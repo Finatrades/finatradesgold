@@ -760,7 +760,13 @@ export async function registerRoutes(
   // Create trade case
   app.post("/api/trade/cases", async (req, res) => {
     try {
-      const caseData = insertTradeCaseSchema.parse(req.body);
+      // Generate unique case number server-side
+      const caseNumber = `TF-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
+      const caseData = insertTradeCaseSchema.parse({
+        ...req.body,
+        caseNumber
+      });
       const tradeCase = await storage.createTradeCase(caseData);
       
       // Create audit log
