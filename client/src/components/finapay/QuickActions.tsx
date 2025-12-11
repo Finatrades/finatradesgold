@@ -10,7 +10,8 @@ interface QuickActionsProps {
 export default function QuickActions({ onAction }: QuickActionsProps) {
   
   const actions = [
-    { id: 'buy', label: 'Buy Gold', icon: <ShoppingCart className="w-4 h-4" />, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { id: 'add_fund', label: 'Add Funds', icon: <ShoppingCart className="w-4 h-4" />, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { id: 'buy_gold', label: 'Buy Gold', icon: <Briefcase className="w-4 h-4" />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
     { id: 'sell', label: 'Sell Gold', icon: <Banknote className="w-4 h-4" />, color: 'text-red-400', bg: 'bg-red-400/10' },
     { id: 'send', label: 'Send Gold', icon: <Send className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-400/10' },
     { id: 'request', label: 'Request', icon: <ArrowDownLeft className="w-4 h-4" />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
