@@ -71,9 +71,9 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
              <div className="p-1.5 bg-[#D4AF37]/10 rounded border border-[#D4AF37]/20">
                <Database className="w-4 h-4 text-[#D4AF37]" />
              </div>
-             Gold Deposits — My Requests
+             Vault Transaction Record
           </CardTitle>
-          <p className="text-sm text-white/60 mt-1">Track all current and past gold deposit requests.</p>
+          <p className="text-sm text-white/60 mt-1">Complete history and status of your vault activities.</p>
         </div>
         <Button 
           onClick={onNewRequest}
