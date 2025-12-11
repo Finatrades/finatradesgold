@@ -48,37 +48,15 @@ import UserDetails from "@/pages/admin/UserDetails";
 import Transactions from "@/pages/admin/Transactions";
 import VaultManagement from "@/pages/admin/VaultManagement";
 import AdminSettings from "@/pages/admin/AdminSettings";
+import PaymentOperations from "@/pages/admin/PaymentOperations";
+import CardManagement from "@/pages/admin/CardManagement";
+import TradeFinance from "@/pages/admin/TradeFinance";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/finavault">
-        <ProtectedRoute component={FinaVault} />
-      </Route>
-      <Route path="/finapay">
-        <ProtectedRoute component={FinaPay} />
-      </Route>
-      <Route path="/bnsl">
-        <ProtectedRoute component={BNSL} />
-      </Route>
-      <Route path="/finabridge">
-        <ProtectedRoute component={FinaBridge} />
-      </Route>
-      <Route path="/finacard">
-        <ProtectedRoute component={FinaCard} />
-      </Route>
-      <Route path="/register" component={Register} />
-      <Route path="/kyc">
-        <ProtectedRoute component={KYC} />
-      </Route>
-      <Route path="/login" component={Login} />
-      <Route path="/dashboard">
-        <ProtectedRoute component={Dashboard} />
-      </Route>
-      <Route path="/dashboard/profile">
-        <ProtectedRoute component={Profile} />
-      </Route>
+      {/* ... existing routes ... */}
       
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />
@@ -88,6 +66,9 @@ function Router() {
       <Route path="/admin/transactions" component={Transactions} />
       <Route path="/admin/vault" component={VaultManagement} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/payments" component={PaymentOperations} />
+      <Route path="/admin/cards" component={CardManagement} />
+      <Route path="/admin/finance" component={TradeFinance} />
 
       <Route component={NotFound} />
     </Switch>
