@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Plus, ShoppingCart, Database, Send, ArrowDownLeft } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 const actions = [
   {
     title: 'Add Fund',
+    path: '/finapay',
     icon: <Plus className="w-5 h-5" />,
     color: 'text-white',
     bg: 'bg-white/10 hover:bg-white/20',
@@ -12,6 +14,7 @@ const actions = [
   },
   {
     title: 'Buy Gold',
+    path: '/finapay',
     icon: <ShoppingCart className="w-5 h-5" />,
     color: 'text-[#D4AF37]',
     bg: 'bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20',
@@ -19,6 +22,7 @@ const actions = [
   },
   {
     title: 'Deposit Gold',
+    path: '/finavault',
     icon: <Database className="w-5 h-5" />,
     color: 'text-[#D4AF37]',
     bg: 'bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20',
@@ -26,6 +30,7 @@ const actions = [
   },
   {
     title: 'Send Payment',
+    path: '/finapay',
     icon: <Send className="w-5 h-5" />,
     color: 'text-[#8A2BE2]',
     bg: 'bg-[#8A2BE2]/10 hover:bg-[#8A2BE2]/20',
@@ -33,6 +38,7 @@ const actions = [
   },
   {
     title: 'Request Payment',
+    path: '/finapay',
     icon: <ArrowDownLeft className="w-5 h-5" />,
     color: 'text-[#FF2FBF]',
     bg: 'bg-[#FF2FBF]/10 hover:bg-[#FF2FBF]/20',
@@ -41,6 +47,8 @@ const actions = [
 ];
 
 export default function QuickActionsTop() {
+  const [, setLocation] = useLocation();
+
   return (
     <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
       <div className="flex gap-4 min-w-max">
@@ -52,6 +60,7 @@ export default function QuickActionsTop() {
             transition={{ delay: index * 0.05 }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
+            onClick={() => setLocation(action.path)}
             className={`flex items-center gap-3 px-6 py-4 rounded-xl border backdrop-blur-sm transition-all ${action.bg} ${action.border} min-w-[180px]`}
           >
             <div className={`p-2 rounded-lg bg-black/20 ${action.color}`}>

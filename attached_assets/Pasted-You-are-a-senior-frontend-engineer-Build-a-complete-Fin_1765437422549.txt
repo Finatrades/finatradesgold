@@ -1,0 +1,383 @@
+You are a senior frontend engineer.
+Build a complete **FinaPay Wallet** module UI for the Finatrades platform.
+
+This is a DIGITAL GOLD WALLET where users:
+- See their gold balance and fiat equivalent
+- View recent transactions
+- Buy gold
+- Sell gold (cash-out)
+- Send gold to other users
+- Request gold from other users
+- Navigate to BNSL (staking) and Trade Finance
+
+No backend is required yet – use local state and mock data.
+
+Tech stack:
+- React (Vite + React or Next.js)
+- TypeScript (preferred)
+- TailwindCSS
+- Optional: framer-motion for subtle animations
+
+Brand / Theme:
+- Dark, premium, gold-backed fintech
+- Background: gradient #000000 → #0D0515 → #1A0A2E
+- Accent gold: #D1A954
+- Text: #FFFFFF and neutral grays (#E5E7EB, #9CA3AF)
+- Cards: glassmorphism (bg-white/5, backdrop-blur, rounded-2xl)
+- Font: "Inter" for UI, optional headings "Playfair Display" for premium feel
+
+App Scope:
+Implement a full FinaPay screen with:
+1. Wallet header + summary strip
+2. Wallet home dashboard:
+   - Gold balance & valuation (USD/AED)
+   - Live gold spot chart (mock data)
+   - Recent transactions
+   - Quick Actions buttons
+3. Modal/panel flows for:
+   - Buy Gold
+   - Sell Gold
+   - Send Gold
+   - Request Gold
+
+Integration with FinaVault is only conceptual here:
+- We simulate FinaVault ledger updates by updating local state.
+
+────────────────────────
+LAYOUT STRUCTURE
+────────────────────────
+
+Route/page: `/finapay` or main component `<FinaPayWallet />`.
+
+Top layout:
+- Top bar:
+  - Title: "FinaPay Wallet"
+  - Subtitle: "Digital gold wallet for buying, selling and sending gold."
+  - Right side: "Live Gold Spot: 2,350.40 USD/oz" (mock price)
+
+Main layout sections:
+1. Balance & valuation cards (top row)
+2. Live Gold Spot chart (left) + Recent Transactions (right)
+3. Quick Actions row (buttons)
+4. Optional: Quick navigation tiles for BNSL and Trade Finance
+
+Use `max-w-5xl mx-auto px-4 py-6` for container.
+
+────────────────────────
+SECTION 1: BALANCE & VALUATION
+────────────────────────
+
+Top row: 3 cards
+
+1) Gold Balance (grams/kg)
+- Title: "Gold Balance"
+- Value: e.g., "125.400 g" (or "0.125 kg")
+- Subtext: "Gold held in your FinaPay Wallet."
+
+2) Gold Value (USD)
+- Title: "Gold Value (USD)"
+- Value: e.g., "$7,850.32"
+- Subtext: "Calculated using the latest LBMA-linked price."
+
+3) Gold Value (AED)
+- Title: "Gold Value (AED)"
+- Value: e.g., "AED 28,850.00"
+- Subtext: "Local currency view of your gold holdings."
+
+Each card:
+- Glass card: rounded-2xl, bg-white/5, backdrop-blur
+- Use tailwind for hover: `hover:scale-[1.02] hover:border-[#D1A954] transition-all duration-200`
+
+Underlying state:
+- Keep a single `wallet` state object:
+  - `goldBalanceGrams`
+  - `goldPriceUsdPerGram`
+  - `usdAedRate`
+  - Computed values for USD/AED.
+
+────────────────────────
+SECTION 2: LIVE GOLD SPOT & RECENT TRANSACTIONS
+────────────────────────
+
+Two-column layout (stacked on mobile).
+
+LEFT: Live Gold Spot Chart
+- Card title: "Live Gold Spot"
+- Tabs: "24H | 7D | 30D"
+- Implement:
+  - A simple line chart with mock data (e.g. using any lightweight chart library or a custom SVG).
+  - Show last point value + % change.
+
+RIGHT: Recent Transactions
+- Card title: "Recent Transactions"
+- Table or list with columns/fields:
+  - Date/Time
+  - Type (Buy, Sell, Send, Receive, Request)
+  - Amount: gold in grams (e.g., "5.000 g")
+  - Value: in USD (e.g., "$310.00")
+  - Status badge: (Completed / Pending / Failed)
+
+- At bottom: link/button "View all transactions".
+
+Transactions should be stored as an array in state:
+
+`Transaction` includes:
+- id: string
+- type: "Buy" | "Sell" | "Send" | "Receive" | "Request"
+- amountGrams: number
+- amountFiatUsd: number
+- feeUsd: number
+- timestamp: string
+- status: "Completed" | "Pending" | "Failed"
+- referenceId: string
+
+────────────────────────
+SECTION 3: QUICK ACTIONS
+────────────────────────
+
+Under the top sections, show a row of **Quick Action buttons**:
+
+Buttons:
+- Buy Gold
+- Sell Gold
+- Send Gold
+- Request Gold
+- BNSL (link to staking)
+- Trade Finance (link to FinaBridge)
+
+UI:
+- Use pill/rounded buttons with icon + label.
+- On desktop, show them as a row, on mobile use wrapping.
+
+On click:
+- For Buy/Sell/Send/Request → open modals (see below).
+- For BNSL and Trade Finance → just show placeholder navigation (console.log or alert) “Navigate to BNSL” / “Navigate to Trade Finance”.
+
+────────────────────────
+FLOW: BUY GOLD (DEPOSIT CONVERSION)
+────────────────────────
+
+Trigger: Click "Buy Gold" button → open modal or side panel.
+
+Modal content:
+
+Step 1: Choose Method
+- Radio or select:
+  - Crypto
+  - Bank Transfer
+  - Card (Visa/MasterCard)
+
+Step 2: Enter Amount
+- Toggle or tabs:
+  - "Enter amount in USD"
+  - "Enter target grams"
+- Field: USD or Grams
+- Show:
+  - Calculated other side based on current `goldPriceUsdPerGram`.
+  - Example:
+    - If user enters $1,000 and price is $60/g → show 16.666 g.
+
+Step 3: Summary
+- Show:
+  - Payment method
+  - Gold to be credited (g)
+  - FX or fee info (static text: "Network and processing fees may apply.")
+- Button: "Confirm Purchase"
+
+On Confirm:
+- Simulate payment success (no real integration):
+  - Add the purchased grams to `wallet.goldBalanceGrams`.
+  - Add a new transaction of type "Buy" with:
+    - status: "Completed"
+- Close modal and show a success toast/banner at top:
+  - "Successfully bought X.XXX g of gold."
+
+Also conceptually:
+- Comment in code: "// Here we would call FinaVault API to credit gold ownership."
+
+────────────────────────
+FLOW: SELL GOLD (WITHDRAWAL / CASH OUT)
+────────────────────────
+
+Trigger: Click "Sell Gold" → open modal.
+
+Modal sections:
+
+Step 1: Amount
+- Input: "Gold amount (grams)" – number
+- Show:
+  - Equivalent value in USD and AED.
+
+Step 2: Payout Method
+- Radio/select:
+  - Bank Transfer
+  - Crypto Payout
+  - Card Refund
+
+Depending on method, show placeholder fields (no need to fully implement IBAN forms here; can just show a text summary).
+
+Step 3: Summary & Confirm
+- Show:
+  - Gold amount
+  - Gross payout
+  - Estimated fees (static or simple percentage)
+  - Net payout value
+
+On Confirm:
+- Deduct gold from `wallet.goldBalanceGrams`.
+- Create a "Sell" transaction with status "Completed".
+- Show success toast "Sell order executed."
+
+Also add a comment:
+- "// Here we would debit FinaVault and trigger payout."
+
+────────────────────────
+FLOW: SEND GOLD (INTERNAL TRANSFER)
+────────────────────────
+
+Trigger: Click "Send Gold" → open modal.
+
+Fields:
+- Recipient ID or Email (text input)
+- Amount in grams
+- Optional message/description
+
+Validation:
+- Non-empty recipient
+- Amount > 0
+- Amount <= current `goldBalanceGrams`
+
+Add a simple 2FA/OTP step:
+- Show "Enter 6-digit OTP" input.
+- For now, accept any 6-digit number.
+
+On Confirm:
+- Deduct amount from `wallet.goldBalanceGrams`.
+- Create a "Send" transaction with status "Completed".
+- Optionally create a dummy "Receive" transaction for a mock recipient (purely local).
+- Show success toast "Gold sent successfully."
+
+Concept comment:
+- "// FinaVault: debit sender, credit receiver."
+
+────────────────────────
+FLOW: REQUEST GOLD (PAYMENT REQUEST)
+────────────────────────
+
+Trigger: Click "Request Gold" → open modal.
+
+Fields:
+- Request From: recipient email/ID
+- Amount (grams)
+- Description: text
+
+On Submit:
+- Save this as a `Pending` "Request" transaction in local state.
+- Show a banner: "Request sent to [recipient]."
+
+Also show a "Requests" sub-section somewhere in the page (e.g. under transactions or in separate tab) listing:
+- Outgoing requests
+- Incoming requests (mocked)
+
+Status:
+- Outgoing: "Pending"
+- Provide dummy "Approve" / "Decline" buttons for incoming requests:
+  - Approve → simulate "Send Gold" from that user to current user.
+  - Decline → set status to "Declined".
+
+────────────────────────
+TRANSACTION HISTORY
+────────────────────────
+
+Below main sections or in a dedicated card, show full transaction history:
+
+Table columns:
+- Date/Time
+- Type (Buy/Sell/Send/Receive/Request)
+- Gold (g)
+- Value (USD)
+- Fees (USD)
+- Status
+- Reference ID
+
+Use mock data + any new actions update this history.
+
+Optional: filter by type using pill buttons:
+- All | Buy | Sell | Send | Receive | Request
+
+────────────────────────
+INTEGRATION WITH FINAVAULT (CONCEPTUAL)
+────────────────────────
+
+Add clear comments to show future backend integration:
+
+- In Buy Gold flow:
+  - "// TODO: Call FinaVault API to credit gold weight and record ledger entry."
+
+- In Sell Gold flow:
+  - "// TODO: Call FinaVault API to debit gold and trigger payout."
+
+- In Send/Receive:
+  - "// TODO: FinaVault: debit sender, credit receiver."
+
+- In BNSL / Trade Finance navigation:
+  - "// TODO: Navigate to FinaEarn (BNSL) / FinaBridge modules."
+
+No actual API calls needed – just placeholders and code comments.
+
+────────────────────────
+STATE & TYPES
+────────────────────────
+
+Define TypeScript types:
+
+`Wallet`:
+- goldBalanceGrams: number
+- goldPriceUsdPerGram: number
+- usdAedRate: number
+
+`TransactionType`:
+- "Buy" | "Sell" | "Send" | "Receive" | "Request"
+
+`TransactionStatus`:
+- "Completed" | "Pending" | "Failed" | "Declined"
+
+`Transaction`:
+- id: string
+- type: TransactionType
+- amountGrams: number
+- amountUsd: number
+- feeUsd: number
+- timestamp: string
+- referenceId: string
+- status: TransactionStatus
+- description?: string
+
+Use React `useState` for wallet and transaction list.
+
+────────────────────────
+UX / ANIMATION
+────────────────────────
+
+- Use subtle animations:
+  - Cards fade-in and slide up on initial load.
+  - Buttons have hover scale and gold glow.
+  - Modals slide from bottom or right with smooth motion.
+
+- Make everything responsive:
+  - On small screens, stack sections vertically.
+  - Collapse layout gracefully without losing readability.
+
+────────────────────────
+GOAL
+────────────────────────
+
+Deliver a **polished, functional FinaPay Wallet UI module** that matches this spec:
+
+- Wallet Overview (gold + fiat values)
+- Live Gold Spot chart (mock)
+- Quick Action buttons
+- Buy / Sell / Send / Request flows (modals)
+- Transaction history
+- Clean code with TypeScript types and Tailwind styling
+- Ready to be hooked to real FinaVault APIs later.
