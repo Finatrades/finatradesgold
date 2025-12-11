@@ -152,10 +152,10 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
             </div>
           )}
 
-          {/* STEP 2: COUNTERPARTY INFO */}
+          {/* STEP 2: EXPORTER INFO */}
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-              <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">Counterparty Information</h3>
+              <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">Exporter Information</h3>
               
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">

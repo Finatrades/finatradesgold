@@ -43,7 +43,7 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
           <TableHeader className="bg-white/5">
             <TableRow className="border-white/10 hover:bg-transparent">
               <TableHead className="text-white/60">Trade ID</TableHead>
-              <TableHead className="text-white/60">Counterparty</TableHead>
+              <TableHead className="text-white/60">Exporter</TableHead>
               <TableHead className="text-white/60">Value (USD)</TableHead>
               <TableHead className="text-white/60">Locked Gold</TableHead>
               <TableHead className="text-white/60">Status</TableHead>
