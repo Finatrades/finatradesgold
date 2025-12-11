@@ -199,7 +199,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [user]);
+  }, [user, isGuestReady, guestId]);
 
   // Load sessions on mount
   useEffect(() => {
