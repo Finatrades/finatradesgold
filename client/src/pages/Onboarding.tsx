@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAccountType } from '@/context/AccountTypeContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera, XCircle } from 'lucide-react';
+import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ import { toast } from 'sonner';
 export default function Onboarding() {
   const { t } = useLanguage();
   const { setAccountType: setContextAccountType } = useAccountType();
+  const { login } = useAuth();
   
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
   const [businessRole, setBusinessRole] = useState<'importer' | 'exporter' | 'both'>('importer');
@@ -74,8 +76,17 @@ export default function Onboarding() {
     // Update global context
     setContextAccountType(accountType);
 
+    // Simulate Login
+    login({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      accountType: accountType,
+      companyName: accountType === 'business' ? formData.companyName : undefined
+    });
+
     toast.success("Account Created Successfully!", {
-      description: "Please check your email to verify your account."
+      description: "Welcome to your new dashboard."
     });
   };
 

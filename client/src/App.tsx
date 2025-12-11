@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,8 +10,25 @@ import FinaPay from "@/pages/FinaPay";
 import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
 import Onboarding from "@/pages/Onboarding";
+import Dashboard from "@/pages/Dashboard";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
+
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { user } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!user) {
+      setLocation('/onboarding');
+    }
+  }, [user, setLocation]);
+
+  if (!user) return null;
+  return <Component />;
+}
 
 function Router() {
   return (
@@ -22,6 +39,9 @@ function Router() {
       <Route path="/bnsl" component={BNSL} />
       <Route path="/finabridge" component={FinaBridge} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/dashboard">
+        <ProtectedRoute component={Dashboard} />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -30,14 +50,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AccountTypeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AccountTypeProvider>
-      </LanguageProvider>
+      <AuthProvider>
+        <LanguageProvider>
+          <AccountTypeProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </AccountTypeProvider>
+        </LanguageProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
