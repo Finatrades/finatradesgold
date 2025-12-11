@@ -1,0 +1,108 @@
+import React from 'react';
+import { Link, useLocation } from 'wouter';
+import { motion } from 'framer-motion';
+import { 
+  LayoutDashboard, 
+  Wallet, 
+  Database, 
+  TrendingUp, 
+  BarChart3, 
+  User, 
+  Settings, 
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useAccountType } from '@/context/AccountTypeContext';
+import { Button } from '@/components/ui/button';
+
+export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) {
+  const [location] = useLocation();
+  const { logout } = useAuth();
+  const { accountType } = useAccountType();
+
+  const menuItems = [
+    { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
+    { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay Wallet', href: '/finapay' },
+    { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
+    { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
+    ...(accountType === 'business' ? [
+      { icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' }
+    ] : []),
+    { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/dashboard/profile' },
+    { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },
+  ];
+
+  const isActive = (path: string) => location === path;
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <aside 
+        className={`fixed top-0 left-0 h-full w-64 bg-[#0D001E] border-r border-white/10 z-50 transition-transform duration-300 lg:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          
+          {/* Logo Area */}
+          <div className="h-20 flex items-center px-6 border-b border-white/10">
+            <Link href="/">
+              <div className="flex items-center gap-2 cursor-pointer">
+                <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#8A2BE2] rounded-lg" />
+                <span className="text-xl font-bold tracking-tight text-white">Finatrades</span>
+              </div>
+            </Link>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2 custom-scrollbar">
+            {menuItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <div 
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer group ${
+                    isActive(item.href) 
+                      ? 'bg-[#D4AF37]/10 text-[#D4AF37]' 
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className={`${isActive(item.href) ? 'text-[#D4AF37]' : 'text-white/60 group-hover:text-white'}`}>
+                    {item.icon}
+                  </div>
+                  <span className="font-medium">{item.label}</span>
+                  {isActive(item.href) && (
+                    <motion.div 
+                      layoutId="sidebar-active"
+                      className="absolute left-0 w-1 h-8 bg-[#D4AF37] rounded-r-full"
+                    />
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Footer / Logout */}
+          <div className="p-4 border-t border-white/10">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              onClick={logout}
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              Log Out
+            </Button>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
