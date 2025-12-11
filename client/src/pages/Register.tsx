@@ -17,7 +17,7 @@ import { Link, useLocation } from 'wouter';
 export default function Register() {
   const { t } = useLanguage();
   const { setAccountType: setContextAccountType } = useAccountType();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const [, setLocation] = useLocation();
   
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
@@ -84,13 +84,10 @@ export default function Register() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        passwordHash: formData.password,
+        password: formData.password,
         accountType: accountType,
-        companyName: accountType === 'business' ? formData.companyName : undefined,
         role: 'user',
-        kycStatus: 'pending',
-        status: 'active',
-        language: 'en',
+        kycStatus: 'Not Started',
       });
 
       toast.success("Account Created Successfully!", {

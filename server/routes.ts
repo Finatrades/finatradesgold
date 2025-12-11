@@ -6,9 +6,16 @@ import {
   insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
   insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertTradeCaseSchema,
   insertTradeDocumentSchema, insertChatSessionSchema, insertChatMessageSchema,
-  insertAuditLogSchema
+  insertAuditLogSchema, User
 } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+
+// Helper to strip sensitive fields from user object
+function sanitizeUser(user: User): Omit<User, 'password'> {
+  const { password, ...safeUser } = user;
+  return safeUser;
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -29,25 +36,32 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Email already registered" });
       }
       
-      const user = await storage.createUser(userData);
+      // Hash the password before storing
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
       
       // Create wallet for new user
       await storage.createWallet({
         userId: user.id,
-        currency: "USD",
-        balance: "0",
+        goldGrams: "0",
+        usdBalance: "0",
+        eurBalance: "0",
       });
       
       // Create audit log
       await storage.createAuditLog({
         entityType: "user",
         entityId: user.id,
-        action: "create",
-        performedBy: user.id,
-        changes: { status: "User registered" },
+        actionType: "create",
+        actor: user.id,
+        actorRole: "user",
+        details: "User registered",
       });
       
-      res.json({ user });
+      res.json({ user: sanitizeUser(user) });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
     }
@@ -59,11 +73,24 @@ export async function registerRoutes(
       const { email, password } = req.body;
       const user = await storage.getUserByEmail(email);
       
-      if (!user || user.passwordHash !== password) {
+      if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      res.json({ user });
+      // Check if password is hashed (starts with $2) or plain text (for demo/admin users)
+      let isValidPassword = false;
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await bcrypt.compare(password, user.password);
+      } else {
+        // Legacy plain text comparison for existing demo/admin users
+        isValidPassword = user.password === password;
+      }
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      res.json({ user: sanitizeUser(user) });
     } catch (error) {
       res.status(400).json({ message: "Login failed" });
     }
@@ -76,7 +103,7 @@ export async function registerRoutes(
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json({ user });
+      res.json({ user: sanitizeUser(user) });
     } catch (error) {
       res.status(400).json({ message: "Failed to get user" });
     }
@@ -89,7 +116,7 @@ export async function registerRoutes(
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json({ user });
+      res.json({ user: sanitizeUser(user) });
     } catch (error) {
       res.status(400).json({ message: "Failed to update user" });
     }
@@ -107,17 +134,17 @@ export async function registerRoutes(
       
       // Update user KYC status
       await storage.updateUser(kycData.userId, {
-        kycStatus: "pending",
-        kycSubmittedAt: new Date(),
+        kycStatus: "In Progress",
       });
       
       // Create audit log
       await storage.createAuditLog({
         entityType: "kyc",
         entityId: submission.id,
-        action: "create",
-        performedBy: kycData.userId,
-        changes: { status: "KYC submitted" },
+        actionType: "create",
+        actor: kycData.userId,
+        actorRole: "user",
+        details: "KYC submitted",
       });
       
       res.json({ submission });
@@ -147,8 +174,7 @@ export async function registerRoutes(
       // Update user KYC status
       if (req.body.status) {
         await storage.updateUser(submission.userId, {
-          kycStatus: req.body.status === "approved" ? "verified" : req.body.status,
-          kycVerifiedAt: req.body.status === "approved" ? new Date() : null,
+          kycStatus: req.body.status,
         });
       }
       
@@ -208,9 +234,10 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "transaction",
         entityId: transaction.id,
-        action: "create",
-        performedBy: transactionData.userId,
-        changes: { type: transactionData.type, amount: transactionData.amount },
+        actionType: "create",
+        actor: transactionData.userId,
+        actorRole: "user",
+        details: `Transaction type: ${transactionData.type}`,
       });
       
       res.json({ transaction });
@@ -266,9 +293,10 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "vault",
         entityId: holding.id,
-        action: "create",
-        performedBy: holdingData.userId,
-        changes: { grams: holdingData.grams, type: "purchase" },
+        actionType: "create",
+        actor: holdingData.userId,
+        actorRole: "user",
+        details: `Gold grams: ${holdingData.goldGrams}`,
       });
       
       res.json({ holding });
@@ -324,9 +352,10 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "bnsl",
         entityId: plan.id,
-        action: "create",
-        performedBy: planData.userId,
-        changes: { grams: planData.grams, status: "active" },
+        actionType: "create",
+        actor: planData.userId,
+        actorRole: "user",
+        details: `BNSL plan created: ${planData.goldSoldGrams}g`,
       });
       
       res.json({ plan });
@@ -390,7 +419,7 @@ export async function registerRoutes(
       
       // Update plan status
       await storage.updateBnslPlan(terminationData.planId, {
-        status: "terminated",
+        status: "Early Terminated",
       });
       
       res.json({ termination });
@@ -433,9 +462,10 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "trade",
         entityId: tradeCase.id,
-        action: "create",
-        performedBy: caseData.userId,
-        changes: { status: "draft", amount: caseData.transactionAmount },
+        actionType: "create",
+        actor: caseData.userId,
+        actorRole: "user",
+        details: `Trade case created: ${caseData.tradeValueUsd} USD`,
       });
       
       res.json({ case: tradeCase });
