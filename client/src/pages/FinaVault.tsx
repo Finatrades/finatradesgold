@@ -99,6 +99,28 @@ const MOCK_REQUESTS: DepositRequest[] = [
     vaultInternalReference: 'TR-INT-99283'
   },
   {
+    id: 'DIG-IN-2024-771',
+    userId: 'user-1',
+    vaultLocation: 'London Vault (Pool)',
+    depositType: 'Digital Allocation',
+    totalDeclaredWeightGrams: 2.500,
+    items: [
+      { id: '1', itemType: 'Digital Gold', quantity: 1, weightPerUnitGrams: 2.500, totalWeightGrams: 2.500, purity: '999.9', brand: 'FinaTrades Pool' }
+    ],
+    deliveryMethod: 'Pickup', // Virtual
+    pickupDetails: {
+      address: 'Digital Transfer from User: @sarah_gold',
+      contactName: 'Sarah Smith',
+      contactMobile: 'ID: 7721-11',
+      date: '2024-12-04',
+      timeSlot: 'Instant'
+    },
+    documents: [],
+    status: 'Received',
+    submittedAt: '2024-12-04T11:20:00Z',
+    vaultInternalReference: 'DIG-TR-5512'
+  },
+  {
     id: 'FD-2024-0089',
     userId: 'user-1',
     vaultLocation: 'Dubai Vault',

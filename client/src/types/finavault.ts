@@ -1,6 +1,6 @@
 export interface DepositItem {
   id: string;
-  itemType: 'Bar' | 'Coin';
+  itemType: 'Bar' | 'Coin' | 'Digital Gold';
   quantity: number;
   weightPerUnitGrams: number;
   totalWeightGrams: number;
@@ -24,7 +24,7 @@ export interface DepositRequest {
   id: string;
   userId: string;
   vaultLocation: string;
-  depositType: 'Bars' | 'Coins' | 'Mixed';
+  depositType: 'Bars' | 'Coins' | 'Mixed' | 'Digital Allocation';
   totalDeclaredWeightGrams: number;
   items: DepositItem[];
   deliveryMethod: 'Walk-in' | 'Courier' | 'Pickup';
