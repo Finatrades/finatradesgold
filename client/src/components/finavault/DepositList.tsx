@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
+import DigitalCertificateModal from './DigitalCertificateModal';
 
 interface DepositListProps {
   requests: DepositRequest[];
@@ -19,6 +20,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [vaultFilter, setVaultFilter] = useState('all');
+  const [selectedCertificate, setSelectedCertificate] = useState<DepositRequest | null>(null);
 
   // Filter Logic
   const filteredRequests = requests.filter(req => {
@@ -65,6 +67,11 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
 
   return (
     <Card className="bg-white/5 border-white/10 overflow-hidden shadow-sm backdrop-blur-sm">
+      <DigitalCertificateModal 
+        request={selectedCertificate} 
+        open={!!selectedCertificate} 
+        onOpenChange={(open) => !open && setSelectedCertificate(null)} 
+      />
       <CardHeader className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-white/10">
         <div>
           <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
@@ -180,7 +187,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
                       </div>
                     </td>
                     <td className="p-4 text-center">
-                      <Button variant="ghost" size="icon" className="text-white/40 hover:text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); /* TODO: Download handler */ }}>
+                      <Button variant="ghost" size="icon" className="text-white/40 hover:text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); setSelectedCertificate(req); }}>
                         <FileText className="w-4 h-4" />
                       </Button>
                     </td>
