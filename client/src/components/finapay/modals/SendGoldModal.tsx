@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, QrCode, Scan, Paperclip, X } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, Upload, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface SendGoldModalProps {
@@ -113,15 +113,15 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
                      className="h-6 px-2 text-xs text-white/40 hover:text-white"
                      onClick={handleAttachment}
                    >
-                     <Paperclip className="w-3 h-3 mr-1" />
-                     Attach File
+                     <Upload className="w-3 h-3 mr-1" />
+                     Upload File
                    </Button>
                 </div>
                 
                 {attachment ? (
                   <div className="flex items-center justify-between bg-white/5 p-2 rounded border border-white/10 text-sm">
                     <div className="flex items-center text-white/80">
-                      <Paperclip className="w-3 h-3 mr-2" />
+                      <Upload className="w-3 h-3 mr-2" />
                       {attachment}
                     </div>
                     <Button 
