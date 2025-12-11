@@ -87,6 +87,8 @@ function Router() {
   );
 }
 
+import { BnslProvider } from "@/context/BnslContext";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -94,16 +96,18 @@ function App() {
         <AuthProvider>
           <PlatformProvider>
             <TradeFinanceProvider>
-              <LanguageProvider>
-                <AccountTypeProvider>
-                  <NotificationProvider>
-                    <TooltipProvider>
-                      <Toaster />
-                      <Router />
-                    </TooltipProvider>
-                  </NotificationProvider>
-                </AccountTypeProvider>
-              </LanguageProvider>
+              <BnslProvider>
+                <LanguageProvider>
+                  <AccountTypeProvider>
+                    <NotificationProvider>
+                      <TooltipProvider>
+                        <Toaster />
+                        <Router />
+                      </TooltipProvider>
+                    </NotificationProvider>
+                  </AccountTypeProvider>
+                </LanguageProvider>
+              </BnslProvider>
             </TradeFinanceProvider>
           </PlatformProvider>
         </AuthProvider>
