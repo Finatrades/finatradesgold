@@ -139,7 +139,6 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
               <thead>
                 <tr className="border-b border-white/10 text-xs font-semibold text-[#D4AF37] uppercase tracking-wider bg-[#D4AF37]/5">
                   <th className="p-4 rounded-tl-lg">Request ID</th>
-                  <th className="p-4">Vault</th>
                   <th className="p-4">Weight</th>
                   <th className="p-4">Type</th>
                   <th className="p-4">Status</th>
@@ -160,12 +159,6 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
                   >
                     <td className="p-4 font-medium text-[#D4AF37] hover:underline">
                       {req.id}
-                    </td>
-                    <td className="p-4 text-white/80 font-medium">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-white/40" />
-                        {req.vaultLocation}
-                      </div>
                     </td>
                     <td className="p-4">
                        <div className="font-bold text-white text-lg">{req.totalDeclaredWeightGrams} g</div>
