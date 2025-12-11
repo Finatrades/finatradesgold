@@ -4,24 +4,21 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, FileText, Upload, ShieldCheck, ArrowRight, ArrowLeft, Eye, EyeOff, Lock } from 'lucide-react';
+import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-type Step = 'account-type' | 'basic-info' | 'business-details' | 'kyc-documents' | 'review';
-
 export default function Onboarding() {
   const { t } = useLanguage();
-  const { accountType: contextAccountType, setAccountType: setContextAccountType } = useAccountType();
+  const { setAccountType: setContextAccountType } = useAccountType();
   
-  const [currentStep, setCurrentStep] = useState<Step>('account-type');
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
   const [businessRole, setBusinessRole] = useState<'importer' | 'exporter' | 'both'>('importer');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -37,217 +34,160 @@ export default function Onboarding() {
     agreedToTerms: false
   });
 
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleNext = () => {
-    if (currentStep === 'account-type') {
-      setContextAccountType(accountType);
-      setCurrentStep('basic-info');
-    } else if (currentStep === 'basic-info') {
-      if (!formData.email || !formData.password) {
-        toast.error("Please fill in all required fields");
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        toast.error("Passwords do not match");
-        return;
-      }
-      if (accountType === 'business') {
-        setCurrentStep('business-details');
-      } else {
-        setCurrentStep('kyc-documents');
-      }
-    } else if (currentStep === 'business-details') {
-      setCurrentStep('kyc-documents');
-    } else if (currentStep === 'kyc-documents') {
-      setCurrentStep('review');
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep === 'basic-info') setCurrentStep('account-type');
-    else if (currentStep === 'business-details') setCurrentStep('basic-info');
-    else if (currentStep === 'kyc-documents') {
-      setCurrentStep(accountType === 'business' ? 'business-details' : 'basic-info');
-    } else if (currentStep === 'review') setCurrentStep('kyc-documents');
-  };
-
   const handleSubmit = () => {
+    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
     if (!formData.agreedToTerms) {
       toast.error("Please agree to the Terms and Conditions");
       return;
     }
+
+    // Update global context
+    setContextAccountType(accountType);
+
     toast.success("Account Created Successfully!", {
       description: "Please check your email to verify your account."
     });
-    // Here you would redirect to dashboard or success page
   };
 
   return (
     <Layout>
-      <div className="min-h-screen pt-12 pb-24 bg-[#0D001E]">
-        <div className="container mx-auto px-6 max-w-4xl">
+      <div className="min-h-screen pt-20 pb-24 bg-[#0D001E]">
+        <div className="container mx-auto px-6 max-w-3xl">
           
-          {/* Progress Bar */}
-          <div className="mb-12">
-            <div className="flex justify-between mb-4">
-              <span className={`text-sm font-medium ${currentStep === 'account-type' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Account Type</span>
-              <span className={`text-sm font-medium ${currentStep === 'basic-info' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Sign Up</span>
-              {accountType === 'business' && (
-                <span className={`text-sm font-medium ${currentStep === 'business-details' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Business</span>
-              )}
-              <span className={`text-sm font-medium ${currentStep === 'kyc-documents' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>KYC</span>
-              <span className={`text-sm font-medium ${currentStep === 'review' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Review</span>
-            </div>
-            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF]"
-                initial={{ width: '0%' }}
-                animate={{ 
-                  width: currentStep === 'account-type' ? '20%' : 
-                         currentStep === 'basic-info' ? '40%' :
-                         currentStep === 'business-details' ? '60%' :
-                         currentStep === 'kyc-documents' ? '80%' : '100%'
-                }}
-              />
-            </div>
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold text-white mb-4">Create your Account</h1>
+            <p className="text-white/60">Join the future of gold-backed digital finance.</p>
           </div>
 
-          <Card className="p-8 bg-white/5 border-white/10 backdrop-blur-sm min-h-[500px] flex flex-col">
-            <AnimatePresence mode="wait">
-              
-              {/* STEP 1: ACCOUNT TYPE */}
-              {currentStep === 'account-type' && (
-                <motion.div 
-                  key="step1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex-1"
-                >
-                  <h2 className="text-3xl font-bold text-white mb-2">Create Your Account</h2>
-                  <p className="text-white/60 mb-8">Select how you want to use Finatrades.</p>
+          <Card className="p-8 bg-white/5 border-white/10 backdrop-blur-sm">
+            
+            {/* Account Type Toggle */}
+            <div className="grid grid-cols-2 gap-4 p-1 bg-white/5 rounded-xl mb-8">
+              <button
+                onClick={() => setAccountType('personal')}
+                className={`flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
+                  accountType === 'personal' 
+                    ? 'bg-[#8A2BE2] text-white shadow-lg' 
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <User className="w-4 h-4" /> Personal
+              </button>
+              <button
+                onClick={() => setAccountType('business')}
+                className={`flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
+                  accountType === 'business' 
+                    ? 'bg-[#D4AF37] text-black shadow-lg' 
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Building className="w-4 h-4" /> Corporate
+              </button>
+            </div>
 
-                  <RadioGroup value={accountType} onValueChange={(v: any) => setAccountType(v)} className="grid md:grid-cols-2 gap-6">
-                    <div className={`cursor-pointer rounded-2xl border-2 p-6 transition-all ${accountType === 'personal' ? 'border-[#8A2BE2] bg-[#8A2BE2]/10' : 'border-white/10 hover:border-white/20'}`}>
-                      <RadioGroupItem value="personal" id="personal" className="hidden" />
-                      <label htmlFor="personal" className="cursor-pointer block">
-                        <User className={`w-12 h-12 mb-4 ${accountType === 'personal' ? 'text-[#8A2BE2]' : 'text-white/40'}`} />
-                        <h3 className="text-xl font-bold text-white mb-2">Personal Account</h3>
-                        <p className="text-sm text-white/60">For individuals who want to buy, store, and manage personal gold wealth. Access FinaVault and FinaPay.</p>
-                      </label>
-                    </div>
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">
+                  1. Account Information
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>First Name</Label>
+                    <Input 
+                      value={formData.firstName}
+                      onChange={e => setFormData({...formData, firstName: e.target.value})}
+                      className="bg-white/5 border-white/10 text-white" 
+                      placeholder="John"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Name</Label>
+                    <Input 
+                      value={formData.lastName}
+                      onChange={e => setFormData({...formData, lastName: e.target.value})}
+                      className="bg-white/5 border-white/10 text-white" 
+                      placeholder="Doe"
+                    />
+                  </div>
+                </div>
 
-                    <div className={`cursor-pointer rounded-2xl border-2 p-6 transition-all ${accountType === 'business' ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-white/10 hover:border-white/20'}`}>
-                      <RadioGroupItem value="business" id="business" className="hidden" />
-                      <label htmlFor="business" className="cursor-pointer block">
-                        <Building className={`w-12 h-12 mb-4 ${accountType === 'business' ? 'text-[#D4AF37]' : 'text-white/40'}`} />
-                        <h3 className="text-xl font-bold text-white mb-2">Corporate Account</h3>
-                        <p className="text-sm text-white/60">For companies involved in trade, import/export, or corporate treasury. Access FinaBridge and B2B tools.</p>
-                      </label>
-                    </div>
-                  </RadioGroup>
-                </motion.div>
-              )}
+                <div className="space-y-2">
+                  <Label>Email Address</Label>
+                  <Input 
+                    type="email"
+                    value={formData.email}
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    className="bg-white/5 border-white/10 text-white" 
+                    placeholder="john@example.com"
+                  />
+                </div>
 
-              {/* STEP 2: BASIC INFO (SIGN UP) */}
-              {currentStep === 'basic-info' && (
-                <motion.div 
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex-1 max-w-2xl mx-auto w-full"
-                >
-                  <h2 className="text-3xl font-bold text-white mb-2">Sign Up Details</h2>
-                  <p className="text-white/60 mb-8">Create your login credentials.</p>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input 
+                    type="tel"
+                    value={formData.phone}
+                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                    className="bg-white/5 border-white/10 text-white" 
+                    placeholder="+41 79 123 45 67"
+                  />
+                </div>
 
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>First Name</Label>
-                        <Input 
-                          value={formData.firstName}
-                          onChange={e => setFormData({...formData, firstName: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Last Name</Label>
-                        <Input 
-                          value={formData.lastName}
-                          onChange={e => setFormData({...formData, lastName: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white" 
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Email Address</Label>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Password</Label>
+                    <div className="relative">
                       <Input 
-                        type="email"
-                        value={formData.email}
-                        onChange={e => setFormData({...formData, email: e.target.value})}
-                        className="bg-white/5 border-white/10 text-white" 
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={e => setFormData({...formData, password: e.target.value})}
+                        className="bg-white/5 border-white/10 text-white pr-10" 
+                        placeholder="••••••••"
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Phone Number</Label>
-                      <Input 
-                        type="tel"
-                        value={formData.phone}
-                        onChange={e => setFormData({...formData, phone: e.target.value})}
-                        className="bg-white/5 border-white/10 text-white" 
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Password</Label>
-                        <div className="relative">
-                          <Input 
-                            type={showPassword ? "text" : "password"}
-                            value={formData.password}
-                            onChange={e => setFormData({...formData, password: e.target.value})}
-                            className="bg-white/5 border-white/10 text-white pr-10" 
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                          >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Confirm Password</Label>
-                        <Input 
-                          type="password"
-                          value={formData.confirmPassword}
-                          onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white" 
-                        />
-                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                </motion.div>
-              )}
+                  <div className="space-y-2">
+                    <Label>Confirm Password</Label>
+                    <Input 
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+                      className="bg-white/5 border-white/10 text-white" 
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+              </div>
 
-              {/* STEP 3: BUSINESS DETAILS (Conditional) */}
-              {currentStep === 'business-details' && (
-                <motion.div 
-                  key="step3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex-1 max-w-2xl mx-auto w-full"
-                >
-                  <h2 className="text-3xl font-bold text-white mb-2">Business Details</h2>
-                  <p className="text-white/60 mb-8">Tell us about your company.</p>
-
-                  <div className="space-y-6">
+              {/* Business Details (Conditional) */}
+              <AnimatePresence>
+                {accountType === 'business' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 overflow-hidden"
+                  >
+                    <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 pt-4">
+                      2. Company Details
+                    </h3>
+                    
                     <div className="space-y-2">
                       <Label>Company Name</Label>
                       <Input 
@@ -269,10 +209,10 @@ export default function Onboarding() {
                           <SelectItem value="both">Both (Import & Export)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-white/40 mt-1">This helps us tailor FinaBridge for your trade needs.</p>
+                      <p className="text-xs text-white/40">This helps us tailor FinaBridge for your trade needs.</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Registration Number</Label>
                         <Input 
@@ -291,145 +231,71 @@ export default function Onboarding() {
                         />
                       </div>
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* KYC Upload (Simplified) */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 pt-4">
+                  {accountType === 'business' ? '3. Verification Documents' : '2. Verification Documents'}
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                    <Upload className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#8A2BE2] transition-colors" />
+                    <h4 className="font-medium text-white text-sm mb-1">
+                      {accountType === 'personal' ? 'Passport / ID Card' : 'Certificate of Incorporation'}
+                    </h4>
+                    <p className="text-xs text-white/40">Click to upload</p>
                   </div>
-                </motion.div>
-              )}
 
-              {/* STEP 4: KYC */}
-              {currentStep === 'kyc-documents' && (
-                <motion.div 
-                  key="step4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex-1 max-w-2xl mx-auto w-full"
-                >
-                  <h2 className="text-3xl font-bold text-white mb-2">Identity Verification</h2>
-                  <p className="text-white/60 mb-8">
-                    {accountType === 'personal' ? 'Please upload your ID documents.' : 'Please upload your company registration documents.'}
-                  </p>
-
-                  <div className="space-y-6">
-                    {/* Document Upload Box */}
-                    <div className="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center hover:bg-white/5 transition-colors cursor-pointer">
-                      <Upload className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                      <h4 className="font-bold text-white mb-1">
-                        {accountType === 'personal' ? 'Upload Passport or ID' : 'Upload Certificate of Incorporation'}
+                  {accountType === 'business' && (
+                    <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                      <Upload className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#D4AF37] transition-colors" />
+                      <h4 className="font-medium text-white text-sm mb-1">
+                        Articles of Association
                       </h4>
-                      <p className="text-sm text-white/40 mb-4">Drag and drop or click to browse</p>
-                      <Button variant="secondary" size="sm">Choose File</Button>
+                      <p className="text-xs text-white/40">Click to upload</p>
                     </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs text-white/40 bg-white/5 p-3 rounded-lg">
+                  <ShieldCheck className="w-4 h-4 text-[#8A2BE2]" />
+                  Your data is encrypted and stored securely in Switzerland.
+                </div>
+              </div>
 
-                    {accountType === 'business' && (
-                       <div className="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center hover:bg-white/5 transition-colors cursor-pointer">
-                        <Upload className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                        <h4 className="font-bold text-white mb-1">Upload Articles of Association</h4>
-                        <p className="text-sm text-white/40 mb-4">Drag and drop or click to browse</p>
-                        <Button variant="secondary" size="sm">Choose File</Button>
-                      </div>
-                    )}
+              {/* Terms and Submit */}
+              <div className="pt-6 border-t border-white/10 space-y-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="terms" 
+                    checked={formData.agreedToTerms}
+                    onCheckedChange={(c: any) => setFormData({...formData, agreedToTerms: c})}
+                    className="border-white/20 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80"
+                  >
+                    I agree to the <span className="text-[#8A2BE2] hover:underline cursor-pointer">Terms of Service</span> and <span className="text-[#8A2BE2] hover:underline cursor-pointer">Privacy Policy</span>
+                  </label>
+                </div>
 
-                    <div className="bg-[#8A2BE2]/10 p-4 rounded-xl flex gap-4 items-start border border-[#8A2BE2]/30">
-                      <ShieldCheck className="w-6 h-6 text-[#8A2BE2] flex-shrink-0 mt-1" />
-                      <div>
-                        <h4 className="font-bold text-white text-sm">Secure Verification</h4>
-                        <p className="text-xs text-white/60">Your documents are encrypted and processed securely according to Swiss data protection laws.</p>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* STEP 5: REVIEW */}
-              {currentStep === 'review' && (
-                <motion.div 
-                  key="step5"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex-1 max-w-2xl mx-auto w-full"
-                >
-                  <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-[#8A2BE2]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle2 className="w-8 h-8 text-[#8A2BE2]" />
-                    </div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Review & Create Account</h2>
-                    <p className="text-white/60">Please review your information before submitting.</p>
-                  </div>
-
-                  <div className="bg-white/5 rounded-2xl p-6 space-y-4 mb-6">
-                     <ReviewRow label="Account Type" value={accountType === 'personal' ? 'Personal' : 'Corporate'} />
-                     <ReviewRow label="Name" value={`${formData.firstName} ${formData.lastName}`} />
-                     <ReviewRow label="Email" value={formData.email} />
-                     
-                     {accountType === 'business' && (
-                       <>
-                         <div className="h-px bg-white/10 my-4" />
-                         <ReviewRow label="Company" value={formData.companyName} />
-                         <ReviewRow label="Role" value={businessRole.toUpperCase()} />
-                         <ReviewRow label="Jurisdiction" value={formData.jurisdiction} />
-                       </>
-                     )}
-                  </div>
-
-                  <div className="flex items-center space-x-2 bg-white/5 p-4 rounded-xl border border-white/10">
-                    <Checkbox 
-                      id="terms" 
-                      checked={formData.agreedToTerms}
-                      onCheckedChange={(c: any) => setFormData({...formData, agreedToTerms: c})}
-                      className="border-white/20 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
-                    />
-                    <label
-                      htmlFor="terms"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80"
-                    >
-                      I agree to the <span className="text-[#8A2BE2] hover:underline cursor-pointer">Terms of Service</span> and <span className="text-[#8A2BE2] hover:underline cursor-pointer">Privacy Policy</span>
-                    </label>
-                  </div>
-                </motion.div>
-              )}
-
-            </AnimatePresence>
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-8 border-t border-white/10">
-              <Button 
-                variant="ghost" 
-                onClick={handleBack}
-                disabled={currentStep === 'account-type'}
-                className="text-white/60 hover:text-white"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back
-              </Button>
-
-              {currentStep === 'review' ? (
                 <Button 
                   onClick={handleSubmit}
-                  className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] text-white hover:opacity-90 px-8"
+                  className="w-full bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl"
                 >
-                  Create Account <CheckCircle2 className="w-4 h-4 ml-2" />
+                  Create Account <CheckCircle2 className="w-5 h-5 ml-2" />
                 </Button>
-              ) : (
-                <Button 
-                  onClick={handleNext}
-                  className="bg-white text-black hover:bg-gray-200 px-8"
-                >
-                  Next Step <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
+              </div>
+
             </div>
           </Card>
         </div>
       </div>
     </Layout>
-  );
-}
-
-function ReviewRow({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="flex justify-between items-center">
-      <span className="text-white/40 text-sm">{label}</span>
-      <span className="text-white font-medium">{value || '-'}</span>
-    </div>
   );
 }
