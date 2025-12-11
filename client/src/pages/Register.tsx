@@ -85,7 +85,8 @@ export default function Register() {
       email: formData.email,
       password: formData.password, // Storing plain text for mockup only
       accountType: accountType,
-      companyName: accountType === 'business' ? formData.companyName : undefined
+      companyName: accountType === 'business' ? formData.companyName : undefined,
+      kycStatus: 'pending' as const
     };
 
     const existingUsers = JSON.parse(localStorage.getItem('fina_users') || '[]');
@@ -98,15 +99,16 @@ export default function Register() {
       lastName: formData.lastName,
       email: formData.email,
       accountType: accountType,
-      companyName: accountType === 'business' ? formData.companyName : undefined
+      companyName: accountType === 'business' ? formData.companyName : undefined,
+      kycStatus: 'pending'
     });
 
     toast.success("Account Created Successfully!", {
-      description: "Please complete identity verification to proceed."
+      description: "Please complete identity verification to unlock full features."
     });
     
-    // Redirect to KYC
-    setLocation('/kyc');
+    // Redirect to Dashboard
+    setLocation('/dashboard');
   };
 
   const handleDemoAccess = () => {
@@ -115,10 +117,11 @@ export default function Register() {
       firstName: "Demo",
       lastName: "User",
       email: "demo@finatrades.com",
-      accountType: "personal"
+      accountType: "personal",
+      kycStatus: 'pending'
     });
     toast.success("Demo Access Granted", {
-      description: "Welcome to the dashboard preview."
+      description: "Welcome to the dashboard preview. KYC is pending."
     });
   };
 

@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 
 export default function KYC() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [, setLocation] = useLocation();
   const [activeStep, setActiveStep] = useState('personal');
   const [progress, setProgress] = useState(25);
@@ -40,10 +40,16 @@ export default function KYC() {
     // Simulate API submission
     setTimeout(() => {
       setIsSubmitting(false);
+      
+      if (user) {
+        const updatedUser = { ...user, kycStatus: 'verified' as const };
+        login(updatedUser);
+      }
+
       toast.success("KYC Verification Submitted", {
-        description: "Your documents are under review. You will be notified shortly."
+        description: "Your documents have been verified. You now have full access."
       });
-      setLocation('/dashboard');
+      // Redirect is handled by login function in AuthContext which sets location to /dashboard
     }, 2000);
   };
 

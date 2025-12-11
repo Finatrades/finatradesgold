@@ -5,11 +5,12 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, Search, Briefcase, User as UserIcon } from 'lucide-react';
+import { Menu, Search, Briefcase, User as UserIcon, AlertTriangle, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -104,6 +105,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
+
+        {/* KYC Alert Banner */}
+        {user.kycStatus === 'pending' && (
+          <div className="bg-orange-50 border-b border-orange-200 px-6 py-2">
+            <div className="container mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-2 text-orange-700 text-sm">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="font-medium">Verification Required:</span>
+                <span>Complete your KYC to unlock full trading limits and withdrawals.</span>
+              </div>
+              <Link href="/kyc">
+                <Button size="sm" variant="outline" className="h-7 text-xs border-orange-300 text-orange-800 hover:bg-orange-100 hover:text-orange-900">
+                  Verify Now <ArrowRight className="w-3 h-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Page Content */}
         <main className="flex-1 p-6 overflow-x-hidden">

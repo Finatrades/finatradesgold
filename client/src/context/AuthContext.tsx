@@ -7,6 +7,7 @@ interface User {
   email: string;
   accountType: 'personal' | 'business';
   companyName?: string;
+  kycStatus?: 'pending' | 'verified';
 }
 
 interface AuthContextType {
