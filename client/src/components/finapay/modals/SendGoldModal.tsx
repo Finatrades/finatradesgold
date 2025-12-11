@@ -11,12 +11,14 @@ interface SendGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
   walletBalance: number;
+  goldPrice: number;
   onConfirm: (recipient: string, grams: number) => void;
 }
 
-export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfirm }: SendGoldModalProps) {
+export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPrice, onConfirm }: SendGoldModalProps) {
   const [recipient, setRecipient] = useState('');
   const [grams, setGrams] = useState('');
+  const [usdAmount, setUsdAmount] = useState('');
   const [note, setNote] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1);
@@ -29,6 +31,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
       setStep(1);
       setRecipient('');
       setGrams('');
+      setUsdAmount('');
       setNote('');
       setOtp('');
       setIsLoading(false);
@@ -36,6 +39,30 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
       setAttachment(null);
     }
   }, [isOpen]);
+
+  const handleGramsChange = (val: string) => {
+    setGrams(val);
+    if (val === '') {
+      setUsdAmount('');
+      return;
+    }
+    const g = parseFloat(val);
+    if (!isNaN(g)) {
+      setUsdAmount((g * goldPrice).toFixed(2));
+    }
+  };
+
+  const handleUsdChange = (val: string) => {
+    setUsdAmount(val);
+    if (val === '') {
+      setGrams('');
+      return;
+    }
+    const u = parseFloat(val);
+    if (!isNaN(u)) {
+      setGrams((u / goldPrice).toFixed(4));
+    }
+  };
 
   const numericGrams = parseFloat(grams) || 0;
 
@@ -87,18 +114,37 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label>Amount (g)</Label>
-                  <span className="text-xs text-white/40">Available: {walletBalance.toFixed(3)} g</span>
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      placeholder="0.000" 
+                      className="bg-black/20 border-white/10 pr-8"
+                      value={grams}
+                      onChange={(e) => handleGramsChange(e.target.value)}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">g</span>
+                  </div>
                 </div>
-                <Input 
-                  type="number" 
-                  placeholder="0.000" 
-                  className="bg-black/20 border-white/10"
-                  value={grams}
-                  onChange={(e) => setGrams(e.target.value)}
-                />
+                <div className="space-y-2">
+                  <Label>Amount (USD)</Label>
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      placeholder="0.00" 
+                      className="bg-black/20 border-white/10 pr-8"
+                      value={usdAmount}
+                      onChange={(e) => handleUsdChange(e.target.value)}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">$</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end -mt-2">
+                <span className="text-xs text-white/40">Available: {walletBalance.toFixed(3)} g</span>
               </div>
 
               <div className="space-y-2">

@@ -252,11 +252,13 @@ export default function FinaPay() {
           isOpen={activeModal === 'send'} 
           onClose={() => setActiveModal(null)}
           walletBalance={wallet.goldBalanceGrams}
+          goldPrice={wallet.goldPriceUsdPerGram}
           onConfirm={handleSendConfirm}
         />
         <RequestGoldModal 
           isOpen={activeModal === 'request'} 
           onClose={() => setActiveModal(null)}
+          goldPrice={wallet.goldPriceUsdPerGram}
           onConfirm={handleRequestConfirm}
         />
 
