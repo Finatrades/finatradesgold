@@ -156,8 +156,8 @@ export default function FinaVault() {
                     <Database className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1 text-[#D4AF37]">1,500.00 <span className="text-lg font-normal opacity-60 text-white">g</span></div>
-              <div className="text-sm opacity-50 font-medium">48.23 oz</div>
+              <div className="text-3xl font-bold mb-1 text-[#D4AF37]">125.400 <span className="text-lg font-normal opacity-60 text-white">g</span></div>
+              <div className="text-sm opacity-50 font-medium">4.03 oz • <span className="text-green-400">Synced with FinaPay</span></div>
            </div>
 
            {/* Card 2: Locked Gold */}
@@ -168,7 +168,7 @@ export default function FinaVault() {
                     <TrendingUp className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1">500.00 <span className="text-lg font-normal opacity-60">g</span></div>
+              <div className="text-3xl font-bold mb-1">0.00 <span className="text-lg font-normal opacity-60">g</span></div>
               <div className="text-sm opacity-50 font-medium">In BNSL</div>
            </div>
 
@@ -180,7 +180,7 @@ export default function FinaVault() {
                     <DollarSign className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold text-[#D4AF37] mb-1">$127,830</div>
+              <div className="text-3xl font-bold text-[#D4AF37] mb-1">$10,686.58</div>
               <div className="text-sm opacity-50 font-medium">@ $85.22/g</div>
            </div>
 
@@ -192,7 +192,7 @@ export default function FinaVault() {
                     <Globe className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold text-white mb-1">469.5K</div>
+              <div className="text-3xl font-bold text-white mb-1">39,220.10</div>
               <div className="text-sm opacity-50 font-medium">@ 312.76/g</div>
            </div>
         </div>
