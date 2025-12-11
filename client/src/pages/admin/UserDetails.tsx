@@ -236,8 +236,8 @@ export default function UserDetails() {
                           <Badge variant="secondary" className="bg-green-100 text-green-800">
                             {doc.status}
                           </Badge>
-                          <Button size="icon" variant="ghost">
-                            <Download className="w-4 h-4 text-gray-500" />
+                          <Button size="sm" variant="outline" className="gap-2">
+                             <Eye className="w-4 h-4" /> View
                           </Button>
                         </div>
                       </div>

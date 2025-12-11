@@ -128,8 +128,7 @@ export default function KYCReview() {
                           <span className="text-sm font-medium capitalize">{key}</span>
                         </div>
                         <div className="flex gap-2">
-                           <Button size="icon" variant="ghost" className="h-6 w-6"><Eye className="w-3 h-3" /></Button>
-                           <Button size="icon" variant="ghost" className="h-6 w-6"><Download className="w-3 h-3" /></Button>
+                           <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><Eye className="w-3 h-3" /> View</Button>
                         </div>
                       </div>
                     ))}
