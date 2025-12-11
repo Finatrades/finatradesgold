@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera } from 'lucide-react';
+import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera, ArrowRight } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -90,6 +90,19 @@ export default function Onboarding() {
     });
   };
 
+  const handleDemoAccess = () => {
+    setContextAccountType('personal');
+    login({
+      firstName: "Demo",
+      lastName: "User",
+      email: "demo@finatrades.com",
+      accountType: "personal"
+    });
+    toast.success("Demo Access Granted", {
+      description: "Welcome to the dashboard preview."
+    });
+  };
+
   return (
     <Layout>
       <div className="min-h-screen pt-20 pb-24 bg-[#0D001E]">
@@ -97,7 +110,16 @@ export default function Onboarding() {
           
           <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-white mb-4">Create your Account</h1>
-            <p className="text-white/60">Join the future of gold-backed digital finance.</p>
+            <p className="text-white/60 mb-6">Join the future of gold-backed digital finance.</p>
+            
+            {/* Demo Access Button */}
+            <Button 
+              variant="outline" 
+              onClick={handleDemoAccess}
+              className="border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10"
+            >
+              Skip to Dashboard (Demo) <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
 
           <Card className="p-8 bg-white/5 border-white/10 backdrop-blur-sm">
