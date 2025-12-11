@@ -25,22 +25,34 @@ export default function BnslWalletCard({
   const { toast } = useToast();
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
+  const [currency, setCurrency] = useState<'Grams' | 'USD'>('Grams');
 
   const handleTransfer = () => {
-    const amount = parseFloat(transferAmount);
-    if (isNaN(amount) || amount <= 0) {
+    let amountGrams = parseFloat(transferAmount);
+    
+    if (currency === 'USD') {
+      amountGrams = amountGrams / currentGoldPrice;
+    }
+
+    if (isNaN(amountGrams) || amountGrams <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid positive number.", variant: "destructive" });
       return;
     }
-    if (amount > finaPayBalanceGold) {
+    if (amountGrams > finaPayBalanceGold) {
       toast({ title: "Insufficient Balance", description: "Not enough gold in FinaPay wallet.", variant: "destructive" });
       return;
     }
     
-    onTransferFromFinaPay(amount);
+    onTransferFromFinaPay(amountGrams);
     setIsTransferModalOpen(false);
     setTransferAmount('');
-    toast({ title: "Transfer Successful", description: `Transferred ${amount.toFixed(2)}g from FinaPay to BNSL Wallet.` });
+    toast({ title: "Transfer Successful", description: `Transferred ${amountGrams.toFixed(3)}g from FinaPay to BNSL Wallet.` });
+  };
+
+  const getMaxAmount = () => {
+    return currency === 'Grams' 
+      ? finaPayBalanceGold.toString() 
+      : (finaPayBalanceGold * currentGoldPrice).toFixed(2);
   };
 
   return (
@@ -140,7 +152,25 @@ export default function BnslWalletCard({
              </div>
 
              <div className="space-y-2">
-               <Label>Amount to Transfer (g)</Label>
+               <Label>Amount to Transfer</Label>
+               <div className="flex gap-2 mb-2">
+                 <Button 
+                   size="sm" 
+                   variant={currency === 'Grams' ? 'default' : 'outline'} 
+                   onClick={() => setCurrency('Grams')}
+                   className={`flex-1 ${currency === 'Grams' ? 'bg-secondary hover:bg-secondary/90' : ''}`}
+                 >
+                   Grams (g)
+                 </Button>
+                 <Button 
+                   size="sm" 
+                   variant={currency === 'USD' ? 'default' : 'outline'} 
+                   onClick={() => setCurrency('USD')}
+                   className={`flex-1 ${currency === 'USD' ? 'bg-secondary hover:bg-secondary/90' : ''}`}
+                 >
+                   USD ($)
+                 </Button>
+               </div>
                <div className="relative">
                  <Input 
                    type="number" 
@@ -150,17 +180,25 @@ export default function BnslWalletCard({
                    onChange={(e) => setTransferAmount(e.target.value)}
                  />
                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                   <span className="text-muted-foreground text-sm font-bold">g</span>
+                   <span className="text-muted-foreground text-sm font-bold">{currency === 'Grams' ? 'g' : '$'}</span>
                    <Button 
                      size="sm" 
                      variant="ghost" 
                      className="h-7 px-2 text-xs font-bold text-secondary hover:text-secondary/80 hover:bg-secondary/10"
-                     onClick={() => setTransferAmount(finaPayBalanceGold.toString())}
+                     onClick={() => setTransferAmount(getMaxAmount())}
                    >
                      MAX
                    </Button>
                  </div>
                </div>
+               <p className="text-xs text-muted-foreground mt-1">
+                 {currency === 'Grams' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
+                   <>≈ ${(parseFloat(transferAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</>
+                 )}
+                 {currency === 'USD' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
+                   <>≈ {(parseFloat(transferAmount) / currentGoldPrice).toFixed(3)} g</>
+                 )}
+               </p>
              </div>
 
              <Button 
