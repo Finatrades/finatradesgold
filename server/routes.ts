@@ -249,11 +249,78 @@ export async function registerRoutes(
     }
   });
   
-  // Create transaction
+  // Create transaction with wallet balance update
   app.post("/api/transactions", async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
-      const transaction = await storage.createTransaction(transactionData);
+      const { userId, type, amountGold, amountUsd } = transactionData;
+
+      // Get current wallet
+      const wallet = await storage.getWallet(userId);
+      if (!wallet) {
+        return res.status(400).json({ message: "Wallet not found" });
+      }
+
+      const currentGold = parseFloat(wallet.goldGrams);
+      const currentUsd = parseFloat(wallet.usdBalance);
+      const goldAmount = amountGold ? parseFloat(amountGold) : 0;
+      const usdAmount = amountUsd ? parseFloat(amountUsd) : 0;
+
+      // Validate and calculate new balances based on transaction type
+      let newGoldBalance = currentGold;
+      let newUsdBalance = currentUsd;
+
+      switch (type) {
+        case 'Buy':
+          if (currentUsd < usdAmount) {
+            return res.status(400).json({ message: "Insufficient USD balance" });
+          }
+          newGoldBalance = currentGold + goldAmount;
+          newUsdBalance = currentUsd - usdAmount;
+          break;
+        case 'Sell':
+          if (currentGold < goldAmount) {
+            return res.status(400).json({ message: "Insufficient gold balance" });
+          }
+          newGoldBalance = currentGold - goldAmount;
+          newUsdBalance = currentUsd + usdAmount;
+          break;
+        case 'Send':
+          if (goldAmount > 0 && currentGold < goldAmount) {
+            return res.status(400).json({ message: "Insufficient gold balance" });
+          }
+          if (usdAmount > 0 && currentUsd < usdAmount) {
+            return res.status(400).json({ message: "Insufficient USD balance" });
+          }
+          newGoldBalance = currentGold - goldAmount;
+          newUsdBalance = currentUsd - usdAmount;
+          break;
+        case 'Receive':
+          newGoldBalance = currentGold + goldAmount;
+          newUsdBalance = currentUsd + usdAmount;
+          break;
+        case 'Deposit':
+          newUsdBalance = currentUsd + usdAmount;
+          break;
+        case 'Withdrawal':
+          if (currentUsd < usdAmount) {
+            return res.status(400).json({ message: "Insufficient USD balance" });
+          }
+          newUsdBalance = currentUsd - usdAmount;
+          break;
+      }
+
+      // Update wallet
+      await storage.updateWallet(wallet.id, {
+        goldGrams: newGoldBalance.toFixed(6),
+        usdBalance: newUsdBalance.toFixed(2),
+      });
+
+      // Create transaction with completed status
+      const transaction = await storage.createTransaction({
+        ...transactionData,
+        status: 'Completed',
+      });
       
       // Create audit log
       await storage.createAuditLog({
@@ -262,10 +329,10 @@ export async function registerRoutes(
         actionType: "create",
         actor: transactionData.userId,
         actorRole: "user",
-        details: `Transaction type: ${transactionData.type}`,
+        details: `Transaction type: ${transactionData.type}, Gold: ${goldAmount}g, USD: $${usdAmount}`,
       });
       
-      res.json({ transaction });
+      res.json({ transaction, wallet: { goldGrams: newGoldBalance.toFixed(6), usdBalance: newUsdBalance.toFixed(2) } });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Transaction failed" });
     }
