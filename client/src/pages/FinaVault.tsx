@@ -102,7 +102,7 @@ export default function FinaVault() {
     
     toast({
       title: "Request Submitted",
-      description: `Deposit request #${newRequest.id} has been created successfully.`,
+      description: `Deposit request #${newRequest.id} created. Your FinaPay gold balance will be credited once the physical metal is received and verified at the vault.`,
     });
   };
 

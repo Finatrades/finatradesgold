@@ -490,32 +490,32 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
         <div className="sticky top-24 space-y-6">
           <Card className="bg-[#D4AF37]/5 border-[#D4AF37]/20 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-[#D4AF37]">Request Summary</CardTitle>
+              <CardTitle className="text-lg font-medium text-[#D4AF37]">Deposit Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                 <span className="text-white/60">Total Items</span>
-                 <span className="text-white font-medium">{totalItems}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Total Items</span>
+                <span className="text-white font-medium">{totalItems}</span>
               </div>
-              <div className="flex justify-between items-center">
-                 <span className="text-white/60">Total Weight</span>
-                 <span className="text-xl font-bold text-white">{totalWeight.toLocaleString()} g</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Total Weight</span>
+                <span className="text-white font-bold">{totalWeight} g</span>
               </div>
               <Separator className="bg-[#D4AF37]/20" />
-              <div className="flex justify-between items-center">
-                 <span className="text-white/60">In Troy Ounces</span>
-                 <span className="text-white font-medium">{(totalWeight / 31.1035).toFixed(2)} oz</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Est. Value (USD)</span>
+                <span className="text-[#D4AF37] font-bold">~${(totalWeight * 85.22).toFixed(2)}</span>
               </div>
-              
-              <div className="mt-6 p-3 bg-white/5 rounded text-xs text-white/40 leading-relaxed">
-                <Info className="w-3 h-3 inline mr-1 mb-0.5" />
-                Final weight will be verified upon receipt at the vault. Discrepancies may affect processing time.
+              <div className="mt-4 p-3 bg-[#D4AF37]/10 rounded border border-[#D4AF37]/20">
+                <p className="text-xs text-[#D4AF37] flex gap-2">
+                  <Info className="w-4 h-4 flex-shrink-0" />
+                  <span>Upon verification at the vault, <strong>{totalWeight}g</strong> of Gold will be credited to your FinaPay Wallet.</span>
+                </p>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-
     </div>
   );
 }
