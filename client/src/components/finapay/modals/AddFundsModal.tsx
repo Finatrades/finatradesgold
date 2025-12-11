@@ -48,7 +48,7 @@ export default function AddFundsModal({ isOpen, onClose, onConfirm }: AddFundsMo
             <span className="text-green-400">Add Funds</span>
           </DialogTitle>
           <DialogDescription className="text-white/60">
-            Deposit USD into your FinaPay wallet.
+            Purchase digital gold using your preferred payment method
           </DialogDescription>
         </DialogHeader>
 
