@@ -708,6 +708,116 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // REFERRAL PROGRAM
+  // ============================================================================
+
+  // Get user's referral info and stats
+  app.get("/api/referrals/:userId", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const referrals = await storage.getUserReferrals(req.params.userId);
+      const stats = await storage.getReferralStats(req.params.userId);
+      
+      res.json({ 
+        referralCode: user.referralCode,
+        referrals,
+        stats
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get referral info" });
+    }
+  });
+
+  // Validate a referral code
+  app.get("/api/referrals/validate/:code", async (req, res) => {
+    try {
+      const referrer = await storage.getUserByReferralCode(req.params.code);
+      if (!referrer) {
+        return res.json({ valid: false });
+      }
+      res.json({ 
+        valid: true, 
+        referrerName: `${referrer.firstName} ${referrer.lastName.charAt(0)}.`
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to validate code" });
+    }
+  });
+
+  // Complete a referral (called when referred user completes first transaction)
+  app.post("/api/referrals/complete", async (req, res) => {
+    try {
+      const { referredUserId, referralCode } = req.body;
+      
+      const referrer = await storage.getUserByReferralCode(referralCode);
+      if (!referrer) {
+        return res.status(400).json({ message: "Invalid referral code" });
+      }
+
+      // Credit bonus to both users' wallets (0.5g gold each)
+      const bonusGold = 0.5;
+      
+      // Get referrer's wallet
+      const referrerWallet = await storage.getWallet(referrer.id);
+      if (referrerWallet) {
+        const newGold = parseFloat(referrerWallet.goldGrams) + bonusGold;
+        await storage.updateWallet(referrerWallet.id, { goldGrams: newGold.toFixed(6) });
+      }
+
+      // Get referred user's wallet
+      const referredWallet = await storage.getWallet(referredUserId);
+      if (referredWallet) {
+        const newGold = parseFloat(referredWallet.goldGrams) + bonusGold;
+        await storage.updateWallet(referredWallet.id, { goldGrams: newGold.toFixed(6) });
+      }
+
+      // Create referral record
+      await storage.createReferral({
+        referrerId: referrer.id,
+        referredId: referredUserId,
+        referralCode: referralCode,
+        status: 'Completed',
+        bonusGoldGrams: bonusGold.toString(),
+        referrerBonusPaid: true,
+        referredBonusPaid: true,
+        completedAt: new Date(),
+      });
+
+      res.json({ success: true, bonusGold });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to complete referral" });
+    }
+  });
+
+  // ============================================================================
+  // DASHBOARD LAYOUTS
+  // ============================================================================
+
+  // Get user's dashboard layout
+  app.get("/api/dashboard/layout/:userId", async (req, res) => {
+    try {
+      const layout = await storage.getDashboardLayout(req.params.userId);
+      res.json({ layout: layout?.layout || null });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get dashboard layout" });
+    }
+  });
+
+  // Save user's dashboard layout
+  app.post("/api/dashboard/layout/:userId", async (req, res) => {
+    try {
+      const saved = await storage.saveDashboardLayout(req.params.userId, req.body.layout);
+      res.json({ layout: saved });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to save dashboard layout" });
+    }
+  });
+
+  // ============================================================================
   // AUDIT LOGS
   // ============================================================================
   

@@ -13,7 +13,9 @@ import {
   LogOut,
   Menu,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Gift,
+  LayoutGrid
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -26,11 +28,13 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
   const menuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
+    { icon: <LayoutGrid className="w-5 h-5" />, label: 'My Dashboard', href: '/my-dashboard' },
     { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay Wallet', href: '/finapay' },
     { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
     { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
     { icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' },
     { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
+    { icon: <Gift className="w-5 h-5" />, label: 'Referral Program', href: '/referrals' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/dashboard/profile' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },
   ];

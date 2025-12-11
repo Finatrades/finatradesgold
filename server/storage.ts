@@ -3,6 +3,7 @@ import {
   bnslPlans, bnslPayouts, bnslEarlyTerminations,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs,
+  referrals, dashboardLayouts,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -15,7 +16,9 @@ import {
   type TradeDocument, type InsertTradeDocument,
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
-  type AuditLog, type InsertAuditLog
+  type AuditLog, type InsertAuditLog,
+  type Referral, type InsertReferral,
+  type DashboardLayout, type InsertDashboardLayout
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -107,6 +110,15 @@ function generateFinatradesId(): string {
   return `FT-${code}`;
 }
 
+function generateReferralCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: string): Promise<User | undefined> {
@@ -125,7 +137,8 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const finatradesId = generateFinatradesId();
-    const [user] = await db.insert(users).values({ ...insertUser, finatradesId }).returning();
+    const referralCode = generateReferralCode();
+    const [user] = await db.insert(users).values({ ...insertUser, finatradesId, referralCode }).returning();
     return user;
   }
 
@@ -360,6 +373,55 @@ export class DatabaseStorage implements IStorage {
 
   async getEntityAuditLogs(entityType: string, entityId: string): Promise<AuditLog[]> {
     return await db.select().from(auditLogs).where(and(eq(auditLogs.entityType, entityType), eq(auditLogs.entityId, entityId))).orderBy(desc(auditLogs.timestamp));
+  }
+
+  // Referrals
+  async getUserReferrals(userId: string): Promise<Referral[]> {
+    return await db.select().from(referrals).where(eq(referrals.referrerId, userId)).orderBy(desc(referrals.createdAt));
+  }
+
+  async getReferralByCode(code: string): Promise<Referral | undefined> {
+    const [referral] = await db.select().from(referrals).where(eq(referrals.referralCode, code));
+    return referral || undefined;
+  }
+
+  async getUserByReferralCode(code: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.referralCode, code));
+    return user || undefined;
+  }
+
+  async createReferral(insertReferral: InsertReferral): Promise<Referral> {
+    const [referral] = await db.insert(referrals).values(insertReferral).returning();
+    return referral;
+  }
+
+  async updateReferral(id: string, updates: Partial<Referral>): Promise<Referral | undefined> {
+    const [referral] = await db.update(referrals).set(updates).where(eq(referrals.id, id)).returning();
+    return referral || undefined;
+  }
+
+  async getReferralStats(userId: string): Promise<{ total: number; completed: number; pending: number; totalBonus: number }> {
+    const userReferrals = await this.getUserReferrals(userId);
+    const completed = userReferrals.filter(r => r.status === 'Completed').length;
+    const pending = userReferrals.filter(r => r.status === 'Pending').length;
+    const totalBonus = userReferrals.filter(r => r.referrerBonusPaid).reduce((sum, r) => sum + parseFloat(r.bonusGoldGrams || '0'), 0);
+    return { total: userReferrals.length, completed, pending, totalBonus };
+  }
+
+  // Dashboard Layouts
+  async getDashboardLayout(userId: string): Promise<DashboardLayout | undefined> {
+    const [layout] = await db.select().from(dashboardLayouts).where(eq(dashboardLayouts.userId, userId));
+    return layout || undefined;
+  }
+
+  async saveDashboardLayout(userId: string, layout: DashboardLayout['layout']): Promise<DashboardLayout> {
+    const existing = await this.getDashboardLayout(userId);
+    if (existing) {
+      const [updated] = await db.update(dashboardLayouts).set({ layout, updatedAt: new Date() }).where(eq(dashboardLayouts.userId, userId)).returning();
+      return updated;
+    }
+    const [created] = await db.insert(dashboardLayouts).values({ userId, layout }).returning();
+    return created;
   }
 }
 

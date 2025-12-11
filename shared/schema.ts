@@ -38,6 +38,8 @@ export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'adm
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   finatradesId: varchar("finatrades_id", { length: 20 }).unique(),
+  referralCode: varchar("referral_code", { length: 10 }).unique(),
+  referredBy: varchar("referred_by", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   firstName: varchar("first_name", { length: 255 }).notNull(),
@@ -359,3 +361,51 @@ export const auditLogs = pgTable("audit_logs", {
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// ============================================
+// REFERRAL PROGRAM
+// ============================================
+
+export const referralStatusEnum = pgEnum('referral_status', ['Pending', 'Completed', 'Expired']);
+
+export const referrals = pgTable("referrals", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referrerId: varchar("referrer_id", { length: 255 }).notNull().references(() => users.id),
+  referredId: varchar("referred_id", { length: 255 }).references(() => users.id),
+  referralCode: varchar("referral_code", { length: 20 }).notNull().unique(),
+  status: referralStatusEnum("status").notNull().default('Pending'),
+  bonusGoldGrams: decimal("bonus_gold_grams", { precision: 18, scale: 6 }).default('0.5'),
+  referrerBonusPaid: boolean("referrer_bonus_paid").notNull().default(false),
+  referredBonusPaid: boolean("referred_bonus_paid").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
+export type Referral = typeof referrals.$inferSelect;
+
+// ============================================
+// DASHBOARD PREFERENCES
+// ============================================
+
+export const dashboardLayouts = pgTable("dashboard_layouts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  layout: json("layout").$type<{
+    widgets: Array<{
+      id: string;
+      type: string;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      visible: boolean;
+    }>;
+  }>(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDashboardLayoutSchema = createInsertSchema(dashboardLayouts).omit({ id: true });
+export type InsertDashboardLayout = z.infer<typeof insertDashboardLayoutSchema>;
+export type DashboardLayout = typeof dashboardLayouts.$inferSelect;
