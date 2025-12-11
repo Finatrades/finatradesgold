@@ -1,0 +1,137 @@
+You are a senior frontend engineer.
+Build a complete **FinaBridge – Trade Finance Wallet** module UI for the Finatrades platform.
+
+Concept:
+FinaBridge (FinaFinance) is a GOLD-BASED TRADE FINANCE + WALLET module for:
+- Importers
+- Exporters
+- Trade partners
+- Finatrades Compliance (view in same UI, no separate login)
+
+It must support:
+- FinaBridge Wallet (Importer & Exporter)
+- Transfer from FinaPay → FinaBridge Wallet (Importer side)
+- Locking gold for trade cases (collateral/settlement)
+- Trade Case creation and management
+- Document Management System (DMS)
+- Multi-level approval workflow
+- Release of funds from Importer to Exporter
+- Audit & Compliance view
+
+No backend yet → use local state + mock data.
+
+Tech:
+- React (Vite + React or Next.js)
+- TypeScript (preferred)
+- TailwindCSS
+- Optional: framer-motion for subtle animations
+
+Theme / Branding:
+- Dark premium gold-backed fintech
+- Background gradient: #000000 → #0D0515 → #1A0A2E
+- Accent gold: #D1A954
+- Text: white and neutral grays (#E5E7EB, #9CA3AF)
+- Cards: glassmorphism (bg-white/5, border-white/10, backdrop-blur, rounded-2xl)
+- Font: "Inter" for UI (optionally "Playfair Display" for big headings)
+
+────────────────────────
+HIGH-LEVEL UI STRUCTURE
+────────────────────────
+
+Main route/component: `/finabridge` or `<FinaBridgeTrade />`
+
+Layout:
+- Top bar (title + quick info)
+- FinaBridge Wallet strip (Importer/Exporter balances)
+- Tabs:
+  1. Trade Cases
+  2. Create Trade Case
+  3. Audit & Compliance
+
+All inside a container: `max-w-6xl mx-auto px-4 py-6`.
+
+────────────────────────
+TOP BAR
+────────────────────────
+
+Top bar content:
+- Left:
+  - Title: "FinaBridge Trade"
+  - Subtitle: "Gold-backed trade finance wallet for importers and exporters."
+- Right:
+  - Role badge: mock either "Importer" or "Exporter"
+  - Small label: "Gold Spot: 2,350.40 USD/oz"
+  - Optional icon for help.
+
+────────────────────────
+FINABRIDGE WALLET STRIP
+────────────────────────
+
+Directly below top bar, show a **FinaBridge Wallet** row.
+
+This represents a separate wallet layer that sits between FinaPay and Trade Cases.
+
+Two roles:
+
+1) IMPORTER VIEW:
+- Card title: "FinaBridge Wallet (Importer)"
+- Show:
+  - Available Balance: e.g. "250.00 g"
+  - Locked for Trade Cases: e.g. "150.00 g"
+  - Pending Release: e.g. "0.00 g"
+- Secondary text: "Funds here are reserved for trade settlements; they are separate from your FinaPay wallet."
+- Button: "Transfer from FinaPay"
+  - On click, open modal:
+    - Show:
+      - "Available in FinaPay: 500.00 g" (mock)
+      - Input: "Amount to transfer (g)"
+    - On confirm:
+      - Decrease FinaPay available balance
+      - Increase `finaBridgeWallet.importer.availableGoldGrams`
+      - Add audit log entry:
+        "Transferred X.XX g from FinaPay to FinaBridge Wallet (Importer)."
+
+2) EXPORTER VIEW:
+- Card title: "FinaBridge Wallet (Exporter)"
+- Show:
+  - Available Balance: e.g. "40.00 g"
+  - Incoming Locked Funds: e.g. "150.00 g"
+    - Label: "Locked by Importers (Not Yet Released)"
+- Secondary text:
+  - "Locked funds represent gold reserved by importers for your trade cases. They become available after release."
+- No transfer-in from FinaPay here; this wallet is fed by trade releases.
+
+Implementation:
+- Use a single component `<FinaBridgeWalletCard role="Importer" | "Exporter" ... />`
+- But for now assume one role at a time (e.g., we can toggle role with a mock state).
+
+────────────────────────
+STATE: FINABRIDGE WALLET + FINAPAY
+────────────────────────
+
+Use TypeScript types:
+
+```ts
+type FinaBridgeWalletSide = {
+  availableGoldGrams: number;
+  lockedGoldGrams: number;
+  incomingLockedGoldGrams?: number; // mainly for exporter
+};
+
+type FinaBridgeWallet = {
+  importer: FinaBridgeWalletSide;
+  exporter: FinaBridgeWalletSide;
+};
+
+const [finaPayBalanceGold, setFinaPayBalanceGold] = useState<number>(500); // mock
+const [finaBridgeWallet, setFinaBridgeWallet] = useState<FinaBridgeWallet>({
+  importer: {
+    availableGoldGrams: 0,
+    lockedGoldGrams: 0
+  },
+  exporter: {
+    availableGoldGrams: 0,
+    lockedGoldGrams: 0,
+    incomingLockedGoldGrams: 0
+  }
+});
