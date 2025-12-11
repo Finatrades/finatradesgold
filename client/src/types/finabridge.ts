@@ -16,7 +16,15 @@ export type TradeCase = {
   name: string;
   role: TradeRole;
   buyer: { company: string; country: string; contactName: string; email: string; };
-  seller: { company: string; country: string; contactName: string; email: string; };
+  seller: { 
+    company: string; 
+    country: string; 
+    contactName: string; 
+    email: string;
+    mobile?: string;
+    bankName?: string;
+    address?: string;
+  };
   commodityDescription: string;
   valueUsd: number;
   valueGoldGrams: number;

@@ -185,18 +185,20 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
             <div className={`space-y-6 transition-opacity duration-200 ${useFinatradesExporter ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Company Name</Label>
+                  <Label>Company Name <span className="text-red-500">*</span></Label>
                   <Input 
                     className="bg-black/20 border-white/10"
+                    placeholder="Enter company name"
                     value={useFinatradesExporter ? 'Pending Finatrades Assignment' : (currentRole === 'Importer' ? formData.seller?.company : formData.buyer?.company)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'company', e.target.value)}
                     disabled={useFinatradesExporter}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Country</Label>
+                  <Label>Country <span className="text-red-500">*</span></Label>
                   <Input 
                     className="bg-black/20 border-white/10"
+                    placeholder="e.g., United Arab Emirates"
                     value={useFinatradesExporter ? 'Global' : (currentRole === 'Importer' ? formData.seller?.country : formData.buyer?.country)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'country', e.target.value)}
                     disabled={useFinatradesExporter}
@@ -209,21 +211,58 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                   <Label>Contact Person</Label>
                   <Input 
                     className="bg-black/20 border-white/10"
+                    placeholder="John Doe"
                     value={useFinatradesExporter ? 'FinaTrades Broker Desk' : (currentRole === 'Importer' ? formData.seller?.contactName : formData.buyer?.contactName)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'contactName', e.target.value)}
                     disabled={useFinatradesExporter}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email</Label>
+                  <Label>Contact Email <span className="text-red-500">*</span></Label>
                   <Input 
                     className="bg-black/20 border-white/10"
+                    placeholder="contact@company.com"
                     value={useFinatradesExporter ? 'broker@finatrades.com' : (currentRole === 'Importer' ? formData.seller?.email : formData.buyer?.email)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'email', e.target.value)}
                     disabled={useFinatradesExporter}
                   />
                 </div>
               </div>
+
+              {!useFinatradesExporter && currentRole === 'Importer' && (
+                <>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Mobile Number <span className="text-red-500">*</span></Label>
+                      <Input 
+                        className="bg-black/20 border-white/10"
+                        placeholder="+971 50 123 4567"
+                        value={formData.seller?.mobile || ''}
+                        onChange={(e) => updateNestedField('seller', 'mobile', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Bank Name</Label>
+                      <Input 
+                        className="bg-black/20 border-white/10"
+                        placeholder="Bank name"
+                        value={formData.seller?.bankName || ''}
+                        onChange={(e) => updateNestedField('seller', 'bankName', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Address</Label>
+                    <Textarea 
+                      className="bg-black/20 border-white/10 h-20"
+                      placeholder="Full address"
+                      value={formData.seller?.address || ''}
+                      onChange={(e) => updateNestedField('seller', 'address', e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label>Payment Terms</Label>
@@ -240,11 +279,24 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                 </Select>
               </div>
             </div>
-            {useFinatradesExporter && (
+            {useFinatradesExporter ? (
               <div className="mt-4 p-4 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg text-[#D4AF37] text-sm flex items-center justify-center animate-in fade-in slide-in-from-top-2">
                 <CheckCircle2 className="w-4 h-4 mr-2" />
                 Finatrades will assign a verified exporter to match your trade requirements.
               </div>
+            ) : currentRole === 'Importer' && (
+               <div className="mt-8 p-4 bg-black/20 border border-white/10 rounded-lg">
+                 <h4 className="font-bold text-white mb-2">Required Exporter Documents</h4>
+                 <p className="text-xs text-white/60 mb-4">The exporter will be required to upload the following documents:</p>
+                 <div className="grid grid-cols-2 gap-2 text-xs text-white/80">
+                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Certificate of Origin</div>
+                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Inspection / Quality Certificate</div>
+                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Bill of Lading (B/L)</div>
+                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Commercial Invoice</div>
+                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Packing List</div>
+                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Insurance Certificate</div>
+                 </div>
+               </div>
             )}
           </CardContent>
         </Card>
