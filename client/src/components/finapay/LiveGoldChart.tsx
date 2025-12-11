@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, ArrowUpRight } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { TrendingUp, ArrowUpRight, Maximize2, BarChart2, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const generateData = (points: number, startValue: number, volatility: number) => {
   let currentValue = startValue;
@@ -11,7 +12,8 @@ const generateData = (points: number, startValue: number, volatility: number) =>
     currentValue += change;
     return {
       time: i,
-      value: currentValue
+      value: currentValue,
+      volume: Math.random() * 1000
     };
   });
 };
@@ -22,6 +24,7 @@ const DATA_30D = generateData(30, 2300, 30);
 
 export default function LiveGoldChart() {
   const [range, setRange] = useState('24H');
+  const [chartType, setChartType] = useState<'area' | 'candle'>('area');
   
   const getData = () => {
     switch(range) {
@@ -39,33 +42,72 @@ export default function LiveGoldChart() {
   const isPositive = change >= 0;
 
   return (
-    <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
-          Live Gold Spot
-        </CardTitle>
-        <Tabs value={range} onValueChange={setRange} className="w-auto">
-          <TabsList className="bg-black/20 border border-white/10 h-8">
-            <TabsTrigger value="24H" className="text-xs h-6">24H</TabsTrigger>
-            <TabsTrigger value="7D" className="text-xs h-6">7D</TabsTrigger>
-            <TabsTrigger value="30D" className="text-xs h-6">30D</TabsTrigger>
-          </TabsList>
-        </Tabs>
+    <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-white/5">
+        <div className="flex items-center gap-4">
+           <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
+             <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
+             XAU/USD
+           </CardTitle>
+           <div className="flex bg-black/20 rounded p-0.5 border border-white/10">
+              <button 
+                onClick={() => setChartType('area')}
+                className={`p-1.5 rounded ${chartType === 'area' ? 'bg-white/10 text-[#D4AF37]' : 'text-white/40 hover:text-white'}`}
+              >
+                <Activity className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setChartType('candle')}
+                className={`p-1.5 rounded ${chartType === 'candle' ? 'bg-white/10 text-[#D4AF37]' : 'text-white/40 hover:text-white'}`}
+              >
+                <BarChart2 className="w-4 h-4" />
+              </button>
+           </div>
+        </div>
+        
+        <div className="flex gap-2">
+          <Tabs value={range} onValueChange={setRange} className="w-auto">
+            <TabsList className="bg-black/20 border border-white/10 h-8">
+              <TabsTrigger value="24H" className="text-xs h-6 px-3">1D</TabsTrigger>
+              <TabsTrigger value="7D" className="text-xs h-6 px-3">1W</TabsTrigger>
+              <TabsTrigger value="30D" className="text-xs h-6 px-3">1M</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white/40 hover:text-white">
+             <Maximize2 className="w-4 h-4" />
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="mb-6">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">${lastValue.toFixed(2)}</span>
-            <span className="text-sm text-white/40">USD/oz</span>
+      
+      <CardContent className="flex-1 pt-6">
+        <div className="flex justify-between items-end mb-6">
+          <div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-bold text-white tracking-tight">${lastValue.toFixed(2)}</span>
+              <span className={`text-sm font-medium px-2 py-0.5 rounded ${isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                {isPositive ? '+' : ''}{change.toFixed(2)}%
+              </span>
+            </div>
+            <p className="text-xs text-white/40 mt-1">Global Spot Price • Real-time</p>
           </div>
-          <div className={`flex items-center text-sm font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-            <ArrowUpRight className={`w-4 h-4 mr-1 ${isPositive ? '' : 'rotate-90'}`} />
-            {isPositive ? '+' : ''}{change.toFixed(2)}%
+          
+          <div className="hidden sm:flex gap-4 text-right">
+             <div>
+               <p className="text-[10px] text-white/40 uppercase">High (24h)</p>
+               <p className="text-sm font-medium text-white">${(lastValue * 1.01).toFixed(2)}</p>
+             </div>
+             <div>
+               <p className="text-[10px] text-white/40 uppercase">Low (24h)</p>
+               <p className="text-sm font-medium text-white">${(lastValue * 0.99).toFixed(2)}</p>
+             </div>
+             <div>
+               <p className="text-[10px] text-white/40 uppercase">Vol</p>
+               <p className="text-sm font-medium text-white">12.5M</p>
+             </div>
           </div>
         </div>
 
-        <div className="h-[200px] w-full">
+        <div className="h-[250px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={currentData}>
               <defs>
@@ -74,13 +116,22 @@ export default function LiveGoldChart() {
                   <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
                 </linearGradient>
               </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis dataKey="time" hide />
-              <YAxis domain={['auto', 'auto']} hide />
+              <YAxis 
+                domain={['auto', 'auto']} 
+                orientation="right" 
+                tick={{fill: 'rgba(255,255,255,0.3)', fontSize: 10}}
+                tickFormatter={(val) => `$${val.toFixed(0)}`}
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip 
                 contentStyle={{ backgroundColor: '#0D0515', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
                 itemStyle={{ color: '#D4AF37' }}
                 formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
                 labelFormatter={() => ''}
+                cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
               />
               <Area 
                 type="monotone" 
@@ -89,6 +140,7 @@ export default function LiveGoldChart() {
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#colorValue)" 
+                animationDuration={1000}
               />
             </AreaChart>
           </ResponsiveContainer>

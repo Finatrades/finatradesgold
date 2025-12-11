@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types/finapay';
-import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, History } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
 }
 
 export default function TransactionHistory({ transactions }: TransactionHistoryProps) {
+  const [filter, setFilter] = useState('All');
   
   const getIcon = (type: string) => {
     switch (type) {
@@ -44,44 +47,92 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
      }
   };
 
+  const filteredTransactions = filter === 'All' 
+    ? transactions 
+    : transactions.filter(t => t.type === filter);
+
   return (
     <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
-          <History className="w-5 h-5 text-[#D4AF37]" />
-          Recent Transactions
-        </CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs text-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10">
-          View All
-        </Button>
+      <CardHeader className="pb-4 border-b border-white/5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
+            <History className="w-5 h-5 text-[#D4AF37]" />
+            Transaction History
+          </CardTitle>
+          
+          <div className="flex gap-2">
+             <div className="relative">
+               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
+               <Input placeholder="Search ref..." className="h-8 w-[140px] pl-8 bg-black/20 border-white/10 text-xs" />
+             </div>
+             
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="outline" size="sm" className="h-8 bg-white/5 border-white/10 text-white/80">
+                   <Filter className="w-3.5 h-3.5 mr-2" />
+                   {filter}
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent className="bg-[#1A0A2E] border-white/10 text-white">
+                 <DropdownMenuItem onClick={() => setFilter('All')}>All</DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => setFilter('Buy')}>Buy</DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => setFilter('Sell')}>Sell</DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => setFilter('Send')}>Send</DropdownMenuItem>
+               </DropdownMenuContent>
+             </DropdownMenu>
+
+             <Button variant="ghost" size="icon" className="h-8 w-8 text-white/40 hover:text-white">
+               <Download className="w-4 h-4" />
+             </Button>
+          </div>
+        </div>
       </CardHeader>
+      
       <CardContent className="flex-1 overflow-hidden p-0">
-        <ScrollArea className="h-[300px] px-6 pb-6">
-          <div className="space-y-4">
-            {transactions.length === 0 ? (
-               <div className="text-center py-8 text-white/40 text-sm">No transactions yet</div>
+        <ScrollArea className="h-[400px] px-6 py-4">
+          <div className="space-y-1">
+            <div className="grid grid-cols-12 text-xs text-white/40 uppercase tracking-wider font-medium px-4 pb-2">
+               <div className="col-span-4">Transaction</div>
+               <div className="col-span-3 text-right">Amount</div>
+               <div className="col-span-3 text-right">Status</div>
+               <div className="col-span-2 text-right">Action</div>
+            </div>
+
+            {filteredTransactions.length === 0 ? (
+               <div className="text-center py-12 text-white/40 text-sm">No transactions found</div>
             ) : (
-              transactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${getColor(tx.type)}`}>
+              filteredTransactions.map((tx) => (
+                <div key={tx.id} className="grid grid-cols-12 items-center p-3 rounded-lg hover:bg-white/5 transition-colors group border border-transparent hover:border-white/5">
+                  
+                  {/* Type & Date */}
+                  <div className="col-span-4 flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${getColor(tx.type)} bg-opacity-10`}>
                       {getIcon(tx.type)}
                     </div>
                     <div>
-                      <p className="font-medium text-white text-sm">{tx.type} Gold</p>
-                      <p className="text-xs text-white/40">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                      <p className="font-bold text-white text-sm">{tx.type} Gold</p>
+                      <p className="text-[10px] text-white/40 font-mono mt-0.5">{new Date(tx.timestamp).toLocaleDateString()} • {new Date(tx.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
                   </div>
                   
-                  <div className="text-right">
+                  {/* Amount */}
+                  <div className="col-span-3 text-right">
                     <p className="font-bold text-white text-sm">{tx.amountGrams.toFixed(3)} g</p>
-                    <p className="text-xs text-white/40">${tx.amountUsd.toFixed(2)}</p>
+                    <p className="text-[10px] text-white/40">${tx.amountUsd.toFixed(2)}</p>
                   </div>
 
-                  <div className="hidden sm:block">
-                     <Badge variant="outline" className={`text-[10px] h-5 px-2 ${getStatusColor(tx.status)}`}>
+                  {/* Status */}
+                  <div className="col-span-3 flex justify-end">
+                     <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
                        {tx.status}
                      </Badge>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="col-span-2 flex justify-end">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white/20 hover:text-white hover:bg-white/10">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               ))
