@@ -175,22 +175,22 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
   return (
     <div className="max-w-5xl mx-auto py-6">
       <div className="mb-8 flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Create New Trade</h2>
+        <h2 className="text-2xl font-bold text-foreground">Create New Trade</h2>
       </div>
 
       <div className="space-y-8">
         
         {/* SECTION 1: BASIC DETAILS */}
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader className="border-b border-white/10 pb-4">
-            <CardTitle className="text-lg font-bold text-white">1. Basic Details</CardTitle>
+        <Card className="bg-white shadow-sm border border-border">
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-lg font-bold text-foreground">1. Basic Details</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Role</Label>
-                  <div className="p-3 bg-black/20 border border-white/10 rounded-md text-white/60">
+                  <div className="p-3 bg-muted border border-border rounded-md text-muted-foreground">
                     {formData.role}
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                   <Label>Trade Name</Label>
                   <Input 
                     placeholder="e.g. Gold Bullion Import - Batch A" 
-                    className="bg-black/20 border-white/10"
+                    className="bg-background border-input"
                     value={formData.name || ''}
                     onChange={(e) => updateField('name', e.target.value)}
                   />
@@ -209,7 +209,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                 <div className="space-y-2">
                   <Label>Contract Number</Label>
                   <Input 
-                     className="bg-black/20 border-white/10"
+                     className="bg-background border-input"
                      onChange={(e) => updateField('contractNumber', e.target.value)}
                   />
                 </div>
@@ -217,7 +217,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                   <Label>Expected Delivery</Label>
                   <Input 
                     type="date" 
-                    className="bg-black/20 border-white/10"
+                    className="bg-background border-input"
                     onChange={(e) => updateField('expectedDeliveryDate', e.target.value)}
                   />
                 </div>
@@ -227,7 +227,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                 <Label>Commodity Description</Label>
                 <Textarea 
                   placeholder="Describe the goods..." 
-                  className="bg-black/20 border-white/10 h-24"
+                  className="bg-background border-input h-24"
                   value={formData.commodityDescription || ''}
                   onChange={(e) => updateField('commodityDescription', e.target.value)}
                 />
@@ -237,20 +237,20 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
         </Card>
 
         {/* SECTION 2: EXPORTER INFO */}
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader className="border-b border-white/10 pb-4 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-bold text-white">2. Exporter Information</CardTitle>
+        <Card className="bg-white shadow-sm border border-border">
+          <CardHeader className="border-b border-border pb-4 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-bold text-foreground">2. Exporter Information</CardTitle>
             {currentRole === 'Importer' && (
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="use-finatrades" 
                   checked={useFinatradesExporter}
                   onCheckedChange={(checked) => setUseFinatradesExporter(checked as boolean)}
-                  className="border-white/20 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black"
+                  className="border-muted-foreground data-[state=checked]:bg-secondary data-[state=checked]:text-white"
                 />
                 <label
                   htmlFor="use-finatrades"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-[#D4AF37]"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-secondary"
                 >
                   Suggest Finatrades Exporter
                 </label>
@@ -263,7 +263,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                 <div className="space-y-2">
                   <Label>Company Name <span className="text-red-500">*</span></Label>
                   <Input 
-                    className="bg-black/20 border-white/10"
+                    className="bg-background border-input"
                     placeholder="Enter company name"
                     value={useFinatradesExporter ? 'Pending Finatrades Assignment' : (currentRole === 'Importer' ? formData.seller?.company : formData.buyer?.company)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'company', e.target.value)}
@@ -273,7 +273,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                 <div className="space-y-2">
                   <Label>Country <span className="text-red-500">*</span></Label>
                   <Input 
-                    className="bg-black/20 border-white/10"
+                    className="bg-background border-input"
                     placeholder="e.g., United Arab Emirates"
                     value={useFinatradesExporter ? 'Global' : (currentRole === 'Importer' ? formData.seller?.country : formData.buyer?.country)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'country', e.target.value)}
@@ -286,7 +286,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                 <div className="space-y-2">
                   <Label>Contact Person</Label>
                   <Input 
-                    className="bg-black/20 border-white/10"
+                    className="bg-background border-input"
                     placeholder="John Doe"
                     value={useFinatradesExporter ? 'FinaTrades Broker Desk' : (currentRole === 'Importer' ? formData.seller?.contactName : formData.buyer?.contactName)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'contactName', e.target.value)}
@@ -296,7 +296,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                 <div className="space-y-2">
                   <Label>Contact Email <span className="text-red-500">*</span></Label>
                   <Input 
-                    className="bg-black/20 border-white/10"
+                    className="bg-background border-input"
                     placeholder="contact@company.com"
                     value={useFinatradesExporter ? 'broker@finatrades.com' : (currentRole === 'Importer' ? formData.seller?.email : formData.buyer?.email)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'email', e.target.value)}
@@ -311,7 +311,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                     <div className="space-y-2">
                       <Label>Mobile Number <span className="text-red-500">*</span></Label>
                       <Input 
-                        className="bg-black/20 border-white/10"
+                        className="bg-background border-input"
                         placeholder="+971 50 123 4567"
                         value={formData.seller?.mobile || ''}
                         onChange={(e) => updateNestedField('seller', 'mobile', e.target.value)}
@@ -320,7 +320,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                     <div className="space-y-2">
                       <Label>Bank Name</Label>
                       <Input 
-                        className="bg-black/20 border-white/10"
+                        className="bg-background border-input"
                         placeholder="Bank name"
                         value={formData.seller?.bankName || ''}
                         onChange={(e) => updateNestedField('seller', 'bankName', e.target.value)}
@@ -331,7 +331,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                   <div className="space-y-2">
                     <Label>Address</Label>
                     <Textarea 
-                      className="bg-black/20 border-white/10 h-20"
+                      className="bg-background border-input h-20"
                       placeholder="Full address"
                       value={formData.seller?.address || ''}
                       onChange={(e) => updateNestedField('seller', 'address', e.target.value)}
@@ -343,10 +343,10 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
               <div className="space-y-2">
                 <Label>Payment Terms</Label>
                 <Select onValueChange={(val) => updateField('paymentTerms', val)} disabled={useFinatradesExporter}>
-                  <SelectTrigger className="bg-black/20 border-white/10">
+                  <SelectTrigger className="bg-background border-input">
                     <SelectValue placeholder="Select Terms" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border-border text-foreground">
                     <SelectItem value="Advance Payment">Advance Payment</SelectItem>
                     <SelectItem value="Letter of Credit">Letter of Credit (LC)</SelectItem>
                     <SelectItem value="Cash Against Documents">Cash Against Documents (CAD)</SelectItem>
@@ -356,27 +356,27 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
               </div>
             </div>
             {useFinatradesExporter ? (
-              <div className="mt-4 p-4 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg text-[#D4AF37] text-sm flex items-center justify-center animate-in fade-in slide-in-from-top-2">
+              <div className="mt-4 p-4 bg-secondary/10 border border-secondary/20 rounded-lg text-secondary text-sm flex items-center justify-center animate-in fade-in slide-in-from-top-2">
                 <CheckCircle2 className="w-4 h-4 mr-2" />
                 Finatrades will assign a verified exporter to match your trade requirements.
               </div>
             ) : currentRole === 'Importer' && (
-               <div className="mt-8 p-6 bg-black/20 border border-white/10 rounded-lg">
+               <div className="mt-8 p-6 bg-muted/30 border border-border rounded-lg">
                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <div>
-                        <h4 className="font-bold text-white mb-1">Required Exporter Documents</h4>
-                        <p className="text-xs text-white/60">Exporter should upload all the necessary documents</p>
+                        <h4 className="font-bold text-foreground mb-1">Required Exporter Documents</h4>
+                        <p className="text-xs text-muted-foreground">Exporter should upload all the necessary documents</p>
                     </div>
                     
                     <div className="flex flex-col items-end gap-2">
                         <div 
-                             className="flex items-center gap-2 px-4 py-2 border border-dashed border-white/20 rounded-md hover:bg-white/5 cursor-pointer transition-colors"
+                             className="flex items-center gap-2 px-4 py-2 border border-dashed border-border rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
                              onClick={() => toast({ title: "Upload", description: "File selection dialog would open here" })}
                         >
-                            <Upload className="w-4 h-4 text-[#D4AF37]" />
-                            <span className="text-sm text-white/80">Click to upload</span>
+                            <Upload className="w-4 h-4 text-secondary" />
+                            <span className="text-sm text-muted-foreground">Click to upload</span>
                         </div>
-                        <span className="text-[10px] text-white/30">PDF, JPG, PNG, DOC... (Max 10MB)</span>
+                        <span className="text-[10px] text-muted-foreground/50">PDF, JPG, PNG, DOC... (Max 10MB)</span>
                     </div>
                  </div>
 
@@ -391,11 +391,11 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                        'Agreements / Contract Copy',
                        'Other'
                    ].map((doc) => (
-                     <div key={doc} className="flex flex-col space-y-2 p-2 rounded hover:bg-white/5 transition-colors">
+                     <div key={doc} className="flex flex-col space-y-2 p-2 rounded hover:bg-muted/50 transition-colors">
                         <div className="flex items-center space-x-3">
                             <Checkbox 
                                 id={`doc-${doc.replace(/\s+/g, '-')}`} 
-                                className="border-white/20 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black" 
+                                className="border-muted-foreground/40 data-[state=checked]:bg-secondary data-[state=checked]:text-white" 
                                 onCheckedChange={(checked) => {
                                     if (doc === 'Other') {
                                         setIsOtherDocSelected(checked as boolean);
@@ -404,7 +404,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                             />
                             <label 
                                 htmlFor={`doc-${doc.replace(/\s+/g, '-')}`} 
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80 cursor-pointer"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-muted-foreground cursor-pointer"
                             >
                                 {doc}
                             </label>
@@ -412,7 +412,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                         {doc === 'Other' && isOtherDocSelected && (
                             <div className="pl-7 w-full animate-in fade-in slide-in-from-top-1">
                                 <Input 
-                                    className="bg-black/20 border-white/10 h-8 text-sm"
+                                    className="bg-background border-input h-8 text-sm"
                                     placeholder="Please specify other documents..."
                                     value={otherDocDescription}
                                     onChange={(e) => setOtherDocDescription(e.target.value)}
@@ -423,7 +423,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                    ))}
                  </div>
                  
-                 <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-end text-xs text-white/40">
+                 <div className="mt-6 pt-4 border-t border-border flex items-center justify-end text-xs text-muted-foreground">
                     <span>0 file(s) uploaded</span>
                  </div>
                </div>
@@ -432,9 +432,9 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
         </Card>
 
         {/* SECTION 3: PRODUCT & TRANSACTION */}
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader className="border-b border-white/10 pb-4">
-            <CardTitle className="text-lg font-bold text-white">3. Product & Transaction</CardTitle>
+        <Card className="bg-white shadow-sm border border-border">
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-lg font-bold text-foreground">3. Product & Transaction</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-6">
@@ -442,10 +442,10 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                  <div className="space-y-2">
                    <Label>Incoterms</Label>
                    <Select onValueChange={(val) => updateField('deliveryTerms', val)}>
-                    <SelectTrigger className="bg-black/20 border-white/10">
+                    <SelectTrigger className="bg-background border-input">
                       <SelectValue placeholder="Select Incoterm" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover border-border text-foreground">
                       <SelectItem value="FOB">FOB (Free On Board)</SelectItem>
                       <SelectItem value="CIF">CIF (Cost, Insurance, Freight)</SelectItem>
                       <SelectItem value="EXW">EXW (Ex Works)</SelectItem>
@@ -456,10 +456,10 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                  <div className="space-y-2">
                    <Label>Payment Terms</Label>
                    <Select onValueChange={(val) => updateField('paymentTerms', val)}>
-                    <SelectTrigger className="bg-black/20 border-white/10">
+                    <SelectTrigger className="bg-background border-input">
                       <SelectValue placeholder="Select Terms" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover border-border text-foreground">
                       <SelectItem value="Advance Payment">Advance Payment</SelectItem>
                       <SelectItem value="Letter of Credit">Letter of Credit (LC)</SelectItem>
                       <SelectItem value="Cash Against Documents">Cash Against Documents (CAD)</SelectItem>
@@ -473,7 +473,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                  <div className="space-y-2">
                    <Label>Loading Port</Label>
                    <Input 
-                      className="bg-black/20 border-white/10"
+                      className="bg-background border-input"
                       value={formData.loadingPort}
                       onChange={(e) => updateField('loadingPort', e.target.value)}
                    />
@@ -481,7 +481,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                  <div className="space-y-2">
                    <Label>Destination Port</Label>
                    <Input 
-                      className="bg-black/20 border-white/10"
+                      className="bg-background border-input"
                       value={formData.destinationPort}
                       onChange={(e) => updateField('destinationPort', e.target.value)}
                    />
@@ -489,7 +489,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                  <div className="space-y-2">
                    <Label>Delivery Timeframe</Label>
                    <Input 
-                      className="bg-black/20 border-white/10"
+                      className="bg-background border-input"
                       value={formData.deliveryTimeframe}
                       onChange={(e) => updateField('deliveryTimeframe', e.target.value)}
                    />
@@ -500,14 +500,14 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                <div className="space-y-4">
                  <div className="flex justify-between items-center">
                     <Label>Items & HS Codes</Label>
-                    <Button size="sm" onClick={addItem} className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 h-8 text-xs">
+                    <Button size="sm" onClick={addItem} className="bg-secondary text-white hover:bg-secondary/90 h-8 text-xs">
                       <Plus className="w-3 h-3 mr-1" /> Add Item
                     </Button>
                  </div>
                  
-                 <div className="border border-white/10 rounded-lg overflow-hidden">
+                 <div className="border border-border rounded-lg overflow-hidden">
                     <table className="w-full text-sm text-left">
-                      <thead className="bg-white/5 text-white/60 font-medium">
+                      <thead className="bg-muted text-muted-foreground font-medium">
                         <tr>
                           <th className="p-3">Description</th>
                           <th className="p-3 w-24">HS Code</th>
