@@ -54,6 +54,8 @@ import AdminSettings from "@/pages/admin/AdminSettings";
 import PaymentOperations from "@/pages/admin/PaymentOperations";
 import CardManagement from "@/pages/admin/CardManagement";
 import TradeFinance from "@/pages/admin/TradeFinance";
+import BNSLManagement from "@/pages/admin/BNSLManagement";
+import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
 
 function Router() {
   return (
@@ -69,6 +71,13 @@ function Router() {
       <Route path="/admin/transactions" component={Transactions} />
       <Route path="/admin/vault" component={VaultManagement} />
       <Route path="/admin/settings" component={AdminSettings} />
+      
+      {/* Renamed/Consolidated Modules */}
+      <Route path="/admin/finapay" component={PaymentOperations} />
+      <Route path="/admin/finabridge" component={FinaBridgeManagement} />
+      <Route path="/admin/bnsl" component={BNSLManagement} />
+      
+      {/* Legacy/Redirects if needed */}
       <Route path="/admin/payments" component={PaymentOperations} />
       <Route path="/admin/cards" component={CardManagement} />
       <Route path="/admin/finance" component={TradeFinance} />
