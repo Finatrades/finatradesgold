@@ -9,6 +9,7 @@ import ChartCard from '@/components/dashboard/ChartCard';
 import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import ReferralCard from '@/components/dashboard/ReferralCard';
 import WalletCard from '@/components/dashboard/WalletCard';
+import FinaPayCard from '@/components/dashboard/FinaPayCard';
 import DashboardSlider from '@/components/dashboard/DashboardSlider';
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 
@@ -93,10 +94,11 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* 4. Referral + Wallet */}
-        <section className="grid md:grid-cols-2 gap-6">
+        {/* 4. Referral + Wallet + FinaCard */}
+        <section className="grid md:grid-cols-3 gap-6">
           <ReferralCard />
           <WalletCard />
+          <FinaPayCard />
         </section>
 
         {/* 5. Dashboard Slider */}
