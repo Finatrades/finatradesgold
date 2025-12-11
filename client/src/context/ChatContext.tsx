@@ -14,6 +14,8 @@ export interface ChatSession {
   id: string;
   userId: string;
   userName: string;
+  guestName?: string;
+  guestEmail?: string;
   userAvatar?: string;
   messages: Message[];
   status: 'active' | 'closed';
@@ -112,9 +114,30 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     socket.on('joined', (data: { sessionId: string }) => {
       console.log('Joined session:', data.sessionId);
-      // Load messages for this session only if sessionId is defined
       if (data.sessionId) {
+        setCurrentSessionId(data.sessionId);
         loadSessionMessages(data.sessionId);
+        
+        // For guests, create a local session entry with the server's ID
+        const storedGuestName = sessionStorage.getItem('finatrades_guest_name');
+        const storedGuestEmail = sessionStorage.getItem('finatrades_guest_email');
+        if (storedGuestName && storedGuestEmail) {
+          setSessions(prev => {
+            const exists = prev.some(s => s.id === data.sessionId);
+            if (exists) return prev;
+            return [{
+              id: data.sessionId,
+              userId: '',
+              userName: storedGuestName,
+              guestName: storedGuestName,
+              guestEmail: storedGuestEmail,
+              messages: [],
+              status: 'active' as const,
+              lastMessageAt: new Date(),
+              unreadCount: 0,
+            }, ...prev];
+          });
+        }
       }
     });
 
@@ -226,8 +249,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             
             return {
               id: session.id,
-              userId: session.userId,
-              userName: session.userId,
+              userId: session.userId || '',
+              userName: session.guestName || session.userId || 'Guest',
+              guestName: session.guestName,
+              guestEmail: session.guestEmail,
               messages: messagesData.messages.map((m: any) => ({
                 id: m.id,
                 sender: m.sender,
@@ -320,26 +345,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const startGuestSession = useCallback((name: string, email: string) => {
     if (!guestId) return '';
     
-    setIsGuestReady(true);
-    
-    const sessionId = `session-${Date.now()}`;
-    const newSession: ChatSession = {
-      id: sessionId,
-      userId: guestId,
-      userName: name,
-      messages: [],
-      status: 'active',
-      lastMessageAt: new Date(),
-      unreadCount: 0,
-    };
-
-    setSessions(prev => [newSession, ...prev]);
-    setCurrentSessionId(sessionId);
-    
+    // Store guest info - socket will use this when connecting
     sessionStorage.setItem('finatrades_guest_name', name);
     sessionStorage.setItem('finatrades_guest_email', email);
     
-    return sessionId;
+    // Set ready flag to trigger socket connection
+    setIsGuestReady(true);
+    
+    // Session will be created by server and returned via 'joined' event
+    return '';
   }, [guestId]);
 
   const sendMessage = useCallback((content: string, sender: 'user' | 'admin' | 'agent', sessionId?: string) => {

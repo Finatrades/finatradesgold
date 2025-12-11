@@ -16,9 +16,10 @@ function AdminChatContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const filteredSessions = sessions.filter(session => 
-    session.userName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSessions = sessions.filter(session => {
+    const name = session.userName || session.guestName || '';
+    return name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
