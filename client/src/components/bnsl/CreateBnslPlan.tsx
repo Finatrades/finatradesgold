@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BnslTenor, BnslPlan } from '@/types/bnsl';
-import { ArrowRight, Wallet, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Wallet, ShieldCheck, AlertTriangle, CheckCircle2, FileText, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { generateBnslAgreement } from '@/utils/generateBnslPdf';
 
 interface CreateBnslPlanProps {
   finaPayGoldBalance: number;
@@ -16,6 +18,7 @@ interface CreateBnslPlanProps {
 
 export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, onSuccess }: CreateBnslPlanProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [goldAmount, setGoldAmount] = useState<string>('100');
   const [selectedTenor, setSelectedTenor] = useState<BnslTenor>(12);
@@ -40,6 +43,24 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
   const numDisbursements = selectedTenor / 3; // Quarterly
   const quarterlyMargin = totalMarginComponent / numDisbursements;
 
+  const handleDownloadDraft = () => {
+    if (amount <= 0) return;
+    
+    const draftPlan: Partial<BnslPlan> = {
+      id: 'DRAFT-PREVIEW',
+      tenorMonths: selectedTenor,
+      marginRateAnnualPercent: annualRate,
+      goldSoldGrams: amount,
+      enrollmentPriceUsdPerGram: enrollmentPrice,
+      basePriceComponentUsd: basePriceComponent,
+      totalMarginComponentUsd: totalMarginComponent
+    };
+
+    const doc = generateBnslAgreement(draftPlan, user);
+    doc.save(`BNSL_Agreement_Draft_${new Date().getTime()}.pdf`);
+    toast({ title: "Draft Agreement Downloaded", description: "Review the full terms before confirming." });
+  };
+
   const handleSubmit = () => {
     if (amount <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid gold amount.", variant: "destructive" });
@@ -54,7 +75,7 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
       return;
     }
 
-    onSuccess({
+    const planData: Partial<BnslPlan> = {
       tenorMonths: selectedTenor,
       marginRateAnnualPercent: annualRate,
       goldSoldGrams: amount,
@@ -64,7 +85,13 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
       quarterlyMarginUsd: quarterlyMargin,
       startDate: new Date().toISOString(),
       // Maturity date calc would happen in parent or here
-    });
+    };
+
+    // Auto-generate and "store" PDF (in this mock, we just download it for the user as confirmation)
+    const doc = generateBnslAgreement({ ...planData, id: `BNSL-2025-${Math.floor(Math.random() * 1000)}` }, user);
+    doc.save(`BNSL_Agreement_Signed_${new Date().getTime()}.pdf`);
+
+    onSuccess(planData);
   };
 
   return (
@@ -205,7 +232,15 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
         </CardContent>
       </Card>
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-between pt-4">
+        <Button 
+          variant="outline" 
+          onClick={handleDownloadDraft}
+          className="border-white/10 hover:bg-white/5 text-white"
+        >
+          <Download className="w-4 h-4 mr-2" /> Download Draft Agreement
+        </Button>
+
         <Button 
           size="lg" 
           className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold px-8"
