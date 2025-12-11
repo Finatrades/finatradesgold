@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TradeCase, FinaBridgeWallet } from '@/types/finabridge';
-import { Lock, ArrowRight, Save, CheckCircle2 } from 'lucide-react';
+import { Lock, ArrowRight, Save, CheckCircle2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -285,16 +285,50 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                 Finatrades will assign a verified exporter to match your trade requirements.
               </div>
             ) : currentRole === 'Importer' && (
-               <div className="mt-8 p-4 bg-black/20 border border-white/10 rounded-lg">
-                 <h4 className="font-bold text-white mb-2">Required Exporter Documents</h4>
-                 <p className="text-xs text-white/60 mb-4">The exporter will be required to upload the following documents:</p>
-                 <div className="grid grid-cols-2 gap-2 text-xs text-white/80">
-                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Certificate of Origin</div>
-                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Inspection / Quality Certificate</div>
-                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Bill of Lading (B/L)</div>
-                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Commercial Invoice</div>
-                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Packing List</div>
-                   <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-white/20"></div> Insurance Certificate</div>
+               <div className="mt-8 p-6 bg-black/20 border border-white/10 rounded-lg">
+                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h4 className="font-bold text-white mb-1">Required Exporter Documents</h4>
+                        <p className="text-xs text-white/60">Exporter should upload all the necessary documents</p>
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-2">
+                        <div 
+                             className="flex items-center gap-2 px-4 py-2 border border-dashed border-white/20 rounded-md hover:bg-white/5 cursor-pointer transition-colors"
+                             onClick={() => toast({ title: "Upload", description: "File selection dialog would open here" })}
+                        >
+                            <Upload className="w-4 h-4 text-[#D4AF37]" />
+                            <span className="text-sm text-white/80">Click to upload</span>
+                        </div>
+                        <span className="text-[10px] text-white/30">PDF, JPG, PNG, DOC... (Max 10MB)</span>
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   {[
+                       'Certificate of Origin', 
+                       'Inspection / Quality Certificate', 
+                       'Bill of Lading (B/L)', 
+                       'Commercial Invoice', 
+                       'Packing List', 
+                       'Insurance Certificate',
+                       'Agreements / Contract Copy',
+                       'Other'
+                   ].map((doc) => (
+                     <div key={doc} className="flex items-center space-x-3 p-2 rounded hover:bg-white/5 transition-colors">
+                        <Checkbox id={`doc-${doc.replace(/\s+/g, '-')}`} className="border-white/20 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black" />
+                        <label 
+                            htmlFor={`doc-${doc.replace(/\s+/g, '-')}`} 
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80 cursor-pointer"
+                        >
+                            {doc}
+                        </label>
+                     </div>
+                   ))}
+                 </div>
+                 
+                 <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-end text-xs text-white/40">
+                    <span>0 file(s) uploaded</span>
                  </div>
                </div>
             )}
