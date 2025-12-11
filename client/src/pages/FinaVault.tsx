@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings } from 'lucide-react';
+import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
 import NewDepositForm from '@/components/finavault/NewDepositForm';
 import RequestDetails from '@/components/finavault/RequestDetails';
+import CashOutForm from '@/components/finavault/CashOutForm';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -208,24 +209,29 @@ export default function FinaVault() {
               exit={{ opacity: 0, y: -20 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {activeTab === 'new-request' && (
-                  <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
-                    <TabsTrigger 
-                      value="my-deposits"
-                      className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
-                    >
-                      <History className="w-4 h-4 mr-2" />
-                      My Deposits
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="new-request"
-                      className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
-                    >
-                      <PlusCircle className="w-4 h-4 mr-2" />
-                      New Deposit Request
-                    </TabsTrigger>
-                  </TabsList>
-                )}
+                <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
+                  <TabsTrigger 
+                    value="my-deposits"
+                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    My Deposits
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="new-request"
+                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    New Deposit Request
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="cash-out"
+                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                  >
+                    <Banknote className="w-4 h-4 mr-2" />
+                    Cash Out / Sell
+                  </TabsTrigger>
+                </TabsList>
 
                 <TabsContent value="my-deposits" className="mt-0">
                   <DepositList 
@@ -240,6 +246,10 @@ export default function FinaVault() {
                     onSubmit={handleNewRequest}
                     onCancel={() => setActiveTab('my-deposits')}
                   />
+                </TabsContent>
+
+                <TabsContent value="cash-out">
+                  <CashOutForm />
                 </TabsContent>
               </Tabs>
             </motion.div>
