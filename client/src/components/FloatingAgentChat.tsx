@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, ChevronLeft } from "lucide-react";
+import { X, Send, ChevronLeft, User, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useChat, ChatProvider } from "@/context/ChatContext";
 import { useAuth } from "@/context/AuthContext";
 
@@ -16,6 +17,11 @@ const agents = [
   { name: "Markis", role: "Market Intelligence", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/643f01b2a_Markis.png", greeting: "Greetings! I'm Markis, your Market Intelligence expert.", active: false }
 ];
 
+interface GuestInfo {
+  name: string;
+  email: string;
+}
+
 function FloatingAgentChatContent() {
   const { user } = useAuth();
   const { currentSession, sendMessage, createSession, selectSession, sessions } = useChat();
@@ -27,6 +33,11 @@ function FloatingAgentChatContent() {
   const [showNotification, setShowNotification] = useState(true);
   const [comingSoonAgent, setComingSoonAgent] = useState<typeof agents[0] | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const [guestInfo, setGuestInfo] = useState<GuestInfo | null>(null);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [showGuestForm, setShowGuestForm] = useState(false);
 
   // Auto-hide notification after 8 seconds
   useEffect(() => {
@@ -46,7 +57,6 @@ function FloatingAgentChatContent() {
     setIsOpen(true);
     setShowNotification(false);
     
-    // Create session if not exists or select existing one for this user
     if (user) {
       const existingSession = sessions.find(s => s.userId === user.id);
       if (existingSession) {
@@ -54,21 +64,42 @@ function FloatingAgentChatContent() {
       } else {
         const sessionId = createSession(user.id, `${user.firstName} ${user.lastName}`);
         selectSession(sessionId);
-        // Add initial greeting if new session
         sendMessage(currentAgent.greeting, 'agent', sessionId);
       }
+    } else if (guestInfo) {
+      const existingSession = sessions.find(s => s.userName === guestInfo.name);
+      if (existingSession) {
+        selectSession(existingSession.id);
+      }
+    } else {
+      setShowGuestForm(true);
     }
+  };
+
+  const handleGuestSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim() || !guestEmail.trim()) return;
+    
+    const info: GuestInfo = { name: guestName.trim(), email: guestEmail.trim() };
+    setGuestInfo(info);
+    setShowGuestForm(false);
+    
+    const guestId = `guest-${Date.now()}`;
+    const sessionId = createSession(guestId, info.name);
+    selectSession(sessionId);
+    sendMessage(`Guest: ${info.name} (${info.email})`, 'agent', sessionId);
+    sendMessage(currentAgent.greeting, 'agent', sessionId);
   };
 
   const closeChat = () => {
     setIsOpen(false);
     setShowAgentList(false);
+    setShowGuestForm(false);
   };
 
   const switchAgent = (agent: typeof agents[0]) => {
     setCurrentAgent(agent);
     setShowAgentList(false);
-    // Notify about agent switch
     sendMessage(`System: Switched to ${agent.name} (${agent.role})`, 'agent');
   };
 
@@ -76,10 +107,8 @@ function FloatingAgentChatContent() {
     if (!message.trim()) return;
     sendMessage(message, 'user');
     setMessage("");
-    // Removed auto-reply logic to allow admin to answer
   };
 
-  // Use current session messages or fallback to empty array
   const displayMessages = currentSession?.messages || [];
 
   return (
@@ -239,6 +268,64 @@ function FloatingAgentChatContent() {
                       </div>
                     </div>
                   ))}
+                </motion.div>
+              ) : showGuestForm ? (
+                <motion.div
+                  key="guest-form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="bg-background p-6"
+                >
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-primary to-[#FF2FBF] flex items-center justify-center">
+                      <User className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground">Start a Conversation</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Please enter your details to begin chatting</p>
+                  </div>
+                  <form onSubmit={handleGuestSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="guest-name" className="text-foreground">Your Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="guest-name"
+                          type="text"
+                          placeholder="Enter your name"
+                          value={guestName}
+                          onChange={(e) => setGuestName(e.target.value)}
+                          className="pl-10"
+                          required
+                          data-testid="input-guest-name"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="guest-email" className="text-foreground">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="guest-email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          className="pl-10"
+                          required
+                          data-testid="input-guest-email"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90"
+                      disabled={!guestName.trim() || !guestEmail.trim()}
+                      data-testid="button-start-chat"
+                    >
+                      Start Chat
+                    </Button>
+                  </form>
                 </motion.div>
               ) : (
                 <motion.div
@@ -421,12 +508,6 @@ function FloatingAgentChatContent() {
 }
 
 export default function FloatingAgentChat() {
-  const { user } = useAuth();
-  
-  if (!user) {
-    return null;
-  }
-  
   return (
     <ChatProvider>
       <FloatingAgentChatContent />
