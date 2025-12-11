@@ -4,6 +4,7 @@ import { BnslPlan } from '@/types/bnsl';
 export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
   const contentWidth = pageWidth - (margin * 2);
   let y = 20;
@@ -16,22 +17,38 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any) => {
     doc.text(text, (pageWidth - textWidth) / 2, yPos);
   };
 
-  // Helper for wrapped text
-  const addWrappedText = (text: string, yPos: number, fontSize = 10, isBold = false) => {
+  // Helper for wrapped text with page break handling
+  const addWrappedText = (text: string, yPos: number, fontSize = 10, isBold = false, indent = 0) => {
     doc.setFontSize(fontSize);
     doc.setFont("helvetica", isBold ? "bold" : "normal");
-    const lines = doc.splitTextToSize(text, contentWidth);
-    doc.text(lines, margin, yPos);
-    return lines.length * (fontSize * 0.5) + 2; // Return height added
+    const lines = doc.splitTextToSize(text, contentWidth - indent);
+    
+    // Check if we need a page break
+    const lineHeight = fontSize * 0.5;
+    const requiredHeight = lines.length * lineHeight;
+    
+    if (yPos + requiredHeight > pageHeight - margin) {
+      doc.addPage();
+      yPos = margin;
+    }
+    
+    doc.text(lines, margin + indent, yPos);
+    return {
+      newY: yPos + requiredHeight + 2, // Return new Y position
+      addedHeight: requiredHeight + 2
+    }; 
   };
 
   // --- HEADER ---
   centerText("Terms and Conditions for BNSL - Buy Now Sell Later Plan", y, 16, true);
   y += 10;
+  centerText("Last Updated: [09/12/2025], V3", y, 10, false);
+  y += 10;
+  
   centerText(`Plan ID: ${plan.id || 'DRAFT'}`, y, 12, false);
-  y += 8;
+  y += 6;
   centerText(`Date: ${new Date().toLocaleDateString()}`, y, 12, false);
-  y += 15;
+  y += 10;
 
   // --- PARTICIPANT DETAILS ---
   doc.setDrawColor(0);
@@ -69,39 +86,141 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any) => {
   y += 50;
 
   // --- AGREEMENT CONTENT ---
-  y += addWrappedText("1. Introduction and Acceptance", y, 12, true);
-  y += addWrappedText("These Terms and Conditions govern your participation in the BNSL - Buy Now Sell Later Plan ('the Plan'), administered on the Finatrades platform. Under this Plan, you execute an immediate and irrevocable sale of physical gold to Wingold and Metals DMCC ('Wingold').", y);
-  y += 5;
+  let res;
 
-  y += addWrappedText("2. Plan Overview & Transaction Structure", y, 12, true);
-  y += addWrappedText("2.1. The BNSL Plan is a Deferred Price Sale Agreement. Upon your enrollment and confirmation, you sell, and Wingold purchases, a specific quantity of physical gold. Legal title transfers immediately.", y);
-  y += 5;
-  y += addWrappedText("2.3. Pricing Mechanism:", y, 10, true);
-  y += addWrappedText("a) Base Price Component: Market value at sale, deferred until maturity.", y);
-  y += addWrappedText("b) Margin Component: Additional amount paid quarterly in gold grams.", y);
-  y += 5;
+  // 1. Introduction
+  res = addWrappedText("1. Introduction and Acceptance", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("These Terms and Conditions (\"Terms\") govern your participation in the BNSL - Buy Now Sell Later Plan (\"the Plan\"), administered on the Finatrades platform (\"the Platform\"). Under this Plan, you execute an immediate and irrevocable sale of physical gold to Wingold and Metals DMCC (\"Wingold\"). Payment is made in two components: (a) a deferred Base Price Component payable at maturity, and (b) a Margin Component disbursed quarterly during the Plan term.", y);
+  y = res.newY;
+  res = addWrappedText("By enrolling in the Plan, you (\"the Participant,\" \"you,\" \"your\") irrevocably agree to be bound by these Terms.", y);
+  y = res.newY + 5;
 
-  y += addWrappedText("3. Payment Structure", y, 12, true);
-  y += addWrappedText(`You sell ${plan.goldSoldGrams?.toFixed(2)} grams. The Base Price Component is $${plan.basePriceComponentUsd?.toLocaleString()}. An annual margin of ${(plan.marginRateAnnualPercent || 0) * 100}% applies.`, y);
-  y += 5;
+  // 2. Plan Overview
+  res = addWrappedText("2. Plan Overview & Transaction Structure", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("2.1. The BNSL Plan is a Deferred Price Sale Agreement. Upon your enrollment and confirmation, you sell, and Wingold purchases, a specific quantity of physical gold. Legal title and all ownership rights to the gold transfer to Wingold immediately.", y);
+  y = res.newY;
+  res = addWrappedText("2.2. Immediate Sale and Title Transfer: The sale is effective upon Plan confirmation. You no longer own, possess, or have any claim to the specific gold sold. Your rights are strictly contractual, limited to receiving the payments outlined in these Terms.", y);
+  y = res.newY;
+  res = addWrappedText("2.3. Pricing Mechanism:", y, 10, true);
+  y = res.newY;
+  res = addWrappedText("a) Base Price Component: This is the market value of the gold at the time of sale, calculated as: (Quantity of Gold Sold in grams) x (Current Market Gold Price Fixed at Enrollment). Payment of this component is deferred until maturity.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("b) Margin Component: This is the additional amount paid to you by Wingold, representing a pre-agreed percentage of the Base Price Component. It is calculated as: Base Price Component x (Agreed Margin Percentage). This Margin Component is paid out during the Plan term.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("c) Total Sale Proceeds: The sum of the Base Price Component and the Margin Component. This is the total amount Wingold agrees to pay you for your gold.", y, 10, false, 5);
+  y = res.newY;
+  
+  res = addWrappedText("2.4. Value Display: Your Platform account will display:", y, 10, true);
+  y = res.newY;
+  res = addWrappedText("- Contractual Entitlement: The monetary value of the Base Price Component payable at maturity.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("- Margin Disbursement Schedule: The timeline and monetary value of each quarterly Margin Component disbursement.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("- Accumulated Margin Gold: The total physical gold received from Margin Component disbursements.", y, 10, false, 5);
+  y = res.newY;
+  
+  res = addWrappedText("2.5. No Banking Relationship: The Plan does not constitute a deposit, savings account, or banking product. You are purchasing Gold and selling the Gold with a guaranteed Margin, not making a financial deposit.", y);
+  y = res.newY + 5;
 
-  y += addWrappedText("4. Maturity", y, 12, true);
-  y += addWrappedText("At the end of the Plan term, Wingold will settle the Base Price Component by crediting your Fina wallet with gold grams equivalent to the Base Price Component Value divided by the Current Market Gold Price at Maturity.", y);
-  y += 5;
+  // 3. Payment Structure
+  res = addWrappedText("3. Payment Structure: Margin & Base Price", y, 12, true);
+  y = res.newY;
+  res = addWrappedText(`3.1. Sale Transaction: You sell a specified quantity of physical gold, which is ${plan.goldSoldGrams?.toFixed(3)} grams. The market value of this gold at the time of your enrollment is based on the Current Market Gold Price, which is $${plan.enrollmentPriceUsdPerGram?.toFixed(2)} per gram.`, y);
+  y = res.newY;
+  res = addWrappedText(`3.2. Base Price Component: The core value of your sale, known as the Base Price Component, is calculated by multiplying the quantity of gold sold by the Current Market Gold Price at enrollment. This results in an amount of $${plan.basePriceComponentUsd?.toLocaleString()}. This entire sum represents the deferred portion of your payment and will be settled in full upon the Plan's maturity.`, y);
+  y = res.newY;
+  res = addWrappedText(`3.3. Margin Component & Quarterly Disbursements: An additional amount, the Margin Component, is added to your total proceeds. For your selected ${plan.tenorMonths}-Month Plan, an annual margin of ${(plan.marginRateAnnualPercent || 0) * 100}% applies to the Base Price Component. The total value of this Margin Component is $${plan.totalMarginComponentUsd?.toLocaleString()}. This amount is not paid as a lump sum; instead, it is distributed to you in equal instalments, known as Quarterly Disbursements. Each fixed monetary disbursement ($${plan.quarterlyMarginUsd?.toLocaleString()}) is automatically converted into physical gold based on the prevailing market price on the disbursement date.`, y);
+  y = res.newY;
+  res = addWrappedText("3.4. Base Price Payment at Maturity: At the end of the Plan term, Wingold will settle the Base Price Component. Settlement will be made by crediting your Fina wallet with a quantity of gold grams equivalent to the Base Price Component Value divided by the Current Market Gold Price at Maturity. This credit will be completed within three (3) business days of the Maturity Date.", y);
+  y = res.newY + 5;
 
-  y += addWrappedText("5. Early Termination & Breach of Contract", y, 12, true);
-  y += addWrappedText("Early termination is a breach of these Terms and will result in significant financial penalties, including:", y);
-  y += addWrappedText("- Administrative Fee: 1% of Total Sale Proceeds", y);
-  y += addWrappedText("- Early Withdrawal Penalty: 5% of Total Sale Proceeds", y);
-  y += addWrappedText("- Reimbursement of all Margin Component disbursements received.", y);
-  y += 5;
+  // 4. Maturity
+  res = addWrappedText("4. Maturity", y, 12, true);
+  y = res.newY;
+  res = addWrappedText(`4.1. Maturity Definition: The Plan reaches maturity at the end of the selected term (${plan.tenorMonths} months from the start date).`, y);
+  y = res.newY;
+  res = addWrappedText("4.2. Automatic Settlement Process: Upon maturity, settlement of your Base Price Component occurs automatically without requiring any action from you.", y);
+  y = res.newY;
+  res = addWrappedText("4.3. Base Price Settlement: Your Base Price Component (valued at the Current Market Gold Price established at your enrollment) will be delivered to you. Wingold will credit your Fina wallet with the quantity of gold grams equal in monetary value to this Base Price Component.", y);
+  y = res.newY;
+  res = addWrappedText("4.4. Timing of Settlement: The credit of these gold grams to your Fina wallet will be completed within three (3) business days of the Maturity Date. You will receive notification confirming the settlement.", y);
+  y = res.newY;
+  res = addWrappedText("4.5. Post-Maturity Status: After maturity and settlement, your relationship under this Plan terminates. You may continue to hold the gold grams in your Fina wallet subject to the Platform's general terms and conditions, or you may choose to sell, transfer, or utilize them according to Platform functionalities.", y);
+  y = res.newY + 5;
 
-  y += addWrappedText("6. Participant Representations", y, 12, true);
-  y += addWrappedText("You fully understand and accept that this is an immediate sale of your gold. You acknowledge the deferred payment structure and accept all risks associated with the Plan, including market price variability.", y);
-  y += 10;
+  // 5. Early Termination
+  res = addWrappedText("5. Early Termination & Breach of Contract", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("5.1. The Plan is a fixed-term commitment. Early termination by the Participant before the Maturity Date is a breach of these Terms and will result in significant financial penalties.", y);
+  y = res.newY;
+  res = addWrappedText("5.2. Settlement Calculation upon Early Termination: The final settlement in gold in grams is determined as follows:", y, 10, true);
+  y = res.newY;
+  
+  res = addWrappedText("Step 1: Base Price Component Valuation. The value of your original Base Price Component is calculated based on the current market price.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("- If current market price < Enrollment Price: Base Price Component is valued at current lower market price.", y, 10, false, 10);
+  y = res.newY;
+  res = addWrappedText("- If current market price >= Enrollment Price: Base Price Component is valued at original face value.", y, 10, false, 10);
+  y = res.newY;
+
+  res = addWrappedText("Step 2: Deduction of Fees. The total value from Step 1 has the following deductions applied:", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("- Administrative Fee: 1% of Total Sale Proceeds", y, 10, false, 10);
+  y = res.newY;
+  res = addWrappedText("- Early Withdrawal Penalty: 5% of Total Sale Proceeds", y, 10, false, 10);
+  y = res.newY;
+  res = addWrappedText("- Reimbursement of Quarterly Disbursements: The gross monetary value of all Margin Component disbursements received to date.", y, 10, false, 10);
+  y = res.newY;
+
+  res = addWrappedText("Step 3: Final In-Kind Settlement.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("The remaining value after deductions is used to purchase gold at the current market price and credited to your Fina wallet.", y, 10, false, 10);
+  y = res.newY;
+  res = addWrappedText("Final Gold Grams = (Base Price Component Value - Sum of All Deductions) / Current Market Price of Gold.", y, 10, true, 10);
+  y = res.newY;
+
+  res = addWrappedText("5.3. Forfeiture of Rights: Upon early termination, all accrued but unpaid future Quarterly Disbursements are immediately forfeited, and you lose entitlement to the deferred Base Price Component payment for the remaining term.", y);
+  y = res.newY;
+  res = addWrappedText("5.5. Market Conditions Impact: Early termination typically results in substantial financial loss due to penalties and fee deductions, regardless of market price movements.", y);
+  y = res.newY + 5;
+
+  // 6. Representations
+  res = addWrappedText("6. Participant Representations and Warranties", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("By participating, you represent, warrant, and acknowledge that:", y);
+  y = res.newY;
+  res = addWrappedText("6.1. Understanding of Transaction Structure: You fully understand that this is an immediate sale of your gold. You acknowledge the deferred payment structure and accept that early termination results in severe penalties.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("6.2. Risk Acceptance: You accept all risks associated with the Plan, including variability in physical quantity of margin gold and counterparty performance risk.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("6.3. No Guarantee of Value: You understand that future market value of gold received cannot be guaranteed.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("6.4. Independent Decision: Your participation is based on your own independent assessment.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("6.5. Financial Capacity: You have the financial capacity to sustain the entire Plan term without requiring early access to funds.", y, 10, false, 5);
+  y = res.newY;
+  res = addWrappedText("6.6. Tax Responsibilities: You are solely responsible for all tax obligations arising from this transaction.", y, 10, false, 5);
+  y = res.newY + 5;
+
+  // 7. Risks
+  res = addWrappedText("7. Risks and Disclaimer", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("7.1. Early Termination Financial Risk: Exiting before maturity constitutes a breach and will result in substantial financial loss.", y);
+  y = res.newY;
+  res = addWrappedText("7.2. Margin Component Quantity Variability Risk: The physical quantity of gold received from disbursements varies inversely with market price.", y);
+  y = res.newY;
+  res = addWrappedText("7.3. Market Price Divergence Risk: If market prices rise significantly, you will not benefit from appreciation on the deferred portion of your sale proceeds.", y);
+  y = res.newY + 15;
 
   // --- SIGNATURE SECTION ---
-  y += 10;
+  if (y + 40 > pageHeight - margin) {
+    doc.addPage();
+    y = margin;
+  }
+
+  doc.setDrawColor(0);
   doc.line(margin, y, margin + 80, y); // User line
   doc.line(pageWidth - margin - 80, y, pageWidth - margin, y); // Wingold line
 
