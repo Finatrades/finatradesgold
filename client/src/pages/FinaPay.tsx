@@ -22,6 +22,7 @@ import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 // Mock Initial State
 const INITIAL_WALLET: Wallet = {
   goldBalanceGrams: 125.400,
+  usdBalance: 15420.50,
   goldPriceUsdPerGram: 85.22,
   usdAedRate: 3.67,
 };
@@ -36,6 +37,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
     timestamp: '2024-12-10T14:30:00Z',
     referenceId: 'REF-8821',
     status: 'Completed',
+    assetType: 'GOLD'
   },
   {
     id: 'tx-002',
@@ -46,17 +48,18 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
     timestamp: '2024-12-08T09:15:00Z',
     referenceId: 'REF-7732',
     status: 'Completed',
+    assetType: 'GOLD'
   },
   {
     id: 'tx-003',
     type: 'Send',
-    amountGrams: 2.500,
-    amountUsd: 213.05,
+    amountUsd: 500.00,
     feeUsd: 0,
     timestamp: '2024-12-05T18:00:00Z',
     referenceId: 'REF-6651',
     status: 'Completed',
-    description: 'Gift for Sarah',
+    description: 'Rent Split',
+    assetType: 'USD'
   }
 ];
 
@@ -73,8 +76,16 @@ export default function FinaPay() {
   // --- Actions ---
 
   const handleBuyConfirm = (grams: number, cost: number) => {
-    // Credit gold
-    setWallet(prev => ({ ...prev, goldBalanceGrams: prev.goldBalanceGrams + grams }));
+    if (wallet.usdBalance < cost) {
+       toast({ title: "Insufficient Funds", description: "You don't have enough USD.", variant: "destructive" });
+       return;
+    }
+    // Credit gold, Debit USD
+    setWallet(prev => ({ 
+      ...prev, 
+      goldBalanceGrams: prev.goldBalanceGrams + grams,
+      usdBalance: prev.usdBalance - cost
+    }));
     
     // Add Transaction
     const newTx: Transaction = {
@@ -86,6 +97,7 @@ export default function FinaPay() {
       timestamp: new Date().toISOString(),
       referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
       status: 'Completed',
+      assetType: 'GOLD'
     };
     setTransactions(prev => [newTx, ...prev]);
     
@@ -94,8 +106,12 @@ export default function FinaPay() {
   };
 
   const handleSellConfirm = (grams: number, payout: number) => {
-    // Debit gold
-    setWallet(prev => ({ ...prev, goldBalanceGrams: prev.goldBalanceGrams - grams }));
+    // Debit gold, Credit USD
+    setWallet(prev => ({ 
+      ...prev, 
+      goldBalanceGrams: prev.goldBalanceGrams - grams,
+      usdBalance: prev.usdBalance + payout
+    }));
 
     // Add Transaction
     const newTx: Transaction = {
@@ -107,6 +123,7 @@ export default function FinaPay() {
       timestamp: new Date().toISOString(),
       referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
       status: 'Completed',
+      assetType: 'GOLD'
     };
     setTransactions(prev => [newTx, ...prev]);
 
@@ -114,45 +131,45 @@ export default function FinaPay() {
     toast({ title: "Sell Order Executed", description: `Sold ${grams.toFixed(4)}g for $${payout.toFixed(2)}.` });
   };
 
-  const handleSendConfirm = (recipient: string, grams: number) => {
-    // Debit gold
-    setWallet(prev => ({ ...prev, goldBalanceGrams: prev.goldBalanceGrams - grams }));
+  const handleSendConfirm = (recipient: string, amount: number) => {
+    // Debit USD
+    setWallet(prev => ({ ...prev, usdBalance: prev.usdBalance - amount }));
 
     // Add Transaction
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
       type: 'Send',
-      amountGrams: grams,
-      amountUsd: grams * wallet.goldPriceUsdPerGram,
+      amountUsd: amount,
       feeUsd: 0,
       timestamp: new Date().toISOString(),
       referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
       status: 'Completed',
       description: `Sent to ${recipient}`,
+      assetType: 'USD'
     };
     setTransactions(prev => [newTx, ...prev]);
 
     setActiveModal(null);
-    toast({ title: "Transfer Successful", description: `Sent ${grams.toFixed(4)}g to ${recipient}.` });
+    toast({ title: "Transfer Successful", description: `Sent $${amount.toFixed(2)} to ${recipient}.` });
   };
 
-  const handleRequestConfirm = (from: string, grams: number) => {
+  const handleRequestConfirm = (from: string, amount: number) => {
     // Add Pending Transaction
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
       type: 'Request',
-      amountGrams: grams,
-      amountUsd: grams * wallet.goldPriceUsdPerGram,
+      amountUsd: amount,
       feeUsd: 0,
       timestamp: new Date().toISOString(),
       referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
       status: 'Pending',
       description: `Requested from ${from}`,
+      assetType: 'USD'
     };
     setTransactions(prev => [newTx, ...prev]);
 
     setActiveModal(null);
-    toast({ title: "Request Sent", description: `Payment request sent to ${from}.` });
+    toast({ title: "Request Sent", description: `Payment request of $${amount.toFixed(2)} sent to ${from}.` });
   };
 
   const handleQuickAction = (action: string) => {
@@ -184,7 +201,7 @@ export default function FinaPay() {
              </div>
              <div>
                <h1 className="text-2xl font-bold text-white">FinaPay Wallet</h1>
-               <p className="text-white/60 text-sm">Digital gold wallet for buying, selling and sending gold.</p>
+               <p className="text-white/60 text-sm">USD & Gold wallet for digital finance.</p>
              </div>
           </div>
           
@@ -246,19 +263,18 @@ export default function FinaPay() {
           isOpen={activeModal === 'sell'} 
           onClose={() => setActiveModal(null)}
           goldPrice={wallet.goldPriceUsdPerGram}
+          walletBalance={wallet.goldBalanceGrams}
           onConfirm={handleSellConfirm}
         />
         <SendGoldModal 
           isOpen={activeModal === 'send'} 
           onClose={() => setActiveModal(null)}
-          walletBalance={wallet.goldBalanceGrams}
-          goldPrice={wallet.goldPriceUsdPerGram}
+          walletBalance={wallet.usdBalance}
           onConfirm={handleSendConfirm}
         />
         <RequestGoldModal 
           isOpen={activeModal === 'request'} 
           onClose={() => setActiveModal(null)}
-          goldPrice={wallet.goldPriceUsdPerGram}
           onConfirm={handleRequestConfirm}
         />
 

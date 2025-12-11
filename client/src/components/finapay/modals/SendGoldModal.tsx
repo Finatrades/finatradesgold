@@ -11,14 +11,12 @@ interface SendGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
   walletBalance: number;
-  goldPrice: number;
-  onConfirm: (recipient: string, grams: number) => void;
+  onConfirm: (recipient: string, amount: number) => void;
 }
 
-export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPrice, onConfirm }: SendGoldModalProps) {
+export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfirm }: SendGoldModalProps) {
   const [recipient, setRecipient] = useState('');
-  const [grams, setGrams] = useState('');
-  const [usdAmount, setUsdAmount] = useState('');
+  const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1);
@@ -30,8 +28,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
     if (isOpen) {
       setStep(1);
       setRecipient('');
-      setGrams('');
-      setUsdAmount('');
+      setAmount('');
       setNote('');
       setOtp('');
       setIsLoading(false);
@@ -40,31 +37,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
     }
   }, [isOpen]);
 
-  const handleGramsChange = (val: string) => {
-    setGrams(val);
-    if (val === '') {
-      setUsdAmount('');
-      return;
-    }
-    const g = parseFloat(val);
-    if (!isNaN(g)) {
-      setUsdAmount((g * goldPrice).toFixed(2));
-    }
-  };
-
-  const handleUsdChange = (val: string) => {
-    setUsdAmount(val);
-    if (val === '') {
-      setGrams('');
-      return;
-    }
-    const u = parseFloat(val);
-    if (!isNaN(u)) {
-      setGrams((u / goldPrice).toFixed(4));
-    }
-  };
-
-  const numericGrams = parseFloat(grams) || 0;
+  const numericAmount = parseFloat(amount) || 0;
 
   const handleSendOtp = () => {
     setStep(2);
@@ -75,7 +48,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onConfirm(recipient, numericGrams);
+      onConfirm(recipient, numericAmount);
     }, 1500);
   };
 
@@ -89,10 +62,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
       <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="text-orange-400">Send Gold</span>
+            <span className="text-green-400">Send USD</span>
           </DialogTitle>
           <DialogDescription className="text-white/60">
-            Transfer gold instantly to another FinaPay user.
+            Transfer USD instantly to another FinaPay user.
           </DialogDescription>
         </DialogHeader>
 
@@ -114,37 +87,21 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Amount (g)</Label>
-                  <div className="relative">
-                    <Input 
-                      type="number" 
-                      placeholder="0.000" 
-                      className="bg-black/20 border-white/10 pr-8"
-                      value={grams}
-                      onChange={(e) => handleGramsChange(e.target.value)}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">g</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
+              <div className="space-y-2">
+                <div className="flex justify-between">
                   <Label>Amount (USD)</Label>
-                  <div className="relative">
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className="bg-black/20 border-white/10 pr-8"
-                      value={usdAmount}
-                      onChange={(e) => handleUsdChange(e.target.value)}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">$</span>
-                  </div>
+                  <span className="text-xs text-white/40">Available: ${walletBalance.toFixed(2)}</span>
                 </div>
-              </div>
-              
-              <div className="flex justify-end -mt-2">
-                <span className="text-xs text-white/40">Available: {walletBalance.toFixed(3)} g</span>
+                <div className="relative">
+                   <Input 
+                     type="number" 
+                     placeholder="0.00" 
+                     className="bg-black/20 border-white/10 pl-8"
+                     value={amount}
+                     onChange={(e) => setAmount(e.target.value)}
+                   />
+                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">$</span>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -187,8 +144,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
               </div>
 
               <Button 
-                className="w-full bg-orange-500 text-white hover:bg-orange-600 font-bold"
-                disabled={!recipient || numericGrams <= 0 || numericGrams > walletBalance}
+                className="w-full bg-green-500 text-white hover:bg-green-600 font-bold"
+                disabled={!recipient || numericAmount <= 0 || numericAmount > walletBalance}
                 onClick={handleSendOtp}
               >
                 Next
@@ -196,9 +153,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
             </TabsContent>
 
             <TabsContent value="scan" className="space-y-4">
-              <div className="bg-black/40 border-2 border-dashed border-white/20 rounded-xl h-[250px] flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-orange-500/50 transition-colors">
-                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/5 to-transparent animate-pulse pointer-events-none" />
-                 <Scan className="w-12 h-12 text-white/40 mb-3 group-hover:text-orange-500 transition-colors" />
+              <div className="bg-black/40 border-2 border-dashed border-white/20 rounded-xl h-[250px] flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-green-500/50 transition-colors">
+                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-500/5 to-transparent animate-pulse pointer-events-none" />
+                 <Scan className="w-12 h-12 text-white/40 mb-3 group-hover:text-green-500 transition-colors" />
                  <p className="text-white/60 text-sm font-medium">Click to Activate Camera</p>
               </div>
               
@@ -219,7 +176,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
           <div className="space-y-4 py-4">
             <div className="bg-white/5 p-4 rounded-lg border border-white/10 text-center space-y-2">
                <p className="text-white/60 text-sm">Transferring</p>
-               <p className="text-2xl font-bold text-white">{numericGrams.toFixed(3)} g</p>
+               <p className="text-2xl font-bold text-white">${numericAmount.toFixed(2)}</p>
                <p className="text-white/60 text-sm">to <span className="text-white">{recipient}</span></p>
             </div>
 
@@ -236,17 +193,13 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldPric
             </div>
 
             <Button 
-              className="w-full bg-orange-500 text-white hover:bg-orange-600 font-bold"
+              className="w-full bg-green-500 text-white hover:bg-green-600 font-bold"
               disabled={otp.length < 4 || isLoading}
               onClick={handleConfirm}
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Confirm Transfer
             </Button>
-            
-            <p className="text-xs text-center text-white/40">
-              // FinaVault: debit sender, credit receiver.
-            </p>
           </div>
         )}
 

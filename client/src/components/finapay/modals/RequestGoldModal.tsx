@@ -11,15 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 interface RequestGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
-  goldPrice: number;
-  onConfirm: (from: string, grams: number) => void;
+  onConfirm: (from: string, amount: number) => void;
 }
 
-export default function RequestGoldModal({ isOpen, onClose, goldPrice, onConfirm }: RequestGoldModalProps) {
+export default function RequestGoldModal({ isOpen, onClose, onConfirm }: RequestGoldModalProps) {
   const { toast } = useToast();
   const [fromUser, setFromUser] = useState('');
-  const [grams, setGrams] = useState('');
-  const [usdAmount, setUsdAmount] = useState('');
+  const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('request');
@@ -28,8 +26,7 @@ export default function RequestGoldModal({ isOpen, onClose, goldPrice, onConfirm
   useEffect(() => {
     if (isOpen) {
       setFromUser('');
-      setGrams('');
-      setUsdAmount('');
+      setAmount('');
       setNote('');
       setIsLoading(false);
       setActiveTab('request');
@@ -37,37 +34,13 @@ export default function RequestGoldModal({ isOpen, onClose, goldPrice, onConfirm
     }
   }, [isOpen]);
 
-  const handleGramsChange = (val: string) => {
-    setGrams(val);
-    if (val === '') {
-      setUsdAmount('');
-      return;
-    }
-    const g = parseFloat(val);
-    if (!isNaN(g)) {
-      setUsdAmount((g * goldPrice).toFixed(2));
-    }
-  };
-
-  const handleUsdChange = (val: string) => {
-    setUsdAmount(val);
-    if (val === '') {
-      setGrams('');
-      return;
-    }
-    const u = parseFloat(val);
-    if (!isNaN(u)) {
-      setGrams((u / goldPrice).toFixed(4));
-    }
-  };
-
-  const numericGrams = parseFloat(grams) || 0;
+  const numericAmount = parseFloat(amount) || 0;
 
   const handleConfirm = () => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onConfirm(fromUser, numericGrams);
+      onConfirm(fromUser, numericAmount);
     }, 1000);
   };
 
@@ -89,7 +62,7 @@ export default function RequestGoldModal({ isOpen, onClose, goldPrice, onConfirm
       <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="text-blue-400">Request Gold</span>
+            <span className="text-blue-400">Request USD</span>
           </DialogTitle>
           <DialogDescription className="text-white/60">
             Request payment via ID or share a payment link.
@@ -113,32 +86,17 @@ export default function RequestGoldModal({ isOpen, onClose, goldPrice, onConfirm
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Amount (g)</Label>
-                <div className="relative">
-                  <Input 
-                    type="number" 
-                    placeholder="0.000" 
-                    className="bg-black/20 border-white/10 pr-8"
-                    value={grams}
-                    onChange={(e) => handleGramsChange(e.target.value)}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">g</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Amount (USD)</Label>
-                <div className="relative">
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    className="bg-black/20 border-white/10 pr-8"
-                    value={usdAmount}
-                    onChange={(e) => handleUsdChange(e.target.value)}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">$</span>
-                </div>
+            <div className="space-y-2">
+              <Label>Amount (USD)</Label>
+              <div className="relative">
+                 <Input 
+                   type="number" 
+                   placeholder="0.00" 
+                   className="bg-black/20 border-white/10 pl-8"
+                   value={amount}
+                   onChange={(e) => setAmount(e.target.value)}
+                 />
+                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">$</span>
               </div>
             </div>
 
@@ -183,7 +141,7 @@ export default function RequestGoldModal({ isOpen, onClose, goldPrice, onConfirm
 
             <Button 
               className="w-full bg-blue-500 text-white hover:bg-blue-600 font-bold"
-              disabled={!fromUser || numericGrams <= 0 || isLoading}
+              disabled={!fromUser || numericAmount <= 0 || isLoading}
               onClick={handleConfirm}
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowDownLeft className="w-4 h-4 mr-2" />}

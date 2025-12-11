@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types/finapay';
-import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,11 +15,11 @@ interface TransactionHistoryProps {
 export default function TransactionHistory({ transactions }: TransactionHistoryProps) {
   const [filter, setFilter] = useState('All');
   
-  const getIcon = (type: string) => {
+  const getIcon = (type: string, asset: string = 'USD') => {
     switch (type) {
       case 'Buy': return <ShoppingCart className="w-4 h-4" />;
       case 'Sell': return <Banknote className="w-4 h-4" />;
-      case 'Send': return <ArrowUpRight className="w-4 h-4" />;
+      case 'Send': return asset === 'GOLD' ? <ArrowUpRight className="w-4 h-4" /> : <DollarSign className="w-4 h-4" />;
       case 'Receive': return <ArrowDownLeft className="w-4 h-4" />;
       case 'Request': return <RefreshCcw className="w-4 h-4" />;
       default: return <History className="w-4 h-4" />;
@@ -107,18 +107,24 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                   {/* Type & Date */}
                   <div className="col-span-4 flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${getColor(tx.type)} bg-opacity-10`}>
-                      {getIcon(tx.type)}
+                      {getIcon(tx.type, tx.assetType)}
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">{tx.type} Gold</p>
+                      <p className="font-bold text-white text-sm">{tx.type} {tx.assetType === 'GOLD' ? 'Gold' : 'USD'}</p>
                       <p className="text-[10px] text-white/40 font-mono mt-0.5">{new Date(tx.timestamp).toLocaleDateString()} • {new Date(tx.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
                   </div>
                   
                   {/* Amount */}
                   <div className="col-span-3 text-right">
-                    <p className="font-bold text-white text-sm">{tx.amountGrams.toFixed(3)} g</p>
-                    <p className="text-[10px] text-white/40">${tx.amountUsd.toFixed(2)}</p>
+                    {tx.assetType === 'GOLD' ? (
+                       <>
+                         <p className="font-bold text-white text-sm">{tx.amountGrams?.toFixed(3)} g</p>
+                         <p className="text-[10px] text-white/40">${tx.amountUsd.toFixed(2)}</p>
+                       </>
+                    ) : (
+                       <p className="font-bold text-white text-sm">${tx.amountUsd.toFixed(2)}</p>
+                    )}
                   </div>
 
                   {/* Status */}
