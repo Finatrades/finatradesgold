@@ -107,8 +107,8 @@ export default function Register() {
       description: "Identity verification is mandatory to access the platform."
     });
     
-    // Redirect to KYC
-    setLocation('/kyc');
+    // Redirect to Dashboard
+    setLocation('/dashboard');
   };
 
   const handleDemoAccess = () => {
@@ -121,10 +121,10 @@ export default function Register() {
       kycStatus: 'pending'
     });
     toast.success("Demo Access Granted", {
-      description: "Please complete mandatory KYC to access dashboard."
+      description: "Welcome. Please complete KYC to unlock full access."
     });
-    // Redirect to KYC for demo user too if they are pending
-    setLocation('/kyc');
+    // Redirect to Dashboard
+    setLocation('/dashboard');
   };
 
   return (

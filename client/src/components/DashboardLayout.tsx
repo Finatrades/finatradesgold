@@ -20,12 +20,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (user && user.kycStatus === 'pending') {
-      setLocation('/kyc');
-    }
-  }, [user, setLocation]);
-
-  useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -34,11 +28,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   if (!user) return null;
-  if (user.kycStatus === 'pending') return null; // Prevent flash of content
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-white">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-white relative">
       
+      {/* KYC Blocking Overlay */}
+      {user.kycStatus === 'pending' && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-zinc-900 border border-border shadow-2xl rounded-2xl p-8 max-w-md w-full text-center space-y-6 relative overflow-hidden"
+          >
+            {/* Decorative background glow */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-red-500" />
+            
+            <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-500" />
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground">Verification Required</h2>
+              <p className="text-muted-foreground">
+                To ensure compliance and security, all accounts must be verified before accessing the platform features.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <Link href="/kyc">
+                <Button className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg shadow-orange-500/20 transition-all hover:scale-[1.02]">
+                  Verify Identity Now <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Button 
+                variant="ghost" 
+                className="w-full text-muted-foreground hover:text-foreground"
+                onClick={() => window.location.href = '/'} // Logout logic or back to home
+              >
+                Return to Home
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
