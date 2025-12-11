@@ -1,19 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Package, ShieldCheck, AlertTriangle, Plus, ArrowRight, Scale, Lock } from 'lucide-react';
+import { Package, ShieldCheck, AlertTriangle, Plus, ArrowRight, Scale, Lock, MinusCircle, PlusCircle } from 'lucide-react';
+import { usePlatform } from '@/context/PlatformContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 export default function VaultManagement() {
-  // Mock Data
-  const vaultStats = {
-    totalPhysicalGold: 125000, // in grams
-    totalDigitalLiabilities: 118450, // in grams
-    utilization: 94.7,
-    vaultLocation: "Zurich Free Port, Switzerland",
-    lastAudit: "2024-12-01"
+  const { settings, updateInventory } = usePlatform();
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [stockAction, setStockAction] = useState<'add' | 'remove'>('add');
+  const [stockAmount, setStockAmount] = useState('');
+
+  // Derived Stats
+  const availableLiquidity = settings.vaultInventoryGrams - settings.reservedGoldGrams;
+  const coverageRatio = (settings.vaultInventoryGrams / settings.reservedGoldGrams) * 100;
+  
+  const handleStockUpdate = () => {
+    const amount = parseFloat(stockAmount);
+    if (!amount || amount <= 0) return;
+
+    if (stockAction === 'remove' && amount > availableLiquidity) {
+      toast.error("Cannot remove stock", { description: "Removal amount exceeds available liquidity." });
+      return;
+    }
+
+    updateInventory(amount, stockAction);
+    setIsStockModalOpen(false);
+    setStockAmount('');
+    toast.success("Vault Updated", { 
+      description: `${stockAction === 'add' ? 'Added' : 'Removed'} ${amount}g from physical inventory.` 
+    });
   };
 
   const inventory = [
@@ -32,9 +54,14 @@ export default function VaultManagement() {
             <h1 className="text-3xl font-bold text-gray-900">Vault Management</h1>
             <p className="text-gray-500">Manage physical gold inventory and audit reconciliation.</p>
           </div>
-          <Button className="bg-orange-600 hover:bg-orange-700">
-            <Plus className="w-4 h-4 mr-2" /> Register New Bar
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setStockAction('remove'); setIsStockModalOpen(true); }}>
+              <MinusCircle className="w-4 h-4 mr-2" /> Remove Stock
+            </Button>
+            <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => { setStockAction('add'); setIsStockModalOpen(true); }}>
+              <PlusCircle className="w-4 h-4 mr-2" /> Add Physical Gold
+            </Button>
+          </div>
         </div>
 
         {/* Vault Overview Cards */}
@@ -45,10 +72,14 @@ export default function VaultManagement() {
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-white">105.5%</span>
-                <span className="text-sm text-green-400">Over-collateralized</span>
+                <span className={`text-3xl font-bold ${coverageRatio < 100 ? 'text-red-400' : 'text-white'}`}>
+                  {coverageRatio.toFixed(1)}%
+                </span>
+                <span className={`text-sm ${coverageRatio < 100 ? 'text-red-400' : 'text-green-400'}`}>
+                  {coverageRatio < 100 ? 'Under-collateralized' : 'Over-collateralized'}
+                </span>
               </div>
-              <Progress value={94} className="h-2 mt-4 bg-slate-700" indicatorClassName="bg-green-500" />
+              <Progress value={Math.min(coverageRatio, 100)} className={`h-2 mt-4 bg-slate-700 [&>div]:${coverageRatio < 100 ? "bg-red-500" : "bg-green-500"}`} />
               <p className="text-xs text-slate-400 mt-2">Physical Holdings vs Digital Liabilities</p>
             </CardContent>
           </Card>
@@ -63,7 +94,7 @@ export default function VaultManagement() {
                   <Package className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">125.00 kg</p>
+                  <p className="text-2xl font-bold text-gray-900">{(settings.vaultInventoryGrams / 1000).toFixed(2)} kg</p>
                   <p className="text-xs text-gray-500">Total Weight in Vault</p>
                 </div>
               </div>
@@ -72,16 +103,16 @@ export default function VaultManagement() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Audit Status</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-500">Available Liquidity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-green-100 text-green-700 rounded-lg">
-                  <ShieldCheck className="w-6 h-6" />
+                  <Scale className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-gray-900">Verified</p>
-                  <p className="text-xs text-gray-500">Last Audit: {vaultStats.lastAudit}</p>
+                  <p className="text-2xl font-bold text-gray-900">{(availableLiquidity / 1000).toFixed(2)} kg</p>
+                  <p className="text-xs text-gray-500">Unallocated Gold for Sale</p>
                 </div>
               </div>
             </CardContent>
@@ -93,7 +124,7 @@ export default function VaultManagement() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Gold Bar Inventory</CardTitle>
-              <CardDescription>Registry of physical bars stored in {vaultStats.vaultLocation}</CardDescription>
+              <CardDescription>Registry of physical bars stored in Zurich Free Port</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -171,6 +202,45 @@ export default function VaultManagement() {
           </div>
         </div>
       </div>
+      
+      {/* Stock Management Modal */}
+      <Dialog open={isStockModalOpen} onOpenChange={setIsStockModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{stockAction === 'add' ? 'Add Physical Inventory' : 'Remove Physical Inventory'}</DialogTitle>
+            <DialogDescription>
+              {stockAction === 'add' 
+                ? 'Register new gold bars entering the vault.' 
+                : 'Remove gold bars for physical delivery or audit adjustment.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Amount (Grams)</Label>
+              <Input 
+                type="number" 
+                placeholder="e.g. 1000" 
+                value={stockAmount}
+                onChange={(e) => setStockAmount(e.target.value)}
+              />
+            </div>
+            {stockAction === 'remove' && (
+               <div className="bg-yellow-50 text-yellow-800 p-3 rounded text-sm">
+                  Available for removal: {availableLiquidity.toFixed(2)}g
+               </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsStockModalOpen(false)}>Cancel</Button>
+            <Button 
+              className={stockAction === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              onClick={handleStockUpdate}
+            >
+              {stockAction === 'add' ? 'Confirm Addition' : 'Confirm Removal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

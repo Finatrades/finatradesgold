@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { PlatformProvider } from "@/context/PlatformContext";
 import { TradeFinanceProvider } from "@/context/TradeFinanceContext";
+import { UserProvider } from "@/context/UserContext";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -80,22 +81,24 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <PlatformProvider>
-          <TradeFinanceProvider>
-            <LanguageProvider>
-              <AccountTypeProvider>
-                <NotificationProvider>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Router />
-                  </TooltipProvider>
-                </NotificationProvider>
-              </AccountTypeProvider>
-            </LanguageProvider>
-          </TradeFinanceProvider>
-        </PlatformProvider>
-      </AuthProvider>
+      <UserProvider>
+        <AuthProvider>
+          <PlatformProvider>
+            <TradeFinanceProvider>
+              <LanguageProvider>
+                <AccountTypeProvider>
+                  <NotificationProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Router />
+                    </TooltipProvider>
+                  </NotificationProvider>
+                </AccountTypeProvider>
+              </LanguageProvider>
+            </TradeFinanceProvider>
+          </PlatformProvider>
+        </AuthProvider>
+      </UserProvider>
     </QueryClientProvider>
   );
 }

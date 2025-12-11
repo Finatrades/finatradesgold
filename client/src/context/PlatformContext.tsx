@@ -30,6 +30,10 @@ export interface PlatformSettings {
 
   // Bank Accounts
   bankAccounts: BankAccount[];
+
+  // Vault Inventory
+  vaultInventoryGrams: number;
+  reservedGoldGrams: number;
 }
 
 interface PlatformContextType {
@@ -37,6 +41,7 @@ interface PlatformContextType {
   updateSettings: (newSettings: Partial<PlatformSettings>) => void;
   updateBankAccount: (id: string, updates: Partial<BankAccount>) => void;
   addBankAccount: (account: Omit<BankAccount, 'id'>) => void;
+  updateInventory: (grams: number, type: 'add' | 'remove' | 'reserve' | 'release') => void;
 }
 
 const DEFAULT_SETTINGS: PlatformSettings = {
@@ -49,6 +54,8 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   maintenanceMode: false,
   registrationsEnabled: true,
   autoApproveLowRisk: false,
+  vaultInventoryGrams: 125000, // Initial stock
+  reservedGoldGrams: 118450,   // Initial liabilities
   bankAccounts: [
     {
       id: '1',
@@ -116,8 +123,28 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const updateInventory = (grams: number, type: 'add' | 'remove' | 'reserve' | 'release') => {
+    setSettings(prev => {
+      let newInventory = prev.vaultInventoryGrams;
+      let newReserved = prev.reservedGoldGrams;
+
+      switch (type) {
+        case 'add': newInventory += grams; break;
+        case 'remove': newInventory -= grams; break;
+        case 'reserve': newReserved += grams; break;
+        case 'release': newReserved -= grams; break;
+      }
+
+      return {
+        ...prev,
+        vaultInventoryGrams: newInventory,
+        reservedGoldGrams: newReserved
+      };
+    });
+  };
+
   return (
-    <PlatformContext.Provider value={{ settings, updateSettings, updateBankAccount, addBankAccount }}>
+    <PlatformContext.Provider value={{ settings, updateSettings, updateBankAccount, addBankAccount, updateInventory }}>
       {children}
     </PlatformContext.Provider>
   );
