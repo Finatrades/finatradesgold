@@ -3,13 +3,15 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Menu, Search } from 'lucide-react';
+import { Bell, Menu, Search, Briefcase, User as UserIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { accountType } = useAccountType();
+  const { accountType, toggleAccountType } = useAccountType();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -53,6 +55,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Right: User & Actions */}
             <div className="flex items-center gap-4">
+              
+              {/* Account Type Switcher */}
+              <div className="hidden md:flex items-center bg-muted/50 p-1 rounded-full border border-border">
+                 <button 
+                   onClick={() => accountType !== 'personal' && toggleAccountType()}
+                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                     accountType === 'personal' 
+                       ? 'bg-background shadow-sm text-foreground' 
+                       : 'text-muted-foreground hover:text-foreground'
+                   }`}
+                 >
+                   <UserIcon className="w-3 h-3" /> Personal
+                 </button>
+                 <button 
+                   onClick={() => accountType !== 'business' && toggleAccountType()}
+                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                     accountType === 'business' 
+                       ? 'bg-background shadow-sm text-foreground' 
+                       : 'text-muted-foreground hover:text-foreground'
+                   }`}
+                 >
+                   <Briefcase className="w-3 h-3" /> Business
+                 </button>
+              </div>
+
+              {/* Language */}
+              <div className="hidden md:block">
+                 <LanguageSwitcher variant="light" />
+              </div>
+
               <button className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors relative">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 border border-background" />
