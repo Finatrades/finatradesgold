@@ -15,9 +15,11 @@ export default function WalletBalanceCards({ wallet }: WalletBalanceCardsProps) 
   
   // Total Locked = BNSL + FinaBridge
   const totalLockedUsd = wallet.bnslLockedUsd + wallet.finaBridgeLockedUsd;
+  const totalLockedGrams = totalLockedUsd / wallet.goldPriceUsdPerGram;
 
   // Grand Total
   const grandTotalUsd = totalAvailableUsd + totalLockedUsd;
+  const grandTotalGrams = grandTotalUsd / wallet.goldPriceUsdPerGram;
 
   return (
     <Card className="bg-white shadow-sm border border-border overflow-hidden relative">
@@ -61,20 +63,23 @@ export default function WalletBalanceCards({ wallet }: WalletBalanceCardsProps) 
           {/* Locked Funds */}
           <div className="bg-muted p-4 rounded-xl border border-border">
             <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
-              Locked Funds
+              Locked Assets
             </p>
             <div className="text-2xl font-bold text-amber-500">
               ${totalLockedUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
             </div>
+             <p className="text-xs text-amber-500/60 mb-2">
+                ≈ {totalLockedGrams.toFixed(3)} g Gold
+             </p>
             <div className="flex flex-col gap-1 mt-1">
-               <p className="text-sm text-amber-500/80 flex items-center gap-1">
-                 <Lock className="w-3 h-3" />
-                 BNSL: ${wallet.bnslLockedUsd.toLocaleString()}
-               </p>
-               <p className="text-sm text-amber-500/80 flex items-center gap-1">
-                 <Briefcase className="w-3 h-3" />
-                 Trade: ${wallet.finaBridgeLockedUsd.toLocaleString()}
-               </p>
+               <div className="flex justify-between items-center text-sm text-amber-500/80">
+                 <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> BNSL:</span>
+                 <span>${wallet.bnslLockedUsd.toLocaleString()} <span className="text-xs opacity-70">({(wallet.bnslLockedUsd / wallet.goldPriceUsdPerGram).toFixed(2)} g)</span></span>
+               </div>
+               <div className="flex justify-between items-center text-sm text-amber-500/80">
+                 <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> Trade:</span>
+                 <span>${wallet.finaBridgeLockedUsd.toLocaleString()} <span className="text-xs opacity-70">({(wallet.finaBridgeLockedUsd / wallet.goldPriceUsdPerGram).toFixed(2)} g)</span></span>
+               </div>
             </div>
             <p className="text-[10px] text-muted-foreground mt-2">
               Capital currently deployed in active financial products.
@@ -88,6 +93,9 @@ export default function WalletBalanceCards({ wallet }: WalletBalanceCardsProps) 
                ${grandTotalUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
              </div>
              <p className="text-sm text-muted-foreground mt-1">
+               <span className="text-secondary font-semibold">{grandTotalGrams.toFixed(3)} g</span> Total Gold Value
+             </p>
+             <p className="text-[10px] text-muted-foreground mt-2">
                Combined value of all available and locked assets across the platform.
              </p>
           </div>
