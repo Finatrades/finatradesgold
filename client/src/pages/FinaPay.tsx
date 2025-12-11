@@ -14,7 +14,6 @@ import TransactionHistory from '@/components/finapay/TransactionHistory';
 import QuickActions from '@/components/finapay/QuickActions';
 
 // Modals
-import AddFundsModal from '@/components/finapay/modals/AddFundsModal';
 import BuyGoldModal from '@/components/finapay/modals/BuyGoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
@@ -77,27 +76,6 @@ export default function FinaPay() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
   // --- Actions ---
-
-  const handleAddFundsConfirm = (amount: number) => {
-    setWallet(prev => ({ ...prev, usdBalance: prev.usdBalance + amount }));
-    
-    // Add Transaction
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      type: 'Receive', // Treated as deposit
-      amountUsd: amount,
-      feeUsd: 0,
-      timestamp: new Date().toISOString(),
-      referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
-      status: 'Completed',
-      description: 'Wallet Deposit',
-      assetType: 'USD'
-    };
-    setTransactions(prev => [newTx, ...prev]);
-    
-    setActiveModal(null);
-    toast({ title: "Deposit Successful", description: `$${amount.toFixed(2)} added to wallet.` });
-  };
 
   const handleBuyConfirm = (grams: number, cost: number) => {
     if (wallet.usdBalance < cost) {
@@ -198,8 +176,6 @@ export default function FinaPay() {
 
   const handleQuickAction = (action: string) => {
     switch(action) {
-      case 'add_fund': setActiveModal('add_fund'); break;
-      case 'buy_gold': setActiveModal('buy'); break;
       case 'buy': setActiveModal('buy'); break;
       case 'sell': setActiveModal('sell'); break;
       case 'send': setActiveModal('send'); break;
@@ -279,11 +255,6 @@ export default function FinaPay() {
         </section>
 
         {/* Modals */}
-        <AddFundsModal 
-          isOpen={activeModal === 'add_fund'} 
-          onClose={() => setActiveModal(null)}
-          onConfirm={handleAddFundsConfirm}
-        />
         <BuyGoldModal 
           isOpen={activeModal === 'buy'} 
           onClose={() => setActiveModal(null)}
