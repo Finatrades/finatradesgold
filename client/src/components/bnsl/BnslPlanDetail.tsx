@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BnslPlan, BnslPayout } from '@/types/bnsl';
-import { ArrowLeft, CheckCircle2, AlertTriangle, PlayCircle, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, PlayCircle, Clock, Hourglass, TrendingUp } from 'lucide-react';
 import EarlyTerminationSimulator from './EarlyTerminationSimulator';
 
 interface BnslPlanDetailProps {
@@ -26,6 +26,29 @@ export default function BnslPlanDetail({
 
   // Find next scheduled payout
   const nextPayout = plan.payouts.find(p => p.status === 'Scheduled');
+
+  // --- Daily Accrual Logic ---
+  const dailyMarginUsd = plan.quarterlyMarginUsd / 90;
+  
+  // Find start of current period
+  // If no payouts paid yet, start date. If paid, use the scheduled date of the last paid one as the start of new period.
+  const paidPayouts = plan.payouts.filter(p => p.status === 'Paid');
+  const lastPayout = paidPayouts.length > 0 
+    ? paidPayouts[paidPayouts.length - 1] 
+    : null;
+    
+  const currentPeriodStart = lastPayout 
+    ? new Date(lastPayout.scheduledDate) 
+    : new Date(plan.startDate);
+    
+  const now = new Date();
+  // Ensure we don't calculate negative if start date is future (shouldn't happen for active)
+  const diffTime = Math.max(0, now.getTime() - currentPeriodStart.getTime());
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+  
+  // Cap accrued at the quarterly amount (e.g. if we are overdue)
+  const accruedMargin = Math.min(diffDays * dailyMarginUsd, plan.quarterlyMarginUsd);
+  // ---------------------------
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -78,15 +101,25 @@ export default function BnslPlanDetail({
               <p className="text-2xl font-bold text-white">${plan.basePriceComponentUsd.toLocaleString()}</p>
               <p className="text-xs text-white/40 mt-1">Paid at Maturity</p>
             </div>
-            <div>
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Margin</p>
-              <p className="text-2xl font-bold text-[#D4AF37]">${plan.totalMarginComponentUsd.toLocaleString()}</p>
-              <p className="text-xs text-white/40 mt-1">Paid Quarterly in Gold</p>
+            
+            {/* New Daily Accrual Card */}
+            <div className="bg-white/5 -m-2 p-2 rounded-lg border border-white/5">
+              <div className="flex items-center gap-2 mb-1">
+                 <Hourglass className="w-3 h-3 text-[#D4AF37] animate-pulse" />
+                 <p className="text-xs text-[#D4AF37] uppercase tracking-wider">Accrued Margin</p>
+              </div>
+              <p className="text-2xl font-bold text-white">${accruedMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-xs text-white/40 mt-1">
+                 Daily: ${dailyMarginUsd.toFixed(2)}
+                 <span className="ml-1 text-white/20">|</span>
+                 <span className="ml-1 text-[#D4AF37]">Unpaid</span>
+              </p>
             </div>
+
             <div>
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Margin Received</p>
+              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Paid Margin</p>
               <p className="text-2xl font-bold text-[#D4AF37]">{plan.totalPaidMarginGrams.toFixed(3)} g</p>
-              <p className="text-xs text-white/40 mt-1">${plan.totalPaidMarginUsd.toLocaleString()}</p>
+              <p className="text-xs text-white/40 mt-1">${plan.totalPaidMarginUsd.toLocaleString()} Value</p>
             </div>
           </div>
 
@@ -97,6 +130,8 @@ export default function BnslPlanDetail({
                <p className="text-xs text-white/60 mt-1 leading-relaxed">
                  You have sold this gold to Wingold. You no longer own it. You hold a contractual right to receive 
                  (1) Quarterly Margin in gold grams and (2) Base Price Component settlement at maturity.
+                 <br/><br/>
+                 <span className="text-[#D4AF37]">Note:</span> Margin accrues daily but is disbursed only on the scheduled quarterly dates.
                </p>
              </div>
           </div>
