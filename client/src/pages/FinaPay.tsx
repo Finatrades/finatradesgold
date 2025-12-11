@@ -236,7 +236,7 @@ export default function FinaPay() {
           <div className="flex items-center justify-between mb-3">
              <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider">Quick Actions</h3>
           </div>
-          <QuickActions onAction={handleQuickAction} />
+          <QuickActions onAction={handleQuickAction} goldPrice={wallet.goldPriceUsdPerGram} />
         </section>
 
         {/* 3. Charts & Analytics Grid */}
