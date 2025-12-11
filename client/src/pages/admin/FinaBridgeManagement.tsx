@@ -4,97 +4,84 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Briefcase, Eye, CheckCircle, XCircle, AlertTriangle, TrendingUp, Lock } from 'lucide-react';
+import { Briefcase, Eye, CheckCircle, XCircle, AlertTriangle, TrendingUp, Lock, FileText } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import TradeCaseDetailAdmin from '@/components/finabridge/admin/TradeCaseDetailAdmin';
-import { TradeCase, TradeDocument, ApprovalStep, AuditLogEntry, TradeCaseStatus, TradeRole } from '@/types/finabridge';
+import { TradeCase, TradeDocument, ApprovalStep, AuditLogEntry, TradeCaseStatus, LockedFundsSummary, LockStatus } from '@/types/finabridge';
 
 // --- MOCK DATA ---
+const CURRENT_GOLD_PRICE = 75.50;
+
 const MOCK_CASES: TradeCase[] = [
   {
     id: '1',
     reference: 'TF-2025-0007',
-    name: 'Electronics Import',
-    role: 'Importer',
-    importer: { 
-      id: 'IMP-001', name: 'TechGlobal Ltd', role: 'Importer', country: 'Switzerland', kycStatus: 'Approved', riskLevel: 'Low', sanctionsFlag: false 
-    },
-    exporter: { 
-      id: 'EXP-001', name: 'Shenzhen Electronics', role: 'Exporter', country: 'China', kycStatus: 'Approved', riskLevel: 'Medium', sanctionsFlag: false 
-    },
+    importer: { id: 'IMP-001', name: 'TechGlobal Ltd', role: 'Importer', country: 'Switzerland', kycStatus: 'Approved', riskLevel: 'Low' },
+    exporter: { id: 'EXP-001', name: 'Shenzhen Electronics', role: 'Exporter', country: 'China', kycStatus: 'Approved', riskLevel: 'Medium' },
+    contractNumber: 'CTR-2025-001',
     commodityDescription: 'Consumer Electronics Components',
     valueUsd: 150000,
     valueGoldGrams: 2000,
     lockedGoldGrams: 2000,
+    lockStatus: 'Locked',
     status: 'Funded – Docs Pending',
-    createdAt: '2025-03-01T10:00:00Z',
-    updatedAt: '2025-03-05T14:30:00Z',
-    incoterm: 'FOB',
+    paymentTerms: 'LC at Sight',
+    deliveryTerms: 'FOB Shenzhen',
     shipmentMethod: 'Air Freight',
     expectedDeliveryDate: '2025-04-15',
-    jurisdictionRisk: 'Medium',
+    createdAt: '2025-03-01T10:00:00Z',
+    updatedAt: '2025-03-05T14:30:00Z',
     amlFlags: [],
-    paymentTerms: 'LC at Sight',
-    deliveryTerms: 'FOB Shenzhen'
+    jurisdictionRisk: 'Medium'
   },
   {
     id: '2',
     reference: 'TF-2025-0008',
-    name: 'Coffee Beans Shipment',
-    role: 'Importer',
-    importer: { 
-      id: 'IMP-002', name: 'Alpine Coffee Roasters', role: 'Importer', country: 'Switzerland', kycStatus: 'Approved', riskLevel: 'Low', sanctionsFlag: false 
-    },
-    exporter: { 
-      id: 'EXP-002', name: 'Colombian Growers Co-op', role: 'Exporter', country: 'Colombia', kycStatus: 'In Progress', riskLevel: 'Medium', sanctionsFlag: false 
-    },
+    importer: { id: 'IMP-002', name: 'Alpine Coffee Roasters', role: 'Importer', country: 'Switzerland', kycStatus: 'Approved', riskLevel: 'Low' },
+    exporter: { id: 'EXP-002', name: 'Colombian Growers Co-op', role: 'Exporter', country: 'Colombia', kycStatus: 'In Progress', riskLevel: 'Medium' },
+    contractNumber: 'CTR-2025-002',
     commodityDescription: 'Premium Arabica Coffee Beans',
     valueUsd: 45000,
     valueGoldGrams: 600,
     lockedGoldGrams: 600,
+    lockStatus: 'Locked',
     status: 'Approved – Ready to Release',
-    createdAt: '2025-03-02T09:15:00Z',
-    updatedAt: '2025-03-10T11:20:00Z',
-    incoterm: 'CIF',
+    paymentTerms: 'Net 30',
+    deliveryTerms: 'CIF Hamburg',
     shipmentMethod: 'Sea Freight',
     expectedDeliveryDate: '2025-05-01',
-    jurisdictionRisk: 'Low',
+    createdAt: '2025-03-02T09:15:00Z',
+    updatedAt: '2025-03-10T11:20:00Z',
     amlFlags: [],
-    paymentTerms: 'Net 30',
-    deliveryTerms: 'CIF Hamburg'
+    jurisdictionRisk: 'Low'
   },
   {
     id: '3',
     reference: 'TF-2025-0009',
-    name: 'Heavy Machinery',
-    role: 'Importer',
-    importer: { 
-      id: 'IMP-003', name: 'BuildRight Construction', role: 'Importer', country: 'UAE', kycStatus: 'Approved', riskLevel: 'High', sanctionsFlag: false 
-    },
-    exporter: { 
-      id: 'EXP-003', name: 'German Engineering GmbH', role: 'Exporter', country: 'Germany', kycStatus: 'Approved', riskLevel: 'Low', sanctionsFlag: false 
-    },
+    importer: { id: 'IMP-003', name: 'BuildRight Construction', role: 'Importer', country: 'UAE', kycStatus: 'Approved', riskLevel: 'High' },
+    exporter: { id: 'EXP-003', name: 'German Engineering GmbH', role: 'Exporter', country: 'Germany', kycStatus: 'Approved', riskLevel: 'Low' },
+    contractNumber: 'CTR-2025-003',
     commodityDescription: 'Industrial Excavators',
     valueUsd: 850000,
     valueGoldGrams: 11500,
     lockedGoldGrams: 11500,
+    lockStatus: 'Locked',
     status: 'Under Review',
-    createdAt: '2025-03-08T16:45:00Z',
-    updatedAt: '2025-03-09T09:00:00Z',
-    incoterm: 'EXW',
+    paymentTerms: '50% Advance',
+    deliveryTerms: 'EXW Munich',
     shipmentMethod: 'Land/Sea',
     expectedDeliveryDate: '2025-06-20',
-    jurisdictionRisk: 'High',
+    createdAt: '2025-03-08T16:45:00Z',
+    updatedAt: '2025-03-09T09:00:00Z',
     amlFlags: ['High Transaction Value', 'High Risk Jurisdiction'],
-    paymentTerms: '50% Advance',
-    deliveryTerms: 'EXW Munich'
+    jurisdictionRisk: 'High'
   }
 ];
 
 const MOCK_DOCS: TradeDocument[] = [
-  { id: 'DOC-1', caseId: '1', type: 'Commercial Invoice', fileName: 'inv_2025_001.pdf', status: 'Approved', uploadedBy: 'TechGlobal Ltd', uploadedAt: '2025-03-02' },
+  { id: 'DOC-1', caseId: '1', type: 'Invoice', fileName: 'inv_2025_001.pdf', status: 'Approved', uploadedBy: 'TechGlobal Ltd', uploadedAt: '2025-03-02' },
   { id: 'DOC-2', caseId: '1', type: 'Bill of Lading', fileName: 'bl_air_882.pdf', status: 'Under Review', uploadedBy: 'Shenzhen Electronics', uploadedAt: '2025-03-05' },
-  { id: 'DOC-3', caseId: '2', type: 'Commercial Invoice', fileName: 'inv_coffee_99.pdf', status: 'Approved', uploadedBy: 'Alpine Coffee', uploadedAt: '2025-03-03' },
+  { id: 'DOC-3', caseId: '2', type: 'Invoice', fileName: 'inv_coffee_99.pdf', status: 'Approved', uploadedBy: 'Alpine Coffee', uploadedAt: '2025-03-03' },
   { id: 'DOC-4', caseId: '2', type: 'Certificate of Origin', fileName: 'co_colombia.pdf', status: 'Approved', uploadedBy: 'Colombian Growers', uploadedAt: '2025-03-04' },
 ];
 
@@ -109,9 +96,9 @@ const MOCK_APPROVALS: ApprovalStep[] = [
 ];
 
 const MOCK_AUDIT: AuditLogEntry[] = [
-  { id: 'LOG-1', caseId: '1', actorName: 'System', actorRole: 'System', actionType: 'Create Case', timestamp: '2025-03-01T10:00:00Z', details: 'Case created via API' },
-  { id: 'LOG-2', caseId: '1', actorName: 'TechGlobal', actorRole: 'Importer', actionType: 'Upload Document', timestamp: '2025-03-02T11:00:00Z', details: 'Uploaded Commercial Invoice' },
-  { id: 'LOG-3', caseId: '2', actorName: 'Charlie Chief', actorRole: 'Risk', actionType: 'StatusChange', timestamp: '2025-03-10T11:20:00Z', details: 'Approved for release', oldValue: 'Under Review', newValue: 'Approved – Ready to Release' },
+  { id: 'LOG-1', caseId: '1', actorName: 'System', actorRole: 'System', actionType: 'CaseCreated', timestamp: '2025-03-01T10:00:00Z', details: 'Case created via API' },
+  { id: 'LOG-2', caseId: '1', actorName: 'TechGlobal', actorRole: 'Importer', actionType: 'DocumentUploaded', timestamp: '2025-03-02T11:00:00Z', details: 'Uploaded Commercial Invoice' },
+  { id: 'LOG-3', caseId: '2', actorName: 'Charlie Chief', actorRole: 'Risk', actionType: 'StatusChanged', timestamp: '2025-03-10T11:20:00Z', details: 'Approved for release', oldValue: 'Under Review', newValue: 'Approved – Ready to Release' },
 ];
 
 export default function FinaBridgeManagement() {
@@ -130,8 +117,16 @@ export default function FinaBridgeManagement() {
     setDetailOpen(true);
   };
 
-  const updateCaseStatus = (id: string, newStatus: TradeCaseStatus) => {
-    setCases(cases.map(c => c.id === id ? { ...c, status: newStatus } : c));
+  const updateCaseStatus = (id: string, newStatus: TradeCaseStatus, lockStatus?: LockStatus, lockedGrams?: number) => {
+    setCases(cases.map(c => {
+      if (c.id !== id) return c;
+      return {
+        ...c,
+        status: newStatus,
+        lockStatus: lockStatus || c.lockStatus,
+        lockedGoldGrams: lockedGrams !== undefined ? lockedGrams : c.lockedGoldGrams
+      };
+    }));
   };
 
   const addAuditLog = (entry: AuditLogEntry) => {
@@ -146,17 +141,27 @@ export default function FinaBridgeManagement() {
     setApprovals(approvals.map(a => a.id === stepId ? { ...a, status, notes: notes || a.notes } : a));
   };
 
+  const updateRisk = (caseId: string, party: 'importer' | 'exporter', risk: any) => {
+     setCases(cases.map(c => {
+        if (c.id !== caseId) return c;
+        if (party === 'importer') return { ...c, importer: { ...c.importer, riskLevel: risk }};
+        return { ...c, exporter: { ...c.exporter, riskLevel: risk }};
+     }));
+  };
+
   // KPI Calculations
   const totalLocked = cases.reduce((sum, c) => sum + c.lockedGoldGrams, 0);
+  const totalLockedUsd = totalLocked * CURRENT_GOLD_PRICE;
   const pendingCases = cases.filter(c => c.status === 'Under Review' || c.status === 'Funded – Docs Pending').length;
   const highRiskCases = cases.filter(c => c.jurisdictionRisk === 'High' || c.jurisdictionRisk === 'Critical').length;
+  const activeCases = cases.filter(c => c.status !== 'Closed' && c.status !== 'Rejected').length;
 
   return (
     <AdminLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">FinaBridge – Admin Console</h1>
-          <p className="text-gray-500">Monitor gold-backed trade cases, KYC, and settlements.</p>
+          <h1 className="text-3xl font-bold text-gray-900">FinaBridge – Trade Finance Admin</h1>
+          <p className="text-gray-500">Manage gold-backed trade cases, documents, and settlements.</p>
         </div>
 
         {/* Overview KPIs */}
@@ -169,21 +174,35 @@ export default function FinaBridgeManagement() {
                  </div>
                  <div>
                    <p className="text-sm font-medium text-blue-900">Active Trade Cases</p>
-                   <h3 className="text-2xl font-bold text-blue-700">{cases.length}</h3>
+                   <h3 className="text-2xl font-bold text-blue-700">{activeCases}</h3>
                  </div>
                </div>
              </CardContent>
            </Card>
            
-           <Card className="bg-yellow-50 border-yellow-100">
+           <Card className="bg-amber-50 border-amber-100">
              <CardContent className="p-6">
                <div className="flex items-center gap-4">
-                 <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
-                   <Eye className="w-6 h-6" />
+                 <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
+                   <Lock className="w-6 h-6" />
                  </div>
                  <div>
-                   <p className="text-sm font-medium text-yellow-900">Pending Review</p>
-                   <h3 className="text-2xl font-bold text-yellow-700">{pendingCases}</h3>
+                   <p className="text-sm font-medium text-amber-900">Total Locked Gold</p>
+                   <h3 className="text-2xl font-bold text-amber-700">{totalLocked.toLocaleString()}g</h3>
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
+
+           <Card className="bg-green-50 border-green-100">
+             <CardContent className="p-6">
+               <div className="flex items-center gap-4">
+                 <div className="p-3 bg-green-100 text-green-700 rounded-lg">
+                   <TrendingUp className="w-6 h-6" />
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-green-900">Locked Value (USD)</p>
+                   <h3 className="text-2xl font-bold text-green-700">${totalLockedUsd.toLocaleString()}</h3>
                  </div>
                </div>
              </CardContent>
@@ -202,20 +221,6 @@ export default function FinaBridgeManagement() {
                </div>
              </CardContent>
            </Card>
-
-           <Card className="bg-amber-50 border-amber-100">
-             <CardContent className="p-6">
-               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
-                   <Lock className="w-6 h-6" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-amber-900">Total Locked Gold</p>
-                   <h3 className="text-2xl font-bold text-amber-700">{totalLocked.toLocaleString()}g</h3>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
         </div>
 
         <Tabs defaultValue="cases" className="w-full">
@@ -226,8 +231,11 @@ export default function FinaBridgeManagement() {
              <TabsTrigger value="locked" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
                Locked Funds
              </TabsTrigger>
+             <TabsTrigger value="compliance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+               Compliance & Risk
+             </TabsTrigger>
              <TabsTrigger value="audit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-               Audit & Logs
+               Audit Log
              </TabsTrigger>
            </TabsList>
 
@@ -256,7 +264,7 @@ export default function FinaBridgeManagement() {
                                      {tradeCase.importer.name} <span className="text-gray-400 mx-1">→</span> {tradeCase.exporter.name}
                                    </p>
                                    <p className="text-xs text-gray-500 mt-1">
-                                      Value: ${tradeCase.valueUsd.toLocaleString()} • Locked: {tradeCase.lockedGoldGrams}g Gold
+                                      Value: ${tradeCase.valueUsd.toLocaleString()} • Locked: {tradeCase.lockedGoldGrams}g Gold • {tradeCase.shipmentMethod}
                                    </p>
                                </div>
                              </div>
@@ -289,6 +297,7 @@ export default function FinaBridgeManagement() {
                                <div>
                                  <h4 className="font-bold text-gray-900">{tradeCase.lockedGoldGrams}g Gold</h4>
                                  <p className="text-sm text-gray-500">{tradeCase.reference} • {tradeCase.importer.name}</p>
+                                 <p className="text-xs text-gray-400">Lock Status: {tradeCase.lockStatus}</p>
                                </div>
                             </div>
                             <Badge variant="outline">{tradeCase.status}</Badge>
@@ -296,6 +305,36 @@ export default function FinaBridgeManagement() {
                        ))}
                      </div>
                   </CardContent>
+                </Card>
+             </TabsContent>
+             
+             <TabsContent value="compliance">
+                <Card>
+                   <CardHeader>
+                      <CardTitle>Compliance & Risk Monitor</CardTitle>
+                      <CardDescription>High risk cases and AML flags.</CardDescription>
+                   </CardHeader>
+                   <CardContent>
+                      <div className="space-y-4">
+                         {cases.map((c) => (
+                            <div key={c.id} className="p-4 border rounded-lg flex justify-between items-center">
+                               <div>
+                                  <div className="flex items-center gap-2">
+                                     <h4 className="font-bold">{c.reference}</h4>
+                                     <Badge className={c.jurisdictionRisk === 'High' ? 'bg-red-600' : c.jurisdictionRisk === 'Medium' ? 'bg-yellow-600' : 'bg-green-600'}>{c.jurisdictionRisk} Risk</Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1">{c.importer.name} ({c.importer.country}) → {c.exporter.name} ({c.exporter.country})</p>
+                                  {c.amlFlags.length > 0 && (
+                                     <div className="flex gap-1 mt-2">
+                                        {c.amlFlags.map(f => <Badge key={f} variant="outline" className="text-xs border-red-200 text-red-700 bg-red-50">{f}</Badge>)}
+                                     </div>
+                                  )}
+                               </div>
+                               <Button variant="outline" size="sm" onClick={() => handleOpenCase(c.id)}>Review</Button>
+                            </div>
+                         ))}
+                      </div>
+                   </CardContent>
                 </Card>
              </TabsContent>
 
@@ -336,6 +375,7 @@ export default function FinaBridgeManagement() {
                  documents={documents.filter(d => d.caseId === selectedCase.id)}
                  approvals={approvals.filter(a => a.caseId === selectedCase.id)}
                  auditLogs={auditLogs.filter(a => a.caseId === selectedCase.id)}
+                 currentGoldPrice={CURRENT_GOLD_PRICE}
                  onClose={() => setDetailOpen(false)}
                  onUpdateStatus={updateCaseStatus}
                  onAddAuditLog={addAuditLog}

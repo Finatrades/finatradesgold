@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock, AlertTriangle, FileText, Upload } from 'lucide-react';
-import { TradeCase, TradeDocument, ApprovalStep, AuditLogEntry } from '@/types/finabridge';
+import { CheckCircle, XCircle, Clock, AlertTriangle, FileText, Upload, Lock, ShieldCheck } from 'lucide-react';
+import { TradeCase, TradeDocument, ApprovalStep, AuditLogEntry, TradeCaseStatus, LockStatus } from '@/types/finabridge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -18,8 +18,9 @@ interface TradeCaseDetailAdminProps {
   documents: TradeDocument[];
   approvals: ApprovalStep[];
   auditLogs: AuditLogEntry[];
+  currentGoldPrice: number;
   onClose: () => void;
-  onUpdateStatus: (id: string, newStatus: any) => void;
+  onUpdateStatus: (id: string, newStatus: TradeCaseStatus, lockStatus?: LockStatus, lockedGrams?: number) => void;
   onAddAuditLog: (entry: AuditLogEntry) => void;
   onUpdateDocumentStatus: (docId: string, status: any) => void;
   onUpdateApproval: (stepId: string, status: any, notes?: string) => void;
@@ -30,6 +31,7 @@ export default function TradeCaseDetailAdmin({
   documents, 
   approvals, 
   auditLogs, 
+  currentGoldPrice,
   onClose,
   onUpdateStatus,
   onAddAuditLog,
@@ -40,14 +42,37 @@ export default function TradeCaseDetailAdmin({
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showReleaseDialog, setShowReleaseDialog] = useState(false);
 
+  const handleFundCase = () => {
+    onUpdateStatus(tradeCase.id, 'Funded – Docs Pending', 'Locked', tradeCase.valueGoldGrams); // Simulate locking full value
+    onAddAuditLog({
+      id: crypto.randomUUID(),
+      caseId: tradeCase.id,
+      actorName: 'Admin User',
+      actorRole: 'Admin',
+      actionType: 'FundingLocked',
+      timestamp: new Date().toISOString(),
+      details: `Funding locked: ${tradeCase.valueGoldGrams}g Gold reserved`,
+      oldValue: tradeCase.status,
+      newValue: 'Funded – Docs Pending'
+    });
+    toast.success('Case Funded & Settlement Locked');
+  };
+
   const handleApproveCase = () => {
+    // Check if mandatory approvals are done
+    const pending = approvals.some(a => a.status !== 'Approved');
+    if (pending) {
+      toast.warning('All approval steps must be completed first.');
+      return;
+    }
+
     onUpdateStatus(tradeCase.id, 'Approved – Ready to Release');
     onAddAuditLog({
       id: crypto.randomUUID(),
       caseId: tradeCase.id,
       actorName: 'Admin User',
       actorRole: 'Admin',
-      actionType: 'StatusChange',
+      actionType: 'StatusChanged',
       timestamp: new Date().toISOString(),
       details: 'Case approved for settlement release',
       oldValue: tradeCase.status,
@@ -57,13 +82,13 @@ export default function TradeCaseDetailAdmin({
   };
 
   const handleRejectCase = () => {
-    onUpdateStatus(tradeCase.id, 'Rejected');
+    onUpdateStatus(tradeCase.id, 'Rejected', 'Not Locked', 0);
     onAddAuditLog({
       id: crypto.randomUUID(),
       caseId: tradeCase.id,
       actorName: 'Admin User',
       actorRole: 'Admin',
-      actionType: 'StatusChange',
+      actionType: 'StatusChanged',
       timestamp: new Date().toISOString(),
       details: `Case rejected. Reason: ${rejectReason}`,
       oldValue: tradeCase.status,
@@ -74,13 +99,13 @@ export default function TradeCaseDetailAdmin({
   };
 
   const handleReleaseSettlement = () => {
-    onUpdateStatus(tradeCase.id, 'Released');
+    onUpdateStatus(tradeCase.id, 'Released', 'Released', 0);
     onAddAuditLog({
       id: crypto.randomUUID(),
       caseId: tradeCase.id,
       actorName: 'Admin User',
       actorRole: 'Admin',
-      actionType: 'ReleaseFunds',
+      actionType: 'FundsReleased',
       timestamp: new Date().toISOString(),
       details: `Settlement of ${tradeCase.lockedGoldGrams}g Gold released to Exporter`,
       oldValue: 'Approved – Ready to Release',
@@ -90,6 +115,22 @@ export default function TradeCaseDetailAdmin({
     toast.success('Settlement Released Successfully');
   };
 
+  const handleMoveToReview = () => {
+    onUpdateStatus(tradeCase.id, 'Under Review');
+    onAddAuditLog({
+      id: crypto.randomUUID(),
+      caseId: tradeCase.id,
+      actorName: 'Admin User',
+      actorRole: 'Admin',
+      actionType: 'StatusChanged',
+      timestamp: new Date().toISOString(),
+      details: 'Case moved to Under Review',
+      oldValue: tradeCase.status,
+      newValue: 'Under Review'
+    });
+    toast.success('Case Moved to Review');
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-lg shadow-xl overflow-hidden">
       {/* Header */}
@@ -97,7 +138,7 @@ export default function TradeCaseDetailAdmin({
         <div>
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-bold text-gray-900">{tradeCase.reference}</h2>
-            <Badge variant="outline" className="bg-white">{tradeCase.status}</Badge>
+            <Badge variant="outline" className="bg-white text-base py-1 px-3">{tradeCase.status}</Badge>
             <Badge className={
               tradeCase.jurisdictionRisk === 'Critical' ? 'bg-red-600' :
               tradeCase.jurisdictionRisk === 'High' ? 'bg-orange-600' :
@@ -106,23 +147,37 @@ export default function TradeCaseDetailAdmin({
               {tradeCase.jurisdictionRisk} Risk
             </Badge>
           </div>
-          <p className="text-gray-500 mt-1">Created on {new Date(tradeCase.createdAt).toLocaleDateString()}</p>
+          <p className="text-gray-500 mt-1">Contract: {tradeCase.contractNumber} • Created on {new Date(tradeCase.createdAt).toLocaleDateString()}</p>
         </div>
         
         <div className="flex gap-2">
            <Button variant="outline" onClick={onClose}>Close</Button>
            
+           {/* Actions based on status */}
+           {tradeCase.status === 'Draft' || tradeCase.status === 'Funding Pending' ? (
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleFundCase}>
+                Mark as Funded (Lock)
+              </Button>
+           ) : null}
+
+           {tradeCase.status === 'Funded – Docs Pending' ? (
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleMoveToReview}>
+                Move to Under Review
+              </Button>
+           ) : null}
+
            {tradeCase.status === 'Approved – Ready to Release' && (
              <Button className="bg-amber-500 hover:bg-amber-600 text-white border-amber-600" onClick={() => setShowReleaseDialog(true)}>
                Release Settlement
              </Button>
            )}
            
-           {(tradeCase.status !== 'Approved – Ready to Release' && tradeCase.status !== 'Released' && tradeCase.status !== 'Rejected') && (
-             <>
-               <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>Reject</Button>
-               <Button className="bg-green-600 hover:bg-green-700" onClick={handleApproveCase}>Approve Case</Button>
-             </>
+           {(tradeCase.status === 'Under Review') && (
+             <Button className="bg-green-600 hover:bg-green-700" onClick={handleApproveCase}>Approve Case</Button>
+           )}
+
+           {(tradeCase.status !== 'Released' && tradeCase.status !== 'Rejected' && tradeCase.status !== 'Closed') && (
+             <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>Reject</Button>
            )}
         </div>
       </div>
@@ -134,7 +189,7 @@ export default function TradeCaseDetailAdmin({
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
-            <TabsTrigger value="kyc">KYC & Risk</TabsTrigger>
+            <TabsTrigger value="locked">Locked Funds</TabsTrigger>
             <TabsTrigger value="audit">Audit Trail</TabsTrigger>
           </TabsList>
 
@@ -196,17 +251,23 @@ export default function TradeCaseDetailAdmin({
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-gray-500">Incoterm</Label>
-                        <p className="font-medium">{tradeCase.incoterm}</p>
+                        <Label className="text-gray-500">Delivery Terms</Label>
+                        <p className="font-medium">{tradeCase.deliveryTerms}</p>
                       </div>
                       <div>
                         <Label className="text-gray-500">Method</Label>
                         <p className="font-medium">{tradeCase.shipmentMethod}</p>
                       </div>
                     </div>
-                    <div>
-                      <Label className="text-gray-500">Expected Delivery</Label>
-                      <p className="font-medium">{new Date(tradeCase.expectedDeliveryDate).toLocaleDateString()}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div>
+                        <Label className="text-gray-500">Payment Terms</Label>
+                        <p className="font-medium">{tradeCase.paymentTerms}</p>
+                      </div>
+                      <div>
+                        <Label className="text-gray-500">Expected Delivery</Label>
+                        <p className="font-medium">{new Date(tradeCase.expectedDeliveryDate).toLocaleDateString()}</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -218,15 +279,17 @@ export default function TradeCaseDetailAdmin({
                   <CardContent>
                     <div className="flex items-center gap-3 mb-4">
                        <div className="p-2 bg-amber-100 rounded-full text-amber-700">
-                         <CheckCircle className="w-6 h-6" />
+                         {tradeCase.lockStatus === 'Locked' ? <Lock className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
                        </div>
                        <div>
-                         <p className="text-sm font-medium text-amber-900">Locked in FinaVault</p>
+                         <p className="text-sm font-medium text-amber-900">Lock Status: {tradeCase.lockStatus}</p>
                          <p className="text-2xl font-bold text-amber-700">{tradeCase.lockedGoldGrams}g</p>
                        </div>
                     </div>
                     <p className="text-sm text-amber-800 bg-amber-100 p-3 rounded">
-                      This gold is reserved for settlement and is not transferable until released by FinaBridge Admin.
+                      {tradeCase.lockStatus === 'Locked' 
+                        ? "This gold is reserved for settlement and is not transferable until released by FinaBridge Admin." 
+                        : "Settlement funds are currently not locked or have been released."}
                     </p>
                   </CardContent>
                 </Card>
@@ -242,6 +305,11 @@ export default function TradeCaseDetailAdmin({
                </CardHeader>
                <CardContent>
                  <div className="space-y-4">
+                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <span className="font-medium text-sm">Progress</span>
+                      <span className="text-sm">{documents.filter(d => d.status === 'Approved').length} / {documents.length} Approved</span>
+                   </div>
+                   
                    {documents.map(doc => (
                      <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                         <div className="flex items-center gap-4">
@@ -251,6 +319,7 @@ export default function TradeCaseDetailAdmin({
                            <div>
                              <p className="font-bold text-gray-900">{doc.type}</p>
                              <p className="text-sm text-gray-500">{doc.fileName || 'No file uploaded'}</p>
+                             <p className="text-xs text-gray-400">Uploaded by {doc.uploadedBy} on {doc.uploadedAt}</p>
                            </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -327,80 +396,46 @@ export default function TradeCaseDetailAdmin({
              </Card>
           </TabsContent>
 
-          <TabsContent value="kyc" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <Card>
-                 <CardHeader>
-                   <CardTitle className="flex items-center justify-between">
-                     Importer KYC
-                     <Badge>{tradeCase.importer.kycStatus}</Badge>
-                   </CardTitle>
-                 </CardHeader>
-                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                       <span className="text-gray-500">Legal Name</span>
-                       <span className="font-medium">{tradeCase.importer.name}</span>
-                       <span className="text-gray-500">Country</span>
-                       <span className="font-medium">{tradeCase.importer.country}</span>
-                       <span className="text-gray-500">Sanctions Check</span>
-                       <span className={tradeCase.importer.sanctionsFlag ? 'text-red-600 font-bold' : 'text-green-600'}>
-                         {tradeCase.importer.sanctionsFlag ? 'FLAGGED' : 'Clear'}
-                       </span>
-                    </div>
-                    <Separator />
-                    <div>
-                       <Label className="mb-2 block">Risk Assessment</Label>
-                       <Select defaultValue={tradeCase.importer.riskLevel}>
-                          <SelectTrigger>
-                             <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="Low">Low Risk</SelectItem>
-                             <SelectItem value="Medium">Medium Risk</SelectItem>
-                             <SelectItem value="High">High Risk</SelectItem>
-                             <SelectItem value="Critical">Critical Risk</SelectItem>
-                          </SelectContent>
-                       </Select>
-                    </div>
-                 </CardContent>
-               </Card>
-
-               <Card>
-                 <CardHeader>
-                   <CardTitle className="flex items-center justify-between">
-                     Exporter KYC
-                     <Badge>{tradeCase.exporter.kycStatus}</Badge>
-                   </CardTitle>
-                 </CardHeader>
-                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                       <span className="text-gray-500">Legal Name</span>
-                       <span className="font-medium">{tradeCase.exporter.name}</span>
-                       <span className="text-gray-500">Country</span>
-                       <span className="font-medium">{tradeCase.exporter.country}</span>
-                       <span className="text-gray-500">Sanctions Check</span>
-                       <span className={tradeCase.exporter.sanctionsFlag ? 'text-red-600 font-bold' : 'text-green-600'}>
-                         {tradeCase.exporter.sanctionsFlag ? 'FLAGGED' : 'Clear'}
-                       </span>
-                    </div>
-                    <Separator />
-                    <div>
-                       <Label className="mb-2 block">Risk Assessment</Label>
-                       <Select defaultValue={tradeCase.exporter.riskLevel}>
-                          <SelectTrigger>
-                             <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="Low">Low Risk</SelectItem>
-                             <SelectItem value="Medium">Medium Risk</SelectItem>
-                             <SelectItem value="High">High Risk</SelectItem>
-                             <SelectItem value="Critical">Critical Risk</SelectItem>
-                          </SelectContent>
-                       </Select>
-                    </div>
-                 </CardContent>
-               </Card>
-            </div>
+          <TabsContent value="locked" className="space-y-4">
+             <Card>
+               <CardHeader>
+                 <CardTitle>Lock Timeline</CardTitle>
+               </CardHeader>
+               <CardContent>
+                  <div className="space-y-6">
+                     <div className="flex items-start gap-4">
+                        <div className="p-2 bg-green-100 text-green-700 rounded-full mt-1">
+                           <CheckCircle className="w-4 h-4" />
+                        </div>
+                        <div>
+                           <p className="font-bold">FinaPay → FinaFinance</p>
+                           <p className="text-sm text-gray-600">Funds transferred from Importer's Wallet to Trade Finance Wallet.</p>
+                           <p className="text-xs text-gray-400 mt-1">Status: Completed</p>
+                        </div>
+                     </div>
+                     <div className="flex items-start gap-4">
+                        <div className={`p-2 rounded-full mt-1 ${tradeCase.lockStatus === 'Locked' || tradeCase.lockStatus === 'Released' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'}`}>
+                           <Lock className="w-4 h-4" />
+                        </div>
+                        <div>
+                           <p className="font-bold">Settlement Lock</p>
+                           <p className="text-sm text-gray-600">{tradeCase.lockedGoldGrams}g Gold reserved in FinaVault Escrow.</p>
+                           <p className="text-xs text-gray-400 mt-1">Status: {tradeCase.lockStatus}</p>
+                        </div>
+                     </div>
+                     <div className="flex items-start gap-4">
+                        <div className={`p-2 rounded-full mt-1 ${tradeCase.status === 'Released' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                           <ShieldCheck className="w-4 h-4" />
+                        </div>
+                        <div>
+                           <p className="font-bold">Release to Exporter</p>
+                           <p className="text-sm text-gray-600">Funds released to Exporter's FinaPay Wallet upon approval.</p>
+                           <p className="text-xs text-gray-400 mt-1">Status: {tradeCase.status === 'Released' ? 'Completed' : 'Pending'}</p>
+                        </div>
+                     </div>
+                  </div>
+               </CardContent>
+             </Card>
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-4">
@@ -471,13 +506,16 @@ export default function TradeCaseDetailAdmin({
                <span className="text-amber-700">From: FinaVault Escrow</span>
                <span className="text-amber-700">To: {tradeCase.exporter.name}</span>
              </div>
+             <div className="mt-2 text-xs text-amber-600 text-center">
+               ~${(tradeCase.lockedGoldGrams * currentGoldPrice).toLocaleString()} USD value
+             </div>
           </div>
           <p className="text-sm text-gray-500">
-             This action is irreversible. The gold will be immediately credited to the exporter's account.
+            This action is irreversible. The locked gold will be immediately credited to the exporter's wallet.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReleaseDialog(false)}>Cancel</Button>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-white" onClick={handleReleaseSettlement}>Confirm Release</Button>
+            <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleReleaseSettlement}>Release Funds</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
