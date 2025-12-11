@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Banknote, Send, ArrowDownLeft, TrendingUp, Briefcase } from 'lucide-react';
+import { ShoppingCart, Send, ArrowDownLeft, TrendingUp, Plus, ArrowDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface QuickActionsProps {
@@ -12,29 +12,51 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
   
   // Calculate estimated rates
   const buyRate = goldPrice * 1.005;  // +0.5%
-  const sellRate = goldPrice * 0.985; // -1.5%
 
   const actions = [
+    { 
+      id: 'add_fund', 
+      label: 'Add Fund', 
+      icon: <Plus className="w-4 h-4" />, 
+      color: 'text-blue-500', 
+      bg: 'bg-blue-500/10' 
+    },
     { 
       id: 'buy', 
       label: 'Buy Gold', 
       subLabel: `@ $${buyRate.toFixed(2)}`,
       icon: <ShoppingCart className="w-4 h-4" />, 
-      color: 'text-green-400', 
-      bg: 'bg-green-400/10' 
+      color: 'text-green-500', 
+      bg: 'bg-green-500/10' 
     },
     { 
-      id: 'sell', 
-      label: 'Sell Gold', 
-      subLabel: `@ $${sellRate.toFixed(2)}`,
-      icon: <Banknote className="w-4 h-4" />, 
-      color: 'text-red-400', 
-      bg: 'bg-red-400/10' 
+      id: 'deposit_gold', 
+      label: 'Deposit Gold', 
+      icon: <ArrowDown className="w-4 h-4" />, 
+      color: 'text-amber-500', 
+      bg: 'bg-amber-500/10' 
     },
-    { id: 'send', label: 'Send Gold', icon: <Send className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-400/10' },
-    { id: 'request', label: 'Request', icon: <ArrowDownLeft className="w-4 h-4" />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { id: 'bnsl', label: 'BNSL Invest', icon: <TrendingUp className="w-4 h-4" />, color: 'text-[#FF2FBF]', bg: 'bg-[#FF2FBF]/10' },
-    { id: 'trade', label: 'Trade Finance', icon: <Briefcase className="w-4 h-4" />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
+    { 
+      id: 'send', 
+      label: 'Send Payment', 
+      icon: <Send className="w-4 h-4" />, 
+      color: 'text-orange-500', 
+      bg: 'bg-orange-500/10' 
+    },
+    { 
+      id: 'request', 
+      label: 'Request Payment', 
+      icon: <ArrowDownLeft className="w-4 h-4" />, 
+      color: 'text-purple-500', 
+      bg: 'bg-purple-500/10' 
+    },
+    { 
+      id: 'bnsl', 
+      label: 'BNSL', 
+      icon: <TrendingUp className="w-4 h-4" />, 
+      color: 'text-[#FF2FBF]', 
+      bg: 'bg-[#FF2FBF]/10' 
+    },
   ];
 
   return (

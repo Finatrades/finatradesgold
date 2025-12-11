@@ -226,6 +226,12 @@ export default function FinaPay() {
       case 'sell': setActiveModal('sell'); break;
       case 'send': setActiveModal('send'); break;
       case 'request': setActiveModal('request'); break;
+      case 'add_fund':
+        toast({ title: "Coming Soon", description: "Add Fund functionality will be available shortly." });
+        break;
+      case 'deposit_gold':
+        toast({ title: "Coming Soon", description: "Gold Deposit functionality will be available shortly." });
+        break;
       case 'bnsl': 
         setLocation('/bnsl');
         break;
