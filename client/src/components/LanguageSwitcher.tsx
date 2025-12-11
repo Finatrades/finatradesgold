@@ -32,8 +32,8 @@ export default function LanguageSwitcher({ variant = 'default' }) {
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
           isLight 
-            ? 'bg-white/20 border border-white/30 text-white hover:bg-white/30' 
-            : 'bg-white/80 border border-[#8A2BE2]/20 text-[#4A4A4A] hover:border-[#8A2BE2]/40'
+            ? 'bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20' 
+            : 'bg-background border border-border text-foreground hover:bg-muted'
         } backdrop-blur-sm`}
       >
         <Globe className="w-4 h-4" />
@@ -48,7 +48,7 @@ export default function LanguageSwitcher({ variant = 'default' }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full right-0 mt-2 w-40 rounded-xl bg-white border border-[#8A2BE2]/20 shadow-lg overflow-hidden z-50"
+            className="absolute top-full right-0 mt-2 w-40 rounded-xl bg-popover border border-border shadow-lg overflow-hidden z-50"
           >
             {languages.map((lang) => (
               <button
@@ -59,14 +59,14 @@ export default function LanguageSwitcher({ variant = 'default' }) {
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
                   language === lang.code 
-                    ? 'bg-gradient-to-r from-[#8A2BE2]/10 to-[#FF2FBF]/10 text-[#8A2BE2]' 
-                    : 'text-[#4A4A4A] hover:bg-gray-50'
+                    ? 'bg-muted text-primary' 
+                    : 'text-foreground hover:bg-muted/50'
                 }`}
               >
                 <span className="text-lg">{lang.flag}</span>
                 <span className="font-medium">{lang.label}</span>
                 {language === lang.code && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF]" />
+                  <div className="ml-auto w-2 h-2 rounded-full bg-primary" />
                 )}
               </button>
             ))}

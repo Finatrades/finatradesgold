@@ -73,12 +73,12 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
+      <DialogContent className="bg-white border-border text-foreground sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="text-[#D4AF37]">Buy Gold</span>
+            <span className="text-secondary">Buy Gold</span>
           </DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogDescription className="text-muted-foreground">
             Convert fiat to digital gold instantly.
           </DialogDescription>
         </DialogHeader>
@@ -91,21 +91,21 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
             <RadioGroup value={method} onValueChange={setMethod} className="grid grid-cols-3 gap-2">
               <div>
                 <RadioGroupItem value="card" id="card" className="peer sr-only" />
-                <Label htmlFor="card" className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer peer-data-[state=checked]:border-[#D4AF37] peer-data-[state=checked]:text-[#D4AF37] transition-all text-xs text-center h-20">
+                <Label htmlFor="card" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary transition-all text-xs text-center h-20 text-muted-foreground">
                   <CreditCard className="w-5 h-5 mb-1" />
                   Card
                 </Label>
               </div>
               <div>
                 <RadioGroupItem value="crypto" id="crypto" className="peer sr-only" />
-                <Label htmlFor="crypto" className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer peer-data-[state=checked]:border-[#D4AF37] peer-data-[state=checked]:text-[#D4AF37] transition-all text-xs text-center h-20">
+                <Label htmlFor="crypto" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary transition-all text-xs text-center h-20 text-muted-foreground">
                   <Wallet className="w-5 h-5 mb-1" />
                   Crypto
                 </Label>
               </div>
               <div>
                 <RadioGroupItem value="bank" id="bank" className="peer sr-only" />
-                <Label htmlFor="bank" className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer peer-data-[state=checked]:border-[#D4AF37] peer-data-[state=checked]:text-[#D4AF37] transition-all text-xs text-center h-20">
+                <Label htmlFor="bank" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary transition-all text-xs text-center h-20 text-muted-foreground">
                   <Building className="w-5 h-5 mb-1" />
                   Bank
                 </Label>
@@ -121,18 +121,18 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
                 <Input 
                   type="number" 
                   placeholder="0.0000" 
-                  className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                  className="h-12 text-lg font-bold bg-background border-input pr-16"
                   value={grams}
                   onChange={(e) => handleGramsChange(e.target.value)}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37] font-medium">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary font-medium">
                   g
                 </div>
               </div>
             </div>
 
             <div className="flex justify-center -my-2 relative z-10">
-               <div className="bg-[#1A0A2E] border border-white/10 p-1.5 rounded-full text-white/40">
+               <div className="bg-white border border-border p-1.5 rounded-full text-muted-foreground shadow-sm">
                   <ArrowRightLeft className="w-4 h-4 rotate-90" />
                </div>
             </div>
@@ -143,11 +143,11 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
                 <Input 
                   type="number" 
                   placeholder="0.00" 
-                  className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                  className="h-12 text-lg font-bold bg-background border-input pr-16"
                   value={usd}
                   onChange={(e) => handleUsdChange(e.target.value)}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400 font-medium">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 font-medium">
                   USD
                 </div>
               </div>
@@ -156,25 +156,25 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
 
           {/* Summary Section Inline */}
           {numericGrams > 0 && (
-             <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-2 text-sm">
+             <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-white/60">Price / g</span>
-                  <span className="text-white font-medium">${goldPrice.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Price / g</span>
+                  <span className="text-foreground font-medium">${goldPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/60">Fee (0.5%)</span>
-                  <span className="text-white font-medium">${fee.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Fee (0.5%)</span>
+                  <span className="text-foreground font-medium">${fee.toFixed(2)}</span>
                 </div>
-                <Separator className="bg-white/10 my-2" />
+                <Separator className="bg-border my-2" />
                 <div className="flex justify-between items-center">
-                  <span className="text-white/80 font-medium">Total Cost</span>
-                  <span className="text-xl font-bold text-[#D4AF37]">${totalCost.toFixed(2)}</span>
+                  <span className="text-foreground font-medium">Total Cost</span>
+                  <span className="text-xl font-bold text-secondary">${totalCost.toFixed(2)}</span>
                 </div>
              </div>
           )}
 
           <Button 
-            className="w-full h-12 bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold"
+            className="w-full h-12 bg-secondary text-white hover:bg-secondary/90 font-bold"
             disabled={numericGrams <= 0 || isLoading}
             onClick={handleConfirm}
           >

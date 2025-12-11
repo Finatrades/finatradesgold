@@ -48,7 +48,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[450px] p-0 overflow-hidden gap-0">
+      <DialogContent className="bg-white border-border text-foreground sm:max-w-[450px] p-0 overflow-hidden gap-0">
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="sr-only">Transaction Details</DialogTitle>
           <div className="flex flex-col items-center justify-center space-y-4 pt-2">
@@ -56,7 +56,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                {getIcon(transaction.type, transaction.assetType)}
             </div>
             <div className="text-center">
-              <h2 className={`text-2xl font-bold ${transaction.type === 'Buy' || transaction.type === 'Receive' ? 'text-green-400' : 'text-white'}`}>
+              <h2 className={`text-2xl font-bold ${transaction.type === 'Buy' || transaction.type === 'Receive' ? 'text-green-600' : 'text-foreground'}`}>
                 {transaction.type === 'Buy' || transaction.type === 'Receive' ? '+' : '-'} 
                 {transaction.assetType === 'GOLD' 
                   ? `${transaction.amountGrams?.toFixed(4)} g` 
@@ -64,12 +64,12 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                 }
               </h2>
               {transaction.assetType === 'GOLD' && (
-                <p className="text-sm text-white/40 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   ≈ ${transaction.amountUsd.toFixed(2)} USD
                 </p>
               )}
               <div className="flex items-center justify-center gap-2 mt-2">
-                <Badge variant="outline" className="bg-white/5 border-white/10 text-white/60 font-normal">
+                <Badge variant="outline" className="bg-muted/50 border-border text-muted-foreground font-normal">
                   {getStatusIcon(transaction.status)}
                   <span className="ml-1.5">{transaction.status}</span>
                 </Badge>
@@ -79,47 +79,47 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
         </DialogHeader>
 
         <div className="p-6 space-y-6">
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-3">
+          <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-3">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-white/40">Transaction Type</span>
+              <span className="text-muted-foreground">Transaction Type</span>
               <span className="font-medium">{transaction.type} {transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}</span>
             </div>
-            <Separator className="bg-white/5" />
+            <Separator className="bg-border" />
             <div className="flex justify-between items-center text-sm">
-              <span className="text-white/40">Date & Time</span>
+              <span className="text-muted-foreground">Date & Time</span>
               <span className="font-medium">
                 {new Date(transaction.timestamp).toLocaleDateString()} at {new Date(transaction.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               </span>
             </div>
-            <Separator className="bg-white/5" />
+            <Separator className="bg-border" />
             <div className="flex justify-between items-center text-sm">
-              <span className="text-white/40">Reference ID</span>
+              <span className="text-muted-foreground">Reference ID</span>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs bg-black/20 px-2 py-1 rounded text-white/60">{transaction.referenceId}</span>
-                <Copy className="w-3 h-3 text-white/20 hover:text-white cursor-pointer" />
+                <span className="font-mono text-xs bg-muted px-2 py-1 rounded text-muted-foreground">{transaction.referenceId}</span>
+                <Copy className="w-3 h-3 text-muted-foreground hover:text-foreground cursor-pointer" />
               </div>
             </div>
             {transaction.description && (
               <>
-                <Separator className="bg-white/5" />
+                <Separator className="bg-border" />
                 <div className="flex justify-between items-start text-sm">
-                  <span className="text-white/40">Description</span>
+                  <span className="text-muted-foreground">Description</span>
                   <span className="font-medium text-right max-w-[200px]">{transaction.description}</span>
                 </div>
               </>
             )}
-             <Separator className="bg-white/5" />
+             <Separator className="bg-border" />
              <div className="flex justify-between items-center text-sm">
-              <span className="text-white/40">Network Fee</span>
-              <span className="font-medium text-white/60">${transaction.feeUsd.toFixed(2)}</span>
+              <span className="text-muted-foreground">Network Fee</span>
+              <span className="font-medium text-muted-foreground">${transaction.feeUsd.toFixed(2)}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-             <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white/60 hover:text-white w-full">
+             <Button variant="outline" className="border-border hover:bg-muted text-muted-foreground hover:text-foreground w-full">
                <Share2 className="w-4 h-4 mr-2" /> Share
              </Button>
-             <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white/60 hover:text-white w-full">
+             <Button variant="outline" className="border-border hover:bg-muted text-muted-foreground hover:text-foreground w-full">
                <Download className="w-4 h-4 mr-2" /> Receipt
              </Button>
           </div>

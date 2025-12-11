@@ -45,17 +45,17 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => onAction(action.id)}
-          className="flex flex-col items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all gap-1.5 group min-h-[100px]"
+          className="flex flex-col items-center justify-center p-3 rounded-xl bg-white shadow-sm border border-border hover:bg-muted/50 hover:border-secondary/20 transition-all gap-1.5 group min-h-[100px]"
         >
           <div className={`p-2.5 rounded-full ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
             {action.icon}
           </div>
           <div className="text-center">
-             <span className="text-xs font-medium text-white/80 group-hover:text-white transition-colors block">
+             <span className="text-xs font-medium text-foreground group-hover:text-secondary transition-colors block">
                {action.label}
              </span>
              {action.subLabel && (
-               <span className="text-[10px] text-white/40 block mt-0.5 font-mono">
+               <span className="text-[10px] text-muted-foreground block mt-0.5 font-mono">
                  {action.subLabel}
                </span>
              )}

@@ -24,11 +24,11 @@ export default function WalletAnalytics({ wallet }: WalletAnalyticsProps) {
   const totalValue = goldValue + cashValue + cryptoValue;
 
   return (
-    <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full">
-      <CardHeader className="pb-2 border-b border-white/5">
-        <CardTitle className="text-lg font-medium text-white flex items-center justify-between">
+    <Card className="bg-white shadow-sm border border-border h-full">
+      <CardHeader className="pb-2 border-b border-border">
+        <CardTitle className="text-lg font-medium text-foreground flex items-center justify-between">
           <span>Asset Allocation</span>
-          <Info className="w-4 h-4 text-white/40 cursor-help" />
+          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
@@ -51,15 +51,15 @@ export default function WalletAnalytics({ wallet }: WalletAnalyticsProps) {
                  </Pie>
                  <Tooltip 
                     formatter={(value: number) => `$${value.toLocaleString()}`}
-                    contentStyle={{ backgroundColor: '#0D0515', borderColor: 'rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#fff', borderColor: 'rgba(0,0,0,0.1)', color: '#000', borderRadius: '8px' }}
+                    itemStyle={{ color: '#000' }}
                  />
                </PieChart>
              </ResponsiveContainer>
              {/* Center Text */}
              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xs text-white/40">Total</span>
-                <span className="text-sm font-bold text-white">${(totalValue / 1000).toFixed(1)}k</span>
+                <span className="text-xs text-muted-foreground">Total</span>
+                <span className="text-sm font-bold text-foreground">${(totalValue / 1000).toFixed(1)}k</span>
              </div>
           </div>
 
@@ -68,11 +68,11 @@ export default function WalletAnalytics({ wallet }: WalletAnalyticsProps) {
               <div key={item.name} className="flex items-center justify-between group cursor-pointer">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-sm text-white/80 group-hover:text-white transition-colors">{item.name}</span>
+                  <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">{item.name}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-white">${item.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                  <p className="text-xs text-white/40">{((item.value / totalValue) * 100).toFixed(1)}%</p>
+                  <p className="text-sm font-medium text-foreground">${item.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <p className="text-xs text-muted-foreground">{((item.value / totalValue) * 100).toFixed(1)}%</p>
                 </div>
               </div>
             ))}

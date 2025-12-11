@@ -71,11 +71,11 @@ export default function FloatingAgentChat() {
             initial={{ opacity: 0, x: 20, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 20, scale: 0.8 }}
-            className="fixed bottom-24 right-6 z-50 bg-gradient-to-b from-[#1A002F] to-[#0D001E] border border-[#D4AF37]/30 rounded-2xl shadow-2xl p-4 min-w-[220px]"
+            className="fixed bottom-24 right-6 z-50 bg-popover border border-border rounded-2xl shadow-xl p-4 min-w-[220px]"
           >
             <button
               onClick={() => setShowNotification(false)}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+              className="absolute -top-2 -right-2 w-6 h-6 bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors border border-border"
             >
               <X className="w-3 h-3" />
             </button>
@@ -86,12 +86,12 @@ export default function FloatingAgentChat() {
                 className="w-12 h-12 object-contain"
               />
               <div>
-                <p className="text-sm font-medium text-white">Hey, I'm here! 👋</p>
-                <p className="text-xs text-white/60">Need any help?</p>
+                <p className="text-sm font-medium text-foreground">Hey, I'm here! 👋</p>
+                <p className="text-xs text-muted-foreground">Need any help?</p>
               </div>
             </div>
             {/* Arrow pointer */}
-            <div className="absolute -bottom-2 right-8 w-4 h-4 bg-[#0D001E] border-r border-b border-[#D4AF37]/30 transform rotate-45" />
+            <div className="absolute -bottom-2 right-8 w-4 h-4 bg-popover border-r border-b border-border transform rotate-45" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -134,10 +134,10 @@ export default function FloatingAgentChat() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-gradient-to-b from-[#1A002F] to-[#0D001E] border border-[#D4AF37]/30 rounded-2xl overflow-hidden shadow-2xl"
+            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-background border border-border rounded-2xl overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] p-4 flex items-center gap-3">
+            <div className="bg-gradient-to-r from-primary to-[#FF2FBF] p-4 flex items-center gap-3">
               {showAgentList ? (
                 <>
                   <button
@@ -187,7 +187,7 @@ export default function FloatingAgentChat() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="h-96 overflow-y-auto p-3 space-y-2"
+                  className="h-96 overflow-y-auto p-3 space-y-2 bg-background"
                 >
                   {agents.map((agent, idx) => (
                     <div
@@ -195,8 +195,8 @@ export default function FloatingAgentChat() {
                       onClick={() => agent.active ? switchAgent(agent) : setComingSoonAgent(agent)}
                       className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                         currentAgent.name === agent.name
-                          ? 'bg-[#8A2BE2]/30 border border-[#D4AF37]/50'
-                          : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                          ? 'bg-primary/10 border border-primary/50'
+                          : 'bg-muted hover:bg-muted/80 border border-transparent'
                       }`}
                     >
                       <div className={`w-12 h-12 rounded-full overflow-hidden bg-white/10 flex-shrink-0 relative ${!agent.active ? 'grayscale' : ''}`}>
@@ -208,14 +208,14 @@ export default function FloatingAgentChat() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="text-white font-medium text-sm">{agent.name}</h4>
+                          <h4 className="text-foreground font-medium text-sm">{agent.name}</h4>
                           {!agent.active && (
-                            <span className="px-2 py-0.5 text-[10px] font-medium bg-gradient-to-r from-[#8A2BE2]/20 to-[#FF2FBF]/20 border border-[#8A2BE2]/30 text-[#FF66D8] rounded-full">
+                            <span className="px-2 py-0.5 text-[10px] font-medium bg-muted border border-border text-muted-foreground rounded-full">
                               Coming Soon
                             </span>
                           )}
                         </div>
-                        <p className="text-white/60 text-xs">{agent.role}</p>
+                        <p className="text-muted-foreground text-xs">{agent.role}</p>
                       </div>
                     </div>
                   ))}
@@ -226,6 +226,7 @@ export default function FloatingAgentChat() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
+                  className="bg-background"
                 >
                   {/* Chat Messages */}
                   <div className="h-72 overflow-y-auto p-4 space-y-3">
@@ -239,8 +240,8 @@ export default function FloatingAgentChat() {
                         <div
                           className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
                             msg.role === 'user'
-                              ? 'bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] text-white'
-                              : 'bg-white/10 text-white border border-[#D4AF37]/20'
+                              ? 'bg-gradient-to-r from-primary to-[#FF2FBF] text-white'
+                              : 'bg-muted text-foreground border border-border'
                           }`}
                         >
                           <p className="text-sm">{msg.content}</p>
@@ -250,14 +251,14 @@ export default function FloatingAgentChat() {
                   </div>
 
                   {/* Other Specialists */}
-                  <div className="px-4 py-2 border-t border-[#D4AF37]/10">
-                    <p className="text-white/40 text-xs mb-2">Other specialists:</p>
+                  <div className="px-4 py-2 border-t border-border bg-muted/20">
+                    <p className="text-muted-foreground text-xs mb-2">Other specialists:</p>
                     <div className="flex gap-1">
                       {agents.filter(a => a.name !== currentAgent.name).slice(0, 6).map((agent, idx) => (
                         <button
                           key={idx}
                           onClick={() => agent.active ? switchAgent(agent) : setComingSoonAgent(agent)}
-                          className={`w-8 h-8 rounded-full overflow-hidden bg-white/10 transition-all relative hover:ring-2 ring-[#D4AF37]/50 cursor-pointer ${
+                          className={`w-8 h-8 rounded-full overflow-hidden bg-white transition-all relative hover:ring-2 ring-secondary/50 cursor-pointer border border-border ${
                             !agent.active ? 'grayscale opacity-70' : ''
                           }`}
                           title={agent.name}
@@ -273,17 +274,17 @@ export default function FloatingAgentChat() {
                   </div>
 
                   {/* Input */}
-                  <div className="p-4 border-t border-[#D4AF37]/20 flex gap-2">
+                  <div className="p-4 border-t border-border flex gap-2 bg-background">
                     <Input
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                       placeholder={`Message ${currentAgent.name}...`}
-                      className="flex-1 bg-white/10 border-[#D4AF37]/30 text-white placeholder:text-white/50 focus:border-[#D4AF37]"
+                      className="flex-1 bg-muted border-input text-foreground placeholder:text-muted-foreground focus:border-primary"
                     />
                     <Button
                       onClick={sendMessage}
-                      className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] hover:opacity-90"
+                      className="bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90"
                     >
                       <Send className="w-4 h-4" />
                     </Button>
@@ -291,30 +292,30 @@ export default function FloatingAgentChat() {
                 </motion.div>
               )}
             </AnimatePresence>
-            </motion.div>
-            )}
-            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            {/* Coming Soon Popup */}
-            <AnimatePresence>
-            {comingSoonAgent && (
-            <motion.div
+      {/* Coming Soon Popup */}
+      <AnimatePresence>
+        {comingSoonAgent && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setComingSoonAgent(null)}
-            >
+          >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-gradient-to-b from-[#1A002F] to-[#0D001E] border border-[#D4AF37]/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+              className="bg-background border border-border rounded-2xl p-6 max-w-sm w-full shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Agent Image */}
               <div className="flex justify-center mb-4">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#D4AF37]/50 shadow-lg">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-secondary shadow-lg">
                   <img
                     src={comingSoonAgent.image}
                     alt={comingSoonAgent.name}
@@ -325,59 +326,59 @@ export default function FloatingAgentChat() {
 
               {/* Content */}
               <div className="text-center">
-                <span className="inline-block px-3 py-1 text-xs font-medium bg-gradient-to-r from-[#8A2BE2]/20 to-[#FF2FBF]/20 border border-[#8A2BE2]/30 text-[#FF66D8] rounded-full mb-3">
+                <span className="inline-block px-3 py-1 text-xs font-medium bg-muted border border-border text-muted-foreground rounded-full mb-3">
                   Coming Soon
                 </span>
-                <h3 className="text-xl font-bold text-white mb-1">{comingSoonAgent.name}</h3>
-                <p className="text-[#D4AF37] text-sm mb-3">{comingSoonAgent.role}</p>
-                <p className="text-white/60 text-sm mb-6">
+                <h3 className="text-xl font-bold text-foreground mb-1">{comingSoonAgent.name}</h3>
+                <p className="text-secondary text-sm mb-3">{comingSoonAgent.role}</p>
+                <p className="text-muted-foreground text-sm mb-6">
                   {comingSoonAgent.name} is currently under development and will be available soon with advanced capabilities for {comingSoonAgent.role.toLowerCase()}.
                 </p>
 
                 {/* Features Preview */}
-                <div className="bg-white/5 rounded-xl p-4 mb-6 text-left">
-                  <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Upcoming Features</p>
+                <div className="bg-muted/30 rounded-xl p-4 mb-6 text-left border border-border">
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Upcoming Features</p>
                   <ul className="space-y-2">
                     {comingSoonAgent.name === "Vaultis" && (
                       <>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Gold storage management</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Vault allocation tracking</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Certificate verification</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Gold storage management</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Vault allocation tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Certificate verification</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Payis" && (
                       <>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Payment initiation</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Transaction tracking</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Wallet management</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Payment initiation</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Transaction tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Wallet management</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Tradis" && (
                       <>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Trade document generation</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Deal structuring assistance</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Settlement coordination</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Trade document generation</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Deal structuring assistance</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Settlement coordination</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Juris" && (
                       <>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Compliance checks</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Regulatory guidance</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Legal document review</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Compliance checks</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Regulatory guidance</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Legal document review</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Logis" && (
                       <>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Shipment tracking</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Documentation handling</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Delivery coordination</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Shipment tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Documentation handling</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Delivery coordination</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Markis" && (
                       <>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Market analysis</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Price predictions</li>
-                        <li className="text-white/70 text-sm flex items-center gap-2">• Trend insights</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Market analysis</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Price predictions</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Trend insights</li>
                       </>
                     )}
                   </ul>
@@ -385,15 +386,15 @@ export default function FloatingAgentChat() {
 
                 <Button
                   onClick={() => setComingSoonAgent(null)}
-                  className="w-full bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] hover:opacity-90 text-white"
+                  className="w-full bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90 text-white"
                 >
                   Got it, thanks!
                 </Button>
               </div>
             </motion.div>
-            </motion.div>
-            )}
-            </AnimatePresence>
-            </>
-            );
-            }
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

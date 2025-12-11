@@ -75,12 +75,12 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
+      <DialogContent className="bg-white border-border text-foreground sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="text-red-400">Sell Gold</span>
+            <span className="text-red-500">Sell Gold</span>
           </DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogDescription className="text-muted-foreground">
             Cash out your digital gold to fiat.
           </DialogDescription>
         </DialogHeader>
@@ -90,7 +90,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
           {/* Amount Inputs */}
           <div className="space-y-4">
             <div className="flex justify-end">
-              <span className="text-xs text-[#D4AF37] cursor-pointer hover:underline" onClick={() => handleGramsChange(safeBalance.toString())}>
+              <span className="text-xs text-secondary cursor-pointer hover:underline" onClick={() => handleGramsChange(safeBalance.toString())}>
                 Max Available: {safeBalance.toFixed(3)} g
               </span>
             </div>
@@ -101,18 +101,18 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
                 <Input 
                   type="number" 
                   placeholder="0.000" 
-                  className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                  className="h-12 text-lg font-bold bg-background border-input pr-16"
                   value={grams}
                   onChange={(e) => handleGramsChange(e.target.value)}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37] font-medium">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary font-medium">
                   g
                 </div>
               </div>
             </div>
 
             <div className="flex justify-center -my-2 relative z-10">
-               <div className="bg-[#1A0A2E] border border-white/10 p-1.5 rounded-full text-white/40">
+               <div className="bg-white border border-border p-1.5 rounded-full text-muted-foreground shadow-sm">
                   <ArrowRightLeft className="w-4 h-4 rotate-90" />
                </div>
             </div>
@@ -123,11 +123,11 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
                 <Input 
                   type="number" 
                   placeholder="0.00" 
-                  className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                  className="h-12 text-lg font-bold bg-background border-input pr-16"
                   value={usd}
                   onChange={(e) => handleUsdChange(e.target.value)}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
                   USD
                 </div>
               </div>
@@ -138,20 +138,20 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
           <div className="space-y-3">
             <Label>Payout Method</Label>
             <RadioGroup value={method} onValueChange={setMethod} className="space-y-2">
-              <div className="flex items-center space-x-2 bg-white/5 p-3 rounded-lg border border-white/10">
-                <RadioGroupItem value="bank" id="bank" className="border-white/20 text-[#D4AF37]" />
+              <div className="flex items-center space-x-2 bg-white shadow-sm p-3 rounded-lg border border-border">
+                <RadioGroupItem value="bank" id="bank" className="border-border text-secondary" />
                 <Label htmlFor="bank" className="flex-1 flex items-center cursor-pointer">
-                  <Building className="w-4 h-4 mr-3 text-white/60" />
+                  <Building className="w-4 h-4 mr-3 text-muted-foreground" />
                   <span className="flex-1">Bank Transfer</span>
-                  <span className="text-xs text-white/40">2-3 days</span>
+                  <span className="text-xs text-muted-foreground">2-3 days</span>
                 </Label>
               </div>
-              <div className="flex items-center space-x-2 bg-white/5 p-3 rounded-lg border border-white/10">
-                <RadioGroupItem value="crypto" id="crypto" className="border-white/20 text-[#D4AF37]" />
+              <div className="flex items-center space-x-2 bg-white shadow-sm p-3 rounded-lg border border-border">
+                <RadioGroupItem value="crypto" id="crypto" className="border-border text-secondary" />
                 <Label htmlFor="crypto" className="flex-1 flex items-center cursor-pointer">
-                  <Wallet className="w-4 h-4 mr-3 text-white/60" />
+                  <Wallet className="w-4 h-4 mr-3 text-muted-foreground" />
                   <span className="flex-1">Crypto Payout</span>
-                  <span className="text-xs text-white/40">Instant</span>
+                  <span className="text-xs text-muted-foreground">Instant</span>
                 </Label>
               </div>
             </RadioGroup>
@@ -159,19 +159,19 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
           {/* Summary Section Inline */}
           {numericGrams > 0 && (
-             <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-2 text-sm">
+             <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-white/60">Rate</span>
-                  <span className="text-white font-medium">${goldPrice.toFixed(2)} / g</span>
+                  <span className="text-muted-foreground">Rate</span>
+                  <span className="text-foreground font-medium">${goldPrice.toFixed(2)} / g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/60">Fee (1.5%)</span>
-                  <span className="text-red-400">-${fee.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Fee (1.5%)</span>
+                  <span className="text-red-500">-${fee.toFixed(2)}</span>
                 </div>
-                <Separator className="bg-white/10 my-2" />
+                <Separator className="bg-border my-2" />
                 <div className="flex justify-between items-center">
-                  <span className="text-white/80 font-medium">Net Payout</span>
-                  <span className="text-xl font-bold text-white">${netPayout.toFixed(2)}</span>
+                  <span className="text-foreground font-medium">Net Payout</span>
+                  <span className="text-xl font-bold text-foreground">${netPayout.toFixed(2)}</span>
                 </div>
              </div>
           )}

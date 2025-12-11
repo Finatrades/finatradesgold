@@ -42,23 +42,23 @@ export default function LiveGoldChart() {
   const isPositive = change >= 0;
 
   return (
-    <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-white/5">
+    <Card className="bg-white shadow-sm border border-border h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border">
         <div className="flex items-center gap-4">
-           <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
-             <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
+           <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
+             <TrendingUp className="w-5 h-5 text-secondary" />
              XAU/USD
            </CardTitle>
-           <div className="flex bg-black/20 rounded p-0.5 border border-white/10">
+           <div className="flex bg-muted rounded p-0.5 border border-border">
               <button 
                 onClick={() => setChartType('area')}
-                className={`p-1.5 rounded ${chartType === 'area' ? 'bg-white/10 text-[#D4AF37]' : 'text-white/40 hover:text-white'}`}
+                className={`p-1.5 rounded ${chartType === 'area' ? 'bg-white shadow-sm text-secondary' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <Activity className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setChartType('candle')}
-                className={`p-1.5 rounded ${chartType === 'candle' ? 'bg-white/10 text-[#D4AF37]' : 'text-white/40 hover:text-white'}`}
+                className={`p-1.5 rounded ${chartType === 'candle' ? 'bg-white shadow-sm text-secondary' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <BarChart2 className="w-4 h-4" />
               </button>
@@ -67,13 +67,13 @@ export default function LiveGoldChart() {
         
         <div className="flex gap-2">
           <Tabs value={range} onValueChange={setRange} className="w-auto">
-            <TabsList className="bg-black/20 border border-white/10 h-8">
+            <TabsList className="bg-muted border border-border h-8">
               <TabsTrigger value="24H" className="text-xs h-6 px-3">1D</TabsTrigger>
               <TabsTrigger value="7D" className="text-xs h-6 px-3">1W</TabsTrigger>
               <TabsTrigger value="30D" className="text-xs h-6 px-3">1M</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white/40 hover:text-white">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
              <Maximize2 className="w-4 h-4" />
           </Button>
         </div>
@@ -83,26 +83,26 @@ export default function LiveGoldChart() {
         <div className="flex justify-between items-end mb-6">
           <div>
             <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold text-white tracking-tight">${lastValue.toFixed(2)}</span>
-              <span className={`text-sm font-medium px-2 py-0.5 rounded ${isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+              <span className="text-4xl font-bold text-foreground tracking-tight">${lastValue.toFixed(2)}</span>
+              <span className={`text-sm font-medium px-2 py-0.5 rounded ${isPositive ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
                 {isPositive ? '+' : ''}{change.toFixed(2)}%
               </span>
             </div>
-            <p className="text-xs text-white/40 mt-1">Global Spot Price • Real-time</p>
+            <p className="text-xs text-muted-foreground mt-1">Global Spot Price • Real-time</p>
           </div>
           
           <div className="hidden sm:flex gap-4 text-right">
              <div>
-               <p className="text-[10px] text-white/40 uppercase">High (24h)</p>
-               <p className="text-sm font-medium text-white">${(lastValue * 1.01).toFixed(2)}</p>
+               <p className="text-[10px] text-muted-foreground uppercase">High (24h)</p>
+               <p className="text-sm font-medium text-foreground">${(lastValue * 1.01).toFixed(2)}</p>
              </div>
              <div>
-               <p className="text-[10px] text-white/40 uppercase">Low (24h)</p>
-               <p className="text-sm font-medium text-white">${(lastValue * 0.99).toFixed(2)}</p>
+               <p className="text-[10px] text-muted-foreground uppercase">Low (24h)</p>
+               <p className="text-sm font-medium text-foreground">${(lastValue * 0.99).toFixed(2)}</p>
              </div>
              <div>
-               <p className="text-[10px] text-white/40 uppercase">Vol</p>
-               <p className="text-sm font-medium text-white">12.5M</p>
+               <p className="text-[10px] text-muted-foreground uppercase">Vol</p>
+               <p className="text-sm font-medium text-foreground">12.5M</p>
              </div>
           </div>
         </div>
@@ -116,22 +116,22 @@ export default function LiveGoldChart() {
                   <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
               <XAxis dataKey="time" hide />
               <YAxis 
                 domain={['auto', 'auto']} 
                 orientation="right" 
-                tick={{fill: 'rgba(255,255,255,0.3)', fontSize: 10}}
+                tick={{fill: 'rgba(0,0,0,0.4)', fontSize: 10}}
                 tickFormatter={(val) => `$${val.toFixed(0)}`}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#0D0515', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
+                contentStyle={{ backgroundColor: '#fff', borderColor: 'rgba(0,0,0,0.1)', color: '#000' }}
                 itemStyle={{ color: '#D4AF37' }}
                 formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
                 labelFormatter={() => ''}
-                cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                cursor={{ stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1 }}
               />
               <Area 
                 type="monotone" 

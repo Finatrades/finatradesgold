@@ -105,33 +105,33 @@ export default function Onboarding() {
 
   return (
     <Layout>
-      <div className="min-h-screen pt-20 pb-24 bg-[#0D001E]">
+      <div className="min-h-screen pt-20 pb-24 bg-background">
         <div className="container mx-auto px-6 max-w-3xl">
           
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold text-white mb-4">Create your Account</h1>
-            <p className="text-white/60 mb-6">Join the future of gold-backed digital finance.</p>
+            <h1 className="text-4xl font-bold text-foreground mb-4">Create your Account</h1>
+            <p className="text-muted-foreground mb-6">Join the future of gold-backed digital finance.</p>
             
             {/* Demo Access Button */}
             <Button 
               variant="outline" 
               onClick={handleDemoAccess}
-              className="border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10"
+              className="border-secondary text-secondary hover:bg-secondary/10"
             >
               Skip to Dashboard (Demo) <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
 
-          <Card className="p-8 bg-white/5 border-white/10 backdrop-blur-sm">
+          <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
             
             {/* Account Type Toggle */}
-            <div className="grid grid-cols-2 gap-4 p-1 bg-white/5 rounded-xl mb-8">
+            <div className="grid grid-cols-2 gap-4 p-1 bg-muted/50 rounded-xl mb-8">
               <button
                 onClick={() => setAccountType('personal')}
                 className={`flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
                   accountType === 'personal' 
-                    ? 'bg-[#8A2BE2] text-white shadow-lg' 
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                    ? 'bg-primary text-white shadow-lg' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
                 }`}
               >
                 <User className="w-4 h-4" /> Personal
@@ -140,8 +140,8 @@ export default function Onboarding() {
                 onClick={() => setAccountType('business')}
                 className={`flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
                   accountType === 'business' 
-                    ? 'bg-[#D4AF37] text-black shadow-lg' 
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                    ? 'bg-secondary text-white shadow-lg' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
                 }`}
               >
                 <Building className="w-4 h-4" /> Corporate
@@ -151,7 +151,7 @@ export default function Onboarding() {
             <div className="space-y-6">
               {/* Personal Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">
+                <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
                   1. Account Information
                 </h3>
                 
@@ -161,7 +161,7 @@ export default function Onboarding() {
                     <Input 
                       value={formData.firstName}
                       onChange={e => setFormData({...formData, firstName: e.target.value})}
-                      className="bg-white/5 border-white/10 text-white" 
+                      className="bg-background border-input text-foreground" 
                       placeholder="John"
                     />
                   </div>
@@ -170,7 +170,7 @@ export default function Onboarding() {
                     <Input 
                       value={formData.lastName}
                       onChange={e => setFormData({...formData, lastName: e.target.value})}
-                      className="bg-white/5 border-white/10 text-white" 
+                      className="bg-background border-input text-foreground" 
                       placeholder="Doe"
                     />
                   </div>
@@ -182,7 +182,7 @@ export default function Onboarding() {
                     type="email"
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="bg-white/5 border-white/10 text-white" 
+                    className="bg-background border-input text-foreground" 
                     placeholder="john@example.com"
                   />
                 </div>
@@ -193,7 +193,7 @@ export default function Onboarding() {
                     type="tel"
                     value={formData.phone}
                     onChange={e => setFormData({...formData, phone: e.target.value})}
-                    className="bg-white/5 border-white/10 text-white" 
+                    className="bg-background border-input text-foreground" 
                     placeholder="+41 79 123 45 67"
                   />
                 </div>
@@ -206,13 +206,13 @@ export default function Onboarding() {
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={e => setFormData({...formData, password: e.target.value})}
-                        className="bg-white/5 border-white/10 text-white pr-10" 
+                        className="bg-background border-input text-foreground pr-10" 
                         placeholder="••••••••"
                       />
                       <button 
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -224,15 +224,15 @@ export default function Onboarding() {
                       type="password"
                       value={formData.confirmPassword}
                       onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-                      className="bg-white/5 border-white/10 text-white" 
+                      className="bg-background border-input text-foreground" 
                       placeholder="••••••••"
                     />
                   </div>
                 </div>
                 
                 {/* Password Strength Indicator */}
-                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm">
-                  <p className="text-white/60 mb-2 font-medium">Password Requirements:</p>
+                <div className="bg-muted/30 p-4 rounded-xl border border-border text-sm">
+                  <p className="text-muted-foreground mb-2 font-medium">Password Requirements:</p>
                   <div className="grid grid-cols-2 gap-2">
                     <PasswordRequirement met={passwordStrength.length} text="At least 8 characters" />
                     <PasswordRequirement met={passwordStrength.uppercase} text="One uppercase letter" />
@@ -252,7 +252,7 @@ export default function Onboarding() {
                     exit={{ opacity: 0, height: 0 }}
                     className="space-y-4 overflow-hidden"
                   >
-                    <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 pt-4">
+                    <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2 pt-4">
                       2. Company Details
                     </h3>
                     
@@ -261,14 +261,14 @@ export default function Onboarding() {
                       <Input 
                         value={formData.companyName}
                         onChange={e => setFormData({...formData, companyName: e.target.value})}
-                        className="bg-white/5 border-white/10 text-white" 
+                        className="bg-background border-input text-foreground" 
                       />
                     </div>
 
                     <div className="space-y-2">
                       <Label>Business Role</Label>
                       <Select value={businessRole} onValueChange={(v: any) => setBusinessRole(v)}>
-                        <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                        <SelectTrigger className="bg-background border-input text-foreground">
                           <SelectValue placeholder="Select Role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -277,7 +277,7 @@ export default function Onboarding() {
                           <SelectItem value="both">Both (Import & Export)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-white/40">This helps us tailor FinaBridge for your trade needs.</p>
+                      <p className="text-xs text-muted-foreground">This helps us tailor FinaBridge for your trade needs.</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-4">
@@ -286,7 +286,7 @@ export default function Onboarding() {
                         <Input 
                           value={formData.registrationNumber}
                           onChange={e => setFormData({...formData, registrationNumber: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white" 
+                          className="bg-background border-input text-foreground" 
                         />
                       </div>
                       <div className="space-y-2">
@@ -295,7 +295,7 @@ export default function Onboarding() {
                           value={formData.jurisdiction}
                           onChange={e => setFormData({...formData, jurisdiction: e.target.value})}
                           placeholder="e.g. Switzerland"
-                          className="bg-white/5 border-white/10 text-white" 
+                          className="bg-background border-input text-foreground" 
                         />
                       </div>
                     </div>
@@ -305,67 +305,67 @@ export default function Onboarding() {
 
               {/* KYC Upload (Simplified) */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 pt-4">
+                <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2 pt-4">
                   {accountType === 'business' ? '3. Verification Documents' : '2. Verification Documents'}
                 </h3>
                 
                 <div className={`grid gap-4 ${accountType === 'business' ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   {/* Standard ID / Certificate */}
-                  <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group flex flex-col items-center justify-center">
-                    <Upload className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#8A2BE2] transition-colors" />
-                    <h4 className="font-medium text-white text-sm mb-1">
+                  <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer group flex flex-col items-center justify-center">
+                    <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2 group-hover:text-primary transition-colors" />
+                    <h4 className="font-medium text-foreground text-sm mb-1">
                       {accountType === 'personal' ? 'Passport / ID Card' : 'Certificate of Incorporation'}
                     </h4>
-                    <p className="text-xs text-white/40">Click to upload</p>
+                    <p className="text-xs text-muted-foreground">Click to upload</p>
                   </div>
 
                   {/* Business Only: Articles */}
                   {accountType === 'business' && (
-                    <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group flex flex-col items-center justify-center">
-                      <Upload className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#D4AF37] transition-colors" />
-                      <h4 className="font-medium text-white text-sm mb-1">
+                    <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer group flex flex-col items-center justify-center">
+                      <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2 group-hover:text-secondary transition-colors" />
+                      <h4 className="font-medium text-foreground text-sm mb-1">
                         Articles of Association
                       </h4>
-                      <p className="text-xs text-white/40">Click to upload</p>
+                      <p className="text-xs text-muted-foreground">Click to upload</p>
                     </div>
                   )}
 
                   {/* Selfie Option (Both) */}
-                  <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group flex flex-col items-center justify-center">
-                    <Camera className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#FF2FBF] transition-colors" />
-                    <h4 className="font-medium text-white text-sm mb-1">
+                  <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer group flex flex-col items-center justify-center">
+                    <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2 group-hover:text-[#FF2FBF] transition-colors" />
+                    <h4 className="font-medium text-foreground text-sm mb-1">
                       Take a Selfie
                     </h4>
-                    <p className="text-xs text-white/40">For identity verification</p>
+                    <p className="text-xs text-muted-foreground">For identity verification</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 text-xs text-white/40 bg-white/5 p-3 rounded-lg">
-                  <ShieldCheck className="w-4 h-4 text-[#8A2BE2]" />
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                  <ShieldCheck className="w-4 h-4 text-primary" />
                   Your data is encrypted and stored securely in Switzerland.
                 </div>
               </div>
 
               {/* Terms and Submit */}
-              <div className="pt-6 border-t border-white/10 space-y-6">
+              <div className="pt-6 border-t border-border space-y-6">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="terms" 
                     checked={formData.agreedToTerms}
                     onCheckedChange={(c: any) => setFormData({...formData, agreedToTerms: c})}
-                    className="border-white/20 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
+                    className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   <label
                     htmlFor="terms"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-muted-foreground"
                   >
-                    I agree to the <span className="text-[#8A2BE2] hover:underline cursor-pointer">Terms of Service</span> and <span className="text-[#8A2BE2] hover:underline cursor-pointer">Privacy Policy</span>
+                    I agree to the <span className="text-primary hover:underline cursor-pointer">Terms of Service</span> and <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
                   </label>
                 </div>
 
                 <Button 
                   onClick={handleSubmit}
-                  className="w-full bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl"
+                  className="w-full bg-gradient-to-r from-primary to-[#FF2FBF] text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl"
                 >
                   Create Account <CheckCircle2 className="w-5 h-5 ml-2" />
                 </Button>
@@ -381,7 +381,7 @@ export default function Onboarding() {
 
 function PasswordRequirement({ met, text }: { met: boolean, text: string }) {
   return (
-    <div className={`flex items-center gap-2 text-xs transition-colors ${met ? 'text-green-400' : 'text-white/40'}`}>
+    <div className={`flex items-center gap-2 text-xs transition-colors ${met ? 'text-green-500' : 'text-muted-foreground'}`}>
       {met ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current" />}
       {text}
     </div>

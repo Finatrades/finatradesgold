@@ -12,7 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [location]);
 
   return (
-    <div className="min-h-screen bg-[#0D001E] text-white font-sans selection:bg-[#8A2BE2] selection:text-white overflow-x-hidden flex flex-col">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-white overflow-x-hidden flex flex-col">
       <Navbar />
       <main className="flex-grow pt-20">
         {children}

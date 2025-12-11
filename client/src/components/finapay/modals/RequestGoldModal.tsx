@@ -74,20 +74,20 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
+      <DialogContent className="bg-white border-border text-foreground sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className={assetType === 'USD' ? "text-blue-400" : "text-[#D4AF37]"}>
+            <span className={assetType === 'USD' ? "text-blue-600" : "text-secondary"}>
               Request {assetType === 'USD' ? 'USD' : 'Gold'}
             </span>
           </DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogDescription className="text-muted-foreground">
             Request payment via ID or share a payment link.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-black/20 border border-white/10 mb-4">
+          <TabsList className="grid w-full grid-cols-2 bg-muted border border-border mb-4">
             <TabsTrigger value="request">Request from User</TabsTrigger>
             <TabsTrigger value="share">Share QR / Link</TabsTrigger>
           </TabsList>
@@ -95,16 +95,16 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
           <TabsContent value="request" className="space-y-4">
             
             {/* Asset Selection */}
-            <div className="flex justify-center bg-black/20 p-1 rounded-lg border border-white/10">
+            <div className="flex justify-center bg-muted p-1 rounded-lg border border-border">
                <button 
                  onClick={() => setAssetType('USD')}
-                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'USD' ? 'bg-blue-500 text-white' : 'text-white/40 hover:text-white'}`}
+                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'USD' ? 'bg-blue-600 text-white' : 'text-muted-foreground hover:text-foreground'}`}
                >
                  USD ($)
                </button>
                <button 
                  onClick={() => setAssetType('GOLD')}
-                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'GOLD' ? 'bg-[#D4AF37] text-black' : 'text-white/40 hover:text-white'}`}
+                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'GOLD' ? 'bg-secondary text-white' : 'text-muted-foreground hover:text-foreground'}`}
                >
                  Gold (g)
                </button>
@@ -113,10 +113,10 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
             <div className="space-y-3">
               <Label>Request From</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   placeholder="Username, Email, or ID" 
-                  className="bg-black/20 border-white/10 pl-9"
+                  className="bg-background border-input pl-9"
                   value={fromUser}
                   onChange={(e) => setFromUser(e.target.value)}
                 />
@@ -124,19 +124,19 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
               {/* Recent Contacts Horizontal Scroll */}
               <div className="space-y-2">
-                <Label className="text-xs text-white/40 uppercase tracking-wider">Recent Contacts</Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Recent Contacts</Label>
                 <ScrollArea className="w-full whitespace-nowrap">
                   <div className="flex gap-2 pb-2">
                     {RECENT_CONTACTS.map((contact) => (
                       <button
                         key={contact.id}
                         onClick={() => handleContactSelect(contact.username)}
-                        className="flex flex-col items-center gap-1 min-w-[70px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                        className="flex flex-col items-center gap-1 min-w-[70px] p-2 rounded-lg hover:bg-muted/50 transition-colors group"
                       >
-                        <Avatar className="w-10 h-10 border border-white/10 group-hover:border-white/30 transition-colors">
-                          <AvatarFallback className="bg-white/10 text-white text-xs">{contact.avatar}</AvatarFallback>
+                        <Avatar className="w-10 h-10 border border-border group-hover:border-secondary/30 transition-colors">
+                          <AvatarFallback className="bg-muted text-muted-foreground text-xs">{contact.avatar}</AvatarFallback>
                         </Avatar>
-                        <span className="text-[10px] text-white/60 truncate w-full text-center">{contact.name}</span>
+                        <span className="text-[10px] text-muted-foreground truncate w-full text-center">{contact.name}</span>
                       </button>
                     ))}
                   </div>
@@ -150,11 +150,11 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                  <Input 
                    type="number" 
                    placeholder="0.00" 
-                   className="bg-black/20 border-white/10 pl-8 text-lg font-medium"
+                   className="bg-background border-input pl-8 text-lg font-medium"
                    value={amount}
                    onChange={(e) => setAmount(e.target.value)}
                  />
-                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold">{currencyLabel}</span>
+                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currencyLabel}</span>
               </div>
             </div>
 
@@ -164,7 +164,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                  <Button 
                    variant="ghost" 
                    size="sm" 
-                   className="h-6 px-2 text-xs text-white/40 hover:text-white"
+                   className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                    onClick={handleAttachment}
                  >
                    <Upload className="w-3 h-3 mr-1" />
@@ -173,15 +173,15 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
               </div>
 
               {attachment ? (
-                <div className="flex items-center justify-between bg-white/5 p-2 rounded border border-white/10 text-sm">
-                  <div className="flex items-center text-white/80">
+                <div className="flex items-center justify-between bg-muted/30 p-2 rounded border border-border text-sm">
+                  <div className="flex items-center text-foreground/80">
                     <Upload className="w-3 h-3 mr-2" />
                     {attachment}
                   </div>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-6 w-6 text-white/40 hover:text-red-400"
+                    className="h-6 w-6 text-muted-foreground hover:text-red-500"
                     onClick={() => setAttachment(null)}
                   >
                     <X className="w-3 h-3" />
@@ -190,7 +190,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
               ) : (
                 <Textarea 
                   placeholder="Invoice #1024..." 
-                  className="bg-black/20 border-white/10 resize-none h-20"
+                  className="bg-background border-input resize-none h-20"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
@@ -198,7 +198,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
             </div>
 
             <Button 
-              className={`w-full font-bold ${assetType === 'USD' ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black'}`}
+              className={`w-full font-bold ${assetType === 'USD' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
               disabled={!fromUser || numericAmount <= 0 || isLoading}
               onClick={handleConfirm}
             >
@@ -209,12 +209,12 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
           <TabsContent value="share" className="space-y-6 py-2">
              <div className="flex flex-col items-center justify-center space-y-4">
-                <div className="bg-white p-4 rounded-xl shadow-lg shadow-blue-500/10">
+                <div className="bg-white p-4 rounded-xl shadow-lg shadow-blue-500/10 border border-border">
                    <QrCode className="w-40 h-40 text-black" strokeWidth={1.5} />
                 </div>
                 <div className="text-center space-y-1">
-                   <p className="text-lg font-bold text-white">@username</p>
-                   <p className="text-sm text-white/40">Scan to pay directly</p>
+                   <p className="text-lg font-bold text-foreground">@username</p>
+                   <p className="text-sm text-muted-foreground">Scan to pay directly</p>
                 </div>
              </div>
 
@@ -223,13 +223,13 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                   <Input 
                     readOnly 
                     value="https://finatrades.com/pay/user123" 
-                    className="bg-black/20 border-white/10 text-white/60"
+                    className="bg-muted border-border text-muted-foreground"
                   />
-                  <Button variant="outline" size="icon" className="border-white/10 hover:bg-white/5" onClick={copyLink}>
+                  <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={copyLink}>
                      <Copy className="w-4 h-4" />
                   </Button>
                </div>
-               <Button className="w-full bg-white/10 hover:bg-white/20 text-white">
+               <Button className="w-full bg-muted hover:bg-muted/80 text-foreground">
                   <Share2 className="w-4 h-4 mr-2" /> Share Link
                </Button>
              </div>
