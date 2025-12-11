@@ -634,7 +634,122 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                  </div>
                )}
 
+               {/* Fee Breakdown */}
+               <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-2">
+                  <h4 className="text-sm font-bold text-white">Estimated Fee Breakdown</h4>
+                  <div className="flex justify-between text-xs text-white/60">
+                    <span>Platform Service Fee (0.5%)</span>
+                    <span>${((formData.valueUsd || 0) * 0.005).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-white/60">
+                    <span>Regulatory & Compliance Check</span>
+                    <span>$250.00</span>
+                  </div>
+                  <div className="border-t border-white/10 my-2"></div>
+                  <div className="flex justify-between text-sm font-bold text-white">
+                    <span>Total Estimated Cost</span>
+                    <span>${((formData.valueUsd || 0) * 1.005 + 250).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  </div>
+               </div>
+
              </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 5: LOGISTICS & SERVICES */}
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <CardTitle className="text-lg font-bold text-white">5. Logistics & Additional Services</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-base">Cargo Insurance</Label>
+                  <RadioGroup defaultValue="self" onValueChange={(val) => updateField('insuranceOption', val === 'finatrades' ? 'Finatrades Premium' : 'Self-Arranged')}>
+                    <div className="flex items-center space-x-2 border border-white/10 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                      <RadioGroupItem value="finatrades" id="ins-fina" className="border-white/40 text-[#D4AF37]" />
+                      <Label htmlFor="ins-fina" className="cursor-pointer flex-1">
+                        <span className="block font-bold text-white">Finatrades Premium Insurance</span>
+                        <span className="block text-xs text-white/60">Full coverage via Lloyd's of London partners</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 border border-white/10 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                      <RadioGroupItem value="self" id="ins-self" className="border-white/40 text-[#D4AF37]" />
+                      <Label htmlFor="ins-self" className="cursor-pointer flex-1">
+                        <span className="block font-bold text-white">Self-Arranged Insurance</span>
+                        <span className="block text-xs text-white/60">Upload policy document later</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-base">Logistics Provider</Label>
+                  <RadioGroup defaultValue="self" onValueChange={(val) => updateField('logisticsOption', val === 'finatrades' ? 'Finatrades Secure' : 'Self-Arranged')}>
+                    <div className="flex items-center space-x-2 border border-white/10 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                      <RadioGroupItem value="finatrades" id="log-fina" className="border-white/40 text-[#D4AF37]" />
+                      <Label htmlFor="log-fina" className="cursor-pointer flex-1">
+                        <span className="block font-bold text-white">Finatrades Secure Logistics</span>
+                        <span className="block text-xs text-white/60">End-to-end secure transport (Brinks/G4S)</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 border border-white/10 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                      <RadioGroupItem value="self" id="log-self" className="border-white/40 text-[#D4AF37]" />
+                      <Label htmlFor="log-self" className="cursor-pointer flex-1">
+                        <span className="block font-bold text-white">Self-Arranged Logistics</span>
+                        <span className="block text-xs text-white/60">Exporter/Importer manages shipment</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center gap-3">
+                 <Checkbox 
+                    id="inspection-req" 
+                    className="border-blue-400 data-[state=checked]:bg-blue-500"
+                    onCheckedChange={(checked) => updateField('inspectionRequired', checked as boolean)}
+                 />
+                 <label htmlFor="inspection-req" className="text-sm text-white cursor-pointer">
+                    <span className="font-bold block">Request Third-Party Inspection (SGS / Bureau Veritas)</span>
+                    <span className="text-white/60 text-xs">A qualified inspector will verify goods quality and quantity at loading port.</span>
+                 </label>
+              </div>
+
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 6: COMPLIANCE & LEGAL */}
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <CardTitle className="text-lg font-bold text-white">6. Compliance & Legal Declarations</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+               <div className="flex items-start space-x-3 p-3 hover:bg-white/5 rounded-lg transition-colors">
+                 <Checkbox id="kyc-confirm" className="mt-1 border-white/40 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black" />
+                 <label htmlFor="kyc-confirm" className="text-sm text-white/80 leading-relaxed cursor-pointer">
+                   I certify that the funds used for this transaction are derived from legitimate sources and comply with all applicable Anti-Money Laundering (AML) and Counter-Terrorism Financing (CTF) laws.
+                 </label>
+               </div>
+               
+               <div className="flex items-start space-x-3 p-3 hover:bg-white/5 rounded-lg transition-colors">
+                 <Checkbox id="sanctions-confirm" className="mt-1 border-white/40 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black" />
+                 <label htmlFor="sanctions-confirm" className="text-sm text-white/80 leading-relaxed cursor-pointer">
+                   I declare that neither the company nor any beneficial owners are currently subject to any international economic sanctions (OFAC, EU, UN).
+                 </label>
+               </div>
+
+               <div className="flex items-start space-x-3 p-3 hover:bg-white/5 rounded-lg transition-colors">
+                 <Checkbox id="terms-confirm" className="mt-1 border-white/40 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black" />
+                 <label htmlFor="terms-confirm" className="text-sm text-white/80 leading-relaxed cursor-pointer">
+                   I have read and agree to the <span className="text-[#D4AF37] underline">Master Trade Agreement</span> and <span className="text-[#D4AF37] underline">Platform Terms of Service</span>. I understand that FinaTrades acts as a neutral facilitator and escrow agent.
+                 </label>
+               </div>
+            </div>
           </CardContent>
         </Card>
 

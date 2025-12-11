@@ -43,6 +43,16 @@ export type TradeCase = {
   // Risk fields
   riskLevel?: 'Low' | 'Medium' | 'High';
   amlStatus?: 'Clear' | 'Flagged';
+  
+  // Professional Services
+  insuranceOption?: 'Finatrades Premium' | 'Self-Arranged';
+  inspectionRequired?: boolean;
+  logisticsOption?: 'Finatrades Secure' | 'Self-Arranged';
+  
+  // Financials
+  platformFee?: number;
+  insuranceFee?: number;
+  totalPayable?: number;
 };
 
 export type TradeItem = {
