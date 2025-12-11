@@ -71,10 +71,10 @@ export default function CashOutForm() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
-              <Card className="bg-white/5 border-white/10">
+              <Card className="bg-white shadow-sm border border-border">
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[#D4AF37]" />
+                  <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-secondary" />
                     Sell Gold
                   </CardTitle>
                 </CardHeader>
@@ -82,12 +82,12 @@ export default function CashOutForm() {
                   
                   {/* Vault Selection */}
                   <div className="space-y-2">
-                    <Label className="text-white">Source Vault</Label>
+                    <Label className="text-foreground">Source Vault</Label>
                     <Select value={selectedVault} onValueChange={setSelectedVault}>
-                      <SelectTrigger className="bg-black/20 border-white/10 text-white h-12">
+                      <SelectTrigger className="bg-background border-input text-foreground h-12">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#1A0A2E] border-white/10 text-white">
+                      <SelectContent className="bg-popover border-border text-foreground">
                         <SelectItem value="Dubai Vault">Dubai Vault (Available: 1,000.00g)</SelectItem>
                         <SelectItem value="Swiss Vault">Swiss Vault (Available: 500.00g)</SelectItem>
                       </SelectContent>
@@ -97,40 +97,40 @@ export default function CashOutForm() {
                   {/* Amount Input */}
                   <div className="space-y-4">
                     <div className="flex justify-between">
-                       <Label className="text-white">Amount to Sell (Grams)</Label>
-                       <span className="text-xs text-[#D4AF37] cursor-pointer hover:underline" onClick={() => setAmountGrams('1000')}>Max: 1,000.00g</span>
+                       <Label className="text-foreground">Amount to Sell (Grams)</Label>
+                       <span className="text-xs text-secondary cursor-pointer hover:underline" onClick={() => setAmountGrams('1000')}>Max: 1,000.00g</span>
                     </div>
                     <div className="relative">
                       <Input 
                         type="number" 
                         placeholder="0.00" 
-                        className="bg-black/20 border-white/10 text-white h-14 text-lg pl-4 pr-12 font-bold"
+                        className="bg-background border-input text-foreground h-14 text-lg pl-4 pr-12 font-bold"
                         value={amountGrams}
                         onChange={(e) => setAmountGrams(e.target.value)}
                       />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">g</div>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">g</div>
                     </div>
                     
                     {/* Live Conversion Preview */}
                     {grams > 0 && (
-                      <div className="p-4 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-2">
-                         <span className="text-white/60 text-sm">Estimated Value</span>
-                         <span className="text-xl font-bold text-[#D4AF37]">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <div className="p-4 bg-secondary/5 border border-secondary/20 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                         <span className="text-muted-foreground text-sm">Estimated Value</span>
+                         <span className="text-xl font-bold text-secondary">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
                   </div>
 
-                  <Separator className="bg-white/10" />
+                  <Separator className="bg-border" />
 
                   {/* Payout Method */}
                   <div className="space-y-4">
-                    <Label className="text-white">Payout Method</Label>
+                    <Label className="text-foreground">Payout Method</Label>
                     <RadioGroup value={payoutMethod} onValueChange={setPayoutMethod} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <RadioGroupItem value="finapay" id="finapay" className="peer sr-only" />
                         <Label
                           htmlFor="finapay"
-                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer peer-data-[state=checked]:border-[#D4AF37] peer-data-[state=checked]:text-[#D4AF37] text-white transition-all"
+                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary text-foreground transition-all"
                         >
                           <Wallet className="w-6 h-6 mb-2" />
                           <span className="font-semibold">FinaPay Wallet</span>
@@ -141,7 +141,7 @@ export default function CashOutForm() {
                         <RadioGroupItem value="bank" id="bank" className="peer sr-only" />
                         <Label
                           htmlFor="bank"
-                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer peer-data-[state=checked]:border-[#D4AF37] peer-data-[state=checked]:text-[#D4AF37] text-white transition-all"
+                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary text-foreground transition-all"
                         >
                           <Building className="w-6 h-6 mb-2" />
                           <span className="font-semibold">Bank Transfer</span>
@@ -153,7 +153,7 @@ export default function CashOutForm() {
 
                   <Button 
                     onClick={handleProceed}
-                    className="w-full h-12 bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold text-lg"
+                    className="w-full h-12 bg-secondary text-white hover:bg-secondary/90 font-bold text-lg"
                   >
                     Review Cash Out
                   </Button>
@@ -171,42 +171,42 @@ export default function CashOutForm() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <Card className="bg-white/5 border-white/10">
+              <Card className="bg-white shadow-sm border border-border">
                 <CardHeader>
-                   <CardTitle className="text-lg font-medium text-white">Confirm Transaction</CardTitle>
+                   <CardTitle className="text-lg font-medium text-foreground">Confirm Transaction</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-200 text-sm flex gap-3">
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-700 text-sm flex gap-3">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p>You are about to sell {grams}g of gold. This action cannot be undone. Funds will be credited to your {payoutMethod === 'finapay' ? 'FinaPay Wallet' : 'Bank Account'}.</p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex justify-between text-white/60 text-sm">
+                    <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Source</span>
-                      <span className="text-white">{selectedVault}</span>
+                      <span className="text-foreground">{selectedVault}</span>
                     </div>
-                    <div className="flex justify-between text-white/60 text-sm">
+                    <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Weight</span>
-                      <span className="text-white font-medium">{grams.toFixed(2)} g</span>
+                      <span className="text-foreground font-medium">{grams.toFixed(2)} g</span>
                     </div>
-                    <div className="flex justify-between text-white/60 text-sm">
+                    <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Gold Price</span>
-                      <span className="text-white">${GOLD_PRICE_USD}/g</span>
+                      <span className="text-foreground">${GOLD_PRICE_USD}/g</span>
                     </div>
-                    <Separator className="bg-white/10" />
-                    <div className="flex justify-between text-white/60 text-sm">
+                    <Separator className="bg-border" />
+                    <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Gross Amount</span>
-                      <span className="text-white">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-foreground">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between text-white/60 text-sm">
+                    <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Service Fee (1.5%)</span>
-                      <span className="text-red-400">-${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-red-500">-${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <Separator className="bg-white/10" />
+                    <Separator className="bg-border" />
                     <div className="flex justify-between items-end">
-                      <span className="text-white/80 font-medium">Net Payout</span>
-                      <span className="text-2xl font-bold text-[#D4AF37]">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-foreground/80 font-medium">Net Payout</span>
+                      <span className="text-2xl font-bold text-secondary">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
 
@@ -214,14 +214,14 @@ export default function CashOutForm() {
                     <Button 
                       variant="outline" 
                       onClick={() => setStep('input')}
-                      className="flex-1 border-white/10 hover:bg-white/5 text-white h-12"
+                      className="flex-1 border-border hover:bg-muted text-foreground h-12"
                       disabled={isLoading}
                     >
                       Back
                     </Button>
                     <Button 
                       onClick={handleConfirm}
-                      className="flex-1 bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold h-12"
+                      className="flex-1 bg-secondary text-white hover:bg-secondary/90 font-bold h-12"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -247,16 +247,16 @@ export default function CashOutForm() {
               className="text-center py-12"
             >
               <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-green-500" />
+                <CheckCircle2 className="w-10 h-10 text-green-600" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">Transaction Successful!</h3>
-              <p className="text-white/60 mb-8 max-w-sm mx-auto">
+              <h3 className="text-2xl font-bold text-foreground mb-2">Transaction Successful!</h3>
+              <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
                 You have successfully sold {grams}g of gold. <br />
-                <span className="text-[#D4AF37] font-bold">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> has been credited to your wallet.
+                <span className="text-secondary font-bold">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> has been credited to your wallet.
               </p>
               <Button 
                 onClick={reset}
-                className="bg-white/10 hover:bg-white/20 text-white font-medium px-8"
+                className="bg-muted hover:bg-muted/80 text-foreground font-medium px-8"
               >
                 Make Another Transaction
               </Button>
@@ -267,36 +267,36 @@ export default function CashOutForm() {
 
       {/* Right Column: Market Info */}
       <div className="space-y-6">
-        <Card className="bg-[#D4AF37]/5 border-[#D4AF37]/20 backdrop-blur-sm sticky top-24">
+        <Card className="bg-secondary/5 border-secondary/20 backdrop-blur-sm sticky top-24">
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-[#D4AF37]">Market Snapshot</CardTitle>
+            <CardTitle className="text-lg font-bold text-secondary">Market Snapshot</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <p className="text-white/60 text-xs uppercase tracking-wider mb-1">Live Gold Price</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Live Gold Price</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-white">${GOLD_PRICE_USD}</span>
-                <span className="text-sm text-green-500 font-medium">/ gram</span>
+                <span className="text-3xl font-bold text-foreground">${GOLD_PRICE_USD}</span>
+                <span className="text-sm text-green-600 font-medium">/ gram</span>
               </div>
-              <p className="text-green-400 text-xs mt-1 flex items-center gap-1">
+              <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
                 <ArrowRight className="w-3 h-3 -rotate-45" /> +1.2% (24h)
               </p>
             </div>
             
-            <Separator className="bg-[#D4AF37]/20" />
+            <Separator className="bg-secondary/20" />
             
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-white/60">Buy Price</span>
-                <span className="text-white font-medium">${(GOLD_PRICE_USD * 1.02).toFixed(2)}</span>
+                <span className="text-muted-foreground">Buy Price</span>
+                <span className="text-foreground font-medium">${(GOLD_PRICE_USD * 1.02).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-white/60">Sell Price</span>
-                <span className="text-[#D4AF37] font-bold">${GOLD_PRICE_USD.toFixed(2)}</span>
+                <span className="text-muted-foreground">Sell Price</span>
+                <span className="text-secondary font-bold">${GOLD_PRICE_USD.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="p-3 bg-white/5 rounded text-xs text-white/40 leading-relaxed">
+            <div className="p-3 bg-white/50 rounded text-xs text-muted-foreground leading-relaxed">
               <AlertCircle className="w-3 h-3 inline mr-1 mb-0.5" />
               Sell prices are updated every 60 seconds based on global spot rates. Final execution price may vary slightly.
             </div>
