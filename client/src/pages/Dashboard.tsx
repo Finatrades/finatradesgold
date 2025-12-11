@@ -24,8 +24,8 @@ export default function Dashboard() {
         
         {/* 1. Header Section */}
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
-          <p className="text-white/60">Welcome back to your financial command center.</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>
+          <p className="text-muted-foreground">Welcome back to your financial command center.</p>
         </div>
 
         {/* 1.5 Quick Actions Horizontal */}
@@ -104,8 +104,8 @@ export default function Dashboard() {
         {/* 5. Dashboard Slider */}
         <section>
           <div className="flex items-center justify-between mb-4">
-             <h3 className="text-lg font-bold text-white">Quick Access</h3>
-             <div className="h-px flex-1 bg-white/10 ml-6" />
+             <h3 className="text-lg font-bold text-foreground">Quick Access</h3>
+             <div className="h-px flex-1 bg-border ml-6" />
           </div>
           <DashboardSlider />
         </section>

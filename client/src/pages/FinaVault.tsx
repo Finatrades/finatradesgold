@@ -240,19 +240,19 @@ export default function FinaVault() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20 text-[#D4AF37]">
+             <div className="p-2 bg-secondary/10 rounded-lg border border-secondary/20 text-secondary">
                 <Database className="w-6 h-6" />
              </div>
-             <h1 className="text-2xl font-bold text-white">
-               FinaVault — <span className="text-white/60 font-normal">Gold Deposit</span>
+             <h1 className="text-2xl font-bold text-foreground">
+               FinaVault — <span className="text-muted-foreground font-normal">Gold Deposit</span>
              </h1>
           </div>
           
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
                <Bell className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
                <Settings className="w-5 h-5" />
             </Button>
           </div>
@@ -261,22 +261,22 @@ export default function FinaVault() {
         {/* KPI Cards Strip */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
            {/* Card 1: Total Gold - Custom Style */}
-           <div className="p-6 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-white relative overflow-hidden group">
+           <div className="p-6 rounded-2xl bg-secondary/10 border border-secondary/20 text-foreground relative overflow-hidden group">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Total Gold Value</span>
-                 <div className="p-2 bg-[#D4AF37]/20 rounded-lg text-[#D4AF37]">
+                 <div className="p-2 bg-secondary/20 rounded-lg text-secondary">
                     <Database className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1 text-[#D4AF37]">${(125.400 * 85.22).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="text-3xl font-bold mb-1 text-secondary">${(125.400 * 85.22).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               <div className="text-sm opacity-50 font-medium">125.400 g • 4.03 oz</div>
            </div>
 
            {/* Card 2: Locked Gold */}
-           <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white relative overflow-hidden">
+           <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Locked Value</span>
-                 <div className="p-2 bg-[#FFD700]/20 rounded-lg text-[#FFD700]">
+                 <div className="p-2 bg-amber-400/20 rounded-lg text-amber-500">
                     <TrendingUp className="w-4 h-4" />
                  </div>
               </div>
@@ -285,26 +285,26 @@ export default function FinaVault() {
            </div>
 
            {/* Card 3: Value USD */}
-           <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white relative overflow-hidden">
+           <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Value (USD)</span>
-                 <div className="p-2 bg-green-500/20 rounded-lg text-green-500">
+                 <div className="p-2 bg-green-500/20 rounded-lg text-green-600">
                     <DollarSign className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold text-[#D4AF37] mb-1">$10,686.58</div>
+              <div className="text-3xl font-bold text-secondary mb-1">$10,686.58</div>
               <div className="text-sm opacity-50 font-medium">@ $85.22/g</div>
            </div>
 
            {/* Card 4: Value AED */}
-           <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white relative overflow-hidden">
+           <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Value (AED)</span>
-                 <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
+                 <div className="p-2 bg-blue-500/20 rounded-lg text-blue-600">
                     <Globe className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold text-white mb-1">39,220.10</div>
+              <div className="text-3xl font-bold text-foreground mb-1">39,220.10</div>
               <div className="text-sm opacity-50 font-medium">@ 312.76/g</div>
            </div>
         </div>
@@ -332,24 +332,24 @@ export default function FinaVault() {
               exit={{ opacity: 0, y: -20 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
+                <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex">
                   <TabsTrigger 
                     value="my-deposits"
-                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
                   >
                     <History className="w-4 h-4 mr-2" />
                     Transaction Record
                   </TabsTrigger>
                   <TabsTrigger 
                     value="new-request"
-                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
                   >
                     <PlusCircle className="w-4 h-4 mr-2" />
                     New Deposit Request
                   </TabsTrigger>
                   <TabsTrigger 
                     value="cash-out"
-                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
                   >
                     <Banknote className="w-4 h-4 mr-2" />
                     Cash Out / Sell

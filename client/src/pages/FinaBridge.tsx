@@ -110,35 +110,35 @@ export default function FinaBridge() {
         {/* TOP BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20 text-[#D4AF37]">
+             <div className="p-2 bg-secondary/10 rounded-lg border border-secondary/20 text-secondary">
                 <BarChart3 className="w-6 h-6" />
              </div>
              <div>
-               <h1 className="text-2xl font-bold text-white">FinaBridge Trade</h1>
-               <p className="text-white/60 text-sm">Gold-backed trade finance wallet.</p>
+               <h1 className="text-2xl font-bold text-foreground">FinaBridge Trade</h1>
+               <p className="text-muted-foreground text-sm">Gold-backed trade finance wallet.</p>
              </div>
           </div>
           
           <div className="flex items-center gap-4">
             {/* Role Toggler for Demo */}
-            <div className="flex bg-black/40 rounded-lg p-1 border border-white/10">
+            <div className="flex bg-muted rounded-lg p-1 border border-border">
               <button 
                 onClick={() => setRole('Importer')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${role === 'Importer' ? 'bg-blue-500/20 text-blue-400' : 'text-white/40 hover:text-white'}`}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${role === 'Importer' ? 'bg-blue-600/20 text-blue-600' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 Importer View
               </button>
               <button 
                 onClick={() => setRole('Exporter')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${role === 'Exporter' ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white'}`}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${role === 'Exporter' ? 'bg-purple-600/20 text-purple-600' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 Exporter View
               </button>
             </div>
             
-            <div className="hidden md:block text-right border-l border-white/10 pl-4">
-               <p className="text-xs text-white/40 uppercase tracking-wider">Gold Spot</p>
-               <p className="text-[#D4AF37] font-bold font-mono">$85.22 <span className="text-xs text-white/40">/g</span></p>
+            <div className="hidden md:block text-right border-l border-border pl-4">
+               <p className="text-xs text-muted-foreground uppercase tracking-wider">Gold Spot</p>
+               <p className="text-secondary font-bold font-mono">$85.22 <span className="text-xs text-muted-foreground">/g</span></p>
             </div>
           </div>
         </div>
@@ -162,14 +162,14 @@ export default function FinaBridge() {
           />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
-              <TabsTrigger value="cases" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+            <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex">
+              <TabsTrigger value="cases" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <Briefcase className="w-4 h-4 mr-2" /> Trades
               </TabsTrigger>
-              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <PlusCircle className="w-4 h-4 mr-2" /> Create New Trade
               </TabsTrigger>
-              <TabsTrigger value="audit" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+              <TabsTrigger value="audit" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <ShieldCheck className="w-4 h-4 mr-2" /> Audit & Compliance
               </TabsTrigger>
             </TabsList>
@@ -193,10 +193,10 @@ export default function FinaBridge() {
             </TabsContent>
 
             <TabsContent value="audit">
-               <Card className="bg-white/5 border-white/10">
-                 <CardContent className="p-12 text-center text-white/40">
+               <Card className="bg-white shadow-sm border border-border">
+                 <CardContent className="p-12 text-center text-muted-foreground">
                     <ShieldCheck className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <h3 className="text-lg font-bold text-white mb-2">Compliance Dashboard</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-2">Compliance Dashboard</h3>
                     <p>Global view of all trade risks, AML flags, and audit trails.</p>
                  </CardContent>
                </Card>

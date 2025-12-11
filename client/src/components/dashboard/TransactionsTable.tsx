@@ -22,12 +22,12 @@ const mockTransactions: Transaction[] = [
 
 const getIcon = (type: Transaction['type']) => {
   switch (type) {
-    case 'buy': return <ShoppingCart className="w-4 h-4 text-green-400" />;
-    case 'sell': return <DollarSign className="w-4 h-4 text-red-400" />;
-    case 'send': return <ArrowUpRight className="w-4 h-4 text-orange-400" />;
-    case 'receive': return <ArrowDownLeft className="w-4 h-4 text-blue-400" />;
-    case 'bnsl': return <RefreshCw className="w-4 h-4 text-[#FF2FBF]" />;
-    default: return <RefreshCw className="w-4 h-4 text-white" />;
+    case 'buy': return <ShoppingCart className="w-4 h-4 text-green-600" />;
+    case 'sell': return <DollarSign className="w-4 h-4 text-red-600" />;
+    case 'send': return <ArrowUpRight className="w-4 h-4 text-orange-600" />;
+    case 'receive': return <ArrowDownLeft className="w-4 h-4 text-blue-600" />;
+    case 'bnsl': return <RefreshCw className="w-4 h-4 text-accent" />;
+    default: return <RefreshCw className="w-4 h-4 text-foreground" />;
   }
 };
 
@@ -37,38 +37,38 @@ const getBgColor = (type: Transaction['type']) => {
     case 'sell': return 'bg-red-500/10';
     case 'send': return 'bg-orange-500/10';
     case 'receive': return 'bg-blue-500/10';
-    case 'bnsl': return 'bg-[#FF2FBF]/10';
-    default: return 'bg-white/10';
+    case 'bnsl': return 'bg-accent/10';
+    default: return 'bg-muted';
   }
 };
 
 export default function TransactionsTable() {
   return (
-    <Card className="p-6 bg-white/5 border border-white/10 backdrop-blur-sm h-[400px] flex flex-col">
+    <Card className="p-6 bg-white shadow-sm border border-border h-[400px] flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-white">Recent Transactions</h3>
-        <Button variant="link" className="text-[#D4AF37] h-auto p-0 hover:text-[#D4AF37]/80">
+        <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
+        <Button variant="link" className="text-secondary h-auto p-0 hover:text-secondary/80">
           View all
         </Button>
       </div>
 
       <div className="overflow-y-auto flex-1 pr-2 space-y-3 custom-scrollbar">
         {mockTransactions.map((tx) => (
-          <div key={tx.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+          <div key={tx.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getBgColor(tx.type)}`}>
                 {getIcon(tx.type)}
               </div>
               <div>
-                <p className="text-sm font-medium text-white capitalize">{tx.type} Gold</p>
-                <p className="text-xs text-white/40">{tx.date}</p>
+                <p className="text-sm font-medium text-foreground capitalize">{tx.type} Gold</p>
+                <p className="text-xs text-muted-foreground">{tx.date}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className={`text-sm font-bold ${tx.value.startsWith('+') ? 'text-green-400' : 'text-white'}`}>
+              <p className={`text-sm font-bold ${tx.value.startsWith('+') ? 'text-green-600' : 'text-foreground'}`}>
                 {tx.value}
               </p>
-              <p className="text-xs text-white/60">{tx.amount}</p>
+              <p className="text-xs text-muted-foreground">{tx.amount}</p>
             </div>
           </div>
         ))}

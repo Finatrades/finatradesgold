@@ -8,41 +8,41 @@ const actions = [
     title: 'Add Fund',
     path: '/finapay',
     icon: <Plus className="w-5 h-5" />,
-    color: 'text-white',
-    bg: 'bg-white/10 hover:bg-white/20',
-    border: 'border-white/20'
+    color: 'text-primary',
+    bg: 'bg-primary/10 hover:bg-primary/20',
+    border: 'border-primary/20'
   },
   {
     title: 'Buy Gold',
     path: '/finapay',
     icon: <ShoppingCart className="w-5 h-5" />,
-    color: 'text-[#D4AF37]',
-    bg: 'bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20',
-    border: 'border-[#D4AF37]/30'
+    color: 'text-secondary',
+    bg: 'bg-secondary/10 hover:bg-secondary/20',
+    border: 'border-secondary/30'
   },
   {
     title: 'Deposit Gold',
     path: '/finavault?tab=new-request',
     icon: <Database className="w-5 h-5" />,
-    color: 'text-[#D4AF37]',
-    bg: 'bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20',
-    border: 'border-[#D4AF37]/30'
+    color: 'text-secondary',
+    bg: 'bg-secondary/10 hover:bg-secondary/20',
+    border: 'border-secondary/30'
   },
   {
     title: 'Send Payment',
     path: '/finapay',
     icon: <Send className="w-5 h-5" />,
-    color: 'text-[#8A2BE2]',
-    bg: 'bg-[#8A2BE2]/10 hover:bg-[#8A2BE2]/20',
-    border: 'border-[#8A2BE2]/30'
+    color: 'text-orange-600',
+    bg: 'bg-orange-500/10 hover:bg-orange-500/20',
+    border: 'border-orange-500/30'
   },
   {
     title: 'Request Payment',
     path: '/finapay',
     icon: <ArrowDownLeft className="w-5 h-5" />,
-    color: 'text-[#FF2FBF]',
-    bg: 'bg-[#FF2FBF]/10 hover:bg-[#FF2FBF]/20',
-    border: 'border-[#FF2FBF]/30'
+    color: 'text-accent',
+    bg: 'bg-accent/10 hover:bg-accent/20',
+    border: 'border-accent/30'
   }
 ];
 
@@ -61,12 +61,12 @@ export default function QuickActionsTop() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setLocation(action.path)}
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl border backdrop-blur-sm transition-all ${action.bg} ${action.border} min-w-[180px]`}
+            className={`flex items-center gap-3 px-6 py-4 rounded-xl border backdrop-blur-sm transition-all ${action.bg} ${action.border} min-w-[180px] bg-white shadow-sm`}
           >
-            <div className={`p-2 rounded-lg bg-black/20 ${action.color}`}>
+            <div className={`p-2 rounded-lg bg-white/50 ${action.color}`}>
               {action.icon}
             </div>
-            <span className="font-semibold text-white text-sm whitespace-nowrap">
+            <span className="font-semibold text-foreground text-sm whitespace-nowrap">
               {action.title}
             </span>
           </motion.button>

@@ -16,11 +16,11 @@ export default function FinaPayCard() {
   };
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-[#1A0A2E] to-[#0D0515] border border-white/10 relative overflow-hidden group h-full flex flex-col justify-between">
+    <Card className="p-6 bg-gradient-to-br from-black via-zinc-900 to-zinc-800 border border-zinc-700 relative overflow-hidden group h-full flex flex-col justify-between shadow-md">
       <div className="flex justify-between items-start mb-6">
         <div>
           <h3 className="text-lg font-bold text-white mb-1">FinaCard Metal</h3>
-          <p className="text-xs text-[#D4AF37] font-medium uppercase tracking-wider">Premium Debit</p>
+          <p className="text-xs text-secondary font-medium uppercase tracking-wider">Premium Debit</p>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-white/40 hover:text-white">
           <Settings className="w-4 h-4" />
@@ -28,7 +28,7 @@ export default function FinaPayCard() {
       </div>
 
       {/* Card Visual */}
-      <div className="relative w-full aspect-[1.586/1] rounded-xl bg-gradient-to-br from-[#D4AF37] via-[#FCEda8] to-[#B8860B] shadow-lg p-5 flex flex-col justify-between mb-6 group-hover:scale-[1.02] transition-transform duration-300">
+      <div className="relative w-full aspect-[1.586/1] rounded-xl bg-gradient-to-br from-secondary via-orange-300 to-orange-500 shadow-lg p-5 flex flex-col justify-between mb-6 group-hover:scale-[1.02] transition-transform duration-300">
         {/* Card Noise Texture */}
         <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay rounded-xl" />
         
@@ -72,10 +72,10 @@ export default function FinaPayCard() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white">
+        <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white hover:text-white border-zinc-600">
           Freeze Card
         </Button>
-        <Button className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-semibold">
+        <Button className="bg-secondary text-white hover:bg-secondary/90 font-semibold">
           View Details
         </Button>
       </div>

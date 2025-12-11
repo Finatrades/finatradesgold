@@ -32,28 +32,28 @@ export default function ChartCard() {
   const isPositive = change >= 0;
 
   return (
-    <Card className="p-6 bg-white/5 border border-white/10 backdrop-blur-sm h-[400px] flex flex-col">
+    <Card className="p-6 bg-white shadow-sm border border-border h-[400px] flex flex-col">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h3 className="text-lg font-bold text-white mb-1">Gold Live Spot</h3>
+          <h3 className="text-lg font-bold text-foreground mb-1">Gold Live Spot</h3>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-white">${lastValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span className={`text-sm font-medium flex items-center px-2 py-0.5 rounded-full ${isPositive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+            <span className="text-2xl font-bold text-foreground">${lastValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className={`text-sm font-medium flex items-center px-2 py-0.5 rounded-full ${isPositive ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
               {isPositive ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
               {Math.abs(change).toFixed(2)}%
             </span>
           </div>
         </div>
         
-        <div className="flex bg-white/5 p-1 rounded-lg border border-white/5">
+        <div className="flex bg-muted p-1 rounded-lg border border-border">
           {(['24H', '7D', '30D'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTimeframe(t)}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                 timeframe === t 
-                  ? 'bg-[#D4AF37] text-black shadow-lg' 
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
+                  ? 'bg-secondary text-white shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
               {t}
@@ -67,11 +67,11 @@ export default function ChartCard() {
           <AreaChart data={currentData}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                <stop offset="5%" stopColor="hsl(var(--secondary))" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="hsl(var(--secondary))" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis 
               dataKey="date" 
               hide={true}
@@ -79,21 +79,21 @@ export default function ChartCard() {
             <YAxis 
               domain={['auto', 'auto']}
               orientation="right"
-              tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 10}}
+              tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10}}
               tickFormatter={(val) => `$${val}`}
               axisLine={false}
               tickLine={false}
               width={50}
             />
             <Tooltip 
-              contentStyle={{backgroundColor: '#1A0A2E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px'}}
-              itemStyle={{color: '#D4AF37'}}
-              labelStyle={{color: '#fff', marginBottom: '4px'}}
+              contentStyle={{backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--popover-foreground))'}}
+              itemStyle={{color: 'hsl(var(--secondary))'}}
+              labelStyle={{color: 'hsl(var(--foreground))', marginBottom: '4px'}}
             />
             <Area 
               type="monotone" 
               dataKey="value" 
-              stroke="#D4AF37" 
+              stroke="hsl(var(--secondary))" 
               strokeWidth={2}
               fillOpacity={1} 
               fill="url(#colorValue)" 

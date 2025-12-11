@@ -10,9 +10,9 @@ const sliderItems = [
     path: '/finapay',
     desc: 'Buy, sell, send, and receive digital gold value.',
     icon: <Wallet className="w-6 h-6" />,
-    color: 'text-[#8A2BE2]',
-    bg: 'bg-[#8A2BE2]/10',
-    border: 'border-[#8A2BE2]/20'
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    border: 'border-primary/20'
   },
   {
     id: 'finavault',
@@ -20,9 +20,9 @@ const sliderItems = [
     path: '/finavault',
     desc: 'Track and manage your stored physical gold.',
     icon: <Database className="w-6 h-6" />,
-    color: 'text-[#D4AF37]',
-    bg: 'bg-[#D4AF37]/10',
-    border: 'border-[#D4AF37]/20'
+    color: 'text-secondary',
+    bg: 'bg-secondary/10',
+    border: 'border-secondary/20'
   },
   {
     id: 'bnsl',
@@ -30,9 +30,9 @@ const sliderItems = [
     path: '/bnsl',
     desc: 'Lock gold to earn structured rewards over time.',
     icon: <TrendingUp className="w-6 h-6" />,
-    color: 'text-[#FF2FBF]',
-    bg: 'bg-[#FF2FBF]/10',
-    border: 'border-[#FF2FBF]/20'
+    color: 'text-accent',
+    bg: 'bg-accent/10',
+    border: 'border-accent/20'
   },
   {
     id: 'margins',
@@ -40,9 +40,9 @@ const sliderItems = [
     path: '/bnsl',
     desc: 'View margins and projections on your BNSL positions.',
     icon: <BarChart3 className="w-6 h-6" />,
-    color: 'text-[#4CAF50]',
-    bg: 'bg-[#4CAF50]/10',
-    border: 'border-[#4CAF50]/20'
+    color: 'text-green-600',
+    bg: 'bg-green-500/10',
+    border: 'border-green-500/20'
   }
 ];
 
@@ -56,17 +56,17 @@ export default function DashboardSlider() {
           <motion.div
             key={item.id}
             whileHover={{ scale: 1.02, y: -2 }}
-            className={`w-[280px] p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm cursor-pointer hover:border-[#D4AF37]/50 transition-colors group`}
+            className={`w-[280px] p-5 rounded-2xl bg-white shadow-sm border border-border cursor-pointer hover:border-secondary/50 transition-colors group`}
             onClick={() => setLocation(item.path)}
           >
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${item.bg} ${item.color}`}>
               {item.icon}
             </div>
-            <h4 className="text-lg font-bold text-white mb-2 group-hover:text-[#D4AF37] transition-colors">{item.title}</h4>
-            <p className="text-sm text-white/50 leading-relaxed mb-4 min-h-[40px]">
+            <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-secondary transition-colors">{item.title}</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4 min-h-[40px]">
               {item.desc}
             </p>
-            <div className="flex items-center text-xs font-medium text-white/40 group-hover:text-white transition-colors">
+            <div className="flex items-center text-xs font-medium text-muted-foreground/60 group-hover:text-foreground transition-colors">
               Access Module <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
             </div>
           </motion.div>

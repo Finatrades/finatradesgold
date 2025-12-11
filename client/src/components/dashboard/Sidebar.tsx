@@ -46,18 +46,18 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
       {/* Sidebar Container */}
       <aside 
-        className={`fixed top-0 left-0 h-full w-64 bg-[#0D001E] border-r border-white/10 z-50 transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           
           {/* Logo Area */}
-          <div className="h-20 flex items-center px-6 border-b border-white/10">
+          <div className="h-20 flex items-center px-6 border-b border-border">
             <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer">
-                <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#8A2BE2] rounded-lg" />
-                <span className="text-xl font-bold tracking-tight text-white">Finatrades</span>
+                <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg" />
+                <span className="text-xl font-bold tracking-tight text-foreground">Finatrades</span>
               </div>
             </Link>
           </div>
@@ -69,18 +69,18 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
                 <div 
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer group ${
                     isActive(item.href) 
-                      ? 'bg-[#D4AF37]/10 text-[#D4AF37]' 
-                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                      ? 'bg-secondary/10 text-secondary' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
-                  <div className={`${isActive(item.href) ? 'text-[#D4AF37]' : 'text-white/60 group-hover:text-white'}`}>
+                  <div className={`${isActive(item.href) ? 'text-secondary' : 'text-muted-foreground group-hover:text-foreground'}`}>
                     {item.icon}
                   </div>
                   <span className="font-medium">{item.label}</span>
                   {isActive(item.href) && (
                     <motion.div 
                       layoutId="sidebar-active"
-                      className="absolute left-0 w-1 h-8 bg-[#D4AF37] rounded-r-full"
+                      className="absolute left-0 w-1 h-8 bg-secondary rounded-r-full"
                     />
                   )}
                 </div>
@@ -89,10 +89,10 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
           </div>
 
           {/* Footer / Logout */}
-          <div className="p-4 border-t border-white/10">
+          <div className="p-4 border-t border-border">
             <Button 
               variant="ghost" 
-              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="w-full justify-start text-destructive hover:text-destructive/80 hover:bg-destructive/10"
               onClick={logout}
             >
               <LogOut className="w-5 h-5 mr-3" />

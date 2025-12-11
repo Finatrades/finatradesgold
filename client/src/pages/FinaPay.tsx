@@ -219,28 +219,28 @@ export default function FinaPay() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-[#8A2BE2]/10 rounded-lg border border-[#8A2BE2]/20 text-[#8A2BE2]">
+             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20 text-primary">
                 <WalletIcon className="w-6 h-6" />
              </div>
              <div>
-               <h1 className="text-2xl font-bold text-white">FinaPay Wallet</h1>
-               <p className="text-white/60 text-sm">USD & Gold wallet for digital finance.</p>
+               <h1 className="text-2xl font-bold text-foreground">FinaPay Wallet</h1>
+               <p className="text-muted-foreground text-sm">USD & Gold wallet for digital finance.</p>
              </div>
           </div>
           
           <div className="flex items-center gap-4">
             <div className="hidden md:block text-right">
-               <p className="text-xs text-white/40 uppercase tracking-wider">Live Gold Spot</p>
-               <p className="text-[#D4AF37] font-bold font-mono">${wallet.goldPriceUsdPerGram.toFixed(2)} <span className="text-xs text-white/40">/g</span></p>
+               <p className="text-xs text-muted-foreground uppercase tracking-wider">Live Gold Spot</p>
+               <p className="text-secondary font-bold font-mono">${wallet.goldPriceUsdPerGram.toFixed(2)} <span className="text-xs text-muted-foreground">/g</span></p>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
                  <RefreshCw className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
                  <Bell className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
                  <Settings className="w-5 h-5" />
               </Button>
             </div>
@@ -255,7 +255,7 @@ export default function FinaPay() {
         {/* 2. Quick Actions */}
         <section>
           <div className="flex items-center justify-between mb-3">
-             <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider">Quick Actions</h3>
+             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Quick Actions</h3>
           </div>
           <QuickActions onAction={handleQuickAction} goldPrice={wallet.goldPriceUsdPerGram} />
         </section>
