@@ -66,7 +66,7 @@ export default function Dashboard() {
               delay={3}
             />
             <KpiCard 
-              title="Total Staking" 
+              title="BNSL Invested" 
               value="850.00 g" 
               subValue="Locked in BNSL"
               definition="total Staking means overall Staking Gold Quality."
