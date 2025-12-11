@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TradeCase, FinaBridgeWallet } from '@/types/finabridge';
-import { Lock, ArrowRight, Save, CheckCircle2, Upload } from 'lucide-react';
+import { Lock, ArrowRight, Save, CheckCircle2, Upload, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TradeItem } from '@/types/finabridge';
 
 interface CreateTradeCaseProps {
   onSuccess: (newCase: TradeCase, lockAmount: number) => void;
@@ -28,10 +29,15 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
     lockedGoldGrams: 0,
     buyer: { company: '', country: '', contactName: '', email: '' },
     seller: { company: '', country: '', contactName: '', email: '' },
+    items: [],
+    loadingPort: 'Jebel Ali (AEAEX)',
+    destinationPort: 'Nhava Sheva (IN/NSA)',
+    deliveryTimeframe: '15-20 days',
   });
   const [valueMode, setValueMode] = useState<'USD' | 'GOLD'>('USD');
   const [lockAmount, setLockAmount] = useState<string>('0');
   const [useFinatradesExporter, setUseFinatradesExporter] = useState(false);
+  const [items, setItems] = useState<TradeItem[]>([]);
 
   const GOLD_PRICE = 85.22; // Mock price
 
@@ -63,6 +69,47 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
     }
   };
 
+  const calculateTotal = (currentItems: TradeItem[]) => {
+    const total = currentItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    setFormData(prev => ({
+      ...prev,
+      valueUsd: total,
+      valueGoldGrams: total / GOLD_PRICE
+    }));
+  };
+
+  const addItem = () => {
+    const newItem: TradeItem = {
+      id: Math.random().toString(36).substr(2, 9),
+      description: '',
+      hsCode: '',
+      quantity: 0,
+      uom: 'KG',
+      unitPrice: 0,
+      currency: 'USD'
+    };
+    const newItems = [...items, newItem];
+    setItems(newItems);
+    calculateTotal(newItems);
+  };
+
+  const updateItem = (id: string, field: keyof TradeItem, value: any) => {
+    const newItems = items.map(item => {
+      if (item.id === id) {
+        return { ...item, [field]: field === 'quantity' || field === 'unitPrice' ? parseFloat(value) || 0 : value };
+      }
+      return item;
+    });
+    setItems(newItems);
+    calculateTotal(newItems);
+  };
+
+  const removeItem = (id: string) => {
+    const newItems = items.filter(item => item.id !== id);
+    setItems(newItems);
+    calculateTotal(newItems);
+  };
+
   const handleSubmit = (isDraft: boolean) => {
     const lockAmt = parseFloat(lockAmount) || 0;
     
@@ -84,6 +131,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
     const newCase: TradeCase = {
       id: `TF-2025-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
       ...formData as TradeCase,
+      items: items,
       seller: finalSeller || { company: '', country: '', contactName: '', email: '' },
       status: isDraft ? 'Draft' : (lockAmt > 0 ? 'Funded – Docs Pending' : 'Awaiting Funding'),
       lockedGoldGrams: lockAmt,
@@ -335,10 +383,10 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
           </CardContent>
         </Card>
 
-        {/* SECTION 3: SHIPMENT & TERMS */}
+        {/* SECTION 3: PRODUCT & TRANSACTION */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="border-b border-white/10 pb-4">
-            <CardTitle className="text-lg font-bold text-white">3. Shipment & Delivery Terms</CardTitle>
+            <CardTitle className="text-lg font-bold text-white">3. Product & Transaction</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-6">
@@ -358,74 +406,178 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                   </Select>
                  </div>
                  <div className="space-y-2">
-                   <Label>Shipment Method</Label>
-                   <Select onValueChange={(val) => updateField('shipmentMethod', val)}>
+                   <Label>Payment Terms</Label>
+                   <Select onValueChange={(val) => updateField('paymentTerms', val)}>
                     <SelectTrigger className="bg-black/20 border-white/10">
-                      <SelectValue placeholder="Select Method" />
+                      <SelectValue placeholder="Select Terms" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Air Freight">Air Freight</SelectItem>
-                      <SelectItem value="Sea Freight">Sea Freight</SelectItem>
-                      <SelectItem value="Land Transport">Land Transport</SelectItem>
-                      <SelectItem value="Secure Logistics">Secure Logistics</SelectItem>
+                      <SelectItem value="Advance Payment">Advance Payment</SelectItem>
+                      <SelectItem value="Letter of Credit">Letter of Credit (LC)</SelectItem>
+                      <SelectItem value="Cash Against Documents">Cash Against Documents (CAD)</SelectItem>
+                      <SelectItem value="Open Account">Open Account</SelectItem>
                     </SelectContent>
                   </Select>
                  </div>
                </div>
+
+               <div className="grid grid-cols-3 gap-6">
+                 <div className="space-y-2">
+                   <Label>Loading Port</Label>
+                   <Input 
+                      className="bg-black/20 border-white/10"
+                      value={formData.loadingPort}
+                      onChange={(e) => updateField('loadingPort', e.target.value)}
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label>Destination Port</Label>
+                   <Input 
+                      className="bg-black/20 border-white/10"
+                      value={formData.destinationPort}
+                      onChange={(e) => updateField('destinationPort', e.target.value)}
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label>Delivery Timeframe</Label>
+                   <Input 
+                      className="bg-black/20 border-white/10"
+                      value={formData.deliveryTimeframe}
+                      onChange={(e) => updateField('deliveryTimeframe', e.target.value)}
+                   />
+                 </div>
+               </div>
+
+               {/* Items Table */}
+               <div className="space-y-4">
+                 <div className="flex justify-between items-center">
+                    <Label>Items & HS Codes</Label>
+                    <Button size="sm" onClick={addItem} className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 h-8 text-xs">
+                      <Plus className="w-3 h-3 mr-1" /> Add Item
+                    </Button>
+                 </div>
+                 
+                 <div className="border border-white/10 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-white/5 text-white/60 font-medium">
+                        <tr>
+                          <th className="p-3">Description</th>
+                          <th className="p-3 w-24">HS Code</th>
+                          <th className="p-3 w-20 text-right">Qty</th>
+                          <th className="p-3 w-20">UoM</th>
+                          <th className="p-3 w-28 text-right">Unit Price</th>
+                          <th className="p-3 w-20">Curr</th>
+                          <th className="p-3 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {items.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="p-8 text-center text-white/40 italic">
+                              No items added yet. Click "Add Item" to start.
+                            </td>
+                          </tr>
+                        )}
+                        {items.map((item) => (
+                          <tr key={item.id} className="group hover:bg-white/5">
+                            <td className="p-2">
+                              <Input 
+                                className="h-8 bg-transparent border-transparent hover:border-white/10 focus:border-white/20"
+                                placeholder="Item Description"
+                                value={item.description}
+                                onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input 
+                                className="h-8 bg-transparent border-transparent hover:border-white/10 focus:border-white/20"
+                                placeholder="HS Code"
+                                value={item.hsCode}
+                                onChange={(e) => updateItem(item.id, 'hsCode', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input 
+                                type="number"
+                                className="h-8 bg-transparent border-transparent hover:border-white/10 focus:border-white/20 text-right"
+                                value={item.quantity}
+                                onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input 
+                                className="h-8 bg-transparent border-transparent hover:border-white/10 focus:border-white/20 uppercase"
+                                value={item.uom}
+                                onChange={(e) => updateItem(item.id, 'uom', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input 
+                                type="number"
+                                className="h-8 bg-transparent border-transparent hover:border-white/10 focus:border-white/20 text-right"
+                                value={item.unitPrice}
+                                onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input 
+                                className="h-8 bg-transparent border-transparent hover:border-white/10 focus:border-white/20 uppercase"
+                                value={item.currency}
+                                onChange={(e) => updateItem(item.id, 'currency', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2 text-right">
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-8 w-8 text-white/20 hover:text-red-400 hover:bg-red-500/10"
+                                onClick={() => removeItem(item.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      {items.length > 0 && (
+                        <tfoot className="bg-white/5 font-bold">
+                          <tr>
+                            <td colSpan={4} className="p-3 text-right text-white/60">Total (calc):</td>
+                            <td className="p-3 text-right text-[#D4AF37] text-lg">
+                              US$ {formData.valueUsd?.toLocaleString()}
+                            </td>
+                            <td colSpan={2}></td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                 </div>
+               </div>
+
             </div>
           </CardContent>
         </Card>
 
-        {/* SECTION 4: VALUE & LOCKING */}
+        {/* SECTION 4: SETTLEMENT & LOCKING */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="border-b border-white/10 pb-4">
-            <CardTitle className="text-lg font-bold text-white">4. Value & Settlement</CardTitle>
+            <CardTitle className="text-lg font-bold text-white">4. Settlement & Locking</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
              <div className="space-y-8">
                
-               {/* Value Input */}
+               {/* Value Display */}
                <div className="space-y-4">
-                 <Label>Contract Value</Label>
-                 <div className="flex gap-4 mb-2">
-                   <div className="flex items-center space-x-2">
-                      <input 
-                        type="radio" 
-                        checked={valueMode === 'USD'} 
-                        onChange={() => setValueMode('USD')}
-                        className="accent-[#D4AF37]"
-                      />
-                      <span className="text-sm text-white">USD</span>
-                   </div>
-                   <div className="flex items-center space-x-2">
-                      <input 
-                        type="radio" 
-                        checked={valueMode === 'GOLD'} 
-                        onChange={() => setValueMode('GOLD')}
-                        className="accent-[#D4AF37]"
-                      />
-                      <span className="text-sm text-white">Gold (g)</span>
-                   </div>
-                 </div>
-                 
-                 <div className="grid grid-cols-2 gap-4">
-                   <div className="relative">
-                      <Input 
-                        type="number"
-                        placeholder="0.00"
-                        className="bg-black/20 border-white/10 pl-8 text-lg"
-                        onChange={(e) => handleValueChange(e.target.value)}
-                      />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold">
-                        {valueMode === 'USD' ? '$' : 'g'}
-                      </span>
-                   </div>
-                   <div className="flex items-center px-4 bg-white/5 border border-white/10 rounded-md text-white/60 text-sm">
-                      Equivalent: {valueMode === 'USD' 
-                        ? `${formData.valueGoldGrams?.toFixed(3)} g` 
-                        : `$${formData.valueUsd?.toLocaleString()}`
-                      }
-                   </div>
+                 <div className="flex justify-between items-center bg-black/20 p-4 rounded-lg border border-white/10">
+                    <div>
+                      <Label className="text-white/60">Total Contract Value</Label>
+                      <p className="text-2xl font-bold text-white mt-1">US$ {formData.valueUsd?.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <Label className="text-white/60">Gold Equivalent</Label>
+                      <p className="text-xl font-bold text-[#D4AF37] mt-1 font-mono">{formData.valueGoldGrams?.toFixed(3)} g</p>
+                      <p className="text-xs text-white/40">@ ${GOLD_PRICE}/g</p>
+                    </div>
                  </div>
                </div>
 

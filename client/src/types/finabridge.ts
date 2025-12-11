@@ -31,6 +31,10 @@ export type TradeCase = {
   paymentTerms: string;
   deliveryTerms: string;
   shipmentMethod: string;
+  loadingPort?: string;
+  destinationPort?: string;
+  deliveryTimeframe?: string;
+  items?: TradeItem[];
   expectedDeliveryDate: string;
   lockedGoldGrams: number;
   status: TradeCaseStatus;
@@ -39,6 +43,16 @@ export type TradeCase = {
   // Risk fields
   riskLevel?: 'Low' | 'Medium' | 'High';
   amlStatus?: 'Clear' | 'Flagged';
+};
+
+export type TradeItem = {
+  id: string;
+  description: string;
+  hsCode: string;
+  quantity: number;
+  uom: string;
+  unitPrice: number;
+  currency: string;
 };
 
 export type FinaBridgeWalletSide = {
