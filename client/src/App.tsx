@@ -38,6 +38,7 @@ import Profile from "@/pages/Profile";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import KYCReview from "@/pages/admin/KYCReview";
 import UserManagement from "@/pages/admin/UserManagement";
+import UserDetails from "@/pages/admin/UserDetails";
 import Transactions from "@/pages/admin/Transactions";
 
 function Router() {
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/kyc" component={KYCReview} />
       <Route path="/admin/users" component={UserManagement} />
+      <Route path="/admin/users/:id" component={UserDetails} />
       <Route path="/admin/transactions" component={Transactions} />
 
       <Route component={NotFound} />

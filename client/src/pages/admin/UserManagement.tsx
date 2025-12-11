@@ -1,9 +1,10 @@
 import React from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Ban, Edit, Trash } from 'lucide-react';
+import { MoreHorizontal, Ban, Edit, Trash, Eye } from 'lucide-react';
+import { Link } from 'wouter';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,6 +72,11 @@ export default function UserManagement() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <Link href={`/admin/users/${user.id}`}>
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Eye className="w-4 h-4 mr-2" /> View Full Details
+                              </DropdownMenuItem>
+                            </Link>
                             <DropdownMenuItem><Edit className="w-4 h-4 mr-2" /> Edit Details</DropdownMenuItem>
                             <DropdownMenuItem><Ban className="w-4 h-4 mr-2" /> Suspend User</DropdownMenuItem>
                             <DropdownMenuSeparator />
