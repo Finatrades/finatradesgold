@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, QrCode, Scan } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, Paperclip, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface SendGoldModalProps {
@@ -22,6 +22,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('direct');
+  const [attachment, setAttachment] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,6 +33,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
       setOtp('');
       setIsLoading(false);
       setActiveTab('direct');
+      setAttachment(null);
     }
   }, [isOpen]);
 
@@ -48,6 +50,11 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
       setIsLoading(false);
       onConfirm(recipient, numericGrams);
     }, 1500);
+  };
+
+  const handleAttachment = () => {
+    // In a real app, this would trigger a file picker
+    setAttachment('invoice_123.pdf');
   };
 
   return (
@@ -95,13 +102,42 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
               </div>
 
               <div className="space-y-2">
-                <Label>Note (Optional)</Label>
-                <Textarea 
-                  placeholder="What's this for?" 
-                  className="bg-black/20 border-white/10 resize-none h-20"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
+                <div className="flex justify-between items-center">
+                   <Label>Note (Optional)</Label>
+                   <Button 
+                     variant="ghost" 
+                     size="sm" 
+                     className="h-6 px-2 text-xs text-white/40 hover:text-white"
+                     onClick={handleAttachment}
+                   >
+                     <Paperclip className="w-3 h-3 mr-1" />
+                     Attach File
+                   </Button>
+                </div>
+                
+                {attachment ? (
+                  <div className="flex items-center justify-between bg-white/5 p-2 rounded border border-white/10 text-sm">
+                    <div className="flex items-center text-white/80">
+                      <Paperclip className="w-3 h-3 mr-2" />
+                      {attachment}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-white/40 hover:text-red-400"
+                      onClick={() => setAttachment(null)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Textarea 
+                    placeholder="What's this for?" 
+                    className="bg-black/20 border-white/10 resize-none h-20"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                )}
               </div>
 
               <Button 

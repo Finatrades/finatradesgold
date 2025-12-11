@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Link } from 'lucide-react';
+import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Paperclip, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,6 +21,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   const [note, setNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('request');
+  const [attachment, setAttachment] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -29,6 +30,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       setNote('');
       setIsLoading(false);
       setActiveTab('request');
+      setAttachment(null);
     }
   }, [isOpen]);
 
@@ -48,6 +50,11 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       title: "Link Copied",
       description: "Payment link copied to clipboard.",
     });
+  };
+
+  const handleAttachment = () => {
+    // In a real app, this would trigger a file picker
+    setAttachment('invoice_123.pdf');
   };
 
   return (
@@ -91,13 +98,42 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
             </div>
 
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea 
-                placeholder="Invoice #1024..." 
-                className="bg-black/20 border-white/10 resize-none h-20"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
+              <div className="flex justify-between items-center">
+                 <Label>Description</Label>
+                 <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   className="h-6 px-2 text-xs text-white/40 hover:text-white"
+                   onClick={handleAttachment}
+                 >
+                   <Paperclip className="w-3 h-3 mr-1" />
+                   Attach File
+                 </Button>
+              </div>
+
+              {attachment ? (
+                <div className="flex items-center justify-between bg-white/5 p-2 rounded border border-white/10 text-sm">
+                  <div className="flex items-center text-white/80">
+                    <Paperclip className="w-3 h-3 mr-2" />
+                    {attachment}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-white/40 hover:text-red-400"
+                    onClick={() => setAttachment(null)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Textarea 
+                  placeholder="Invoice #1024..." 
+                  className="bg-black/20 border-white/10 resize-none h-20"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              )}
             </div>
 
             <Button 
