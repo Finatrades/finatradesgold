@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote } from 'lucide-react';
@@ -11,6 +11,7 @@ import CashOutForm from '@/components/finavault/CashOutForm';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { useLocation } from 'wouter';
 
 // Mock Data
 const MOCK_REQUESTS: DepositRequest[] = [
@@ -70,11 +71,21 @@ const MOCK_REQUESTS: DepositRequest[] = [
 export default function FinaVault() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [location] = useLocation();
   
   // State
   const [activeTab, setActiveTab] = useState('my-deposits');
   const [requests, setRequests] = useState<DepositRequest[]>(MOCK_REQUESTS);
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
+
+  // Check query params for initial tab
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'new-request') {
+      setActiveTab('new-request');
+    }
+  }, [location]);
 
   // Handlers
   const handleNewRequest = (data: Omit<DepositRequest, 'id' | 'status' | 'submittedAt'>) => {

@@ -22,7 +22,7 @@ const actions = [
   },
   {
     title: 'Deposit Gold',
-    path: '/finavault',
+    path: '/finavault?tab=new-request',
     icon: <Database className="w-5 h-5" />,
     color: 'text-[#D4AF37]',
     bg: 'bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20',
