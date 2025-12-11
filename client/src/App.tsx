@@ -96,8 +96,6 @@ function Router() {
 
 import { BnslProvider } from "@/context/BnslContext";
 
-import { ChatProvider } from "@/context/ChatContext";
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -107,18 +105,16 @@ function App() {
             <TradeFinanceProvider>
               <BnslProvider>
                 <FinaPayProvider>
-                  <ChatProvider>
-                    <LanguageProvider>
-                      <AccountTypeProvider>
-                        <NotificationProvider>
-                          <TooltipProvider>
-                            <Toaster />
-                            <Router />
-                          </TooltipProvider>
-                        </NotificationProvider>
-                      </AccountTypeProvider>
-                    </LanguageProvider>
-                  </ChatProvider>
+                  <LanguageProvider>
+                    <AccountTypeProvider>
+                      <NotificationProvider>
+                        <TooltipProvider>
+                          <Toaster />
+                          <Router />
+                        </TooltipProvider>
+                      </NotificationProvider>
+                    </AccountTypeProvider>
+                  </LanguageProvider>
                 </FinaPayProvider>
               </BnslProvider>
             </TradeFinanceProvider>

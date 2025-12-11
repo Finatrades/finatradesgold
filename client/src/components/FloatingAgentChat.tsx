@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useChat } from "@/context/ChatContext";
+import { useChat, ChatProvider } from "@/context/ChatContext";
 import { useAuth } from "@/context/AuthContext";
 
 const agents = [
@@ -16,7 +16,7 @@ const agents = [
   { name: "Markis", role: "Market Intelligence", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/643f01b2a_Markis.png", greeting: "Greetings! I'm Markis, your Market Intelligence expert.", active: false }
 ];
 
-export default function FloatingAgentChat() {
+function FloatingAgentChatContent() {
   const { user } = useAuth();
   const { currentSession, sendMessage, createSession, selectSession, sessions } = useChat();
   
@@ -417,5 +417,19 @@ export default function FloatingAgentChat() {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+export default function FloatingAgentChat() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return null;
+  }
+  
+  return (
+    <ChatProvider>
+      <FloatingAgentChatContent />
+    </ChatProvider>
   );
 }
