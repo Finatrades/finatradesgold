@@ -57,12 +57,26 @@ import TradeFinance from "@/pages/admin/TradeFinance";
 import BNSLManagement from "@/pages/admin/BNSLManagement";
 import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
 
+import FinaPayDashboard from "@/pages/FinaPayDashboard";
+import { FinaPayProvider } from "@/context/FinaPayContext";
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      {/* ... existing routes ... */}
+      <Route path="/register" component={Register} />
+      <Route path="/login" component={Login} />
+      <Route path="/kyc" component={KYC} />
       
+      {/* User Dashboard Routes */}
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/finapay" component={FinaPayDashboard} />
+      <ProtectedRoute path="/finavault" component={FinaVault} />
+      <ProtectedRoute path="/bnsl" component={BNSL} />
+      <ProtectedRoute path="/finabridge" component={FinaBridge} />
+      <ProtectedRoute path="/finacard" component={FinaCard} />
+      <ProtectedRoute path="/profile" component={Profile} />
+
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/kyc" component={KYCReview} />
@@ -97,16 +111,18 @@ function App() {
           <PlatformProvider>
             <TradeFinanceProvider>
               <BnslProvider>
-                <LanguageProvider>
-                  <AccountTypeProvider>
-                    <NotificationProvider>
-                      <TooltipProvider>
-                        <Toaster />
-                        <Router />
-                      </TooltipProvider>
-                    </NotificationProvider>
-                  </AccountTypeProvider>
-                </LanguageProvider>
+                <FinaPayProvider>
+                  <LanguageProvider>
+                    <AccountTypeProvider>
+                      <NotificationProvider>
+                        <TooltipProvider>
+                          <Toaster />
+                          <Router />
+                        </TooltipProvider>
+                      </NotificationProvider>
+                    </AccountTypeProvider>
+                  </LanguageProvider>
+                </FinaPayProvider>
               </BnslProvider>
             </TradeFinanceProvider>
           </PlatformProvider>
