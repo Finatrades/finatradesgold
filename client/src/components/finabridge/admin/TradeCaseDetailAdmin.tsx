@@ -23,7 +23,6 @@ interface TradeCaseDetailAdminProps {
   onAddAuditLog: (entry: AuditLogEntry) => void;
   onUpdateDocumentStatus: (docId: string, status: any) => void;
   onUpdateApproval: (stepId: string, status: any, notes?: string) => void;
-  onUpdateParty: (partyId: string, updates: Partial<any>) => void;
 }
 
 export default function TradeCaseDetailAdmin({ 
@@ -35,48 +34,13 @@ export default function TradeCaseDetailAdmin({
   onUpdateStatus,
   onAddAuditLog,
   onUpdateDocumentStatus,
-  onUpdateApproval,
-  onUpdateParty
+  onUpdateApproval
 }: TradeCaseDetailAdminProps) {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showReleaseDialog, setShowReleaseDialog] = useState(false);
 
-  const handleFlagParty = (partyId: string, currentFlag: boolean, role: string) => {
-    onUpdateParty(partyId, { 
-      sanctionsFlag: !currentFlag,
-      riskLevel: !currentFlag ? 'Critical' : 'Medium' // Auto-escalate risk if flagged
-    });
-    
-    onAddAuditLog({
-      id: crypto.randomUUID(),
-      caseId: tradeCase.id,
-      actorName: 'Admin User',
-      actorRole: 'Admin',
-      actionType: 'RiskUpdate',
-      timestamp: new Date().toISOString(),
-      details: `${role} ${!currentFlag ? 'flagged as suspicious' : 'flag cleared'}`,
-      oldValue: currentFlag ? 'Flagged' : 'Clear',
-      newValue: !currentFlag ? 'Flagged' : 'Clear'
-    });
-    
-    toast.warning(`${role} ${!currentFlag ? 'Flagged as Suspicious' : 'Flag Cleared'}`);
-  };
-
-  const handleRiskChange = (partyId: string, newRisk: string, role: string) => {
-    onUpdateParty(partyId, { riskLevel: newRisk });
-    onAddAuditLog({
-      id: crypto.randomUUID(),
-      caseId: tradeCase.id,
-      actorName: 'Admin User',
-      actorRole: 'Admin',
-      actionType: 'RiskUpdate',
-      timestamp: new Date().toISOString(),
-      details: `${role} risk level changed`,
-      newValue: newRisk
-    });
-    toast.success(`${role} Risk Level Updated`);
-  };
+  const handleApproveCase = () => {
     onUpdateStatus(tradeCase.id, 'Approved – Ready to Release');
     onAddAuditLog({
       id: crypto.randomUUID(),
@@ -379,27 +343,14 @@ export default function TradeCaseDetailAdmin({
                        <span className="text-gray-500">Country</span>
                        <span className="font-medium">{tradeCase.importer.country}</span>
                        <span className="text-gray-500">Sanctions Check</span>
-                       <div className="flex items-center gap-2">
-                         <span className={tradeCase.importer.sanctionsFlag ? 'text-red-600 font-bold' : 'text-green-600'}>
-                           {tradeCase.importer.sanctionsFlag ? 'FLAGGED' : 'Clear'}
-                         </span>
-                         <Button 
-                           size="sm" 
-                           variant={tradeCase.importer.sanctionsFlag ? "outline" : "ghost"} 
-                           className={tradeCase.importer.sanctionsFlag ? "text-green-600 border-green-200 hover:bg-green-50" : "text-red-600 hover:bg-red-50 hover:text-red-700"}
-                           onClick={() => handleFlagParty(tradeCase.importer.id, tradeCase.importer.sanctionsFlag, 'Importer')}
-                         >
-                           {tradeCase.importer.sanctionsFlag ? 'Clear Flag' : 'Flag Suspicious'}
-                         </Button>
-                       </div>
+                       <span className={tradeCase.importer.sanctionsFlag ? 'text-red-600 font-bold' : 'text-green-600'}>
+                         {tradeCase.importer.sanctionsFlag ? 'FLAGGED' : 'Clear'}
+                       </span>
                     </div>
                     <Separator />
                     <div>
                        <Label className="mb-2 block">Risk Assessment</Label>
-                       <Select 
-                         defaultValue={tradeCase.importer.riskLevel} 
-                         onValueChange={(val) => handleRiskChange(tradeCase.importer.id, val, 'Importer')}
-                       >
+                       <Select defaultValue={tradeCase.importer.riskLevel}>
                           <SelectTrigger>
                              <SelectValue />
                           </SelectTrigger>
@@ -428,27 +379,14 @@ export default function TradeCaseDetailAdmin({
                        <span className="text-gray-500">Country</span>
                        <span className="font-medium">{tradeCase.exporter.country}</span>
                        <span className="text-gray-500">Sanctions Check</span>
-                       <div className="flex items-center gap-2">
-                         <span className={tradeCase.exporter.sanctionsFlag ? 'text-red-600 font-bold' : 'text-green-600'}>
-                           {tradeCase.exporter.sanctionsFlag ? 'FLAGGED' : 'Clear'}
-                         </span>
-                         <Button 
-                           size="sm" 
-                           variant={tradeCase.exporter.sanctionsFlag ? "outline" : "ghost"} 
-                           className={tradeCase.exporter.sanctionsFlag ? "text-green-600 border-green-200 hover:bg-green-50" : "text-red-600 hover:bg-red-50 hover:text-red-700"}
-                           onClick={() => handleFlagParty(tradeCase.exporter.id, tradeCase.exporter.sanctionsFlag, 'Exporter')}
-                         >
-                           {tradeCase.exporter.sanctionsFlag ? 'Clear Flag' : 'Flag Suspicious'}
-                         </Button>
-                       </div>
+                       <span className={tradeCase.exporter.sanctionsFlag ? 'text-red-600 font-bold' : 'text-green-600'}>
+                         {tradeCase.exporter.sanctionsFlag ? 'FLAGGED' : 'Clear'}
+                       </span>
                     </div>
                     <Separator />
                     <div>
                        <Label className="mb-2 block">Risk Assessment</Label>
-                       <Select 
-                         defaultValue={tradeCase.exporter.riskLevel}
-                         onValueChange={(val) => handleRiskChange(tradeCase.exporter.id, val, 'Exporter')}
-                       >
+                       <Select defaultValue={tradeCase.exporter.riskLevel}>
                           <SelectTrigger>
                              <SelectValue />
                           </SelectTrigger>
