@@ -12,7 +12,8 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -20,7 +21,7 @@ import { Button } from '@/components/ui/button';
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) {
   const [location] = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { accountType } = useAccountType();
 
   const menuItems = [
@@ -33,6 +34,15 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/dashboard/profile' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },
   ];
+
+  // Add KYC menu item if pending
+  if (user?.kycStatus === 'pending') {
+    menuItems.splice(1, 0, { 
+      icon: <ShieldCheck className="w-5 h-5" />, 
+      label: 'Complete Verification', 
+      href: '/kyc' 
+    });
+  }
 
   const isActive = (path: string) => location === path;
 

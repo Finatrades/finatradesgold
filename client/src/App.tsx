@@ -38,10 +38,18 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/finavault" component={FinaVault} />
-      <Route path="/finapay" component={FinaPay} />
-      <Route path="/bnsl" component={BNSL} />
-      <Route path="/finabridge" component={FinaBridge} />
+      <Route path="/finavault">
+        <ProtectedRoute component={FinaVault} />
+      </Route>
+      <Route path="/finapay">
+        <ProtectedRoute component={FinaPay} />
+      </Route>
+      <Route path="/bnsl">
+        <ProtectedRoute component={BNSL} />
+      </Route>
+      <Route path="/finabridge">
+        <ProtectedRoute component={FinaBridge} />
+      </Route>
       <Route path="/finacard">
         <ProtectedRoute component={FinaCard} />
       </Route>
