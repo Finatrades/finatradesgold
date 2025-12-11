@@ -196,30 +196,33 @@ export default function FinaPay() {
       <div className="max-w-5xl mx-auto space-y-8 pb-12">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-             <div className="p-2 bg-[#8A2BE2]/10 rounded-lg border border-[#8A2BE2]/20 text-[#8A2BE2]">
-                <WalletIcon className="w-6 h-6" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gradient-to-r from-[#8A2BE2]/10 via-transparent to-transparent p-6 rounded-2xl border border-white/5">
+          <div className="flex items-center gap-4">
+             <div className="p-3 bg-[#8A2BE2]/20 rounded-xl border border-[#8A2BE2]/30 text-[#8A2BE2] shadow-[0_0_15px_rgba(138,43,226,0.2)]">
+                <WalletIcon className="w-8 h-8" />
              </div>
              <div>
-               <h1 className="text-2xl font-bold text-white">FinaPay Wallet</h1>
-               <p className="text-white/60 text-sm">USD & Gold wallet for digital finance.</p>
+               <h1 className="text-3xl font-bold text-white tracking-tight">FinaPay Wallet</h1>
+               <p className="text-white/60 text-base">USD & Gold wallet for digital finance.</p>
              </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="hidden md:block text-right">
-               <p className="text-xs text-white/40 uppercase tracking-wider">Live Gold Spot</p>
-               <p className="text-[#D4AF37] font-bold font-mono">${wallet.goldPriceUsdPerGram.toFixed(2)} <span className="text-xs text-white/40">/g</span></p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="text-left sm:text-right bg-black/20 px-4 py-2 rounded-lg border border-white/5 backdrop-blur-md">
+               <p className="text-xs text-white/40 uppercase tracking-wider mb-0.5">Live Gold Spot</p>
+               <div className="flex items-baseline gap-2">
+                 <p className="text-[#D4AF37] text-2xl font-bold font-mono tracking-tight">${wallet.goldPriceUsdPerGram.toFixed(2)}</p>
+                 <span className="text-xs text-white/40">/g</span>
+               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+              <Button variant="outline" size="icon" className="h-10 w-10 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-white/70 hover:text-white rounded-xl transition-all">
                  <RefreshCw className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+              <Button variant="outline" size="icon" className="h-10 w-10 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-white/70 hover:text-white rounded-xl transition-all">
                  <Bell className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+              <Button variant="outline" size="icon" className="h-10 w-10 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-white/70 hover:text-white rounded-xl transition-all">
                  <Settings className="w-5 h-5" />
               </Button>
             </div>
@@ -232,9 +235,12 @@ export default function FinaPay() {
         </section>
 
         {/* 2. Quick Actions */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-             <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider">Quick Actions</h3>
+        <section className="bg-white/5 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <span className="w-1 h-6 bg-gradient-to-b from-[#8A2BE2] to-transparent rounded-full"></span>
+                Quick Actions
+             </h3>
           </div>
           <QuickActions onAction={handleQuickAction} />
         </section>
