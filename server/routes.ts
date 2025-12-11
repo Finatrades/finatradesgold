@@ -492,6 +492,107 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to update transaction" });
     }
   });
+
+  // Admin: Get all wallets
+  app.get("/api/admin/wallets", async (req, res) => {
+    try {
+      const wallets = await storage.getAllWallets();
+      res.json({ wallets });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get wallets" });
+    }
+  });
+
+  // Admin: Get all transactions
+  app.get("/api/admin/transactions", async (req, res) => {
+    try {
+      const transactions = await storage.getAllTransactions();
+      res.json({ transactions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+
+  // Admin: Manual deposit/withdrawal operation
+  app.post("/api/admin/manual-operation", async (req, res) => {
+    try {
+      const { userId, type, amount, currency, notes } = req.body;
+
+      if (!userId || !type || !amount || !currency) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const numAmount = parseFloat(amount);
+      if (isNaN(numAmount) || numAmount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // Get user's wallet
+      const wallet = await storage.getWallet(userId);
+      if (!wallet) {
+        return res.status(400).json({ message: "User wallet not found" });
+      }
+
+      // Calculate new balances
+      let updates: Partial<{ goldGrams: string; usdBalance: string; eurBalance: string }> = {};
+      const isDeposit = type === 'deposit';
+
+      switch (currency) {
+        case 'usd':
+          const currentUsd = parseFloat(wallet.usdBalance);
+          if (!isDeposit && currentUsd < numAmount) {
+            return res.status(400).json({ message: "Insufficient USD balance" });
+          }
+          updates.usdBalance = (isDeposit ? currentUsd + numAmount : currentUsd - numAmount).toFixed(2);
+          break;
+        case 'eur':
+          const currentEur = parseFloat(wallet.eurBalance);
+          if (!isDeposit && currentEur < numAmount) {
+            return res.status(400).json({ message: "Insufficient EUR balance" });
+          }
+          updates.eurBalance = (isDeposit ? currentEur + numAmount : currentEur - numAmount).toFixed(2);
+          break;
+        case 'gold':
+          const currentGold = parseFloat(wallet.goldGrams);
+          if (!isDeposit && currentGold < numAmount) {
+            return res.status(400).json({ message: "Insufficient gold balance" });
+          }
+          updates.goldGrams = (isDeposit ? currentGold + numAmount : currentGold - numAmount).toFixed(6);
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid currency" });
+      }
+
+      // Update wallet
+      await storage.updateWallet(wallet.id, updates);
+
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId,
+        type: isDeposit ? 'Deposit' : 'Withdrawal',
+        amountGold: currency === 'gold' ? numAmount.toString() : null,
+        amountUsd: currency === 'usd' ? numAmount.toString() : null,
+        amountEur: currency === 'eur' ? numAmount.toString() : null,
+        currency: currency.toUpperCase(),
+        status: 'Completed',
+        notes: notes || `Manual ${type} by admin`,
+      });
+
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "wallet",
+        entityId: wallet.id,
+        actionType: isDeposit ? "deposit" : "withdrawal",
+        actor: "admin",
+        actorRole: "admin",
+        details: `Manual ${type}: ${currency.toUpperCase()} ${numAmount}${notes ? ` - ${notes}` : ''}`,
+      });
+
+      res.json({ success: true, transaction, wallet: { ...wallet, ...updates } });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Operation failed" });
+    }
+  });
   
   // ============================================================================
   // FINAVAULT - GOLD STORAGE
