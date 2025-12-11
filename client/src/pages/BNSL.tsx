@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar } from 'lucide-react';
+import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus } from 'lucide-react';
 import { BnslPlan, BnslPlanStatus, BnslPayout } from '@/types/bnsl';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 // Components
 import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
@@ -208,6 +209,13 @@ export default function BNSL() {
           </div>
           
           <div className="flex items-center gap-4">
+            <Button 
+              className="bg-secondary text-white hover:bg-secondary/90 shadow-sm hidden md:flex items-center gap-2"
+              onClick={() => setActiveTab('create')}
+            >
+              <Plus className="w-4 h-4" /> Start New Plan
+            </Button>
+
             <div className="hidden md:block text-right border-l border-border pl-4">
                <p className="text-xs text-muted-foreground uppercase tracking-wider">Seller</p>
                <p className="text-foreground font-bold">You</p>
