@@ -10,6 +10,7 @@ import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import ReferralCard from '@/components/dashboard/ReferralCard';
 import WalletCard from '@/components/dashboard/WalletCard';
 import DashboardSlider from '@/components/dashboard/DashboardSlider';
+import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -25,6 +26,11 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
           <p className="text-white/60">Welcome back to your financial command center.</p>
         </div>
+
+        {/* 1.5 Quick Actions Horizontal */}
+        <section>
+          <QuickActionsTop />
+        </section>
         
         {/* 2. Top KPI Cards Grid */}
         <section>
