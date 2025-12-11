@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TradeCase, FinaBridgeWallet } from '@/types/finabridge';
 import { Lock, ArrowRight, Save, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface CreateTradeCaseProps {
   onSuccess: (newCase: TradeCase, lockAmount: number) => void;
@@ -30,6 +31,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
   });
   const [valueMode, setValueMode] = useState<'USD' | 'GOLD'>('USD');
   const [lockAmount, setLockAmount] = useState<string>('0');
+  const [useFinatradesExporter, setUseFinatradesExporter] = useState(false);
 
   const GOLD_PRICE = 85.22; // Mock price
 
@@ -69,9 +71,20 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
        return;
     }
 
+    let finalSeller = formData.seller;
+    if (useFinatradesExporter && currentRole === 'Importer') {
+      finalSeller = {
+        company: 'Pending Finatrades Assignment',
+        country: 'Global',
+        contactName: 'FinaTrades Broker Desk',
+        email: 'broker@finatrades.com'
+      };
+    }
+
     const newCase: TradeCase = {
       id: `TF-2025-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
       ...formData as TradeCase,
+      seller: finalSeller || { company: '', country: '', contactName: '', email: '' },
       status: isDraft ? 'Draft' : (lockAmt > 0 ? 'Funded – Docs Pending' : 'Awaiting Funding'),
       lockedGoldGrams: lockAmt,
       createdAt: new Date().toISOString(),
@@ -149,26 +162,44 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
 
         {/* SECTION 2: EXPORTER INFO */}
         <Card className="bg-white/5 border-white/10">
-          <CardHeader className="border-b border-white/10 pb-4">
+          <CardHeader className="border-b border-white/10 pb-4 flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-bold text-white">2. Exporter Information</CardTitle>
+            {currentRole === 'Importer' && (
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="use-finatrades" 
+                  checked={useFinatradesExporter}
+                  onCheckedChange={(checked) => setUseFinatradesExporter(checked as boolean)}
+                  className="border-white/20 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black"
+                />
+                <label
+                  htmlFor="use-finatrades"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-[#D4AF37]"
+                >
+                  Suggest Finatrades Exporter
+                </label>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-6">
+            <div className={`space-y-6 transition-opacity duration-200 ${useFinatradesExporter ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Company Name</Label>
                   <Input 
                     className="bg-black/20 border-white/10"
-                    value={currentRole === 'Importer' ? formData.seller?.company : formData.buyer?.company}
+                    value={useFinatradesExporter ? 'Pending Finatrades Assignment' : (currentRole === 'Importer' ? formData.seller?.company : formData.buyer?.company)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'company', e.target.value)}
+                    disabled={useFinatradesExporter}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Country</Label>
                   <Input 
                     className="bg-black/20 border-white/10"
-                    value={currentRole === 'Importer' ? formData.seller?.country : formData.buyer?.country}
+                    value={useFinatradesExporter ? 'Global' : (currentRole === 'Importer' ? formData.seller?.country : formData.buyer?.country)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'country', e.target.value)}
+                    disabled={useFinatradesExporter}
                   />
                 </div>
               </div>
@@ -178,23 +209,25 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                   <Label>Contact Person</Label>
                   <Input 
                     className="bg-black/20 border-white/10"
-                    value={currentRole === 'Importer' ? formData.seller?.contactName : formData.buyer?.contactName}
+                    value={useFinatradesExporter ? 'FinaTrades Broker Desk' : (currentRole === 'Importer' ? formData.seller?.contactName : formData.buyer?.contactName)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'contactName', e.target.value)}
+                    disabled={useFinatradesExporter}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
                   <Input 
                     className="bg-black/20 border-white/10"
-                    value={currentRole === 'Importer' ? formData.seller?.email : formData.buyer?.email}
+                    value={useFinatradesExporter ? 'broker@finatrades.com' : (currentRole === 'Importer' ? formData.seller?.email : formData.buyer?.email)}
                     onChange={(e) => updateNestedField(currentRole === 'Importer' ? 'seller' : 'buyer', 'email', e.target.value)}
+                    disabled={useFinatradesExporter}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Payment Terms</Label>
-                <Select onValueChange={(val) => updateField('paymentTerms', val)}>
+                <Select onValueChange={(val) => updateField('paymentTerms', val)} disabled={useFinatradesExporter}>
                   <SelectTrigger className="bg-black/20 border-white/10">
                     <SelectValue placeholder="Select Terms" />
                   </SelectTrigger>
@@ -207,6 +240,12 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                 </Select>
               </div>
             </div>
+            {useFinatradesExporter && (
+              <div className="mt-4 p-4 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg text-[#D4AF37] text-sm flex items-center justify-center animate-in fade-in slide-in-from-top-2">
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Finatrades will assign a verified exporter to match your trade requirements.
+              </div>
+            )}
           </CardContent>
         </Card>
 
