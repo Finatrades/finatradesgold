@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, Shield, History, PlusCircle } from 'lucide-react';
+import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -9,6 +9,7 @@ import NewDepositForm from '@/components/finavault/NewDepositForm';
 import RequestDetails from '@/components/finavault/RequestDetails';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 // Mock Data
 const MOCK_REQUESTS: DepositRequest[] = [
@@ -41,7 +42,28 @@ const MOCK_REQUESTS: DepositRequest[] = [
     documents: [],
     status: 'Approved – Awaiting Delivery',
     submittedAt: '2024-12-05T14:30:00Z'
-  }
+  },
+  {
+     id: 'FD-2024-0091',
+     userId: 'user-1',
+     vaultLocation: 'Dubai Vault',
+     depositType: 'Coins',
+     totalDeclaredWeightGrams: 250,
+     items: [
+       { id: '1', itemType: 'Coin', quantity: 25, weightPerUnitGrams: 10, totalWeightGrams: 250, purity: '999.9', brand: 'Britannia' }
+     ],
+     deliveryMethod: 'Pickup',
+     pickupDetails: {
+        address: 'Downtown Dubai',
+        contactName: 'John Doe',
+        contactMobile: '+971500000000',
+        date: '2024-12-10',
+        timeSlot: '10:00 - 12:00'
+     },
+     documents: [],
+     status: 'Under Review',
+     submittedAt: '2024-12-03T09:15:00Z'
+   }
 ];
 
 export default function FinaVault() {
@@ -93,25 +115,74 @@ export default function FinaVault() {
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-              <Database className="w-8 h-8 text-[#D4AF37]" />
-              FinaVault
-            </h1>
-            <p className="text-white/60">Secure physical gold storage and deposit management.</p>
+          <div className="flex items-center gap-3">
+             <div className="p-2 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20 text-[#D4AF37]">
+                <Database className="w-6 h-6" />
+             </div>
+             <h1 className="text-2xl font-bold text-white">
+               FinaVault — <span className="text-white/60 font-normal">Gold Deposit</span>
+             </h1>
           </div>
           
-          {/* Summary Strip */}
-          <div className="flex gap-4">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 min-w-[140px]">
-               <div className="text-xs text-white/40 mb-1">Stored Gold</div>
-               <div className="text-xl font-bold text-[#D4AF37]">1,250g</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 min-w-[140px]">
-               <div className="text-xs text-white/40 mb-1">Active Deposits</div>
-               <div className="text-xl font-bold text-white">{requests.filter(r => !['Stored in Vault', 'Cancelled', 'Rejected'].includes(r.status)).length}</div>
-            </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+               <Bell className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+               <Settings className="w-5 h-5" />
+            </Button>
           </div>
+        </div>
+        
+        {/* KPI Cards Strip */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+           {/* Card 1: Total Gold - Custom Style */}
+           <div className="p-6 rounded-2xl bg-[#FFF8E7] border border-[#D4AF37]/30 text-black relative overflow-hidden group">
+              <div className="flex justify-between items-start mb-2">
+                 <span className="text-sm font-medium opacity-60">Total Gold</span>
+                 <div className="p-2 bg-[#D4AF37]/20 rounded-lg text-[#D4AF37]">
+                    <Database className="w-4 h-4" />
+                 </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">1,500.00 <span className="text-lg font-normal opacity-60">g</span></div>
+              <div className="text-sm opacity-50 font-medium">48.23 oz</div>
+           </div>
+
+           {/* Card 2: Locked Gold */}
+           <div className="p-6 rounded-2xl bg-white border border-white/20 text-black relative overflow-hidden">
+              <div className="flex justify-between items-start mb-2">
+                 <span className="text-sm font-medium opacity-60">Locked Gold</span>
+                 <div className="p-2 bg-yellow-100 rounded-lg text-yellow-600">
+                    <TrendingUp className="w-4 h-4" />
+                 </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">500.00 <span className="text-lg font-normal opacity-60">g</span></div>
+              <div className="text-sm opacity-50 font-medium">In BNSL</div>
+           </div>
+
+           {/* Card 3: Value USD */}
+           <div className="p-6 rounded-2xl bg-white border border-white/20 text-black relative overflow-hidden">
+              <div className="flex justify-between items-start mb-2">
+                 <span className="text-sm font-medium opacity-60">Value (USD)</span>
+                 <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                    <DollarSign className="w-4 h-4" />
+                 </div>
+              </div>
+              <div className="text-3xl font-bold text-[#D4AF37] mb-1">$127,830</div>
+              <div className="text-sm opacity-50 font-medium">@ $85.22/g</div>
+           </div>
+
+           {/* Card 4: Value AED */}
+           <div className="p-6 rounded-2xl bg-white border border-white/20 text-black relative overflow-hidden">
+              <div className="flex justify-between items-start mb-2">
+                 <span className="text-sm font-medium opacity-60">Value (AED)</span>
+                 <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                    <Globe className="w-4 h-4" />
+                 </div>
+              </div>
+              <div className="text-3xl font-bold text-black mb-1">469.5K</div>
+              <div className="text-sm opacity-50 font-medium">@ 312.76/g</div>
+           </div>
         </div>
 
         {/* Main Content */}
@@ -137,24 +208,26 @@ export default function FinaVault() {
               exit={{ opacity: 0, y: -20 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
-                  <TabsTrigger 
-                    value="my-deposits"
-                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
-                  >
-                    <History className="w-4 h-4 mr-2" />
-                    My Deposits
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="new-request"
-                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
-                  >
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    New Deposit Request
-                  </TabsTrigger>
-                </TabsList>
+                {activeTab === 'new-request' && (
+                  <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
+                    <TabsTrigger 
+                      value="my-deposits"
+                      className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                    >
+                      <History className="w-4 h-4 mr-2" />
+                      My Deposits
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="new-request"
+                      className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      New Deposit Request
+                    </TabsTrigger>
+                  </TabsList>
+                )}
 
-                <TabsContent value="my-deposits">
+                <TabsContent value="my-deposits" className="mt-0">
                   <DepositList 
                     requests={requests} 
                     onSelectRequest={setSelectedRequest}
