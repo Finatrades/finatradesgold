@@ -296,7 +296,7 @@ export default function CashOutForm() {
               </div>
             </div>
 
-            <div className="p-3 bg-white/50 rounded text-xs text-muted-foreground leading-relaxed">
+            <div className="p-3 bg-muted/50 rounded text-xs text-muted-foreground leading-relaxed">
               <AlertCircle className="w-3 h-3 inline mr-1 mb-0.5" />
               Sell prices are updated every 60 seconds based on global spot rates. Final execution price may vary slightly.
             </div>

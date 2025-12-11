@@ -142,9 +142,9 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
 
   if (!KYC_APPROVED) {
     return (
-      <Card className="bg-red-500/10 border-red-500/20 p-8 text-center">
-        <h3 className="text-xl font-bold text-red-400 mb-2">KYC Verification Required</h3>
-        <p className="text-white/60 mb-6">Please complete your identity verification before making deposit requests.</p>
+      <Card className="bg-red-500/10 border-red-500/20 p-8 text-center shadow-none">
+        <h3 className="text-xl font-bold text-red-600 mb-2">KYC Verification Required</h3>
+        <p className="text-muted-foreground mb-6">Please complete your identity verification before making deposit requests.</p>
         <Button variant="destructive">Go to KYC Verification</Button>
       </Card>
     );
