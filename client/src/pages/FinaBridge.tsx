@@ -22,7 +22,7 @@ const MOCK_CASES: TradeCase[] = [
     name: 'Gold Bullion Import - Dubai to London',
     role: 'Importer',
     buyer: { company: 'FinaTrades Importer Ltd', country: 'UK', contactName: 'John Buyer', email: 'john@importer.com' },
-    seller: { company: 'Dubai Gold Suppliers', country: 'UAE', contactName: 'Ahmed Seller', email: 'ahmed@exporter.com' },
+    seller: { company: 'Pending Finatrades Assignment', country: 'Global', contactName: 'FinaTrades Broker Desk', email: 'broker@finatrades.com' },
     commodityDescription: '10kg Gold Bullion, 999.9 Purity',
     valueUsd: 852200,
     valueGoldGrams: 10000,

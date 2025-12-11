@@ -62,7 +62,14 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
                 <TableRow key={c.id} className="border-white/10 hover:bg-white/5 transition-colors">
                   <TableCell className="font-mono text-[#D4AF37]">{c.id}</TableCell>
                   <TableCell className="text-white font-medium">
-                    {c.role === 'Importer' ? c.seller.company : c.buyer.company}
+                    <div className="flex flex-col">
+                      <span>{c.role === 'Importer' ? c.seller.company : c.buyer.company}</span>
+                      {(c.seller.company.includes('Finatrades') || c.seller.company.includes('Pending')) && (
+                        <span className="text-[10px] text-[#D4AF37] flex items-center gap-1 mt-0.5">
+                          <CheckCircle2 className="w-3 h-3" /> Admin Involved
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-white/80">${c.valueUsd.toLocaleString()}</TableCell>
                   <TableCell className="text-white/80 flex items-center gap-2">
