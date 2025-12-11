@@ -11,6 +11,7 @@ import CashOutForm from '@/components/finavault/CashOutForm';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation } from 'wouter';
 
 // Mock Data
@@ -20,9 +21,10 @@ const MOCK_REQUESTS: DepositRequest[] = [
     userId: 'user-1',
     vaultLocation: 'Swiss Vault',
     depositType: 'Bars',
-    totalDeclaredWeightGrams: 1000,
+    totalDeclaredWeightGrams: 125.4,
     items: [
-      { id: '1', itemType: 'Bar', quantity: 1, weightPerUnitGrams: 1000, totalWeightGrams: 1000, purity: '999.9', brand: 'PAMP' }
+      { id: '1', itemType: 'Bar', quantity: 1, weightPerUnitGrams: 100, totalWeightGrams: 100, purity: '999.9', brand: 'PAMP' },
+      { id: '2', itemType: 'Coin', quantity: 1, weightPerUnitGrams: 25.4, totalWeightGrams: 25.4, purity: '999.9', brand: 'Sovereign' }
     ],
     deliveryMethod: 'Courier',
     documents: [],
@@ -195,6 +197,63 @@ export default function FinaVault() {
               <div className="text-3xl font-bold text-white mb-1">39,220.10</div>
               <div className="text-sm opacity-50 font-medium">@ 312.76/g</div>
            </div>
+        </div>
+
+        {/* Holdings Breakdown */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+           <Card className="bg-white/5 border-white/10">
+              <CardHeader className="pb-2">
+                 <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Flag_of_Switzerland.svg/512px-Flag_of_Switzerland.svg.png" className="w-5 h-5 rounded-sm object-cover" alt="Swiss" />
+                    Swiss Vault (Zurich)
+                 </CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="flex justify-between items-end">
+                    <div>
+                       <div className="text-2xl font-bold text-[#D4AF37]">125.400 <span className="text-sm text-white/60">g</span></div>
+                       <div className="text-xs text-white/40">Allocated Storage</div>
+                    </div>
+                    <Button size="sm" variant="ghost" className="text-white/60 hover:text-white">View Details</Button>
+                 </div>
+              </CardContent>
+           </Card>
+
+           <Card className="bg-white/5 border-white/10 opacity-60">
+              <CardHeader className="pb-2">
+                 <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Flag_of_the_United_Arab_Emirates.svg/512px-Flag_of_the_United_Arab_Emirates.svg.png" className="w-5 h-5 rounded-sm object-cover" alt="UAE" />
+                    Dubai Vault (DIFC)
+                 </CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="flex justify-between items-end">
+                    <div>
+                       <div className="text-2xl font-bold text-white/40">0.000 <span className="text-sm text-white/20">g</span></div>
+                       <div className="text-xs text-white/20">No Holdings</div>
+                    </div>
+                    <Button size="sm" variant="ghost" disabled className="text-white/20">View Details</Button>
+                 </div>
+              </CardContent>
+           </Card>
+
+           <Card className="bg-white/5 border-white/10 opacity-60">
+              <CardHeader className="pb-2">
+                 <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Flag_of_Singapore.svg/512px-Flag_of_Singapore.svg.png" className="w-5 h-5 rounded-sm object-cover" alt="Singapore" />
+                    Singapore Vault
+                 </CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="flex justify-between items-end">
+                    <div>
+                       <div className="text-2xl font-bold text-white/40">0.000 <span className="text-sm text-white/20">g</span></div>
+                       <div className="text-xs text-white/20">No Holdings</div>
+                    </div>
+                    <Button size="sm" variant="ghost" disabled className="text-white/20">View Details</Button>
+                 </div>
+              </CardContent>
+           </Card>
         </div>
 
         {/* Main Content */}
