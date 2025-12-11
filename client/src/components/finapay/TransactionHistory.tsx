@@ -92,9 +92,9 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
         <ScrollArea className="h-[400px] px-6 py-4">
           <div className="space-y-1">
             <div className="grid grid-cols-12 text-xs text-white/40 uppercase tracking-wider font-medium px-4 pb-2">
-               <div className="col-span-4">Transaction</div>
+               <div className="col-span-5">Transaction</div>
                <div className="col-span-3 text-right">Amount</div>
-               <div className="col-span-3 text-right">Status</div>
+               <div className="col-span-2 text-right">Status</div>
                <div className="col-span-2 text-right">Action</div>
             </div>
 
@@ -105,12 +105,18 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                 <div key={tx.id} className="grid grid-cols-12 items-center p-3 rounded-lg hover:bg-white/5 transition-colors group border border-transparent hover:border-white/5">
                   
                   {/* Type & Date */}
-                  <div className="col-span-4 flex items-center gap-3">
+                  <div className="col-span-5 flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${getColor(tx.type)} bg-opacity-10`}>
                       {getIcon(tx.type, tx.assetType)}
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">{tx.type} {tx.assetType === 'GOLD' ? 'Gold' : 'USD'}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-white text-sm">{tx.type} {tx.assetType === 'GOLD' ? 'Gold' : 'USD'}</p>
+                        {tx.status === 'Completed' && (tx.type === 'Send' || tx.type === 'Receive') && (
+                           <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">P2P</span>
+                        )}
+                      </div>
+                      {tx.description && <p className="text-xs text-white/70 font-medium">{tx.description}</p>}
                       <p className="text-[10px] text-white/40 font-mono mt-0.5">{new Date(tx.timestamp).toLocaleDateString()} • {new Date(tx.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
                   </div>
@@ -128,7 +134,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                   </div>
 
                   {/* Status */}
-                  <div className="col-span-3 flex justify-end">
+                  <div className="col-span-2 flex justify-end">
                      <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
                        {tx.status}
                      </Badge>

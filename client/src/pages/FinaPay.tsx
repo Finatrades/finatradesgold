@@ -39,7 +39,8 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
     timestamp: '2024-12-10T14:30:00Z',
     referenceId: 'REF-8821',
     status: 'Completed',
-    assetType: 'GOLD'
+    assetType: 'GOLD',
+    description: 'Spot Market Purchase'
   },
   {
     id: 'tx-002',
@@ -50,7 +51,8 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
     timestamp: '2024-12-08T09:15:00Z',
     referenceId: 'REF-7732',
     status: 'Completed',
-    assetType: 'GOLD'
+    assetType: 'GOLD',
+    description: 'Liquidated to USD'
   },
   {
     id: 'tx-003',
@@ -60,8 +62,20 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
     timestamp: '2024-12-05T18:00:00Z',
     referenceId: 'REF-6651',
     status: 'Completed',
-    description: 'Rent Split',
+    description: 'Sent to @alex_crypto',
     assetType: 'USD'
+  },
+  {
+    id: 'tx-004',
+    type: 'Receive',
+    amountGrams: 2.500,
+    amountUsd: 213.05,
+    feeUsd: 0,
+    timestamp: '2024-12-04T11:20:00Z',
+    referenceId: 'REF-5512',
+    status: 'Completed',
+    description: 'Received from @sarah_gold',
+    assetType: 'GOLD'
   }
 ];
 
