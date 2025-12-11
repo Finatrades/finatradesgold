@@ -33,6 +33,28 @@ const MOCK_REQUESTS: DepositRequest[] = [
     vaultInternalReference: 'CH-ZH-99281'
   },
   {
+    id: 'FP-BUY-2024-001',
+    userId: 'user-1',
+    vaultLocation: 'Swiss Vault',
+    depositType: 'Mixed',
+    totalDeclaredWeightGrams: 50,
+    items: [
+      { id: '1', itemType: 'Bar', quantity: 5, weightPerUnitGrams: 10, totalWeightGrams: 50, purity: '999.9', brand: 'FinaTrades Allocation' }
+    ],
+    deliveryMethod: 'Pickup', // Internal transfer essentially
+    pickupDetails: {
+      address: 'FinaPay Digital Purchase',
+      contactName: 'System',
+      contactMobile: 'N/A',
+      date: '2024-12-10',
+      timeSlot: 'Instant'
+    },
+    documents: [],
+    status: 'Stored in Vault',
+    submittedAt: '2024-12-10T09:30:00Z',
+    vaultInternalReference: 'FP-DIG-8821'
+  },
+  {
     id: 'FD-2024-0089',
     userId: 'user-1',
     vaultLocation: 'Dubai Vault',
