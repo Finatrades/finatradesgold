@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Lock, CheckCircle2, FileText, Upload, ShieldCheck, History, Download, Eye, PenTool } from 'lucide-react';
+import { ArrowLeft, Lock, CheckCircle2, FileText, Upload, ShieldCheck, History, Download, Eye, PenTool, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
