@@ -17,24 +17,6 @@ import { toast } from 'sonner';
 export default function FinaPayDashboard() {
   const { wallet, transactions, limits, currentGoldPriceUsdPerGram, goldPriceHistory, addTransaction, updateWallet } = useFinaPay();
 
-  // Map wallet data from schema (goldGrams, usdBalance, eurBalance) to dashboard properties
-  const goldBalanceGrams = wallet ? parseFloat(wallet.goldGrams as string || '0') : 0;
-  const usdBalance = wallet ? parseFloat(wallet.usdBalance as string || '0') : 0;
-  const eurBalance = wallet ? parseFloat(wallet.eurBalance as string || '0') : 0;
-  
-  // Derived values for dashboard display
-  const safeWallet = {
-    goldBalanceGrams,
-    availableGoldGrams: goldBalanceGrams, // All gold is available by default
-    lockedForBnslGrams: 0, // These would come from BNSL context if needed
-    lockedForTradeGrams: 0, // These would come from Trade context if needed
-    goldValueUsd: goldBalanceGrams * currentGoldPriceUsdPerGram,
-    goldValueAed: goldBalanceGrams * currentGoldPriceUsdPerGram * 3.67, // AED conversion
-    usdBalance,
-    eurBalance,
-    tier: 'Gold' as const, // Default tier
-  };
-
   // Modal States
   const [buyOpen, setBuyOpen] = useState(false);
   const [sellOpen, setSellOpen] = useState(false);
@@ -72,8 +54,8 @@ export default function FinaPayDashboard() {
     });
 
     updateWallet({
-      goldBalanceGrams: safeWallet.goldBalanceGrams + grams,
-      availableGoldGrams: safeWallet.availableGoldGrams + grams
+      goldBalanceGrams: wallet.goldBalanceGrams + grams,
+      availableGoldGrams: wallet.availableGoldGrams + grams
     });
 
     setBuyOpen(false);
@@ -83,7 +65,7 @@ export default function FinaPayDashboard() {
 
   const handleSellGold = () => {
     const grams = parseFloat(sellGrams);
-    if (!grams || grams <= 0 || grams > safeWallet.availableGoldGrams) {
+    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
         toast.error('Invalid amount or insufficient balance');
         return;
     }
@@ -102,8 +84,8 @@ export default function FinaPayDashboard() {
     });
 
     updateWallet({
-      goldBalanceGrams: safeWallet.goldBalanceGrams - grams,
-      availableGoldGrams: safeWallet.availableGoldGrams - grams
+      goldBalanceGrams: wallet.goldBalanceGrams - grams,
+      availableGoldGrams: wallet.availableGoldGrams - grams
     });
 
     setSellOpen(false);
@@ -113,7 +95,7 @@ export default function FinaPayDashboard() {
 
   const handleSendGold = () => {
     const grams = parseFloat(sendGrams);
-    if (!grams || grams <= 0 || grams > safeWallet.availableGoldGrams) {
+    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
         toast.error('Invalid amount or insufficient balance');
         return;
     }
@@ -131,8 +113,8 @@ export default function FinaPayDashboard() {
     });
 
     updateWallet({
-      goldBalanceGrams: safeWallet.goldBalanceGrams - grams,
-      availableGoldGrams: safeWallet.availableGoldGrams - grams
+      goldBalanceGrams: wallet.goldBalanceGrams - grams,
+      availableGoldGrams: wallet.availableGoldGrams - grams
     });
 
     setSendOpen(false);
@@ -164,7 +146,7 @@ export default function FinaPayDashboard() {
 
   const handleMoveToBnsl = () => {
     const grams = parseFloat(bnslGrams);
-    if (!grams || grams <= 0 || grams > safeWallet.availableGoldGrams) {
+    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
        toast.error('Insufficient available balance');
        return;
     }
@@ -180,8 +162,8 @@ export default function FinaPayDashboard() {
     });
 
     updateWallet({
-       availableGoldGrams: safeWallet.availableGoldGrams - grams,
-       lockedForBnslGrams: safeWallet.lockedForBnslGrams + grams
+       availableGoldGrams: wallet.availableGoldGrams - grams,
+       lockedForBnslGrams: wallet.lockedForBnslGrams + grams
     });
 
     setBnslOpen(false);
@@ -191,7 +173,7 @@ export default function FinaPayDashboard() {
 
   const handleMoveToTrade = () => {
     const grams = parseFloat(tradeGrams);
-    if (!grams || grams <= 0 || grams > safeWallet.availableGoldGrams) {
+    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
        toast.error('Insufficient available balance');
        return;
     }
@@ -207,8 +189,8 @@ export default function FinaPayDashboard() {
     });
 
     updateWallet({
-       availableGoldGrams: safeWallet.availableGoldGrams - grams,
-       lockedForTradeGrams: safeWallet.lockedForTradeGrams + grams
+       availableGoldGrams: wallet.availableGoldGrams - grams,
+       lockedForTradeGrams: wallet.lockedForTradeGrams + grams
     });
 
     setTradeOpen(false);
@@ -233,16 +215,16 @@ export default function FinaPayDashboard() {
                    <Wallet className="w-5 h-5" />
                    <span className="text-sm font-medium">Total Gold Balance</span>
                 </div>
-                <h2 className="text-4xl font-bold mb-1">{safeWallet.goldBalanceGrams.toFixed(4)} g</h2>
+                <h2 className="text-4xl font-bold mb-1">{wallet.goldBalanceGrams.toFixed(4)} g</h2>
                 <p className="opacity-80 text-sm">Reflected from FinaVault Ledger</p>
                 <div className="mt-6 flex gap-4">
                    <div>
                       <p className="text-xs opacity-70 uppercase">USD Value</p>
-                      <p className="font-bold text-xl">${safeWallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                      <p className="font-bold text-xl">${wallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                    </div>
                    <div className="border-l border-white/20 pl-4">
                       <p className="text-xs opacity-70 uppercase">AED Value</p>
-                      <p className="font-bold text-xl">AED {safeWallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                      <p className="font-bold text-xl">AED {wallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                    </div>
                 </div>
              </CardContent>
@@ -255,17 +237,17 @@ export default function FinaPayDashboard() {
               <CardContent>
                  <div className="flex items-center justify-between mb-4">
                     <div>
-                       <p className="text-2xl font-bold text-green-600">{safeWallet.availableGoldGrams.toFixed(2)} g</p>
+                       <p className="text-2xl font-bold text-green-600">{wallet.availableGoldGrams.toFixed(2)} g</p>
                        <p className="text-xs text-gray-500">Available</p>
                     </div>
                     <div className="text-right">
-                       <p className="text-2xl font-bold text-amber-600">{(safeWallet.lockedForBnslGrams + safeWallet.lockedForTradeGrams).toFixed(2)} g</p>
+                       <p className="text-2xl font-bold text-amber-600">{(wallet.lockedForBnslGrams + wallet.lockedForTradeGrams).toFixed(2)} g</p>
                        <p className="text-xs text-gray-500">Locked (BNSL + Trade)</p>
                     </div>
                  </div>
                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
-                    <div className="bg-green-500 h-2.5" style={{ width: `${(safeWallet.availableGoldGrams / safeWallet.goldBalanceGrams) * 100}%` }}></div>
-                    <div className="bg-amber-500 h-2.5" style={{ width: `${((safeWallet.lockedForBnslGrams + safeWallet.lockedForTradeGrams) / safeWallet.goldBalanceGrams) * 100}%` }}></div>
+                    <div className="bg-green-500 h-2.5" style={{ width: `${(wallet.availableGoldGrams / wallet.goldBalanceGrams) * 100}%` }}></div>
+                    <div className="bg-amber-500 h-2.5" style={{ width: `${((wallet.lockedForBnslGrams + wallet.lockedForTradeGrams) / wallet.goldBalanceGrams) * 100}%` }}></div>
                  </div>
               </CardContent>
            </Card>
@@ -275,7 +257,7 @@ export default function FinaPayDashboard() {
                  <div>
                     <div className="flex justify-between items-start">
                        <ShieldCheck className="w-8 h-8 text-amber-400 mb-2" />
-                       <Badge variant="outline" className="text-amber-400 border-amber-400">{safeWallet.tier}</Badge>
+                       <Badge variant="outline" className="text-amber-400 border-amber-400">{wallet.tier}</Badge>
                     </div>
                     <p className="font-bold text-lg mt-2">Tier Status</p>
                  </div>
@@ -484,7 +466,7 @@ export default function FinaPayDashboard() {
                        value={sellGrams} 
                        onChange={(e) => setSellGrams(e.target.value)} 
                     />
-                    <p className="text-xs text-gray-500">Available: {safeWallet.availableGoldGrams.toFixed(4)} g</p>
+                    <p className="text-xs text-gray-500">Available: {wallet.availableGoldGrams.toFixed(4)} g</p>
                  </div>
                  {sellGrams && (
                     <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-800">
@@ -507,7 +489,7 @@ export default function FinaPayDashboard() {
            <DialogContent>
               <DialogHeader>
                  <DialogTitle>Send Gold</DialogTitle>
-                 <DialogDescription>Transfer gold to another FinaPay safeWallet.</DialogDescription>
+                 <DialogDescription>Transfer gold to another FinaPay wallet.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                  <div className="space-y-2">

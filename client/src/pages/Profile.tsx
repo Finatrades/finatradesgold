@@ -22,14 +22,25 @@ export default function Profile() {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
-    phone: user?.phoneNumber || '+41 79 123 45 67',
-    address: 'Bahnhofstrasse 12, 8001 Zurich',
+    phone: '+41 79 123 45 67', // Mock phone
+    address: 'Bahnhofstrasse 12, 8001 Zurich', // Mock address
+    companyName: user?.companyName || ''
   });
 
   if (!user) return null;
 
   const handleSave = () => {
     setIsEditing(false);
+    
+    // Update local user state
+    login({
+      ...user,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      companyName: formData.companyName
+    });
+
     toast.success("Profile Updated", {
       description: "Your personal information has been saved successfully."
     });
@@ -50,14 +61,14 @@ export default function Profile() {
             <p className="text-muted-foreground">Manage your account settings and preferences.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={user.kycStatus === 'Approved' ? 'default' : 'destructive'} className="text-sm px-3 py-1">
-              {user.kycStatus === 'Approved' ? (
+            <Badge variant={user.kycStatus === 'verified' ? 'default' : 'destructive'} className="text-sm px-3 py-1">
+              {user.kycStatus === 'verified' ? (
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Verified</span>
               ) : (
-                <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> {user.kycStatus}</span>
+                <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Unverified</span>
               )}
             </Badge>
-            {(user.kycStatus === 'Not Started' || user.kycStatus === 'In Progress') && (
+            {user.kycStatus === 'pending' && (
               <Link href="/kyc">
                  <Button size="sm" variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
                     Complete Verification <ArrowRight className="w-3 h-3 ml-1" />
@@ -104,12 +115,12 @@ export default function Profile() {
             <Card className="p-4 border-border">
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className={`p-2 rounded-lg ${user.kycStatus === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className={`p-2 rounded-lg ${user.kycStatus === 'verified' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-medium">{user.kycStatus === 'Approved' ? 'Identity Verified' : 'Identity Unverified'}</p>
-                    {user.kycStatus === 'Approved' ? (
+                    <p className="font-medium">{user.kycStatus === 'verified' ? 'Identity Verified' : 'Identity Unverified'}</p>
+                    {user.kycStatus === 'verified' ? (
                        <p className="text-xs text-muted-foreground">Level 2 Access</p>
                     ) : (
                        <Link href="/kyc">
@@ -223,6 +234,20 @@ export default function Profile() {
                       </div>
                     </div>
 
+                    {accountType === 'business' && (
+                      <div className="space-y-2 pt-4 border-t border-border">
+                        <Label>Company Name</Label>
+                        <div className="relative">
+                          <Building className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                          <Input 
+                            value={formData.companyName}
+                            onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                            disabled={!isEditing}
+                            className="pl-10" 
+                          />
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

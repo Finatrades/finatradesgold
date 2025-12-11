@@ -1,15 +1,13 @@
 import { 
   users, wallets, transactions, vaultHoldings, kycSubmissions,
-  bnslPlanTemplates, bnslPlans, bnslPayouts, bnslEarlyTerminations,
+  bnslPlans, bnslPayouts, bnslEarlyTerminations,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs,
-  referrals, dashboardLayouts, bankAccounts, emailTemplates,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
   type VaultHolding, type InsertVaultHolding,
   type KycSubmission, type InsertKycSubmission,
-  type BnslPlanTemplate, type InsertBnslPlanTemplate,
   type BnslPlan, type InsertBnslPlan,
   type BnslPayout, type InsertBnslPayout,
   type BnslEarlyTermination, type InsertBnslEarlyTermination,
@@ -17,11 +15,7 @@ import {
   type TradeDocument, type InsertTradeDocument,
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
-  type AuditLog, type InsertAuditLog,
-  type Referral, type InsertReferral,
-  type DashboardLayout, type InsertDashboardLayout,
-  type BankAccount, type InsertBankAccount,
-  type EmailTemplate, type InsertEmailTemplate
+  type AuditLog, type InsertAuditLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -30,7 +24,6 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   
@@ -42,7 +35,6 @@ export interface IStorage {
   
   // Wallets
   getWallet(userId: string): Promise<Wallet | undefined>;
-  getAllWallets(): Promise<Wallet[]>;
   createWallet(wallet: InsertWallet): Promise<Wallet>;
   updateWallet(id: string, updates: Partial<Wallet>): Promise<Wallet | undefined>;
   
@@ -50,24 +42,14 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getUserTransactions(userId: string): Promise<Transaction[]>;
-  getAllTransactions(): Promise<Transaction[]>;
   updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined>;
   
   // Vault Holdings
   getVaultHolding(id: string): Promise<VaultHolding | undefined>;
   getUserVaultHoldings(userId: string): Promise<VaultHolding[]>;
-  getAllVaultHoldings(): Promise<VaultHolding[]>;
   createVaultHolding(holding: InsertVaultHolding): Promise<VaultHolding>;
   updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined>;
   
-  // BNSL Plan Templates
-  getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined>;
-  getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
-  getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
-  createBnslPlanTemplate(template: InsertBnslPlanTemplate): Promise<BnslPlanTemplate>;
-  updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined>;
-  deleteBnslPlanTemplate(id: string): Promise<void>;
-
   // BNSL Plans
   getBnslPlan(id: string): Promise<BnslPlan | undefined>;
   getUserBnslPlans(userId: string): Promise<BnslPlan[]>;
@@ -112,40 +94,6 @@ export interface IStorage {
   // Audit Logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getEntityAuditLogs(entityType: string, entityId: string): Promise<AuditLog[]>;
-  
-  // Bank Accounts
-  getBankAccount(id: string): Promise<BankAccount | undefined>;
-  getUserBankAccounts(userId: string): Promise<BankAccount[]>;
-  createBankAccount(account: InsertBankAccount & { maskedAccountNumber: string }): Promise<BankAccount>;
-  updateBankAccount(id: string, updates: Partial<BankAccount>): Promise<BankAccount | undefined>;
-  deleteBankAccount(id: string): Promise<void>;
-  setPrimaryBankAccount(userId: string, accountId: string): Promise<void>;
-
-  // Email Templates
-  getAllEmailTemplates(): Promise<EmailTemplate[]>;
-  getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
-  getEmailTemplateByName(name: string): Promise<EmailTemplate | undefined>;
-  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
-  updateEmailTemplate(id: string, updates: Partial<EmailTemplate>): Promise<EmailTemplate | undefined>;
-  deleteEmailTemplate(id: string): Promise<void>;
-}
-
-function generateFinatradesId(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `FT-${code}`;
-}
-
-function generateReferralCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -160,14 +108,8 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.createdAt));
-  }
-
   async createUser(insertUser: InsertUser): Promise<User> {
-    const finatradesId = generateFinatradesId();
-    const referralCode = generateReferralCode();
-    const [user] = await db.insert(users).values({ ...insertUser, finatradesId, referralCode }).returning();
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
@@ -202,10 +144,6 @@ export class DatabaseStorage implements IStorage {
     return wallet || undefined;
   }
 
-  async getAllWallets(): Promise<Wallet[]> {
-    return await db.select().from(wallets);
-  }
-
   async createWallet(insertWallet: InsertWallet): Promise<Wallet> {
     const [wallet] = await db.insert(wallets).values(insertWallet).returning();
     return wallet;
@@ -231,10 +169,6 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.createdAt));
   }
 
-  async getAllTransactions(): Promise<Transaction[]> {
-    return await db.select().from(transactions).orderBy(desc(transactions.createdAt));
-  }
-
   async updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
     const [transaction] = await db.update(transactions).set(updates).where(eq(transactions.id, id)).returning();
     return transaction || undefined;
@@ -250,10 +184,6 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(vaultHoldings).where(eq(vaultHoldings.userId, userId)).orderBy(desc(vaultHoldings.createdAt));
   }
 
-  async getAllVaultHoldings(): Promise<VaultHolding[]> {
-    return await db.select().from(vaultHoldings).orderBy(desc(vaultHoldings.createdAt));
-  }
-
   async createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding> {
     const [holding] = await db.insert(vaultHoldings).values(insertHolding).returning();
     return holding;
@@ -262,39 +192,6 @@ export class DatabaseStorage implements IStorage {
   async updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined> {
     const [holding] = await db.update(vaultHoldings).set({ ...updates, updatedAt: new Date() }).where(eq(vaultHoldings.id, id)).returning();
     return holding || undefined;
-  }
-
-  // BNSL Plan Templates
-  async getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined> {
-    const [template] = await db.select().from(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
-    return template || undefined;
-  }
-
-  async getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
-    return await db.select().from(bnslPlanTemplates).orderBy(bnslPlanTemplates.displayOrder);
-  }
-
-  async getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
-    return await db.select().from(bnslPlanTemplates)
-      .where(eq(bnslPlanTemplates.isActive, true))
-      .orderBy(bnslPlanTemplates.displayOrder);
-  }
-
-  async createBnslPlanTemplate(insertTemplate: InsertBnslPlanTemplate): Promise<BnslPlanTemplate> {
-    const [template] = await db.insert(bnslPlanTemplates).values(insertTemplate).returning();
-    return template;
-  }
-
-  async updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined> {
-    const [template] = await db.update(bnslPlanTemplates)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(bnslPlanTemplates.id, id))
-      .returning();
-    return template || undefined;
-  }
-
-  async deleteBnslPlanTemplate(id: string): Promise<void> {
-    await db.delete(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
   }
 
   // BNSL Plans
@@ -443,127 +340,6 @@ export class DatabaseStorage implements IStorage {
 
   async getEntityAuditLogs(entityType: string, entityId: string): Promise<AuditLog[]> {
     return await db.select().from(auditLogs).where(and(eq(auditLogs.entityType, entityType), eq(auditLogs.entityId, entityId))).orderBy(desc(auditLogs.timestamp));
-  }
-
-  // Referrals
-  async getUserReferrals(userId: string): Promise<Referral[]> {
-    return await db.select().from(referrals).where(eq(referrals.referrerId, userId)).orderBy(desc(referrals.createdAt));
-  }
-
-  async getReferralByCode(code: string): Promise<Referral | undefined> {
-    const [referral] = await db.select().from(referrals).where(eq(referrals.referralCode, code));
-    return referral || undefined;
-  }
-
-  async getUserByReferralCode(code: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.referralCode, code));
-    return user || undefined;
-  }
-
-  async createReferral(insertReferral: InsertReferral): Promise<Referral> {
-    const [referral] = await db.insert(referrals).values(insertReferral).returning();
-    return referral;
-  }
-
-  async updateReferral(id: string, updates: Partial<Referral>): Promise<Referral | undefined> {
-    const [referral] = await db.update(referrals).set(updates).where(eq(referrals.id, id)).returning();
-    return referral || undefined;
-  }
-
-  async getReferralStats(userId: string): Promise<{ total: number; completed: number; pending: number; totalBonus: number }> {
-    const userReferrals = await this.getUserReferrals(userId);
-    const completed = userReferrals.filter(r => r.status === 'Completed').length;
-    const pending = userReferrals.filter(r => r.status === 'Pending').length;
-    const totalBonus = userReferrals.filter(r => r.referrerBonusPaid).reduce((sum, r) => sum + parseFloat(r.bonusGoldGrams || '0'), 0);
-    return { total: userReferrals.length, completed, pending, totalBonus };
-  }
-
-  // Dashboard Layouts
-  async getDashboardLayout(userId: string): Promise<DashboardLayout | undefined> {
-    const [layout] = await db.select().from(dashboardLayouts).where(eq(dashboardLayouts.userId, userId));
-    return layout || undefined;
-  }
-
-  async saveDashboardLayout(userId: string, layout: DashboardLayout['layout']): Promise<DashboardLayout> {
-    const existing = await this.getDashboardLayout(userId);
-    if (existing) {
-      const [updated] = await db.update(dashboardLayouts).set({ layout, updatedAt: new Date() }).where(eq(dashboardLayouts.userId, userId)).returning();
-      return updated;
-    }
-    const [created] = await db.insert(dashboardLayouts).values({ userId, layout }).returning();
-    return created;
-  }
-
-  // Bank Accounts
-  async getBankAccount(id: string): Promise<BankAccount | undefined> {
-    const [account] = await db.select().from(bankAccounts).where(eq(bankAccounts.id, id));
-    return account || undefined;
-  }
-
-  async getUserBankAccounts(userId: string): Promise<BankAccount[]> {
-    return await db.select().from(bankAccounts)
-      .where(and(eq(bankAccounts.userId, userId), sql`${bankAccounts.status} != 'Disabled'`))
-      .orderBy(desc(bankAccounts.isPrimary), desc(bankAccounts.createdAt));
-  }
-
-  async createBankAccount(insertAccount: InsertBankAccount & { maskedAccountNumber: string }): Promise<BankAccount> {
-    const [account] = await db.insert(bankAccounts).values(insertAccount).returning();
-    return account;
-  }
-
-  async updateBankAccount(id: string, updates: Partial<BankAccount>): Promise<BankAccount | undefined> {
-    const [account] = await db.update(bankAccounts)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(bankAccounts.id, id))
-      .returning();
-    return account || undefined;
-  }
-
-  async deleteBankAccount(id: string): Promise<void> {
-    await db.update(bankAccounts)
-      .set({ status: 'Disabled', updatedAt: new Date() })
-      .where(eq(bankAccounts.id, id));
-  }
-
-  async setPrimaryBankAccount(userId: string, accountId: string): Promise<void> {
-    await db.update(bankAccounts)
-      .set({ isPrimary: false, updatedAt: new Date() })
-      .where(eq(bankAccounts.userId, userId));
-    await db.update(bankAccounts)
-      .set({ isPrimary: true, updatedAt: new Date() })
-      .where(eq(bankAccounts.id, accountId));
-  }
-
-  // Email Templates
-  async getAllEmailTemplates(): Promise<EmailTemplate[]> {
-    return await db.select().from(emailTemplates).orderBy(emailTemplates.category, emailTemplates.name);
-  }
-
-  async getEmailTemplate(id: string): Promise<EmailTemplate | undefined> {
-    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, id));
-    return template || undefined;
-  }
-
-  async getEmailTemplateByName(name: string): Promise<EmailTemplate | undefined> {
-    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.name, name));
-    return template || undefined;
-  }
-
-  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
-    const [created] = await db.insert(emailTemplates).values(template).returning();
-    return created;
-  }
-
-  async updateEmailTemplate(id: string, updates: Partial<EmailTemplate>): Promise<EmailTemplate | undefined> {
-    const [updated] = await db.update(emailTemplates)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(emailTemplates.id, id))
-      .returning();
-    return updated || undefined;
-  }
-
-  async deleteEmailTemplate(id: string): Promise<void> {
-    await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
   }
 }
 

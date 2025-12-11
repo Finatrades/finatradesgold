@@ -45,17 +45,12 @@ import PaymentOperations from "@/pages/admin/PaymentOperations";
 import CardManagement from "@/pages/admin/CardManagement";
 import TradeFinance from "@/pages/admin/TradeFinance";
 import BNSLManagement from "@/pages/admin/BNSLManagement";
-import BNSLTemplates from "@/pages/admin/BNSLTemplates";
 import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
-import EmailTemplates from "@/pages/admin/EmailTemplates";
 
 import FinaPayDashboard from "@/pages/FinaPayDashboard";
 import { FinaPayProvider } from "@/context/FinaPayContext";
 
 import AdminChat from "@/pages/admin/AdminChat";
-import ReferralProgram from "@/pages/ReferralProgram";
-import CustomDashboard from "@/pages/CustomDashboard";
-import BankAccounts from "@/pages/BankAccounts";
 
 function Router() {
   return (
@@ -73,9 +68,6 @@ function Router() {
       <ProtectedRoute path="/finabridge" component={FinaBridge} />
       <ProtectedRoute path="/finacard" component={FinaCard} />
       <ProtectedRoute path="/profile" component={Profile} />
-      <ProtectedRoute path="/referrals" component={ReferralProgram} />
-      <ProtectedRoute path="/my-dashboard" component={CustomDashboard} />
-      <ProtectedRoute path="/bank-accounts" component={BankAccounts} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />
@@ -91,8 +83,6 @@ function Router() {
       <Route path="/admin/finapay" component={PaymentOperations} />
       <Route path="/admin/finabridge" component={FinaBridgeManagement} />
       <Route path="/admin/bnsl" component={BNSLManagement} />
-      <Route path="/admin/bnsl/templates" component={BNSLTemplates} />
-      <Route path="/admin/email-templates" component={EmailTemplates} />
       
       {/* Legacy/Redirects if needed */}
       <Route path="/admin/payments" component={PaymentOperations} />

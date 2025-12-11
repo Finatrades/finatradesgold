@@ -13,10 +13,7 @@ import {
   LogOut,
   Menu,
   X,
-  ShieldCheck,
-  Gift,
-  LayoutGrid,
-  Building2
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -29,20 +26,17 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
   const menuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
-    { icon: <LayoutGrid className="w-5 h-5" />, label: 'My Dashboard', href: '/my-dashboard' },
     { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay Wallet', href: '/finapay' },
     { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
     { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
     { icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' },
     { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
-    { icon: <Building2 className="w-5 h-5" />, label: 'Bank Accounts', href: '/bank-accounts' },
-    { icon: <Gift className="w-5 h-5" />, label: 'Referral Program', href: '/referrals' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/dashboard/profile' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },
   ];
 
-  // Add KYC menu item if not completed
-  if (user?.kycStatus === 'Not Started' || user?.kycStatus === 'In Progress') {
+  // Add KYC menu item if pending
+  if (user?.kycStatus === 'pending') {
     menuItems.splice(1, 0, { 
       icon: <ShieldCheck className="w-5 h-5" />, 
       label: 'Complete Verification', 

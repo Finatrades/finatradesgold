@@ -37,9 +37,6 @@ export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'adm
 
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  finatradesId: varchar("finatrades_id", { length: 20 }).unique(),
-  referralCode: varchar("referral_code", { length: 10 }).unique(),
-  referredBy: varchar("referred_by", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   firstName: varchar("first_name", { length: 255 }).notNull(),
@@ -170,26 +167,6 @@ export type VaultHolding = typeof vaultHoldings.$inferSelect;
 // ============================================
 // BNSL - BUY NOW SELL LATER
 // ============================================
-
-export const bnslPlanTemplates = pgTable("bnsl_plan_templates", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
-  tenorMonths: integer("tenor_months").notNull(),
-  marginAnnualPercent: decimal("margin_annual_percent", { precision: 5, scale: 2 }).notNull(),
-  minGoldGrams: decimal("min_gold_grams", { precision: 18, scale: 6 }).notNull().default('1'),
-  maxGoldGrams: decimal("max_gold_grams", { precision: 18, scale: 6 }),
-  earlyTerminationPenaltyPercent: decimal("early_termination_penalty_percent", { precision: 5, scale: 2 }).notNull().default('2'),
-  adminFeePercent: decimal("admin_fee_percent", { precision: 5, scale: 2 }).notNull().default('1'),
-  isActive: boolean("is_active").notNull().default(true),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertBnslPlanTemplateSchema = createInsertSchema(bnslPlanTemplates).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertBnslPlanTemplate = z.infer<typeof insertBnslPlanTemplateSchema>;
-export type BnslPlanTemplate = typeof bnslPlanTemplates.$inferSelect;
 
 export const bnslPlans = pgTable("bnsl_plans", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -381,119 +358,3 @@ export const auditLogs = pgTable("audit_logs", {
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
-
-// ============================================
-// REFERRAL PROGRAM
-// ============================================
-
-export const referralStatusEnum = pgEnum('referral_status', ['Pending', 'Completed', 'Expired']);
-
-export const referrals = pgTable("referrals", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referrerId: varchar("referrer_id", { length: 255 }).notNull().references(() => users.id),
-  referredId: varchar("referred_id", { length: 255 }).references(() => users.id),
-  referralCode: varchar("referral_code", { length: 20 }).notNull().unique(),
-  status: referralStatusEnum("status").notNull().default('Pending'),
-  bonusGoldGrams: decimal("bonus_gold_grams", { precision: 18, scale: 6 }).default('0.5'),
-  referrerBonusPaid: boolean("referrer_bonus_paid").notNull().default(false),
-  referredBonusPaid: boolean("referred_bonus_paid").notNull().default(false),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
-export type InsertReferral = z.infer<typeof insertReferralSchema>;
-export type Referral = typeof referrals.$inferSelect;
-
-// ============================================
-// DASHBOARD PREFERENCES
-// ============================================
-
-export const dashboardLayouts = pgTable("dashboard_layouts", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
-  layout: json("layout").$type<{
-    widgets: Array<{
-      id: string;
-      type: string;
-      x: number;
-      y: number;
-      w: number;
-      h: number;
-      visible: boolean;
-    }>;
-  }>(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertDashboardLayoutSchema = createInsertSchema(dashboardLayouts).omit({ id: true });
-export type InsertDashboardLayout = z.infer<typeof insertDashboardLayoutSchema>;
-export type DashboardLayout = typeof dashboardLayouts.$inferSelect;
-
-// ============================================
-// BANK ACCOUNTS
-// ============================================
-
-export const bankAccountStatusEnum = pgEnum('bank_account_status', ['Pending', 'Verified', 'Rejected', 'Disabled']);
-export const bankAccountTypeEnum = pgEnum('bank_account_type', ['Checking', 'Savings', 'Business']);
-
-export const bankAccounts = pgTable("bank_accounts", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  label: varchar("label", { length: 100 }),
-  bankName: varchar("bank_name", { length: 255 }).notNull(),
-  accountHolderName: varchar("account_holder_name", { length: 255 }).notNull(),
-  maskedAccountNumber: varchar("masked_account_number", { length: 20 }).notNull(),
-  accountNumber: varchar("account_number", { length: 255 }).notNull(),
-  ibanOrRouting: varchar("iban_or_routing", { length: 50 }).notNull(),
-  swiftCode: varchar("swift_code", { length: 20 }),
-  country: varchar("country", { length: 100 }).notNull(),
-  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
-  accountType: bankAccountTypeEnum("account_type").notNull().default('Checking'),
-  status: bankAccountStatusEnum("status").notNull().default('Pending'),
-  isPrimary: boolean("is_primary").notNull().default(false),
-  verificationCode: varchar("verification_code", { length: 20 }),
-  verifiedAt: timestamp("verified_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertBankAccountSchema = createInsertSchema(bankAccounts).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true,
-  verifiedAt: true,
-  verificationCode: true,
-  status: true,
-  isPrimary: true,
-  maskedAccountNumber: true,
-});
-export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
-export type BankAccount = typeof bankAccounts.$inferSelect;
-
-// ============================================
-// EMAIL TEMPLATES
-// ============================================
-
-export const emailTemplateCategoryEnum = pgEnum('email_template_category', [
-  'Onboarding', 'Transaction', 'KYC', 'BNSL', 'Security', 'Support', 'Referral', 'System'
-]);
-
-export const emailTemplates = pgTable("email_templates", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 100 }).notNull().unique(),
-  category: emailTemplateCategoryEnum("category").notNull(),
-  subject: text("subject").notNull(),
-  subjectFr: text("subject_fr"),
-  body: text("body").notNull(),
-  bodyFr: text("body_fr"),
-  placeholders: json("placeholders").$type<string[]>().default([]),
-  isActive: boolean("is_active").notNull().default(true),
-  lastEditedBy: varchar("last_edited_by", { length: 255 }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
-export type EmailTemplate = typeof emailTemplates.$inferSelect;

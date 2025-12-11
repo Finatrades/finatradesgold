@@ -1,104 +1,46 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface UserProfile {
   id: string;
-  finatradesId: string | null;
   firstName: string;
   lastName: string;
   email: string;
   role: 'user' | 'admin';
-  accountType: 'personal' | 'business';
-  kycStatus: 'Not Started' | 'In Progress' | 'Approved' | 'Rejected';
-  createdAt: string;
-  updatedAt: string;
-  // Mapped fields for UI
   status: 'Active' | 'Suspended' | 'Pending KYC' | 'Frozen';
-  kycLevel: 0 | 1 | 2;
+  kycLevel: 0 | 1 | 2; // 0=None, 1=Personal, 2=Business
   joinedDate: string;
+  lastLogin?: string;
 }
+
+// Initial Mock Data
+const MOCK_USERS: UserProfile[] = [
+  { id: '1', firstName: 'Demo', lastName: 'User', email: 'demo@finatrades.com', role: 'user', status: 'Pending KYC', kycLevel: 0, joinedDate: '2024-12-01' },
+  { id: '2', firstName: 'Alice', lastName: 'Freeman', email: 'alice@example.com', role: 'user', status: 'Active', kycLevel: 1, joinedDate: '2024-11-15' },
+  { id: '3', firstName: 'Bob', lastName: 'Smith', email: 'bob@example.com', role: 'user', status: 'Active', kycLevel: 1, joinedDate: '2024-11-20' },
+  { id: '4', firstName: 'Charlie', lastName: 'Brown', email: 'charlie@example.com', role: 'user', status: 'Suspended', kycLevel: 0, joinedDate: '2024-12-01' },
+  { id: '99', firstName: 'Admin', lastName: 'Super', email: 'admin@finatrades.com', role: 'admin', status: 'Active', kycLevel: 2, joinedDate: '2024-10-01' },
+];
 
 interface UserContextType {
   users: UserProfile[];
-  isLoading: boolean;
   updateUserStatus: (id: string, status: UserProfile['status']) => void;
   updateUserKYC: (id: string, level: UserProfile['kycLevel']) => void;
   getUser: (email: string) => UserProfile | undefined;
-  refetch: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-function mapUserToProfile(user: any): UserProfile {
-  // Map kycStatus to kycLevel
-  let kycLevel: 0 | 1 | 2 = 0;
-  if (user.kycStatus === 'Approved') kycLevel = 2;
-  else if (user.kycStatus === 'In Progress') kycLevel = 1;
-  
-  // Map to status for UI
-  let status: UserProfile['status'] = 'Active';
-  if (user.kycStatus === 'Not Started') status = 'Pending KYC';
-  
-  return {
-    id: user.id,
-    finatradesId: user.finatradesId,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    role: user.role,
-    accountType: user.accountType,
-    kycStatus: user.kycStatus,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    status,
-    kycLevel,
-    joinedDate: new Date(user.createdAt).toLocaleDateString(),
-  };
-}
-
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const queryClient = useQueryClient();
-  
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/users');
-      if (!response.ok) throw new Error('Failed to fetch users');
-      return response.json();
-    },
-  });
-
-  const users: UserProfile[] = (data?.users || []).map(mapUserToProfile);
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      const response = await fetch(`/api/admin/users/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!response.ok) throw new Error('Failed to update user');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-    },
-  });
+  const [users, setUsers] = useState<UserProfile[]>(MOCK_USERS);
 
   const updateUserStatus = (id: string, status: UserProfile['status']) => {
-    // Map status to database field if needed
-    updateMutation.mutate({ id, updates: { status } });
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u));
     toast.success("User Updated", { description: `User status changed to ${status}` });
   };
 
   const updateUserKYC = (id: string, level: UserProfile['kycLevel']) => {
-    // Map kycLevel to kycStatus
-    let kycStatus = 'Not Started';
-    if (level === 1) kycStatus = 'In Progress';
-    if (level === 2) kycStatus = 'Approved';
-    
-    updateMutation.mutate({ id, updates: { kycStatus } });
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, kycLevel: level } : u));
     toast.success("KYC Updated", { description: `User KYC level changed to ${level}` });
   };
 
@@ -107,7 +49,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ users, isLoading, updateUserStatus, updateUserKYC, getUser, refetch }}>
+    <UserContext.Provider value={{ users, updateUserStatus, updateUserKYC, getUser }}>
       {children}
     </UserContext.Provider>
   );
