@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Database, TrendingUp, BarChart3, User, Settings, ArrowRight } from 'lucide-react';
+import { Wallet, Database, TrendingUp, BarChart3, ArrowRight } from 'lucide-react';
 
 const sliderItems = [
   {
@@ -38,24 +38,6 @@ const sliderItems = [
     color: 'text-[#4CAF50]',
     bg: 'bg-[#4CAF50]/10',
     border: 'border-[#4CAF50]/20'
-  },
-  {
-    id: 'profile',
-    title: 'Profile',
-    desc: 'Manage your personal information and KYC status.',
-    icon: <User className="w-6 h-6" />,
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/10',
-    border: 'border-blue-400/20'
-  },
-  {
-    id: 'settings',
-    title: 'Settings',
-    desc: 'Configure security, notifications, and preferences.',
-    icon: <Settings className="w-6 h-6" />,
-    color: 'text-white',
-    bg: 'bg-white/10',
-    border: 'border-white/20'
   }
 ];
 
