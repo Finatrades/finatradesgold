@@ -4,15 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Upload, X } from 'lucide-react';
+import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Upload, X, User } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RequestGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (from: string, amount: number, asset: 'USD' | 'GOLD') => void;
 }
+
+const RECENT_CONTACTS = [
+  { id: 'u1', name: 'Alex Johnson', username: '@alex_crypto', avatar: 'AJ' },
+  { id: 'u2', name: 'Sarah Smith', username: '@sarah_gold', avatar: 'SS' },
+  { id: 'u3', name: 'Mike Ross', username: '@mike_r', avatar: 'MR' },
+  { id: 'u4', name: 'Emily Chen', username: '@emily_c', avatar: 'EC' },
+];
 
 export default function RequestGoldModal({ isOpen, onClose, onConfirm }: RequestGoldModalProps) {
   const { toast } = useToast();
@@ -59,6 +68,10 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
     setAttachment('invoice_123.pdf');
   };
 
+  const handleContactSelect = (username: string) => {
+    setFromUser(username);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
@@ -97,14 +110,38 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                </button>
             </div>
 
-            <div className="space-y-2">
-              <Label>Request From (Email / ID)</Label>
-              <Input 
-                placeholder="friend@example.com" 
-                className="bg-black/20 border-white/10"
-                value={fromUser}
-                onChange={(e) => setFromUser(e.target.value)}
-              />
+            <div className="space-y-3">
+              <Label>Request From</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <Input 
+                  placeholder="Username, Email, or ID" 
+                  className="bg-black/20 border-white/10 pl-9"
+                  value={fromUser}
+                  onChange={(e) => setFromUser(e.target.value)}
+                />
+              </div>
+
+              {/* Recent Contacts Horizontal Scroll */}
+              <div className="space-y-2">
+                <Label className="text-xs text-white/40 uppercase tracking-wider">Recent Contacts</Label>
+                <ScrollArea className="w-full whitespace-nowrap">
+                  <div className="flex gap-2 pb-2">
+                    {RECENT_CONTACTS.map((contact) => (
+                      <button
+                        key={contact.id}
+                        onClick={() => handleContactSelect(contact.username)}
+                        className="flex flex-col items-center gap-1 min-w-[70px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                      >
+                        <Avatar className="w-10 h-10 border border-white/10 group-hover:border-white/30 transition-colors">
+                          <AvatarFallback className="bg-white/10 text-white text-xs">{contact.avatar}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-[10px] text-white/60 truncate w-full text-center">{contact.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -113,11 +150,11 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                  <Input 
                    type="number" 
                    placeholder="0.00" 
-                   className="bg-black/20 border-white/10 pl-8"
+                   className="bg-black/20 border-white/10 pl-8 text-lg font-medium"
                    value={amount}
                    onChange={(e) => setAmount(e.target.value)}
                  />
-                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">{currencyLabel}</span>
+                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold">{currencyLabel}</span>
               </div>
             </div>
 

@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, QrCode, Scan, Upload, X, ArrowRightLeft } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, Upload, X, ArrowRightLeft, User, Search } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SendGoldModalProps {
   isOpen: boolean;
@@ -14,6 +16,13 @@ interface SendGoldModalProps {
   goldBalance: number;   // Gold Balance in Grams
   onConfirm: (recipient: string, amount: number, asset: 'USD' | 'GOLD') => void;
 }
+
+const RECENT_CONTACTS = [
+  { id: 'u1', name: 'Alex Johnson', username: '@alex_crypto', avatar: 'AJ' },
+  { id: 'u2', name: 'Sarah Smith', username: '@sarah_gold', avatar: 'SS' },
+  { id: 'u3', name: 'Mike Ross', username: '@mike_r', avatar: 'MR' },
+  { id: 'u4', name: 'Emily Chen', username: '@emily_c', avatar: 'EC' },
+];
 
 export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBalance, onConfirm }: SendGoldModalProps) {
   const [recipient, setRecipient] = useState('');
@@ -62,6 +71,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     setAttachment('invoice_123.pdf');
   };
 
+  const handleContactSelect = (username: string) => {
+    setRecipient(username);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
@@ -101,14 +114,38 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                  </button>
               </div>
 
-              <div className="space-y-2">
-                <Label>Recipient ID / Email</Label>
-                <Input 
-                  placeholder="user@example.com" 
-                  className="bg-black/20 border-white/10"
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                />
+              <div className="space-y-3">
+                <Label>Recipient</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Input 
+                    placeholder="Username, Email, or ID" 
+                    className="bg-black/20 border-white/10 pl-9"
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                  />
+                </div>
+
+                {/* Recent Contacts Horizontal Scroll */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-white/40 uppercase tracking-wider">Recent Contacts</Label>
+                  <ScrollArea className="w-full whitespace-nowrap">
+                    <div className="flex gap-2 pb-2">
+                      {RECENT_CONTACTS.map((contact) => (
+                        <button
+                          key={contact.id}
+                          onClick={() => handleContactSelect(contact.username)}
+                          className="flex flex-col items-center gap-1 min-w-[70px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                        >
+                          <Avatar className="w-10 h-10 border border-white/10 group-hover:border-white/30 transition-colors">
+                            <AvatarFallback className="bg-white/10 text-white text-xs">{contact.avatar}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-[10px] text-white/60 truncate w-full text-center">{contact.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -122,11 +159,19 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                    <Input 
                      type="number" 
                      placeholder="0.00" 
-                     className="bg-black/20 border-white/10 pl-8"
+                     className="bg-black/20 border-white/10 pl-8 text-lg font-medium"
                      value={amount}
                      onChange={(e) => setAmount(e.target.value)}
                    />
-                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">{currencyLabel}</span>
+                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold">{currencyLabel}</span>
+                   <Button 
+                     size="sm" 
+                     variant="ghost" 
+                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-[#D4AF37] hover:text-[#D4AF37]/80"
+                     onClick={() => setAmount(currentBalance.toString())}
+                   >
+                     MAX
+                   </Button>
                 </div>
               </div>
 
@@ -188,7 +233,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <Button 
                 className="w-full bg-white/10 text-white hover:bg-white/20"
                 onClick={() => {
-                   setRecipient('scanned-user-id');
+                   setRecipient('@qr_scanned_user');
                    setActiveTab('direct');
                 }}
               >
@@ -199,33 +244,49 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
         )}
 
         {step === 2 && (
-          <div className="space-y-4 py-4">
-            <div className="bg-white/5 p-4 rounded-lg border border-white/10 text-center space-y-2">
-               <p className="text-white/60 text-sm">Transferring</p>
-               <p className={`text-2xl font-bold ${assetType === 'USD' ? 'text-white' : 'text-[#D4AF37]'}`}>
-                 {assetType === 'USD' ? '$' : ''}{numericAmount.toFixed(assetType === 'USD' ? 2 : 4)}{assetType === 'GOLD' ? ' g' : ''}
-               </p>
-               <p className="text-white/60 text-sm">to <span className="text-white">{recipient}</span></p>
+          <div className="space-y-6 py-4">
+            <div className="bg-white/5 p-6 rounded-xl border border-white/10 text-center space-y-4">
+               <div className="space-y-1">
+                 <p className="text-white/60 text-sm uppercase tracking-wider">Review Transfer</p>
+                 <div className="flex items-center justify-center gap-2 text-2xl font-bold text-white">
+                   <Avatar className="w-8 h-8 border border-white/10">
+                      <AvatarFallback className="bg-[#D4AF37] text-black text-xs font-bold">ME</AvatarFallback>
+                   </Avatar>
+                   <ArrowRightLeft className="w-5 h-5 text-white/40" />
+                   <Avatar className="w-8 h-8 border border-white/10">
+                      <AvatarFallback className="bg-white/20 text-white text-xs">TO</AvatarFallback>
+                   </Avatar>
+                 </div>
+               </div>
+               
+               <div>
+                 <p className={`text-3xl font-bold ${assetType === 'USD' ? 'text-green-400' : 'text-[#D4AF37]'}`}>
+                   {assetType === 'USD' ? '$' : ''}{numericAmount.toFixed(assetType === 'USD' ? 2 : 4)}{assetType === 'GOLD' ? ' g' : ''}
+                 </p>
+                 <p className="text-white/60 text-sm mt-1">{recipient}</p>
+               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Enter Security Code (OTP)</Label>
-              <Input 
-                placeholder="123456" 
-                className="bg-black/20 border-white/10 text-center tracking-widest text-lg"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength={6}
-              />
-              <p className="text-xs text-white/40">We sent a code to your registered device.</p>
+            <div className="space-y-3">
+              <Label className="text-center block w-full">Security Verification</Label>
+              <div className="relative">
+                <Input 
+                  placeholder="000000" 
+                  className="bg-black/20 border-white/10 text-center tracking-[0.5em] text-2xl font-mono h-14"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                />
+              </div>
+              <p className="text-xs text-white/40 text-center">Enter the 6-digit code sent to your device.</p>
             </div>
 
             <Button 
-              className={`w-full text-white font-bold ${assetType === 'USD' ? 'bg-green-500 hover:bg-green-600' : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black'}`}
+              className={`w-full text-white font-bold h-12 ${assetType === 'USD' ? 'bg-green-500 hover:bg-green-600' : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black'}`}
               disabled={otp.length < 4 || isLoading}
               onClick={handleConfirm}
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
               Confirm Transfer
             </Button>
           </div>
