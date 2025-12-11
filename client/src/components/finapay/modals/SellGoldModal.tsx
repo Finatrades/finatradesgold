@@ -16,7 +16,6 @@ interface SellGoldModalProps {
 }
 
 export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalance, onConfirm }: SellGoldModalProps) {
-  const [step, setStep] = useState(1);
   const [method, setMethod] = useState('bank');
   
   // Dual inputs
@@ -27,7 +26,6 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
   useEffect(() => {
     if (isOpen) {
-      setStep(1);
       setGrams('');
       setUsd('');
       setMethod('bank');
@@ -87,130 +85,106 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
           </DialogDescription>
         </DialogHeader>
 
-        {step === 1 && (
-          <div className="space-y-6 py-4">
-            
-            {/* Amount Inputs */}
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <span className="text-xs text-[#D4AF37] cursor-pointer hover:underline" onClick={() => handleGramsChange(safeBalance.toString())}>
-                  Max Available: {safeBalance.toFixed(3)} g
-                </span>
-              </div>
-              
-              <div className="relative">
-                <Label className="mb-2 block">Amount to Sell (Gold Grams)</Label>
-                <div className="relative">
-                  <Input 
-                    type="number" 
-                    placeholder="0.000" 
-                    className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
-                    value={grams}
-                    onChange={(e) => handleGramsChange(e.target.value)}
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37] font-medium">
-                    g
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center -my-2 relative z-10">
-                 <div className="bg-[#1A0A2E] border border-white/10 p-1.5 rounded-full text-white/40">
-                    <ArrowRightLeft className="w-4 h-4 rotate-90" />
-                 </div>
-              </div>
-
-              <div className="relative">
-                <Label className="mb-2 block">Value (USD)</Label>
-                <div className="relative">
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
-                    value={usd}
-                    onChange={(e) => handleUsdChange(e.target.value)}
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
-                    USD
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Method Selection */}
-            <div className="space-y-3">
-              <Label>Payout Method</Label>
-              <RadioGroup value={method} onValueChange={setMethod} className="space-y-2">
-                <div className="flex items-center space-x-2 bg-white/5 p-3 rounded-lg border border-white/10">
-                  <RadioGroupItem value="bank" id="bank" className="border-white/20 text-[#D4AF37]" />
-                  <Label htmlFor="bank" className="flex-1 flex items-center cursor-pointer">
-                    <Building className="w-4 h-4 mr-3 text-white/60" />
-                    <span className="flex-1">Bank Transfer</span>
-                    <span className="text-xs text-white/40">2-3 days</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/5 p-3 rounded-lg border border-white/10">
-                  <RadioGroupItem value="crypto" id="crypto" className="border-white/20 text-[#D4AF37]" />
-                  <Label htmlFor="crypto" className="flex-1 flex items-center cursor-pointer">
-                    <Wallet className="w-4 h-4 mr-3 text-white/60" />
-                    <span className="flex-1">Crypto Payout</span>
-                    <span className="text-xs text-white/40">Instant</span>
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <Button 
-              className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold"
-              disabled={numericGrams <= 0 || numericGrams > safeBalance}
-              onClick={() => setStep(2)}
-            >
-              Review Sell Order
-            </Button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-6 py-4">
-            <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-4">
-               <div className="flex justify-between">
-                 <span className="text-white/60">Selling</span>
-                 <span className="text-white font-medium">{numericGrams.toFixed(4)} g</span>
-               </div>
-               <div className="flex justify-between">
-                 <span className="text-white/60">Rate</span>
-                 <span className="text-white font-medium">${goldPrice.toFixed(2)} / g</span>
-               </div>
-               <div className="flex justify-between">
-                 <span className="text-white/60">Fee (1.5%)</span>
-                 <span className="text-red-400">-${fee.toFixed(2)}</span>
-               </div>
-               <Separator className="bg-white/10" />
-               <div className="flex justify-between items-end">
-                 <span className="text-white/80">Net Payout</span>
-                 <span className="text-2xl font-bold text-white">${netPayout.toFixed(2)}</span>
-               </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1 border-white/10 hover:bg-white/5 text-white" onClick={() => setStep(1)}>
-                Back
-              </Button>
-              <Button 
-                className="flex-[2] bg-red-500 text-white hover:bg-red-600 font-bold"
-                onClick={handleConfirm}
-                disabled={isLoading}
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                Confirm Sell
-              </Button>
+        <div className="space-y-6 py-4">
+          
+          {/* Amount Inputs */}
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <span className="text-xs text-[#D4AF37] cursor-pointer hover:underline" onClick={() => handleGramsChange(safeBalance.toString())}>
+                Max Available: {safeBalance.toFixed(3)} g
+              </span>
             </div>
             
-            <p className="text-xs text-center text-white/40">
-              // This mocks debiting FinaVault and triggering payout.
-            </p>
+            <div className="relative">
+              <Label className="mb-2 block">Amount to Sell (Gold Grams)</Label>
+              <div className="relative">
+                <Input 
+                  type="number" 
+                  placeholder="0.000" 
+                  className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                  value={grams}
+                  onChange={(e) => handleGramsChange(e.target.value)}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37] font-medium">
+                  g
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-center -my-2 relative z-10">
+               <div className="bg-[#1A0A2E] border border-white/10 p-1.5 rounded-full text-white/40">
+                  <ArrowRightLeft className="w-4 h-4 rotate-90" />
+               </div>
+            </div>
+
+            <div className="relative">
+              <Label className="mb-2 block">Value (USD)</Label>
+              <div className="relative">
+                <Input 
+                  type="number" 
+                  placeholder="0.00" 
+                  className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                  value={usd}
+                  onChange={(e) => handleUsdChange(e.target.value)}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
+                  USD
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Method Selection */}
+          <div className="space-y-3">
+            <Label>Payout Method</Label>
+            <RadioGroup value={method} onValueChange={setMethod} className="space-y-2">
+              <div className="flex items-center space-x-2 bg-white/5 p-3 rounded-lg border border-white/10">
+                <RadioGroupItem value="bank" id="bank" className="border-white/20 text-[#D4AF37]" />
+                <Label htmlFor="bank" className="flex-1 flex items-center cursor-pointer">
+                  <Building className="w-4 h-4 mr-3 text-white/60" />
+                  <span className="flex-1">Bank Transfer</span>
+                  <span className="text-xs text-white/40">2-3 days</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 bg-white/5 p-3 rounded-lg border border-white/10">
+                <RadioGroupItem value="crypto" id="crypto" className="border-white/20 text-[#D4AF37]" />
+                <Label htmlFor="crypto" className="flex-1 flex items-center cursor-pointer">
+                  <Wallet className="w-4 h-4 mr-3 text-white/60" />
+                  <span className="flex-1">Crypto Payout</span>
+                  <span className="text-xs text-white/40">Instant</span>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Summary Section Inline */}
+          {numericGrams > 0 && (
+             <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-white/60">Rate</span>
+                  <span className="text-white font-medium">${goldPrice.toFixed(2)} / g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Fee (1.5%)</span>
+                  <span className="text-red-400">-${fee.toFixed(2)}</span>
+                </div>
+                <Separator className="bg-white/10 my-2" />
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80 font-medium">Net Payout</span>
+                  <span className="text-xl font-bold text-white">${netPayout.toFixed(2)}</span>
+                </div>
+             </div>
+          )}
+
+          <Button 
+            className="w-full h-12 bg-red-500 text-white hover:bg-red-600 font-bold"
+            disabled={numericGrams <= 0 || numericGrams > safeBalance || isLoading}
+            onClick={handleConfirm}
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+            Confirm Sell
+          </Button>
+        </div>
 
       </DialogContent>
     </Dialog>
