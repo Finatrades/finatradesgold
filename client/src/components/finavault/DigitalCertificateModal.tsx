@@ -212,6 +212,12 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
 
                 <div className="text-xs text-black/60 leading-relaxed mt-8 text-justify">
                   This certificate acknowledges the receipt and storage of the above-mentioned precious metals. The assets are held in a segregated account and are fully insured against all risks. Release of the assets is subject to the standard withdrawal procedures and fee settlement. WinGold & Metals Vault guarantees the weight and purity as stated upon receipt.
+                  <br /><br />
+                  The Certificate does not constitute a negotiable instrument, pledge, transfer of title, or guarantee of future value. It is not independently tradable or assignable and cannot be relied upon as proof of ownership beyond the balance recorded in the Platform’s official ledger.
+                  <br /><br />
+                  The storage balance may change upon any subsequent transaction, withdrawal, deposit, allocation, or audit adjustment, and this Certificate shall automatically become null and void upon issuance of any updated Storage Certificate. The Vault and Platform records shall prevail over any earlier certificate in the event of discrepancy.
+                  <br /><br />
+                  Neither the Vault Operator nor the Platform assumes liability for loss, misinterpretation, or misuse of this Certificate outside the Platform’s authenticated environment.
                 </div>
 
                 <div className="flex justify-between items-end mt-16 pt-8 border-t border-black/20">
