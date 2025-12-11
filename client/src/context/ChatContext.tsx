@@ -45,6 +45,8 @@ interface ChatContextType {
   rejectCall: () => void;
   endCall: () => void;
   activeCall: { sessionId: string; callType: 'audio' | 'video' } | null;
+  startGuestSession: (name: string, email: string) => string;
+  guestId: string | null;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -58,10 +60,27 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<{ sessionId: string; callType: 'audio' | 'video' } | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const [guestId, setGuestId] = useState<string | null>(null);
+  const [isGuestReady, setIsGuestReady] = useState(false);
 
-  // Initialize socket connection
+  // Generate guest ID on mount if no user
   useEffect(() => {
-    if (!user) return;
+    if (!user && !guestId) {
+      const storedGuestId = sessionStorage.getItem('finatrades_guest_id');
+      if (storedGuestId) {
+        setGuestId(storedGuestId);
+      } else {
+        const newGuestId = `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem('finatrades_guest_id', newGuestId);
+        setGuestId(newGuestId);
+      }
+    }
+  }, [user, guestId]);
+
+  // Initialize socket connection for authenticated users or when guest is ready
+  useEffect(() => {
+    const userId = user?.id || (isGuestReady ? guestId : null);
+    if (!userId) return;
 
     const socket = io(window.location.origin, {
       transports: ['websocket', 'polling'],
@@ -75,8 +94,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       
       // Join with user info
       socket.emit('join', {
-        userId: user.id,
-        role: user.role || 'user',
+        userId: userId,
+        role: user?.role || 'guest',
       });
     });
 
@@ -292,6 +311,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     return newSession.id;
   };
 
+  const startGuestSession = useCallback((name: string, email: string) => {
+    if (!guestId) return '';
+    
+    setIsGuestReady(true);
+    
+    const sessionId = `session-${Date.now()}`;
+    const newSession: ChatSession = {
+      id: sessionId,
+      userId: guestId,
+      userName: name,
+      messages: [],
+      status: 'active',
+      lastMessageAt: new Date(),
+      unreadCount: 0,
+    };
+
+    setSessions(prev => [newSession, ...prev]);
+    setCurrentSessionId(sessionId);
+    
+    sessionStorage.setItem('finatrades_guest_name', name);
+    sessionStorage.setItem('finatrades_guest_email', email);
+    
+    return sessionId;
+  }, [guestId]);
+
   const sendMessage = useCallback((content: string, sender: 'user' | 'admin' | 'agent', sessionId?: string) => {
     const targetSessionId = sessionId || currentSessionId;
     if (!targetSessionId || !socketRef.current) return;
@@ -301,7 +345,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       sessionId: targetSessionId,
       content,
       sender,
-      userId: user?.id,
+      userId: user?.id || guestId,
     });
 
     // Optimistically add message to local state
@@ -421,6 +465,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       rejectCall,
       endCall,
       activeCall,
+      startGuestSession,
+      guestId,
     }}>
       {children}
     </ChatContext.Provider>
@@ -448,6 +494,8 @@ const defaultChatContext: ChatContextType = {
   incomingCall: null,
   initiateCall: () => {},
   acceptCall: () => {},
+  startGuestSession: () => '',
+  guestId: null,
   rejectCall: () => {},
   endCall: () => {},
   activeCall: null,

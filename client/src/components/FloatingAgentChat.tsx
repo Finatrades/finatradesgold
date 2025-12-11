@@ -24,7 +24,7 @@ interface GuestInfo {
 
 function FloatingAgentChatContent() {
   const { user } = useAuth();
-  const { currentSession, sendMessage, createSession, selectSession, sessions } = useChat();
+  const { currentSession, sendMessage, createSession, selectSession, sessions, startGuestSession, guestId } = useChat();
   
   const [isOpen, setIsOpen] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(agents[0]);
@@ -84,11 +84,13 @@ function FloatingAgentChatContent() {
     setGuestInfo(info);
     setShowGuestForm(false);
     
-    const guestId = `guest-${Date.now()}`;
-    const sessionId = createSession(guestId, info.name);
-    selectSession(sessionId);
-    sendMessage(`Guest: ${info.name} (${info.email})`, 'agent', sessionId);
-    sendMessage(currentAgent.greeting, 'agent', sessionId);
+    const sessionId = startGuestSession(info.name, info.email);
+    if (sessionId) {
+      setTimeout(() => {
+        sendMessage(`Guest: ${info.name} (${info.email})`, 'agent', sessionId);
+        sendMessage(currentAgent.greeting, 'agent', sessionId);
+      }, 1000);
+    }
   };
 
   const closeChat = () => {
