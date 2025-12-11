@@ -3,7 +3,7 @@ import {
   bnslPlanTemplates, bnslPlans, bnslPayouts, bnslEarlyTerminations,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs,
-  referrals, dashboardLayouts, bankAccounts,
+  referrals, dashboardLayouts, bankAccounts, emailTemplates,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -20,7 +20,8 @@ import {
   type AuditLog, type InsertAuditLog,
   type Referral, type InsertReferral,
   type DashboardLayout, type InsertDashboardLayout,
-  type BankAccount, type InsertBankAccount
+  type BankAccount, type InsertBankAccount,
+  type EmailTemplate, type InsertEmailTemplate
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -119,6 +120,14 @@ export interface IStorage {
   updateBankAccount(id: string, updates: Partial<BankAccount>): Promise<BankAccount | undefined>;
   deleteBankAccount(id: string): Promise<void>;
   setPrimaryBankAccount(userId: string, accountId: string): Promise<void>;
+
+  // Email Templates
+  getAllEmailTemplates(): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
+  getEmailTemplateByName(name: string): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: string, updates: Partial<EmailTemplate>): Promise<EmailTemplate | undefined>;
+  deleteEmailTemplate(id: string): Promise<void>;
 }
 
 function generateFinatradesId(): string {
@@ -523,6 +532,38 @@ export class DatabaseStorage implements IStorage {
     await db.update(bankAccounts)
       .set({ isPrimary: true, updatedAt: new Date() })
       .where(eq(bankAccounts.id, accountId));
+  }
+
+  // Email Templates
+  async getAllEmailTemplates(): Promise<EmailTemplate[]> {
+    return await db.select().from(emailTemplates).orderBy(emailTemplates.category, emailTemplates.name);
+  }
+
+  async getEmailTemplate(id: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, id));
+    return template || undefined;
+  }
+
+  async getEmailTemplateByName(name: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.name, name));
+    return template || undefined;
+  }
+
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [created] = await db.insert(emailTemplates).values(template).returning();
+    return created;
+  }
+
+  async updateEmailTemplate(id: string, updates: Partial<EmailTemplate>): Promise<EmailTemplate | undefined> {
+    const [updated] = await db.update(emailTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(emailTemplates.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteEmailTemplate(id: string): Promise<void> {
+    await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
   }
 }
 

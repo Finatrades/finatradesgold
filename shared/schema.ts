@@ -470,3 +470,30 @@ export const insertBankAccountSchema = createInsertSchema(bankAccounts).omit({
 });
 export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
 export type BankAccount = typeof bankAccounts.$inferSelect;
+
+// ============================================
+// EMAIL TEMPLATES
+// ============================================
+
+export const emailTemplateCategoryEnum = pgEnum('email_template_category', [
+  'Onboarding', 'Transaction', 'KYC', 'BNSL', 'Security', 'Support', 'Referral', 'System'
+]);
+
+export const emailTemplates = pgTable("email_templates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  category: emailTemplateCategoryEnum("category").notNull(),
+  subject: text("subject").notNull(),
+  subjectFr: text("subject_fr"),
+  body: text("body").notNull(),
+  bodyFr: text("body_fr"),
+  placeholders: json("placeholders").$type<string[]>().default([]),
+  isActive: boolean("is_active").notNull().default(true),
+  lastEditedBy: varchar("last_edited_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
