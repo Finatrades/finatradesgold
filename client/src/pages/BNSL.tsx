@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Components
 import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
+import BnslWalletCard from '@/components/bnsl/BnslWalletCard';
 import BnslPlanList from '@/components/bnsl/BnslPlanList';
 import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
 import CreateBnslPlan from '@/components/bnsl/CreateBnslPlan';
@@ -50,6 +51,7 @@ export default function BNSL() {
   
   // Wallet State
   const [finaPayGoldBalance, setFinaPayGoldBalance] = useState(500.00); 
+  const [bnslWalletBalance, setBnslWalletBalance] = useState(0.00);
   const [currentGoldPrice, setCurrentGoldPrice] = useState(85.22); // Mock spot
 
   // Aggregated Stats
@@ -60,6 +62,9 @@ export default function BNSL() {
   const weightedRate = activePlansCount > 0 
     ? (plans.reduce((sum, p) => p.status === 'Active' ? sum + (p.marginRateAnnualPercent * p.basePriceComponentUsd) : sum, 0) / totalDeferredBase) * 100
     : 0;
+  
+  // Calculate total locked gold in BNSL (Active plans)
+  const totalLockedGold = plans.reduce((sum, p) => p.status === 'Active' ? sum + p.goldSoldGrams : sum, 0);
 
   // Next Payout Finder
   const getNextPayout = (): { date: string; amount: number; planId: string } | null => {
@@ -78,10 +83,15 @@ export default function BNSL() {
   const nextPayout = getNextPayout();
 
   // Actions
+  const handleTransferFromFinaPay = (amount: number) => {
+    setFinaPayGoldBalance(prev => prev - amount);
+    setBnslWalletBalance(prev => prev + amount);
+  };
+
   const handleCreatePlan = (newPlanData: Partial<BnslPlan>) => {
-    // 1. Deduct Gold from FinaPay
+    // 1. Deduct Gold from BNSL Wallet
     if (newPlanData.goldSoldGrams) {
-      setFinaPayGoldBalance(prev => prev - newPlanData.goldSoldGrams!);
+      setBnslWalletBalance(prev => prev - newPlanData.goldSoldGrams!);
     }
 
     // 2. Create Plan Object
@@ -122,7 +132,7 @@ export default function BNSL() {
     setActiveTab('plans');
     toast({
       title: "BNSL Plan Started",
-      description: `Plan ${planId} activated. Gold deducted from FinaPay.`,
+      description: `Plan ${planId} activated. Gold deducted from BNSL Wallet.`,
     });
   };
 
@@ -212,6 +222,15 @@ export default function BNSL() {
           </div>
         </div>
 
+        {/* WALLET STRIP */}
+        <BnslWalletCard 
+          bnslBalanceGold={bnslWalletBalance}
+          lockedBalanceGold={totalLockedGold}
+          finaPayBalanceGold={finaPayGoldBalance}
+          onTransferFromFinaPay={handleTransferFromFinaPay}
+          currentGoldPrice={currentGoldPrice}
+        />
+
         {/* SUMMARY STRIP */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
            <BnslStatsCard 
@@ -296,7 +315,7 @@ export default function BNSL() {
 
             <TabsContent value="create" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
                <CreateBnslPlan 
-                 finaPayGoldBalance={finaPayGoldBalance} 
+                 bnslWalletBalance={bnslWalletBalance} 
                  currentGoldPrice={currentGoldPrice}
                  onSuccess={handleCreatePlan}
                />

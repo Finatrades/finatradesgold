@@ -11,12 +11,12 @@ import { useAuth } from '@/context/AuthContext';
 import { generateBnslAgreement } from '@/utils/generateBnslPdf';
 
 interface CreateBnslPlanProps {
-  finaPayGoldBalance: number;
+  bnslWalletBalance: number;
   currentGoldPrice: number;
   onSuccess: (plan: Partial<BnslPlan>) => void;
 }
 
-export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, onSuccess }: CreateBnslPlanProps) {
+export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, onSuccess }: CreateBnslPlanProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -68,8 +68,8 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
       toast({ title: "Invalid Amount", description: "Please enter a valid gold amount.", variant: "destructive" });
       return;
     }
-    if (amount > finaPayGoldBalance) {
-      toast({ title: "Insufficient Funds", description: "You do not have enough gold in FinaPay.", variant: "destructive" });
+    if (amount > bnslWalletBalance) {
+      toast({ title: "Insufficient Funds", description: "You do not have enough gold in your BNSL Wallet. Please transfer funds first.", variant: "destructive" });
       return;
     }
     if (!agreedToTerms) {
@@ -116,8 +116,8 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
                  <Wallet className="w-5 h-5" />
                </div>
                <div>
-                 <p className="text-sm text-muted-foreground">Available in FinaPay</p>
-                 <p className="font-bold text-foreground">{finaPayGoldBalance.toFixed(3)} g</p>
+                 <p className="text-sm text-muted-foreground">Available in BNSL Wallet</p>
+                 <p className="font-bold text-foreground">{bnslWalletBalance.toFixed(3)} g</p>
                </div>
              </div>
              <div className="text-right">
@@ -251,7 +251,7 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
           size="lg" 
           className="bg-secondary text-white hover:bg-secondary/90 font-bold px-8"
           onClick={handleSubmit}
-          disabled={!agreedToTerms || amount <= 0 || amount > finaPayGoldBalance || !hasDownloadedDraft}
+          disabled={!agreedToTerms || amount <= 0 || amount > bnslWalletBalance || !hasDownloadedDraft}
         >
           Confirm & Start Plan
         </Button>
