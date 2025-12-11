@@ -4,8 +4,8 @@ import { storage } from "./storage";
 
 interface ConnectedUser {
   socketId: string;
-  odId: string;
-  role: 'user' | 'admin';
+  visitorId: string;
+  role: 'user' | 'admin' | 'guest';
 }
 
 const connectedUsers = new Map<string, ConnectedUser>();
@@ -22,8 +22,8 @@ export function setupSocketIO(httpServer: HttpServer) {
     console.log(`Socket connected: ${socket.id}`);
 
     // User joins with their userId
-    socket.on("join", async (data: { userId: string; role: 'user' | 'admin' }) => {
-      const { userId, role } = data;
+    socket.on("join", async (data: { userId: string; role: 'user' | 'admin' | 'guest'; guestName?: string; guestEmail?: string }) => {
+      const { userId, role, guestName, guestEmail } = data;
       
       // Validate userId before proceeding
       if (!userId) {
@@ -32,10 +32,12 @@ export function setupSocketIO(httpServer: HttpServer) {
         return;
       }
       
+      const isGuest = role === 'guest' || userId.startsWith('guest-');
+      
       connectedUsers.set(userId, {
         socketId: socket.id,
-        odId: userId,
-        role
+        visitorId: userId,
+        role: isGuest ? 'guest' : role
       });
 
       socket.join(userId);
@@ -46,13 +48,30 @@ export function setupSocketIO(httpServer: HttpServer) {
       }
 
       // Get or create chat session for user (only for non-admin users)
-      let session = await storage.getChatSession(userId);
-      if (!session && role !== 'admin') {
-        session = await storage.createChatSession({
-          userId: userId,
-          status: 'active',
-          lastMessageAt: new Date(),
-        });
+      let session = null;
+      if (role !== 'admin') {
+        if (isGuest) {
+          // For guests, look up by guest name/email or create new
+          session = await storage.getChatSessionByGuest(guestName, guestEmail);
+          if (!session && guestName && guestEmail) {
+            session = await storage.createChatSession({
+              guestName: guestName,
+              guestEmail: guestEmail,
+              status: 'active',
+              lastMessageAt: new Date(),
+            });
+          }
+        } else {
+          // For registered users
+          session = await storage.getChatSession(userId);
+          if (!session) {
+            session = await storage.createChatSession({
+              userId: userId,
+              status: 'active',
+              lastMessageAt: new Date(),
+            });
+          }
+        }
       }
 
       // Join the session room if session exists
@@ -61,8 +80,8 @@ export function setupSocketIO(httpServer: HttpServer) {
       }
 
       // Notify admins of user connection
-      if (role === 'user' && session) {
-        io.to('admin-room').emit('user:online', { userId, sessionId: session.id });
+      if ((role === 'user' || isGuest) && session) {
+        io.to('admin-room').emit('user:online', { userId, sessionId: session.id, guestName });
       }
 
       socket.emit("joined", { sessionId: session?.id });

@@ -313,7 +313,9 @@ export type TradeDocument = typeof tradeDocuments.$inferSelect;
 
 export const chatSessions = pgTable("chat_sessions", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  guestName: varchar("guest_name", { length: 255 }),
+  guestEmail: varchar("guest_email", { length: 255 }),
   status: varchar("status", { length: 50 }).notNull().default('active'), // active, closed
   lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),

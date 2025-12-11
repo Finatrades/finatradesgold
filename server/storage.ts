@@ -82,6 +82,7 @@ export interface IStorage {
   
   // Chat
   getChatSession(userId: string): Promise<ChatSession | undefined>;
+  getChatSessionByGuest(guestName?: string, guestEmail?: string): Promise<ChatSession | undefined>;
   getAllChatSessions(): Promise<ChatSession[]>;
   createChatSession(session: InsertChatSession): Promise<ChatSession>;
   updateChatSession(id: string, updates: Partial<ChatSession>): Promise<ChatSession | undefined>;
@@ -295,6 +296,12 @@ export class DatabaseStorage implements IStorage {
   // Chat
   async getChatSession(userId: string): Promise<ChatSession | undefined> {
     const [session] = await db.select().from(chatSessions).where(and(eq(chatSessions.userId, userId), eq(chatSessions.status, 'active'))).orderBy(desc(chatSessions.createdAt)).limit(1);
+    return session || undefined;
+  }
+
+  async getChatSessionByGuest(guestName?: string, guestEmail?: string): Promise<ChatSession | undefined> {
+    if (!guestName || !guestEmail) return undefined;
+    const [session] = await db.select().from(chatSessions).where(and(eq(chatSessions.guestEmail, guestEmail), eq(chatSessions.status, 'active'))).orderBy(desc(chatSessions.createdAt)).limit(1);
     return session || undefined;
   }
 

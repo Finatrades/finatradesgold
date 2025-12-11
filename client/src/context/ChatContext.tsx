@@ -92,10 +92,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       console.log('Socket connected');
       setIsConnected(true);
       
+      // Get stored guest info if available
+      const storedGuestName = sessionStorage.getItem('finatrades_guest_name');
+      const storedGuestEmail = sessionStorage.getItem('finatrades_guest_email');
+      
       // Join with user info
       socket.emit('join', {
         userId: userId,
         role: user?.role || 'guest',
+        guestName: storedGuestName || undefined,
+        guestEmail: storedGuestEmail || undefined,
       });
     });
 
