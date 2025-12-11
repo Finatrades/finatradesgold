@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, RefreshCw, DollarSign, Percent, Globe, Shield } from 'lucide-react';
+import { Save, RefreshCw, DollarSign, Percent, Globe, Shield, Landmark, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminSettings() {
@@ -30,9 +30,10 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="pricing" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
             <TabsTrigger value="pricing">Pricing & Fees</TabsTrigger>
             <TabsTrigger value="limits">Limits & KYC</TabsTrigger>
+            <TabsTrigger value="bank">Bank Accounts</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
           
@@ -133,6 +134,76 @@ export default function AdminSettings() {
                           <Input defaultValue="Unlimited" />
                        </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="bank">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Landmark className="w-5 h-5 text-purple-600" /> Receiving Bank Accounts
+                  </CardTitle>
+                  <CardDescription>Manage bank details displayed to users for fiat deposits.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Account 1 */}
+                  <div className="space-y-4 border border-gray-200 rounded-lg p-4">
+                     <div className="flex justify-between items-start">
+                        <h4 className="font-medium text-gray-900">Primary CHF Account (Switzerland)</h4>
+                        <Switch defaultChecked />
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Bank Name</Label>
+                          <Input defaultValue="UBS Switzerland AG" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Account Holder</Label>
+                          <Input defaultValue="FinaTrades AG" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>IBAN</Label>
+                          <Input defaultValue="CH93 0024 0000 1122 3344 5" className="font-mono" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>BIC / SWIFT</Label>
+                          <Input defaultValue="UBSWCHZH80A" className="font-mono" />
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Account 2 */}
+                  <div className="space-y-4 border border-gray-200 rounded-lg p-4 bg-gray-50/50">
+                     <div className="flex justify-between items-start">
+                        <h4 className="font-medium text-gray-900">Secondary EUR Account (SEPA)</h4>
+                        <Switch defaultChecked />
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Bank Name</Label>
+                          <Input defaultValue="Credit Suisse (Switzerland) Ltd" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Account Holder</Label>
+                          <Input defaultValue="FinaTrades AG" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>IBAN</Label>
+                          <Input defaultValue="CH45 0483 5000 8899 0011 2" className="font-mono" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>BIC / SWIFT</Label>
+                          <Input defaultValue="CRESRESXX" className="font-mono" />
+                        </div>
+                     </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                     <Button variant="outline" className="w-full">
+                       <Plus className="w-4 h-4 mr-2" /> Add New Bank Account
+                     </Button>
                   </div>
                 </CardContent>
               </Card>
