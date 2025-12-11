@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { usePlatform } from '@/context/PlatformContext';
 import { Wallet as WalletIcon, RefreshCw, Bell, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,7 @@ import BuyGoldModal from '@/components/finapay/modals/BuyGoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
+import DepositModal from '@/components/finapay/modals/DepositModal';
 
 // Mock Initial State
 const INITIAL_WALLET: Wallet = {
@@ -84,6 +86,7 @@ import { useLocation } from 'wouter';
 
 export default function FinaPay() {
   const { user } = useAuth();
+  const { settings } = usePlatform();
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
@@ -226,9 +229,7 @@ export default function FinaPay() {
       case 'sell': setActiveModal('sell'); break;
       case 'send': setActiveModal('send'); break;
       case 'request': setActiveModal('request'); break;
-      case 'add_fund':
-        toast({ title: "Coming Soon", description: "Add Fund functionality will be available shortly." });
-        break;
+      case 'add_fund': setActiveModal('deposit'); break;
       case 'deposit_gold':
         toast({ title: "Coming Soon", description: "Gold Deposit functionality will be available shortly." });
         break;
@@ -311,6 +312,7 @@ export default function FinaPay() {
           isOpen={activeModal === 'buy'} 
           onClose={() => setActiveModal(null)}
           goldPrice={wallet.goldPriceUsdPerGram}
+          spreadPercent={settings.buySpreadPercent}
           onConfirm={handleBuyConfirm}
         />
         <SellGoldModal 
@@ -318,6 +320,7 @@ export default function FinaPay() {
           onClose={() => setActiveModal(null)}
           goldPrice={wallet.goldPriceUsdPerGram}
           walletBalance={wallet.goldBalanceGrams}
+          spreadPercent={settings.sellSpreadPercent}
           onConfirm={handleSellConfirm}
         />
         <SendGoldModal 
@@ -331,6 +334,10 @@ export default function FinaPay() {
           isOpen={activeModal === 'request'} 
           onClose={() => setActiveModal(null)}
           onConfirm={handleRequestConfirm}
+        />
+        <DepositModal 
+          isOpen={activeModal === 'deposit'} 
+          onClose={() => setActiveModal(null)}
         />
 
       </div>

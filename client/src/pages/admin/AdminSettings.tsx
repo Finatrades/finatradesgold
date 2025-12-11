@@ -8,8 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, RefreshCw, DollarSign, Percent, Globe, Shield, Landmark, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePlatform } from '@/context/PlatformContext';
 
 export default function AdminSettings() {
+  const { settings, updateSettings, updateBankAccount } = usePlatform();
+
   const handleSave = () => {
     toast.success("Settings Saved", {
       description: "Platform configuration has been updated successfully."
@@ -51,7 +54,11 @@ export default function AdminSettings() {
                     <div className="space-y-2">
                       <Label>Buy Spread (%)</Label>
                       <div className="relative">
-                        <Input defaultValue="1.5" />
+                        <Input 
+                          type="number" 
+                          value={settings.buySpreadPercent}
+                          onChange={(e) => updateSettings({ buySpreadPercent: parseFloat(e.target.value) })}
+                        />
                         <span className="absolute right-3 top-2.5 text-gray-500 text-sm">%</span>
                       </div>
                       <p className="text-xs text-gray-500">Markup added to spot price for user purchases.</p>
@@ -59,7 +66,11 @@ export default function AdminSettings() {
                     <div className="space-y-2">
                       <Label>Sell Spread (%)</Label>
                       <div className="relative">
-                        <Input defaultValue="1.0" />
+                        <Input 
+                          type="number"
+                          value={settings.sellSpreadPercent}
+                          onChange={(e) => updateSettings({ sellSpreadPercent: parseFloat(e.target.value) })}
+                        />
                         <span className="absolute right-3 top-2.5 text-gray-500 text-sm">%</span>
                       </div>
                       <p className="text-xs text-gray-500">Markdown deducted from spot price for user sales.</p>
@@ -70,14 +81,22 @@ export default function AdminSettings() {
                     <div className="space-y-2">
                       <Label>Storage Fee (Annual %)</Label>
                       <div className="relative">
-                        <Input defaultValue="0.5" />
+                        <Input 
+                          type="number"
+                          value={settings.storageFeePercent}
+                          onChange={(e) => updateSettings({ storageFeePercent: parseFloat(e.target.value) })}
+                        />
                         <span className="absolute right-3 top-2.5 text-gray-500 text-sm">%</span>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Minimum Trade Amount (CHF)</Label>
                       <div className="relative">
-                        <Input defaultValue="50.00" />
+                        <Input 
+                          type="number"
+                          value={settings.minTradeAmount}
+                          onChange={(e) => updateSettings({ minTradeAmount: parseFloat(e.target.value) })}
+                        />
                       </div>
                     </div>
                   </div>
@@ -113,11 +132,19 @@ export default function AdminSettings() {
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-2">
                           <Label>Daily Limit (CHF)</Label>
-                          <Input defaultValue="15,000" />
+                          <Input 
+                            type="number"
+                            value={settings.level1DailyLimit}
+                            onChange={(e) => updateSettings({ level1DailyLimit: parseFloat(e.target.value) })}
+                          />
                        </div>
                        <div className="space-y-2">
                           <Label>Monthly Limit (CHF)</Label>
-                          <Input defaultValue="100,000" />
+                          <Input 
+                            type="number"
+                            value={settings.level1MonthlyLimit}
+                            onChange={(e) => updateSettings({ level1MonthlyLimit: parseFloat(e.target.value) })}
+                          />
                        </div>
                     </div>
                   </div>
@@ -148,57 +175,49 @@ export default function AdminSettings() {
                   <CardDescription>Manage bank details displayed to users for fiat deposits.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Account 1 */}
-                  <div className="space-y-4 border border-gray-200 rounded-lg p-4">
-                     <div className="flex justify-between items-start">
-                        <h4 className="font-medium text-gray-900">Primary CHF Account (Switzerland)</h4>
-                        <Switch defaultChecked />
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Bank Name</Label>
-                          <Input defaultValue="UBS Switzerland AG" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Account Holder</Label>
-                          <Input defaultValue="FinaTrades AG" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>IBAN</Label>
-                          <Input defaultValue="CH93 0024 0000 1122 3344 5" className="font-mono" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>BIC / SWIFT</Label>
-                          <Input defaultValue="UBSWCHZH80A" className="font-mono" />
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* Account 2 */}
-                  <div className="space-y-4 border border-gray-200 rounded-lg p-4 bg-gray-50/50">
-                     <div className="flex justify-between items-start">
-                        <h4 className="font-medium text-gray-900">Secondary EUR Account (SEPA)</h4>
-                        <Switch defaultChecked />
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Bank Name</Label>
-                          <Input defaultValue="Credit Suisse (Switzerland) Ltd" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Account Holder</Label>
-                          <Input defaultValue="FinaTrades AG" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>IBAN</Label>
-                          <Input defaultValue="CH45 0483 5000 8899 0011 2" className="font-mono" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>BIC / SWIFT</Label>
-                          <Input defaultValue="CRESRESXX" className="font-mono" />
-                        </div>
-                     </div>
-                  </div>
+                  {settings.bankAccounts.map((account) => (
+                    <div key={account.id} className={`space-y-4 border rounded-lg p-4 ${account.isActive ? 'border-gray-200' : 'border-red-200 bg-red-50/50'}`}>
+                       <div className="flex justify-between items-start">
+                          <h4 className="font-medium text-gray-900">{account.name}</h4>
+                          <Switch 
+                            checked={account.isActive}
+                            onCheckedChange={(checked) => updateBankAccount(account.id, { isActive: checked })}
+                          />
+                       </div>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Bank Name</Label>
+                            <Input 
+                              value={account.bankName}
+                              onChange={(e) => updateBankAccount(account.id, { bankName: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Account Holder</Label>
+                            <Input 
+                              value={account.holderName}
+                              onChange={(e) => updateBankAccount(account.id, { holderName: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>IBAN</Label>
+                            <Input 
+                              value={account.iban}
+                              className="font-mono"
+                              onChange={(e) => updateBankAccount(account.id, { iban: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>BIC / SWIFT</Label>
+                            <Input 
+                              value={account.bic}
+                              className="font-mono"
+                              onChange={(e) => updateBankAccount(account.id, { bic: e.target.value })}
+                            />
+                          </div>
+                       </div>
+                    </div>
+                  ))}
                   
                   <div className="pt-2">
                      <Button variant="outline" className="w-full">
@@ -222,21 +241,30 @@ export default function AdminSettings() {
                       <Label className="text-base">Maintenance Mode</Label>
                       <p className="text-sm text-gray-500">Disable platform access for all users except admins.</p>
                     </div>
-                    <Switch />
+                    <Switch 
+                      checked={settings.maintenanceMode}
+                      onCheckedChange={(checked) => updateSettings({ maintenanceMode: checked })}
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-base">New User Registration</Label>
                       <p className="text-sm text-gray-500">Allow new users to sign up.</p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={settings.registrationsEnabled}
+                      onCheckedChange={(checked) => updateSettings({ registrationsEnabled: checked })}
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-base">Auto-Approve Low Risk KYC</Label>
                       <p className="text-sm text-gray-500">Automatically verify users with low risk scores.</p>
                     </div>
-                    <Switch />
+                    <Switch 
+                      checked={settings.autoApproveLowRisk}
+                      onCheckedChange={(checked) => updateSettings({ autoApproveLowRisk: checked })}
+                    />
                   </div>
                   
                   <div className="pt-6 border-t border-gray-100">

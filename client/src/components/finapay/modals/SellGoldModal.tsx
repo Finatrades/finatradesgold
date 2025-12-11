@@ -12,10 +12,11 @@ interface SellGoldModalProps {
   onClose: () => void;
   goldPrice: number;
   walletBalance: number;
+  spreadPercent: number;
   onConfirm: (grams: number, payout: number) => void;
 }
 
-export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalance, onConfirm }: SellGoldModalProps) {
+export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalance, spreadPercent, onConfirm }: SellGoldModalProps) {
   const [method, setMethod] = useState('bank');
   
   // Dual inputs
@@ -61,7 +62,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
   const numericGrams = parseFloat(grams) || 0;
   const grossPayout = numericGrams * goldPrice;
-  const fee = grossPayout * 0.015; // 1.5% fee
+  const fee = grossPayout * (spreadPercent / 100); 
   const netPayout = grossPayout - fee;
 
   const handleConfirm = () => {
@@ -165,7 +166,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
                   <span className="text-foreground font-medium">${goldPrice.toFixed(2)} / g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fee (1.5%)</span>
+                  <span className="text-muted-foreground">Fee ({spreadPercent}%)</span>
                   <span className="text-red-500">-${fee.toFixed(2)}</span>
                 </div>
                 <Separator className="bg-border my-2" />

@@ -11,10 +11,11 @@ interface BuyGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
   goldPrice: number;
+  spreadPercent: number;
   onConfirm: (grams: number, cost: number) => void;
 }
 
-export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: BuyGoldModalProps) {
+export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent, onConfirm }: BuyGoldModalProps) {
   const [method, setMethod] = useState('card');
   
   // Dual inputs state
@@ -59,7 +60,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
 
   const numericGrams = parseFloat(grams) || 0;
   const numericUsd = parseFloat(usd) || 0;
-  const fee = numericUsd * 0.005;
+  const fee = numericUsd * (spreadPercent / 100);
   const totalCost = numericUsd + fee;
 
   const handleConfirm = () => {
@@ -162,7 +163,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
                   <span className="text-foreground font-medium">${goldPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fee (0.5%)</span>
+                  <span className="text-muted-foreground">Fee ({spreadPercent}%)</span>
                   <span className="text-foreground font-medium">${fee.toFixed(2)}</span>
                 </div>
                 <Separator className="bg-border my-2" />
