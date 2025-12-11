@@ -164,10 +164,10 @@ export default function FinaBridge() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
               <TabsTrigger value="cases" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
-                <Briefcase className="w-4 h-4 mr-2" /> Trade Cases
+                <Briefcase className="w-4 h-4 mr-2" /> Trades
               </TabsTrigger>
               <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
-                <PlusCircle className="w-4 h-4 mr-2" /> Create Trade Case
+                <PlusCircle className="w-4 h-4 mr-2" /> Create New Trade
               </TabsTrigger>
               <TabsTrigger value="audit" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
                 <ShieldCheck className="w-4 h-4 mr-2" /> Audit & Compliance

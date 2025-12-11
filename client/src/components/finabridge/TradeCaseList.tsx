@@ -31,18 +31,18 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
     <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-6">
         <div>
-          <CardTitle className="text-xl font-bold text-white">Active Trade Cases</CardTitle>
+          <CardTitle className="text-xl font-bold text-white">Active Trades</CardTitle>
           <p className="text-sm text-white/40 mt-1">Manage your ongoing trade finance deals.</p>
         </div>
         <Button onClick={onCreateNew} className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold">
-          + Create Trade Case
+          + Create New Trade
         </Button>
       </CardHeader>
       <CardContent className="p-0">
         <Table>
           <TableHeader className="bg-white/5">
             <TableRow className="border-white/10 hover:bg-transparent">
-              <TableHead className="text-white/60">Case ID</TableHead>
+              <TableHead className="text-white/60">Trade ID</TableHead>
               <TableHead className="text-white/60">Counterparty</TableHead>
               <TableHead className="text-white/60">Value (USD)</TableHead>
               <TableHead className="text-white/60">Locked Gold</TableHead>
@@ -54,7 +54,7 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
             {cases.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12 text-white/40">
-                  No trade cases found. Create one to get started.
+                  No trades found. Create one to get started.
                 </TableCell>
               </TableRow>
             ) : (

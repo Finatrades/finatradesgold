@@ -89,7 +89,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
   return (
     <div className="max-w-4xl mx-auto py-6">
       <div className="mb-8 flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Create New Trade Case</h2>
+        <h2 className="text-2xl font-bold text-white">Create New Trade</h2>
         <div className="text-white/40 text-sm">Step {step} of 4</div>
       </div>
 
@@ -366,7 +366,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
               className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold"
             >
               <CheckCircle2 className="w-4 h-4 mr-2" /> 
-              {parseFloat(lockAmount) > 0 ? "Create & Fund Case" : "Create Case"}
+              {parseFloat(lockAmount) > 0 ? "Create & Fund Trade" : "Create Trade"}
             </Button>
           </div>
         )}
