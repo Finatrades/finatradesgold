@@ -46,7 +46,7 @@ export default function EarlyTerminationSimulator({
   // Step 2: Deductions
   const adminFee = totalSaleProceeds * ADMIN_FEE_PERCENT;
   const earlyPenalty = totalSaleProceeds * PENALTY_PERCENT;
-  const reimburseDisbursements = plan.totalPaidMarginUsd;
+  const reimburseDisbursements = plan.paidMarginUsd || 0;
   
   const totalDeductions = adminFee + earlyPenalty + reimburseDisbursements;
   
