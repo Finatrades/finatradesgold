@@ -207,13 +207,20 @@ export async function registerRoutes(
         storage.getAllTradeCases()
       ]);
 
+      // Safe number parsing helper
+      const safeParseFloat = (value: any): number => {
+        if (value === null || value === undefined) return 0;
+        const parsed = parseFloat(String(value));
+        return isNaN(parsed) ? 0 : parsed;
+      };
+
       // Current gold price (would come from external API in production)
       const currentGoldPriceUsd = 78.50;
 
       // Calculate totals
-      const totalGoldGrams = wallets.reduce((sum, w) => sum + parseFloat(w.goldGrams || '0'), 0);
-      const totalUsdBalances = wallets.reduce((sum, w) => sum + parseFloat(w.usdBalance || '0'), 0);
-      const totalEurBalances = wallets.reduce((sum, w) => sum + parseFloat(w.eurBalance || '0'), 0);
+      const totalGoldGrams = wallets.reduce((sum, w) => sum + safeParseFloat(w.goldGrams), 0);
+      const totalUsdBalances = wallets.reduce((sum, w) => sum + safeParseFloat(w.usdBalance), 0);
+      const totalEurBalances = wallets.reduce((sum, w) => sum + safeParseFloat(w.eurBalance), 0);
       const totalAUM = totalGoldGrams * currentGoldPriceUsd + totalUsdBalances + (totalEurBalances * 1.08);
 
       // User stats
@@ -231,7 +238,7 @@ export async function registerRoutes(
       today.setHours(0, 0, 0, 0);
       const todayTransactions = allTransactions.filter(t => new Date(t.createdAt) >= today);
       const dailyTransactionCount = todayTransactions.length;
-      const dailyTransactionVolume = todayTransactions.reduce((sum, t) => sum + parseFloat(t.amountUsd || '0'), 0);
+      const dailyTransactionVolume = todayTransactions.reduce((sum, t) => sum + safeParseFloat(t.amountUsd), 0);
 
       // Transaction types breakdown
       const buyTransactions = allTransactions.filter(t => t.type === 'Buy');
@@ -241,16 +248,16 @@ export async function registerRoutes(
       const failedTransactions = allTransactions.filter(t => t.status === 'Failed' || t.status === 'Pending');
 
       // Vault stats
-      const totalVaultGold = vaultHoldings.reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
+      const totalVaultGold = vaultHoldings.reduce((sum, h) => sum + safeParseFloat(h.goldGrams), 0);
       const vaultDeposits = vaultHoldings.length;
 
       // BNSL stats
       const activeBnslPlans = bnslPlans.filter(p => p.status === 'Active').length;
-      const totalBnslInvested = bnslPlans.reduce((sum, p) => sum + parseFloat(p.goldGrams || '0'), 0) * currentGoldPriceUsd;
+      const totalBnslInvested = bnslPlans.reduce((sum, p) => sum + safeParseFloat(p.goldGrams), 0) * currentGoldPriceUsd;
 
       // Trade Finance stats
       const activeTradeCases = tradeCases.filter(c => c.status === 'Active' || c.status === 'In Progress').length;
-      const totalTradeValue = tradeCases.reduce((sum, c) => sum + parseFloat(c.valueUsd || '0'), 0);
+      const totalTradeValue = tradeCases.reduce((sum, c) => sum + safeParseFloat(c.valueUsd), 0);
 
       res.json({
         overview: {
@@ -275,8 +282,8 @@ export async function registerRoutes(
         },
         finapay: {
           paymentsProcessedToday: dailyTransactionCount,
-          totalValueSent: sendTransactions.reduce((sum, t) => sum + parseFloat(t.amountUsd || '0'), 0),
-          totalValueReceived: receiveTransactions.reduce((sum, t) => sum + parseFloat(t.amountUsd || '0'), 0),
+          totalValueSent: sendTransactions.reduce((sum, t) => sum + safeParseFloat(t.amountUsd), 0),
+          totalValueReceived: receiveTransactions.reduce((sum, t) => sum + safeParseFloat(t.amountUsd), 0),
           crossBorderTransfers: sendTransactions.filter(t => t.description?.includes('International')).length,
           cardTransactions: allTransactions.filter(t => t.description?.includes('Card')).length,
           failedTransactions: failedTransactions.length,
