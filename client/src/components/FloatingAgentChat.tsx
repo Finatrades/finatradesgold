@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useChat } from "@/context/ChatContext";
+import { useAuth } from "@/context/AuthContext";
 
 const agents = [
   { name: "General", role: "General Assistant", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/a3b38c132_General.png", greeting: "Hi! I'm your General Assistant. Ask me anything about Finatrades, or select a specialist agent below!", active: true },
@@ -15,13 +17,16 @@ const agents = [
 ];
 
 export default function FloatingAgentChat() {
+  const { user } = useAuth();
+  const { currentSession, sendMessage, createSession, selectSession, sessions } = useChat();
+  
   const [isOpen, setIsOpen] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(agents[0]);
   const [showAgentList, setShowAgentList] = useState(false);
   const [message, setMessage] = useState("");
-  const [chatMessages, setChatMessages] = useState<{role: string, content: string}[]>([]);
   const [showNotification, setShowNotification] = useState(true);
   const [comingSoonAgent, setComingSoonAgent] = useState<typeof agents[0] | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-hide notification after 8 seconds
   useEffect(() => {
@@ -31,11 +36,27 @@ export default function FloatingAgentChat() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (isOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isOpen, currentSession?.messages]);
+
   const openChat = () => {
     setIsOpen(true);
     setShowNotification(false);
-    if (chatMessages.length === 0) {
-      setChatMessages([{ role: "agent", content: currentAgent.greeting }]);
+    
+    // Create session if not exists or select existing one for this user
+    if (user) {
+      const existingSession = sessions.find(s => s.userId === user.id);
+      if (existingSession) {
+        selectSession(existingSession.id);
+      } else {
+        const sessionId = createSession(user.id, `${user.firstName} ${user.lastName}`);
+        selectSession(sessionId);
+        // Add initial greeting if new session
+        sendMessage(currentAgent.greeting, 'agent', sessionId);
+      }
     }
   };
 
@@ -47,20 +68,19 @@ export default function FloatingAgentChat() {
   const switchAgent = (agent: typeof agents[0]) => {
     setCurrentAgent(agent);
     setShowAgentList(false);
-    setChatMessages([{ role: "agent", content: agent.greeting }]);
+    // Notify about agent switch
+    sendMessage(`System: Switched to ${agent.name} (${agent.role})`, 'agent');
   };
 
-  const sendMessage = () => {
+  const handleSendMessage = () => {
     if (!message.trim()) return;
-    setChatMessages(prev => [...prev, { role: "user", content: message }]);
+    sendMessage(message, 'user');
     setMessage("");
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, {
-        role: "agent",
-        content: `Thank you for your message. As ${currentAgent.name}, I'm here to help. Our team will respond shortly.`
-      }]);
-    }, 1000);
+    // Removed auto-reply logic to allow admin to answer
   };
+
+  // Use current session messages or fallback to empty array
+  const displayMessages = currentSession?.messages || [];
 
   return (
     <>
@@ -230,16 +250,16 @@ export default function FloatingAgentChat() {
                 >
                   {/* Chat Messages */}
                   <div className="h-72 overflow-y-auto p-4 space-y-3">
-                    {chatMessages.map((msg, idx) => (
+                    {displayMessages.map((msg, idx) => (
                       <motion.div
                         key={idx}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
                           className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-                            msg.role === 'user'
+                            msg.sender === 'user'
                               ? 'bg-gradient-to-r from-primary to-[#FF2FBF] text-white'
                               : 'bg-muted text-foreground border border-border'
                           }`}
@@ -248,6 +268,7 @@ export default function FloatingAgentChat() {
                         </div>
                       </motion.div>
                     ))}
+                    <div ref={messagesEndRef} />
                   </div>
 
                   {/* Other Specialists */}
@@ -278,12 +299,12 @@ export default function FloatingAgentChat() {
                     <Input
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                       placeholder={`Message ${currentAgent.name}...`}
                       className="flex-1 bg-muted border-input text-foreground placeholder:text-muted-foreground focus:border-primary"
                     />
                     <Button
-                      onClick={sendMessage}
+                      onClick={handleSendMessage}
                       className="bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90"
                     >
                       <Send className="w-4 h-4" />

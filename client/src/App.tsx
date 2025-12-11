@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -23,24 +23,14 @@ import { TradeFinanceProvider } from "@/context/TradeFinanceContext";
 import { UserProvider } from "@/context/UserContext";
 import { useEffect } from "react";
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRoute({ path, component: Component }: { path: string, component: React.ComponentType }) {
   const { user } = useAuth();
-  const [location, setLocation] = useLocation();
 
-  // Temporary bypass for development/demo purposes
-  // Remove this block to enforce strict auth
-  // if (!user) {
-  //   return <Component />;
-  // }
-
-  useEffect(() => {
-    if (!user) {
-      setLocation('/login');
-    }
-  }, [user, setLocation]);
-
-  if (!user) return null;
-  return <Component />;
+  return (
+    <Route path={path}>
+      {user ? <Component /> : <Redirect to="/login" />}
+    </Route>
+  );
 }
 
 import Profile from "@/pages/Profile";
@@ -59,6 +49,8 @@ import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
 
 import FinaPayDashboard from "@/pages/FinaPayDashboard";
 import { FinaPayProvider } from "@/context/FinaPayContext";
+
+import AdminChat from "@/pages/admin/AdminChat";
 
 function Router() {
   return (
@@ -85,6 +77,7 @@ function Router() {
       <Route path="/admin/transactions" component={Transactions} />
       <Route path="/admin/vault" component={VaultManagement} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/chat" component={AdminChat} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />
@@ -103,6 +96,8 @@ function Router() {
 
 import { BnslProvider } from "@/context/BnslContext";
 
+import { ChatProvider } from "@/context/ChatContext";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -112,16 +107,18 @@ function App() {
             <TradeFinanceProvider>
               <BnslProvider>
                 <FinaPayProvider>
-                  <LanguageProvider>
-                    <AccountTypeProvider>
-                      <NotificationProvider>
-                        <TooltipProvider>
-                          <Toaster />
-                          <Router />
-                        </TooltipProvider>
-                      </NotificationProvider>
-                    </AccountTypeProvider>
-                  </LanguageProvider>
+                  <ChatProvider>
+                    <LanguageProvider>
+                      <AccountTypeProvider>
+                        <NotificationProvider>
+                          <TooltipProvider>
+                            <Toaster />
+                            <Router />
+                          </TooltipProvider>
+                        </NotificationProvider>
+                      </AccountTypeProvider>
+                    </LanguageProvider>
+                  </ChatProvider>
                 </FinaPayProvider>
               </BnslProvider>
             </TradeFinanceProvider>
