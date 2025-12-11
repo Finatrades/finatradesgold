@@ -23,6 +23,7 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
   const [goldAmount, setGoldAmount] = useState<string>('100');
   const [selectedTenor, setSelectedTenor] = useState<BnslTenor>(12);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [hasDownloadedDraft, setHasDownloadedDraft] = useState(false);
 
   // Derived Values
   const amount = parseFloat(goldAmount) || 0;
@@ -58,6 +59,7 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
 
     const doc = generateBnslAgreement(draftPlan, user);
     doc.save(`BNSL_Agreement_Draft_${new Date().getTime()}.pdf`);
+    setHasDownloadedDraft(true);
     toast({ title: "Draft Agreement Downloaded", description: "Review the full terms before confirming." });
   };
 
@@ -72,6 +74,10 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
     }
     if (!agreedToTerms) {
       toast({ title: "Terms Required", description: "Please accept the Terms & Conditions.", variant: "destructive" });
+      return;
+    }
+    if (!hasDownloadedDraft) {
+      toast({ title: "Agreement Review Required", description: "Please download and review the draft agreement first.", variant: "destructive" });
       return;
     }
 
@@ -245,7 +251,7 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
           size="lg" 
           className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold px-8"
           onClick={handleSubmit}
-          disabled={!agreedToTerms || amount <= 0 || amount > finaPayGoldBalance}
+          disabled={!agreedToTerms || amount <= 0 || amount > finaPayGoldBalance || !hasDownloadedDraft}
         >
           Confirm & Start Plan
         </Button>
