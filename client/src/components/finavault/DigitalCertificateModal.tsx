@@ -65,9 +65,29 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
 
               {/* Content */}
               <div className="space-y-8 text-center relative z-10">
-                <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">
-                  This certifies that <strong>User #{request.userId}</strong> is the beneficial owner of the following precious metal assets, securely stored and insured at <strong>{request.vaultLocation}</strong>.
-                </p>
+                {request.pickupDetails?.address?.includes('Ownership Changed') ? (
+                  <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/20 p-6 rounded-lg mb-8">
+                     <h4 className="text-[#D4AF37] font-serif text-xl mb-2 uppercase tracking-widest">Transfer of Ownership</h4>
+                     <p className="text-white/80 leading-relaxed mb-4">
+                       This certifies that the digital ownership of the specified assets has been legally transferred and recorded in the FinaVault Ledger.
+                     </p>
+                     <div className="flex items-center justify-center gap-4 text-lg font-bold text-white">
+                        <div className="text-right">
+                          <p className="text-xs text-[#D4AF37] font-normal uppercase tracking-wider mb-1">Transferor</p>
+                          {request.pickupDetails.address.split('->')[0].replace('Ownership Changed:', '').trim()}
+                        </div>
+                        <div className="text-[#D4AF37]">→</div>
+                        <div className="text-left">
+                          <p className="text-xs text-[#D4AF37] font-normal uppercase tracking-wider mb-1">Transferee</p>
+                          {request.pickupDetails.address.split('->')[1].trim()}
+                        </div>
+                     </div>
+                  </div>
+                ) : (
+                  <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">
+                    This certifies that <strong>User #{request.userId}</strong> is the beneficial owner of the following precious metal assets, securely stored and insured at <strong>{request.vaultLocation}</strong>.
+                  </p>
+                )}
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-y border-[#D4AF37]/20 py-8 my-8">
                   <div>
