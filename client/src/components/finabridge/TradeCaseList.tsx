@@ -23,7 +23,7 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
       case 'Approved – Ready to Release': return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Approved</Badge>;
       case 'Released': return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Released</Badge>;
       case 'Rejected': return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Rejected</Badge>;
-      default: return <Badge variant="outline" className="bg-white/10 text-white/60">Unknown</Badge>;
+      default: return <Badge variant="outline" className="bg-muted text-muted-foreground border-border">Unknown</Badge>;
     }
   };
 
