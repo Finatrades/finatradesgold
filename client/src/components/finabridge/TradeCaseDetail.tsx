@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { TradeCase, TradeDocument, ApprovalStep, AuditLogEntry } from '@/types/finabridge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Lock, CheckCircle2, FileText, Upload, ShieldCheck, History, Download, Eye, PenTool, Clock } from 'lucide-react';
+import { ArrowLeft, Lock, CheckCircle2, FileText, Upload, ShieldCheck, History, Download, Eye, PenTool, Clock, MessageSquare, Send, Paperclip } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface TradeCaseDetailProps {
   tradeCase: TradeCase;
@@ -18,6 +19,15 @@ interface TradeCaseDetailProps {
   onUpdateCase: (updatedCase: TradeCase) => void;
   onReleaseFunds: () => void;
   currentRole: 'Importer' | 'Exporter';
+}
+
+interface ChatMessage {
+  id: string;
+  sender: string;
+  role: 'Importer' | 'Exporter' | 'Admin' | 'System';
+  content: string;
+  timestamp: string;
+  attachments?: { name: string; type: string }[];
 }
 
 export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onReleaseFunds, currentRole }: TradeCaseDetailProps) {
@@ -40,6 +50,29 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([
     { id: 'log1', caseId: tradeCase.id, actorName: 'System', actorRole: 'System', actionType: 'Create Case', timestamp: tradeCase.createdAt, details: 'Case created via FinaBridge' }
   ]);
+
+  // Mock State for Chat
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { id: 'm1', sender: 'FinaBridge System', role: 'System', content: 'Trade case initialized. Waiting for exporter documentation.', timestamp: tradeCase.createdAt },
+    { id: 'm2', sender: 'John Buyer', role: 'Importer', content: 'Hello, I have initiated the trade and locked the funds. Please proceed with the document upload.', timestamp: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'm3', sender: 'Ahmed Seller', role: 'Exporter', content: 'Received. We are preparing the Bill of Lading and Certificate of Origin now.', timestamp: new Date(Date.now() - 43200000).toISOString() },
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+    
+    const msg: ChatMessage = {
+      id: `m${Date.now()}`,
+      sender: currentRole === 'Importer' ? tradeCase.buyer.contactName : tradeCase.seller.contactName,
+      role: currentRole,
+      content: newMessage,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages([...messages, msg]);
+    setNewMessage('');
+  };
 
   const handleFileUpload = () => {
     toast({ title: "File Uploaded", description: "Document added to case DMS." });
@@ -94,6 +127,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white/5 border border-white/10 w-full justify-start rounded-lg p-1">
            <TabsTrigger value="overview" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">Overview</TabsTrigger>
+           <TabsTrigger value="messages" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">Messages</TabsTrigger>
            <TabsTrigger value="documents" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">Documents (DMS)</TabsTrigger>
            <TabsTrigger value="approvals" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">Approvals</TabsTrigger>
            <TabsTrigger value="audit" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">Ledger & Audit</TabsTrigger>
@@ -157,6 +191,102 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                </CardContent>
              </Card>
            </div>
+        </TabsContent>
+
+        {/* MESSAGES TAB */}
+        <TabsContent value="messages" className="mt-6">
+          <Card className="bg-white/5 border-white/10 h-[600px] flex flex-col">
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-[#D4AF37]" /> 
+                Secure Communication Channel
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden p-0 relative">
+               <ScrollArea className="h-full p-6">
+                 <div className="space-y-6">
+                   {messages.map((msg) => {
+                     const isMe = msg.role === currentRole;
+                     const isSystem = msg.role === 'System';
+                     const isAdmin = msg.role === 'Admin';
+                     
+                     if (isSystem) {
+                        return (
+                          <div key={msg.id} className="flex justify-center my-4">
+                            <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                              {new Date(msg.timestamp).toLocaleString()} — {msg.content}
+                            </span>
+                          </div>
+                        );
+                     }
+
+                     return (
+                       <div key={msg.id} className={`flex gap-4 ${isMe ? 'flex-row-reverse' : ''}`}>
+                         <Avatar className="w-10 h-10 border border-white/10">
+                           <AvatarFallback className={`${isAdmin ? 'bg-[#D4AF37] text-black' : 'bg-white/10 text-white'}`}>
+                             {msg.sender.charAt(0)}
+                           </AvatarFallback>
+                         </Avatar>
+                         <div className={`max-w-[70%] space-y-1 ${isMe ? 'items-end flex flex-col' : ''}`}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-white">{msg.sender}</span>
+                              <span className="text-xs text-white/40">
+                                {isAdmin ? <Badge variant="outline" className="text-[10px] py-0 h-4 border-[#D4AF37] text-[#D4AF37]">ADMIN</Badge> : msg.role}
+                              </span>
+                              <span className="text-xs text-white/30">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <div className={`p-4 rounded-xl text-sm leading-relaxed ${
+                              isMe ? 'bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-white rounded-tr-none' : 
+                              isAdmin ? 'bg-red-500/10 border border-red-500/20 text-white rounded-tl-none' :
+                              'bg-white/10 border border-white/10 text-white rounded-tl-none'
+                            }`}>
+                              {msg.content}
+                              {msg.attachments && (
+                                <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                                  {msg.attachments.map((att, i) => (
+                                    <div key={i} className="flex items-center gap-2 bg-black/20 p-2 rounded text-xs hover:bg-black/40 cursor-pointer">
+                                      <Paperclip className="w-3 h-3 text-white/60" />
+                                      {att.name}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                         </div>
+                       </div>
+                     );
+                   })}
+                 </div>
+               </ScrollArea>
+            </CardContent>
+            <CardFooter className="p-4 border-t border-white/10 bg-black/20">
+              <div className="flex w-full gap-2 items-end">
+                <Button variant="outline" size="icon" className="shrink-0 border-white/10 hover:bg-white/5 text-white/60" onClick={() => toast({title: "Upload", description: "File selection dialog would open here"})}>
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+                <div className="flex-1 relative">
+                  <Textarea 
+                    placeholder="Type your message..." 
+                    className="min-h-[2.5rem] max-h-32 bg-black/40 border-white/10 focus-visible:ring-[#D4AF37]/50 resize-none"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                </div>
+                <Button 
+                  className="shrink-0 bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90"
+                  onClick={handleSendMessage}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
         </TabsContent>
 
         {/* DOCUMENTS TAB */}
