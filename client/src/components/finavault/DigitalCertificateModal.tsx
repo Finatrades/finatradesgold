@@ -129,6 +129,9 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
                   <p>
                     “This Gold Ownership Certificate is valid solely until the occurrence of the next transaction affecting the Holder’s gold balance. Upon execution of any new purchase, sale, transfer, allocation, redemption, or adjustment, this Certificate shall automatically become null and void. The updated ownership, whether increased or reduced, shall be determined exclusively by the most recent Gold Ownership Certificate issued thereafter, which supersedes all prior certificates.”
                   </p>
+                  <p className="mt-4 font-bold text-white/40">
+                    This Certificate is electronically generated and verified through the Platform’s secure system. It does not require any physical signature or stamp to be valid, enforceable, or effective.
+                  </p>
                 </div>
               </div>
               
