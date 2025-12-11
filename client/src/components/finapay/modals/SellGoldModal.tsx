@@ -31,6 +31,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
   }, [isOpen]);
 
   const numericGrams = parseFloat(grams) || 0;
+  const safeBalance = walletBalance || 0;
   const grossPayout = numericGrams * goldPrice;
   const fee = grossPayout * 0.015; // 1.5% fee
   const netPayout = grossPayout - fee;
@@ -63,8 +64,8 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <Label>Amount to Sell (g)</Label>
-                <span className="text-xs text-[#D4AF37] cursor-pointer" onClick={() => setGrams(walletBalance.toString())}>
-                  Max: {walletBalance.toFixed(3)} g
+                <span className="text-xs text-[#D4AF37] cursor-pointer" onClick={() => setGrams(safeBalance.toString())}>
+                  Max: {safeBalance.toFixed(3)} g
                 </span>
               </div>
 
@@ -114,7 +115,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
             <Button 
               className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold"
-              disabled={numericGrams <= 0 || numericGrams > walletBalance}
+              disabled={numericGrams <= 0 || numericGrams > safeBalance}
               onClick={() => setStep(2)}
             >
               Review Sell Order
