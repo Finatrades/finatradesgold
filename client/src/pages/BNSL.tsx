@@ -305,7 +305,7 @@ export default function BNSL() {
             <TabsContent value="terms" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
                <Card className="bg-white shadow-sm border border-border">
                  <CardContent className="p-12 text-center text-muted-foreground">
-                    <Info className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                    <Info className="w-16 h-16 mx-auto mb-4 opacity-20 text-foreground" />
                     <h3 className="text-lg font-bold text-foreground mb-2">BNSL Master Agreement</h3>
                     <p className="max-w-md mx-auto">
                       Full terms and conditions of the Buy Now Sell Later program, including risk disclosures, legal title transfer details, and dispute resolution mechanisms.

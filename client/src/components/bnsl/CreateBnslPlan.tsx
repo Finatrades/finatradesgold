@@ -104,25 +104,25 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
     <div className="max-w-4xl mx-auto space-y-8">
       
       {/* 1. Sell Config */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="border-b border-white/10 pb-4">
-          <CardTitle className="text-lg font-bold text-white">1. Configure Sale</CardTitle>
+      <Card className="bg-white shadow-sm border border-border">
+        <CardHeader className="border-b border-border pb-4">
+          <CardTitle className="text-lg font-bold text-foreground">1. Configure Sale</CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
           
-          <div className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-white/5">
+          <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
              <div className="flex items-center gap-3">
                <div className="p-2 bg-[#8A2BE2]/10 rounded-lg text-[#8A2BE2]">
                  <Wallet className="w-5 h-5" />
                </div>
                <div>
-                 <p className="text-sm text-white/60">Available in FinaPay</p>
-                 <p className="font-bold text-white">{finaPayGoldBalance.toFixed(3)} g</p>
+                 <p className="text-sm text-muted-foreground">Available in FinaPay</p>
+                 <p className="font-bold text-foreground">{finaPayGoldBalance.toFixed(3)} g</p>
                </div>
              </div>
              <div className="text-right">
-                <p className="text-sm text-white/60">Current Spot Price</p>
-                <p className="font-bold text-[#D4AF37]">${currentGoldPrice.toFixed(2)}/g</p>
+                <p className="text-sm text-muted-foreground">Current Spot Price</p>
+                <p className="font-bold text-secondary">${currentGoldPrice.toFixed(2)}/g</p>
              </div>
           </div>
 
@@ -133,12 +133,12 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
                 type="number" 
                 value={goldAmount}
                 onChange={(e) => setGoldAmount(e.target.value)}
-                className="bg-black/20 border-white/10 h-12 text-lg"
+                className="bg-background border-input h-12 text-lg"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-bold">g</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">g</span>
             </div>
-            <p className="text-xs text-white/40">
-              Enrollment Price locked at: <span className="text-white">${enrollmentPrice.toFixed(2)} / g</span>
+            <p className="text-xs text-muted-foreground">
+              Enrollment Price locked at: <span className="text-foreground">${enrollmentPrice.toFixed(2)} / g</span>
             </p>
           </div>
 
@@ -146,9 +146,9 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
       </Card>
 
       {/* 2. Plan Selection */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="border-b border-white/10 pb-4">
-          <CardTitle className="text-lg font-bold text-white">2. Select Plan Tenure</CardTitle>
+      <Card className="bg-white shadow-sm border border-border">
+        <CardHeader className="border-b border-border pb-4">
+          <CardTitle className="text-lg font-bold text-foreground">2. Select Plan Tenure</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -158,19 +158,19 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
                  onClick={() => setSelectedTenor(tenor as BnslTenor)}
                  className={`cursor-pointer relative p-6 rounded-xl border transition-all duration-200 ${
                    selectedTenor === tenor 
-                     ? 'bg-[#D4AF37]/10 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.2)]' 
-                     : 'bg-white/5 border-white/10 hover:bg-white/10'
+                     ? 'bg-secondary/10 border-secondary shadow-[0_0_15px_rgba(255,184,77,0.2)]' 
+                     : 'bg-white border-border hover:bg-muted/50'
                  }`}
                >
                  {selectedTenor === tenor && (
-                   <div className="absolute top-3 right-3 text-[#D4AF37]">
+                   <div className="absolute top-3 right-3 text-secondary">
                      <CheckCircle2 className="w-5 h-5" />
                    </div>
                  )}
                  <div className="text-center space-y-2">
-                   <h3 className="text-2xl font-bold text-white">{tenor} Months</h3>
+                   <h3 className="text-2xl font-bold text-foreground">{tenor} Months</h3>
                    <div className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
-                     selectedTenor === tenor ? 'bg-[#D4AF37] text-black' : 'bg-white/10 text-white'
+                     selectedTenor === tenor ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground'
                    }`}>
                      {getMarginRate(tenor as BnslTenor) * 100}% p.a.
                    </div>
@@ -180,26 +180,26 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
           </div>
 
           {/* Calculator Output */}
-          <div className="mt-8 p-6 bg-black/30 rounded-xl border border-white/10 grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="mt-8 p-6 bg-muted/30 rounded-xl border border-border grid grid-cols-2 md:grid-cols-4 gap-6">
              <div>
-               <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Base Component</p>
-               <p className="text-xl font-bold text-white">${basePriceComponent.toLocaleString()}</p>
-               <p className="text-[10px] text-white/40">Deferred to Maturity</p>
+               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Base Component</p>
+               <p className="text-xl font-bold text-foreground">${basePriceComponent.toLocaleString()}</p>
+               <p className="text-[10px] text-muted-foreground">Deferred to Maturity</p>
              </div>
              <div>
-               <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Margin</p>
-               <p className="text-xl font-bold text-[#D4AF37]">${totalMarginComponent.toLocaleString()}</p>
-               <p className="text-[10px] text-white/40">Over {selectedTenor} months</p>
+               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin</p>
+               <p className="text-xl font-bold text-secondary">${totalMarginComponent.toLocaleString()}</p>
+               <p className="text-[10px] text-muted-foreground">Over {selectedTenor} months</p>
              </div>
              <div>
-               <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Quarterly Payout</p>
-               <p className="text-xl font-bold text-[#D4AF37]">${quarterlyMargin.toLocaleString()}</p>
-               <p className="text-[10px] text-white/40">Paid in Gold</p>
+               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Quarterly Payout</p>
+               <p className="text-xl font-bold text-secondary">${quarterlyMargin.toLocaleString()}</p>
+               <p className="text-[10px] text-muted-foreground">Paid in Gold</p>
              </div>
              <div>
-               <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Disbursements</p>
-               <p className="text-xl font-bold text-white">{numDisbursements}</p>
-               <p className="text-[10px] text-white/40">Total Payments</p>
+               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Disbursements</p>
+               <p className="text-xl font-bold text-foreground">{numDisbursements}</p>
+               <p className="text-[10px] text-muted-foreground">Total Payments</p>
              </div>
           </div>
 
@@ -207,13 +207,13 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
       </Card>
 
       {/* 3. Terms */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="border-b border-white/10 pb-4">
-          <CardTitle className="text-lg font-bold text-white">3. Terms & Risk Acknowledgement</CardTitle>
+      <Card className="bg-white shadow-sm border border-border">
+        <CardHeader className="border-b border-border pb-4">
+          <CardTitle className="text-lg font-bold text-foreground">3. Terms & Risk Acknowledgement</CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
-          <div className="h-40 overflow-y-auto bg-black/20 p-4 rounded-lg text-sm text-white/70 border border-white/5 space-y-3">
-            <p className="font-bold text-white">Key Terms of Agreement:</p>
+          <div className="h-40 overflow-y-auto bg-muted/30 p-4 rounded-lg text-sm text-muted-foreground border border-border space-y-3">
+            <p className="font-bold text-foreground">Key Terms of Agreement:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>You execute an immediate and irrevocable sale of physical gold to Wingold and Metals DMCC.</li>
               <li>You no longer own the sold gold; you only hold a contractual right to deferred payments.</li>
@@ -224,14 +224,14 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
             </ul>
           </div>
 
-          <div className="flex items-start gap-3 p-4 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-lg cursor-pointer hover:bg-[#D4AF37]/10 transition-colors"
+          <div className="flex items-start gap-3 p-4 bg-secondary/5 border border-secondary/20 rounded-lg cursor-pointer hover:bg-secondary/10 transition-colors"
                onClick={() => setAgreedToTerms(!agreedToTerms)}>
             <Checkbox 
               checked={agreedToTerms} 
               onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-              className="mt-1 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black border-white/40"
+              className="mt-1 data-[state=checked]:bg-secondary data-[state=checked]:text-white border-muted-foreground/40"
             />
-            <Label className="cursor-pointer text-white/80 leading-relaxed">
+            <Label className="cursor-pointer text-foreground/80 leading-relaxed">
               I acknowledge that I am selling my gold to Wingold and agree to the deferred payment terms, risks, and early termination penalties outlined above.
             </Label>
           </div>
@@ -242,14 +242,14 @@ export default function CreateBnslPlan({ finaPayGoldBalance, currentGoldPrice, o
         <Button 
           variant="outline" 
           onClick={handleDownloadDraft}
-          className="border-white/10 hover:bg-white/5 text-white"
+          className="border-border hover:bg-muted text-foreground"
         >
           <Download className="w-4 h-4 mr-2" /> Download Draft Agreement
         </Button>
 
         <Button 
           size="lg" 
-          className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold px-8"
+          className="bg-secondary text-white hover:bg-secondary/90 font-bold px-8"
           onClick={handleSubmit}
           disabled={!agreedToTerms || amount <= 0 || amount > finaPayGoldBalance || !hasDownloadedDraft}
         >
