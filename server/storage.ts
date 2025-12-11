@@ -47,6 +47,7 @@ export interface IStorage {
   // Vault Holdings
   getVaultHolding(id: string): Promise<VaultHolding | undefined>;
   getUserVaultHoldings(userId: string): Promise<VaultHolding[]>;
+  getAllVaultHoldings(): Promise<VaultHolding[]>;
   createVaultHolding(holding: InsertVaultHolding): Promise<VaultHolding>;
   updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined>;
   
@@ -182,6 +183,10 @@ export class DatabaseStorage implements IStorage {
 
   async getUserVaultHoldings(userId: string): Promise<VaultHolding[]> {
     return await db.select().from(vaultHoldings).where(eq(vaultHoldings.userId, userId)).orderBy(desc(vaultHoldings.createdAt));
+  }
+
+  async getAllVaultHoldings(): Promise<VaultHolding[]> {
+    return await db.select().from(vaultHoldings).orderBy(desc(vaultHoldings.createdAt));
   }
 
   async createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding> {

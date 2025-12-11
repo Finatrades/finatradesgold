@@ -273,6 +273,16 @@ export async function registerRoutes(
   // FINAVAULT - GOLD STORAGE
   // ============================================================================
   
+  // Admin: Get all vault holdings
+  app.get("/api/admin/vault/holdings", async (req, res) => {
+    try {
+      const holdings = await storage.getAllVaultHoldings();
+      res.json({ holdings });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get vault holdings" });
+    }
+  });
+
   // Get user vault holdings
   app.get("/api/vault/:userId", async (req, res) => {
     try {

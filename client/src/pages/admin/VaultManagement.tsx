@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Package, ShieldCheck, AlertTriangle, Plus, ArrowRight, Scale, Lock, MinusCircle, PlusCircle } from 'lucide-react';
+import { Package, ShieldCheck, AlertTriangle, Plus, ArrowRight, Scale, Lock, MinusCircle, PlusCircle, Loader2 } from 'lucide-react';
 import { usePlatform } from '@/context/PlatformContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+
+interface VaultHolding {
+  id: string;
+  userId: string;
+  goldGrams: string;
+  storageLocation: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function VaultManagement() {
   const { settings, updateInventory } = usePlatform();
@@ -17,9 +28,27 @@ export default function VaultManagement() {
   const [stockAction, setStockAction] = useState<'add' | 'remove'>('add');
   const [stockAmount, setStockAmount] = useState('');
 
-  // Derived Stats
-  const availableLiquidity = settings.vaultInventoryGrams - settings.reservedGoldGrams;
-  const coverageRatio = (settings.vaultInventoryGrams / settings.reservedGoldGrams) * 100;
+  const { data: holdingsData, isLoading } = useQuery({
+    queryKey: ['admin-vault-holdings'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/vault/holdings');
+      if (!response.ok) throw new Error('Failed to fetch holdings');
+      return response.json();
+    },
+  });
+
+  const holdings: VaultHolding[] = holdingsData?.holdings || [];
+
+  // Calculate totals from real data
+  const totalGoldGrams = holdings.reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
+  const allocatedGrams = holdings.filter(h => h.status === 'allocated').reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
+  const availableGrams = holdings.filter(h => h.status === 'available').reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
+
+  // Derived Stats (using real data if available, fallback to settings)
+  const vaultInventory = totalGoldGrams || settings.vaultInventoryGrams;
+  const reservedGold = allocatedGrams || settings.reservedGoldGrams;
+  const availableLiquidity = vaultInventory - reservedGold;
+  const coverageRatio = reservedGold > 0 ? (vaultInventory / reservedGold) * 100 : 100;
   
   const handleStockUpdate = () => {
     const amount = parseFloat(stockAmount);
@@ -37,14 +66,6 @@ export default function VaultManagement() {
       description: `${stockAction === 'add' ? 'Added' : 'Removed'} ${amount}g from physical inventory.` 
     });
   };
-
-  const inventory = [
-    { id: "BAR-CH-8821", weight: "1000g", purity: "999.9", ref: "Valcambi", status: "Allocated", location: "Zone A-12" },
-    { id: "BAR-CH-8822", weight: "1000g", purity: "999.9", ref: "PAMP", status: "Allocated", location: "Zone A-12" },
-    { id: "BAR-CH-8823", weight: "500g", purity: "999.9", ref: "Argor-Heraeus", status: "Available", location: "Zone B-04" },
-    { id: "BAR-CH-8824", weight: "100g", purity: "999.9", ref: "Valcambi", status: "Available", location: "Zone B-05" },
-    { id: "BAR-CH-8825", weight: "1000g", purity: "999.9", ref: "PAMP", status: "Reserved", location: "Zone A-13" },
-  ];
 
   return (
     <AdminLayout>
@@ -94,7 +115,7 @@ export default function VaultManagement() {
                   <Package className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{(settings.vaultInventoryGrams / 1000).toFixed(2)} kg</p>
+                  <p className="text-2xl font-bold text-gray-900">{(vaultInventory / 1000).toFixed(2)} kg</p>
                   <p className="text-xs text-gray-500">Total Weight in Vault</p>
                 </div>
               </div>
@@ -123,40 +144,52 @@ export default function VaultManagement() {
           {/* Inventory List */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Gold Bar Inventory</CardTitle>
-              <CardDescription>Registry of physical bars stored in Zurich Free Port</CardDescription>
+              <CardTitle>User Vault Holdings</CardTitle>
+              <CardDescription>All user gold storage requests and holdings</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {inventory.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-yellow-50 rounded flex items-center justify-center border border-yellow-100">
-                        <Scale className="w-5 h-5 text-yellow-600" />
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                </div>
+              ) : holdings.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No vault holdings found</p>
+                  <p className="text-sm">User vault requests will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {holdings.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50" data-testid={`vault-holding-${item.id}`}>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-yellow-50 rounded flex items-center justify-center border border-yellow-100">
+                          <Scale className="w-5 h-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{item.id.slice(0, 8)}...</p>
+                          <p className="text-xs text-gray-500">User: {item.userId.slice(0, 8)}...</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{item.id}</p>
-                        <p className="text-xs text-gray-500">{item.ref} • {item.purity}</p>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="font-medium text-gray-900">{parseFloat(item.goldGrams).toFixed(2)}g</p>
+                          <p className="text-xs text-gray-500">{item.storageLocation || 'Zurich'}</p>
+                        </div>
+                        <Badge variant="outline" className={
+                          item.status === 'allocated' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                          item.status === 'available' ? 'bg-green-50 text-green-700 border-green-200' :
+                          'bg-orange-50 text-orange-700 border-orange-200'
+                        }>
+                          {item.status}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">{item.weight}</p>
-                        <p className="text-xs text-gray-500">{item.location}</p>
-                      </div>
-                      <Badge variant="outline" className={
-                        item.status === 'Allocated' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                        item.status === 'Available' ? 'bg-green-50 text-green-700 border-green-200' :
-                        'bg-orange-50 text-orange-700 border-orange-200'
-                      }>
-                        {item.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                <Button variant="ghost" className="text-sm text-gray-500">View All Inventory <ArrowRight className="w-4 h-4 ml-1" /></Button>
+                <Button variant="ghost" className="text-sm text-gray-500">View All Holdings <ArrowRight className="w-4 h-4 ml-1" /></Button>
               </div>
             </CardContent>
           </Card>
