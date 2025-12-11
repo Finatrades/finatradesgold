@@ -24,6 +24,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   const { user } = useAuth();
   const [location, setLocation] = useLocation();
 
+  // Temporary bypass for development/demo purposes
+  // Remove this block to enforce strict auth
+  // if (!user) {
+  //   return <Component />;
+  // }
+
   useEffect(() => {
     if (!user) {
       setLocation('/login');
