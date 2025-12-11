@@ -157,8 +157,8 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
     }
 
     const newCase: TradeCase = {
-      id: `TF-2025-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
       ...formData as TradeCase,
+      id: `TF-2025-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
       items: items,
       seller: finalSeller || { company: '', country: '', contactName: '', email: '' },
       status: isDraft ? 'Draft' : (lockAmt > 0 ? 'Funded – Docs Pending' : 'Awaiting Funding'),

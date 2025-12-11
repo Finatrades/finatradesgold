@@ -1,296 +1,322 @@
 import React, { useState } from 'react';
-import { useLanguage } from '@/context/LanguageContext';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { motion } from 'framer-motion';
-import { TrendingUp, Lock, RefreshCw, BarChart3, Info } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import Layout from '@/components/Layout';
-import { Card } from '@/components/ui/card';
+import DashboardLayout from '@/components/DashboardLayout';
+import { useAuth } from '@/context/AuthContext';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar } from 'lucide-react';
+import { BnslPlan, BnslPlanStatus, BnslPayout } from '@/types/bnsl';
+import { useToast } from '@/hooks/use-toast';
+
+// Components
+import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
+import BnslPlanList from '@/components/bnsl/BnslPlanList';
+import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
+import CreateBnslPlan from '@/components/bnsl/CreateBnslPlan';
+import { Card, CardContent } from '@/components/ui/card';
+
+// Mock Data
+const MOCK_PLANS: BnslPlan[] = [
+  {
+    id: 'BNSL-2024-001',
+    tenorMonths: 12,
+    marginRateAnnualPercent: 0.08,
+    goldSoldGrams: 100,
+    enrollmentPriceUsdPerGram: 80.50,
+    basePriceComponentUsd: 8050,
+    totalMarginComponentUsd: 644, // 8050 * 0.08 * 1
+    quarterlyMarginUsd: 161, // 644 / 4
+    startDate: '2024-01-15T10:00:00Z',
+    maturityDate: '2025-01-15T10:00:00Z',
+    status: 'Active',
+    totalPaidMarginUsd: 483, // 3 payouts done
+    totalPaidMarginGrams: 5.85, // approx
+    earlyTerminationAllowed: true,
+    payouts: [
+      { id: 'p1', planId: 'BNSL-2024-001', sequence: 1, scheduledDate: '2024-04-15', monetaryAmountUsd: 161, marketPriceUsdPerGramAtPayout: 82.00, gramsCredited: 1.9634, status: 'Paid' },
+      { id: 'p2', planId: 'BNSL-2024-001', sequence: 2, scheduledDate: '2024-07-15', monetaryAmountUsd: 161, marketPriceUsdPerGramAtPayout: 83.50, gramsCredited: 1.9281, status: 'Paid' },
+      { id: 'p3', planId: 'BNSL-2024-001', sequence: 3, scheduledDate: '2024-10-15', monetaryAmountUsd: 161, marketPriceUsdPerGramAtPayout: 82.10, gramsCredited: 1.9610, status: 'Paid' },
+      { id: 'p4', planId: 'BNSL-2024-001', sequence: 4, scheduledDate: '2025-01-15', monetaryAmountUsd: 161, status: 'Scheduled' },
+    ]
+  }
+];
 
 export default function BNSL() {
-  const { t } = useLanguage();
-  const [tenure, setTenure] = useState(12);
-  const [investment, setInvestment] = useState(10000);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Mock data generation for chart
-  const generateChartData = (months: number, initialValue: number) => {
-    const data = [];
-    const monthlyRate = 0.008; // 0.8% monthly growth approx
-    for (let i = 0; i <= months; i++) {
-      data.push({
-        month: i,
-        value: Math.round(initialValue * Math.pow(1 + monthlyRate, i)),
-        principal: initialValue
-      });
+  // State
+  const [activeTab, setActiveTab] = useState('plans');
+  const [plans, setPlans] = useState<BnslPlan[]>(MOCK_PLANS);
+  const [selectedPlan, setSelectedPlan] = useState<BnslPlan | null>(null);
+  
+  // Wallet State
+  const [finaPayGoldBalance, setFinaPayGoldBalance] = useState(500.00); 
+  const [currentGoldPrice, setCurrentGoldPrice] = useState(85.22); // Mock spot
+
+  // Aggregated Stats
+  const activePlansCount = plans.filter(p => p.status === 'Active').length;
+  const totalDeferredBase = plans.reduce((sum, p) => p.status === 'Active' ? sum + p.basePriceComponentUsd : sum, 0);
+  
+  // Weighted Avg Rate (approx)
+  const weightedRate = activePlansCount > 0 
+    ? (plans.reduce((sum, p) => p.status === 'Active' ? sum + (p.marginRateAnnualPercent * p.basePriceComponentUsd) : sum, 0) / totalDeferredBase) * 100
+    : 0;
+
+  // Next Payout Finder
+  const getNextPayout = (): { date: string; amount: number; planId: string } | null => {
+    let next: { date: string; amount: number; planId: string } | null = null;
+    plans.forEach(plan => {
+      if (plan.status !== 'Active') return;
+      const upcoming = plan.payouts.find(p => p.status === 'Scheduled');
+      if (upcoming) {
+        if (!next || new Date(upcoming.scheduledDate) < new Date(next.date)) {
+           next = { date: upcoming.scheduledDate, amount: upcoming.monetaryAmountUsd, planId: plan.id };
+        }
+      }
+    });
+    return next;
+  };
+  const nextPayout = getNextPayout();
+
+  // Actions
+  const handleCreatePlan = (newPlanData: Partial<BnslPlan>) => {
+    // 1. Deduct Gold from FinaPay
+    if (newPlanData.goldSoldGrams) {
+      setFinaPayGoldBalance(prev => prev - newPlanData.goldSoldGrams!);
     }
-    return data;
+
+    // 2. Create Plan Object
+    const planId = `BNSL-2025-${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}`;
+    const startDate = new Date();
+    const maturityDate = new Date();
+    maturityDate.setMonth(startDate.getMonth() + (newPlanData.tenorMonths || 12));
+
+    // Generate Payouts
+    const payouts: BnslPayout[] = [];
+    const numPayouts = (newPlanData.tenorMonths || 12) / 3;
+    for(let i=1; i<=numPayouts; i++) {
+       const d = new Date(startDate);
+       d.setMonth(d.getMonth() + (i * 3));
+       payouts.push({
+         id: `p-${planId}-${i}`,
+         planId: planId,
+         sequence: i,
+         scheduledDate: d.toISOString(),
+         monetaryAmountUsd: newPlanData.quarterlyMarginUsd || 0,
+         status: 'Scheduled'
+       });
+    }
+
+    const newPlan: BnslPlan = {
+      ...newPlanData as BnslPlan,
+      id: planId,
+      status: 'Active',
+      startDate: startDate.toISOString(),
+      maturityDate: maturityDate.toISOString(),
+      payouts: payouts,
+      totalPaidMarginUsd: 0,
+      totalPaidMarginGrams: 0,
+      earlyTerminationAllowed: true
+    };
+
+    setPlans(prev => [newPlan, ...prev]);
+    setActiveTab('plans');
+    toast({
+      title: "BNSL Plan Started",
+      description: `Plan ${planId} activated. Gold deducted from FinaPay.`,
+    });
   };
 
-  const chartData = generateChartData(tenure, investment);
-  const finalValue = chartData[chartData.length - 1].value;
-  const growth = finalValue - investment;
+  const handleSimulatePayout = (payoutId: string, currentPrice: number) => {
+     setPlans(prev => prev.map(plan => {
+       const payoutIndex = plan.payouts.findIndex(p => p.id === payoutId);
+       if (payoutIndex === -1) return plan;
+
+       const updatedPayouts = [...plan.payouts];
+       const payout = updatedPayouts[payoutIndex];
+       
+       const gramsCredited = payout.monetaryAmountUsd / currentPrice;
+       
+       updatedPayouts[payoutIndex] = {
+         ...payout,
+         status: 'Paid',
+         marketPriceUsdPerGramAtPayout: currentPrice,
+         gramsCredited: gramsCredited
+       };
+
+       // Update Plan Totals
+       return {
+         ...plan,
+         payouts: updatedPayouts,
+         totalPaidMarginUsd: plan.totalPaidMarginUsd + payout.monetaryAmountUsd,
+         totalPaidMarginGrams: plan.totalPaidMarginGrams + gramsCredited
+       };
+     }));
+
+     // Conceptually credit FinaPay (though margin goes to FinaPay wallet)
+     // In a real app, this would be a backend tx.
+     // Here we just update the local plan state for display.
+     
+     toast({
+       title: "Payout Simulated",
+       description: "Margin payout marked as paid. Grams credited to wallet (simulated).",
+     });
+     
+     // Update selected plan view if open
+     if (selectedPlan) {
+        // Need to find the updated plan to set selected
+        // We do this via useEffect or just by finding it again, 
+        // but since setPlans is async, we'll just let the list re-render logic handle it if we passed the ID.
+        // For now, simpler to just close detail or rely on finding it again.
+        // Actually, let's just update selectedPlan locally for immediate feedback if we can find it.
+     }
+  };
+
+  // Sync selectedPlan with plans state
+  const displayedPlan = selectedPlan ? plans.find(p => p.id === selectedPlan.id) || selectedPlan : null;
+
+  const handleTerminatePlan = (planId: string) => {
+    setPlans(prev => prev.map(p => p.id === planId ? { ...p, status: 'Early Terminated' as BnslPlanStatus } : p));
+    toast({ title: "Plan Terminated", description: "Plan status set to Early Terminated." });
+  };
+
+  if (!user) return null;
 
   return (
-    <Layout>
-      {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 overflow-hidden">
-        <div className="absolute top-0 right-1/2 translate-x-1/2 w-[800px] h-[600px] bg-[#FF2FBF]/10 blur-[120px] rounded-full pointer-events-none" />
+    <DashboardLayout>
+      <div className="max-w-6xl mx-auto space-y-8 pb-12">
         
-        <div className="container mx-auto px-6 relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
-              <TrendingUp className="w-4 h-4 text-[#FF2FBF]" />
-              <span className="text-sm font-medium text-[#FF2FBF]">{t('bnsl.badge')}</span>
+        {/* TOP BAR */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+             <div className="p-2 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20 text-[#D4AF37]">
+                <TrendingUp className="w-6 h-6" />
+             </div>
+             <div>
+               <h1 className="text-2xl font-bold text-white">BNSL – Buy Now Sell Later</h1>
+               <p className="text-white/60 text-sm">Deferred price gold sale with quarterly margin payouts.</p>
+             </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block text-right border-l border-white/10 pl-4">
+               <p className="text-xs text-white/40 uppercase tracking-wider">Seller</p>
+               <p className="text-white font-bold">You</p>
             </div>
-            
-            <h1 className="text-5xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
-              {t('bnsl.title')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF2FBF] to-[#D4AF37]">{t('bnsl.titleHighlight')}</span>
-            </h1>
-            
-            <p className="text-lg text-white/60 mb-8 max-w-2xl mx-auto leading-relaxed">
-              {t('bnsl.description')}
-            </p>
-            
-            <div className="flex flex-wrap justify-center gap-4 text-sm font-medium text-white/80 mb-10">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
-                <ShieldCheckIcon className="w-4 h-4 text-[#D4AF37]" />
-                {t('bnsl.badge1')}
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
-                <Lock className="w-4 h-4 text-[#D4AF37]" />
-                {t('bnsl.badge2')}
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
-                <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
-                {t('bnsl.badge3')}
-              </div>
+            <div className="hidden md:block text-right border-l border-white/10 pl-4">
+               <p className="text-xs text-white/40 uppercase tracking-wider">Gold Spot</p>
+               <p className="text-[#D4AF37] font-bold font-mono">${currentGoldPrice.toFixed(2)} <span className="text-xs text-white/40">/g</span></p>
             </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" className="h-12 px-8 bg-[#FF2FBF] text-white hover:bg-[#FF2FBF]/90 rounded-full text-base font-semibold shadow-[0_0_20px_rgba(255,47,191,0.3)]">
-                {t('bnsl.startPlan')}
-              </Button>
-              <Button size="lg" variant="outline" className="h-12 px-8 border-white/20 hover:bg-white/10 text-white rounded-full text-base bg-transparent">
-                {t('bnsl.viewHow')}
-              </Button>
+            <div className="p-2 bg-white/5 rounded-full hover:bg-white/10 cursor-pointer">
+               <Info className="w-5 h-5 text-white/60" />
             </div>
-          </motion.div>
+          </div>
         </div>
-      </section>
 
-      {/* Calculator Section */}
-      <section className="py-24 bg-[#0A0018]">
-        <div className="container mx-auto px-6">
-          <div className="grid lg:grid-cols-12 gap-12">
-            {/* Input Side */}
-            <div className="lg:col-span-4 space-y-8">
-              <div>
-                <h2 className="text-3xl font-bold mb-2">{t('bnsl.planner.title')}</h2>
-                <p className="text-white/60">{t('bnsl.planner.subtitle')}</p>
-              </div>
+        {/* SUMMARY STRIP */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+           <BnslStatsCard 
+             label="Active Plans" 
+             value={activePlansCount.toString()} 
+             icon={Briefcase} 
+             accentColor="text-blue-500"
+           />
+           <BnslStatsCard 
+             label="Deferred Base Value" 
+             value={`$${totalDeferredBase.toLocaleString()}`} 
+             icon={BarChart3} 
+             accentColor="text-white"
+             tooltip="Total Base Price Component you are entitled to at maturity."
+           />
+           <BnslStatsCard 
+             label="Avg. Margin Rate" 
+             value={`${weightedRate.toFixed(2)}% p.a.`} 
+             icon={TrendingUp} 
+             accentColor="text-[#D4AF37]"
+           />
+           <BnslStatsCard 
+             label="Next Payout" 
+             value={nextPayout ? `$${nextPayout.amount.toLocaleString()}` : 'None'} 
+             subValue={nextPayout ? new Date(nextPayout.date).toLocaleDateString() : ''}
+             icon={Calendar} 
+             accentColor="text-green-500"
+           />
+        </div>
 
-              <Card className="p-6 bg-white/5 border-white/10">
-                <div className="space-y-6">
-                  {/* Amount Input */}
+        {/* MAIN CONTENT */}
+        {displayedPlan ? (
+           <BnslPlanDetail 
+             plan={displayedPlan} 
+             onBack={() => setSelectedPlan(null)}
+             onSimulatePayout={handleSimulatePayout}
+             onTerminate={handleTerminatePlan}
+             currentGoldPrice={currentGoldPrice}
+           />
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
+              <TabsTrigger value="plans" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+                <Briefcase className="w-4 h-4 mr-2" /> My BNSL Plans
+              </TabsTrigger>
+              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+                <PlusCircle className="w-4 h-4 mr-2" /> Start New Plan
+              </TabsTrigger>
+              <TabsTrigger value="terms" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+                <Info className="w-4 h-4 mr-2" /> Terms & Info
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="plans" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+               <BnslPlanList 
+                 plans={plans} 
+                 onViewPlan={(plan) => setSelectedPlan(plan)}
+               />
+               
+               {/* Mini Summary Footer */}
+               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-white/5 rounded-xl border border-white/10">
                   <div>
-                    <label className="text-sm font-medium text-white/80 mb-2 block">
-                      {t('bnsl.planner.purchaseValue')} (USD)
-                    </label>
-                    <div className="relative">
-                      <input 
-                        type="number" 
-                        value={investment}
-                        onChange={(e) => setInvestment(Number(e.target.value))}
-                        className="w-full bg-[#0D001E] border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF2FBF] transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Tenure Selection */}
-                  <div>
-                    <label className="text-sm font-medium text-white/80 mb-4 block">
-                      {t('bnsl.planner.tenure')}
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[12, 24, 36].map((m) => (
-                        <button
-                          key={m}
-                          onClick={() => setTenure(m)}
-                          className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                            tenure === m 
-                              ? 'bg-[#FF2FBF] text-white shadow-lg' 
-                              : 'bg-white/5 text-white/60 hover:bg-white/10'
-                          }`}
-                        >
-                          {m} Months
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Info Box */}
-                  <div className="p-4 rounded-xl bg-[#0D001E] border border-[#FF2FBF]/20">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-white/60 text-sm">Addition Rate</span>
-                      <span className="text-[#FF2FBF] font-bold">~10% p.a.</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-white/60 text-sm">Locked Price</span>
-                      <span className="text-white font-medium">$85.40 /g</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Output Side */}
-            <div className="lg:col-span-8">
-              <Card className="p-8 bg-white/5 border-white/10 h-full flex flex-col">
-                <div className="flex flex-wrap gap-8 mb-8">
-                  <div>
-                    <p className="text-white/40 text-sm uppercase tracking-wide mb-1">Total Gold Value</p>
-                    <p className="text-4xl font-bold text-white">${finalValue.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/40 text-sm uppercase tracking-wide mb-1">Projected Growth</p>
-                    <p className="text-4xl font-bold text-[#FF2FBF]">
-                      +${growth.toLocaleString()}
+                    <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Gold Sold</p>
+                    <p className="text-xl font-bold text-white">
+                      {plans.reduce((sum, p) => p.status !== 'Pending Acceptance' ? sum + p.goldSoldGrams : sum, 0).toFixed(2)} g
                     </p>
                   </div>
-                </div>
+                  <div>
+                     <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Margin Received</p>
+                     <p className="text-xl font-bold text-[#D4AF37]">
+                       {plans.reduce((sum, p) => sum + p.totalPaidMarginGrams, 0).toFixed(3)} g
+                     </p>
+                  </div>
+                  <div>
+                     <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Deferred Base</p>
+                     <p className="text-xl font-bold text-white">
+                       ${totalDeferredBase.toLocaleString()}
+                     </p>
+                  </div>
+               </div>
+            </TabsContent>
 
-                <div className="flex-1 min-h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
-                      <defs>
-                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#FF2FBF" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#FF2FBF" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis 
-                        dataKey="month" 
-                        stroke="rgba(255,255,255,0.2)" 
-                        tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 12}}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis 
-                        stroke="rgba(255,255,255,0.2)" 
-                        tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 12}}
-                        tickFormatter={(val) => `$${val/1000}k`}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Tooltip 
-                        contentStyle={{backgroundColor: '#1A002F', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px'}}
-                        itemStyle={{color: '#fff'}}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#FF2FBF" 
-                        strokeWidth={3}
-                        fillOpacity={1} 
-                        fill="url(#colorValue)" 
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="principal" 
-                        stroke="#ffffff" 
-                        strokeWidth={1}
-                        strokeDasharray="5 5"
-                        fill="transparent" 
-                        opacity={0.3}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                <p className="text-white/30 text-xs mt-4">
-                  {t('bnsl.planner.disclaimer')}
-                </p>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
+            <TabsContent value="create" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+               <CreateBnslPlan 
+                 finaPayGoldBalance={finaPayGoldBalance} 
+                 currentGoldPrice={currentGoldPrice}
+                 onSuccess={handleCreatePlan}
+               />
+            </TabsContent>
 
-      {/* How it Works Grid */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">{t('bnslHowItWorks.title')}</h2>
-            <p className="text-white/60">{t('bnslHowItWorks.subtitle')}</p>
-          </div>
+            <TabsContent value="terms" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+               <Card className="bg-white/5 border-white/10">
+                 <CardContent className="p-12 text-center text-white/40">
+                    <Info className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                    <h3 className="text-lg font-bold text-white mb-2">BNSL Master Agreement</h3>
+                    <p className="max-w-md mx-auto">
+                      Full terms and conditions of the Buy Now Sell Later program, including risk disclosures, legal title transfer details, and dispute resolution mechanisms.
+                    </p>
+                 </CardContent>
+               </Card>
+            </TabsContent>
+          </Tabs>
+        )}
 
-          <div className="grid md:grid-cols-4 gap-8">
-            {[1, 2, 3, 4].map((step) => (
-              <div key={step} className="relative group">
-                <div className="w-12 h-12 rounded-full bg-[#FF2FBF]/10 border border-[#FF2FBF]/30 flex items-center justify-center text-[#FF2FBF] font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
-                  {step}
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2">
-                  {t(`bnslHowItWorks.step${step}.title`)}
-                </h3>
-                <p className="text-white/60 text-sm">
-                  {t(`bnslHowItWorks.step${step}.desc`)}
-                </p>
-                {step < 4 && (
-                  <div className="hidden md:block absolute top-6 left-12 w-[calc(100%-3rem)] h-px bg-gradient-to-r from-[#FF2FBF]/30 to-transparent" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-24 bg-gradient-to-b from-[#0D001E] to-[#1A002F] border-t border-white/5">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            {t('bnslFinalCta.title1')} <br/>
-            <span className="text-[#FF2FBF]">{t('bnslFinalCta.title2')}</span>
-          </h2>
-          <p className="text-white/60 max-w-2xl mx-auto mb-8">
-            {t('bnslFinalCta.subtitle')}
-          </p>
-          <div className="flex justify-center gap-4">
-            <Button size="lg" className="h-12 px-8 bg-[#FF2FBF] text-white hover:bg-[#FF2FBF]/90 rounded-full font-bold">
-              {t('bnslFinalCta.startPlan')}
-            </Button>
-            <Button size="lg" variant="outline" className="h-12 px-8 border-white/20 hover:bg-white/10 text-white rounded-full bg-transparent">
-              {t('bnslFinalCta.support')}
-            </Button>
-          </div>
-        </div>
-      </section>
-    </Layout>
+      </div>
+    </DashboardLayout>
   );
-}
-
-function ShieldCheckIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  )
 }
