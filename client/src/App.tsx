@@ -34,6 +34,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
+import Profile from "@/pages/Profile";
+
 function Router() {
   return (
     <Switch>
@@ -60,6 +62,9 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
+      </Route>
+      <Route path="/dashboard/profile">
+        <ProtectedRoute component={Profile} />
       </Route>
       <Route component={NotFound} />
     </Switch>
