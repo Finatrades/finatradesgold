@@ -57,7 +57,7 @@ export default function Register() {
 
   const isPasswordValid = Object.values(passwordStrength).every(Boolean);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
       toast.error("Please fill in all required fields");
       return;
@@ -75,56 +75,46 @@ export default function Register() {
       return;
     }
 
-    // Update global context
-    setContextAccountType(accountType);
+    try {
+      // Update global context
+      setContextAccountType(accountType);
 
-    // Save to local mock DB
-    const newUser = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      password: formData.password, // Storing plain text for mockup only
-      accountType: accountType,
-      companyName: accountType === 'business' ? formData.companyName : undefined,
-      kycStatus: 'pending' as const
-    };
+      // Register via API
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        passwordHash: formData.password,
+        accountType: accountType,
+        companyName: accountType === 'business' ? formData.companyName : undefined,
+        role: 'user',
+        kycStatus: 'pending',
+        status: 'active',
+        language: 'en',
+      });
 
-    const existingUsers = JSON.parse(localStorage.getItem('fina_users') || '[]');
-    existingUsers.push(newUser);
-    localStorage.setItem('fina_users', JSON.stringify(existingUsers));
-
-    // Simulate Login
-    login({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      accountType: accountType,
-      companyName: accountType === 'business' ? formData.companyName : undefined,
-      kycStatus: 'pending'
-    });
-
-    toast.success("Account Created Successfully!", {
-      description: "Identity verification is mandatory to access the platform."
-    });
-    
-    // Redirect to Dashboard
-    setLocation('/dashboard');
+      toast.success("Account Created Successfully!", {
+        description: "Identity verification is mandatory to access the platform."
+      });
+    } catch (error) {
+      toast.error("Registration Failed", {
+        description: error instanceof Error ? error.message : "Please try again."
+      });
+    }
   };
 
-  const handleDemoAccess = () => {
+  const handleDemoAccess = async () => {
     setContextAccountType('personal');
-    login({
-      firstName: "Demo",
-      lastName: "User",
-      email: "demo@finatrades.com",
-      accountType: "personal",
-      kycStatus: 'pending'
-    });
-    toast.success("Demo Access Granted", {
-      description: "Welcome. Please complete KYC to unlock full access."
-    });
-    // Redirect to Dashboard
-    setLocation('/dashboard');
+    try {
+      await login("demo@finatrades.com", "password");
+      toast.success("Demo Access Granted", {
+        description: "Welcome. Please complete KYC to unlock full access."
+      });
+    } catch (error) {
+      toast.error("Demo access failed", {
+        description: "Please try registering a new account."
+      });
+    }
   };
 
   return (

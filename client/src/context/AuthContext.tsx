@@ -1,89 +1,116 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useUserManagement } from './UserContext';
-
-interface User {
-  firstName: string;
-  lastName: string;
-  email: string;
-  accountType: 'personal' | 'business';
-  companyName?: string;
-  kycStatus?: 'pending' | 'verified';
-  role?: 'user' | 'admin';
-  status?: 'Active' | 'Suspended' | 'Pending KYC' | 'Frozen'; // Added status
-}
+import type { User } from '@shared/schema';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (userData: User) => void;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: any) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [location, setLocation] = useLocation();
-  const { getUser } = useUserManagement();
 
   useEffect(() => {
     // Check local storage on mount
-    const storedUser = localStorage.getItem('fina_user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      // SYNC WITH USER MANAGEMENT
-      const liveUser = getUser(parsedUser.email);
-      
-      if (liveUser) {
-        // If user is found in the "DB", update local session with latest status/KYC
-        const updatedUser: User = {
-          ...parsedUser,
-          status: liveUser.status,
-          kycStatus: liveUser.kycLevel > 0 ? 'verified' : 'pending',
-          role: liveUser.role
-        };
-        
-        // If suspended, logout immediately
-        if (liveUser.status === 'Suspended' || liveUser.status === 'Frozen') {
-           setUser(null);
-           localStorage.removeItem('fina_user');
-           return;
-        }
-
-        setUser(updatedUser);
-      } else {
-        // Fallback for demo users not in list
-        setUser(parsedUser);
-      }
-    }
-  }, [getUser]);
-
-  const login = (userData: User) => {
-    // Check status before login
-    const liveUser = getUser(userData.email);
-    if (liveUser && (liveUser.status === 'Suspended' || liveUser.status === 'Frozen')) {
-      alert("Your account is suspended. Please contact support.");
-      return;
-    }
-
-    setUser(userData);
-    localStorage.setItem('fina_user', JSON.stringify(userData));
-    if (userData.role === 'admin') {
-      setLocation('/admin');
+    const storedUserId = localStorage.getItem('fina_user_id');
+    if (storedUserId) {
+      refreshUserById(storedUserId);
     } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const refreshUserById = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/auth/me/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      } else {
+        localStorage.removeItem('fina_user_id');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      localStorage.removeItem('fina_user_id');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    if (user) {
+      await refreshUserById(user.id);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      localStorage.setItem('fina_user_id', data.user.id);
+      
+      if (data.user.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/dashboard');
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const register = async (userData: any) => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Registration failed');
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      localStorage.setItem('fina_user_id', data.user.id);
       setLocation('/dashboard');
+    } catch (error) {
+      throw error;
     }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('fina_user');
+    localStorage.removeItem('fina_user_id');
     setLocation('/');
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

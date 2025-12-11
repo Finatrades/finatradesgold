@@ -17,7 +17,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error("Please enter your email and password");
@@ -26,47 +26,18 @@ export default function Login() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await login(email, password);
+      toast.success("Welcome back!", {
+        description: "You have successfully logged in."
+      });
+    } catch (error) {
+      toast.error("Invalid Credentials", {
+        description: error instanceof Error ? error.message : "Please check your email and password."
+      });
+    } finally {
       setIsLoading(false);
-      
-      // Check against mock DB
-      const existingUsers = JSON.parse(localStorage.getItem('fina_users') || '[]');
-      const user = existingUsers.find((u: any) => u.email === email && u.password === password);
-      
-      const isDemo = email === 'demo@finatrades.com' && password === 'password';
-      const isAdmin = email === 'admin@finatrades.com' && password === 'admin123';
-
-      if (isAdmin) {
-        login({
-          firstName: "Admin",
-          lastName: "User",
-          email: "admin@finatrades.com",
-          accountType: "business",
-          role: 'admin'
-        });
-        toast.success("Admin Login Successful");
-      } else if (user || isDemo) {
-        // Mock login logic
-        login({
-          firstName: user ? user.firstName : "Demo",
-          lastName: user ? user.lastName : "User",
-          email: email,
-          accountType: user ? user.accountType : "personal",
-          companyName: user ? user.companyName : undefined,
-          role: 'user',
-          kycStatus: user ? user.kycStatus : 'pending' // Demo starts pending
-        });
-
-        toast.success("Welcome back!", {
-          description: "You have successfully logged in."
-        });
-      } else {
-        toast.error("Invalid Credentials", {
-          description: "Please check your email and password."
-        });
-      }
-    }, 1000);
+    }
   };
 
   return (
