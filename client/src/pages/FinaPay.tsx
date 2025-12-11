@@ -80,10 +80,13 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
   }
 ];
 
+import { useLocation } from 'wouter';
+
 export default function FinaPay() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [, setLocation] = useLocation();
 
   const [wallet, setWallet] = useState<Wallet>(INITIAL_WALLET);
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
@@ -224,10 +227,10 @@ export default function FinaPay() {
       case 'send': setActiveModal('send'); break;
       case 'request': setActiveModal('request'); break;
       case 'bnsl': 
-        toast({ title: "Navigate to BNSL", description: "Redirecting to Staking Module..." });
+        setLocation('/bnsl');
         break;
       case 'trade':
-        toast({ title: "Navigate to FinaBridge", description: "Redirecting to Trade Finance Module..." });
+        setLocation('/finabridge');
         break;
     }
   };

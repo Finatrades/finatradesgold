@@ -42,10 +42,13 @@ const MOCK_PLANS: BnslPlan[] = [
   }
 ];
 
+import { useLocation } from 'wouter';
+
 export default function BNSL() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [, setLocation] = useLocation();
 
   // State
   const [activeTab, setActiveTab] = useState('plans');
@@ -255,6 +258,11 @@ export default function BNSL() {
           onTransferFromFinaPay={handleTransferFromFinaPay}
           currentGoldPrice={currentGoldPrice}
         />
+        <div className="flex justify-end -mt-4">
+            <Button variant="link" size="sm" className="text-muted-foreground hover:text-primary" onClick={() => setLocation('/finapay')}>
+                Need more funds? Go to FinaPay Wallet &rarr;
+            </Button>
+        </div>
 
         {/* SUMMARY STRIP */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
