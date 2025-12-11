@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Menu, Search, Briefcase, User as UserIcon } from 'lucide-react';
+import { Menu, Search, Briefcase, User as UserIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -85,10 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                  <LanguageSwitcher variant="light" />
               </div>
 
-              <button className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 border border-background" />
-              </button>
+              <NotificationCenter />
               
               <div className="flex items-center gap-3 pl-4 border-l border-border">
                 <div className="text-right hidden sm:block">

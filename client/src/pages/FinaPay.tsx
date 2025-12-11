@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { Wallet as WalletIcon, RefreshCw, Bell, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -82,6 +83,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
 export default function FinaPay() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   const [wallet, setWallet] = useState<Wallet>(INITIAL_WALLET);
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
@@ -119,6 +121,11 @@ export default function FinaPay() {
     
     setActiveModal(null);
     toast({ title: "Purchase Successful", description: `You bought ${grams.toFixed(4)}g of gold. Gold credited to your FinaVault.` });
+    addNotification({
+      title: "Gold Purchase Successful",
+      message: `You bought ${grams.toFixed(4)}g of gold for $${cost.toFixed(2)}.`,
+      type: 'success'
+    });
   };
 
   const handleSellConfirm = (grams: number, payout: number) => {
@@ -145,6 +152,11 @@ export default function FinaPay() {
 
     setActiveModal(null);
     toast({ title: "Sell Order Executed", description: `Sold ${grams.toFixed(4)}g for $${payout.toFixed(2)}.` });
+    addNotification({
+      title: "Gold Sold Successfully",
+      message: `Sold ${grams.toFixed(4)}g of gold. $${payout.toFixed(2)} credited to USD balance.`,
+      type: 'success'
+    });
   };
 
   const handleSendConfirm = (recipient: string, amount: number, asset: 'USD' | 'GOLD') => {
@@ -172,6 +184,11 @@ export default function FinaPay() {
     setActiveModal(null);
     const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
     toast({ title: "Transfer Successful", description: `Sent ${amountDisplay} to ${recipient}. Ownership Transferred.` });
+    addNotification({
+      title: "Funds Sent",
+      message: `You sent ${amountDisplay} to ${recipient}.`,
+      type: 'transaction'
+    });
   };
 
   const handleRequestConfirm = (from: string, amount: number, asset: 'USD' | 'GOLD') => {
@@ -193,6 +210,11 @@ export default function FinaPay() {
     setActiveModal(null);
     const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
     toast({ title: "Request Sent", description: `Request for ${amountDisplay} sent to ${from}.` });
+    addNotification({
+      title: "Payment Requested",
+      message: `You requested ${amountDisplay} from ${from}.`,
+      type: 'info'
+    });
   };
 
   const handleQuickAction = (action: string) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus } from 'lucide-react';
 import { BnslPlan, BnslPlanStatus, BnslPayout } from '@/types/bnsl';
@@ -44,6 +45,7 @@ const MOCK_PLANS: BnslPlan[] = [
 export default function BNSL() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   // State
   const [activeTab, setActiveTab] = useState('plans');
@@ -135,6 +137,11 @@ export default function BNSL() {
       title: "BNSL Plan Started",
       description: `Plan ${planId} activated. Gold deducted from BNSL Wallet.`,
     });
+    addNotification({
+      title: "BNSL Plan Activated",
+      message: `Plan ${planId} successfully created. ${newPlanData.goldSoldGrams}g deducted from wallet.`,
+      type: 'success'
+    });
   };
 
   const handleSimulatePayout = (payoutId: string, currentPrice: number) => {
@@ -171,6 +178,11 @@ export default function BNSL() {
        title: "Payout Simulated",
        description: "Margin payout marked as paid. Grams credited to wallet (simulated).",
      });
+     addNotification({
+       title: "Margin Payout Received",
+       message: `Quarterly margin payout received for plan.`,
+       type: 'success'
+     });
      
      // Update selected plan view if open
      if (selectedPlan) {
@@ -188,6 +200,11 @@ export default function BNSL() {
   const handleTerminatePlan = (planId: string) => {
     setPlans(prev => prev.map(p => p.id === planId ? { ...p, status: 'Early Terminated' as BnslPlanStatus } : p));
     toast({ title: "Plan Terminated", description: "Plan status set to Early Terminated." });
+    addNotification({
+      title: "BNSL Plan Terminated",
+      message: `Plan ${planId} was terminated early. Penalties may apply.`,
+      type: 'warning'
+    });
   };
 
   if (!user) return null;

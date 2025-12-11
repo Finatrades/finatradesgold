@@ -15,6 +15,7 @@ import Dashboard from "@/pages/Dashboard";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -57,10 +58,12 @@ function App() {
       <AuthProvider>
         <LanguageProvider>
           <AccountTypeProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
+            <NotificationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </NotificationProvider>
           </AccountTypeProvider>
         </LanguageProvider>
       </AuthProvider>
