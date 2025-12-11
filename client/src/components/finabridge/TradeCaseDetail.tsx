@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useNotifications } from '@/context/NotificationContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -32,6 +33,7 @@ interface ChatMessage {
 
 export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onReleaseFunds, currentRole }: TradeCaseDetailProps) {
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Mock State for DMS
@@ -76,6 +78,11 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
 
   const handleFileUpload = () => {
     toast({ title: "File Uploaded", description: "Document added to case DMS." });
+    addNotification({
+      title: "Document Uploaded",
+      message: `New document added to Trade #${tradeCase.id} DMS.`,
+      type: 'info'
+    });
     // Add logic to update state
   };
 
@@ -84,6 +91,11 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
       step.id === stepId ? { ...step, status: 'Approved', approverName: 'Me', decisionAt: new Date().toISOString() } : step
     ));
     toast({ title: "Step Approved", description: "Approval recorded on blockchain ledger." });
+    addNotification({
+      title: "Workflow Step Approved",
+      message: `You approved a step in Trade #${tradeCase.id}. Ledger updated.`,
+      type: 'success'
+    });
     
     // Check if all approved to update status
     // Simplified logic for demo

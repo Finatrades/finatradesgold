@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { BarChart3, ShieldCheck, FileText, PlusCircle, Briefcase, Info } from 'lucide-react';
 import { FinaBridgeWallet, TradeCase } from '@/types/finabridge';
+import { Button } from '@/components/ui/button';
+import { useLocation } from 'wouter';
 import FinaBridgeWalletCard from '@/components/finabridge/FinaBridgeWalletCard';
 import TradeCaseList from '@/components/finabridge/TradeCaseList';
 import CreateTradeCase from '@/components/finabridge/CreateTradeCase';
 import TradeCaseDetail from '@/components/finabridge/TradeCaseDetail';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock Data
 const MOCK_WALLET: FinaBridgeWallet = {
@@ -41,6 +45,9 @@ const MOCK_CASES: TradeCase[] = [
 
 export default function FinaBridge() {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   
   // State
   const [activeTab, setActiveTab] = useState('cases');
@@ -60,6 +67,11 @@ export default function FinaBridge() {
         availableGoldGrams: prev.importer.availableGoldGrams + amount
       }
     }));
+    addNotification({
+      title: "Gold Transferred",
+      message: `${amount.toFixed(2)}g transferred from FinaPay to FinaBridge Importer Wallet.`,
+      type: 'transaction'
+    });
   };
 
   const handleCaseCreation = (newCase: TradeCase, lockAmount: number) => {
@@ -78,6 +90,16 @@ export default function FinaBridge() {
     }
     
     setActiveTab('cases');
+    
+    toast({
+        title: "Trade Case Created",
+        description: `Trade #${newCase.id} initiated. ${lockAmount > 0 ? 'Funds locked.' : 'Status: Draft'}`,
+    });
+    addNotification({
+      title: "New Trade Initiated",
+      message: `Trade Case #${newCase.id} created. ${lockAmount > 0 ? `${lockAmount.toFixed(2)}g locked as collateral.` : ''}`,
+      type: 'success'
+    });
   };
 
   const handleReleaseFunds = (caseId: string, amount: number) => {
@@ -99,6 +121,12 @@ export default function FinaBridge() {
 
      setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: 'Released' } : c));
      if (selectedCase) setSelectedCase(prev => prev ? { ...prev, status: 'Released' } : null);
+     
+     addNotification({
+       title: "Funds Released",
+       message: `Settlement for Trade #${caseId} released. Ownership transferred to Exporter.`,
+       type: 'success'
+     });
   };
 
   if (!user) return null;
@@ -150,6 +178,11 @@ export default function FinaBridge() {
           finaPayBalanceGold={finaPayBalanceGold}
           onTransferFromFinaPay={handleTransferFromFinaPay}
         />
+        <div className="flex justify-end -mt-4">
+            <Button variant="link" size="sm" className="text-muted-foreground hover:text-primary" onClick={() => setLocation('/finapay')}>
+                Need more funds? Go to FinaPay Wallet &rarr;
+            </Button>
+        </div>
 
         {/* MAIN CONTENT AREA */}
         {selectedCase ? (
