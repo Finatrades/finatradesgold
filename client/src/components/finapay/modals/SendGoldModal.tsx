@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface SendGoldModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('direct');
 
   useEffect(() => {
     if (isOpen) {
@@ -29,6 +31,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
       setNote('');
       setOtp('');
       setIsLoading(false);
+      setActiveTab('direct');
     }
   }, [isOpen]);
 
@@ -60,49 +63,74 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
         </DialogHeader>
 
         {step === 1 && (
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Recipient ID / Email</Label>
-              <Input 
-                placeholder="user@example.com" 
-                className="bg-black/20 border-white/10"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-              />
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-black/20 border border-white/10 mb-4">
+              <TabsTrigger value="direct">Direct Send</TabsTrigger>
+              <TabsTrigger value="scan">Scan QR</TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label>Amount (g)</Label>
-                <span className="text-xs text-white/40">Available: {walletBalance.toFixed(3)} g</span>
+            <TabsContent value="direct" className="space-y-4">
+              <div className="space-y-2">
+                <Label>Recipient ID / Email</Label>
+                <Input 
+                  placeholder="user@example.com" 
+                  className="bg-black/20 border-white/10"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                />
               </div>
-              <Input 
-                type="number" 
-                placeholder="0.000" 
-                className="bg-black/20 border-white/10"
-                value={grams}
-                onChange={(e) => setGrams(e.target.value)}
-              />
-            </div>
 
-            <div className="space-y-2">
-              <Label>Note (Optional)</Label>
-              <Textarea 
-                placeholder="What's this for?" 
-                className="bg-black/20 border-white/10 resize-none h-20"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label>Amount (g)</Label>
+                  <span className="text-xs text-white/40">Available: {walletBalance.toFixed(3)} g</span>
+                </div>
+                <Input 
+                  type="number" 
+                  placeholder="0.000" 
+                  className="bg-black/20 border-white/10"
+                  value={grams}
+                  onChange={(e) => setGrams(e.target.value)}
+                />
+              </div>
 
-            <Button 
-              className="w-full bg-orange-500 text-white hover:bg-orange-600 font-bold"
-              disabled={!recipient || numericGrams <= 0 || numericGrams > walletBalance}
-              onClick={handleSendOtp}
-            >
-              Next
-            </Button>
-          </div>
+              <div className="space-y-2">
+                <Label>Note (Optional)</Label>
+                <Textarea 
+                  placeholder="What's this for?" 
+                  className="bg-black/20 border-white/10 resize-none h-20"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
+
+              <Button 
+                className="w-full bg-orange-500 text-white hover:bg-orange-600 font-bold"
+                disabled={!recipient || numericGrams <= 0 || numericGrams > walletBalance}
+                onClick={handleSendOtp}
+              >
+                Next
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="scan" className="space-y-4">
+              <div className="bg-black/40 border-2 border-dashed border-white/20 rounded-xl h-[250px] flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-orange-500/50 transition-colors">
+                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/5 to-transparent animate-pulse pointer-events-none" />
+                 <Scan className="w-12 h-12 text-white/40 mb-3 group-hover:text-orange-500 transition-colors" />
+                 <p className="text-white/60 text-sm font-medium">Click to Activate Camera</p>
+              </div>
+              
+              <Button 
+                className="w-full bg-white/10 text-white hover:bg-white/20"
+                onClick={() => {
+                   setRecipient('scanned-user-id');
+                   setActiveTab('direct');
+                }}
+              >
+                Simulate Scan
+              </Button>
+            </TabsContent>
+          </Tabs>
         )}
 
         {step === 2 && (
