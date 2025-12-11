@@ -104,11 +104,11 @@ export default function Register() {
     });
 
     toast.success("Account Created Successfully!", {
-      description: "Please complete identity verification to unlock full features."
+      description: "Identity verification is mandatory to access the platform."
     });
     
-    // Redirect to Dashboard
-    setLocation('/dashboard');
+    // Redirect to KYC
+    setLocation('/kyc');
   };
 
   const handleDemoAccess = () => {
@@ -121,8 +121,10 @@ export default function Register() {
       kycStatus: 'pending'
     });
     toast.success("Demo Access Granted", {
-      description: "Welcome to the dashboard preview. KYC is pending."
+      description: "Please complete mandatory KYC to access dashboard."
     });
+    // Redirect to KYC for demo user too if they are pending
+    setLocation('/kyc');
   };
 
   return (

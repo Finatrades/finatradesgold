@@ -10,13 +10,20 @@ import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { accountType, toggleAccountType } = useAccountType();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (user && user.kycStatus === 'pending') {
+      setLocation('/kyc');
+    }
+  }, [user, setLocation]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   if (!user) return null;
+  if (user.kycStatus === 'pending') return null; // Prevent flash of content
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-white">
@@ -105,24 +113,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-
-        {/* KYC Alert Banner */}
-        {user.kycStatus === 'pending' && (
-          <div className="bg-orange-50 border-b border-orange-200 px-6 py-2">
-            <div className="container mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-2 text-orange-700 text-sm">
-                <AlertTriangle className="w-4 h-4" />
-                <span className="font-medium">Verification Required:</span>
-                <span>Complete your KYC to unlock full trading limits and withdrawals.</span>
-              </div>
-              <Link href="/kyc">
-                <Button size="sm" variant="outline" className="h-7 text-xs border-orange-300 text-orange-800 hover:bg-orange-100 hover:text-orange-900">
-                  Verify Now <ArrowRight className="w-3 h-3 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* Page Content */}
         <main className="flex-1 p-6 overflow-x-hidden">
