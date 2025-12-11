@@ -146,6 +146,18 @@ export default function FinaBridgeManagement() {
     setApprovals(approvals.map(a => a.id === stepId ? { ...a, status, notes: notes || a.notes } : a));
   };
 
+  const updateParty = (partyId: string, updates: Partial<any>) => {
+    setCases(cases.map(c => {
+      if (c.importer.id === partyId) {
+        return { ...c, importer: { ...c.importer, ...updates }, jurisdictionRisk: updates.riskLevel === 'Critical' ? 'Critical' : c.jurisdictionRisk };
+      }
+      if (c.exporter.id === partyId) {
+        return { ...c, exporter: { ...c.exporter, ...updates }, jurisdictionRisk: updates.riskLevel === 'Critical' ? 'Critical' : c.jurisdictionRisk };
+      }
+      return c;
+    }));
+  };
+
   // KPI Calculations
   const totalLocked = cases.reduce((sum, c) => sum + c.lockedGoldGrams, 0);
   const pendingCases = cases.filter(c => c.status === 'Under Review' || c.status === 'Funded – Docs Pending').length;
@@ -341,6 +353,7 @@ export default function FinaBridgeManagement() {
                  onAddAuditLog={addAuditLog}
                  onUpdateDocumentStatus={updateDocumentStatus}
                  onUpdateApproval={updateApproval}
+                 onUpdateParty={updateParty}
                />
              ) : (
                <div className="p-10 text-center">Loading...</div>
