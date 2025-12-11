@@ -187,6 +187,8 @@ export default function FinaBridge() {
                  onSuccess={handleCaseCreation} 
                  wallet={wallet}
                  currentRole={role}
+                 finaPayBalanceGold={finaPayBalanceGold}
+                 onTransferFromFinaPay={handleTransferFromFinaPay}
                />
             </TabsContent>
 

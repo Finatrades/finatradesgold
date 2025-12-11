@@ -7,18 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TradeCase, FinaBridgeWallet } from '@/types/finabridge';
-import { Lock, ArrowRight, Save, CheckCircle2, Upload, Plus, Trash2 } from 'lucide-react';
+import { Lock, ArrowRight, Save, CheckCircle2, Upload, Plus, Trash2, ArrowRightLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TradeItem } from '@/types/finabridge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface CreateTradeCaseProps {
   onSuccess: (newCase: TradeCase, lockAmount: number) => void;
   wallet: FinaBridgeWallet;
   currentRole: 'Importer' | 'Exporter';
+  finaPayBalanceGold?: number;
+  onTransferFromFinaPay?: (amount: number) => void;
 }
 
-export default function CreateTradeCase({ onSuccess, wallet, currentRole }: CreateTradeCaseProps) {
+export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPayBalanceGold = 0, onTransferFromFinaPay }: CreateTradeCaseProps) {
   const { toast } = useToast();
   // Removed step state
   const [formData, setFormData] = useState<Partial<TradeCase>>({
@@ -41,7 +44,30 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
   const [otherDocDescription, setOtherDocDescription] = useState('');
   const [isOtherDocSelected, setIsOtherDocSelected] = useState(false);
 
+  // Transfer Modal State
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferAmount, setTransferAmount] = useState('');
+
   const GOLD_PRICE = 85.22; // Mock price
+
+  const handleTransfer = () => {
+    const amount = parseFloat(transferAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Invalid Amount", description: "Please enter a valid positive number.", variant: "destructive" });
+      return;
+    }
+    if (amount > finaPayBalanceGold) {
+      toast({ title: "Insufficient Balance", description: "Not enough gold in FinaPay wallet.", variant: "destructive" });
+      return;
+    }
+    
+    if (onTransferFromFinaPay) {
+        onTransferFromFinaPay(amount);
+        setIsTransferModalOpen(false);
+        setTransferAmount('');
+        toast({ title: "Transfer Successful", description: `Transferred ${amount.toFixed(2)}g from FinaPay to FinaBridge Wallet.` });
+    }
+  };
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -618,7 +644,20 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
 
                    <div className="flex justify-between text-sm py-2 border-b border-white/10">
                       <span className="text-white/60">Available in Wallet:</span>
-                      <span className="font-bold text-white">{wallet.importer.availableGoldGrams.toFixed(3)} g</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white">{wallet.importer.availableGoldGrams.toFixed(3)} g</span>
+                        {onTransferFromFinaPay && (
+                            <Button 
+                                type="button"
+                                variant="outline" 
+                                size="sm" 
+                                className="h-6 text-[10px] border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37]/10"
+                                onClick={() => setIsTransferModalOpen(true)}
+                            >
+                                <ArrowRightLeft className="w-3 h-3 mr-1" /> Add Funds
+                            </Button>
+                        )}
+                      </div>
                    </div>
 
                    <div className="space-y-2">
@@ -772,6 +811,52 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
           {parseFloat(lockAmount) > 0 ? "Create & Fund Trade" : "Create Trade"}
         </Button>
       </div>
+
+      {/* Transfer Modal */}
+      <Dialog open={isTransferModalOpen} onOpenChange={setIsTransferModalOpen}>
+        <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Transfer Gold from FinaPay</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Move gold from your main FinaPay wallet to your Trade Finance wallet to fund this trade.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+             <div className="p-4 bg-black/20 rounded-lg border border-white/5 space-y-2">
+               <div className="flex justify-between text-sm">
+                 <span className="text-white/60">Available in FinaPay:</span>
+                 <span className="text-[#D4AF37] font-bold">{finaPayBalanceGold.toFixed(3)} g</span>
+               </div>
+               <div className="flex justify-between text-sm">
+                 <span className="text-white/60">Current Trade Wallet:</span>
+                 <span className="text-white font-bold">{wallet.importer.availableGoldGrams.toFixed(3)} g</span>
+               </div>
+             </div>
+
+             <div className="space-y-2">
+               <Label>Amount to Transfer (g)</Label>
+               <div className="relative">
+                 <Input 
+                   type="number" 
+                   placeholder="0.00" 
+                   className="bg-black/20 border-white/10 pl-4 pr-12 text-lg"
+                   value={transferAmount}
+                   onChange={(e) => setTransferAmount(e.target.value)}
+                 />
+                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-sm font-bold">g</span>
+               </div>
+             </div>
+
+             <Button 
+               className="w-full bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold"
+               onClick={handleTransfer}
+             >
+               Confirm Transfer
+             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
