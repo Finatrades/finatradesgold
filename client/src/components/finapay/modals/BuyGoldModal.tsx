@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CreditCard, Wallet, Building, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { CreditCard, Wallet, Building, Loader2, CheckCircle2, ArrowRightLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface BuyGoldModalProps {
@@ -18,32 +17,57 @@ interface BuyGoldModalProps {
 export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: BuyGoldModalProps) {
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState('card');
-  const [amountMode, setAmountMode] = useState<'usd' | 'grams'>('usd');
-  const [amount, setAmount] = useState('');
+  
+  // Dual inputs state
+  const [grams, setGrams] = useState('');
+  const [usd, setUsd] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
 
   // Reset on open
   useEffect(() => {
     if (isOpen) {
       setStep(1);
-      setAmount('');
+      setGrams('');
+      setUsd('');
       setMethod('card');
       setIsLoading(false);
     }
   }, [isOpen]);
 
-  const numericAmount = parseFloat(amount) || 0;
-  
-  const calculatedGrams = amountMode === 'usd' ? numericAmount / goldPrice : numericAmount;
-  const calculatedCost = amountMode === 'usd' ? numericAmount : numericAmount * goldPrice;
+  const handleGramsChange = (val: string) => {
+    setGrams(val);
+    if (!val) {
+      setUsd('');
+      return;
+    }
+    const numGrams = parseFloat(val);
+    if (!isNaN(numGrams)) {
+      setUsd((numGrams * goldPrice).toFixed(2));
+    }
+  };
+
+  const handleUsdChange = (val: string) => {
+    setUsd(val);
+    if (!val) {
+      setGrams('');
+      return;
+    }
+    const numUsd = parseFloat(val);
+    if (!isNaN(numUsd)) {
+      setGrams((numUsd / goldPrice).toFixed(4));
+    }
+  };
+
+  const numericGrams = parseFloat(grams) || 0;
+  const numericUsd = parseFloat(usd) || 0;
 
   const handleConfirm = () => {
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      onConfirm(calculatedGrams, calculatedCost);
-      // Let parent handle close/success toast
+      onConfirm(numericGrams, numericUsd);
     }, 1500);
   };
 
@@ -90,56 +114,50 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
               </RadioGroup>
             </div>
 
-            {/* Amount Input */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <Label>Amount</Label>
-                <div className="flex bg-black/20 rounded-md p-0.5 border border-white/10">
-                  <button 
-                    onClick={() => setAmountMode('usd')}
-                    className={`px-3 py-1 text-xs rounded-sm transition-colors ${amountMode === 'usd' ? 'bg-[#D4AF37] text-black font-bold' : 'text-white/60 hover:text-white'}`}
-                  >
-                    USD
-                  </button>
-                  <button 
-                    onClick={() => setAmountMode('grams')}
-                    className={`px-3 py-1 text-xs rounded-sm transition-colors ${amountMode === 'grams' ? 'bg-[#D4AF37] text-black font-bold' : 'text-white/60 hover:text-white'}`}
-                  >
-                    Grams
-                  </button>
+            {/* Dual Inputs */}
+            <div className="space-y-4">
+              <div className="relative">
+                <Label className="mb-2 block">Amount (Gold Grams)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number" 
+                    placeholder="0.0000" 
+                    className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                    value={grams}
+                    onChange={(e) => handleGramsChange(e.target.value)}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37] font-medium">
+                    g
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex justify-center -my-2 relative z-10">
+                 <div className="bg-[#1A0A2E] border border-white/10 p-1.5 rounded-full text-white/40">
+                    <ArrowRightLeft className="w-4 h-4 rotate-90" />
+                 </div>
               </div>
 
               <div className="relative">
-                <Input 
-                  type="number" 
-                  placeholder="0.00" 
-                  className="h-14 text-2xl font-bold bg-black/20 border-white/10 pr-16"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
-                  {amountMode === 'usd' ? 'USD' : 'g'}
+                <Label className="mb-2 block">Amount (USD Equivalent)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number" 
+                    placeholder="0.00" 
+                    className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                    value={usd}
+                    onChange={(e) => handleUsdChange(e.target.value)}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400 font-medium">
+                    USD
+                  </div>
                 </div>
-              </div>
-
-              {/* Conversion Preview */}
-              <div className="bg-white/5 rounded-lg p-3 flex justify-between items-center border border-white/5">
-                <span className="text-sm text-white/60">
-                  {amountMode === 'usd' ? 'You receive:' : 'You pay:'}
-                </span>
-                <span className="text-lg font-bold text-[#D4AF37]">
-                  {amountMode === 'usd' 
-                    ? `${calculatedGrams.toLocaleString(undefined, { maximumFractionDigits: 4 })} g`
-                    : `$${calculatedCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-                  }
-                </span>
               </div>
             </div>
 
             <Button 
               className="w-full h-12 bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold"
-              disabled={numericAmount <= 0}
+              disabled={numericGrams <= 0}
               onClick={() => setStep(2)}
             >
               Review Purchase
@@ -152,7 +170,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
             <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-4">
                <div className="flex justify-between">
                  <span className="text-white/60">Amount</span>
-                 <span className="text-white font-medium">{calculatedGrams.toFixed(4)} g</span>
+                 <span className="text-white font-medium">{numericGrams.toFixed(4)} g</span>
                </div>
                <div className="flex justify-between">
                  <span className="text-white/60">Price / g</span>
@@ -160,12 +178,12 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onConfirm }: 
                </div>
                <div className="flex justify-between">
                  <span className="text-white/60">Fee (0.5%)</span>
-                 <span className="text-white font-medium">${(calculatedCost * 0.005).toFixed(2)}</span>
+                 <span className="text-white font-medium">${(numericUsd * 0.005).toFixed(2)}</span>
                </div>
                <Separator className="bg-white/10" />
                <div className="flex justify-between items-end">
                  <span className="text-white/80">Total Cost</span>
-                 <span className="text-2xl font-bold text-[#D4AF37]">${(calculatedCost * 1.005).toFixed(2)}</span>
+                 <span className="text-2xl font-bold text-[#D4AF37]">${(numericUsd * 1.005).toFixed(2)}</span>
                </div>
             </div>
 

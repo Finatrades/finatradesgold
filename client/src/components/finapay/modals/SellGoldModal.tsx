@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Building, Wallet, CreditCard } from 'lucide-react';
+import { Loader2, CheckCircle2, Building, Wallet, ArrowRightLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface SellGoldModalProps {
@@ -18,20 +18,50 @@ interface SellGoldModalProps {
 export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalance, onConfirm }: SellGoldModalProps) {
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState('bank');
+  
+  // Dual inputs
   const [grams, setGrams] = useState('');
+  const [usd, setUsd] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setStep(1);
       setGrams('');
+      setUsd('');
       setMethod('bank');
       setIsLoading(false);
     }
   }, [isOpen]);
 
-  const numericGrams = parseFloat(grams) || 0;
   const safeBalance = walletBalance || 0;
+
+  const handleGramsChange = (val: string) => {
+    setGrams(val);
+    if (!val) {
+      setUsd('');
+      return;
+    }
+    const numGrams = parseFloat(val);
+    if (!isNaN(numGrams)) {
+      setUsd((numGrams * goldPrice).toFixed(2));
+    }
+  };
+
+  const handleUsdChange = (val: string) => {
+    setUsd(val);
+    if (!val) {
+      setGrams('');
+      return;
+    }
+    const numUsd = parseFloat(val);
+    if (!isNaN(numUsd)) {
+      setGrams((numUsd / goldPrice).toFixed(4));
+    }
+  };
+
+  const numericGrams = parseFloat(grams) || 0;
   const grossPayout = numericGrams * goldPrice;
   const fee = grossPayout * 0.015; // 1.5% fee
   const netPayout = grossPayout - fee;
@@ -60,33 +90,50 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
         {step === 1 && (
           <div className="space-y-6 py-4">
             
-            {/* Amount Input */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <Label>Amount to Sell (g)</Label>
-                <span className="text-xs text-[#D4AF37] cursor-pointer" onClick={() => setGrams(safeBalance.toString())}>
-                  Max: {safeBalance.toFixed(3)} g
+            {/* Amount Inputs */}
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <span className="text-xs text-[#D4AF37] cursor-pointer hover:underline" onClick={() => handleGramsChange(safeBalance.toString())}>
+                  Max Available: {safeBalance.toFixed(3)} g
                 </span>
               </div>
-
+              
               <div className="relative">
-                <Input 
-                  type="number" 
-                  placeholder="0.000" 
-                  className="h-14 text-2xl font-bold bg-black/20 border-white/10 pr-16"
-                  value={grams}
-                  onChange={(e) => setGrams(e.target.value)}
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
-                  g
+                <Label className="mb-2 block">Amount to Sell (Gold Grams)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number" 
+                    placeholder="0.000" 
+                    className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                    value={grams}
+                    onChange={(e) => handleGramsChange(e.target.value)}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37] font-medium">
+                    g
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-lg p-3 flex justify-between items-center border border-white/5">
-                <span className="text-sm text-white/60">Estimated Value:</span>
-                <span className="text-lg font-bold text-white">
-                  ${grossPayout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+              <div className="flex justify-center -my-2 relative z-10">
+                 <div className="bg-[#1A0A2E] border border-white/10 p-1.5 rounded-full text-white/40">
+                    <ArrowRightLeft className="w-4 h-4 rotate-90" />
+                 </div>
+              </div>
+
+              <div className="relative">
+                <Label className="mb-2 block">Value (USD)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number" 
+                    placeholder="0.00" 
+                    className="h-12 text-lg font-bold bg-black/20 border-white/10 pr-16"
+                    value={usd}
+                    onChange={(e) => handleUsdChange(e.target.value)}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
+                    USD
+                  </div>
+                </div>
               </div>
             </div>
 
