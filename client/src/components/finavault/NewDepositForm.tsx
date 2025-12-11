@@ -24,7 +24,7 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
   const { toast } = useToast();
 
   // --- State ---
-  const [vaultLocation, setVaultLocation] = useState<string>('');
+  const [vaultLocation, setVaultLocation] = useState<string>('Dubai Vault');
   const [items, setItems] = useState<DepositItem[]>([
     { id: '1', itemType: 'Bar', quantity: 1, weightPerUnitGrams: 0, totalWeightGrams: 0, purity: '999.9', brand: '' }
   ]);
@@ -156,40 +156,10 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
       {/* Main Form Column */}
       <div className="lg:col-span-2 space-y-8">
         
-        {/* 1. Vault Selection */}
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium text-white">1. Vault Location</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Select Vault</Label>
-              <Select onValueChange={setVaultLocation} value={vaultLocation}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Choose a secure facility" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1A0A2E] border-white/10 text-white">
-                  <SelectItem value="Dubai Vault">Dubai Vault (DIFC)</SelectItem>
-                  <SelectItem value="Swiss Vault">Swiss Vault (Zurich)</SelectItem>
-                  <SelectItem value="Singapore Vault">Singapore Vault (Freeport)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {vaultLocation && (
-              <div className="p-4 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg text-sm">
-                <p className="font-bold text-[#D4AF37] mb-1">{vaultLocation} Details</p>
-                <p className="text-white/60">High-security facility. Open Mon-Fri, 09:00 - 17:00.</p>
-                <p className="text-white/60">Requires 24h advance notice for walk-ins.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 2. Gold Items */}
+        {/* 1. Gold Items */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-medium text-white">2. Gold Items</CardTitle>
+            <CardTitle className="text-lg font-medium text-white">1. Gold Items</CardTitle>
             <Button size="sm" onClick={addItem} className="bg-white/10 hover:bg-white/20 text-white border border-white/10">
               <Plus className="w-4 h-4 mr-2" /> Add Item
             </Button>
@@ -276,10 +246,10 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
           </CardContent>
         </Card>
 
-        {/* 3. Ownership & Source */}
+        {/* 2. Ownership & Source */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-lg font-medium text-white">3. Ownership</CardTitle>
+            <CardTitle className="text-lg font-medium text-white">2. Ownership</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2 p-3 rounded bg-white/5 border border-white/5">
@@ -314,10 +284,10 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
           </CardContent>
         </Card>
 
-        {/* 4. Delivery Method */}
+        {/* 3. Delivery Method */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-lg font-medium text-white">4. Delivery Method</CardTitle>
+            <CardTitle className="text-lg font-medium text-white">3. Delivery Method</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <RadioGroup value={deliveryMethod} onValueChange={(v) => setDeliveryMethod(v as any)} className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -414,10 +384,10 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
           </CardContent>
         </Card>
 
-        {/* 5. Documents */}
+        {/* 4. Documents */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-lg font-medium text-white">5. Documents</CardTitle>
+            <CardTitle className="text-lg font-medium text-white">4. Documents</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
