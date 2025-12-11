@@ -18,7 +18,7 @@ interface CreateTradeCaseProps {
 
 export default function CreateTradeCase({ onSuccess, wallet, currentRole }: CreateTradeCaseProps) {
   const { toast } = useToast();
-  const [step, setStep] = useState(1);
+  // Removed step state
   const [formData, setFormData] = useState<Partial<TradeCase>>({
     role: currentRole,
     status: 'Draft',
@@ -32,9 +32,6 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
   const [lockAmount, setLockAmount] = useState<string>('0');
 
   const GOLD_PRICE = 85.22; // Mock price
-
-  const handleNext = () => setStep(prev => prev + 1);
-  const handleBack = () => setStep(prev => prev - 1);
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -87,23 +84,20 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6">
+    <div className="max-w-5xl mx-auto py-6">
       <div className="mb-8 flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">Create New Trade</h2>
-        <div className="text-white/40 text-sm">Step {step} of 4</div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-white/10 h-1 rounded-full mb-8 overflow-hidden">
-        <div className="h-full bg-[#D4AF37] transition-all duration-300" style={{ width: `${step * 25}%` }} />
-      </div>
-
-      <Card className="bg-white/5 border-white/10">
-        <CardContent className="p-8">
-          
-          {/* STEP 1: BASIC DETAILS */}
-          {step === 1 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+      <div className="space-y-8">
+        
+        {/* SECTION 1: BASIC DETAILS */}
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <CardTitle className="text-lg font-bold text-white">1. Basic Details</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Role</Label>
@@ -150,13 +144,16 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                 />
               </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
 
-          {/* STEP 2: EXPORTER INFO */}
-          {step === 2 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-              <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">Exporter Information</h3>
-              
+        {/* SECTION 2: EXPORTER INFO */}
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <CardTitle className="text-lg font-bold text-white">2. Exporter Information</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Company Name</Label>
@@ -210,11 +207,16 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                 </Select>
               </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
 
-          {/* STEP 3: SHIPMENT & TERMS */}
-          {step === 3 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+        {/* SECTION 3: SHIPMENT & TERMS */}
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <CardTitle className="text-lg font-bold text-white">3. Shipment & Delivery Terms</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
                <div className="grid grid-cols-2 gap-6">
                  <div className="space-y-2">
                    <Label>Incoterms</Label>
@@ -246,11 +248,16 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                  </div>
                </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
 
-          {/* STEP 4: VALUE & LOCKING */}
-          {step === 4 && (
-             <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+        {/* SECTION 4: VALUE & LOCKING */}
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <CardTitle className="text-lg font-bold text-white">4. Value & Settlement</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+             <div className="space-y-8">
                
                {/* Value Input */}
                <div className="space-y-4">
@@ -329,47 +336,27 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                )}
 
              </div>
-          )}
+          </CardContent>
+        </Card>
 
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Footer Buttons */}
-      <div className="flex justify-between mt-8">
+      <div className="flex justify-end gap-3 mt-8 sticky bottom-6 bg-[#0D0515]/80 backdrop-blur-md p-4 rounded-xl border border-white/10">
         <Button 
           variant="outline" 
-          onClick={handleBack}
-          disabled={step === 1}
+          onClick={() => handleSubmit(true)}
           className="border-white/10 text-white hover:bg-white/5"
         >
-          Back
+          <Save className="w-4 h-4 mr-2" /> Save Draft
         </Button>
-        
-        {step < 4 ? (
-          <Button 
-            onClick={handleNext}
-            className="bg-white text-black hover:bg-white/90"
-          >
-            Next <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        ) : (
-          <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => handleSubmit(true)}
-              className="border-white/10 text-white hover:bg-white/5"
-            >
-              <Save className="w-4 h-4 mr-2" /> Save Draft
-            </Button>
-            <Button 
-              onClick={() => handleSubmit(false)}
-              className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold"
-            >
-              <CheckCircle2 className="w-4 h-4 mr-2" /> 
-              {parseFloat(lockAmount) > 0 ? "Create & Fund Trade" : "Create Trade"}
-            </Button>
-          </div>
-        )}
+        <Button 
+          onClick={() => handleSubmit(false)}
+          className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold"
+        >
+          <CheckCircle2 className="w-4 h-4 mr-2" /> 
+          {parseFloat(lockAmount) > 0 ? "Create & Fund Trade" : "Create Trade"}
+        </Button>
       </div>
     </div>
   );
