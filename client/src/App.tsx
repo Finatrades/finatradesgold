@@ -9,7 +9,8 @@ import FinaVault from "@/pages/FinaVault";
 import FinaPay from "@/pages/FinaPay";
 import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
-import Onboarding from "@/pages/Onboarding";
+import Register from "@/pages/Register"; // Renamed component export, file still named Onboarding.tsx for now
+import Login from "@/pages/Login";
 import FinaCard from "@/pages/FinaCard";
 import Dashboard from "@/pages/Dashboard";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -24,7 +25,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   useEffect(() => {
     if (!user) {
-      setLocation('/onboarding');
+      setLocation('/login');
     }
   }, [user, setLocation]);
 
@@ -43,7 +44,8 @@ function Router() {
       <Route path="/finacard">
         <ProtectedRoute component={FinaCard} />
       </Route>
-      <Route path="/onboarding" component={Onboarding} />
+      <Route path="/register" component={Register} />
+      <Route path="/login" component={Login} />
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
       </Route>

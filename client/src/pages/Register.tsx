@@ -12,8 +12,9 @@ import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera,
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { Link } from 'wouter';
 
-export default function Onboarding() {
+export default function Register() {
   const { t } = useLanguage();
   const { setAccountType: setContextAccountType } = useAccountType();
   const { login } = useAuth();
@@ -332,7 +333,7 @@ export default function Onboarding() {
 
                   {/* Selfie Option (Both) */}
                   <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer group flex flex-col items-center justify-center">
-                    <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2 group-hover:text-[#FF2FBF] transition-colors" />
+                    <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2 group-hover:text-accent transition-colors" />
                     <h4 className="font-medium text-foreground text-sm mb-1">
                       Take a Selfie
                     </h4>
@@ -365,10 +366,17 @@ export default function Onboarding() {
 
                 <Button 
                   onClick={handleSubmit}
-                  className="w-full bg-gradient-to-r from-primary to-[#FF2FBF] text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl"
+                  className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20"
                 >
                   Create Account <CheckCircle2 className="w-5 h-5 ml-2" />
                 </Button>
+
+                <div className="text-center text-sm">
+                   <span className="text-muted-foreground">Already have an account? </span>
+                   <Link href="/login">
+                     <span className="text-secondary font-bold hover:underline cursor-pointer">Sign In</span>
+                   </Link>
+                </div>
               </div>
 
             </div>

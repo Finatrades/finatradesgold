@@ -94,7 +94,7 @@ export default function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/onboarding">
+            <Link href="/register">
               <Button className="bg-secondary text-white hover:bg-secondary/90 font-semibold">
                 {t('common.getStarted')}
               </Button>
