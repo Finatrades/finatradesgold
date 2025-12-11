@@ -163,13 +163,69 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
         <TabsContent value="documents" className="mt-6">
           <Card className="bg-white/5 border-white/10">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Document Management System</CardTitle>
+              <div>
+                <CardTitle>Document Management System</CardTitle>
+                <p className="text-sm text-white/60 mt-1">Manage and track all trade-related documentation</p>
+              </div>
               <Button size="sm" onClick={handleFileUpload} className="bg-white/10 hover:bg-white/20 text-white">
                 <Upload className="w-4 h-4 mr-2" /> Upload Document
               </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-8">
+              
+              {/* Required Documents Upload Section */}
+              <div className="bg-black/20 rounded-xl border border-white/10 p-6">
+                 <div className="mb-6">
+                   <h3 className="text-lg font-bold text-white">Required Exporter Documents</h3>
+                   <p className="text-sm text-white/60">Exporter should upload all the necessary documents</p>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   {/* Checklist */}
+                   <div className="space-y-3">
+                     {[
+                       'Certificate of Origin', 
+                       'Inspection / Quality Certificate', 
+                       'Bill of Lading (B/L)', 
+                       'Commercial Invoice',
+                       'Packing List',
+                       'Insurance Certificate',
+                       'Agreements / Contract Copy',
+                       'Other'
+                     ].map((doc, i) => {
+                       const isUploaded = documents.some(d => d.type === doc || (doc === 'Other' && !['Certificate of Origin', 'Inspection / Quality Certificate', 'Bill of Lading (B/L)', 'Commercial Invoice', 'Packing List', 'Insurance Certificate', 'Agreements / Contract Copy'].includes(d.type)));
+                       return (
+                         <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${isUploaded ? 'bg-green-500 border-green-500' : 'border-white/20'}`}>
+                             {isUploaded && <CheckCircle2 className="w-3 h-3 text-black" />}
+                           </div>
+                           <span className={isUploaded ? 'text-white font-medium' : 'text-white/60'}>{doc}</span>
+                         </div>
+                       );
+                     })}
+                   </div>
+
+                   {/* Upload Area */}
+                   <div 
+                     className="border-2 border-dashed border-white/10 rounded-xl bg-white/5 hover:bg-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer flex flex-col items-center justify-center p-8 text-center h-full min-h-[300px]"
+                     onClick={handleFileUpload}
+                   >
+                     <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-4 text-[#D4AF37]">
+                       <Upload className="w-8 h-8" />
+                     </div>
+                     <h4 className="text-lg font-bold text-white mb-2">Click to upload</h4>
+                     <p className="text-sm text-white/40 mb-6 max-w-[200px]">PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 10MB each)</p>
+                     <div className="px-4 py-2 bg-black/40 rounded-full text-xs text-[#D4AF37] border border-[#D4AF37]/20">
+                       0 file(s) uploaded
+                     </div>
+                   </div>
+                 </div>
+              </div>
+
+              <Separator className="bg-white/10" />
+
               <div className="space-y-4">
+                <h3 className="text-md font-bold text-white">Uploaded Documents</h3>
                 {documents.map(doc => (
                   <div key={doc.id} className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-white/5 hover:border-white/20 transition-all">
                     <div className="flex items-center gap-4">
