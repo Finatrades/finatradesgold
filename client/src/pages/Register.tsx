@@ -12,12 +12,13 @@ import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera,
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 export default function Register() {
   const { t } = useLanguage();
   const { setAccountType: setContextAccountType } = useAccountType();
   const { login } = useAuth();
+  const [, setLocation] = useLocation();
   
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
   const [businessRole, setBusinessRole] = useState<'importer' | 'exporter' | 'both'>('importer');
@@ -101,8 +102,11 @@ export default function Register() {
     });
 
     toast.success("Account Created Successfully!", {
-      description: "Welcome to your new dashboard."
+      description: "Please complete identity verification to proceed."
     });
+    
+    // Redirect to KYC
+    setLocation('/kyc');
   };
 
   const handleDemoAccess = () => {

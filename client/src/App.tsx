@@ -10,6 +10,7 @@ import FinaPay from "@/pages/FinaPay";
 import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
 import Register from "@/pages/Register"; // Renamed component export, file still named Onboarding.tsx for now
+import KYC from "@/pages/KYC";
 import Login from "@/pages/Login";
 import FinaCard from "@/pages/FinaCard";
 import Dashboard from "@/pages/Dashboard";
@@ -45,6 +46,9 @@ function Router() {
         <ProtectedRoute component={FinaCard} />
       </Route>
       <Route path="/register" component={Register} />
+      <Route path="/kyc">
+        <ProtectedRoute component={KYC} />
+      </Route>
       <Route path="/login" component={Login} />
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
