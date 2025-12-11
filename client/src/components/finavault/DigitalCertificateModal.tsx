@@ -108,15 +108,7 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row justify-between items-center md:items-end px-8 md:px-16 mt-16 gap-8">
-                  <div className="text-center">
-                    <div className="h-16 flex items-end justify-center pb-2">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Signature_sample.svg/1200px-Signature_sample.svg.png" className="h-10 opacity-60 invert" alt="Signature" />
-                    </div>
-                    <Separator className="bg-[#D4AF37]/40 w-48 mb-2 mx-auto" />
-                    <p className="text-xs text-[#D4AF37] uppercase tracking-wider">Authorized Signature</p>
-                    <p className="text-[10px] text-white/40">FinaTrades Vault Operations</p>
-                  </div>
+                <div className="flex flex-col md:flex-row justify-center items-center md:items-end px-8 md:px-16 mt-16 gap-8">
                   <div className="text-center">
                      <p className="text-white font-medium mb-2">{issueDate}</p>
                      <Separator className="bg-[#D4AF37]/40 w-48 mb-2 mx-auto" />
