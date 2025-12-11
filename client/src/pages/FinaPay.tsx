@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { Wallet as WalletIcon, RefreshCw, Bell, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 
 // Components
-import TopMetricsRow from '@/components/finapay/TopMetricsRow';
-import WalletCardsRow from '@/components/finapay/WalletCardsRow';
-import QuickActionsSidebar from '@/components/finapay/QuickActionsSidebar';
+import WalletBalanceCards from '@/components/finapay/WalletBalanceCards';
 import LiveGoldChart from '@/components/finapay/LiveGoldChart';
+import WalletAnalytics from '@/components/finapay/WalletAnalytics';
+import TransactionHistory from '@/components/finapay/TransactionHistory';
+import QuickActions from '@/components/finapay/QuickActions';
 
 // Modals
 import BuyGoldModal from '@/components/finapay/modals/BuyGoldModal';
@@ -190,36 +193,65 @@ export default function FinaPay() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-[1400px] mx-auto space-y-6 pb-12 pt-4 px-4 md:px-6">
+      <div className="max-w-5xl mx-auto space-y-8 pb-12">
         
-        {/* Row 2: Wallet Cards */}
-        <section className="pt-6">
-           <WalletCardsRow wallet={wallet} />
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+             <div className="p-2 bg-[#8A2BE2]/10 rounded-lg border border-[#8A2BE2]/20 text-[#8A2BE2]">
+                <WalletIcon className="w-6 h-6" />
+             </div>
+             <div>
+               <h1 className="text-2xl font-bold text-white">FinaPay Wallet</h1>
+               <p className="text-white/60 text-sm">USD & Gold wallet for digital finance.</p>
+             </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block text-right">
+               <p className="text-xs text-white/40 uppercase tracking-wider">Live Gold Spot</p>
+               <p className="text-[#D4AF37] font-bold font-mono">${wallet.goldPriceUsdPerGram.toFixed(2)} <span className="text-xs text-white/40">/g</span></p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+                 <RefreshCw className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+                 <Bell className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full">
+                 <Settings className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 1. Balance & Valuation */}
+        <section>
+          <WalletBalanceCards wallet={wallet} />
         </section>
 
-        {/* Row 3: Main Chart Area & Sidebar */}
-        <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-           {/* Chart - Left 3/4 */}
-           <div className="lg:col-span-3 h-[400px]">
-             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 h-full">
-               <div className="flex justify-between items-center mb-4">
-                 <h3 className="font-bold text-gray-900">Gold Price Chart</h3>
-                 <div className="flex gap-2">
-                    <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-600 rounded">1H</span>
-                    <span className="px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 rounded cursor-pointer">4H</span>
-                    <span className="px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 rounded cursor-pointer">1D</span>
-                 </div>
-               </div>
-               <div className="h-[300px] w-full">
-                 <LiveGoldChart />
-               </div>
-             </div>
-           </div>
+        {/* 2. Quick Actions */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+             <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider">Quick Actions</h3>
+          </div>
+          <QuickActions onAction={handleQuickAction} />
+        </section>
 
-           {/* Sidebar - Right 1/4 */}
-           <div className="lg:col-span-1 h-full">
-             <QuickActionsSidebar onAction={handleQuickAction} />
+        {/* 3. Charts & Analytics Grid */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+           <div className="lg:col-span-2 h-[450px]">
+             <LiveGoldChart />
            </div>
+           <div className="lg:col-span-1 h-[450px]">
+             <WalletAnalytics wallet={wallet} />
+           </div>
+        </section>
+
+        {/* 4. Transactions Table */}
+        <section>
+           <TransactionHistory transactions={transactions} />
         </section>
 
         {/* Modals */}
