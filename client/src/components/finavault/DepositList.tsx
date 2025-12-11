@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DepositRequest } from '@/types/finavault';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Package, Clock, ShieldCheck, AlertCircle, Search, Filter, MapPin, Database, Coins, Scale, Calendar } from 'lucide-react';
+import { Eye, Package, Clock, ShieldCheck, AlertCircle, Search, Filter, MapPin, Database, Coins, Scale, Calendar, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -143,7 +143,9 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
                   <th className="p-4">Weight</th>
                   <th className="p-4">Type</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4 rounded-tr-lg">Submitted</th>
+                  <th className="p-4">Submitted</th>
+                  <th className="p-4 text-center">Record</th>
+                  <th className="p-4 rounded-tr-lg text-center">View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -183,6 +185,16 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
                         <Calendar className="w-4 h-4 text-white/30" />
                         {new Date(req.submittedAt).toISOString().split('T')[0]}
                       </div>
+                    </td>
+                    <td className="p-4 text-center">
+                      <Button variant="ghost" size="icon" className="text-white/40 hover:text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); /* TODO: Download handler */ }}>
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                    </td>
+                    <td className="p-4 text-center">
+                       <Button variant="ghost" size="icon" className="text-[#D4AF37] hover:bg-[#D4AF37]/10" onClick={(e) => { e.stopPropagation(); onSelectRequest(req); }}>
+                         <Eye className="w-4 h-4" />
+                       </Button>
                     </td>
                   </motion.tr>
                 ))}
