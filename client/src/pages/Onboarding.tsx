@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -241,8 +241,9 @@ export default function Onboarding() {
                   {accountType === 'business' ? '3. Verification Documents' : '2. Verification Documents'}
                 </h3>
                 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                <div className={`grid gap-4 ${accountType === 'business' ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                  {/* Standard ID / Certificate */}
+                  <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group flex flex-col items-center justify-center">
                     <Upload className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#8A2BE2] transition-colors" />
                     <h4 className="font-medium text-white text-sm mb-1">
                       {accountType === 'personal' ? 'Passport / ID Card' : 'Certificate of Incorporation'}
@@ -250,8 +251,9 @@ export default function Onboarding() {
                     <p className="text-xs text-white/40">Click to upload</p>
                   </div>
 
+                  {/* Business Only: Articles */}
                   {accountType === 'business' && (
-                    <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                    <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group flex flex-col items-center justify-center">
                       <Upload className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#D4AF37] transition-colors" />
                       <h4 className="font-medium text-white text-sm mb-1">
                         Articles of Association
@@ -259,6 +261,15 @@ export default function Onboarding() {
                       <p className="text-xs text-white/40">Click to upload</p>
                     </div>
                   )}
+
+                  {/* Selfie Option (Both) */}
+                  <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer group flex flex-col items-center justify-center">
+                    <Camera className="w-8 h-8 text-white/40 mx-auto mb-2 group-hover:text-[#FF2FBF] transition-colors" />
+                    <h4 className="font-medium text-white text-sm mb-1">
+                      Take a Selfie
+                    </h4>
+                    <p className="text-xs text-white/40">For identity verification</p>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-2 text-xs text-white/40 bg-white/5 p-3 rounded-lg">
