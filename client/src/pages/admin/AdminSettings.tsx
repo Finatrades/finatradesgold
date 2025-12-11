@@ -11,11 +11,26 @@ import { toast } from 'sonner';
 import { usePlatform } from '@/context/PlatformContext';
 
 export default function AdminSettings() {
-  const { settings, updateSettings, updateBankAccount } = usePlatform();
+  const { settings, updateSettings, updateBankAccount, addBankAccount } = usePlatform();
 
   const handleSave = () => {
     toast.success("Settings Saved", {
       description: "Platform configuration has been updated successfully."
+    });
+  };
+
+  const handleAddBankAccount = () => {
+    addBankAccount({
+      name: "New Bank Account",
+      bankName: "Bank Name",
+      holderName: "Account Holder",
+      iban: "IBAN",
+      bic: "BIC/SWIFT",
+      currency: "CHF",
+      isActive: false
+    });
+    toast.success("New bank account added", {
+      description: "A new bank account template has been added. Please configure the details."
     });
   };
 
@@ -220,7 +235,7 @@ export default function AdminSettings() {
                   ))}
                   
                   <div className="pt-2">
-                     <Button variant="outline" className="w-full">
+                     <Button variant="outline" className="w-full" onClick={handleAddBankAccount}>
                        <Plus className="w-4 h-4 mr-2" /> Add New Bank Account
                      </Button>
                   </div>
