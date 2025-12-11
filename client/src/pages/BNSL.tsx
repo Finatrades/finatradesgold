@@ -188,26 +188,26 @@ export default function BNSL() {
         {/* TOP BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20 text-[#D4AF37]">
+             <div className="p-2 bg-secondary/10 rounded-lg border border-secondary/20 text-secondary">
                 <TrendingUp className="w-6 h-6" />
              </div>
              <div>
-               <h1 className="text-2xl font-bold text-white">BNSL – Buy Now Sell Later</h1>
-               <p className="text-white/60 text-sm">Deferred price gold sale with quarterly margin payouts.</p>
+               <h1 className="text-2xl font-bold text-foreground">BNSL – Buy Now Sell Later</h1>
+               <p className="text-muted-foreground text-sm">Deferred price gold sale with quarterly margin payouts.</p>
              </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="hidden md:block text-right border-l border-white/10 pl-4">
-               <p className="text-xs text-white/40 uppercase tracking-wider">Seller</p>
-               <p className="text-white font-bold">You</p>
+            <div className="hidden md:block text-right border-l border-border pl-4">
+               <p className="text-xs text-muted-foreground uppercase tracking-wider">Seller</p>
+               <p className="text-foreground font-bold">You</p>
             </div>
-            <div className="hidden md:block text-right border-l border-white/10 pl-4">
-               <p className="text-xs text-white/40 uppercase tracking-wider">Gold Spot</p>
-               <p className="text-[#D4AF37] font-bold font-mono">${currentGoldPrice.toFixed(2)} <span className="text-xs text-white/40">/g</span></p>
+            <div className="hidden md:block text-right border-l border-border pl-4">
+               <p className="text-xs text-muted-foreground uppercase tracking-wider">Gold Spot</p>
+               <p className="text-secondary font-bold font-mono">${currentGoldPrice.toFixed(2)} <span className="text-xs text-muted-foreground">/g</span></p>
             </div>
-            <div className="p-2 bg-white/5 rounded-full hover:bg-white/10 cursor-pointer">
-               <Info className="w-5 h-5 text-white/60" />
+            <div className="p-2 bg-muted rounded-full hover:bg-muted/80 cursor-pointer">
+               <Info className="w-5 h-5 text-muted-foreground" />
             </div>
           </div>
         </div>
@@ -218,27 +218,27 @@ export default function BNSL() {
              label="Active Plans" 
              value={activePlansCount.toString()} 
              icon={Briefcase} 
-             accentColor="text-blue-500"
+             accentColor="text-blue-600"
            />
            <BnslStatsCard 
              label="Deferred Base Value" 
              value={`$${totalDeferredBase.toLocaleString()}`} 
              icon={BarChart3} 
-             accentColor="text-white"
+             accentColor="text-foreground"
              tooltip="Total Base Price Component you are entitled to at maturity."
            />
            <BnslStatsCard 
              label="Avg. Margin Rate" 
              value={`${weightedRate.toFixed(2)}% p.a.`} 
              icon={TrendingUp} 
-             accentColor="text-[#D4AF37]"
+             accentColor="text-secondary"
            />
            <BnslStatsCard 
              label="Next Payout" 
              value={nextPayout ? `$${nextPayout.amount.toLocaleString()}` : 'None'} 
              subValue={nextPayout ? new Date(nextPayout.date).toLocaleDateString() : ''}
              icon={Calendar} 
-             accentColor="text-green-500"
+             accentColor="text-green-600"
            />
         </div>
 
@@ -253,14 +253,14 @@ export default function BNSL() {
            />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-white/5 border border-white/10 p-1 mb-8 w-full md:w-auto flex">
-              <TabsTrigger value="plans" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+            <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex">
+              <TabsTrigger value="plans" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <Briefcase className="w-4 h-4 mr-2" /> My BNSL Plans
               </TabsTrigger>
-              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <PlusCircle className="w-4 h-4 mr-2" /> Start New Plan
               </TabsTrigger>
-              <TabsTrigger value="terms" className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+              <TabsTrigger value="terms" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <Info className="w-4 h-4 mr-2" /> Terms & Info
               </TabsTrigger>
             </TabsList>
@@ -272,22 +272,22 @@ export default function BNSL() {
                />
                
                {/* Mini Summary Footer */}
-               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-white/5 rounded-xl border border-white/10">
+               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-white shadow-sm rounded-xl border border-border">
                   <div>
-                    <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Gold Sold</p>
-                    <p className="text-xl font-bold text-white">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Gold Sold</p>
+                    <p className="text-xl font-bold text-foreground">
                       {plans.reduce((sum, p) => p.status !== 'Pending Acceptance' ? sum + p.goldSoldGrams : sum, 0).toFixed(2)} g
                     </p>
                   </div>
                   <div>
-                     <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Margin Received</p>
-                     <p className="text-xl font-bold text-[#D4AF37]">
+                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin Received</p>
+                     <p className="text-xl font-bold text-secondary">
                        {plans.reduce((sum, p) => sum + p.totalPaidMarginGrams, 0).toFixed(3)} g
                      </p>
                   </div>
                   <div>
-                     <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Deferred Base</p>
-                     <p className="text-xl font-bold text-white">
+                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Deferred Base</p>
+                     <p className="text-xl font-bold text-foreground">
                        ${totalDeferredBase.toLocaleString()}
                      </p>
                   </div>
@@ -303,10 +303,10 @@ export default function BNSL() {
             </TabsContent>
 
             <TabsContent value="terms" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
-               <Card className="bg-white/5 border-white/10">
-                 <CardContent className="p-12 text-center text-white/40">
+               <Card className="bg-white shadow-sm border border-border">
+                 <CardContent className="p-12 text-center text-muted-foreground">
                     <Info className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <h3 className="text-lg font-bold text-white mb-2">BNSL Master Agreement</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-2">BNSL Master Agreement</h3>
                     <p className="max-w-md mx-auto">
                       Full terms and conditions of the Buy Now Sell Later program, including risk disclosures, legal title transfer details, and dispute resolution mechanisms.
                     </p>
