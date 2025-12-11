@@ -192,13 +192,8 @@ export default function FinaPay() {
     <DashboardLayout>
       <div className="max-w-[1400px] mx-auto space-y-6 pb-12 pt-4 px-4 md:px-6">
         
-        {/* Row 1: Top Metrics & Credit Card */}
-        <section>
-          <TopMetricsRow wallet={wallet} />
-        </section>
-
         {/* Row 2: Wallet Cards */}
-        <section>
+        <section className="pt-6">
            <WalletCardsRow wallet={wallet} />
         </section>
 
