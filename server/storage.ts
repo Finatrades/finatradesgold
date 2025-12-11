@@ -41,6 +41,7 @@ export interface IStorage {
   
   // Wallets
   getWallet(userId: string): Promise<Wallet | undefined>;
+  getAllWallets(): Promise<Wallet[]>;
   createWallet(wallet: InsertWallet): Promise<Wallet>;
   updateWallet(id: string, updates: Partial<Wallet>): Promise<Wallet | undefined>;
   
@@ -48,6 +49,7 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getUserTransactions(userId: string): Promise<Transaction[]>;
+  getAllTransactions(): Promise<Transaction[]>;
   updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined>;
   
   // Vault Holdings
@@ -191,6 +193,10 @@ export class DatabaseStorage implements IStorage {
     return wallet || undefined;
   }
 
+  async getAllWallets(): Promise<Wallet[]> {
+    return await db.select().from(wallets);
+  }
+
   async createWallet(insertWallet: InsertWallet): Promise<Wallet> {
     const [wallet] = await db.insert(wallets).values(insertWallet).returning();
     return wallet;
@@ -214,6 +220,10 @@ export class DatabaseStorage implements IStorage {
 
   async getUserTransactions(userId: string): Promise<Transaction[]> {
     return await db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.createdAt));
+  }
+
+  async getAllTransactions(): Promise<Transaction[]> {
+    return await db.select().from(transactions).orderBy(desc(transactions.createdAt));
   }
 
   async updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
