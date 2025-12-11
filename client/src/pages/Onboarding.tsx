@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, FileText, Upload, ShieldCheck, ArrowRight, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Building, User, FileText, Upload, ShieldCheck, ArrowRight, ArrowLeft, Eye, EyeOff, Lock } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -28,16 +29,29 @@ export default function Onboarding() {
     lastName: '',
     email: '',
     phone: '',
+    password: '',
+    confirmPassword: '',
     companyName: '',
     registrationNumber: '',
     jurisdiction: '',
+    agreedToTerms: false
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleNext = () => {
     if (currentStep === 'account-type') {
       setContextAccountType(accountType);
       setCurrentStep('basic-info');
     } else if (currentStep === 'basic-info') {
+      if (!formData.email || !formData.password) {
+        toast.error("Please fill in all required fields");
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
       if (accountType === 'business') {
         setCurrentStep('business-details');
       } else {
@@ -59,8 +73,12 @@ export default function Onboarding() {
   };
 
   const handleSubmit = () => {
-    toast.success("Application Submitted Successfully!", {
-      description: "Our compliance team will review your documents within 24-48 hours."
+    if (!formData.agreedToTerms) {
+      toast.error("Please agree to the Terms and Conditions");
+      return;
+    }
+    toast.success("Account Created Successfully!", {
+      description: "Please check your email to verify your account."
     });
     // Here you would redirect to dashboard or success page
   };
@@ -74,7 +92,7 @@ export default function Onboarding() {
           <div className="mb-12">
             <div className="flex justify-between mb-4">
               <span className={`text-sm font-medium ${currentStep === 'account-type' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Account Type</span>
-              <span className={`text-sm font-medium ${currentStep === 'basic-info' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Details</span>
+              <span className={`text-sm font-medium ${currentStep === 'basic-info' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Sign Up</span>
               {accountType === 'business' && (
                 <span className={`text-sm font-medium ${currentStep === 'business-details' ? 'text-[#8A2BE2]' : 'text-white/40'}`}>Business</span>
               )}
@@ -107,7 +125,7 @@ export default function Onboarding() {
                   exit={{ opacity: 0, x: -20 }}
                   className="flex-1"
                 >
-                  <h2 className="text-3xl font-bold text-white mb-2">Choose Account Type</h2>
+                  <h2 className="text-3xl font-bold text-white mb-2">Create Your Account</h2>
                   <p className="text-white/60 mb-8">Select how you want to use Finatrades.</p>
 
                   <RadioGroup value={accountType} onValueChange={(v: any) => setAccountType(v)} className="grid md:grid-cols-2 gap-6">
@@ -132,7 +150,7 @@ export default function Onboarding() {
                 </motion.div>
               )}
 
-              {/* STEP 2: BASIC INFO */}
+              {/* STEP 2: BASIC INFO (SIGN UP) */}
               {currentStep === 'basic-info' && (
                 <motion.div 
                   key="step2"
@@ -141,8 +159,8 @@ export default function Onboarding() {
                   exit={{ opacity: 0, x: -20 }}
                   className="flex-1 max-w-2xl mx-auto w-full"
                 >
-                  <h2 className="text-3xl font-bold text-white mb-2">Basic Information</h2>
-                  <p className="text-white/60 mb-8">Tell us about yourself.</p>
+                  <h2 className="text-3xl font-bold text-white mb-2">Sign Up Details</h2>
+                  <p className="text-white/60 mb-8">Create your login credentials.</p>
 
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
@@ -182,6 +200,36 @@ export default function Onboarding() {
                         onChange={e => setFormData({...formData, phone: e.target.value})}
                         className="bg-white/5 border-white/10 text-white" 
                       />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Password</Label>
+                        <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"}
+                            value={formData.password}
+                            onChange={e => setFormData({...formData, password: e.target.value})}
+                            className="bg-white/5 border-white/10 text-white pr-10" 
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Confirm Password</Label>
+                        <Input 
+                          type="password"
+                          value={formData.confirmPassword}
+                          onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+                          className="bg-white/5 border-white/10 text-white" 
+                        />
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -305,11 +353,11 @@ export default function Onboarding() {
                     <div className="w-16 h-16 bg-[#8A2BE2]/20 rounded-full flex items-center justify-center mx-auto mb-4">
                       <CheckCircle2 className="w-8 h-8 text-[#8A2BE2]" />
                     </div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Review & Submit</h2>
+                    <h2 className="text-3xl font-bold text-white mb-2">Review & Create Account</h2>
                     <p className="text-white/60">Please review your information before submitting.</p>
                   </div>
 
-                  <div className="bg-white/5 rounded-2xl p-6 space-y-4 mb-8">
+                  <div className="bg-white/5 rounded-2xl p-6 space-y-4 mb-6">
                      <ReviewRow label="Account Type" value={accountType === 'personal' ? 'Personal' : 'Corporate'} />
                      <ReviewRow label="Name" value={`${formData.firstName} ${formData.lastName}`} />
                      <ReviewRow label="Email" value={formData.email} />
@@ -322,6 +370,21 @@ export default function Onboarding() {
                          <ReviewRow label="Jurisdiction" value={formData.jurisdiction} />
                        </>
                      )}
+                  </div>
+
+                  <div className="flex items-center space-x-2 bg-white/5 p-4 rounded-xl border border-white/10">
+                    <Checkbox 
+                      id="terms" 
+                      checked={formData.agreedToTerms}
+                      onCheckedChange={(c: any) => setFormData({...formData, agreedToTerms: c})}
+                      className="border-white/20 data-[state=checked]:bg-[#8A2BE2] data-[state=checked]:border-[#8A2BE2]"
+                    />
+                    <label
+                      htmlFor="terms"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80"
+                    >
+                      I agree to the <span className="text-[#8A2BE2] hover:underline cursor-pointer">Terms of Service</span> and <span className="text-[#8A2BE2] hover:underline cursor-pointer">Privacy Policy</span>
+                    </label>
                   </div>
                 </motion.div>
               )}
@@ -344,7 +407,7 @@ export default function Onboarding() {
                   onClick={handleSubmit}
                   className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] text-white hover:opacity-90 px-8"
                 >
-                  Submit Application <CheckCircle2 className="w-4 h-4 ml-2" />
+                  Create Account <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
                 <Button 
