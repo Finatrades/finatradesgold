@@ -169,7 +169,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Case Name</Label>
+                  <Label>Trade Name</Label>
                   <Input 
                     placeholder="e.g. Gold Bullion Import - Batch A" 
                     className="bg-black/20 border-white/10"
