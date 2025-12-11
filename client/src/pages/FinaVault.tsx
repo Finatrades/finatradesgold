@@ -137,22 +137,22 @@ export default function FinaVault() {
         {/* KPI Cards Strip */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
            {/* Card 1: Total Gold - Custom Style */}
-           <div className="p-6 rounded-2xl bg-[#FFF8E7] border border-[#D4AF37]/30 text-black relative overflow-hidden group">
+           <div className="p-6 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-white relative overflow-hidden group">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Total Gold</span>
                  <div className="p-2 bg-[#D4AF37]/20 rounded-lg text-[#D4AF37]">
                     <Database className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1">1,500.00 <span className="text-lg font-normal opacity-60">g</span></div>
+              <div className="text-3xl font-bold mb-1 text-[#D4AF37]">1,500.00 <span className="text-lg font-normal opacity-60 text-white">g</span></div>
               <div className="text-sm opacity-50 font-medium">48.23 oz</div>
            </div>
 
            {/* Card 2: Locked Gold */}
-           <div className="p-6 rounded-2xl bg-white border border-white/20 text-black relative overflow-hidden">
+           <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Locked Gold</span>
-                 <div className="p-2 bg-yellow-100 rounded-lg text-yellow-600">
+                 <div className="p-2 bg-[#FFD700]/20 rounded-lg text-[#FFD700]">
                     <TrendingUp className="w-4 h-4" />
                  </div>
               </div>
@@ -161,10 +161,10 @@ export default function FinaVault() {
            </div>
 
            {/* Card 3: Value USD */}
-           <div className="p-6 rounded-2xl bg-white border border-white/20 text-black relative overflow-hidden">
+           <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Value (USD)</span>
-                 <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                 <div className="p-2 bg-green-500/20 rounded-lg text-green-500">
                     <DollarSign className="w-4 h-4" />
                  </div>
               </div>
@@ -173,14 +173,14 @@ export default function FinaVault() {
            </div>
 
            {/* Card 4: Value AED */}
-           <div className="p-6 rounded-2xl bg-white border border-white/20 text-black relative overflow-hidden">
+           <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-sm font-medium opacity-60">Value (AED)</span>
-                 <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                 <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
                     <Globe className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold text-black mb-1">469.5K</div>
+              <div className="text-3xl font-bold text-white mb-1">469.5K</div>
               <div className="text-sm opacity-50 font-medium">@ 312.76/g</div>
            </div>
         </div>
