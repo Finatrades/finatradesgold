@@ -4,47 +4,17 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { ArrowRight, Shield, Globe, Database, Wallet, TrendingUp } from 'lucide-react';
-import FloatingAgentChat from '@/components/FloatingAgentChat';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Layout from '@/components/Layout';
+import { Link } from 'wouter';
 
 export default function Home() {
   const { t } = useLanguage();
-  const { accountType, toggleAccountType } = useAccountType();
+  const { accountType } = useAccountType();
 
   return (
-    <div className="min-h-screen bg-[#0D001E] text-white font-sans selection:bg-[#8A2BE2] selection:text-white overflow-x-hidden">
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-40 bg-[#0D001E]/80 backdrop-blur-md border-b border-white/10">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#8A2BE2] rounded-lg" />
-            <span className="text-xl font-bold tracking-tight">Finatrades</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-sm font-medium hover:text-[#D4AF37] transition-colors">{t('nav.home')}</a>
-            <a href="#" className="text-sm font-medium hover:text-[#D4AF37] transition-colors">{t('nav.finavault')}</a>
-            <a href="#" className="text-sm font-medium hover:text-[#D4AF37] transition-colors">{t('nav.finapay')}</a>
-            <a href="#" className="text-sm font-medium hover:text-[#D4AF37] transition-colors">{t('nav.bnsl')}</a>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={toggleAccountType}
-              className="text-xs font-medium px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
-            >
-              {accountType === 'personal' ? t('nav.personal') : t('nav.business')}
-            </button>
-            <LanguageSwitcher />
-            <Button className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-semibold">
-              {t('common.getStarted')}
-            </Button>
-          </div>
-        </div>
-      </nav>
-
+    <Layout>
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <section className="relative py-20 lg:py-32 overflow-hidden">
         {/* Background Gradients */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-[#8A2BE2]/20 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#D4AF37]/10 blur-[100px] rounded-full pointer-events-none" />
@@ -91,6 +61,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6">
             {/* FinaVault */}
             <ProductCard 
+              href="/finavault"
               icon={<Database className="w-8 h-8 text-[#D4AF37]" />}
               title={accountType === 'personal' ? t('products.personal.finavault.name') : t('products.business.finavault.name')}
               tagline={accountType === 'personal' ? t('products.personal.finavault.tagline') : t('products.business.finavault.tagline')}
@@ -99,6 +70,7 @@ export default function Home() {
             
             {/* FinaPay */}
             <ProductCard 
+              href="/finapay"
               icon={<Wallet className="w-8 h-8 text-[#8A2BE2]" />}
               title={accountType === 'personal' ? t('products.personal.finapay.name') : t('products.business.finapay.name')}
               tagline={accountType === 'personal' ? t('products.personal.finapay.tagline') : t('products.business.finapay.tagline')}
@@ -107,6 +79,7 @@ export default function Home() {
 
             {/* BNSL / FinaBridge */}
             <ProductCard 
+              href={accountType === 'personal' ? "/bnsl" : "/finabridge"}
               icon={accountType === 'personal' ? <TrendingUp className="w-8 h-8 text-[#FF2FBF]" /> : <Globe className="w-8 h-8 text-[#FF2FBF]" />}
               title={accountType === 'personal' ? t('products.personal.bnsl.name') : t('products.business.finabridge.name')}
               tagline={accountType === 'personal' ? t('products.personal.bnsl.tagline') : t('products.business.finabridge.tagline')}
@@ -167,28 +140,27 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Floating Agent */}
-      <FloatingAgentChat />
-    </div>
+    </Layout>
   );
 }
 
-function ProductCard({ icon, title, tagline, description }: { icon: React.ReactNode, title: string, tagline: string, description: string }) {
+function ProductCard({ href, icon, title, tagline, description }: { href: string, icon: React.ReactNode, title: string, tagline: string, description: string }) {
   return (
-    <motion.div 
-      whileHover={{ y: -5 }}
-      className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/50 transition-colors group"
-    >
-      <div className="mb-6 p-4 rounded-2xl bg-white/5 w-fit group-hover:scale-110 transition-transform duration-300">
-        {icon}
-      </div>
-      <h3 className="text-xl font-bold mb-2 text-white">{title}</h3>
-      <p className="text-sm font-medium text-[#D4AF37] mb-4">{tagline}</p>
-      <p className="text-white/60 leading-relaxed mb-6">{description}</p>
-      <div className="flex items-center text-sm font-medium text-white group-hover:text-[#D4AF37] transition-colors">
-        Learn more <ArrowRight className="w-4 h-4 ml-2" />
-      </div>
-    </motion.div>
+    <Link href={href}>
+      <motion.div 
+        whileHover={{ y: -5 }}
+        className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-[#D4AF37]/50 transition-colors group cursor-pointer h-full"
+      >
+        <div className="mb-6 p-4 rounded-2xl bg-white/5 w-fit group-hover:scale-110 transition-transform duration-300">
+          {icon}
+        </div>
+        <h3 className="text-xl font-bold mb-2 text-white">{title}</h3>
+        <p className="text-sm font-medium text-[#D4AF37] mb-4">{tagline}</p>
+        <p className="text-white/60 leading-relaxed mb-6">{description}</p>
+        <div className="flex items-center text-sm font-medium text-white group-hover:text-[#D4AF37] transition-colors mt-auto">
+          Learn more <ArrowRight className="w-4 h-4 ml-2" />
+        </div>
+      </motion.div>
+    </Link>
   );
 }
