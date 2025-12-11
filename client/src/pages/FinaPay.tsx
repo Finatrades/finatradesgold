@@ -104,7 +104,7 @@ export default function FinaPay() {
     setTransactions(prev => [newTx, ...prev]);
     
     setActiveModal(null);
-    toast({ title: "Purchase Successful", description: `You bought ${grams.toFixed(4)}g of gold.` });
+    toast({ title: "Purchase Successful", description: `You bought ${grams.toFixed(4)}g of gold. Gold credited to your FinaVault.` });
   };
 
   const handleSellConfirm = (grams: number, payout: number) => {
@@ -133,45 +133,52 @@ export default function FinaPay() {
     toast({ title: "Sell Order Executed", description: `Sold ${grams.toFixed(4)}g for $${payout.toFixed(2)}.` });
   };
 
-  const handleSendConfirm = (recipient: string, amount: number) => {
-    // Debit USD
-    setWallet(prev => ({ ...prev, usdBalance: prev.usdBalance - amount }));
+  const handleSendConfirm = (recipient: string, amount: number, asset: 'USD' | 'GOLD') => {
+    if (asset === 'USD') {
+      setWallet(prev => ({ ...prev, usdBalance: prev.usdBalance - amount }));
+    } else {
+      setWallet(prev => ({ ...prev, goldBalanceGrams: prev.goldBalanceGrams - amount }));
+    }
 
     // Add Transaction
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
       type: 'Send',
-      amountUsd: amount,
+      amountUsd: asset === 'USD' ? amount : amount * wallet.goldPriceUsdPerGram,
+      amountGrams: asset === 'GOLD' ? amount : undefined,
       feeUsd: 0,
       timestamp: new Date().toISOString(),
       referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
       status: 'Completed',
       description: `Sent to ${recipient}`,
-      assetType: 'USD'
+      assetType: asset
     };
     setTransactions(prev => [newTx, ...prev]);
 
     setActiveModal(null);
-    toast({ title: "Transfer Successful", description: `Sent $${amount.toFixed(2)} to ${recipient}.` });
+    const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
+    toast({ title: "Transfer Successful", description: `Sent ${amountDisplay} to ${recipient}. Ownership Transferred.` });
   };
 
-  const handleRequestConfirm = (from: string, amount: number) => {
+  const handleRequestConfirm = (from: string, amount: number, asset: 'USD' | 'GOLD') => {
     // Add Pending Transaction
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
       type: 'Request',
-      amountUsd: amount,
+      amountUsd: asset === 'USD' ? amount : amount * wallet.goldPriceUsdPerGram,
+      amountGrams: asset === 'GOLD' ? amount : undefined,
       feeUsd: 0,
       timestamp: new Date().toISOString(),
       referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
       status: 'Pending',
       description: `Requested from ${from}`,
-      assetType: 'USD'
+      assetType: asset
     };
     setTransactions(prev => [newTx, ...prev]);
 
     setActiveModal(null);
-    toast({ title: "Request Sent", description: `Payment request of $${amount.toFixed(2)} sent to ${from}.` });
+    const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
+    toast({ title: "Request Sent", description: `Request for ${amountDisplay} sent to ${from}.` });
   };
 
   const handleQuickAction = (action: string) => {
@@ -272,6 +279,7 @@ export default function FinaPay() {
           isOpen={activeModal === 'send'} 
           onClose={() => setActiveModal(null)}
           walletBalance={wallet.usdBalance}
+          goldBalance={wallet.goldBalanceGrams}
           onConfirm={handleSendConfirm}
         />
         <RequestGoldModal 

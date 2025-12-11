@@ -11,13 +11,14 @@ import { useToast } from '@/hooks/use-toast';
 interface RequestGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (from: string, amount: number) => void;
+  onConfirm: (from: string, amount: number, asset: 'USD' | 'GOLD') => void;
 }
 
 export default function RequestGoldModal({ isOpen, onClose, onConfirm }: RequestGoldModalProps) {
   const { toast } = useToast();
   const [fromUser, setFromUser] = useState('');
   const [amount, setAmount] = useState('');
+  const [assetType, setAssetType] = useState<'USD' | 'GOLD'>('USD');
   const [note, setNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('request');
@@ -27,6 +28,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
     if (isOpen) {
       setFromUser('');
       setAmount('');
+      setAssetType('USD');
       setNote('');
       setIsLoading(false);
       setActiveTab('request');
@@ -35,12 +37,13 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   }, [isOpen]);
 
   const numericAmount = parseFloat(amount) || 0;
+  const currencyLabel = assetType === 'USD' ? '$' : 'g';
 
   const handleConfirm = () => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onConfirm(fromUser, numericAmount);
+      onConfirm(fromUser, numericAmount, assetType);
     }, 1000);
   };
 
@@ -53,7 +56,6 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   };
 
   const handleAttachment = () => {
-    // In a real app, this would trigger a file picker
     setAttachment('invoice_123.pdf');
   };
 
@@ -62,7 +64,9 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="text-blue-400">Request USD</span>
+            <span className={assetType === 'USD' ? "text-blue-400" : "text-[#D4AF37]"}>
+              Request {assetType === 'USD' ? 'USD' : 'Gold'}
+            </span>
           </DialogTitle>
           <DialogDescription className="text-white/60">
             Request payment via ID or share a payment link.
@@ -76,6 +80,23 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
           </TabsList>
 
           <TabsContent value="request" className="space-y-4">
+            
+            {/* Asset Selection */}
+            <div className="flex justify-center bg-black/20 p-1 rounded-lg border border-white/10">
+               <button 
+                 onClick={() => setAssetType('USD')}
+                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'USD' ? 'bg-blue-500 text-white' : 'text-white/40 hover:text-white'}`}
+               >
+                 USD ($)
+               </button>
+               <button 
+                 onClick={() => setAssetType('GOLD')}
+                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'GOLD' ? 'bg-[#D4AF37] text-black' : 'text-white/40 hover:text-white'}`}
+               >
+                 Gold (g)
+               </button>
+            </div>
+
             <div className="space-y-2">
               <Label>Request From (Email / ID)</Label>
               <Input 
@@ -87,7 +108,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
             </div>
 
             <div className="space-y-2">
-              <Label>Amount (USD)</Label>
+              <Label>Amount ({assetType})</Label>
               <div className="relative">
                  <Input 
                    type="number" 
@@ -96,7 +117,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                    value={amount}
                    onChange={(e) => setAmount(e.target.value)}
                  />
-                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">$</span>
+                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">{currencyLabel}</span>
               </div>
             </div>
 
@@ -140,7 +161,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
             </div>
 
             <Button 
-              className="w-full bg-blue-500 text-white hover:bg-blue-600 font-bold"
+              className={`w-full font-bold ${assetType === 'USD' ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black'}`}
               disabled={!fromUser || numericAmount <= 0 || isLoading}
               onClick={handleConfirm}
             >

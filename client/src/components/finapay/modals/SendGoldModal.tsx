@@ -4,19 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, QrCode, Scan, Upload, X } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, Upload, X, ArrowRightLeft } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface SendGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
-  walletBalance: number;
-  onConfirm: (recipient: string, amount: number) => void;
+  walletBalance: number; // USD Balance
+  goldBalance: number;   // Gold Balance in Grams
+  onConfirm: (recipient: string, amount: number, asset: 'USD' | 'GOLD') => void;
 }
 
-export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfirm }: SendGoldModalProps) {
+export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBalance, onConfirm }: SendGoldModalProps) {
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
+  const [assetType, setAssetType] = useState<'USD' | 'GOLD'>('USD');
   const [note, setNote] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1);
@@ -29,6 +31,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
       setStep(1);
       setRecipient('');
       setAmount('');
+      setAssetType('USD');
       setNote('');
       setOtp('');
       setIsLoading(false);
@@ -38,22 +41,24 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
   }, [isOpen]);
 
   const numericAmount = parseFloat(amount) || 0;
+  
+  // Determine max balance based on asset type
+  const currentBalance = assetType === 'USD' ? walletBalance : goldBalance;
+  const currencyLabel = assetType === 'USD' ? '$' : 'g';
 
   const handleSendOtp = () => {
     setStep(2);
-    // Simulate sending OTP
   };
 
   const handleConfirm = () => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onConfirm(recipient, numericAmount);
+      onConfirm(recipient, numericAmount, assetType);
     }, 1500);
   };
 
   const handleAttachment = () => {
-    // In a real app, this would trigger a file picker
     setAttachment('invoice_123.pdf');
   };
 
@@ -62,10 +67,12 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
       <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="text-green-400">Send USD</span>
+            <span className={assetType === 'USD' ? "text-green-400" : "text-[#D4AF37]"}>
+              Send {assetType === 'USD' ? 'USD' : 'Gold'}
+            </span>
           </DialogTitle>
           <DialogDescription className="text-white/60">
-            Transfer USD instantly to another FinaPay user.
+            Transfer assets instantly to another FinaPay user.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,6 +84,23 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
             </TabsList>
 
             <TabsContent value="direct" className="space-y-4">
+              
+              {/* Asset Selection */}
+              <div className="flex justify-center bg-black/20 p-1 rounded-lg border border-white/10">
+                 <button 
+                   onClick={() => setAssetType('USD')}
+                   className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'USD' ? 'bg-green-500 text-white' : 'text-white/40 hover:text-white'}`}
+                 >
+                   USD ($)
+                 </button>
+                 <button 
+                   onClick={() => setAssetType('GOLD')}
+                   className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'GOLD' ? 'bg-[#D4AF37] text-black' : 'text-white/40 hover:text-white'}`}
+                 >
+                   Gold (g)
+                 </button>
+              </div>
+
               <div className="space-y-2">
                 <Label>Recipient ID / Email</Label>
                 <Input 
@@ -89,8 +113,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
 
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <Label>Amount (USD)</Label>
-                  <span className="text-xs text-white/40">Available: ${walletBalance.toFixed(2)}</span>
+                  <Label>Amount ({assetType})</Label>
+                  <span className="text-xs text-white/40">
+                    Available: {assetType === 'USD' ? '$' : ''}{currentBalance.toFixed(assetType === 'USD' ? 2 : 4)}{assetType === 'GOLD' ? ' g' : ''}
+                  </span>
                 </div>
                 <div className="relative">
                    <Input 
@@ -100,7 +126,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
                      value={amount}
                      onChange={(e) => setAmount(e.target.value)}
                    />
-                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">$</span>
+                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">{currencyLabel}</span>
                 </div>
               </div>
 
@@ -144,8 +170,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
               </div>
 
               <Button 
-                className="w-full bg-green-500 text-white hover:bg-green-600 font-bold"
-                disabled={!recipient || numericAmount <= 0 || numericAmount > walletBalance}
+                className={`w-full text-white font-bold ${assetType === 'USD' ? 'bg-green-500 hover:bg-green-600' : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black'}`}
+                disabled={!recipient || numericAmount <= 0 || numericAmount > currentBalance}
                 onClick={handleSendOtp}
               >
                 Next
@@ -176,7 +202,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
           <div className="space-y-4 py-4">
             <div className="bg-white/5 p-4 rounded-lg border border-white/10 text-center space-y-2">
                <p className="text-white/60 text-sm">Transferring</p>
-               <p className="text-2xl font-bold text-white">${numericAmount.toFixed(2)}</p>
+               <p className={`text-2xl font-bold ${assetType === 'USD' ? 'text-white' : 'text-[#D4AF37]'}`}>
+                 {assetType === 'USD' ? '$' : ''}{numericAmount.toFixed(assetType === 'USD' ? 2 : 4)}{assetType === 'GOLD' ? ' g' : ''}
+               </p>
                <p className="text-white/60 text-sm">to <span className="text-white">{recipient}</span></p>
             </div>
 
@@ -193,7 +221,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, onConfir
             </div>
 
             <Button 
-              className="w-full bg-green-500 text-white hover:bg-green-600 font-bold"
+              className={`w-full text-white font-bold ${assetType === 'USD' ? 'bg-green-500 hover:bg-green-600' : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black'}`}
               disabled={otp.length < 4 || isLoading}
               onClick={handleConfirm}
             >
