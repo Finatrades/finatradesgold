@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User } from 'lucide-react';
+import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 
@@ -20,12 +20,12 @@ export default function KYC() {
 
   // Form States
   const [idType, setIdType] = useState('passport');
-  const [uploadedFiles, setUploadedFiles] = useState<{front?: File, back?: File, selfie?: File, utility?: File}>({});
+  const [uploadedFiles, setUploadedFiles] = useState<{front?: File, back?: File, selfie?: File, utility?: File, company_doc?: File}>({});
   
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back' | 'selfie' | 'utility') => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back' | 'selfie' | 'utility' | 'company_doc') => {
     if (e.target.files && e.target.files[0]) {
       setUploadedFiles(prev => ({...prev, [type]: e.target.files![0]}));
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
+      toast.success(`${type.replace('_', ' ').charAt(0).toUpperCase() + type.replace('_', ' ').slice(1)} uploaded successfully`);
     }
   };
 
@@ -58,6 +58,8 @@ export default function KYC() {
     return null;
   }
 
+  const isBusiness = user.accountType === 'business';
+
   return (
     <Layout>
       <div className="min-h-screen pt-24 pb-12 bg-background">
@@ -65,13 +67,13 @@ export default function KYC() {
           
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-foreground mb-2">Identity Verification</h1>
-            <p className="text-muted-foreground">Complete your KYC to unlock full platform features.</p>
+            <p className="text-muted-foreground">Complete your {isBusiness ? 'Corporate' : 'Personal'} KYC to unlock full platform features.</p>
           </div>
 
           <div className="mb-8">
             <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
-              <span>Progress</span>
-              <span>{progress}%</span>
+            <span>Progress</span>
+            <span>{progress}%</span>
             </div>
             <Progress value={progress} className="h-2 bg-muted" />
           </div>
@@ -81,25 +83,34 @@ export default function KYC() {
             {/* Sidebar Steps */}
             <div className="md:col-span-4 space-y-4">
               <StepItem 
-                title="Personal Info" 
-                description="Review your details" 
-                icon={<User className="w-5 h-5" />} 
+                title={isBusiness ? "Company Info" : "Personal Info"}
+                description="Review details" 
+                icon={isBusiness ? <Building className="w-5 h-5" /> : <User className="w-5 h-5" />} 
                 isActive={activeStep === 'personal'} 
                 isCompleted={progress > 25}
               />
+              {isBusiness && (
+                <StepItem 
+                  title="Corporate Docs" 
+                  description="Registration & Articles" 
+                  icon={<FileText className="w-5 h-5" />} 
+                  isActive={activeStep === 'company_docs'} 
+                  isCompleted={progress > 40}
+                />
+              )}
               <StepItem 
-                title="ID Verification" 
+                title={isBusiness ? "Representative ID" : "ID Verification"}
                 description="Upload Passport/ID" 
-                icon={<FileText className="w-5 h-5" />} 
+                icon={<User className="w-5 h-5" />} 
                 isActive={activeStep === 'document'} 
-                isCompleted={progress > 50}
+                isCompleted={progress > (isBusiness ? 60 : 50)}
               />
               <StepItem 
                 title="Liveness Check" 
                 description="Take a selfie" 
                 icon={<Camera className="w-5 h-5" />} 
                 isActive={activeStep === 'selfie'} 
-                isCompleted={progress > 75}
+                isCompleted={progress > (isBusiness ? 80 : 75)}
               />
               <StepItem 
                 title="Proof of Address" 
@@ -114,43 +125,102 @@ export default function KYC() {
             <div className="md:col-span-8">
               <Card className="border-border shadow-sm">
                 
-                {/* STEP 1: Personal Info */}
+                {/* STEP 1: Personal / Company Info */}
                 {activeStep === 'personal' && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
-                      <CardTitle>Confirm Personal Details</CardTitle>
-                      <CardDescription>Please ensure your details match your government ID.</CardDescription>
+                      <CardTitle>{isBusiness ? "Confirm Company Details" : "Confirm Personal Details"}</CardTitle>
+                      <CardDescription>Please ensure details match your {isBusiness ? "registration documents" : "government ID"}.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>First Name</Label>
-                          <Input value={user.firstName} disabled className="bg-muted" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Last Name</Label>
-                          <Input value={user.lastName} disabled className="bg-muted" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Email Address</Label>
-                        <Input value={user.email} disabled className="bg-muted" />
-                      </div>
-                      <div className="space-y-2">
-                         <Label>Date of Birth</Label>
-                         <Input type="date" className="bg-background" />
-                      </div>
-                      <div className="space-y-2">
-                         <Label>Nationality</Label>
-                         <Input placeholder="Select Nationality" className="bg-background" />
-                      </div>
+                      {isBusiness ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Company Name</Label>
+                            <Input value={user.companyName || ''} disabled className="bg-muted" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Registration Number</Label>
+                              <Input defaultValue="CHE-123.456.789" className="bg-background" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Jurisdiction</Label>
+                              <Input defaultValue="Switzerland" className="bg-background" />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Authorized Representative</Label>
+                            <Input value={`${user.firstName} ${user.lastName}`} disabled className="bg-muted" />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>First Name</Label>
+                              <Input value={user.firstName} disabled className="bg-muted" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Last Name</Label>
+                              <Input value={user.lastName} disabled className="bg-muted" />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email Address</Label>
+                            <Input value={user.email} disabled className="bg-muted" />
+                          </div>
+                          <div className="space-y-2">
+                             <Label>Date of Birth</Label>
+                             <Input type="date" className="bg-background" />
+                          </div>
+                          <div className="space-y-2">
+                             <Label>Nationality</Label>
+                             <Input placeholder="Select Nationality" className="bg-background" />
+                          </div>
+                        </>
+                      )}
                     </CardContent>
                     <CardFooter className="flex justify-end">
                       <Button 
-                        onClick={() => handleNextStep('document', 50)}
+                        onClick={() => handleNextStep(isBusiness ? 'company_docs' : 'document', isBusiness ? 40 : 50)}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
                         Confirm & Continue
+                      </Button>
+                    </CardFooter>
+                  </div>
+                )}
+
+                {/* STEP 1.5: Company Docs (Business Only) */}
+                {activeStep === 'company_docs' && isBusiness && (
+                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                    <CardHeader>
+                      <CardTitle>Corporate Documents</CardTitle>
+                      <CardDescription>Upload Certificate of Incorporation or Extract from Registry.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 transition-colors">
+                         <input type="file" id="company-doc-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'company_doc')} />
+                         <label htmlFor="company-doc-upload" className="cursor-pointer flex flex-col items-center">
+                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${uploadedFiles.company_doc ? 'bg-green-100 text-green-600' : 'bg-secondary/10 text-secondary'}`}>
+                             {uploadedFiles.company_doc ? <CheckCircle2 className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+                           </div>
+                           <span className="font-medium text-foreground">
+                             {uploadedFiles.company_doc ? uploadedFiles.company_doc.name : 'Upload Certificate of Incorporation'}
+                           </span>
+                           <span className="text-xs text-muted-foreground mt-1">PDF, JPG or PNG (Max 10MB)</span>
+                         </label>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <Button variant="outline" onClick={() => handleNextStep('personal', 25)}>Back</Button>
+                      <Button 
+                        onClick={() => handleNextStep('document', 60)}
+                        disabled={!uploadedFiles.company_doc}
+                        className="bg-primary text-white hover:bg-primary/90"
+                      >
+                        Continue
                       </Button>
                     </CardFooter>
                   </div>
@@ -160,8 +230,8 @@ export default function KYC() {
                 {activeStep === 'document' && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
-                      <CardTitle>Document Verification</CardTitle>
-                      <CardDescription>Upload a valid government-issued ID.</CardDescription>
+                      <CardTitle>{isBusiness ? "Authorized Representative ID" : "Document Verification"}</CardTitle>
+                      <CardDescription>Upload a valid government-issued ID{isBusiness ? " for the account manager" : ""}.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <Tabs defaultValue="passport" className="w-full" onValueChange={setIdType}>
@@ -203,9 +273,9 @@ export default function KYC() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => handleNextStep('personal', 25)}>Back</Button>
+                      <Button variant="outline" onClick={() => handleNextStep(isBusiness ? 'company_docs' : 'personal', isBusiness ? 40 : 25)}>Back</Button>
                       <Button 
-                        onClick={() => handleNextStep('selfie', 75)}
+                        onClick={() => handleNextStep('selfie', isBusiness ? 80 : 75)}
                         disabled={!uploadedFiles.front}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
@@ -244,9 +314,9 @@ export default function KYC() {
                        </p>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => handleNextStep('document', 50)}>Back</Button>
+                      <Button variant="outline" onClick={() => handleNextStep('document', isBusiness ? 60 : 50)}>Back</Button>
                       <Button 
-                        onClick={() => handleNextStep('address', 90)}
+                        onClick={() => handleNextStep('address', isBusiness ? 90 : 90)}
                         disabled={!uploadedFiles.selfie}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
@@ -260,12 +330,12 @@ export default function KYC() {
                 {activeStep === 'address' && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
-                      <CardTitle>Proof of Address</CardTitle>
+                      <CardTitle>{isBusiness ? "Proof of Business Address" : "Proof of Address"}</CardTitle>
                       <CardDescription>Upload a recent utility bill or bank statement (max 3 months old).</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                        <div className="space-y-2">
-                          <Label>Full Address</Label>
+                          <Label>Full {isBusiness ? "Business " : ""}Address</Label>
                           <Input placeholder="Street Address, City, Zip Code" className="bg-background" />
                        </div>
 
@@ -283,7 +353,7 @@ export default function KYC() {
                        </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => handleNextStep('selfie', 75)}>Back</Button>
+                      <Button variant="outline" onClick={() => handleNextStep('selfie', isBusiness ? 80 : 75)}>Back</Button>
                       <Button 
                         onClick={handleComplete}
                         disabled={isSubmitting}
