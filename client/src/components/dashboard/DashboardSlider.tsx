@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Database, TrendingUp, BarChart3, ArrowRight } from 'lucide-react';
+import { Wallet, Database, TrendingUp, BarChart3, ArrowRight, Briefcase } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 const sliderItems = [
@@ -35,14 +35,14 @@ const sliderItems = [
     border: 'border-accent/20'
   },
   {
-    id: 'margins',
-    title: 'BNSL Margins',
-    path: '/bnsl',
-    desc: 'View margins and projections on your BNSL positions.',
-    icon: <BarChart3 className="w-6 h-6" />,
-    color: 'text-green-600',
-    bg: 'bg-green-500/10',
-    border: 'border-green-500/20'
+    id: 'finabridge',
+    title: 'FinaBridge',
+    path: '/finabridge',
+    desc: 'Gold-backed trade finance wallet for business.',
+    icon: <Briefcase className="w-6 h-6" />,
+    color: 'text-purple-600',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/20'
   }
 ];
 
