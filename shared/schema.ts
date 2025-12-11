@@ -171,6 +171,26 @@ export type VaultHolding = typeof vaultHoldings.$inferSelect;
 // BNSL - BUY NOW SELL LATER
 // ============================================
 
+export const bnslPlanTemplates = pgTable("bnsl_plan_templates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  tenorMonths: integer("tenor_months").notNull(),
+  marginAnnualPercent: decimal("margin_annual_percent", { precision: 5, scale: 2 }).notNull(),
+  minGoldGrams: decimal("min_gold_grams", { precision: 18, scale: 6 }).notNull().default('1'),
+  maxGoldGrams: decimal("max_gold_grams", { precision: 18, scale: 6 }),
+  earlyTerminationPenaltyPercent: decimal("early_termination_penalty_percent", { precision: 5, scale: 2 }).notNull().default('2'),
+  adminFeePercent: decimal("admin_fee_percent", { precision: 5, scale: 2 }).notNull().default('1'),
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBnslPlanTemplateSchema = createInsertSchema(bnslPlanTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBnslPlanTemplate = z.infer<typeof insertBnslPlanTemplateSchema>;
+export type BnslPlanTemplate = typeof bnslPlanTemplates.$inferSelect;
+
 export const bnslPlans = pgTable("bnsl_plans", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   contractId: varchar("contract_id", { length: 100 }).notNull().unique(),

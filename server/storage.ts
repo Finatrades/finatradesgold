@@ -1,6 +1,6 @@
 import { 
   users, wallets, transactions, vaultHoldings, kycSubmissions,
-  bnslPlans, bnslPayouts, bnslEarlyTerminations,
+  bnslPlanTemplates, bnslPlans, bnslPayouts, bnslEarlyTerminations,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs,
   referrals, dashboardLayouts, bankAccounts,
@@ -9,6 +9,7 @@ import {
   type Transaction, type InsertTransaction,
   type VaultHolding, type InsertVaultHolding,
   type KycSubmission, type InsertKycSubmission,
+  type BnslPlanTemplate, type InsertBnslPlanTemplate,
   type BnslPlan, type InsertBnslPlan,
   type BnslPayout, type InsertBnslPayout,
   type BnslEarlyTermination, type InsertBnslEarlyTermination,
@@ -56,6 +57,14 @@ export interface IStorage {
   createVaultHolding(holding: InsertVaultHolding): Promise<VaultHolding>;
   updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined>;
   
+  // BNSL Plan Templates
+  getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined>;
+  getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
+  getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
+  createBnslPlanTemplate(template: InsertBnslPlanTemplate): Promise<BnslPlanTemplate>;
+  updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined>;
+  deleteBnslPlanTemplate(id: string): Promise<void>;
+
   // BNSL Plans
   getBnslPlan(id: string): Promise<BnslPlan | undefined>;
   getUserBnslPlans(userId: string): Promise<BnslPlan[]>;
@@ -234,6 +243,39 @@ export class DatabaseStorage implements IStorage {
   async updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined> {
     const [holding] = await db.update(vaultHoldings).set({ ...updates, updatedAt: new Date() }).where(eq(vaultHoldings.id, id)).returning();
     return holding || undefined;
+  }
+
+  // BNSL Plan Templates
+  async getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined> {
+    const [template] = await db.select().from(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
+    return template || undefined;
+  }
+
+  async getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
+    return await db.select().from(bnslPlanTemplates).orderBy(bnslPlanTemplates.displayOrder);
+  }
+
+  async getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
+    return await db.select().from(bnslPlanTemplates)
+      .where(eq(bnslPlanTemplates.isActive, true))
+      .orderBy(bnslPlanTemplates.displayOrder);
+  }
+
+  async createBnslPlanTemplate(insertTemplate: InsertBnslPlanTemplate): Promise<BnslPlanTemplate> {
+    const [template] = await db.insert(bnslPlanTemplates).values(insertTemplate).returning();
+    return template;
+  }
+
+  async updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined> {
+    const [template] = await db.update(bnslPlanTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(bnslPlanTemplates.id, id))
+      .returning();
+    return template || undefined;
+  }
+
+  async deleteBnslPlanTemplate(id: string): Promise<void> {
+    await db.delete(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
   }
 
   // BNSL Plans

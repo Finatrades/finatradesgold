@@ -421,6 +421,77 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // BNSL PLAN TEMPLATES (Dynamic Plan Configuration)
+  // ============================================================================
+
+  // Get all active plan templates (for users to see available plans)
+  app.get("/api/bnsl/templates", async (req, res) => {
+    try {
+      const templates = await storage.getActiveBnslPlanTemplates();
+      res.json({ templates });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get plan templates" });
+    }
+  });
+
+  // Get all plan templates (Admin - includes inactive)
+  app.get("/api/admin/bnsl/templates", async (req, res) => {
+    try {
+      const templates = await storage.getAllBnslPlanTemplates();
+      res.json({ templates });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get plan templates" });
+    }
+  });
+
+  // Create a new plan template (Admin)
+  app.post("/api/admin/bnsl/templates", async (req, res) => {
+    try {
+      const { name, description, tenorMonths, marginAnnualPercent, minGoldGrams, maxGoldGrams, earlyTerminationPenaltyPercent, adminFeePercent, displayOrder } = req.body;
+      
+      const template = await storage.createBnslPlanTemplate({
+        name,
+        description,
+        tenorMonths,
+        marginAnnualPercent,
+        minGoldGrams: minGoldGrams || '1',
+        maxGoldGrams,
+        earlyTerminationPenaltyPercent: earlyTerminationPenaltyPercent || '2',
+        adminFeePercent: adminFeePercent || '1',
+        isActive: true,
+        displayOrder: displayOrder || 0,
+      });
+      
+      res.json({ template });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create plan template" });
+    }
+  });
+
+  // Update a plan template (Admin)
+  app.patch("/api/admin/bnsl/templates/:id", async (req, res) => {
+    try {
+      const template = await storage.updateBnslPlanTemplate(req.params.id, req.body);
+      if (!template) {
+        return res.status(404).json({ message: "Plan template not found" });
+      }
+      res.json({ template });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update plan template" });
+    }
+  });
+
+  // Delete a plan template (Admin)
+  app.delete("/api/admin/bnsl/templates/:id", async (req, res) => {
+    try {
+      await storage.deleteBnslPlanTemplate(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete plan template" });
+    }
+  });
+
+  // ============================================================================
   // BNSL - BUY NOW SELL LATER
   // ============================================================================
   

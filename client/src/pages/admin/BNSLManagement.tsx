@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Plus } from 'lucide-react';
+import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Plus, Settings } from 'lucide-react';
+import { Link } from 'wouter';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -141,9 +142,16 @@ export default function BNSLManagement() {
             <h1 className="text-3xl font-bold text-gray-900">BNSL Management</h1>
             <p className="text-gray-500">Buy Now Sell Later – Admin Panel & Risk Monitoring</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="bg-orange-600 hover:bg-orange-700">
-            <Plus className="w-4 h-4 mr-2" /> Create New Plan
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/admin/bnsl/templates">
+              <Button variant="outline">
+                <Settings className="w-4 h-4 mr-2" /> Plan Templates
+              </Button>
+            </Link>
+            <Button onClick={() => setCreateOpen(true)} className="bg-orange-600 hover:bg-orange-700">
+              <Plus className="w-4 h-4 mr-2" /> Create New Plan
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}
