@@ -16,8 +16,10 @@ interface VaultHolding {
   id: string;
   userId: string;
   goldGrams: string;
-  storageLocation: string;
-  status: string;
+  vaultLocation: string;
+  certificateNumber: string | null;
+  purchasePriceUsdPerGram: string | null;
+  storageFeesAnnualPercent: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,12 +43,10 @@ export default function VaultManagement() {
 
   // Calculate totals from real data
   const totalGoldGrams = holdings.reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
-  const allocatedGrams = holdings.filter(h => h.status === 'allocated').reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
-  const availableGrams = holdings.filter(h => h.status === 'available').reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
 
   // Derived Stats (using real data if available, fallback to settings)
   const vaultInventory = totalGoldGrams || settings.vaultInventoryGrams;
-  const reservedGold = allocatedGrams || settings.reservedGoldGrams;
+  const reservedGold = settings.reservedGoldGrams;
   const availableLiquidity = vaultInventory - reservedGold;
   const coverageRatio = reservedGold > 0 ? (vaultInventory / reservedGold) * 100 : 100;
   
@@ -174,14 +174,10 @@ export default function VaultManagement() {
                       <div className="flex items-center gap-6">
                         <div className="text-right">
                           <p className="font-medium text-gray-900">{parseFloat(item.goldGrams).toFixed(2)}g</p>
-                          <p className="text-xs text-gray-500">{item.storageLocation || 'Zurich'}</p>
+                          <p className="text-xs text-gray-500">{item.vaultLocation || 'Zurich'}</p>
                         </div>
-                        <Badge variant="outline" className={
-                          item.status === 'allocated' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                          item.status === 'available' ? 'bg-green-50 text-green-700 border-green-200' :
-                          'bg-orange-50 text-orange-700 border-orange-200'
-                        }>
-                          {item.status}
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Stored
                         </Badge>
                       </div>
                     </div>
