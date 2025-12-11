@@ -77,6 +77,20 @@ export default function Register() {
     // Update global context
     setContextAccountType(accountType);
 
+    // Save to local mock DB
+    const newUser = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      password: formData.password, // Storing plain text for mockup only
+      accountType: accountType,
+      companyName: accountType === 'business' ? formData.companyName : undefined
+    };
+
+    const existingUsers = JSON.parse(localStorage.getItem('fina_users') || '[]');
+    existingUsers.push(newUser);
+    localStorage.setItem('fina_users', JSON.stringify(existingUsers));
+
     // Simulate Login
     login({
       firstName: formData.firstName,

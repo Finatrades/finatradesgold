@@ -30,17 +30,30 @@ export default function Login() {
     setTimeout(() => {
       setIsLoading(false);
       
-      // Mock login logic
-      login({
-        firstName: "Demo",
-        lastName: "User",
-        email: email,
-        accountType: "personal" // Default for login mock
-      });
+      // Check against mock DB
+      const existingUsers = JSON.parse(localStorage.getItem('fina_users') || '[]');
+      const user = existingUsers.find((u: any) => u.email === email && u.password === password);
+      
+      const isDemo = email === 'demo@finatrades.com' && password === 'password';
 
-      toast.success("Welcome back!", {
-        description: "You have successfully logged in."
-      });
+      if (user || isDemo) {
+        // Mock login logic
+        login({
+          firstName: user ? user.firstName : "Demo",
+          lastName: user ? user.lastName : "User",
+          email: email,
+          accountType: user ? user.accountType : "personal",
+          companyName: user ? user.companyName : undefined
+        });
+
+        toast.success("Welcome back!", {
+          description: "You have successfully logged in."
+        });
+      } else {
+        toast.error("Invalid Credentials", {
+          description: "Please check your email and password."
+        });
+      }
     }, 1000);
   };
 
