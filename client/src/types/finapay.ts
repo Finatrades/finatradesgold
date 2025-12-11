@@ -3,6 +3,8 @@ export interface Wallet {
   usdBalance: number;
   goldPriceUsdPerGram: number;
   usdAedRate: number;
+  bnslLockedUsd: number;
+  finaBridgeLockedUsd: number;
 }
 
 export type TransactionType = 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Request';

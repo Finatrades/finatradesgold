@@ -25,6 +25,8 @@ const INITIAL_WALLET: Wallet = {
   usdBalance: 15420.50,
   goldPriceUsdPerGram: 85.22,
   usdAedRate: 3.67,
+  bnslLockedUsd: 5000.00,
+  finaBridgeLockedUsd: 12500.00
 };
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
