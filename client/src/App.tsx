@@ -35,6 +35,10 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 import Profile from "@/pages/Profile";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import KYCReview from "@/pages/admin/KYCReview";
+import UserManagement from "@/pages/admin/UserManagement";
+import Transactions from "@/pages/admin/Transactions";
 
 function Router() {
   return (
@@ -66,6 +70,13 @@ function Router() {
       <Route path="/dashboard/profile">
         <ProtectedRoute component={Profile} />
       </Route>
+      
+      {/* Admin Routes */}
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/kyc" component={KYCReview} />
+      <Route path="/admin/users" component={UserManagement} />
+      <Route path="/admin/transactions" component={Transactions} />
+
       <Route component={NotFound} />
     </Switch>
   );

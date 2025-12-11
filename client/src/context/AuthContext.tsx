@@ -8,6 +8,7 @@ interface User {
   accountType: 'personal' | 'business';
   companyName?: string;
   kycStatus?: 'pending' | 'verified';
+  role?: 'user' | 'admin';
 }
 
 interface AuthContextType {
@@ -34,7 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (userData: User) => {
     setUser(userData);
     localStorage.setItem('fina_user', JSON.stringify(userData));
-    setLocation('/dashboard');
+    if (userData.role === 'admin') {
+      setLocation('/admin');
+    } else {
+      setLocation('/dashboard');
+    }
   };
 
   const logout = () => {

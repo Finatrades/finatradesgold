@@ -35,15 +35,27 @@ export default function Login() {
       const user = existingUsers.find((u: any) => u.email === email && u.password === password);
       
       const isDemo = email === 'demo@finatrades.com' && password === 'password';
+      const isAdmin = email === 'admin@finatrades.com' && password === 'admin123';
 
-      if (user || isDemo) {
+      if (isAdmin) {
+        login({
+          firstName: "Admin",
+          lastName: "User",
+          email: "admin@finatrades.com",
+          accountType: "business",
+          role: 'admin'
+        });
+        toast.success("Admin Login Successful");
+      } else if (user || isDemo) {
         // Mock login logic
         login({
           firstName: user ? user.firstName : "Demo",
           lastName: user ? user.lastName : "User",
           email: email,
           accountType: user ? user.accountType : "personal",
-          companyName: user ? user.companyName : undefined
+          companyName: user ? user.companyName : undefined,
+          role: 'user',
+          kycStatus: user ? user.kycStatus : 'pending' // Demo starts pending
         });
 
         toast.success("Welcome back!", {
