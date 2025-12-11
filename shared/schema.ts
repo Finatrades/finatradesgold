@@ -409,3 +409,44 @@ export const dashboardLayouts = pgTable("dashboard_layouts", {
 export const insertDashboardLayoutSchema = createInsertSchema(dashboardLayouts).omit({ id: true });
 export type InsertDashboardLayout = z.infer<typeof insertDashboardLayoutSchema>;
 export type DashboardLayout = typeof dashboardLayouts.$inferSelect;
+
+// ============================================
+// BANK ACCOUNTS
+// ============================================
+
+export const bankAccountStatusEnum = pgEnum('bank_account_status', ['Pending', 'Verified', 'Rejected', 'Disabled']);
+export const bankAccountTypeEnum = pgEnum('bank_account_type', ['Checking', 'Savings', 'Business']);
+
+export const bankAccounts = pgTable("bank_accounts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  label: varchar("label", { length: 100 }),
+  bankName: varchar("bank_name", { length: 255 }).notNull(),
+  accountHolderName: varchar("account_holder_name", { length: 255 }).notNull(),
+  maskedAccountNumber: varchar("masked_account_number", { length: 20 }).notNull(),
+  accountNumber: varchar("account_number", { length: 255 }).notNull(),
+  ibanOrRouting: varchar("iban_or_routing", { length: 50 }).notNull(),
+  swiftCode: varchar("swift_code", { length: 20 }),
+  country: varchar("country", { length: 100 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  accountType: bankAccountTypeEnum("account_type").notNull().default('Checking'),
+  status: bankAccountStatusEnum("status").notNull().default('Pending'),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  verificationCode: varchar("verification_code", { length: 20 }),
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBankAccountSchema = createInsertSchema(bankAccounts).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  verifiedAt: true,
+  verificationCode: true,
+  status: true,
+  isPrimary: true,
+  maskedAccountNumber: true,
+});
+export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
+export type BankAccount = typeof bankAccounts.$inferSelect;

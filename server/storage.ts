@@ -3,7 +3,7 @@ import {
   bnslPlans, bnslPayouts, bnslEarlyTerminations,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs,
-  referrals, dashboardLayouts,
+  referrals, dashboardLayouts, bankAccounts,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -18,7 +18,8 @@ import {
   type ChatMessage, type InsertChatMessage,
   type AuditLog, type InsertAuditLog,
   type Referral, type InsertReferral,
-  type DashboardLayout, type InsertDashboardLayout
+  type DashboardLayout, type InsertDashboardLayout,
+  type BankAccount, type InsertBankAccount
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -99,6 +100,14 @@ export interface IStorage {
   // Audit Logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getEntityAuditLogs(entityType: string, entityId: string): Promise<AuditLog[]>;
+  
+  // Bank Accounts
+  getBankAccount(id: string): Promise<BankAccount | undefined>;
+  getUserBankAccounts(userId: string): Promise<BankAccount[]>;
+  createBankAccount(account: InsertBankAccount & { maskedAccountNumber: string }): Promise<BankAccount>;
+  updateBankAccount(id: string, updates: Partial<BankAccount>): Promise<BankAccount | undefined>;
+  deleteBankAccount(id: string): Promise<void>;
+  setPrimaryBankAccount(userId: string, accountId: string): Promise<void>;
 }
 
 function generateFinatradesId(): string {
@@ -422,6 +431,46 @@ export class DatabaseStorage implements IStorage {
     }
     const [created] = await db.insert(dashboardLayouts).values({ userId, layout }).returning();
     return created;
+  }
+
+  // Bank Accounts
+  async getBankAccount(id: string): Promise<BankAccount | undefined> {
+    const [account] = await db.select().from(bankAccounts).where(eq(bankAccounts.id, id));
+    return account || undefined;
+  }
+
+  async getUserBankAccounts(userId: string): Promise<BankAccount[]> {
+    return await db.select().from(bankAccounts)
+      .where(and(eq(bankAccounts.userId, userId), sql`${bankAccounts.status} != 'Disabled'`))
+      .orderBy(desc(bankAccounts.isPrimary), desc(bankAccounts.createdAt));
+  }
+
+  async createBankAccount(insertAccount: InsertBankAccount & { maskedAccountNumber: string }): Promise<BankAccount> {
+    const [account] = await db.insert(bankAccounts).values(insertAccount).returning();
+    return account;
+  }
+
+  async updateBankAccount(id: string, updates: Partial<BankAccount>): Promise<BankAccount | undefined> {
+    const [account] = await db.update(bankAccounts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(bankAccounts.id, id))
+      .returning();
+    return account || undefined;
+  }
+
+  async deleteBankAccount(id: string): Promise<void> {
+    await db.update(bankAccounts)
+      .set({ status: 'Disabled', updatedAt: new Date() })
+      .where(eq(bankAccounts.id, id));
+  }
+
+  async setPrimaryBankAccount(userId: string, accountId: string): Promise<void> {
+    await db.update(bankAccounts)
+      .set({ isPrimary: false, updatedAt: new Date() })
+      .where(eq(bankAccounts.userId, userId));
+    await db.update(bankAccounts)
+      .set({ isPrimary: true, updatedAt: new Date() })
+      .where(eq(bankAccounts.id, accountId));
   }
 }
 

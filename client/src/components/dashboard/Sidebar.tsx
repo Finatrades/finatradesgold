@@ -15,7 +15,8 @@ import {
   X,
   ShieldCheck,
   Gift,
-  LayoutGrid
+  LayoutGrid,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -34,6 +35,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
     { icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' },
     { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
+    { icon: <Building2 className="w-5 h-5" />, label: 'Bank Accounts', href: '/bank-accounts' },
     { icon: <Gift className="w-5 h-5" />, label: 'Referral Program', href: '/referrals' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/dashboard/profile' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },

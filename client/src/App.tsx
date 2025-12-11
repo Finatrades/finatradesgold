@@ -53,6 +53,7 @@ import { FinaPayProvider } from "@/context/FinaPayContext";
 import AdminChat from "@/pages/admin/AdminChat";
 import ReferralProgram from "@/pages/ReferralProgram";
 import CustomDashboard from "@/pages/CustomDashboard";
+import BankAccounts from "@/pages/BankAccounts";
 
 function Router() {
   return (
@@ -72,6 +73,7 @@ function Router() {
       <ProtectedRoute path="/profile" component={Profile} />
       <ProtectedRoute path="/referrals" component={ReferralProgram} />
       <ProtectedRoute path="/my-dashboard" component={CustomDashboard} />
+      <ProtectedRoute path="/bank-accounts" component={BankAccounts} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />

@@ -818,6 +818,121 @@ export async function registerRoutes(
   });
 
   // ============================================================================
+  // BANK ACCOUNTS
+  // ============================================================================
+
+  // Get user's bank accounts
+  app.get("/api/bank-accounts/:userId", async (req, res) => {
+    try {
+      const accounts = await storage.getUserBankAccounts(req.params.userId);
+      // Don't return full account numbers for security
+      const safeAccounts = accounts.map(acc => ({
+        ...acc,
+        accountNumber: undefined,
+      }));
+      res.json({ accounts: safeAccounts });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get bank accounts" });
+    }
+  });
+
+  // Create a bank account
+  app.post("/api/bank-accounts", async (req, res) => {
+    try {
+      const { userId, bankName, accountHolderName, accountNumber, ibanOrRouting, swiftCode, country, currency, accountType, label } = req.body;
+      
+      // Mask the account number (show last 4 digits)
+      const maskedAccountNumber = `****${accountNumber.slice(-4)}`;
+      
+      const account = await storage.createBankAccount({
+        userId,
+        bankName,
+        accountHolderName,
+        accountNumber,
+        maskedAccountNumber,
+        ibanOrRouting,
+        swiftCode,
+        country,
+        currency: currency || 'USD',
+        accountType: accountType || 'Checking',
+        label,
+      });
+      
+      // Don't return full account number
+      res.json({ account: { ...account, accountNumber: undefined } });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create bank account" });
+    }
+  });
+
+  // Update bank account
+  app.patch("/api/bank-accounts/:id", async (req, res) => {
+    try {
+      const { label, status } = req.body;
+      const updates: any = {};
+      if (label !== undefined) updates.label = label;
+      if (status !== undefined) updates.status = status;
+      
+      const account = await storage.updateBankAccount(req.params.id, updates);
+      if (!account) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      res.json({ account: { ...account, accountNumber: undefined } });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update bank account" });
+    }
+  });
+
+  // Set primary bank account
+  app.post("/api/bank-accounts/:id/primary", async (req, res) => {
+    try {
+      const account = await storage.getBankAccount(req.params.id);
+      if (!account) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      await storage.setPrimaryBankAccount(account.userId, req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to set primary account" });
+    }
+  });
+
+  // Delete bank account
+  app.delete("/api/bank-accounts/:id", async (req, res) => {
+    try {
+      await storage.deleteBankAccount(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete bank account" });
+    }
+  });
+
+  // Verify bank account (simulated micro-deposit verification)
+  app.post("/api/bank-accounts/:id/verify", async (req, res) => {
+    try {
+      const { verificationCode } = req.body;
+      const account = await storage.getBankAccount(req.params.id);
+      
+      if (!account) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      
+      // For demo purposes, accept any 4-digit code or auto-verify
+      if (verificationCode && verificationCode.length === 4) {
+        await storage.updateBankAccount(req.params.id, {
+          status: 'Verified',
+          verifiedAt: new Date(),
+        });
+        res.json({ success: true, message: "Bank account verified" });
+      } else {
+        res.status(400).json({ message: "Invalid verification code" });
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Failed to verify bank account" });
+    }
+  });
+
+  // ============================================================================
   // AUDIT LOGS
   // ============================================================================
   
