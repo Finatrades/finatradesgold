@@ -98,6 +98,15 @@ export interface IStorage {
   getEntityAuditLogs(entityType: string, entityId: string): Promise<AuditLog[]>;
 }
 
+function generateFinatradesId(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `FT-${code}`;
+}
+
 export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: string): Promise<User | undefined> {
@@ -115,7 +124,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const finatradesId = generateFinatradesId();
+    const [user] = await db.insert(users).values({ ...insertUser, finatradesId }).returning();
     return user;
   }
 

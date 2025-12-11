@@ -49,6 +49,7 @@ export default function UserManagement() {
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
                   <tr>
+                    <th className="px-6 py-3">Finatrades ID</th>
                     <th className="px-6 py-3">Name</th>
                     <th className="px-6 py-3">Email</th>
                     <th className="px-6 py-3">Role</th>
@@ -61,6 +62,11 @@ export default function UserManagement() {
                 <tbody>
                   {users.map((user) => (
                     <tr key={user.id} className="bg-white border-b hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <code className="px-2 py-1 bg-orange-50 text-orange-600 rounded text-xs font-mono">
+                          {user.finatradesId || '-'}
+                        </code>
+                      </td>
                       <td className="px-6 py-4 font-medium text-gray-900">{user.firstName} {user.lastName}</td>
                       <td className="px-6 py-4">{user.email}</td>
                       <td className="px-6 py-4">{user.role}</td>

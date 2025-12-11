@@ -37,6 +37,7 @@ export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'adm
 
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  finatradesId: varchar("finatrades_id", { length: 20 }).unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   firstName: varchar("first_name", { length: 255 }).notNull(),

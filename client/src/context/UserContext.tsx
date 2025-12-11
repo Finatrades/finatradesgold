@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface UserProfile {
   id: string;
+  finatradesId: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -41,6 +42,7 @@ function mapUserToProfile(user: any): UserProfile {
   
   return {
     id: user.id,
+    finatradesId: user.finatradesId,
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
