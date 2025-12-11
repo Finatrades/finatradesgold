@@ -1,16 +1,593 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { 
+  insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
+  insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
+  insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertTradeCaseSchema,
+  insertTradeDocumentSchema, insertChatSessionSchema, insertChatMessageSchema,
+  insertAuditLogSchema
+} from "@shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
-
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  
+  // ============================================================================
+  // AUTHENTICATION & USER MANAGEMENT
+  // ============================================================================
+  
+  // Register new user
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      const existingUser = await storage.getUserByEmail(userData.email);
+      
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      
+      const user = await storage.createUser(userData);
+      
+      // Create wallet for new user
+      await storage.createWallet({
+        userId: user.id,
+        currency: "USD",
+        balance: "0",
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        action: "create",
+        performedBy: user.id,
+        changes: { status: "User registered" },
+      });
+      
+      res.json({ user });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
+    }
+  });
+  
+  // Login
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user || user.passwordHash !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      res.json({ user });
+    } catch (error) {
+      res.status(400).json({ message: "Login failed" });
+    }
+  });
+  
+  // Get current user
+  app.get("/api/auth/me/:userId", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ user });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get user" });
+    }
+  });
+  
+  // Update user profile
+  app.patch("/api/users/:userId", async (req, res) => {
+    try {
+      const user = await storage.updateUser(req.params.userId, req.body);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ user });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update user" });
+    }
+  });
+  
+  // ============================================================================
+  // KYC MANAGEMENT
+  // ============================================================================
+  
+  // Submit KYC
+  app.post("/api/kyc", async (req, res) => {
+    try {
+      const kycData = insertKycSubmissionSchema.parse(req.body);
+      const submission = await storage.createKycSubmission(kycData);
+      
+      // Update user KYC status
+      await storage.updateUser(kycData.userId, {
+        kycStatus: "pending",
+        kycSubmittedAt: new Date(),
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "kyc",
+        entityId: submission.id,
+        action: "create",
+        performedBy: kycData.userId,
+        changes: { status: "KYC submitted" },
+      });
+      
+      res.json({ submission });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "KYC submission failed" });
+    }
+  });
+  
+  // Get user's KYC submission
+  app.get("/api/kyc/:userId", async (req, res) => {
+    try {
+      const submission = await storage.getKycSubmission(req.params.userId);
+      res.json({ submission });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get KYC submission" });
+    }
+  });
+  
+  // Update KYC status (Admin)
+  app.patch("/api/kyc/:id", async (req, res) => {
+    try {
+      const submission = await storage.updateKycSubmission(req.params.id, req.body);
+      if (!submission) {
+        return res.status(404).json({ message: "KYC submission not found" });
+      }
+      
+      // Update user KYC status
+      if (req.body.status) {
+        await storage.updateUser(submission.userId, {
+          kycStatus: req.body.status === "approved" ? "verified" : req.body.status,
+          kycVerifiedAt: req.body.status === "approved" ? new Date() : null,
+        });
+      }
+      
+      res.json({ submission });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update KYC" });
+    }
+  });
+  
+  // Get all KYC submissions (Admin)
+  app.get("/api/admin/kyc", async (req, res) => {
+    try {
+      const submissions = await storage.getAllKycSubmissions();
+      res.json({ submissions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get KYC submissions" });
+    }
+  });
+  
+  // ============================================================================
+  // FINAPAY - WALLET & TRANSACTIONS
+  // ============================================================================
+  
+  // Get user wallet
+  app.get("/api/wallet/:userId", async (req, res) => {
+    try {
+      const wallet = await storage.getWallet(req.params.userId);
+      if (!wallet) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      res.json({ wallet });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get wallet" });
+    }
+  });
+  
+  // Update wallet
+  app.patch("/api/wallet/:id", async (req, res) => {
+    try {
+      const wallet = await storage.updateWallet(req.params.id, req.body);
+      if (!wallet) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      res.json({ wallet });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update wallet" });
+    }
+  });
+  
+  // Create transaction
+  app.post("/api/transactions", async (req, res) => {
+    try {
+      const transactionData = insertTransactionSchema.parse(req.body);
+      const transaction = await storage.createTransaction(transactionData);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "transaction",
+        entityId: transaction.id,
+        action: "create",
+        performedBy: transactionData.userId,
+        changes: { type: transactionData.type, amount: transactionData.amount },
+      });
+      
+      res.json({ transaction });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Transaction failed" });
+    }
+  });
+  
+  // Get user transactions
+  app.get("/api/transactions/:userId", async (req, res) => {
+    try {
+      const transactions = await storage.getUserTransactions(req.params.userId);
+      res.json({ transactions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+  
+  // Update transaction status
+  app.patch("/api/transactions/:id", async (req, res) => {
+    try {
+      const transaction = await storage.updateTransaction(req.params.id, req.body);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      res.json({ transaction });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update transaction" });
+    }
+  });
+  
+  // ============================================================================
+  // FINAVAULT - GOLD STORAGE
+  // ============================================================================
+  
+  // Get user vault holdings
+  app.get("/api/vault/:userId", async (req, res) => {
+    try {
+      const holdings = await storage.getUserVaultHoldings(req.params.userId);
+      res.json({ holdings });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get vault holdings" });
+    }
+  });
+  
+  // Create vault holding
+  app.post("/api/vault", async (req, res) => {
+    try {
+      const holdingData = insertVaultHoldingSchema.parse(req.body);
+      const holding = await storage.createVaultHolding(holdingData);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "vault",
+        entityId: holding.id,
+        action: "create",
+        performedBy: holdingData.userId,
+        changes: { grams: holdingData.grams, type: "purchase" },
+      });
+      
+      res.json({ holding });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create holding" });
+    }
+  });
+  
+  // Update vault holding
+  app.patch("/api/vault/:id", async (req, res) => {
+    try {
+      const holding = await storage.updateVaultHolding(req.params.id, req.body);
+      if (!holding) {
+        return res.status(404).json({ message: "Holding not found" });
+      }
+      res.json({ holding });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update holding" });
+    }
+  });
+  
+  // ============================================================================
+  // BNSL - BUY NOW SELL LATER
+  // ============================================================================
+  
+  // Get user BNSL plans
+  app.get("/api/bnsl/plans/:userId", async (req, res) => {
+    try {
+      const plans = await storage.getUserBnslPlans(req.params.userId);
+      res.json({ plans });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get BNSL plans" });
+    }
+  });
+  
+  // Get all BNSL plans (Admin)
+  app.get("/api/admin/bnsl/plans", async (req, res) => {
+    try {
+      const plans = await storage.getAllBnslPlans();
+      res.json({ plans });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get BNSL plans" });
+    }
+  });
+  
+  // Create BNSL plan
+  app.post("/api/bnsl/plans", async (req, res) => {
+    try {
+      const planData = insertBnslPlanSchema.parse(req.body);
+      const plan = await storage.createBnslPlan(planData);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "bnsl",
+        entityId: plan.id,
+        action: "create",
+        performedBy: planData.userId,
+        changes: { grams: planData.grams, status: "active" },
+      });
+      
+      res.json({ plan });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create BNSL plan" });
+    }
+  });
+  
+  // Update BNSL plan
+  app.patch("/api/bnsl/plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.updateBnslPlan(req.params.id, req.body);
+      if (!plan) {
+        return res.status(404).json({ message: "BNSL plan not found" });
+      }
+      res.json({ plan });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update BNSL plan" });
+    }
+  });
+  
+  // Get plan payouts
+  app.get("/api/bnsl/payouts/:planId", async (req, res) => {
+    try {
+      const payouts = await storage.getPlanPayouts(req.params.planId);
+      res.json({ payouts });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get payouts" });
+    }
+  });
+  
+  // Create payout
+  app.post("/api/bnsl/payouts", async (req, res) => {
+    try {
+      const payoutData = insertBnslPayoutSchema.parse(req.body);
+      const payout = await storage.createBnslPayout(payoutData);
+      res.json({ payout });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create payout" });
+    }
+  });
+  
+  // Update payout
+  app.patch("/api/bnsl/payouts/:id", async (req, res) => {
+    try {
+      const payout = await storage.updateBnslPayout(req.params.id, req.body);
+      if (!payout) {
+        return res.status(404).json({ message: "Payout not found" });
+      }
+      res.json({ payout });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update payout" });
+    }
+  });
+  
+  // Create early termination
+  app.post("/api/bnsl/early-termination", async (req, res) => {
+    try {
+      const terminationData = insertBnslEarlyTerminationSchema.parse(req.body);
+      const termination = await storage.createBnslEarlyTermination(terminationData);
+      
+      // Update plan status
+      await storage.updateBnslPlan(terminationData.planId, {
+        status: "terminated",
+      });
+      
+      res.json({ termination });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create early termination" });
+    }
+  });
+  
+  // ============================================================================
+  // FINABRIDGE - TRADE FINANCE
+  // ============================================================================
+  
+  // Get user trade cases
+  app.get("/api/trade/cases/:userId", async (req, res) => {
+    try {
+      const cases = await storage.getUserTradeCases(req.params.userId);
+      res.json({ cases });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get trade cases" });
+    }
+  });
+  
+  // Get all trade cases (Admin)
+  app.get("/api/admin/trade/cases", async (req, res) => {
+    try {
+      const cases = await storage.getAllTradeCases();
+      res.json({ cases });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get trade cases" });
+    }
+  });
+  
+  // Create trade case
+  app.post("/api/trade/cases", async (req, res) => {
+    try {
+      const caseData = insertTradeCaseSchema.parse(req.body);
+      const tradeCase = await storage.createTradeCase(caseData);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "trade",
+        entityId: tradeCase.id,
+        action: "create",
+        performedBy: caseData.userId,
+        changes: { status: "draft", amount: caseData.transactionAmount },
+      });
+      
+      res.json({ case: tradeCase });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade case" });
+    }
+  });
+  
+  // Update trade case
+  app.patch("/api/trade/cases/:id", async (req, res) => {
+    try {
+      const tradeCase = await storage.updateTradeCase(req.params.id, req.body);
+      if (!tradeCase) {
+        return res.status(404).json({ message: "Trade case not found" });
+      }
+      res.json({ case: tradeCase });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update trade case" });
+    }
+  });
+  
+  // Get case documents
+  app.get("/api/trade/documents/:caseId", async (req, res) => {
+    try {
+      const documents = await storage.getCaseDocuments(req.params.caseId);
+      res.json({ documents });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get documents" });
+    }
+  });
+  
+  // Upload document
+  app.post("/api/trade/documents", async (req, res) => {
+    try {
+      const documentData = insertTradeDocumentSchema.parse(req.body);
+      const document = await storage.createTradeDocument(documentData);
+      res.json({ document });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
+    }
+  });
+  
+  // Update document status
+  app.patch("/api/trade/documents/:id", async (req, res) => {
+    try {
+      const document = await storage.updateTradeDocument(req.params.id, req.body);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      res.json({ document });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update document" });
+    }
+  });
+  
+  // ============================================================================
+  // CHAT SYSTEM
+  // ============================================================================
+  
+  // Get user chat session
+  app.get("/api/chat/session/:userId", async (req, res) => {
+    try {
+      let session = await storage.getChatSession(req.params.userId);
+      
+      // Create new session if none exists
+      if (!session) {
+        session = await storage.createChatSession({
+          userId: req.params.userId,
+          status: "active",
+          lastMessageAt: new Date(),
+        });
+      }
+      
+      res.json({ session });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get chat session" });
+    }
+  });
+  
+  // Get all chat sessions (Admin)
+  app.get("/api/admin/chat/sessions", async (req, res) => {
+    try {
+      const sessions = await storage.getAllChatSessions();
+      res.json({ sessions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get chat sessions" });
+    }
+  });
+  
+  // Get session messages
+  app.get("/api/chat/messages/:sessionId", async (req, res) => {
+    try {
+      const messages = await storage.getSessionMessages(req.params.sessionId);
+      res.json({ messages });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get messages" });
+    }
+  });
+  
+  // Send message
+  app.post("/api/chat/messages", async (req, res) => {
+    try {
+      const messageData = insertChatMessageSchema.parse(req.body);
+      const message = await storage.createChatMessage(messageData);
+      
+      // Update session last message time
+      await storage.updateChatSession(messageData.sessionId, {
+        lastMessageAt: new Date(),
+      });
+      
+      res.json({ message });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
+    }
+  });
+  
+  // Mark messages as read
+  app.patch("/api/chat/messages/:sessionId/read", async (req, res) => {
+    try {
+      await storage.markMessagesAsRead(req.params.sessionId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to mark messages as read" });
+    }
+  });
+  
+  // Update chat session
+  app.patch("/api/chat/session/:id", async (req, res) => {
+    try {
+      const session = await storage.updateChatSession(req.params.id, req.body);
+      if (!session) {
+        return res.status(404).json({ message: "Chat session not found" });
+      }
+      res.json({ session });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update chat session" });
+    }
+  });
+  
+  // ============================================================================
+  // AUDIT LOGS
+  // ============================================================================
+  
+  // Get entity audit logs
+  app.get("/api/audit/:entityType/:entityId", async (req, res) => {
+    try {
+      const logs = await storage.getEntityAuditLogs(req.params.entityType, req.params.entityId);
+      res.json({ logs });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get audit logs" });
+    }
+  });
 
   return httpServer;
 }
