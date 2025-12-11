@@ -39,9 +39,11 @@ export default function Home() {
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" className="h-12 px-8 bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] hover:opacity-90 text-white rounded-full text-base">
-                {accountType === 'personal' ? t('hero.personal.cta2') : t('hero.business.cta2')}
-              </Button>
+              <Link href="/onboarding">
+                <Button size="lg" className="h-12 px-8 bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] hover:opacity-90 text-white rounded-full text-base">
+                  {accountType === 'personal' ? t('hero.personal.cta2') : t('hero.business.cta2')}
+                </Button>
+              </Link>
               <Button size="lg" variant="outline" className="h-12 px-8 border-white/20 hover:bg-white/10 text-white rounded-full text-base bg-transparent">
                 {t('common.learnMore')}
               </Button>

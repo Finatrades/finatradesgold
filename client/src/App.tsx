@@ -9,6 +9,7 @@ import FinaVault from "@/pages/FinaVault";
 import FinaPay from "@/pages/FinaPay";
 import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
+import Onboarding from "@/pages/Onboarding";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
 
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/finapay" component={FinaPay} />
       <Route path="/bnsl" component={BNSL} />
       <Route path="/finabridge" component={FinaBridge} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route component={NotFound} />
     </Switch>
   );

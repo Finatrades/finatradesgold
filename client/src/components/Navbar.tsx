@@ -41,9 +41,11 @@ export default function Navbar() {
             {accountType === 'personal' ? t('nav.personal') : t('nav.business')}
           </button>
           <LanguageSwitcher />
-          <Button className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-semibold">
-            {t('common.getStarted')}
-          </Button>
+          <Link href="/onboarding">
+            <Button className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-semibold">
+              {t('common.getStarted')}
+            </Button>
+          </Link>
         </div>
       </div>
     </nav>
