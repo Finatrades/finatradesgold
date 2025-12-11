@@ -145,11 +145,21 @@ export default function BnslWalletCard({
                  <Input 
                    type="number" 
                    placeholder="0.00" 
-                   className="bg-background border-input pl-4 pr-12 text-lg text-foreground"
+                   className="bg-background border-input pl-4 pr-20 text-lg text-foreground"
                    value={transferAmount}
                    onChange={(e) => setTransferAmount(e.target.value)}
                  />
-                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">g</span>
+                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                   <span className="text-muted-foreground text-sm font-bold">g</span>
+                   <Button 
+                     size="sm" 
+                     variant="ghost" 
+                     className="h-7 px-2 text-xs font-bold text-secondary hover:text-secondary/80 hover:bg-secondary/10"
+                     onClick={() => setTransferAmount(finaPayBalanceGold.toString())}
+                   >
+                     MAX
+                   </Button>
+                 </div>
                </div>
              </div>
 
