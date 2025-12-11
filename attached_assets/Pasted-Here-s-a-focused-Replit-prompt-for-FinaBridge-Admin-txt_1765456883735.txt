@@ -1,0 +1,502 @@
+Here’s a focused **Replit prompt for FinaBridge Admin** 👇
+
+````txt
+You are a senior frontend engineer.
+Build a **FinaBridge Admin Panel** UI for the Finatrades platform.
+
+Concept:
+FinaBridge is a gold-backed trade finance module used by importers and exporters.
+This ADMIN PANEL is for:
+- Operations
+- Compliance / Risk
+- Trade Finance Desk
+
+Admin users must be able to:
+- Monitor all trade cases
+- Inspect KYC summaries for importer/exporter
+- Review documents and approvals
+- See locked settlement value (gold) per case
+- Approve / Reject / Hold trade cases
+- Trigger “Release Settlement” (conceptual)
+- View full audit trail
+
+No backend yet → use local state + mock data.
+
+Tech:
+- React (Vite + React or Next.js)
+- TypeScript
+- TailwindCSS
+- Optional: framer-motion for subtle animations
+
+Theme / Branding:
+- Dark, premium fintech dashboard.
+- Background gradient: #000000 → #0D0515 → #1A0A2E
+- Accent gold: #D1A954
+- Cards: glassmorphism (bg-white/5, border-white/10, backdrop-blur, rounded-2xl)
+- Font: Inter
+
+────────────────────────
+ROUTE / LAYOUT
+────────────────────────
+
+Main route/component:
+- `/admin/finabridge` or `<FinaBridgeAdmin />`
+
+Layout:
+- Left: vertical sidebar nav
+- Right: main content with top filter bar + dashboard + data tables
+
+Sidebar items:
+- Overview
+- Trade Cases
+- KYC & Parties
+- Locked Funds
+- Audit & Logs
+- Settings (stub)
+
+Top of main content:
+- Title: "FinaBridge – Admin Console"
+- Subtitle: "Monitor gold-backed trade cases, KYC, and settlements."
+
+────────────────────────
+STATE & TYPES
+────────────────────────
+
+Use TypeScript interfaces.
+
+```ts
+type TradeCaseStatus =
+  | "Draft"
+  | "Awaiting Funding"
+  | "Funded – Docs Pending"
+  | "Under Review"
+  | "Approved – Ready to Release"
+  | "Released"
+  | "Closed"
+  | "Rejected"
+  | "On Hold";
+
+type TradeRole = "Importer" | "Exporter";
+
+type PartyKycStatus = "Not Started" | "In Progress" | "Approved" | "Rejected";
+
+type RiskLevel = "Low" | "Medium" | "High" | "Critical";
+
+type TradeParty = {
+  id: string;
+  name: string;
+  role: TradeRole;            // importer or exporter in that case
+  country: string;
+  kycStatus: PartyKycStatus;
+  riskLevel: RiskLevel;
+  sanctionsFlag: boolean;
+};
+
+type TradeCase = {
+  id: string;
+  reference: string;          // e.g. TF-2025-0007
+  importer: TradeParty;
+  exporter: TradeParty;
+  commodityDescription: string;
+  valueUsd: number;
+  valueGoldGrams: number;
+  lockedGoldGrams: number;    // reserved settlement amount
+  status: TradeCaseStatus;
+  createdAt: string;
+  updatedAt: string;
+  incoterm: string;           // FOB, CIF, etc.
+  shipmentMethod: string;     // Air, Sea, Land
+  expectedDeliveryDate: string;
+  jurisdictionRisk: RiskLevel;
+  amlFlags: string[];         // e.g. ["High invoice value", "High-risk country"]
+};
+
+type DocumentStatus = "Missing" | "Uploaded" | "Under Review" | "Approved" | "Rejected";
+
+type TradeDocument = {
+  id: string;
+  caseId: string;
+  type: string;               // Invoice, BL, CO, Insurance, etc.
+  fileName: string;
+  status: DocumentStatus;
+  uploadedBy: string;
+  uploadedAt: string;
+};
+
+type ApprovalStepStatus = "Pending" | "In Review" | "Approved" | "Rejected";
+
+type ApprovalStep = {
+  id: string;
+  caseId: string;
+  name: string;               // "Importer Verification", "Compliance Review", etc.
+  role: string;               // "Ops", "Compliance", "Risk"
+  status: ApprovalStepStatus;
+  approverName?: string;
+  decisionAt?: string;
+  notes?: string;
+};
+
+type AuditLogEntry = {
+  id: string;
+  caseId?: string;
+  actorName: string;
+  actorRole: string;          // "Admin", "Compliance", "System"
+  actionType: string;         // "StatusChange", "DocumentReview", "ReleaseFunds", etc.
+  timestamp: string;
+  details?: string;
+  oldValue?: string;
+  newValue?: string;
+};
+
+type LockedFundsSummary = {
+  totalLockedGoldGrams: number;
+  totalReleasedGoldGrams: number;
+  lockedByStatus: Record<TradeCaseStatus, number>;
+};
+````
+
+Mock state:
+
+* `tradeCases: TradeCase[]`
+* `documents: TradeDocument[]`
+* `approvalSteps: ApprovalStep[]`
+* `auditLogs: AuditLogEntry[]`
+* `lockedFundsSummary: LockedFundsSummary`
+
+────────────────────────
+OVERVIEW (DEFAULT VIEW)
+────────────────────────
+
+Overview = admin dashboard.
+
+Top KPI cards:
+
+* Active Trade Cases
+* Under Review (count)
+* High / Critical Risk Cases
+* Total Locked Settlement (g)
+* Released This Month (g)
+
+Below KPIs:
+
+* Small chart: locked vs released gold over time (mock data).
+* Table of "Top 5 Risky Cases":
+
+  * Case ID
+  * Importer / Exporter
+  * Jurisdiction Risk
+  * AML Flags count
+  * Status
+  * Action: "Open Case"
+
+────────────────────────
+TRADE CASES TAB
+────────────────────────
+
+Main workhorse list.
+
+Filters (top bar):
+
+* Status filter (multi-select)
+* Risk Level filter (Low / Medium / High / Critical)
+* Country filter (importer or exporter)
+* Search by Case ID / Reference / Party name
+
+Table columns:
+
+* Case ID (TF-XXXX-YYYY)
+* Importer name (with country flag or code)
+* Exporter name
+* Value (USD)
+* Locked Gold (g)
+* Status (colored badge)
+* Risk Level (color-coded pill)
+* AML Flags (chip with count)
+* Last Updated
+* Action: "View"
+
+Row click OR View button → opens **Trade Case Detail** (drawer or dedicated page).
+
+────────────────────────
+TRADE CASE DETAIL (ADMIN VIEW)
+────────────────────────
+
+Layout:
+
+* Header: Case ID, Status badge, Risk badge.
+* Buttons at top-right:
+
+  * "Approve"
+  * "Reject"
+  * "Put On Hold"
+  * "Release Settlement" (only if status = "Approved – Ready to Release")
+* Under header: inner tabs:
+
+  * Overview
+  * Documents
+  * Approvals
+  * KYC & Risk
+  * Audit
+
+──────── OVERVIEW TAB ────────
+
+Show:
+
+Left column:
+
+* Importer card:
+
+  * Name, country
+  * KYC status
+  * Risk level
+  * Sanctions flag
+* Exporter card:
+
+  * Same fields
+
+Right column:
+
+* Trade info:
+
+  * Commodity
+  * Value USD / Gold
+  * Locked Gold (g)
+  * Incoterm, Shipment Method
+  * Expected Delivery Date
+* Settlement info:
+
+  * "Locked in FinaVault: X.XX g"
+  * Status: e.g. "Reserved – Trade Finance Settlement"
+  * Text: "This gold is not transferable until settlement release."
+
+Admin actions:
+
+* "Approve Case" → updates status to "Approved – Ready to Release", creates audit log.
+* "Reject Case" → sets status to "Rejected", requires reason textarea, creates audit log.
+* "Put On Hold" → status = "On Hold" with note.
+
+──────── DOCUMENTS TAB ────────
+
+Purpose: Document Management System for admin review.
+
+Show list grouped by type:
+
+* Invoice
+* Bill of Lading
+* Packing List
+* Certificate of Origin
+* Insurance Certificate
+* Inspection Report
+* Other
+
+For each document type:
+
+* Status badge: Missing / Uploaded / Under Review / Approved / Rejected
+* If uploaded:
+
+  * File name, uploadedBy, uploadedAt
+  * Buttons:
+
+    * "View" (open placeholder modal)
+    * "Approve"
+    * "Reject" (with notes)
+
+When admin changes document status:
+
+* Update `TradeDocument.status`.
+* Add `AuditLogEntry` with actionType "DocumentReview".
+
+──────── APPROVALS TAB ────────
+
+Multi-step workflow view.
+
+Timeline or vertical stepper:
+
+Steps example:
+
+1. Importer Submission
+2. Ops Pre-check
+3. Compliance Review
+4. Final Approval
+
+For each step:
+
+* Show name, role, status.
+* If current admin role matches (you can ignore real auth, just allow for demo):
+
+  * Buttons: "Approve", "Reject", "Mark In Review"
+  * Textarea for notes (optional).
+
+Changes:
+
+* Update `ApprovalStep.status`, `approverName`, `decisionAt`, `notes`.
+* If all mandatory steps Approved:
+
+  * Update TradeCase.status → "Approved – Ready to Release".
+  * Log in audit.
+
+──────── KYC & RISK TAB ────────
+
+Admin needs a quick KYC + risk view per party.
+
+For each party (importer / exporter):
+
+* KYC block:
+
+  * KYC Status: Not Started / In Progress / Approved / Rejected
+  * KYC Last Updated
+  * Basic fields:
+
+    * Legal entity name
+    * Registration ID
+    * Country
+    * UBO verified flag
+
+* Risk block:
+
+  * Risk Level (Low / Medium / High / Critical)
+  * Sanctions: Clear / Flagged
+  * Risk notes list:
+
+    * "High-risk country"
+    * "Large transaction size"
+    * etc.
+
+Allow admin to:
+
+* Change risk level via dropdown.
+* Toggle "Sanctions flagged" boolean.
+* Add/edit a short "Risk memo".
+
+All changes create audit log entries.
+
+──────── AUDIT TAB ────────
+
+Show full audit trail for this case:
+
+Table columns:
+
+* Timestamp
+* Actor (name + role)
+* Action Type
+* Details
+* Old → New (short text)
+
+This is read-only, built from `auditLogs.filter(l => l.caseId === currentCaseId)`.
+
+────────────────────────
+LOCKED FUNDS TAB
+────────────────────────
+
+Global view of settlement balances across cases.
+
+Top:
+
+* KPI cards:
+
+  * Total Locked Gold: X.XX g
+  * Locked Under Review: Y.YY g
+  * Locked Ready to Release: Z.ZZ g
+  * Released This Month: W.WW g
+
+Below:
+
+Table:
+
+* Case ID
+* Importer
+* Exporter
+* Locked Gold (g)
+* Status
+* Age of lock (days)
+* Action: "Open Case"
+
+This tab is read-only except for "Open Case" (takes admin back to Trade Case Detail).
+
+────────────────────────
+AUDIT & LOGS TAB (GLOBAL)
+────────────────────────
+
+Admin view for all audit entries.
+
+Filters:
+
+* Filter by case
+* Filter by actor role
+* Filter by action type (StatusChange, DocumentReview, KycUpdate, RiskUpdate, ReleaseFunds)
+
+Table columns:
+
+* Timestamp
+* Actor
+* Role
+* Action Type
+* Case ID (if any)
+* Details
+
+────────────────────────
+SETTLEMENT RELEASE (ADMIN ACTION)
+────────────────────────
+
+In Trade Case Detail, when status = "Approved – Ready to Release":
+
+Show button:
+
+* "Release Settlement"
+
+On click:
+
+* Confirm modal:
+
+  * "This will instruct the system to transfer X.XX g from importer to exporter in FinaVault/FinaPay. Continue?"
+* On confirm:
+
+  * Update case.status → "Released"
+  * Update `lockedFundsSummary`:
+
+    * `totalLockedGoldGrams` decreases
+    * `totalReleasedGoldGrams` increases
+  * Add `AuditLogEntry` with actionType = "ReleaseFunds".
+
+Comment:
+
+```ts
+// TODO: Backend should:
+/// - Transfer settlement gold in FinaVault from importer to exporter
+/// - Update corresponding FinaPay balances
+/// - Mark vault ledger as "Settled"
+```
+
+────────────────────────
+UX / ANIMATION
+────────────────────────
+
+* Use framer-motion for:
+
+  * Page fade-in
+  * Detail drawer slide-in
+* Tailwind transitions:
+
+  * Hover on buttons: subtle scale + gold border glow.
+* Responsive:
+
+  * On smaller screens, collapse tables into stacked cards.
+  * Keep filters usable on mobile (vertical stacking).
+
+────────────────────────
+GOAL
+────────────────────────
+
+Deliver a **FinaBridge Admin Panel** that:
+
+* Gives a clean overview of all trade cases and risks.
+* Lets admin filter, open, and manage cases easily.
+* Shows KYC and risk summaries per party.
+* Allows document review and multi-step approvals.
+* Exposes locked settlement amounts and allows release (front-end only).
+* Maintains a full audit trail of all admin actions.
+
+Front-end only. All data is mock state, but structure must be ready for future backend APIs.
+
+```
+```

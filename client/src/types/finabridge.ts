@@ -7,42 +7,60 @@ export type TradeCaseStatus =
   | "Approved – Ready to Release"
   | "Released"
   | "Closed"
-  | "Rejected";
+  | "Rejected"
+  | "On Hold";
 
 export type TradeRole = "Importer" | "Exporter";
 
-export type TradeCase = {
+export type PartyKycStatus = "Not Started" | "In Progress" | "Approved" | "Rejected";
+
+export type RiskLevel = "Low" | "Medium" | "High" | "Critical";
+
+export type TradeParty = {
   id: string;
   name: string;
-  role: TradeRole;
-  buyer: { company: string; country: string; contactName: string; email: string; };
-  seller: { 
-    company: string; 
-    country: string; 
-    contactName: string; 
-    email: string;
-    mobile?: string;
-    bankName?: string;
-    address?: string;
-  };
+  role: TradeRole;            // importer or exporter in that case
+  country: string;
+  kycStatus: PartyKycStatus;
+  riskLevel: RiskLevel;
+  sanctionsFlag: boolean;
+  contactName?: string;
+  email?: string;
+};
+
+export type TradeCase = {
+  id: string;
+  reference: string;          // e.g. TF-2025-0007
+  name: string;
+  role: TradeRole; // Kept for compatibility, but mainly derived from importer/exporter now
+  
+  // New Party Structures
+  importer: TradeParty;
+  exporter: TradeParty;
+  
+  // Legacy fields kept for compatibility with existing code if needed, but should migrate to new structure
+  buyer?: { company: string; country: string; contactName: string; email: string; };
+  seller?: { company: string; country: string; contactName: string; email: string; };
+
   commodityDescription: string;
   valueUsd: number;
   valueGoldGrams: number;
-  paymentTerms: string;
-  deliveryTerms: string;
-  shipmentMethod: string;
-  loadingPort?: string;
-  destinationPort?: string;
-  deliveryTimeframe?: string;
-  items?: TradeItem[];
-  expectedDeliveryDate: string;
-  lockedGoldGrams: number;
+  lockedGoldGrams: number;    // reserved settlement amount
   status: TradeCaseStatus;
   createdAt: string;
   updatedAt: string;
-  // Risk fields
-  riskLevel?: 'Low' | 'Medium' | 'High';
-  amlStatus?: 'Clear' | 'Flagged';
+  
+  incoterm: string;           // FOB, CIF, etc.
+  shipmentMethod: string;     // Air, Sea, Land
+  expectedDeliveryDate: string;
+  
+  jurisdictionRisk: RiskLevel;
+  amlFlags: string[];         // e.g. ["High invoice value", "High-risk country"]
+  
+  // Additional fields from previous definition
+  paymentTerms?: string;
+  deliveryTerms?: string; // alias for incoterm usually
+  items?: TradeItem[];
   
   // Professional Services
   insuranceOption?: 'Finatrades Premium' | 'Self-Arranged';
@@ -76,14 +94,17 @@ export type FinaBridgeWallet = {
   exporter: FinaBridgeWalletSide;
 };
 
+export type DocumentStatus = "Missing" | "Uploaded" | "Under Review" | "Approved" | "Rejected";
+
 export type TradeDocument = {
   id: string;
   caseId: string;
-  type: string;
+  type: string;               // Invoice, BL, CO, Insurance, etc.
   fileName: string;
-  version: number;
+  status: DocumentStatus;
   uploadedBy: string;
   uploadedAt: string;
+  version?: number;
   digitalSignatureStatus?: "Unsigned" | "Signed" | "Rejected";
 };
 
@@ -92,8 +113,8 @@ export type ApprovalStepStatus = "Pending" | "In Review" | "Approved" | "Rejecte
 export type ApprovalStep = {
   id: string;
   caseId: string;
-  name: string; // "Importer Verification", etc.
-  role: string; // "Importer", "Exporter", "Compliance"
+  name: string;               // "Importer Verification", "Compliance Review", etc.
+  role: string;               // "Ops", "Compliance", "Risk"
   status: ApprovalStepStatus;
   approverName?: string;
   decisionAt?: string;
@@ -102,14 +123,20 @@ export type ApprovalStep = {
 
 export type AuditLogEntry = {
   id: string;
-  caseId: string;
+  caseId?: string;
   actorName: string;
-  actorRole: string;
-  actionType: string; // "Create Case", "Lock Gold", "Release Gold", "Upload Document", "Approve", etc.
+  actorRole: string;          // "Admin", "Compliance", "System"
+  actionType: string;         // "StatusChange", "DocumentReview", "ReleaseFunds", etc.
   timestamp: string;
-  ipAddress?: string;
-  deviceId?: string;
+  details?: string;
   oldValue?: string;
   newValue?: string;
-  details?: string;
+  ipAddress?: string;
+  deviceId?: string;
+};
+
+export type LockedFundsSummary = {
+  totalLockedGoldGrams: number;
+  totalReleasedGoldGrams: number;
+  lockedByStatus: Record<TradeCaseStatus, number>;
 };
