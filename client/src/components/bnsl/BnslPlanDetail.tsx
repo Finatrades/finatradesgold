@@ -55,13 +55,13 @@ export default function BnslPlanDetail({
       
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <Button variant="ghost" onClick={onBack} className="pl-0 text-white/60 hover:text-white hover:bg-transparent">
+        <Button variant="ghost" onClick={onBack} className="pl-0 text-muted-foreground hover:text-foreground hover:bg-transparent">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Plans
         </Button>
         <div className="flex gap-2">
            <Button 
              variant="destructive" 
-             className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20"
+             className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
              onClick={() => setIsSimulatorOpen(true)}
              disabled={plan.status !== 'Active'}
            >
@@ -71,20 +71,20 @@ export default function BnslPlanDetail({
       </div>
 
       {/* Overview Card */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="border-b border-white/10 pb-4">
+      <Card className="bg-white shadow-sm border border-border">
+        <CardHeader className="border-b border-border pb-4">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-xl font-bold text-white mb-1">
+              <CardTitle className="text-xl font-bold text-foreground mb-1">
                 {plan.tenorMonths}-Month BNSL Plan
               </CardTitle>
-              <div className="flex items-center gap-2 text-sm text-white/60">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{plan.id}</span>
                 <span>•</span>
                 <span>Started {new Date(plan.startDate).toLocaleDateString()}</span>
               </div>
             </div>
-            <Badge className="bg-green-500/20 text-green-500 hover:bg-green-500/30 border-green-500/20">
+            <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/30 border-green-500/20">
               {plan.status}
             </Badge>
           </div>
@@ -92,46 +92,46 @@ export default function BnslPlanDetail({
         <CardContent className="p-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Gold Sold</p>
-              <p className="text-2xl font-bold text-white">{plan.goldSoldGrams.toFixed(2)} g</p>
-              <p className="text-xs text-white/40 mt-1">@ ${plan.enrollmentPriceUsdPerGram.toFixed(2)}/g</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Gold Sold</p>
+              <p className="text-2xl font-bold text-foreground">{plan.goldSoldGrams.toFixed(2)} g</p>
+              <p className="text-xs text-muted-foreground mt-1">@ ${plan.enrollmentPriceUsdPerGram.toFixed(2)}/g</p>
             </div>
             <div>
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Deferred Base (USD)</p>
-              <p className="text-2xl font-bold text-white">${plan.basePriceComponentUsd.toLocaleString()}</p>
-              <p className="text-xs text-white/40 mt-1">Paid at Maturity</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Deferred Base (USD)</p>
+              <p className="text-2xl font-bold text-foreground">${plan.basePriceComponentUsd.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">Paid at Maturity</p>
             </div>
             
             {/* New Daily Accrual Card */}
-            <div className="bg-white/5 -m-2 p-2 rounded-lg border border-white/5">
+            <div className="bg-secondary/10 -m-2 p-2 rounded-lg border border-secondary/20">
               <div className="flex items-center gap-2 mb-1">
-                 <Hourglass className="w-3 h-3 text-[#D4AF37] animate-pulse" />
-                 <p className="text-xs text-[#D4AF37] uppercase tracking-wider">Accrued Margin</p>
+                 <Hourglass className="w-3 h-3 text-secondary animate-pulse" />
+                 <p className="text-xs text-secondary uppercase tracking-wider">Accrued Margin</p>
               </div>
-              <p className="text-2xl font-bold text-white">${accruedMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-2xl font-bold text-foreground">${accruedMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-xs text-muted-foreground mt-1">
                  Daily: ${dailyMarginUsd.toFixed(2)}
-                 <span className="ml-1 text-white/20">|</span>
-                 <span className="ml-1 text-[#D4AF37]">Unpaid</span>
+                 <span className="ml-1 text-muted-foreground/50">|</span>
+                 <span className="ml-1 text-secondary">Unpaid</span>
               </p>
             </div>
 
             <div>
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Total Paid Margin</p>
-              <p className="text-2xl font-bold text-[#D4AF37]">{plan.totalPaidMarginGrams.toFixed(3)} g</p>
-              <p className="text-xs text-white/40 mt-1">${plan.totalPaidMarginUsd.toLocaleString()} Value</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Paid Margin</p>
+              <p className="text-2xl font-bold text-secondary">{plan.totalPaidMarginGrams.toFixed(3)} g</p>
+              <p className="text-xs text-muted-foreground mt-1">${plan.totalPaidMarginUsd.toLocaleString()} Value</p>
             </div>
           </div>
 
           <div className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
-             <Clock className="w-5 h-5 text-blue-400 mt-0.5" />
+             <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
              <div>
-               <h4 className="font-bold text-blue-400 text-sm">Contract Type: Deferred Price Sale</h4>
-               <p className="text-xs text-white/60 mt-1 leading-relaxed">
+               <h4 className="font-bold text-blue-600 text-sm">Contract Type: Deferred Price Sale</h4>
+               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                  You have sold this gold to Wingold. You no longer own it. You hold a contractual right to receive 
                  (1) Quarterly Margin in gold grams and (2) Base Price Component settlement at maturity.
                  <br/><br/>
-                 <span className="text-[#D4AF37]">Note:</span> Margin accrues daily but is disbursed only on the scheduled quarterly dates.
+                 <span className="text-secondary font-medium">Note:</span> Margin accrues daily but is disbursed only on the scheduled quarterly dates.
                </p>
              </div>
           </div>
@@ -139,14 +139,14 @@ export default function BnslPlanDetail({
       </Card>
 
       {/* Payout Schedule */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="border-b border-white/10 pb-4">
+      <Card className="bg-white shadow-sm border border-border">
+        <CardHeader className="border-b border-border pb-4">
            <div className="flex justify-between items-center">
-             <CardTitle className="text-lg font-bold text-white">Payout Schedule</CardTitle>
+             <CardTitle className="text-lg font-bold text-foreground">Payout Schedule</CardTitle>
              {nextPayout && (
                <Button 
                  size="sm" 
-                 className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90"
+                 className="bg-secondary text-white hover:bg-secondary/90"
                  onClick={() => onSimulatePayout(nextPayout.id, currentGoldPrice)}
                >
                  <PlayCircle className="w-4 h-4 mr-2" /> Simulate Next Payout
@@ -156,7 +156,7 @@ export default function BnslPlanDetail({
         </CardHeader>
         <CardContent className="p-0">
            <table className="w-full text-sm text-left">
-             <thead className="bg-white/5 text-white/60 font-medium">
+             <thead className="bg-muted text-muted-foreground font-medium">
                <tr>
                  <th className="p-4 pl-6">#</th>
                  <th className="p-4">Scheduled Date</th>
@@ -166,29 +166,29 @@ export default function BnslPlanDetail({
                  <th className="p-4 pr-6 text-right">Status</th>
                </tr>
              </thead>
-             <tbody className="divide-y divide-white/5">
+             <tbody className="divide-y divide-border">
                {plan.payouts.map((payout) => (
-                 <tr key={payout.id} className="hover:bg-white/5 transition-colors">
-                   <td className="p-4 pl-6 text-white/60">{payout.sequence}</td>
-                   <td className="p-4 font-medium text-white">
+                 <tr key={payout.id} className="hover:bg-muted/50 transition-colors">
+                   <td className="p-4 pl-6 text-muted-foreground">{payout.sequence}</td>
+                   <td className="p-4 font-medium text-foreground">
                      {new Date(payout.scheduledDate).toLocaleDateString()}
                    </td>
-                   <td className="p-4 text-white">${payout.monetaryAmountUsd.toLocaleString()}</td>
-                   <td className="p-4 text-white/60">
+                   <td className="p-4 text-foreground">${payout.monetaryAmountUsd.toLocaleString()}</td>
+                   <td className="p-4 text-muted-foreground">
                      {payout.marketPriceUsdPerGramAtPayout 
                        ? `$${payout.marketPriceUsdPerGramAtPayout.toFixed(2)}` 
                        : '-'}
                    </td>
-                   <td className="p-4 font-bold text-[#D4AF37]">
+                   <td className="p-4 font-bold text-secondary">
                      {payout.gramsCredited ? `${payout.gramsCredited.toFixed(4)} g` : '-'}
                    </td>
                    <td className="p-4 pr-6 text-right">
                      <span className={`px-2 py-1 rounded text-xs font-bold ${
                        payout.status === 'Paid' 
-                         ? 'bg-green-500/10 text-green-500' 
+                         ? 'bg-green-500/10 text-green-600' 
                          : payout.status === 'Cancelled'
-                         ? 'bg-red-500/10 text-red-500'
-                         : 'bg-white/10 text-white/60'
+                         ? 'bg-red-500/10 text-red-600'
+                         : 'bg-muted text-muted-foreground'
                      }`}>
                        {payout.status}
                      </span>

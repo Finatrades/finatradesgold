@@ -28,51 +28,51 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
   };
 
   return (
-    <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+    <Card className="bg-white shadow-sm border border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-6">
         <div>
-          <CardTitle className="text-xl font-bold text-white">Active Trades</CardTitle>
-          <p className="text-sm text-white/40 mt-1">Manage your ongoing trade finance deals.</p>
+          <CardTitle className="text-xl font-bold text-foreground">Active Trades</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Manage your ongoing trade finance deals.</p>
         </div>
-        <Button onClick={onCreateNew} className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold">
+        <Button onClick={onCreateNew} className="bg-secondary text-white hover:bg-secondary/90 font-bold">
           + Create New Trade
         </Button>
       </CardHeader>
       <CardContent className="p-0">
         <Table>
-          <TableHeader className="bg-white/5">
-            <TableRow className="border-white/10 hover:bg-transparent">
-              <TableHead className="text-white/60">Trade ID</TableHead>
-              <TableHead className="text-white/60">Exporter</TableHead>
-              <TableHead className="text-white/60">Value (USD)</TableHead>
-              <TableHead className="text-white/60">Locked Gold</TableHead>
-              <TableHead className="text-white/60">Status</TableHead>
-              <TableHead className="text-white/60 text-right">Action</TableHead>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="text-muted-foreground">Trade ID</TableHead>
+              <TableHead className="text-muted-foreground">Exporter</TableHead>
+              <TableHead className="text-muted-foreground">Value (USD)</TableHead>
+              <TableHead className="text-muted-foreground">Locked Gold</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {cases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-white/40">
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                   No trades found. Create one to get started.
                 </TableCell>
               </TableRow>
             ) : (
               cases.map((c) => (
-                <TableRow key={c.id} className="border-white/10 hover:bg-white/5 transition-colors">
-                  <TableCell className="font-mono text-[#D4AF37]">{c.id}</TableCell>
-                  <TableCell className="text-white font-medium">
+                <TableRow key={c.id} className="border-border hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-mono text-secondary">{c.id}</TableCell>
+                  <TableCell className="text-foreground font-medium">
                     <div className="flex flex-col">
                       <span>{c.role === 'Importer' ? c.seller.company : c.buyer.company}</span>
                       {(c.seller.company.includes('Finatrades') || c.seller.company.includes('Pending')) && (
-                        <span className="text-[10px] text-[#D4AF37] flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] text-secondary flex items-center gap-1 mt-0.5">
                           <CheckCircle2 className="w-3 h-3" /> Admin Involved
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-white/80">${c.valueUsd.toLocaleString()}</TableCell>
-                  <TableCell className="text-white/80 flex items-center gap-2">
+                  <TableCell className="text-foreground/80">${c.valueUsd.toLocaleString()}</TableCell>
+                  <TableCell className="text-foreground/80 flex items-center gap-2">
                     {c.lockedGoldGrams > 0 && <Lock className="w-3 h-3 text-amber-500" />}
                     {c.lockedGoldGrams.toFixed(3)} g
                   </TableCell>
@@ -82,7 +82,7 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
                       variant="ghost" 
                       size="sm" 
                       onClick={() => onViewCase(c)}
-                      className="text-white/60 hover:text-white hover:bg-white/10"
+                      className="text-muted-foreground hover:text-foreground hover:bg-muted"
                     >
                       View
                     </Button>
