@@ -193,6 +193,31 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to get KYC submissions" });
     }
   });
+
+  // Get all users (Admin)
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remove passwords from response
+      const safeUsers = users.map(({ password, ...user }) => user);
+      res.json({ users: safeUsers });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get users" });
+    }
+  });
+
+  // Update user (Admin)
+  app.patch("/api/admin/users/:id", async (req, res) => {
+    try {
+      const user = await storage.updateUser(req.params.id, req.body);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ user });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update user" });
+    }
+  });
   
   // ============================================================================
   // FINAPAY - WALLET & TRANSACTIONS

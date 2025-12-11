@@ -2,7 +2,7 @@ import React from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Ban, Edit, Trash, Eye, CheckCircle, Unlock } from 'lucide-react';
+import { MoreHorizontal, Ban, Edit, Trash, Eye, CheckCircle, Unlock, Loader2, Users } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useUserManagement } from '@/context/UserContext';
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function UserManagement() {
-  const { users, updateUserStatus, updateUserKYC } = useUserManagement();
+  const { users, isLoading, updateUserStatus, updateUserKYC } = useUserManagement();
 
   return (
     <AdminLayout>
@@ -31,9 +31,20 @@ export default function UserManagement() {
 
         <Card>
           <CardHeader>
-            <CardTitle>All Users</CardTitle>
+            <CardTitle>All Users ({users.length})</CardTitle>
           </CardHeader>
           <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No users found</p>
+                <p className="text-sm">Users who register will appear here</p>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
@@ -105,6 +116,7 @@ export default function UserManagement() {
                 </tbody>
               </table>
             </div>
+            )}
           </CardContent>
         </Card>
       </div>
