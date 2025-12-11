@@ -38,6 +38,8 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
   const [lockAmount, setLockAmount] = useState<string>('0');
   const [useFinatradesExporter, setUseFinatradesExporter] = useState(false);
   const [items, setItems] = useState<TradeItem[]>([]);
+  const [otherDocDescription, setOtherDocDescription] = useState('');
+  const [isOtherDocSelected, setIsOtherDocSelected] = useState(false);
 
   const GOLD_PRICE = 85.22; // Mock price
 
@@ -363,14 +365,34 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole }: Crea
                        'Agreements / Contract Copy',
                        'Other'
                    ].map((doc) => (
-                     <div key={doc} className="flex items-center space-x-3 p-2 rounded hover:bg-white/5 transition-colors">
-                        <Checkbox id={`doc-${doc.replace(/\s+/g, '-')}`} className="border-white/20 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black" />
-                        <label 
-                            htmlFor={`doc-${doc.replace(/\s+/g, '-')}`} 
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80 cursor-pointer"
-                        >
-                            {doc}
-                        </label>
+                     <div key={doc} className="flex flex-col space-y-2 p-2 rounded hover:bg-white/5 transition-colors">
+                        <div className="flex items-center space-x-3">
+                            <Checkbox 
+                                id={`doc-${doc.replace(/\s+/g, '-')}`} 
+                                className="border-white/20 data-[state=checked]:bg-[#D4AF37] data-[state=checked]:text-black" 
+                                onCheckedChange={(checked) => {
+                                    if (doc === 'Other') {
+                                        setIsOtherDocSelected(checked as boolean);
+                                    }
+                                }}
+                            />
+                            <label 
+                                htmlFor={`doc-${doc.replace(/\s+/g, '-')}`} 
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white/80 cursor-pointer"
+                            >
+                                {doc}
+                            </label>
+                        </div>
+                        {doc === 'Other' && isOtherDocSelected && (
+                            <div className="pl-7 w-full animate-in fade-in slide-in-from-top-1">
+                                <Input 
+                                    className="bg-black/20 border-white/10 h-8 text-sm"
+                                    placeholder="Please specify other documents..."
+                                    value={otherDocDescription}
+                                    onChange={(e) => setOtherDocDescription(e.target.value)}
+                                />
+                            </div>
+                        )}
                      </div>
                    ))}
                  </div>
