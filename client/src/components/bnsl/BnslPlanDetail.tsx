@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BnslPlan, BnslPayout } from '@/types/bnsl';
+import { BnslPlan } from '@/types/bnsl';
 import { ArrowLeft, CheckCircle2, AlertTriangle, PlayCircle, Clock, Hourglass, TrendingUp } from 'lucide-react';
 import EarlyTerminationSimulator from './EarlyTerminationSimulator';
 
@@ -118,8 +118,8 @@ export default function BnslPlanDetail({
 
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Paid Margin</p>
-              <p className="text-2xl font-bold text-secondary">{plan.totalPaidMarginGrams.toFixed(3)} g</p>
-              <p className="text-xs text-muted-foreground mt-1">${plan.totalPaidMarginUsd.toLocaleString()} Value</p>
+              <p className="text-2xl font-bold text-secondary">{plan.paidMarginGrams.toFixed(3)} g</p>
+              <p className="text-xs text-muted-foreground mt-1">${plan.paidMarginUsd.toLocaleString()} Value</p>
             </div>
           </div>
 
@@ -175,8 +175,8 @@ export default function BnslPlanDetail({
                    </td>
                    <td className="p-4 text-foreground">${payout.monetaryAmountUsd.toLocaleString()}</td>
                    <td className="p-4 text-muted-foreground">
-                     {payout.marketPriceUsdPerGramAtPayout 
-                       ? `$${payout.marketPriceUsdPerGramAtPayout.toFixed(2)}` 
+                     {payout.marketPriceUsdPerGram 
+                       ? `$${payout.marketPriceUsdPerGram.toFixed(2)}` 
                        : '-'}
                    </td>
                    <td className="p-4 font-bold text-secondary">

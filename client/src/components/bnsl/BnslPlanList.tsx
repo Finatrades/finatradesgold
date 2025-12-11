@@ -53,7 +53,7 @@ export default function BnslPlanList({ plans, onViewPlan }: BnslPlanListProps) {
                     </Badge>
                   </div>
                   <h3 className="text-lg font-bold text-foreground">
-                    {plan.tenorMonths} Months @ {plan.marginRateAnnualPercent * 100}% p.a.
+                    {plan.tenorMonths} Months @ {plan.agreedMarginAnnualPercent}% p.a.
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Started: {new Date(plan.startDate).toLocaleDateString()} • Matures: {new Date(plan.maturityDate).toLocaleDateString()}
@@ -75,7 +75,7 @@ export default function BnslPlanList({ plans, onViewPlan }: BnslPlanListProps) {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Received (g)</p>
-                    <p className="font-bold text-secondary">{plan.totalPaidMarginGrams.toFixed(3)} g</p>
+                    <p className="font-bold text-secondary">{plan.paidMarginGrams.toFixed(3)} g</p>
                   </div>
                 </div>
 
