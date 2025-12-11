@@ -17,16 +17,22 @@ import { toast } from 'sonner';
 export default function FinaPayDashboard() {
   const { wallet, transactions, limits, currentGoldPriceUsdPerGram, goldPriceHistory, addTransaction, updateWallet } = useFinaPay();
 
-  // Default wallet values if not loaded yet
-  const safeWallet = wallet || {
-    goldBalanceGrams: 0,
-    availableGoldGrams: 0,
-    lockedForBnslGrams: 0,
-    lockedForTradeGrams: 0,
-    goldValueUsd: 0,
-    goldValueAed: 0,
-    usdBalance: 0,
-    eurBalance: 0,
+  // Map wallet data from schema (goldGrams, usdBalance, eurBalance) to dashboard properties
+  const goldBalanceGrams = wallet ? parseFloat(wallet.goldGrams as string || '0') : 0;
+  const usdBalance = wallet ? parseFloat(wallet.usdBalance as string || '0') : 0;
+  const eurBalance = wallet ? parseFloat(wallet.eurBalance as string || '0') : 0;
+  
+  // Derived values for dashboard display
+  const safeWallet = {
+    goldBalanceGrams,
+    availableGoldGrams: goldBalanceGrams, // All gold is available by default
+    lockedForBnslGrams: 0, // These would come from BNSL context if needed
+    lockedForTradeGrams: 0, // These would come from Trade context if needed
+    goldValueUsd: goldBalanceGrams * currentGoldPriceUsdPerGram,
+    goldValueAed: goldBalanceGrams * currentGoldPriceUsdPerGram * 3.67, // AED conversion
+    usdBalance,
+    eurBalance,
+    tier: 'Gold' as const, // Default tier
   };
 
   // Modal States
