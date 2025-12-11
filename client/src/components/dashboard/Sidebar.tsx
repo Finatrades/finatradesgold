@@ -7,6 +7,7 @@ import {
   Database, 
   TrendingUp, 
   BarChart3, 
+  CreditCard,
   User, 
   Settings, 
   LogOut,
@@ -28,6 +29,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
     { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
     { icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' },
+    { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/dashboard/profile' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },
   ];

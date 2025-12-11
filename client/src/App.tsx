@@ -10,6 +10,7 @@ import FinaPay from "@/pages/FinaPay";
 import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
 import Onboarding from "@/pages/Onboarding";
+import FinaCard from "@/pages/FinaCard";
 import Dashboard from "@/pages/Dashboard";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
@@ -38,6 +39,9 @@ function Router() {
       <Route path="/finapay" component={FinaPay} />
       <Route path="/bnsl" component={BNSL} />
       <Route path="/finabridge" component={FinaBridge} />
+      <Route path="/finacard">
+        <ProtectedRoute component={FinaCard} />
+      </Route>
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
