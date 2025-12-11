@@ -46,6 +46,8 @@ import KYCReview from "@/pages/admin/KYCReview";
 import UserManagement from "@/pages/admin/UserManagement";
 import UserDetails from "@/pages/admin/UserDetails";
 import Transactions from "@/pages/admin/Transactions";
+import VaultManagement from "@/pages/admin/VaultManagement";
+import AdminSettings from "@/pages/admin/AdminSettings";
 
 function Router() {
   return (
@@ -84,6 +86,8 @@ function Router() {
       <Route path="/admin/users" component={UserManagement} />
       <Route path="/admin/users/:id" component={UserDetails} />
       <Route path="/admin/transactions" component={Transactions} />
+      <Route path="/admin/vault" component={VaultManagement} />
+      <Route path="/admin/settings" component={AdminSettings} />
 
       <Route component={NotFound} />
     </Switch>

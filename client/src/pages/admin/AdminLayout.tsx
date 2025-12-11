@@ -10,7 +10,8 @@ import {
   Menu,
   Bell,
   Search,
-  ShieldAlert
+  ShieldAlert,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Overview', href: '/admin' },
     { icon: <Users className="w-5 h-5" />, label: 'User Management', href: '/admin/users' },
     { icon: <ShieldAlert className="w-5 h-5" />, label: 'KYC Reviews', href: '/admin/kyc' },
+    { icon: <Package className="w-5 h-5" />, label: 'Vault Management', href: '/admin/vault' },
     { icon: <FileText className="w-5 h-5" />, label: 'Transactions', href: '/admin/transactions' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/admin/settings' },
   ];
