@@ -15,6 +15,8 @@ export type DepositRequestStatus =
   | 'Approved – Awaiting Delivery'
   | 'Received at Vault'
   | 'Stored in Vault'
+  | 'Transferred'
+  | 'Received'
   | 'Rejected'
   | 'Cancelled';
 

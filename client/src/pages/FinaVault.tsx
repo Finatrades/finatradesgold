@@ -55,6 +55,50 @@ const MOCK_REQUESTS: DepositRequest[] = [
     vaultInternalReference: 'FP-DIG-8821'
   },
   {
+    id: 'TR-OUT-2024-882',
+    userId: 'user-1',
+    vaultLocation: 'Swiss Vault',
+    depositType: 'Bars',
+    totalDeclaredWeightGrams: 100,
+    items: [
+      { id: '1', itemType: 'Bar', quantity: 1, weightPerUnitGrams: 100, totalWeightGrams: 100, purity: '999.9', brand: 'PAMP' }
+    ],
+    deliveryMethod: 'Pickup', // Internal transfer essentially
+    pickupDetails: {
+      address: 'Internal Transfer to User: @alex_crypto',
+      contactName: 'Alex Johnson',
+      contactMobile: 'ID: 99281-22',
+      date: '2024-12-11',
+      timeSlot: 'Completed'
+    },
+    documents: [],
+    status: 'Transferred',
+    submittedAt: '2024-12-11T11:20:00Z',
+    vaultInternalReference: 'TR-INT-99282'
+  },
+  {
+    id: 'TR-IN-2024-991',
+    userId: 'user-1',
+    vaultLocation: 'Singapore Vault',
+    depositType: 'Coins',
+    totalDeclaredWeightGrams: 31.1,
+    items: [
+      { id: '1', itemType: 'Coin', quantity: 1, weightPerUnitGrams: 31.1, totalWeightGrams: 31.1, purity: '999.9', brand: 'Buffalo' }
+    ],
+    deliveryMethod: 'Courier',
+    pickupDetails: {
+      address: 'Received from User: @sarah_gold',
+      contactName: 'Sarah Smith',
+      contactMobile: 'ID: 7721-11',
+      date: '2024-12-11',
+      timeSlot: 'Completed'
+    },
+    documents: [],
+    status: 'Received', 
+    submittedAt: '2024-12-11T10:05:00Z',
+    vaultInternalReference: 'TR-INT-99283'
+  },
+  {
     id: 'FD-2024-0089',
     userId: 'user-1',
     vaultLocation: 'Dubai Vault',

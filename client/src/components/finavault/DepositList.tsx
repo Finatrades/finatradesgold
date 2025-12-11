@@ -47,8 +47,11 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
       case 'Received at Vault':
         colorClass = 'bg-teal-500/10 text-teal-500 border-teal-500/20';
         break;
-      case 'Stored in Vault':
+      case 'Received':
         colorClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+        break;
+      case 'Transferred':
+        colorClass = 'bg-purple-500/10 text-purple-500 border-purple-500/20';
         break;
       case 'Rejected':
       case 'Cancelled':
