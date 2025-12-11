@@ -121,8 +121,14 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
                      <p className="text-white font-medium mb-2">{issueDate}</p>
                      <Separator className="bg-[#D4AF37]/40 w-48 mb-2 mx-auto" />
                      <p className="text-xs text-[#D4AF37] uppercase tracking-wider">Date of Issue</p>
-                     <p className="text-[10px] text-white/40">{request.vaultLocation}</p>
+                     <p className="text-10 text-white/40">{request.vaultLocation}</p>
                   </div>
+                </div>
+
+                <div className="mt-8 text-[10px] text-white/30 text-justify leading-relaxed px-4 md:px-0">
+                  <p>
+                    “This Gold Ownership Certificate is valid solely until the occurrence of the next transaction affecting the Holder’s gold balance. Upon execution of any new purchase, sale, transfer, allocation, redemption, or adjustment, this Certificate shall automatically become null and void. The updated ownership, whether increased or reduced, shall be determined exclusively by the most recent Gold Ownership Certificate issued thereafter, which supersedes all prior certificates.”
+                  </p>
                 </div>
               </div>
               
