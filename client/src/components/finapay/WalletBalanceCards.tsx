@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Wallet } from '@/types/finapay';
-import { DollarSign, Lock, Briefcase, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Wallet as WalletType } from '@/types/finapay';
+import { Wallet, DollarSign, Lock, Briefcase, TrendingUp, ArrowUpRight } from 'lucide-react';
 
 interface WalletBalanceCardsProps {
-  wallet: Wallet;
+  wallet: WalletType;
 }
 
 export default function WalletBalanceCards({ wallet }: WalletBalanceCardsProps) {
@@ -12,82 +12,88 @@ export default function WalletBalanceCards({ wallet }: WalletBalanceCardsProps) 
   
   // Total Available (Liquid) = USD Balance + Liquid Gold
   const totalAvailableUsd = wallet.usdBalance + goldValueUsd;
+  
+  // Total Locked = BNSL + FinaBridge
+  const totalLockedUsd = wallet.bnslLockedUsd + wallet.finaBridgeLockedUsd;
+
+  // Grand Total
+  const grandTotalUsd = totalAvailableUsd + totalLockedUsd;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* 1. Total Available Balance */}
-      <Card className="bg-white shadow-sm border border-border hover:scale-[1.02] hover:border-[#D4AF37] transition-all duration-200 group relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-5">
-           <DollarSign className="w-24 h-24 text-foreground" />
+    <Card className="bg-white shadow-sm border border-border overflow-hidden relative">
+      <div className="absolute top-0 right-0 p-4 opacity-5">
+        <Wallet className="w-32 h-32 text-primary" />
+      </div>
+      
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Wallet className="w-5 h-5" />
+            </div>
+            FinaPay Wallet
+          </CardTitle>
         </div>
-        <CardContent className="p-6 relative z-10">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-green-500/10 rounded-xl text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors">
-              <DollarSign className="w-6 h-6" />
+      </CardHeader>
+      
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Available Balance */}
+          <div className="bg-muted p-4 rounded-xl border border-border">
+            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Available Balance</p>
+            <div className="text-2xl font-bold text-foreground">
+              ${totalAvailableUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
             </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-muted-foreground">Total Available Balance</p>
+            <div className="flex flex-col gap-1 mt-1">
+              <p className="text-sm text-muted-foreground">
+                <span className="text-secondary font-semibold">{wallet.goldBalanceGrams.toFixed(3)} g</span> Gold
+              </p>
+              <p className="text-sm text-muted-foreground">
+                <span className="text-foreground font-semibold">${wallet.usdBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> USD
+              </p>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Funds available for trading, spending, or transfer.
+            </p>
           </div>
-          <div>
-            <h3 className="text-3xl font-bold text-foreground mb-1">
-              ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
-            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-               <span className="text-green-600 flex items-center font-medium bg-green-500/10 px-2 py-0.5 rounded">
-                 <ArrowUpRight className="w-3 h-3 mr-1" />
-                 Ready to Trade
-               </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* 2. Locked Funds in BNSL */}
-      <Card className="bg-white shadow-sm border border-border hover:scale-[1.02] hover:border-[#FF2FBF] transition-all duration-200 group relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-5">
-           <TrendingUp className="w-24 h-24 text-[#FF2FBF]" />
-        </div>
-        <CardContent className="p-6 relative z-10">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-[#FF2FBF]/10 rounded-xl text-[#FF2FBF] group-hover:bg-[#FF2FBF] group-hover:text-white transition-colors">
-              <Lock className="w-6 h-6" />
+          {/* Locked Funds */}
+          <div className="bg-muted p-4 rounded-xl border border-border">
+            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+              Locked Funds
+            </p>
+            <div className="text-2xl font-bold text-amber-500">
+              ${totalLockedUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
             </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-muted-foreground">Locked in BNSL</p>
+            <div className="flex flex-col gap-1 mt-1">
+               <p className="text-sm text-amber-500/80 flex items-center gap-1">
+                 <Lock className="w-3 h-3" />
+                 BNSL: ${wallet.bnslLockedUsd.toLocaleString()}
+               </p>
+               <p className="text-sm text-amber-500/80 flex items-center gap-1">
+                 <Briefcase className="w-3 h-3" />
+                 Trade: ${wallet.finaBridgeLockedUsd.toLocaleString()}
+               </p>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Capital currently deployed in active financial products.
+            </p>
           </div>
-          <div>
-            <h3 className="text-3xl font-bold text-[#FF2FBF] mb-1">
-              ${wallet.bnslLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-2">Earning Yield</p>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* 3. Locked Funds in FinaBridge */}
-      <Card className="bg-white shadow-sm border border-border hover:scale-[1.02] hover:border-[#4CAF50] transition-all duration-200 group relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-5">
-           <Briefcase className="w-24 h-24 text-[#4CAF50]" />
+          {/* Total Value */}
+          <div className="bg-muted p-4 rounded-xl border border-border">
+             <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Total Net Worth</p>
+             <div className="text-2xl font-bold text-secondary">
+               ${grandTotalUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+             </div>
+             <p className="text-sm text-muted-foreground mt-1">
+               Combined value of all available and locked assets across the platform.
+             </p>
+          </div>
+
         </div>
-        <CardContent className="p-6 relative z-10">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-[#4CAF50]/10 rounded-xl text-[#4CAF50] group-hover:bg-[#4CAF50] group-hover:text-white transition-colors">
-              <Briefcase className="w-6 h-6" />
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-muted-foreground">Locked in FinaBridge</p>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-3xl font-bold text-[#4CAF50] mb-1">
-              ${wallet.finaBridgeLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-2">Active Trade Finance</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
