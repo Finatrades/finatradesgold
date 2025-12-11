@@ -9,8 +9,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Link } from 'wouter';
 
 export default function Profile() {
   const { user, login } = useAuth();
@@ -67,6 +68,13 @@ export default function Profile() {
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Unverified</span>
               )}
             </Badge>
+            {user.kycStatus === 'pending' && (
+              <Link href="/kyc">
+                 <Button size="sm" variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
+                    Complete Verification <ArrowRight className="w-3 h-3 ml-1" />
+                 </Button>
+              </Link>
+            )}
             <Badge variant="outline" className="text-sm px-3 py-1 capitalize">
               {accountType} Account
             </Badge>
@@ -107,12 +115,18 @@ export default function Profile() {
             <Card className="p-4 border-border">
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="p-2 bg-green-100 text-green-700 rounded-lg">
+                  <div className={`p-2 rounded-lg ${user.kycStatus === 'verified' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-medium">Identity Verified</p>
-                    <p className="text-xs text-muted-foreground">Level 2 Access</p>
+                    <p className="font-medium">{user.kycStatus === 'verified' ? 'Identity Verified' : 'Identity Unverified'}</p>
+                    {user.kycStatus === 'verified' ? (
+                       <p className="text-xs text-muted-foreground">Level 2 Access</p>
+                    ) : (
+                       <Link href="/kyc">
+                         <p className="text-xs text-orange-600 font-medium hover:underline cursor-pointer">Complete KYC Now</p>
+                       </Link>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
