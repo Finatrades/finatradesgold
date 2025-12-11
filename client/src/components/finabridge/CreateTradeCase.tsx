@@ -645,13 +645,16 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                    <div className="flex justify-between text-sm py-2 border-b border-white/10">
                       <span className="text-white/60">Available in Wallet:</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{wallet.importer.availableGoldGrams.toFixed(3)} g</span>
+                        <div className="text-right">
+                            <div className="font-bold text-white">${(wallet.importer.availableGoldGrams * GOLD_PRICE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                            <div className="text-[10px] text-white/40">{wallet.importer.availableGoldGrams.toFixed(3)} g</div>
+                        </div>
                         {onTransferFromFinaPay && (
                             <Button 
                                 type="button"
                                 variant="outline" 
                                 size="sm" 
-                                className="h-6 text-[10px] border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37]/10"
+                                className="h-6 text-[10px] border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37]/10 ml-2"
                                 onClick={() => setIsTransferModalOpen(true)}
                             >
                                 <ArrowRightLeft className="w-3 h-3 mr-1" /> Add Funds

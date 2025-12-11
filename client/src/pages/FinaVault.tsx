@@ -263,25 +263,25 @@ export default function FinaVault() {
            {/* Card 1: Total Gold - Custom Style */}
            <div className="p-6 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-white relative overflow-hidden group">
               <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Total Gold</span>
+                 <span className="text-sm font-medium opacity-60">Total Gold Value</span>
                  <div className="p-2 bg-[#D4AF37]/20 rounded-lg text-[#D4AF37]">
                     <Database className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1 text-[#D4AF37]">125.400 <span className="text-lg font-normal opacity-60 text-white">g</span></div>
-              <div className="text-sm opacity-50 font-medium">4.03 oz • <span className="text-green-400">Synced with FinaPay</span></div>
+              <div className="text-3xl font-bold mb-1 text-[#D4AF37]">${(125.400 * 85.22).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="text-sm opacity-50 font-medium">125.400 g • 4.03 oz</div>
            </div>
 
            {/* Card 2: Locked Gold */}
            <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Locked Gold</span>
+                 <span className="text-sm font-medium opacity-60">Locked Value</span>
                  <div className="p-2 bg-[#FFD700]/20 rounded-lg text-[#FFD700]">
                     <TrendingUp className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1">0.00 <span className="text-lg font-normal opacity-60">g</span></div>
-              <div className="text-sm opacity-50 font-medium">In BNSL</div>
+              <div className="text-3xl font-bold mb-1">$0.00</div>
+              <div className="text-sm opacity-50 font-medium">0.00 g in BNSL</div>
            </div>
 
            {/* Card 3: Value USD */}

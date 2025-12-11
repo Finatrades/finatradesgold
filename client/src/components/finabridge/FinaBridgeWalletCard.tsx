@@ -74,8 +74,11 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
             <div className="bg-black/20 p-4 rounded-xl border border-white/5">
               <p className="text-white/60 text-xs uppercase tracking-wider mb-1">Available Balance</p>
               <div className="text-2xl font-bold text-white">
-                {currentWallet.availableGoldGrams.toFixed(3)} <span className="text-sm font-normal text-white/40">g</span>
+                ${(currentWallet.availableGoldGrams * 85.22).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
               </div>
+              <p className="text-sm text-white/40 mt-1">
+                {currentWallet.availableGoldGrams.toFixed(3)} g
+              </p>
               <p className="text-[10px] text-white/40 mt-2">
                 {role === 'Importer' 
                   ? "Funds available for locking in trade cases." 
@@ -89,10 +92,11 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
                 {role === 'Importer' ? "Locked in Trades" : "Incoming Locked Funds"}
               </p>
               <div className={`text-2xl font-bold ${role === 'Importer' ? 'text-amber-500' : 'text-blue-400'}`}>
-                {role === 'Importer' 
-                  ? currentWallet.lockedGoldGrams.toFixed(3) 
-                  : currentWallet.incomingLockedGoldGrams?.toFixed(3)} <span className="text-sm font-normal text-white/40">g</span>
+                ${((role === 'Importer' ? currentWallet.lockedGoldGrams : (currentWallet.incomingLockedGoldGrams || 0)) * 85.22).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
               </div>
+              <p className={`text-sm mt-1 ${role === 'Importer' ? 'text-amber-500/60' : 'text-blue-400/60'}`}>
+                {(role === 'Importer' ? currentWallet.lockedGoldGrams : (currentWallet.incomingLockedGoldGrams || 0)).toFixed(3)} g
+              </p>
               <p className="text-[10px] text-white/40 mt-2 flex items-center gap-1">
                 <Lock className="w-3 h-3" />
                 {role === 'Importer' 
@@ -107,8 +111,8 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
                <div className="text-2xl font-bold text-[#D4AF37]">
                  ${((currentWallet.availableGoldGrams + (currentWallet.lockedGoldGrams || 0) + (currentWallet.incomingLockedGoldGrams || 0)) * 85.22).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                </div>
-               <p className="text-[10px] text-white/40 mt-2">
-                 @ $85.22 / g
+               <p className="text-sm text-white/40 mt-1">
+                 {((currentWallet.availableGoldGrams + (currentWallet.lockedGoldGrams || 0) + (currentWallet.incomingLockedGoldGrams || 0))).toFixed(3)} g Total
                </p>
             </div>
 

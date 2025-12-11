@@ -1,0 +1,530 @@
+Nice, time for the BNSL beast. 🟡
+Here’s a full **Replit dev prompt** for the **BNSL module** that matches your FinaVault / FinaPay / FinaBridge style **AND** respects the new legal structure (immediate sale to Wingold, deferred base + quarterly margin in gold).
+
+Just **copy–paste this into Replit AI** 👇
+
+---
+
+````txt
+You are a senior frontend engineer.
+Build a complete **BNSL – Buy Now Sell Later** module UI for the Finatrades platform.
+
+Concept:
+BNSL is NOT a staking product.  
+It is a **Deferred Price Sale Agreement** where:
+
+- The user sells physical gold to Wingold & Metals DMCC via the Platform.
+- Legal title to the sold gold transfers immediately to Wingold.
+- Payment is split into:
+  1) **Base Price Component** – fixed monetary value, paid at maturity.
+  2) **Margin Component** – fixed monetary value per year (8–12% p.a.), paid via quarterly disbursements.
+- Each quarterly disbursement is paid in **physical gold grams**:
+  - Monetary margin for the quarter ÷ current market gold price on payout day.
+  - The resulting grams are credited to the user’s **Fina wallet** (FinaPay).
+
+This module should:
+- Let the user configure and start BNSL plans (12 / 24 / 36 month).
+- Show BNSL “wallet” style dashboard with entitlements.
+- Show plan details, payout schedule, and risk warnings.
+- Simulate early termination penalties.
+- Integrate conceptually with FinaPay (gold sold from FinaPay to Wingold).
+
+NO backend for now → use local state + mock data.
+
+Tech:
+- React (Vite + React or Next.js)
+- TypeScript (preferred)
+- TailwindCSS
+- Optional: framer-motion for smooth animations
+
+Brand / Theme:
+- Same as other Finatrades modules:
+  - Dark, premium, gold-backed fintech
+  - Background gradient: #000000 → #0D0515 → #1A0A2E
+  - Accent gold: #D1A954
+  - Text: #FFFFFF + #E5E7EB + #9CA3AF
+  - Cards: glassmorphism (bg-white/5, border-white/10, backdrop-blur, rounded-2xl)
+  - Font: "Inter" (optionally "Playfair Display" for big headings)
+
+────────────────────────
+HIGH-LEVEL UI
+────────────────────────
+
+Main route/component: `/bnsl` or `<BnslModule />`
+
+Layout:
+- Top bar
+- BNSL Summary Strip (global numbers)
+- Tabs:
+  1. My BNSL Plans
+  2. Start New Plan
+  3. Early Termination Simulator
+  4. Terms & Risk
+
+────────────────────────
+TOP BAR
+────────────────────────
+
+Top bar content:
+- Title: "BNSL – Buy Now Sell Later"
+- Subtitle: "Deferred price gold sale with quarterly margin payouts in gold."
+- Right side:
+  - Badge: "Seller: You" (user is always the original seller)
+  - Gold spot: "Gold Spot: 2,350.40 USD/oz" (mock)
+  - Info icon for tooltip.
+
+────────────────────────
+BNSL SUMMARY STRIP (GLOBAL VIEW)
+────────────────────────
+
+Just below top bar, show 3–4 KPI cards:
+
+1) Active Plans
+   - e.g. "3 Active Plans"
+
+2) Deferred Base Value (USD)
+   - e.g. "$220,000.00"
+   - Tooltip: "Total Base Price Component you are entitled to at maturity across all active plans."
+
+3) Annualized Margin Rate (Weighted)
+   - e.g. "10.4% p.a."
+   - Based on mix of 12/24/36 month plans.
+
+4) Next Quarterly Payout
+   - e.g. "Next Payout: 2.35 g on 15 Mar 2026"
+
+All values from BNSL plans state.
+
+────────────────────────
+STATE & TYPES
+────────────────────────
+
+Define TypeScript types to model plans and payouts.
+
+Plan tenors and margins:
+- 12-Month → 8% p.a.
+- 24-Month → 10% p.a.
+- 36-Month → 12% p.a.
+
+```ts
+type BnslTenor = 12 | 24 | 36;
+
+type BnslPlanStatus =
+  | "Pending Acceptance"
+  | "Active"
+  | "Maturing"
+  | "Completed"
+  | "Early Terminated";
+
+type BnslPayoutStatus = "Scheduled" | "Paid" | "Cancelled";
+
+type BnslPayout = {
+  id: string;
+  planId: string;
+  sequence: number; // 1..4 / 8 / 12
+  scheduledDate: string;
+  monetaryAmountUsd: number;      // fixed margin per quarter
+  marketPriceUsdPerGramAtPayout?: number; // when paid
+  gramsCredited?: number;         // computed = monetaryAmountUsd / price
+  status: BnslPayoutStatus;
+};
+
+type BnslPlan = {
+  id: string;
+  tenorMonths: BnslTenor;         // 12 / 24 / 36
+  marginRateAnnualPercent: number;// 8 / 10 / 12
+  goldSoldGrams: number;          // e.g. 100g
+  enrollmentPriceUsdPerGram: number; // price at sale
+  basePriceComponentUsd: number;  // goldSoldGrams * enrollment price
+  totalMarginComponentUsd: number;// base * annual rate * (tenorMonths / 12)
+  quarterlyMarginUsd: number;     // totalMargin / numDisbursements
+  startDate: string;
+  maturityDate: string;
+  status: BnslPlanStatus;
+  payouts: BnslPayout[];
+  // derived/info
+  totalPaidMarginUsd: number;
+  totalPaidMarginGrams: number;
+  earlyTerminationAllowed: boolean;
+};
+````
+
+Also maintain:
+
+```ts
+const [finaPayGoldBalanceGrams, setFinaPayGoldBalanceGrams] = useState<number>(500); // mock
+const [bnslPlans, setBnslPlans] = useState<BnslPlan[]>([]);
+const [currentGoldPriceUsdPerGram, setCurrentGoldPriceUsdPerGram] = useState<number>(75); // mock
+```
+
+Conceptually:
+
+* When user starts a plan, they **sell** from FinaPay: subtract grams from `finaPayGoldBalanceGrams`.
+
+────────────────────────
+TAB 1: MY BNSL PLANS
+────────────────────────
+
+Table or card list with each plan:
+
+Columns:
+
+* Plan ID (e.g. BNSL-2025-0003)
+* Tenure: "12 Months @ 8% p.a."
+* Gold Sold: "100.00 g"
+* Base Price Component (USD): "$100,000.00"
+* Total Margin (USD): "$8,000.00"
+* Paid Margin (g): "3.25 g"
+* Status: status badge
+* Action: "View"
+
+Status badges:
+
+* Active → green
+* Maturing → teal
+* Completed → gold
+* Early Terminated → red
+* Pending Acceptance → amber
+
+Click "View" → open **Plan Details** view (new component or route).
+
+Also include small summary card in this tab:
+
+* "Total Gold Sold via BNSL: X.XX g"
+* "Total Margin Received: Y.YY g"
+* "Total Deferred Base (USD): $Z"
+
+────────────────────────
+PLAN DETAILS VIEW
+────────────────────────
+
+For selected plan:
+
+Header:
+
+* Plan ID
+* "12-Month BNSL Plan @ 8% p.a."
+* Status badge
+* Start Date – Maturity Date
+
+Sections:
+
+1. Plan Overview Card
+2. Payout Schedule (Quarterly table)
+3. Timeline: Start → Quarterly payouts → Maturity
+4. Early Termination panel (with simulator + warning)
+
+──────── 1) PLAN OVERVIEW CARD ────────
+
+Show:
+
+* Gold Sold: "100.00 g"
+* Enrollment Price: "$1,000.00 / g"
+* Base Price Component: "$100,000.00" (deferred)
+* Total Margin Component: "$8,000.00"
+* Tenor: "12 months" → 4 payouts
+* Contract Type: "Deferred Price Sale – Title transferred to Wingold at enrollment"
+
+Info text (from T&Cs, paraphrased):
+
+* "You sold this gold to Wingold and no longer own it. You hold a contractual right to receive:
+
+  1. Quarterly Margin Component (in gold grams).
+  2. Base Price Component settlement at maturity (in gold grams)."
+
+──────── 2) PAYOUT SCHEDULE ────────
+
+Table:
+
+Columns:
+
+* # (1, 2, 3, 4…)
+* Scheduled Date
+* Monetary Margin (USD)
+* Market Price at Payout (USD/g)
+* Gold Credited (g)
+* Status (Scheduled/Paid/Cancelled)
+
+For now:
+
+* Market price at payout and grams credited can be mocked or set when you click "Simulate Pay".
+
+Add button "Simulate Next Payout":
+
+* Finds the next Scheduled payout:
+
+  * Uses `currentGoldPriceUsdPerGram`.
+  * Sets `marketPriceUsdPerGramAtPayout`.
+  * Computes `gramsCredited = monetaryAmountUsd / marketPrice`.
+  * Marks status as "Paid".
+  * Increments aggregated `totalPaidMarginUsd` and `totalPaidMarginGrams`.
+* Also conceptually:
+
+  * "// TODO: Credit these grams to FinaPay wallet in backend."
+
+──────── 3) TIMELINE ────────
+
+Render a horizontal or vertical stepper:
+
+Steps:
+
+1. Enrollment & Gold Sale (Completed)
+2. Quarterly Disbursements (In progress / Completed)
+3. Maturity & Base Price Settlement (Future / Completed)
+
+Visual:
+
+* Use icons & colors for completed/current/upcoming.
+
+──────── 4) EARLY TERMINATION PANEL ────────
+
+Panel with:
+
+* Warning: "Early termination is a breach of contract and usually results in significant loss."
+* Button: "Open Early Termination Simulator"
+
+On clicking:
+
+* Open modal that applies logic from T&Cs (section 5):
+
+Inputs:
+
+* Current Market Price (USD/g) – default = currentGoldPriceUsdPerGram, editable.
+* Admin Fee % and Early Withdrawal Penalty %:
+
+  * e.g. Admin Fee: 1% of Total Sale Proceeds
+  * Penalty: 5% of Total Sale Proceeds
+* Margin Disbursements Already Received (USD) – read from plan’s totalPaidMarginUsd.
+
+Total Sale Proceeds:
+
+* `totalSaleProceeds = basePriceComponentUsd + totalMarginComponentUsd`.
+
+Simulation Steps (as per terms):
+
+Step 1: Base Price Component Valuation
+
+* If current price < enrollment price:
+
+  * baseValue = goldSoldGrams * currentPrice
+* Else:
+
+  * baseValue = basePriceComponentUsd (original face value).
+
+Step 2: Deductions:
+
+* adminFee = totalSaleProceeds * adminFeePercent
+* earlyPenalty = totalSaleProceeds * penaltyPercent
+* reimburseDisbursements = totalPaidMarginUsd
+* totalDeductions = adminFee + earlyPenalty + reimburseDisbursements
+
+Step 3: Final Settlement in Gold:
+
+* netValueUsd = baseValue - totalDeductions
+* finalGoldGrams = netValueUsd / currentPrice
+
+Show outputs clearly:
+
+* "If you terminate now, you would receive approximately XX.XX g back."
+* Compare vs:
+
+  * Original Gold Sold: "100.00 g"
+  * Effective Loss: "X.XX g (Y% reduction)"
+
+Button: "Confirm Early Termination" (for simulation only):
+
+* Marks plan status as "Early Terminated".
+* Does NOT auto-credit grams to FinaPay in this UI (just a conceptual comment).
+* Adds an audit log entry.
+
+────────────────────────
+TAB 2: START NEW PLAN
+────────────────────────
+
+This is where the user configures and enrolls in a new BNSL plan.
+
+Sections:
+
+1. Selling Gold from FinaPay into BNSL
+2. Plan Configuration (Tenor & Rate)
+3. Calculated Components (Base & Margin)
+4. Terms & Risk Acknowledgement
+5. Confirm & Start Plan
+
+──────── 2.1 SELLING GOLD FROM FINAPAY ────────
+
+Show card:
+
+* "Available Gold in FinaPay: 500.00 g" (from `finaPayGoldBalanceGrams`)
+* Input: "Gold grams to sell via BNSL" (e.g. 100.00 g)
+* Current Market Gold Price at Enrollment (USD/g) – use `currentGoldPriceUsdPerGram`
+* Show:
+
+  * "Enrollment Price: $XX.XX / g"
+
+Note: On confirm, we conceptually treat this as an immediate sale to Wingold.
+
+──────── 2.2 PLAN CONFIGURATION ────────
+
+User chooses plan:
+
+* Tenor dropdown or cards:
+
+  * 12 Months – 8% p.a.
+  * 24 Months – 10% p.a.
+  * 36 Months – 12% p.a.
+
+From selection:
+
+* `annualRate = 0.08 / 0.10 / 0.12`.
+* `basePriceComponentUsd = goldSoldGrams * enrollmentPrice`.
+* `years = tenorMonths / 12`.
+* `totalMarginComponentUsd = basePriceComponentUsd * annualRate * years`.
+* `numDisbursements = tenorMonths / 3` → 4 / 8 / 12.
+* `quarterlyMarginUsd = totalMarginComponentUsd / numDisbursements`.
+
+Show a calculator card with:
+
+* Base Price Component: "$XXX,XXX.XX (deferred to maturity)"
+* Total Margin Component: "$YY,YYY.YY"
+* Quarterly Disbursement (USD): "$Z,ZZZ.ZZ"
+* Number of Disbursements: 4 / 8 / 12
+
+──────── 2.3 TERMS & RISK ACKNOWLEDGEMENT ────────
+
+Show a scrollable text box with short key points from Terms (no need to paste the full document):
+
+Include:
+
+* "You execute an immediate and irrevocable sale of physical gold to Wingold and Metals DMCC."
+* "You no longer own the sold gold; you only hold a contractual right to deferred payments."
+* "Base Price Component is paid at maturity in gold grams equivalent."
+* "Margin Component is paid quarterly in gold grams based on current market price on payout date."
+* "Early termination is a breach and will incur significant fees and reimbursement of margin received."
+
+UI:
+
+* Checkbox:
+
+  * "I confirm I understand that I have sold my gold to Wingold and my rights are contractual only."
+* Checkbox:
+
+  * "I understand the severe penalties and potential loss from early termination."
+* Button to "View Full Terms & Conditions" that opens a modal showing the full T&Cs (static text).
+
+User must tick both checkboxes to enable final button.
+
+──────── 2.4 CONFIRM & START PLAN ────────
+
+Button: "Start BNSL Plan"
+
+On click:
+
+* Validate:
+
+  * grams > 0 and ≤ FinaPay balance.
+  * Tenor selected.
+  * Terms checkboxes checked.
+
+If valid:
+
+1. Subtract `goldSoldGrams` from `finaPayGoldBalanceGrams`.
+2. Create a new `BnslPlan` object with:
+
+   * status: "Active"
+   * computed base and margin values
+   * payouts schedule:
+
+     * for each quarter from startDate, create a `BnslPayout` with monetaryAmountUsd = quarterlyMarginUsd.
+3. Push into `bnslPlans`.
+4. Show success toast:
+
+   * "BNSL plan started. Your gold has been sold to Wingold and quarterly margin payouts will be credited to your Fina wallet."
+
+────────────────────────
+TAB 3: EARLY TERMINATION SIMULATOR (GLOBAL)
+────────────────────────
+
+Separate from individual plan page, provide a global simulator:
+
+* Dropdown to choose a plan.
+* Inputs:
+
+  * Current market price
+  * Admin fee % (e.g. 1)
+  * Early termination penalty % (e.g. 5)
+* Shows the same calculation as the per-plan early termination panel but from a central place.
+
+Purpose:
+
+* Educate user BEFORE they start or terminate.
+
+────────────────────────
+TAB 4: TERMS & RISK
+────────────────────────
+
+Display a clean, formatted version of the BNSL Terms & Conditions (summary, not full legal text). Key sections:
+
+* Nature of the Plan (Deferred Price Sale Agreement).
+* Immediate sale and title transfer to Wingold.
+* Base Price & Margin Components.
+* Quarterly disbursement mechanism.
+* Early termination consequences.
+* Risks (market price, liquidity, counterparty, platform, regulatory).
+
+Include at bottom:
+
+* Button: "Back to Start BNSL Plan".
+
+────────────────────────
+YIELDS INTEGRATION (STUB)
+────────────────────────
+
+Add a small "Yields" box into the My BNSL Plans tab:
+
+* Show:
+
+  * "Total BNSL Margin Earned (g): X.XX g"
+  * "Realized Yield (Annualized): Y.Y% (approx.)"
+* Note in code:
+
+  * "// This can be surfaced in a global Yields page by aggregating BNSL payouts."
+
+────────────────────────
+ANIMATION & UX
+────────────────────────
+
+* Use smooth transitions for cards and modals:
+
+  * fade + slide up for main sections.
+* Hover states for buttons:
+
+  * `hover:scale-[1.02] hover:border-[#D1A954] transition-all duration-200`
+* Responsive:
+
+  * Tables become stacked cards on small screens.
+  * Keep all key metrics visible on mobile.
+
+────────────────────────
+GOAL
+────────────────────────
+
+Deliver a polished **BNSL module** that:
+
+* Treats BNSL as a **sale contract**, not staking.
+* Handles gold sale from FinaPay → BNSL at enrollment.
+* Computes and displays:
+
+  * Base Price Component (deferred).
+  * Margin Component (total + quarterly).
+* Manages BNSL plans with status, payout schedule, and summary.
+* Provides realistic **early termination simulation** with penalties and reimbursement of margin.
+* Clearly communicates **risk and legal structure** in the UI.
+* Uses only front-end state and mock data, ready for backend integration later.
+
+```
+
+---
+
+If you want next, I can write a **small shared `models.ts` prompt** to unify types for FinaVault, FinaPay, FinaBridge, and BNSL in one file so your monorepo is clean.
+```
