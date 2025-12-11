@@ -41,8 +41,8 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },
   ];
 
-  // Add KYC menu item if pending
-  if (user?.kycStatus === 'pending') {
+  // Add KYC menu item if not completed
+  if (user?.kycStatus === 'Not Started' || user?.kycStatus === 'In Progress') {
     menuItems.splice(1, 0, { 
       icon: <ShieldCheck className="w-5 h-5" />, 
       label: 'Complete Verification', 
