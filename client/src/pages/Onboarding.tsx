@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera } from 'lucide-react';
+import { CheckCircle2, Building, User, Upload, ShieldCheck, Eye, EyeOff, Camera, XCircle } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -34,10 +34,33 @@ export default function Onboarding() {
     agreedToTerms: false
   });
 
+  const [passwordStrength, setPasswordStrength] = useState({
+    length: false,
+    uppercase: false,
+    number: false,
+    special: false
+  });
+
+  useEffect(() => {
+    const p = formData.password;
+    setPasswordStrength({
+      length: p.length >= 8,
+      uppercase: /[A-Z]/.test(p),
+      number: /[0-9]/.test(p),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(p)
+    });
+  }, [formData.password]);
+
+  const isPasswordValid = Object.values(passwordStrength).every(Boolean);
+
   const handleSubmit = () => {
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
       toast.error("Please fill in all required fields");
       return;
+    }
+    if (!isPasswordValid) {
+        toast.error("Please ensure your password meets all security requirements");
+        return;
     }
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
@@ -173,6 +196,18 @@ export default function Onboarding() {
                     />
                   </div>
                 </div>
+                
+                {/* Password Strength Indicator */}
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm">
+                  <p className="text-white/60 mb-2 font-medium">Password Requirements:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <PasswordRequirement met={passwordStrength.length} text="At least 8 characters" />
+                    <PasswordRequirement met={passwordStrength.uppercase} text="One uppercase letter" />
+                    <PasswordRequirement met={passwordStrength.number} text="One number" />
+                    <PasswordRequirement met={passwordStrength.special} text="One special character" />
+                  </div>
+                </div>
+
               </div>
 
               {/* Business Details (Conditional) */}
@@ -308,5 +343,14 @@ export default function Onboarding() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+function PasswordRequirement({ met, text }: { met: boolean, text: string }) {
+  return (
+    <div className={`flex items-center gap-2 text-xs transition-colors ${met ? 'text-green-400' : 'text-white/40'}`}>
+      {met ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current" />}
+      {text}
+    </div>
   );
 }
