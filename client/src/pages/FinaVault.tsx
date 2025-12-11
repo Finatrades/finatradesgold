@@ -121,6 +121,28 @@ const MOCK_REQUESTS: DepositRequest[] = [
     vaultInternalReference: 'DIG-TR-5512'
   },
   {
+    id: 'TR-P2P-2024-998',
+    userId: 'user-1',
+    vaultLocation: 'Swiss Vault (Allocated)',
+    depositType: 'Digital Allocation',
+    totalDeclaredWeightGrams: 50.000,
+    items: [
+      { id: '1', itemType: 'Digital Gold', quantity: 1, weightPerUnitGrams: 50.000, totalWeightGrams: 50.000, purity: '999.9', brand: 'PAMP' }
+    ],
+    deliveryMethod: 'Pickup', // Virtual Transfer
+    pickupDetails: {
+      address: 'Ownership Changed: Charan -> Farah',
+      contactName: 'Farah',
+      contactMobile: 'ID: 8821-22',
+      date: '2024-12-11',
+      timeSlot: 'Completed'
+    },
+    documents: [],
+    status: 'Received',
+    submittedAt: '2024-12-11T12:00:00Z',
+    vaultInternalReference: 'TR-P2P-9982'
+  },
+  {
     id: 'FD-2024-0089',
     userId: 'user-1',
     vaultLocation: 'Dubai Vault',
