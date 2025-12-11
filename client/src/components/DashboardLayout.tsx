@@ -5,6 +5,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Menu, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -77,6 +78,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 p-6 overflow-x-hidden">
           {children}
         </main>
+        
+        <FloatingAgentChat />
 
       </div>
     </div>
