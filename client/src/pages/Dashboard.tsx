@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Search, Database, DollarSign, TrendingUp, Wallet, ArrowUpRight, BarChart3, LineChart } from 'lucide-react';
+import { Bell, Search, Database, DollarSign, TrendingUp, Wallet, ArrowUpRight, BarChart3, LineChart, Coins, Globe } from 'lucide-react';
 
 // Components
 import KpiCard from '@/components/dashboard/KpiCard';
@@ -73,41 +73,53 @@ export default function Dashboard() {
           
           {/* 2. Top KPI Cards Grid */}
           <section>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <KpiCard 
-                title="Gold Storage" 
+                title="Gold Storage (KG)" 
                 value="12.500 kg" 
-                subValue="≈ $1,067,500.00"
-                definition="Total physical gold you have deposited in FinaVault."
+                definition="Gold Storage Meaning You have Deposited Gold in FinaVault"
                 icon={<Database className="w-5 h-5" />}
                 delay={0}
               />
               <KpiCard 
-                title="Total Portfolio" 
-                value="$880,000.00" 
-                subValue="+2.4% this month"
-                definition="Overall investment on the platform (vault + wallet + staking)."
+                title="Gold Value (USD)" 
+                value="$1,067,500.00" 
+                definition="Gold Value Meaning You have Deposited worth of Gold in FinaVault in USD"
                 icon={<DollarSign className="w-5 h-5" />}
                 delay={1}
+              />
+              <KpiCard 
+                title="Gold Value (AED)" 
+                value="AED 3,921,000.00" 
+                definition="Gold Value Meaning You have Deposited worth of Gold in FinaVault in AED"
+                icon={<Globe className="w-5 h-5" />}
+                delay={2}
+              />
+              <KpiCard 
+                title="Total Portfolio" 
+                value="$1,150,000.00" 
+                subValue="+2.4% this month"
+                definition="total Portfolio means overall investment in platform."
+                icon={<Coins className="w-5 h-5" />}
+                delay={3}
               />
               <KpiCard 
                 title="Total Staking" 
                 value="850.00 g" 
                 subValue="Locked in BNSL"
-                definition="Total quantity of gold currently locked in BNSL and other staking plans."
+                definition="total Staking means overall Staking Gold Quality."
                 icon={<TrendingUp className="w-5 h-5" />}
-                delay={2}
+                delay={4}
               />
               <KpiCard 
                 title="Total Profit" 
                 value="18.75 g" 
-                subValue="≈ $1,600.00 Earned"
-                definition="Rewards/ROI you have earned from staking."
+                subValue="ROI (Daily)"
+                definition="total profit means what ever gold has been Staked we Shown ROI on day basis in profit section"
                 icon={<LineChart className="w-5 h-5" />}
-                delay={3}
+                delay={5}
               />
             </div>
-            {/* Additional KPIs Row (Optional - keeping it cleaner for now, or could expand) */}
           </section>
 
           {/* 3. Gold Live Spot Chart + Transactions */}

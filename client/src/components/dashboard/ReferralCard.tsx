@@ -21,7 +21,7 @@ export default function ReferralCard() {
         </div>
 
         <p className="text-sm text-white/60 mb-6 leading-relaxed">
-          If you introduce a new user and they deposit funds, you receive bonus gold.
+          single level, if any user introduced any New user and then user deposit funds then first user recive xxxx Amount of GOLD
         </p>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
