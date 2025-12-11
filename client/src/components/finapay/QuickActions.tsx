@@ -9,12 +9,12 @@ interface QuickActionsProps {
 
 export default function QuickActions({ onAction }: QuickActionsProps) {
   const actions = [
-    { id: 'buy', label: 'Buy Gold', icon: <ShoppingCart className="w-5 h-5" />, color: 'bg-[#D4AF37]/10 text-[#D4AF37]', border: 'border-[#D4AF37]/20' },
-    { id: 'sell', label: 'Sell Gold', icon: <Banknote className="w-5 h-5" />, color: 'bg-red-500/10 text-red-500', border: 'border-red-500/20' },
-    { id: 'send', label: 'Send USD', icon: <Send className="w-5 h-5" />, color: 'bg-green-500/10 text-green-500', border: 'border-green-500/20' },
-    { id: 'request', label: 'Request', icon: <ArrowDownLeft className="w-5 h-5" />, color: 'bg-blue-500/10 text-blue-500', border: 'border-blue-500/20' },
-    { id: 'bnsl', label: 'BNSL Plans', icon: <TrendingUp className="w-5 h-5" />, color: 'bg-[#FF2FBF]/10 text-[#FF2FBF]', border: 'border-[#FF2FBF]/20' },
-    { id: 'trade', label: 'FinaBridge', icon: <Briefcase className="w-5 h-5" />, color: 'bg-[#4CAF50]/10 text-[#4CAF50]', border: 'border-[#4CAF50]/20' },
+    { id: 'buy', label: 'Buy Gold', icon: <ShoppingCart className="w-6 h-6" />, color: 'text-[#D4AF37]', shadow: 'shadow-[0_0_20px_rgba(212,175,55,0.4)]', bg: 'bg-[#D4AF37]/20', border: 'border-[#D4AF37]/50' },
+    { id: 'sell', label: 'Sell Gold', icon: <Banknote className="w-6 h-6" />, color: 'text-red-500', shadow: 'shadow-[0_0_20px_rgba(239,68,68,0.4)]', bg: 'bg-red-500/20', border: 'border-red-500/50' },
+    { id: 'send', label: 'Send USD', icon: <Send className="w-6 h-6" />, color: 'text-green-500', shadow: 'shadow-[0_0_20px_rgba(34,197,94,0.4)]', bg: 'bg-green-500/20', border: 'border-green-500/50' },
+    { id: 'request', label: 'Request', icon: <ArrowDownLeft className="w-6 h-6" />, color: 'text-blue-500', shadow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]', bg: 'bg-blue-500/20', border: 'border-blue-500/50' },
+    { id: 'bnsl', label: 'BNSL Plans', icon: <TrendingUp className="w-6 h-6" />, color: 'text-[#FF2FBF]', shadow: 'shadow-[0_0_20px_rgba(255,47,191,0.4)]', bg: 'bg-[#FF2FBF]/20', border: 'border-[#FF2FBF]/50' },
+    { id: 'trade', label: 'FinaBridge', icon: <Briefcase className="w-6 h-6" />, color: 'text-[#4CAF50]', shadow: 'shadow-[0_0_20px_rgba(76,175,80,0.4)]', bg: 'bg-[#4CAF50]/20', border: 'border-[#4CAF50]/50' },
   ];
 
   return (
@@ -22,18 +22,23 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
       {actions.map((action, index) => (
         <motion.button
           key={action.id}
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-          initial={{ opacity: 0, y: 10 }}
+          whileHover={{ scale: 1.05, y: -5 }}
+          whileTap={{ scale: 0.95 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
+          transition={{ delay: index * 0.05, type: 'spring', stiffness: 300 }}
           onClick={() => onAction(action.id)}
-          className={`flex flex-col items-center justify-center p-5 rounded-xl border bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all group ${action.border} h-full`}
+          className="relative group h-32 w-full rounded-2xl overflow-hidden bg-white/5 border border-white/10 backdrop-blur-md hover:border-white/30 transition-all duration-300"
         >
-          <div className={`p-4 rounded-full mb-3 ${action.color} group-hover:scale-110 transition-transform`}>
-            {action.icon}
+          {/* Hover Glow Background */}
+          <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-b from-transparent to-${action.bg.split('/')[0].replace('bg-', '')}/10`} />
+          
+          <div className="relative z-10 h-full flex flex-col items-center justify-center gap-3">
+             <div className={`p-3 rounded-xl ${action.bg} ${action.border} border ${action.color} ${action.shadow} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+               {action.icon}
+             </div>
+             <span className="text-sm font-semibold text-white/70 group-hover:text-white tracking-wide">{action.label}</span>
           </div>
-          <span className="text-sm font-medium text-white/80 group-hover:text-white">{action.label}</span>
         </motion.button>
       ))}
     </div>
