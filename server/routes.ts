@@ -10,6 +10,8 @@ import {
   insertTemplateSchema, insertMediaAssetSchema, 
   insertPlatformBankAccountSchema, insertDepositRequestSchema, insertWithdrawalRequestSchema,
   insertPeerTransferSchema, insertPeerRequestSchema,
+  insertTradeRequestSchema, insertTradeProposalSchema, insertForwardedProposalSchema,
+  insertTradeConfirmationSchema, insertSettlementHoldSchema, insertFinabridgeWalletSchema,
   User
 } from "@shared/schema";
 import { z } from "zod";
@@ -1449,8 +1451,7 @@ export async function registerRoutes(
         userId,
         type: 'Send',
         status: 'Completed',
-        goldGrams: amountGrams.toFixed(6),
-        direction: 'outgoing',
+        amountGold: amountGrams.toFixed(6),
         description: `Transfer ${amountGrams.toFixed(3)}g from FinaPay to BNSL wallet`
       });
       
@@ -2182,6 +2183,515 @@ export async function registerRoutes(
       res.json({ document });
     } catch (error) {
       res.status(400).json({ message: "Failed to update document" });
+    }
+  });
+  
+  // ============================================================================
+  // FINABRIDGE - TRADE REQUEST MATCHING SYSTEM
+  // ============================================================================
+  
+  // Helper to generate Trade Reference ID
+  function generateTradeRefId(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = 'TR';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+  
+  // IMPORTER ENDPOINTS
+  
+  // Get importer's trade requests
+  app.get("/api/finabridge/importer/requests/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserTradeRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get trade requests" });
+    }
+  });
+  
+  // Create new trade request (Importer)
+  app.post("/api/finabridge/importer/requests", async (req, res) => {
+    try {
+      const requestData = insertTradeRequestSchema.parse({
+        ...req.body,
+        tradeRefId: generateTradeRefId(),
+      });
+      const tradeRequest = await storage.createTradeRequest(requestData);
+      
+      await storage.createAuditLog({
+        entityType: "trade_request",
+        entityId: tradeRequest.id,
+        actionType: "create",
+        actor: requestData.importerUserId,
+        actorRole: "user",
+        details: `Trade request created: ${requestData.tradeValueUsd} USD`,
+      });
+      
+      res.json({ tradeRequest });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade request" });
+    }
+  });
+  
+  // Submit trade request (change from Draft to Open)
+  app.post("/api/finabridge/importer/requests/:id/submit", async (req, res) => {
+    try {
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      if (request.status !== 'Draft') {
+        return res.status(400).json({ message: "Only draft requests can be submitted" });
+      }
+      const updated = await storage.updateTradeRequest(req.params.id, { status: 'Open' });
+      res.json({ tradeRequest: updated });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to submit trade request" });
+    }
+  });
+  
+  // Get forwarded proposals for importer
+  app.get("/api/finabridge/importer/requests/:id/forwarded-proposals", async (req, res) => {
+    try {
+      const forwardedList = await storage.getForwardedProposals(req.params.id);
+      const proposalIds = forwardedList.map(f => f.proposalId);
+      const proposals = await Promise.all(
+        proposalIds.map(id => storage.getTradeProposal(id))
+      );
+      
+      // For each proposal, get exporter info but only return finatradesId (privacy)
+      const proposalsWithExporter = await Promise.all(
+        proposals.filter(Boolean).map(async (proposal) => {
+          const exporter = await storage.getUser(proposal!.exporterUserId);
+          return {
+            ...proposal,
+            exporter: exporter ? { finatradesId: exporter.finatradesId } : null,
+          };
+        })
+      );
+      
+      res.json({ proposals: proposalsWithExporter });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get forwarded proposals" });
+    }
+  });
+  
+  // Accept a forwarded proposal (creates settlement hold)
+  app.post("/api/finabridge/importer/proposals/:proposalId/accept", async (req, res) => {
+    try {
+      const proposal = await storage.getTradeProposal(req.params.proposalId);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      
+      const request = await storage.getTradeRequest(proposal.tradeRequestId);
+      if (!request) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      
+      // Verify proposal was forwarded
+      const forwarded = await storage.getForwardedProposals(proposal.tradeRequestId);
+      const isForwarded = forwarded.some(f => f.proposalId === proposal.id);
+      if (!isForwarded) {
+        return res.status(400).json({ message: "Proposal has not been forwarded to importer" });
+      }
+      
+      // Get or create importer's FinaBridge wallet
+      const wallet = await storage.getOrCreateFinabridgeWallet(request.importerUserId);
+      const availableGold = parseFloat(wallet.availableGoldGrams);
+      const requiredGold = parseFloat(request.settlementGoldGrams);
+      
+      if (availableGold < requiredGold) {
+        return res.status(400).json({ 
+          message: `Insufficient gold balance. Required: ${requiredGold}g, Available: ${availableGold}g` 
+        });
+      }
+      
+      // Lock the gold in wallet
+      await storage.updateFinabridgeWallet(wallet.id, {
+        availableGoldGrams: (availableGold - requiredGold).toFixed(6),
+        lockedGoldGrams: (parseFloat(wallet.lockedGoldGrams) + requiredGold).toFixed(6),
+      });
+      
+      // Create settlement hold
+      const settlementHold = await storage.createSettlementHold({
+        tradeRequestId: request.id,
+        importerUserId: request.importerUserId,
+        exporterUserId: proposal.exporterUserId,
+        lockedGoldGrams: request.settlementGoldGrams,
+        status: 'Held',
+      });
+      
+      // Update proposal status
+      await storage.updateTradeProposal(proposal.id, { status: 'Accepted' });
+      
+      // Create trade confirmation
+      await storage.createTradeConfirmation({
+        tradeRequestId: request.id,
+        acceptedProposalId: proposal.id,
+      });
+      
+      // Update trade request status
+      await storage.updateTradeRequest(request.id, { status: 'Active Trade' });
+      
+      // Reject other proposals
+      const allProposals = await storage.getRequestProposals(request.id);
+      for (const p of allProposals) {
+        if (p.id !== proposal.id && p.status !== 'Rejected') {
+          await storage.updateTradeProposal(p.id, { status: 'Declined' });
+        }
+      }
+      
+      res.json({ settlementHold, message: "Proposal accepted and gold locked" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to accept proposal" });
+    }
+  });
+  
+  // EXPORTER ENDPOINTS
+  
+  // Get open trade requests for exporters (privacy filtered - no importer PII)
+  app.get("/api/finabridge/exporter/open-requests", async (req, res) => {
+    try {
+      const requests = await storage.getOpenTradeRequests();
+      
+      // Filter out importer PII - only include tradeRefId and trade details
+      const sanitizedRequests = await Promise.all(
+        requests.map(async (request) => {
+          const importer = await storage.getUser(request.importerUserId);
+          return {
+            id: request.id,
+            tradeRefId: request.tradeRefId,
+            goodsName: request.goodsName,
+            description: request.description,
+            quantity: request.quantity,
+            incoterms: request.incoterms,
+            destination: request.destination,
+            expectedShipDate: request.expectedShipDate,
+            tradeValueUsd: request.tradeValueUsd,
+            settlementGoldGrams: request.settlementGoldGrams,
+            currency: request.currency,
+            status: request.status,
+            createdAt: request.createdAt,
+            importer: importer ? { finatradesId: importer.finatradesId } : null,
+          };
+        })
+      );
+      
+      res.json({ requests: sanitizedRequests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get open trade requests" });
+    }
+  });
+  
+  // Get exporter's submitted proposals
+  app.get("/api/finabridge/exporter/proposals/:userId", async (req, res) => {
+    try {
+      const proposals = await storage.getExporterProposals(req.params.userId);
+      
+      // Include trade request details but not importer PII
+      const proposalsWithRequest = await Promise.all(
+        proposals.map(async (proposal) => {
+          const request = await storage.getTradeRequest(proposal.tradeRequestId);
+          return {
+            ...proposal,
+            tradeRequest: request ? {
+              tradeRefId: request.tradeRefId,
+              goodsName: request.goodsName,
+              tradeValueUsd: request.tradeValueUsd,
+              status: request.status,
+            } : null,
+          };
+        })
+      );
+      
+      res.json({ proposals: proposalsWithRequest });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get proposals" });
+    }
+  });
+  
+  // Submit proposal for a trade request
+  app.post("/api/finabridge/exporter/proposals", async (req, res) => {
+    try {
+      const proposalData = insertTradeProposalSchema.parse(req.body);
+      
+      // Verify trade request exists and is open
+      const request = await storage.getTradeRequest(proposalData.tradeRequestId);
+      if (!request) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      if (request.status !== 'Open' && request.status !== 'Proposal Review') {
+        return res.status(400).json({ message: "Trade request is not accepting proposals" });
+      }
+      
+      // Check if exporter already submitted a proposal
+      const existingProposals = await storage.getExporterProposals(proposalData.exporterUserId);
+      const alreadySubmitted = existingProposals.some(p => p.tradeRequestId === proposalData.tradeRequestId);
+      if (alreadySubmitted) {
+        return res.status(400).json({ message: "You have already submitted a proposal for this request" });
+      }
+      
+      const proposal = await storage.createTradeProposal(proposalData);
+      
+      // Update request status to Proposal Review if first proposal
+      if (request.status === 'Open') {
+        await storage.updateTradeRequest(request.id, { status: 'Proposal Review' });
+      }
+      
+      res.json({ proposal });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit proposal" });
+    }
+  });
+  
+  // ADMIN ENDPOINTS
+  
+  // Get all trade requests (admin)
+  app.get("/api/admin/finabridge/requests", async (req, res) => {
+    try {
+      const requests = await storage.getAllTradeRequests();
+      
+      // Include importer details for admin
+      const requestsWithImporter = await Promise.all(
+        requests.map(async (request) => {
+          const importer = await storage.getUser(request.importerUserId);
+          const proposals = await storage.getRequestProposals(request.id);
+          return {
+            ...request,
+            importer: importer ? {
+              id: importer.id,
+              finatradesId: importer.finatradesId,
+              fullName: `${importer.firstName} ${importer.lastName}`,
+              email: importer.email,
+              companyName: importer.companyName,
+            } : null,
+            proposalCount: proposals.length,
+          };
+        })
+      );
+      
+      res.json({ requests: requestsWithImporter });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get trade requests" });
+    }
+  });
+  
+  // Get proposals for a specific request (admin)
+  app.get("/api/admin/finabridge/requests/:requestId/proposals", async (req, res) => {
+    try {
+      const proposals = await storage.getRequestProposals(req.params.requestId);
+      
+      // Include exporter details for admin
+      const proposalsWithExporter = await Promise.all(
+        proposals.map(async (proposal) => {
+          const exporter = await storage.getUser(proposal.exporterUserId);
+          return {
+            ...proposal,
+            exporter: exporter ? {
+              id: exporter.id,
+              finatradesId: exporter.finatradesId,
+              fullName: `${exporter.firstName} ${exporter.lastName}`,
+              email: exporter.email,
+              companyName: exporter.companyName,
+            } : null,
+          };
+        })
+      );
+      
+      res.json({ proposals: proposalsWithExporter });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get proposals" });
+    }
+  });
+  
+  // Shortlist a proposal (admin)
+  app.post("/api/admin/finabridge/proposals/:id/shortlist", async (req, res) => {
+    try {
+      const proposal = await storage.getTradeProposal(req.params.id);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      if (proposal.status !== 'Submitted') {
+        return res.status(400).json({ message: "Only submitted proposals can be shortlisted" });
+      }
+      
+      const updated = await storage.updateTradeProposal(req.params.id, { status: 'Shortlisted' });
+      res.json({ proposal: updated });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to shortlist proposal" });
+    }
+  });
+  
+  // Reject a proposal (admin)
+  app.post("/api/admin/finabridge/proposals/:id/reject", async (req, res) => {
+    try {
+      const proposal = await storage.getTradeProposal(req.params.id);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      
+      const updated = await storage.updateTradeProposal(req.params.id, { status: 'Rejected' });
+      res.json({ proposal: updated });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to reject proposal" });
+    }
+  });
+  
+  // Forward shortlisted proposals to importer (admin)
+  app.post("/api/admin/finabridge/requests/:requestId/forward-proposals", async (req, res) => {
+    try {
+      const { proposalIds, adminId } = req.body;
+      
+      if (!Array.isArray(proposalIds) || proposalIds.length === 0) {
+        return res.status(400).json({ message: "No proposals selected" });
+      }
+      
+      const request = await storage.getTradeRequest(req.params.requestId);
+      if (!request) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      
+      // Verify all proposals are shortlisted
+      for (const proposalId of proposalIds) {
+        const proposal = await storage.getTradeProposal(proposalId);
+        if (!proposal || proposal.status !== 'Shortlisted') {
+          return res.status(400).json({ message: `Proposal ${proposalId} is not shortlisted` });
+        }
+      }
+      
+      // Create forwarded proposal records and update status
+      for (const proposalId of proposalIds) {
+        await storage.createForwardedProposal({
+          tradeRequestId: req.params.requestId,
+          proposalId,
+          forwardedByAdminId: adminId,
+        });
+        await storage.updateTradeProposal(proposalId, { status: 'Forwarded' });
+      }
+      
+      // Update request status
+      await storage.updateTradeRequest(req.params.requestId, { status: 'Awaiting Importer' });
+      
+      res.json({ message: `${proposalIds.length} proposals forwarded to importer` });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to forward proposals" });
+    }
+  });
+  
+  // FINABRIDGE WALLET ENDPOINTS
+  
+  // Get user's FinaBridge wallet
+  app.get("/api/finabridge/wallet/:userId", async (req, res) => {
+    try {
+      const wallet = await storage.getOrCreateFinabridgeWallet(req.params.userId);
+      res.json({ wallet });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get wallet" });
+    }
+  });
+  
+  // Fund FinaBridge wallet (transfer from main wallet)
+  app.post("/api/finabridge/wallet/:userId/fund", async (req, res) => {
+    try {
+      const { amountGrams } = req.body;
+      const amount = parseFloat(amountGrams);
+      
+      if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+      
+      // Get main wallet
+      const mainWallet = await storage.getWallet(req.params.userId);
+      if (!mainWallet) {
+        return res.status(404).json({ message: "Main wallet not found" });
+      }
+      
+      const mainGoldBalance = parseFloat(mainWallet.goldGrams || '0');
+      if (mainGoldBalance < amount) {
+        return res.status(400).json({ message: "Insufficient gold balance in main wallet" });
+      }
+      
+      // Deduct from main wallet
+      await storage.updateWallet(mainWallet.id, {
+        goldGrams: (mainGoldBalance - amount).toFixed(6),
+      });
+      
+      // Add to FinaBridge wallet
+      const fbWallet = await storage.getOrCreateFinabridgeWallet(req.params.userId);
+      const newBalance = parseFloat(fbWallet.availableGoldGrams) + amount;
+      await storage.updateFinabridgeWallet(fbWallet.id, {
+        availableGoldGrams: newBalance.toFixed(6),
+      });
+      
+      // Create transaction record
+      await storage.createTransaction({
+        userId: req.params.userId,
+        type: 'Withdrawal',
+        status: 'Completed',
+        amountGold: amountGrams.toString(),
+        description: 'Transfer to FinaBridge wallet',
+        sourceModule: 'finabridge',
+        updatedAt: new Date(),
+      });
+      
+      res.json({ 
+        message: `${amount}g transferred to FinaBridge wallet`,
+        wallet: await storage.getFinabridgeWallet(req.params.userId),
+      });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to fund wallet" });
+    }
+  });
+  
+  // Get user's settlement holds
+  app.get("/api/finabridge/settlement-holds/:userId", async (req, res) => {
+    try {
+      const holds = await storage.getUserSettlementHolds(req.params.userId);
+      res.json({ holds });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get settlement holds" });
+    }
+  });
+  
+  // Release settlement hold (admin - after trade completion)
+  app.post("/api/admin/finabridge/settlement-holds/:id/release", async (req, res) => {
+    try {
+      const hold = await storage.getSettlementHold(req.params.id);
+      if (!hold) {
+        return res.status(404).json({ message: "Settlement hold not found" });
+      }
+      if (hold.status !== 'Held') {
+        return res.status(400).json({ message: "Settlement hold is not active" });
+      }
+      
+      const lockedAmount = parseFloat(hold.lockedGoldGrams);
+      
+      // Transfer gold from importer's locked to exporter's available
+      const importerWallet = await storage.getFinabridgeWallet(hold.importerUserId);
+      if (importerWallet) {
+        await storage.updateFinabridgeWallet(importerWallet.id, {
+          lockedGoldGrams: (parseFloat(importerWallet.lockedGoldGrams) - lockedAmount).toFixed(6),
+        });
+      }
+      
+      const exporterWallet = await storage.getOrCreateFinabridgeWallet(hold.exporterUserId);
+      await storage.updateFinabridgeWallet(exporterWallet.id, {
+        availableGoldGrams: (parseFloat(exporterWallet.availableGoldGrams) + lockedAmount).toFixed(6),
+      });
+      
+      // Update hold status
+      await storage.updateSettlementHold(req.params.id, { status: 'Released' });
+      
+      // Update trade request status
+      await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Completed' });
+      
+      res.json({ message: "Settlement released and gold transferred to exporter" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release settlement" });
     }
   });
   
