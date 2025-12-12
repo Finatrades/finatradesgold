@@ -4229,7 +4229,9 @@ export async function registerRoutes(
       const binanceService = BinancePayService.getInstance();
       
       if (binanceService && timestamp && nonce && signature) {
-        const bodyString = JSON.stringify(req.body);
+        // Use the raw body buffer for signature verification to ensure exact payload matching
+        const rawBody = (req as any).rawBody;
+        const bodyString = rawBody ? rawBody.toString('utf-8') : JSON.stringify(req.body);
         const isValid = binanceService.verifyWebhookSignature(timestamp, nonce, bodyString, signature);
         
         if (!isValid) {
