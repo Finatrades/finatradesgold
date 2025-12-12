@@ -48,6 +48,7 @@ import CardManagement from "@/pages/admin/CardManagement";
 import TradeFinance from "@/pages/admin/TradeFinance";
 import BNSLManagement from "@/pages/admin/BNSLManagement";
 import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
+import FinaVaultManagement from "@/pages/admin/FinaVaultManagement";
 import FeeManagement from "@/pages/admin/FeeManagement";
 import BNSLExplore from "@/pages/BNSLExplore";
 
@@ -83,7 +84,8 @@ function Router() {
       <Route path="/admin/users" component={UserManagement} />
       <Route path="/admin/users/:id" component={UserDetails} />
       <Route path="/admin/transactions" component={Transactions} />
-      <Route path="/admin/vault" component={VaultManagement} />
+      <Route path="/admin/vault" component={FinaVaultManagement} />
+      <Route path="/admin/vault-legacy" component={VaultManagement} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/chat" component={AdminChat} />
       <Route path="/admin/cms" component={CMSManagement} />
