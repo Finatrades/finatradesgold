@@ -3,6 +3,8 @@ import {
   bnslPlans, bnslPayouts, bnslEarlyTerminations, bnslWallets,
   bnslPlanTemplates, bnslTemplateVariants,
   tradeCases, tradeDocuments,
+  tradeRequests, tradeProposals, forwardedProposals, tradeConfirmations,
+  finabridgeWallets, settlementHolds,
   chatSessions, chatMessages, auditLogs, certificates,
   contentPages, contentBlocks, templates, mediaAssets,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
@@ -20,6 +22,12 @@ import {
   type BnslTemplateVariant, type InsertBnslTemplateVariant,
   type TradeCase, type InsertTradeCase,
   type TradeDocument, type InsertTradeDocument,
+  type TradeRequest, type InsertTradeRequest,
+  type TradeProposal, type InsertTradeProposal,
+  type ForwardedProposal, type InsertForwardedProposal,
+  type TradeConfirmation, type InsertTradeConfirmation,
+  type FinabridgeWallet, type InsertFinabridgeWallet,
+  type SettlementHold, type InsertSettlementHold,
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
   type AuditLog, type InsertAuditLog,
@@ -208,6 +216,44 @@ export interface IStorage {
   getCaseDocuments(caseId: string): Promise<TradeDocument[]>;
   createTradeDocument(document: InsertTradeDocument): Promise<TradeDocument>;
   updateTradeDocument(id: string, updates: Partial<TradeDocument>): Promise<TradeDocument | undefined>;
+  
+  // Trade Requests (FinaBridge Matching)
+  getTradeRequest(id: string): Promise<TradeRequest | undefined>;
+  getTradeRequestByRef(tradeRefId: string): Promise<TradeRequest | undefined>;
+  getUserTradeRequests(userId: string): Promise<TradeRequest[]>;
+  getOpenTradeRequests(): Promise<TradeRequest[]>;
+  getAllTradeRequests(): Promise<TradeRequest[]>;
+  createTradeRequest(request: InsertTradeRequest): Promise<TradeRequest>;
+  updateTradeRequest(id: string, updates: Partial<TradeRequest>): Promise<TradeRequest | undefined>;
+  
+  // Trade Proposals
+  getTradeProposal(id: string): Promise<TradeProposal | undefined>;
+  getRequestProposals(tradeRequestId: string): Promise<TradeProposal[]>;
+  getExporterProposals(exporterUserId: string): Promise<TradeProposal[]>;
+  createTradeProposal(proposal: InsertTradeProposal): Promise<TradeProposal>;
+  updateTradeProposal(id: string, updates: Partial<TradeProposal>): Promise<TradeProposal | undefined>;
+  
+  // Forwarded Proposals
+  getForwardedProposals(tradeRequestId: string): Promise<ForwardedProposal[]>;
+  createForwardedProposal(forwarded: InsertForwardedProposal): Promise<ForwardedProposal>;
+  
+  // Trade Confirmations
+  getTradeConfirmation(tradeRequestId: string): Promise<TradeConfirmation | undefined>;
+  createTradeConfirmation(confirmation: InsertTradeConfirmation): Promise<TradeConfirmation>;
+  
+  // FinaBridge Wallets
+  getFinabridgeWallet(userId: string): Promise<FinabridgeWallet | undefined>;
+  createFinabridgeWallet(wallet: InsertFinabridgeWallet): Promise<FinabridgeWallet>;
+  updateFinabridgeWallet(id: string, updates: Partial<FinabridgeWallet>): Promise<FinabridgeWallet | undefined>;
+  getOrCreateFinabridgeWallet(userId: string): Promise<FinabridgeWallet>;
+  
+  // Settlement Holds
+  getSettlementHold(id: string): Promise<SettlementHold | undefined>;
+  getTradeSettlementHold(tradeRequestId: string): Promise<SettlementHold | undefined>;
+  getUserSettlementHolds(userId: string): Promise<SettlementHold[]>;
+  getExporterSettlementHolds(exporterUserId: string): Promise<SettlementHold[]>;
+  createSettlementHold(hold: InsertSettlementHold): Promise<SettlementHold>;
+  updateSettlementHold(id: string, updates: Partial<SettlementHold>): Promise<SettlementHold | undefined>;
   
   // Chat
   getChatSession(userId: string): Promise<ChatSession | undefined>;
@@ -593,6 +639,140 @@ export class DatabaseStorage implements IStorage {
   async updateTradeDocument(id: string, updates: Partial<TradeDocument>): Promise<TradeDocument | undefined> {
     const [document] = await db.update(tradeDocuments).set(updates).where(eq(tradeDocuments.id, id)).returning();
     return document || undefined;
+  }
+
+  // Trade Requests (FinaBridge Matching)
+  async getTradeRequest(id: string): Promise<TradeRequest | undefined> {
+    const [request] = await db.select().from(tradeRequests).where(eq(tradeRequests.id, id));
+    return request || undefined;
+  }
+
+  async getTradeRequestByRef(tradeRefId: string): Promise<TradeRequest | undefined> {
+    const [request] = await db.select().from(tradeRequests).where(eq(tradeRequests.tradeRefId, tradeRefId));
+    return request || undefined;
+  }
+
+  async getUserTradeRequests(userId: string): Promise<TradeRequest[]> {
+    return await db.select().from(tradeRequests).where(eq(tradeRequests.importerUserId, userId)).orderBy(desc(tradeRequests.createdAt));
+  }
+
+  async getOpenTradeRequests(): Promise<TradeRequest[]> {
+    return await db.select().from(tradeRequests).where(
+      and(
+        eq(tradeRequests.status, 'Open'),
+        eq(tradeRequests.suggestExporter, true)
+      )
+    ).orderBy(desc(tradeRequests.createdAt));
+  }
+
+  async getAllTradeRequests(): Promise<TradeRequest[]> {
+    return await db.select().from(tradeRequests).orderBy(desc(tradeRequests.createdAt));
+  }
+
+  async createTradeRequest(insertRequest: InsertTradeRequest): Promise<TradeRequest> {
+    const [request] = await db.insert(tradeRequests).values(insertRequest).returning();
+    return request;
+  }
+
+  async updateTradeRequest(id: string, updates: Partial<TradeRequest>): Promise<TradeRequest | undefined> {
+    const [request] = await db.update(tradeRequests).set({ ...updates, updatedAt: new Date() }).where(eq(tradeRequests.id, id)).returning();
+    return request || undefined;
+  }
+
+  // Trade Proposals
+  async getTradeProposal(id: string): Promise<TradeProposal | undefined> {
+    const [proposal] = await db.select().from(tradeProposals).where(eq(tradeProposals.id, id));
+    return proposal || undefined;
+  }
+
+  async getRequestProposals(tradeRequestId: string): Promise<TradeProposal[]> {
+    return await db.select().from(tradeProposals).where(eq(tradeProposals.tradeRequestId, tradeRequestId)).orderBy(desc(tradeProposals.createdAt));
+  }
+
+  async getExporterProposals(exporterUserId: string): Promise<TradeProposal[]> {
+    return await db.select().from(tradeProposals).where(eq(tradeProposals.exporterUserId, exporterUserId)).orderBy(desc(tradeProposals.createdAt));
+  }
+
+  async createTradeProposal(insertProposal: InsertTradeProposal): Promise<TradeProposal> {
+    const [proposal] = await db.insert(tradeProposals).values(insertProposal).returning();
+    return proposal;
+  }
+
+  async updateTradeProposal(id: string, updates: Partial<TradeProposal>): Promise<TradeProposal | undefined> {
+    const [proposal] = await db.update(tradeProposals).set({ ...updates, updatedAt: new Date() }).where(eq(tradeProposals.id, id)).returning();
+    return proposal || undefined;
+  }
+
+  // Forwarded Proposals
+  async getForwardedProposals(tradeRequestId: string): Promise<ForwardedProposal[]> {
+    return await db.select().from(forwardedProposals).where(eq(forwardedProposals.tradeRequestId, tradeRequestId)).orderBy(desc(forwardedProposals.createdAt));
+  }
+
+  async createForwardedProposal(insertForwarded: InsertForwardedProposal): Promise<ForwardedProposal> {
+    const [forwarded] = await db.insert(forwardedProposals).values(insertForwarded).returning();
+    return forwarded;
+  }
+
+  // Trade Confirmations
+  async getTradeConfirmation(tradeRequestId: string): Promise<TradeConfirmation | undefined> {
+    const [confirmation] = await db.select().from(tradeConfirmations).where(eq(tradeConfirmations.tradeRequestId, tradeRequestId));
+    return confirmation || undefined;
+  }
+
+  async createTradeConfirmation(insertConfirmation: InsertTradeConfirmation): Promise<TradeConfirmation> {
+    const [confirmation] = await db.insert(tradeConfirmations).values(insertConfirmation).returning();
+    return confirmation;
+  }
+
+  // FinaBridge Wallets
+  async getFinabridgeWallet(userId: string): Promise<FinabridgeWallet | undefined> {
+    const [wallet] = await db.select().from(finabridgeWallets).where(eq(finabridgeWallets.userId, userId));
+    return wallet || undefined;
+  }
+
+  async createFinabridgeWallet(insertWallet: InsertFinabridgeWallet): Promise<FinabridgeWallet> {
+    const [wallet] = await db.insert(finabridgeWallets).values(insertWallet).returning();
+    return wallet;
+  }
+
+  async updateFinabridgeWallet(id: string, updates: Partial<FinabridgeWallet>): Promise<FinabridgeWallet | undefined> {
+    const [wallet] = await db.update(finabridgeWallets).set({ ...updates, updatedAt: new Date() }).where(eq(finabridgeWallets.id, id)).returning();
+    return wallet || undefined;
+  }
+
+  async getOrCreateFinabridgeWallet(userId: string): Promise<FinabridgeWallet> {
+    const existing = await this.getFinabridgeWallet(userId);
+    if (existing) return existing;
+    return await this.createFinabridgeWallet({ userId, availableGoldGrams: '0', lockedGoldGrams: '0' });
+  }
+
+  // Settlement Holds
+  async getSettlementHold(id: string): Promise<SettlementHold | undefined> {
+    const [hold] = await db.select().from(settlementHolds).where(eq(settlementHolds.id, id));
+    return hold || undefined;
+  }
+
+  async getTradeSettlementHold(tradeRequestId: string): Promise<SettlementHold | undefined> {
+    const [hold] = await db.select().from(settlementHolds).where(eq(settlementHolds.tradeRequestId, tradeRequestId));
+    return hold || undefined;
+  }
+
+  async getUserSettlementHolds(userId: string): Promise<SettlementHold[]> {
+    return await db.select().from(settlementHolds).where(eq(settlementHolds.importerUserId, userId)).orderBy(desc(settlementHolds.createdAt));
+  }
+
+  async getExporterSettlementHolds(exporterUserId: string): Promise<SettlementHold[]> {
+    return await db.select().from(settlementHolds).where(eq(settlementHolds.exporterUserId, exporterUserId)).orderBy(desc(settlementHolds.createdAt));
+  }
+
+  async createSettlementHold(insertHold: InsertSettlementHold): Promise<SettlementHold> {
+    const [hold] = await db.insert(settlementHolds).values(insertHold).returning();
+    return hold;
+  }
+
+  async updateSettlementHold(id: string, updates: Partial<SettlementHold>): Promise<SettlementHold | undefined> {
+    const [hold] = await db.update(settlementHolds).set({ ...updates, updatedAt: new Date() }).where(eq(settlementHolds.id, id)).returning();
+    return hold || undefined;
   }
 
   // Chat

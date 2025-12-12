@@ -562,6 +562,123 @@ export type InsertTradeDocument = z.infer<typeof insertTradeDocumentSchema>;
 export type TradeDocument = typeof tradeDocuments.$inferSelect;
 
 // ============================================
+// FINABRIDGE - TRADE MATCHING & SETTLEMENT
+// ============================================
+
+export const tradeRequestStatusEnum = pgEnum('trade_request_status', [
+  'Draft', 'Open', 'Proposal Review', 'Awaiting Importer', 'Active Trade', 'Completed', 'Cancelled'
+]);
+
+export const proposalStatusEnum = pgEnum('proposal_status', [
+  'Submitted', 'Shortlisted', 'Rejected', 'Forwarded', 'Accepted', 'Declined'
+]);
+
+export const settlementHoldStatusEnum = pgEnum('settlement_hold_status', [
+  'Held', 'Released', 'Cancelled'
+]);
+
+export const tradeRequests = pgTable("trade_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRefId: varchar("trade_ref_id", { length: 50 }).notNull().unique(),
+  importerUserId: varchar("importer_user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  goodsName: varchar("goods_name", { length: 255 }).notNull(),
+  description: text("description"),
+  quantity: varchar("quantity", { length: 100 }),
+  incoterms: varchar("incoterms", { length: 50 }),
+  destination: varchar("destination", { length: 255 }),
+  expectedShipDate: varchar("expected_ship_date", { length: 50 }),
+  
+  tradeValueUsd: decimal("trade_value_usd", { precision: 18, scale: 2 }).notNull(),
+  settlementGoldGrams: decimal("settlement_gold_grams", { precision: 18, scale: 6 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  
+  exporterKnown: boolean("exporter_known").default(false),
+  exporterFinatradesId: varchar("exporter_finatrades_id", { length: 20 }),
+  suggestExporter: boolean("suggest_exporter").default(false),
+  
+  status: tradeRequestStatusEnum("status").notNull().default('Draft'),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTradeRequestSchema = createInsertSchema(tradeRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTradeRequest = z.infer<typeof insertTradeRequestSchema>;
+export type TradeRequest = typeof tradeRequests.$inferSelect;
+
+export const tradeProposals = pgTable("trade_proposals", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  exporterUserId: varchar("exporter_user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  quotePrice: decimal("quote_price", { precision: 18, scale: 2 }).notNull(),
+  timelineDays: integer("timeline_days").notNull(),
+  notes: text("notes"),
+  attachmentUrl: text("attachment_url"),
+  
+  status: proposalStatusEnum("status").notNull().default('Submitted'),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTradeProposalSchema = createInsertSchema(tradeProposals).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTradeProposal = z.infer<typeof insertTradeProposalSchema>;
+export type TradeProposal = typeof tradeProposals.$inferSelect;
+
+export const forwardedProposals = pgTable("forwarded_proposals", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  proposalId: varchar("proposal_id", { length: 255 }).notNull().references(() => tradeProposals.id),
+  forwardedByAdminId: varchar("forwarded_by_admin_id", { length: 255 }).notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertForwardedProposalSchema = createInsertSchema(forwardedProposals).omit({ id: true, createdAt: true });
+export type InsertForwardedProposal = z.infer<typeof insertForwardedProposalSchema>;
+export type ForwardedProposal = typeof forwardedProposals.$inferSelect;
+
+export const tradeConfirmations = pgTable("trade_confirmations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  acceptedProposalId: varchar("accepted_proposal_id", { length: 255 }).notNull().references(() => tradeProposals.id),
+  confirmedAt: timestamp("confirmed_at").notNull().defaultNow(),
+});
+
+export const insertTradeConfirmationSchema = createInsertSchema(tradeConfirmations).omit({ id: true, confirmedAt: true });
+export type InsertTradeConfirmation = z.infer<typeof insertTradeConfirmationSchema>;
+export type TradeConfirmation = typeof tradeConfirmations.$inferSelect;
+
+export const finabridgeWallets = pgTable("finabridge_wallets", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  availableGoldGrams: decimal("available_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  lockedGoldGrams: decimal("locked_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFinabridgeWalletSchema = createInsertSchema(finabridgeWallets).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFinabridgeWallet = z.infer<typeof insertFinabridgeWalletSchema>;
+export type FinabridgeWallet = typeof finabridgeWallets.$inferSelect;
+
+export const settlementHolds = pgTable("settlement_holds", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  importerUserId: varchar("importer_user_id", { length: 255 }).notNull().references(() => users.id),
+  exporterUserId: varchar("exporter_user_id", { length: 255 }).notNull().references(() => users.id),
+  lockedGoldGrams: decimal("locked_gold_grams", { precision: 18, scale: 6 }).notNull(),
+  status: settlementHoldStatusEnum("status").notNull().default('Held'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSettlementHoldSchema = createInsertSchema(settlementHolds).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSettlementHold = z.infer<typeof insertSettlementHoldSchema>;
+export type SettlementHold = typeof settlementHolds.$inferSelect;
+
+// ============================================
 // CHAT
 // ============================================
 
