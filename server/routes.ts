@@ -1366,6 +1366,399 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to get all vault holdings" });
     }
   });
+
+  // ============================================================================
+  // FINAVAULT - DEPOSIT REQUESTS
+  // ============================================================================
+
+  // Get user's vault deposit requests
+  app.get("/api/vault/deposits/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserVaultDepositRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deposit requests" });
+    }
+  });
+
+  // Get single deposit request
+  app.get("/api/vault/deposit/:id", async (req, res) => {
+    try {
+      const request = await storage.getVaultDepositRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Deposit request not found" });
+      }
+      res.json({ request });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deposit request" });
+    }
+  });
+
+  // Create vault deposit request (user submission)
+  app.post("/api/vault/deposit", async (req, res) => {
+    try {
+      const { userId, vaultLocation, depositType, totalDeclaredWeightGrams, items, deliveryMethod, pickupDetails, documents } = req.body;
+      
+      if (!userId || !vaultLocation || !depositType || !totalDeclaredWeightGrams || !items || !deliveryMethod) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const referenceNumber = storage.generateVaultDepositReferenceNumber();
+      
+      const request = await storage.createVaultDepositRequest({
+        referenceNumber,
+        userId,
+        vaultLocation,
+        depositType,
+        totalDeclaredWeightGrams: totalDeclaredWeightGrams.toString(),
+        items,
+        deliveryMethod,
+        pickupDetails: pickupDetails || null,
+        documents: documents || [],
+        status: 'Submitted',
+      });
+
+      await storage.createAuditLog({
+        entityType: "vault_deposit",
+        entityId: request.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: `Deposit request submitted: ${totalDeclaredWeightGrams}g ${depositType}`,
+      });
+
+      res.json({ request });
+    } catch (error) {
+      console.error('Create deposit request error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
+    }
+  });
+
+  // Admin: Get all vault deposit requests
+  app.get("/api/admin/vault/deposits", async (req, res) => {
+    try {
+      const requests = await storage.getAllVaultDepositRequests();
+      
+      // Enrich with user data
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        const user = await storage.getUser(request.userId);
+        return { ...request, user };
+      }));
+      
+      res.json({ requests: enrichedRequests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deposit requests" });
+    }
+  });
+
+  // Admin: Get pending vault deposit requests
+  app.get("/api/admin/vault/deposits/pending", async (req, res) => {
+    try {
+      const requests = await storage.getPendingVaultDepositRequests();
+      
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        const user = await storage.getUser(request.userId);
+        return { ...request, user };
+      }));
+      
+      res.json({ requests: enrichedRequests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get pending deposit requests" });
+    }
+  });
+
+  // Admin: Update vault deposit request status
+  app.patch("/api/admin/vault/deposit/:id", async (req, res) => {
+    try {
+      const { status, adminNotes, rejectionReason, verifiedWeightGrams, goldPriceUsdPerGram, adminId } = req.body;
+      
+      const request = await storage.getVaultDepositRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Deposit request not found" });
+      }
+
+      const updates: any = { 
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+      };
+      
+      if (adminNotes) updates.adminNotes = adminNotes;
+      if (rejectionReason) updates.rejectionReason = rejectionReason;
+      if (verifiedWeightGrams) updates.verifiedWeightGrams = verifiedWeightGrams.toString();
+      if (goldPriceUsdPerGram) updates.goldPriceUsdPerGram = goldPriceUsdPerGram.toString();
+
+      // If status is "Stored", create vault holding, certificate, and credit wallet
+      if (status === 'Stored') {
+        const finalWeightGrams = verifiedWeightGrams || parseFloat(request.totalDeclaredWeightGrams);
+        const pricePerGram = goldPriceUsdPerGram || 85.22;
+        const totalValue = finalWeightGrams * pricePerGram;
+
+        // Create vault holding
+        const holding = await storage.createVaultHolding({
+          userId: request.userId,
+          goldGrams: finalWeightGrams.toString(),
+          vaultLocation: request.vaultLocation,
+          isPhysicallyDeposited: true,
+          purchasePriceUsdPerGram: pricePerGram.toString(),
+        });
+
+        // Generate certificate
+        const certificateNumber = await storage.generateCertificateNumber('Physical Storage');
+        const certificate = await storage.createCertificate({
+          certificateNumber,
+          userId: request.userId,
+          vaultHoldingId: holding.id,
+          type: 'Physical Storage',
+          status: 'Active',
+          goldGrams: finalWeightGrams.toString(),
+          goldPriceUsdPerGram: pricePerGram.toString(),
+          totalValueUsd: totalValue.toFixed(2),
+          issuer: 'Wingold & Metals DMCC',
+          vaultLocation: request.vaultLocation,
+        });
+
+        // Credit user's FinaPay wallet
+        const wallet = await storage.getWallet(request.userId);
+        if (wallet) {
+          const newGoldBalance = parseFloat(wallet.goldGrams) + finalWeightGrams;
+          await storage.updateWallet(wallet.id, {
+            goldGrams: newGoldBalance.toFixed(6),
+          });
+
+          // Create transaction record
+          await storage.createTransaction({
+            userId: request.userId,
+            type: 'Deposit',
+            status: 'Completed',
+            amountGold: finalWeightGrams.toString(),
+            goldPriceUsdPerGram: pricePerGram.toString(),
+            description: `FinaVault deposit: ${finalWeightGrams}g physical gold stored`,
+            sourceModule: 'finavault',
+            referenceId: request.referenceNumber,
+          });
+        }
+
+        updates.vaultHoldingId = holding.id;
+        updates.certificateId = certificate.id;
+        updates.storedAt = new Date();
+        updates.vaultInternalReference = `WG-${Date.now().toString(36).toUpperCase()}`;
+      }
+
+      const updatedRequest = await storage.updateVaultDepositRequest(req.params.id, updates);
+
+      await storage.createAuditLog({
+        entityType: "vault_deposit",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId,
+        actorRole: "admin",
+        details: `Status changed to ${status}`,
+      });
+
+      res.json({ request: updatedRequest });
+    } catch (error) {
+      console.error('Update deposit request error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update deposit request" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - WITHDRAWAL REQUESTS (Cash Out)
+  // ============================================================================
+
+  // Get user's vault withdrawal requests
+  app.get("/api/vault/withdrawals/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserVaultWithdrawalRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get withdrawal requests" });
+    }
+  });
+
+  // Get single withdrawal request
+  app.get("/api/vault/withdrawal/:id", async (req, res) => {
+    try {
+      const request = await storage.getVaultWithdrawalRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Withdrawal request not found" });
+      }
+      res.json({ request });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get withdrawal request" });
+    }
+  });
+
+  // Create vault withdrawal request (user submission)
+  app.post("/api/vault/withdrawal", async (req, res) => {
+    try {
+      const { 
+        userId, goldGrams, goldPriceUsdPerGram, withdrawalMethod,
+        bankName, accountName, accountNumber, iban, swiftCode, bankCountry,
+        cryptoNetwork, cryptoCurrency, walletAddress, notes
+      } = req.body;
+      
+      if (!userId || !goldGrams || !goldPriceUsdPerGram || !withdrawalMethod) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Validate withdrawal method specific fields
+      if (withdrawalMethod === 'Bank Transfer') {
+        if (!bankName || !accountName || !accountNumber) {
+          return res.status(400).json({ message: "Bank details required for bank transfer" });
+        }
+      } else if (withdrawalMethod === 'Crypto') {
+        if (!cryptoNetwork || !cryptoCurrency || !walletAddress) {
+          return res.status(400).json({ message: "Crypto details required for crypto withdrawal" });
+        }
+      }
+
+      // Check if user has sufficient vault holdings
+      const holdings = await storage.getUserVaultHoldings(userId);
+      const totalVaultGold = holdings.reduce((sum, h) => sum + parseFloat(h.goldGrams), 0);
+      
+      if (totalVaultGold < parseFloat(goldGrams)) {
+        return res.status(400).json({ message: "Insufficient vault holdings" });
+      }
+
+      const referenceNumber = storage.generateVaultWithdrawalReferenceNumber();
+      const totalValueUsd = parseFloat(goldGrams) * parseFloat(goldPriceUsdPerGram);
+
+      const request = await storage.createVaultWithdrawalRequest({
+        referenceNumber,
+        userId,
+        goldGrams: goldGrams.toString(),
+        goldPriceUsdPerGram: goldPriceUsdPerGram.toString(),
+        totalValueUsd: totalValueUsd.toFixed(2),
+        withdrawalMethod,
+        bankName: bankName || null,
+        accountName: accountName || null,
+        accountNumber: accountNumber || null,
+        iban: iban || null,
+        swiftCode: swiftCode || null,
+        bankCountry: bankCountry || null,
+        cryptoNetwork: cryptoNetwork || null,
+        cryptoCurrency: cryptoCurrency || null,
+        walletAddress: walletAddress || null,
+        notes: notes || null,
+        status: 'Submitted',
+      });
+
+      await storage.createAuditLog({
+        entityType: "vault_withdrawal",
+        entityId: request.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: `Withdrawal request submitted: ${goldGrams}g via ${withdrawalMethod}`,
+      });
+
+      res.json({ request });
+    } catch (error) {
+      console.error('Create withdrawal request error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
+    }
+  });
+
+  // Admin: Get all vault withdrawal requests
+  app.get("/api/admin/vault/withdrawals", async (req, res) => {
+    try {
+      const requests = await storage.getAllVaultWithdrawalRequests();
+      
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        const user = await storage.getUser(request.userId);
+        return { ...request, user };
+      }));
+      
+      res.json({ requests: enrichedRequests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get withdrawal requests" });
+    }
+  });
+
+  // Admin: Get pending vault withdrawal requests
+  app.get("/api/admin/vault/withdrawals/pending", async (req, res) => {
+    try {
+      const requests = await storage.getPendingVaultWithdrawalRequests();
+      
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        const user = await storage.getUser(request.userId);
+        return { ...request, user };
+      }));
+      
+      res.json({ requests: enrichedRequests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get pending withdrawal requests" });
+    }
+  });
+
+  // Admin: Update vault withdrawal request status
+  app.patch("/api/admin/vault/withdrawal/:id", async (req, res) => {
+    try {
+      const { status, adminNotes, rejectionReason, transactionReference, adminId } = req.body;
+      
+      const request = await storage.getVaultWithdrawalRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Withdrawal request not found" });
+      }
+
+      const updates: any = { 
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+      };
+      
+      if (adminNotes) updates.adminNotes = adminNotes;
+      if (rejectionReason) updates.rejectionReason = rejectionReason;
+      if (transactionReference) updates.transactionReference = transactionReference;
+
+      // If status is "Completed", deduct from vault holdings and wallet
+      if (status === 'Completed') {
+        const goldGrams = parseFloat(request.goldGrams);
+
+        // Deduct from user's FinaPay wallet
+        const wallet = await storage.getWallet(request.userId);
+        if (wallet) {
+          const newGoldBalance = Math.max(0, parseFloat(wallet.goldGrams) - goldGrams);
+          await storage.updateWallet(wallet.id, {
+            goldGrams: newGoldBalance.toFixed(6),
+          });
+
+          // Create transaction record
+          await storage.createTransaction({
+            userId: request.userId,
+            type: 'Withdrawal',
+            status: 'Completed',
+            amountGold: goldGrams.toString(),
+            amountUsd: request.totalValueUsd,
+            goldPriceUsdPerGram: request.goldPriceUsdPerGram,
+            description: `FinaVault withdrawal: ${goldGrams}g via ${request.withdrawalMethod}`,
+            sourceModule: 'finavault',
+            referenceId: request.referenceNumber,
+          });
+        }
+
+        updates.processedAt = new Date();
+      }
+
+      const updatedRequest = await storage.updateVaultWithdrawalRequest(req.params.id, updates);
+
+      await storage.createAuditLog({
+        entityType: "vault_withdrawal",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId,
+        actorRole: "admin",
+        details: `Status changed to ${status}`,
+      });
+
+      res.json({ request: updatedRequest });
+    } catch (error) {
+      console.error('Update withdrawal request error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update withdrawal request" });
+    }
+  });
   
   // ============================================================================
   // BNSL - BUY NOW SELL LATER
