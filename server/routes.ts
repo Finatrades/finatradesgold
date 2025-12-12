@@ -2077,7 +2077,23 @@ export async function registerRoutes(
   // Create BNSL plan (locks gold from BNSL wallet)
   app.post("/api/bnsl/plans", async (req, res) => {
     try {
-      const planData = insertBnslPlanSchema.parse(req.body);
+      // Auto-generate contractId if not provided
+      const contractId = req.body.contractId || `BNSL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Convert date strings to Date objects
+      const startDate = typeof req.body.startDate === 'string' ? new Date(req.body.startDate) : req.body.startDate;
+      const maturityDate = typeof req.body.maturityDate === 'string' ? new Date(req.body.maturityDate) : req.body.maturityDate;
+      
+      // Set remainingMarginUsd to totalMarginComponentUsd if not provided
+      const remainingMarginUsd = req.body.remainingMarginUsd || req.body.totalMarginComponentUsd;
+      
+      const planData = insertBnslPlanSchema.parse({
+        ...req.body,
+        contractId,
+        startDate,
+        maturityDate,
+        remainingMarginUsd
+      });
       const goldGrams = parseFloat(planData.goldSoldGrams);
       
       // Get BNSL wallet and verify sufficient funds
