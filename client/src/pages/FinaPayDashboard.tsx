@@ -76,20 +76,16 @@ export default function FinaPayDashboard() {
     
     addTransaction({
       type: 'Buy',
-      status: 'Completed',
       amountUsd: usd.toFixed(2),
       amountGold: grams.toFixed(6),
       description: 'Purchase via Card'
     });
 
-    updateWallet({
-      goldBalanceGrams: wallet.goldBalanceGrams + grams,
-      availableGoldGrams: wallet.availableGoldGrams + grams
-    });
+    // Wallet update happens only after admin approval - do not update locally
 
     setBuyOpen(false);
     setBuyAmountUsd('');
-    toast.success(`Successfully bought ${grams.toFixed(4)}g Gold`);
+    toast.success(`Buy order for ${grams.toFixed(4)}g Gold submitted for admin approval`);
   };
 
   const handleSellGold = () => {
@@ -103,20 +99,16 @@ export default function FinaPayDashboard() {
 
     addTransaction({
       type: 'Sell',
-      status: 'Completed',
       amountUsd: usd.toFixed(2),
       amountGold: grams.toFixed(6),
       description: 'Sell to Bank Account'
     });
 
-    updateWallet({
-      goldBalanceGrams: wallet.goldBalanceGrams - grams,
-      availableGoldGrams: wallet.availableGoldGrams - grams
-    });
+    // Wallet update happens only after admin approval - do not update locally
 
     setSellOpen(false);
     setSellGrams('');
-    toast.success(`Successfully sold ${grams.toFixed(4)}g Gold`);
+    toast.success(`Sell order for ${grams.toFixed(4)}g Gold submitted for admin approval`);
   };
 
   const handleSendGold = () => {
@@ -128,22 +120,18 @@ export default function FinaPayDashboard() {
 
     addTransaction({
       type: 'Send',
-      status: 'Completed',
       amountGold: grams.toFixed(6),
       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
       recipientEmail: recipient,
       description: 'Internal Transfer'
     });
 
-    updateWallet({
-      goldBalanceGrams: wallet.goldBalanceGrams - grams,
-      availableGoldGrams: wallet.availableGoldGrams - grams
-    });
+    // Wallet update happens only after admin approval - do not update locally
 
     setSendOpen(false);
     setSendGrams('');
     setRecipient('');
-    toast.success(`Sent ${grams.toFixed(4)}g to ${recipient}`);
+    toast.success(`Send request for ${grams.toFixed(4)}g to ${recipient} submitted for admin approval`);
   };
 
   const handleRequestGold = () => {
@@ -152,7 +140,6 @@ export default function FinaPayDashboard() {
 
     addTransaction({
        type: 'Receive',
-       status: 'Pending',
        amountGold: grams.toFixed(6),
        amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
        counterparty: recipient,
@@ -162,7 +149,7 @@ export default function FinaPayDashboard() {
     setRequestOpen(false);
     setRequestGrams('');
     setRecipient('');
-    toast.success('Request sent successfully');
+    toast.success('Request submitted for admin approval');
   };
 
   const handleMoveToBnsl = () => {
@@ -174,20 +161,16 @@ export default function FinaPayDashboard() {
 
     addTransaction({
        type: 'Deposit',
-       status: 'Completed',
        amountGold: grams.toFixed(6),
        amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
        description: 'Locked for BNSL Plan'
     });
 
-    updateWallet({
-       availableGoldGrams: wallet.availableGoldGrams - grams,
-       lockedForBnslGrams: wallet.lockedForBnslGrams + grams
-    });
+    // Wallet update happens only after admin approval
 
     setBnslOpen(false);
     setBnslGrams('');
-    toast.success(`${grams.toFixed(4)}g moved to BNSL (Locked)`);
+    toast.success(`BNSL deposit of ${grams.toFixed(4)}g submitted for admin approval`);
   };
 
   const handleMoveToTrade = () => {
@@ -199,20 +182,16 @@ export default function FinaPayDashboard() {
 
     addTransaction({
        type: 'Deposit',
-       status: 'Completed',
        amountGold: grams.toFixed(6),
        amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
        description: 'Locked for Trade Settlement'
     });
 
-    updateWallet({
-       availableGoldGrams: wallet.availableGoldGrams - grams,
-       lockedForTradeGrams: wallet.lockedForTradeGrams + grams
-    });
+    // Wallet update happens only after admin approval
 
     setTradeOpen(false);
     setTradeGrams('');
-    toast.success(`${grams.toFixed(4)}g moved to Trade Finance (Locked)`);
+    toast.success(`Trade deposit of ${grams.toFixed(4)}g submitted for admin approval`);
   };
 
   return (

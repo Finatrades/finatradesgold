@@ -224,132 +224,15 @@ export async function registerRoutes(
     }
   });
   
-  // Create transaction with automatic wallet and vault updates
+  // Create transaction - all transactions start as Pending and require admin approval
   app.post("/api/transactions", async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
-      const transaction = await storage.createTransaction(transactionData);
-      
-      // Get user wallet to update balances
-      const wallet = await storage.getWallet(transactionData.userId);
-      if (wallet && transaction.status === 'Completed') {
-        const goldAmount = parseFloat(transaction.amountGold || '0');
-        const usdAmount = parseFloat(transaction.amountUsd || '0');
-        const currentGold = parseFloat(wallet.goldGrams || '0');
-        const currentUsd = parseFloat(wallet.usdBalance || '0');
-        
-        let newGoldBalance = currentGold;
-        let newUsdBalance = currentUsd;
-        
-        switch (transaction.type) {
-          case 'Buy':
-            // User pays USD (from wallet if available), receives gold
-            newGoldBalance = currentGold + goldAmount;
-            // Deduct USD from wallet if user has sufficient balance
-            if (currentUsd >= usdAmount) {
-              newUsdBalance = currentUsd - usdAmount;
-            }
-            // If insufficient USD, payment is assumed to be external (card/bank)
-            break;
-          case 'Sell':
-            // User sells gold, receives USD
-            newGoldBalance = currentGold - goldAmount;
-            newUsdBalance = currentUsd + usdAmount;
-            break;
-          case 'Send':
-            // User sends gold to another user
-            newGoldBalance = currentGold - goldAmount;
-            // Also credit the recipient's wallet if recipientEmail is provided
-            if (transaction.recipientEmail) {
-              const recipientUser = await storage.getUserByEmail(transaction.recipientEmail);
-              if (recipientUser) {
-                const recipientWallet = await storage.getWallet(recipientUser.id);
-                if (recipientWallet) {
-                  const recipientGold = parseFloat(recipientWallet.goldGrams || '0');
-                  await storage.updateWallet(recipientWallet.id, {
-                    goldGrams: (recipientGold + goldAmount).toFixed(6)
-                  });
-                  // Create corresponding Receive transaction for recipient
-                  await storage.createTransaction({
-                    userId: recipientUser.id,
-                    type: 'Receive',
-                    status: 'Completed',
-                    amountGold: goldAmount.toFixed(6),
-                    amountUsd: usdAmount.toFixed(2),
-                    senderEmail: (await storage.getUser(transactionData.userId))?.email || '',
-                    description: `Received from ${transactionData.userId}`
-                  });
-                  // Update recipient's vault holding
-                  const recipientHoldings = await storage.getUserVaultHoldings(recipientUser.id);
-                  if (recipientHoldings.length > 0) {
-                    const rHolding = recipientHoldings[0];
-                    const rGold = parseFloat(rHolding.goldGrams || '0');
-                    await storage.updateVaultHolding(rHolding.id, {
-                      goldGrams: (rGold + goldAmount).toFixed(6)
-                    });
-                  } else {
-                    await storage.createVaultHolding({
-                      userId: recipientUser.id,
-                      goldGrams: goldAmount.toFixed(6),
-                      vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
-                      certificateNumber: `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-                    });
-                  }
-                }
-              }
-            }
-            break;
-          case 'Receive':
-            // User receives gold from another user (handled automatically via Send)
-            newGoldBalance = currentGold + goldAmount;
-            break;
-          case 'Deposit':
-            // Physical gold deposited, credited digitally
-            newGoldBalance = currentGold + goldAmount;
-            break;
-          case 'Withdrawal':
-            // Physical gold withdrawn
-            newGoldBalance = currentGold - goldAmount;
-            break;
-        }
-        
-        // Update wallet with new balances
-        await storage.updateWallet(wallet.id, {
-          goldGrams: newGoldBalance.toFixed(6),
-          usdBalance: newUsdBalance.toFixed(2)
-        });
-        
-        // Create/update FinaVault holding for ownership record
-        const existingHoldings = await storage.getUserVaultHoldings(transactionData.userId);
-        if (existingHoldings.length > 0) {
-          // Update existing holding
-          const holding = existingHoldings[0];
-          const holdingGold = parseFloat(holding.goldGrams || '0');
-          let newHoldingGold = holdingGold;
-          
-          if (['Buy', 'Receive', 'Deposit'].includes(transaction.type)) {
-            newHoldingGold = holdingGold + goldAmount;
-          } else if (['Sell', 'Send', 'Withdrawal'].includes(transaction.type)) {
-            newHoldingGold = holdingGold - goldAmount;
-          }
-          
-          await storage.updateVaultHolding(holding.id, {
-            goldGrams: newHoldingGold.toFixed(6)
-          });
-        } else if (['Buy', 'Receive', 'Deposit'].includes(transaction.type) && goldAmount > 0) {
-          // Create new vault holding with certificate number
-          const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-          const currentGoldPrice = 71.55; // USD per gram (should be fetched from price feed)
-          
-          await storage.createVaultHolding({
-            userId: transactionData.userId,
-            goldGrams: goldAmount.toFixed(6),
-            vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
-            certificateNumber: certificateNumber,
-            purchasePriceUsdPerGram: currentGoldPrice.toFixed(2)
-          });
-        }
-      }
+      // Force all transactions to start as Pending (requires admin authorization)
+      const transaction = await storage.createTransaction({
+        ...transactionData,
+        status: 'Pending'
+      });
       
       // Create audit log
       await storage.createAuditLog({
@@ -358,10 +241,10 @@ export async function registerRoutes(
         actionType: "create",
         actor: transactionData.userId,
         actorRole: "user",
-        details: `Transaction type: ${transactionData.type}, Gold: ${transaction.amountGold || 0}g, USD: $${transaction.amountUsd || 0}`,
+        details: `Transaction submitted for approval - Type: ${transactionData.type}, Gold: ${transaction.amountGold || 0}g, USD: $${transaction.amountUsd || 0}`,
       });
       
-      res.json({ transaction });
+      res.json({ transaction, message: 'Transaction submitted for admin approval' });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Transaction failed" });
     }
@@ -377,7 +260,7 @@ export async function registerRoutes(
     }
   });
   
-  // Update transaction status
+  // Update transaction status (basic update without processing)
   app.patch("/api/transactions/:id", async (req, res) => {
     try {
       const transaction = await storage.updateTransaction(req.params.id, req.body);
@@ -387,6 +270,183 @@ export async function registerRoutes(
       res.json({ transaction });
     } catch (error) {
       res.status(400).json({ message: "Failed to update transaction" });
+    }
+  });
+  
+  // Admin: Approve transaction - processes wallet/vault updates
+  app.post("/api/admin/transactions/:id/approve", async (req, res) => {
+    try {
+      const transaction = await storage.getTransaction(req.params.id);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      if (transaction.status !== 'Pending') {
+        return res.status(400).json({ message: "Only pending transactions can be approved" });
+      }
+      
+      const goldAmount = parseFloat(transaction.amountGold || '0');
+      const usdAmount = parseFloat(transaction.amountUsd || '0');
+      
+      // Get user wallet
+      const wallet = await storage.getWallet(transaction.userId);
+      if (!wallet) {
+        return res.status(404).json({ message: "User wallet not found" });
+      }
+      
+      const currentGold = parseFloat(wallet.goldGrams || '0');
+      const currentUsd = parseFloat(wallet.usdBalance || '0');
+      
+      let newGoldBalance = currentGold;
+      let newUsdBalance = currentUsd;
+      
+      // Process based on transaction type
+      switch (transaction.type) {
+        case 'Buy':
+          newGoldBalance = currentGold + goldAmount;
+          if (currentUsd >= usdAmount) {
+            newUsdBalance = currentUsd - usdAmount;
+          }
+          break;
+        case 'Sell':
+          newGoldBalance = currentGold - goldAmount;
+          newUsdBalance = currentUsd + usdAmount;
+          break;
+        case 'Send':
+          newGoldBalance = currentGold - goldAmount;
+          // Credit recipient
+          if (transaction.recipientEmail) {
+            const recipientUser = await storage.getUserByEmail(transaction.recipientEmail);
+            if (recipientUser) {
+              const recipientWallet = await storage.getWallet(recipientUser.id);
+              if (recipientWallet) {
+                const recipientGold = parseFloat(recipientWallet.goldGrams || '0');
+                await storage.updateWallet(recipientWallet.id, {
+                  goldGrams: (recipientGold + goldAmount).toFixed(6)
+                });
+                // Create Receive transaction for recipient
+                const senderUser = await storage.getUser(transaction.userId);
+                await storage.createTransaction({
+                  userId: recipientUser.id,
+                  type: 'Receive',
+                  status: 'Completed',
+                  amountGold: goldAmount.toFixed(6),
+                  amountUsd: usdAmount.toFixed(2),
+                  senderEmail: senderUser?.email || '',
+                  description: `Received from ${senderUser?.firstName} ${senderUser?.lastName}`
+                });
+                // Update recipient vault holding
+                const recipientHoldings = await storage.getUserVaultHoldings(recipientUser.id);
+                if (recipientHoldings.length > 0) {
+                  const rHolding = recipientHoldings[0];
+                  const rGold = parseFloat(rHolding.goldGrams || '0');
+                  await storage.updateVaultHolding(rHolding.id, {
+                    goldGrams: (rGold + goldAmount).toFixed(6)
+                  });
+                } else {
+                  await storage.createVaultHolding({
+                    userId: recipientUser.id,
+                    goldGrams: goldAmount.toFixed(6),
+                    vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
+                    certificateNumber: `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+                  });
+                }
+              }
+            }
+          }
+          break;
+        case 'Receive':
+          newGoldBalance = currentGold + goldAmount;
+          break;
+        case 'Deposit':
+          newGoldBalance = currentGold + goldAmount;
+          break;
+        case 'Withdrawal':
+          newGoldBalance = currentGold - goldAmount;
+          break;
+      }
+      
+      // Update sender wallet
+      await storage.updateWallet(wallet.id, {
+        goldGrams: newGoldBalance.toFixed(6),
+        usdBalance: newUsdBalance.toFixed(2)
+      });
+      
+      // Update sender vault holding
+      const existingHoldings = await storage.getUserVaultHoldings(transaction.userId);
+      if (existingHoldings.length > 0) {
+        const holding = existingHoldings[0];
+        const holdingGold = parseFloat(holding.goldGrams || '0');
+        let newHoldingGold = holdingGold;
+        
+        if (['Buy', 'Receive', 'Deposit'].includes(transaction.type)) {
+          newHoldingGold = holdingGold + goldAmount;
+        } else if (['Sell', 'Send', 'Withdrawal'].includes(transaction.type)) {
+          newHoldingGold = holdingGold - goldAmount;
+        }
+        
+        await storage.updateVaultHolding(holding.id, {
+          goldGrams: newHoldingGold.toFixed(6)
+        });
+      } else if (['Buy', 'Receive', 'Deposit'].includes(transaction.type) && goldAmount > 0) {
+        await storage.createVaultHolding({
+          userId: transaction.userId,
+          goldGrams: goldAmount.toFixed(6),
+          vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
+          certificateNumber: `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          purchasePriceUsdPerGram: '71.55'
+        });
+      }
+      
+      // Mark transaction as completed
+      const updatedTransaction = await storage.updateTransaction(req.params.id, {
+        status: 'Completed',
+        completedAt: new Date()
+      });
+      
+      // Audit log
+      await storage.createAuditLog({
+        entityType: "transaction",
+        entityId: transaction.id,
+        actionType: "approve",
+        actor: req.body.adminId || 'admin',
+        actorRole: "admin",
+        details: `Transaction approved - Type: ${transaction.type}, Gold: ${goldAmount}g, USD: $${usdAmount}`,
+      });
+      
+      res.json({ transaction: updatedTransaction, message: 'Transaction approved and processed' });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Approval failed" });
+    }
+  });
+  
+  // Admin: Reject transaction
+  app.post("/api/admin/transactions/:id/reject", async (req, res) => {
+    try {
+      const transaction = await storage.getTransaction(req.params.id);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      if (transaction.status !== 'Pending') {
+        return res.status(400).json({ message: "Only pending transactions can be rejected" });
+      }
+      
+      const updatedTransaction = await storage.updateTransaction(req.params.id, {
+        status: 'Cancelled'
+      });
+      
+      // Audit log
+      await storage.createAuditLog({
+        entityType: "transaction",
+        entityId: transaction.id,
+        actionType: "reject",
+        actor: req.body.adminId || 'admin',
+        actorRole: "admin",
+        details: `Transaction rejected - Type: ${transaction.type}, Reason: ${req.body.reason || 'Not specified'}`,
+      });
+      
+      res.json({ transaction: updatedTransaction, message: 'Transaction rejected' });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Rejection failed" });
     }
   });
   

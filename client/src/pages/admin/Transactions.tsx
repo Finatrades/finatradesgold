@@ -37,26 +37,46 @@ export default function Transactions() {
     queryKey: ['/api/admin/transactions'],
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await fetch(`/api/transactions/${id}`, {
-        method: 'PATCH',
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/transactions/${id}/approve`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, completedAt: status === 'Completed' ? new Date().toISOString() : null }),
+        body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error('Failed to update transaction');
+      if (!res.ok) throw new Error('Failed to approve transaction');
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
-      toast.success('Transaction updated');
+      toast.success('Transaction approved and processed');
     },
     onError: () => {
-      toast.error('Failed to update transaction');
+      toast.error('Failed to approve transaction');
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/transactions/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Rejected by admin' }),
+      });
+      if (!res.ok) throw new Error('Failed to reject transaction');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
+      toast.success('Transaction rejected');
+    },
+    onError: () => {
+      toast.error('Failed to reject transaction');
     },
   });
 
   const transactions = data?.transactions || [];
+  const pendingCount = transactions.filter(tx => tx.status === 'Pending').length;
 
   const filteredTransactions = transactions.filter((tx) => {
     const matchesSearch = 
@@ -124,6 +144,27 @@ export default function Transactions() {
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
         </div>
+
+        {pendingCount > 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold">{pendingCount}</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-yellow-800">Pending Authorization</h3>
+                <p className="text-yellow-700 text-sm">{pendingCount} transaction(s) awaiting your approval</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-100"
+              onClick={() => setStatusFilter('Pending')}
+            >
+              View Pending
+            </Button>
+          </div>
+        )}
 
         <div className="flex gap-4 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
@@ -214,7 +255,8 @@ export default function Transactions() {
                                 size="sm" 
                                 variant="outline" 
                                 className="text-green-600 hover:bg-green-50"
-                                onClick={() => updateMutation.mutate({ id: tx.id, status: 'Completed' })}
+                                onClick={() => approveMutation.mutate(tx.id)}
+                                disabled={approveMutation.isPending}
                                 data-testid={`button-approve-${tx.id}`}
                               >
                                 Approve
@@ -223,7 +265,8 @@ export default function Transactions() {
                                 size="sm" 
                                 variant="outline" 
                                 className="text-red-600 hover:bg-red-50"
-                                onClick={() => updateMutation.mutate({ id: tx.id, status: 'Cancelled' })}
+                                onClick={() => rejectMutation.mutate(tx.id)}
+                                disabled={rejectMutation.isPending}
                                 data-testid={`button-reject-${tx.id}`}
                               >
                                 Reject
