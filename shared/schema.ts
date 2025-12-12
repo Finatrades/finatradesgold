@@ -135,11 +135,18 @@ export const transactions = pgTable("transactions", {
   
   recipientEmail: varchar("recipient_email", { length: 255 }),
   senderEmail: varchar("sender_email", { length: 255 }),
+  recipientUserId: varchar("recipient_user_id", { length: 255 }),
   
   description: text("description"),
   referenceId: varchar("reference_id", { length: 255 }),
+  sourceModule: varchar("source_module", { length: 50 }).default('finapay'),
+  
+  approvedBy: varchar("approved_by", { length: 255 }),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
 });
 

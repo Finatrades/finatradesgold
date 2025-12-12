@@ -353,12 +353,12 @@ export default function FinaPayDashboard() {
                           <div key={tx.id} className="flex items-center justify-between p-3 border-b last:border-0 hover:bg-gray-50 rounded transition-colors">
                              <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-full ${
-                                   tx.type === 'BuyGold' || tx.type === 'ReceiveGold' ? 'bg-green-100 text-green-600' :
-                                   tx.type === 'SellGold' || tx.type === 'SendGold' ? 'bg-red-100 text-red-600' :
+                                   tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? 'bg-green-100 text-green-600' :
+                                   tx.type === 'Sell' || tx.type === 'Send' || tx.type === 'Withdrawal' ? 'bg-red-100 text-red-600' :
                                    'bg-gray-100 text-gray-600'
                                 }`}>
-                                   {tx.type === 'BuyGold' ? <PlusCircle className="w-4 h-4" /> : 
-                                    tx.type === 'SendGold' ? <ArrowUpRight className="w-4 h-4" /> : 
+                                   {tx.type === 'Buy' || tx.type === 'Deposit' ? <PlusCircle className="w-4 h-4" /> : 
+                                    tx.type === 'Send' || tx.type === 'Sell' ? <ArrowUpRight className="w-4 h-4" /> : 
                                     <RefreshCw className="w-4 h-4" />}
                                 </div>
                                 <div>
@@ -368,9 +368,9 @@ export default function FinaPayDashboard() {
                              </div>
                              <div className="text-right">
                                 <p className={`font-bold text-sm ${
-                                   tx.type === 'BuyGold' || tx.type === 'ReceiveGold' ? 'text-green-600' : 'text-gray-900'
+                                   tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? 'text-green-600' : 'text-gray-900'
                                 }`}>
-                                   {tx.goldGrams?.toFixed(2)} g
+                                   {tx.amountGold ? parseFloat(tx.amountGold).toFixed(4) : '0.00'} g
                                 </p>
                                 <p className="text-xs text-gray-400">
                                    {tx.status}
