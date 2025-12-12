@@ -1,7 +1,9 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, LineChart, Globe, Coins } from 'lucide-react';
+import { Database, DollarSign, TrendingUp, LineChart, Globe, Coins, AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Link } from 'wouter';
+import { Button } from '@/components/ui/button';
 
 // Components
 import KpiCard from '@/components/dashboard/KpiCard';
@@ -18,10 +20,49 @@ export default function Dashboard() {
 
   if (!user) return null;
 
+  const isKycApproved = user.kycStatus === 'Approved';
+  const isKycPending = user.kycStatus === 'In Progress';
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8">
         
+        {/* KYC Verification Banner */}
+        {!isKycApproved && (
+          <div className={`rounded-xl p-4 border ${isKycPending ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`} data-testid="banner-kyc">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                {isKycPending ? (
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  </div>
+                )}
+                <div>
+                  <h3 className={`font-semibold ${isKycPending ? 'text-blue-900' : 'text-amber-900'}`}>
+                    {isKycPending ? 'KYC Verification Under Review' : 'Complete Your KYC Verification'}
+                  </h3>
+                  <p className={`text-sm ${isKycPending ? 'text-blue-700' : 'text-amber-700'}`}>
+                    {isKycPending 
+                      ? 'Your documents are being reviewed. You will be notified once approved.'
+                      : 'To access all platform features, please complete your identity verification.'}
+                  </p>
+                </div>
+              </div>
+              {!isKycPending && (
+                <Link href="/kyc">
+                  <Button className="bg-amber-600 hover:bg-amber-700 text-white" data-testid="button-complete-kyc">
+                    Complete KYC <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 1. Header Section */}
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>

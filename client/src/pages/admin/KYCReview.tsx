@@ -3,49 +3,107 @@ import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, FileText, User, Building, Eye, Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle2, XCircle, FileText, User, Building, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 
 export default function KYCReview() {
+  const { user: adminUser } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
 
-  const mockApplications = [
-    { 
-      id: 1, 
-      name: 'Sarah Johnson', 
-      type: 'Personal', 
-      status: 'Pending', 
-      date: '2024-12-11',
-      documents: {
-        id: 'passport_scan.jpg',
-        selfie: 'selfie.jpg',
-        proof: 'utility_bill.pdf'
-      }
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['admin-kyc-submissions'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/kyc');
+      if (!res.ok) throw new Error('Failed to fetch KYC submissions');
+      return res.json();
     },
-    { 
-      id: 2, 
-      name: 'TechCorp Solutions AG', 
-      type: 'Corporate', 
-      status: 'Pending', 
-      date: '2024-12-11',
-      documents: {
-        id: 'manager_id.jpg',
-        registration: 'cert_incorporation.pdf',
-        articles: 'articles_assoc.pdf',
-        proof: 'bank_statement.pdf'
-      }
+  });
+
+  const submissions = data?.submissions || [];
+  const pendingSubmissions = submissions.filter((s: any) => s.status === 'In Progress');
+  const approvedSubmissions = submissions.filter((s: any) => s.status === 'Approved');
+  const rejectedSubmissions = submissions.filter((s: any) => s.status === 'Rejected');
+
+  const approveMutation = useMutation({
+    mutationFn: async (submissionId: string) => {
+      const res = await fetch(`/api/kyc/${submissionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'Approved',
+          reviewedBy: adminUser?.id,
+          reviewedAt: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to approve');
+      return res.json();
     },
-  ];
+    onSuccess: () => {
+      toast.success('KYC Approved', { description: 'User now has full platform access.' });
+      setSelectedApplication(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-kyc-submissions'] });
+    },
+    onError: () => {
+      toast.error('Failed to approve KYC');
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ submissionId, reason }: { submissionId: string; reason: string }) => {
+      const res = await fetch(`/api/kyc/${submissionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'Rejected',
+          rejectionReason: reason,
+          reviewedBy: adminUser?.id,
+          reviewedAt: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to reject');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.error('KYC Rejected', { description: 'User has been notified.' });
+      setSelectedApplication(null);
+      setShowRejectDialog(false);
+      setRejectionReason('');
+      queryClient.invalidateQueries({ queryKey: ['admin-kyc-submissions'] });
+    },
+    onError: () => {
+      toast.error('Failed to reject KYC');
+    },
+  });
 
   const handleApprove = () => {
-    toast.success(`Application for ${selectedApplication.name} Approved`);
-    setSelectedApplication(null);
+    if (selectedApplication) {
+      approveMutation.mutate(selectedApplication.id);
+    }
   };
 
   const handleReject = () => {
-    toast.error(`Application for ${selectedApplication.name} Rejected`);
-    setSelectedApplication(null);
+    if (selectedApplication && rejectionReason.trim()) {
+      rejectMutation.mutate({ submissionId: selectedApplication.id, reason: rejectionReason });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return <Badge className="bg-green-100 text-green-700"><CheckCircle2 className="w-3 h-3 mr-1" /> Approved</Badge>;
+      case 'Rejected':
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" /> Rejected</Badge>;
+      default:
+        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" /> Pending Review</Badge>;
+    }
   };
 
   return (
@@ -56,52 +114,142 @@ export default function KYCReview() {
             <h1 className="text-3xl font-bold text-gray-900">KYC Reviews</h1>
             <p className="text-gray-500">Review and approve customer identity verifications.</p>
           </div>
-          <div className="flex gap-2">
-             <Button variant="outline">Export List</Button>
-          </div>
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{pendingSubmissions.length}</p>
+                <p className="text-sm text-gray-500">Pending Review</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{approvedSubmissions.length}</p>
+                <p className="text-sm text-gray-500">Approved</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <XCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{rejectedSubmissions.length}</p>
+                <p className="text-sm text-gray-500">Rejected</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Pending Applications */}
         <Card>
           <CardHeader>
-            <CardTitle>Pending Applications</CardTitle>
+            <CardTitle>Pending Applications ({pendingSubmissions.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockApplications.map((app) => (
-                <div key={app.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
-                      {app.type === 'Corporate' ? <Building className="w-6 h-6" /> : <User className="w-6 h-6" />}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-900">{app.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{app.type} Account</span>
-                        <span>•</span>
-                        <span>Submitted {app.date}</span>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : pendingSubmissions.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-400" />
+                <p>No pending applications</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingSubmissions.map((app: any) => (
+                  <div key={app.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" data-testid={`kyc-submission-${app.id}`}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                        {app.accountType === 'business' ? <Building className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">{app.fullName || 'Name not provided'}</h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <span className="capitalize">{app.accountType} Account</span>
+                          <span>•</span>
+                          <span>Submitted {new Date(app.createdAt).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
+                    
+                    <div className="flex items-center gap-4">
+                      {getStatusBadge(app.status)}
+                      <Button onClick={() => setSelectedApplication(app)} data-testid={`button-review-${app.id}`}>
+                        Review Details
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">Pending Review</Badge>
-                    <Button onClick={() => setSelectedApplication(app)}>
-                      Review Details
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* All Applications */}
+        <Card>
+          <CardHeader>
+            <CardTitle>All Applications ({submissions.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {submissions.length === 0 ? (
+              <p className="text-center text-gray-500 py-4">No KYC submissions yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Applicant</th>
+                      <th className="px-4 py-3 text-left">Account Type</th>
+                      <th className="px-4 py-3 text-left">Status</th>
+                      <th className="px-4 py-3 text-left">Submitted</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {submissions.map((app: any) => (
+                      <tr key={app.id} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium">{app.fullName || 'Not provided'}</td>
+                        <td className="px-4 py-3 capitalize">{app.accountType}</td>
+                        <td className="px-4 py-3">{getStatusBadge(app.status)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{new Date(app.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-right">
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedApplication(app)}>
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Review Dialog */}
-        <Dialog open={!!selectedApplication} onOpenChange={(open) => !open && setSelectedApplication(null)}>
+        <Dialog open={!!selectedApplication && !showRejectDialog} onOpenChange={(open) => !open && setSelectedApplication(null)}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>KYC Application Review</DialogTitle>
               <DialogDescription>
-                Review documents for {selectedApplication?.name} ({selectedApplication?.type} Account)
+                Review documents for {selectedApplication?.fullName} ({selectedApplication?.accountType} Account)
               </DialogDescription>
             </DialogHeader>
 
@@ -110,38 +258,130 @@ export default function KYCReview() {
                 <h4 className="font-medium border-b pb-2">Applicant Details</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-gray-500">Full Name:</span>
-                  <span className="font-medium">{selectedApplication?.name}</span>
-                  <span className="text-gray-500">Email:</span>
-                  <span className="font-medium">user@{selectedApplication?.name.replace(/\s+/g, '').toLowerCase()}.com</span>
+                  <span className="font-medium">{selectedApplication?.fullName || 'Not provided'}</span>
+                  <span className="text-gray-500">Account Type:</span>
+                  <span className="font-medium capitalize">{selectedApplication?.accountType}</span>
+                  <span className="text-gray-500">Country:</span>
+                  <span className="font-medium">{selectedApplication?.country || 'Not provided'}</span>
+                  <span className="text-gray-500">Nationality:</span>
+                  <span className="font-medium">{selectedApplication?.nationality || 'Not provided'}</span>
                   <span className="text-gray-500">Submitted:</span>
-                  <span className="font-medium">{selectedApplication?.date}</span>
+                  <span className="font-medium">{selectedApplication?.createdAt ? new Date(selectedApplication.createdAt).toLocaleString() : '-'}</span>
                 </div>
+                
+                {selectedApplication?.accountType === 'business' && (
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-medium mb-2">Business Details</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-gray-500">Company Name:</span>
+                      <span className="font-medium">{selectedApplication?.companyName || 'Not provided'}</span>
+                      <span className="text-gray-500">Registration Number:</span>
+                      <span className="font-medium">{selectedApplication?.registrationNumber || 'Not provided'}</span>
+                      <span className="text-gray-500">Tax ID:</span>
+                      <span className="font-medium">{selectedApplication?.taxId || 'Not provided'}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
-                 <h4 className="font-medium border-b pb-2">Submitted Documents</h4>
-                 <div className="space-y-2">
-                    {selectedApplication && Object.keys(selectedApplication.documents).map((key) => (
-                      <div key={key} className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-100">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm font-medium capitalize">{key}</span>
-                        </div>
-                        <div className="flex gap-2">
-                           <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><Eye className="w-3 h-3" /> View</Button>
-                        </div>
-                      </div>
-                    ))}
-                 </div>
+                <h4 className="font-medium border-b pb-2">Documents Status</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">ID Document</span>
+                    </div>
+                    {selectedApplication?.documents?.idProof ? (
+                      <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                    ) : (
+                      <Badge variant="outline">Not Uploaded</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">Selfie</span>
+                    </div>
+                    {selectedApplication?.documents?.selfie ? (
+                      <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                    ) : (
+                      <Badge variant="outline">Not Uploaded</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">Proof of Address</span>
+                    </div>
+                    {selectedApplication?.documents?.proofOfAddress ? (
+                      <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                    ) : (
+                      <Badge variant="outline">Not Uploaded</Badge>
+                    )}
+                  </div>
+                </div>
+
+                {selectedApplication?.rejectionReason && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                    <p className="text-sm text-red-700">{selectedApplication.rejectionReason}</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="destructive" onClick={handleReject}>
-                <XCircle className="w-4 h-4 mr-2" /> Reject Application
-              </Button>
-              <Button className="bg-green-600 hover:bg-green-700" onClick={handleApprove}>
-                <CheckCircle2 className="w-4 h-4 mr-2" /> Approve & Verify
+            {selectedApplication?.status === 'In Progress' && (
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowRejectDialog(true)}
+                  disabled={rejectMutation.isPending}
+                  data-testid="button-reject-kyc"
+                >
+                  <XCircle className="w-4 h-4 mr-2" /> Reject
+                </Button>
+                <Button 
+                  className="bg-green-600 hover:bg-green-700" 
+                  onClick={handleApprove}
+                  disabled={approveMutation.isPending}
+                  data-testid="button-approve-kyc"
+                >
+                  {approveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                  Approve & Verify
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Reject Reason Dialog */}
+        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject KYC Application</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for rejecting this application.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Textarea 
+                placeholder="Enter rejection reason..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="min-h-[100px]"
+                data-testid="input-rejection-reason"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleReject}
+                disabled={!rejectionReason.trim() || rejectMutation.isPending}
+              >
+                {rejectMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Reject Application
               </Button>
             </DialogFooter>
           </DialogContent>

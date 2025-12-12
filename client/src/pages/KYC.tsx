@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 
 export default function KYC() {
-  const { user, login } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
   const [activeStep, setActiveStep] = useState('personal');
   const [progress, setProgress] = useState(25);
@@ -34,23 +34,43 @@ export default function KYC() {
     setProgress(progressValue);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    if (!user) return;
+    
     setIsSubmitting(true);
     
-    // Simulate API submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      
-      if (user) {
-        const updatedUser = { ...user, kycStatus: 'verified' as const };
-        login(updatedUser);
-      }
-
-      toast.success("KYC Verification Submitted", {
-        description: "Your documents have been verified. You now have full access."
+    try {
+      const response = await fetch('/api/kyc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          accountType: user.accountType,
+          fullName: `${user.firstName} ${user.lastName}`,
+          country: user.country || 'Not specified',
+          companyName: user.companyName,
+          registrationNumber: user.registrationNumber,
+        }),
       });
-      // Redirect is handled by login function in AuthContext which sets location to /dashboard
-    }, 2000);
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit KYC');
+      }
+      
+      await refreshUser();
+      
+      toast.success("KYC Verification Submitted", {
+        description: "Your documents are now under review. You will be notified once approved."
+      });
+      
+      setLocation('/dashboard');
+    } catch (error) {
+      toast.error("Submission Failed", {
+        description: "Please try again later."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!user) {
