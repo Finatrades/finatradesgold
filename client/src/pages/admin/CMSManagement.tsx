@@ -391,6 +391,7 @@ export default function CMSManagement() {
             {/* Quick Add Templates */}
             <QuickAddTemplates 
               pages={pages}
+              existingBlocks={blocks}
               onAddBlock={(data) => createBlockMutation.mutate(data)}
               isPending={createBlockMutation.isPending}
             />
@@ -1431,10 +1432,12 @@ const quickAddTemplates = [
 
 function QuickAddTemplates({ 
   pages, 
+  existingBlocks,
   onAddBlock, 
   isPending 
 }: { 
   pages: ContentPage[]; 
+  existingBlocks: ContentBlock[];
   onAddBlock: (data: Partial<ContentBlock>) => void;
   isPending: boolean;
 }) {
@@ -1442,13 +1445,33 @@ function QuickAddTemplates({
   const [selectedPage, setSelectedPage] = useState<string>('_global');
   const [customSection, setCustomSection] = useState('');
   const [customKey, setCustomKey] = useState('');
+  const { toast } = useToast();
+
+  const checkBlockExists = (pageId: string | null, section: string, key: string) => {
+    return existingBlocks.some(block => 
+      block.pageId === pageId && 
+      block.section === section && 
+      block.key === key
+    );
+  };
 
   const handleQuickAdd = (template: typeof quickAddTemplates[0]['items'][0]) => {
     const section = customSection || template.section;
     const key = customKey || template.key;
+    const pageId = selectedPage === '_global' ? null : selectedPage;
+    
+    // Check if block already exists
+    if (checkBlockExists(pageId, section, key)) {
+      toast({
+        title: "Block already exists",
+        description: `A block with section "${section}" and key "${key}" already exists.`,
+        variant: "destructive"
+      });
+      return;
+    }
     
     onAddBlock({
-      pageId: selectedPage === '_global' ? null : selectedPage,
+      pageId,
       section,
       key,
       type: template.type,
