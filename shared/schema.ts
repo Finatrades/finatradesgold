@@ -343,10 +343,62 @@ export const insertBnslWalletSchema = createInsertSchema(bnslWallets).omit({ id:
 export type InsertBnslWallet = z.infer<typeof insertBnslWalletSchema>;
 export type BnslWallet = typeof bnslWallets.$inferSelect;
 
+// BNSL Plan Templates - Admin-configurable plan types
+export const bnslTemplateStatusEnum = pgEnum('bnsl_template_status', ['Active', 'Inactive', 'Draft']);
+
+export const bnslPlanTemplates = pgTable("bnsl_plan_templates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  status: bnslTemplateStatusEnum("status").notNull().default('Draft'),
+  
+  minGoldGrams: decimal("min_gold_grams", { precision: 18, scale: 6 }).notNull().default('10'),
+  maxGoldGrams: decimal("max_gold_grams", { precision: 18, scale: 6 }).notNull().default('10000'),
+  
+  payoutFrequency: varchar("payout_frequency", { length: 50 }).notNull().default('Quarterly'),
+  earlyTerminationFeePercent: decimal("early_termination_fee_percent", { precision: 5, scale: 2 }).notNull().default('2.00'),
+  adminFeePercent: decimal("admin_fee_percent", { precision: 5, scale: 2 }).notNull().default('0.50'),
+  
+  termsAndConditions: text("terms_and_conditions"),
+  displayOrder: integer("display_order").notNull().default(0),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBnslPlanTemplateSchema = createInsertSchema(bnslPlanTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBnslPlanTemplate = z.infer<typeof insertBnslPlanTemplateSchema>;
+export type BnslPlanTemplate = typeof bnslPlanTemplates.$inferSelect;
+
+// BNSL Template Variants - Tenor/rate combinations for each template
+export const bnslTemplateVariants = pgTable("bnsl_template_variants", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  templateId: varchar("template_id", { length: 255 }).notNull().references(() => bnslPlanTemplates.id),
+  
+  tenorMonths: integer("tenor_months").notNull(),
+  marginRatePercent: decimal("margin_rate_percent", { precision: 5, scale: 2 }).notNull(),
+  
+  minMarginRatePercent: decimal("min_margin_rate_percent", { precision: 5, scale: 2 }),
+  maxMarginRatePercent: decimal("max_margin_rate_percent", { precision: 5, scale: 2 }),
+  
+  isActive: boolean("is_active").notNull().default(true),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBnslTemplateVariantSchema = createInsertSchema(bnslTemplateVariants).omit({ id: true, createdAt: true });
+export type InsertBnslTemplateVariant = z.infer<typeof insertBnslTemplateVariantSchema>;
+export type BnslTemplateVariant = typeof bnslTemplateVariants.$inferSelect;
+
 export const bnslPlans = pgTable("bnsl_plans", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   contractId: varchar("contract_id", { length: 100 }).notNull().unique(),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Template reference (optional for backward compatibility)
+  templateId: varchar("template_id", { length: 255 }).references(() => bnslPlanTemplates.id),
+  variantId: varchar("variant_id", { length: 255 }).references(() => bnslTemplateVariants.id),
+  templateName: varchar("template_name", { length: 255 }),
   
   tenorMonths: integer("tenor_months").notNull(), // 12, 24, 36
   agreedMarginAnnualPercent: decimal("agreed_margin_annual_percent", { precision: 5, scale: 2 }).notNull(),
