@@ -70,12 +70,14 @@ export default function FinaBridge() {
   const [myProposals, setMyProposals] = useState<TradeProposal[]>([]);
   const [forwardedProposals, setForwardedProposals] = useState<TradeProposal[]>([]);
   const [wallet, setWallet] = useState<FinabridgeWallet | null>(null);
+  const [mainWallet, setMainWallet] = useState<{ goldGrams: string } | null>(null);
   
   const [selectedRequest, setSelectedRequest] = useState<TradeRequest | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showFundDialog, setShowFundDialog] = useState(false);
   const [fundAmount, setFundAmount] = useState('');
+  const [insufficientFundsError, setInsufficientFundsError] = useState<string | null>(null);
   
   const [requestForm, setRequestForm] = useState({
     goodsName: '',
@@ -107,6 +109,14 @@ export default function FinaBridge() {
       const walletData = await walletRes.json();
       setMyRequests(requestsData.requests || []);
       setWallet(walletData.wallet);
+      
+      try {
+        const mainWalletRes = await apiRequest('GET', `/api/wallet/${user.id}`);
+        const mainWalletData = await mainWalletRes.json();
+        setMainWallet(mainWalletData.wallet || { goldGrams: '0' });
+      } catch {
+        setMainWallet({ goldGrams: '0' });
+      }
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to load importer data', variant: 'destructive' });
     } finally {
@@ -162,6 +172,26 @@ export default function FinaBridge() {
       toast({ title: 'Missing Fields', description: 'Please fill in required fields', variant: 'destructive' });
       return;
     }
+
+    const requiredGold = parseFloat(requestForm.settlementGoldGrams);
+    const availableInFinaBridge = parseFloat(wallet?.availableGoldGrams || '0');
+    
+    if (requiredGold > availableInFinaBridge) {
+      const deficit = requiredGold - availableInFinaBridge;
+      const mainWalletBalance = parseFloat(mainWallet?.goldGrams || '0');
+      
+      setInsufficientFundsError(
+        `Insufficient funds in FinaBridge wallet. You need ${requiredGold.toFixed(3)}g but only have ${availableInFinaBridge.toFixed(3)}g available. ` +
+        `Please fund your FinaBridge wallet with at least ${deficit.toFixed(3)}g from FinaPay (available: ${mainWalletBalance.toFixed(3)}g).`
+      );
+      
+      const suggestedAmount = Math.min(deficit, mainWalletBalance);
+      setFundAmount(suggestedAmount > 0 ? suggestedAmount.toFixed(3) : '');
+      setShowFundDialog(true);
+      return;
+    }
+    
+    setInsufficientFundsError(null);
 
     setSubmitting(true);
     try {
@@ -260,12 +290,25 @@ export default function FinaBridge() {
     e.preventDefault();
     if (!user || !fundAmount) return;
     
+    const amount = parseFloat(fundAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid positive amount', variant: 'destructive' });
+      return;
+    }
+    
+    const mainBalance = parseFloat(mainWallet?.goldGrams || '0');
+    if (amount > mainBalance) {
+      toast({ title: 'Insufficient Balance', description: `You only have ${mainBalance.toFixed(3)}g in your FinaPay wallet`, variant: 'destructive' });
+      return;
+    }
+    
     setSubmitting(true);
     try {
       await apiRequest('POST', `/api/finabridge/wallet/${user.id}/fund`, { amountGrams: fundAmount });
       toast({ title: 'Success', description: `${fundAmount}g transferred to FinaBridge wallet` });
       setShowFundDialog(false);
       setFundAmount('');
+      setInsufficientFundsError(null);
       if (role === 'importer') {
         fetchImporterData();
       } else {
@@ -499,11 +542,34 @@ export default function FinaBridge() {
                           type="number"
                           step="0.001"
                           value={requestForm.settlementGoldGrams}
-                          onChange={(e) => setRequestForm({ ...requestForm, settlementGoldGrams: e.target.value })}
+                          onChange={(e) => {
+                            setRequestForm({ ...requestForm, settlementGoldGrams: e.target.value });
+                            setInsufficientFundsError(null);
+                          }}
                           className="w-full p-3 border rounded-lg"
                           placeholder="0.000"
                           data-testid="input-settlement-gold"
                         />
+                        <div className="flex flex-wrap gap-4 text-xs mt-1">
+                          <span className="text-muted-foreground">
+                            FinaBridge Balance: <span className="font-medium text-green-600">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            FinaPay Balance: <span className="font-medium text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowFundDialog(true)}
+                            className="text-primary hover:underline"
+                          >
+                            + Fund FinaBridge
+                          </button>
+                        </div>
+                        {insufficientFundsError && (
+                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                            {insufficientFundsError}
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Incoterms</label>
@@ -824,11 +890,24 @@ export default function FinaBridge() {
               <p className="text-sm text-muted-foreground">
                 Transfer gold from your main FinaPay wallet to your FinaBridge wallet for trade settlements.
               </p>
+              
+              <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">FinaPay Balance</p>
+                  <p className="font-semibold text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">FinaBridge Balance</p>
+                  <p className="font-semibold text-green-600">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</p>
+                </div>
+              </div>
+              
               <div className="space-y-2">
-                <label className="text-sm font-medium">Amount (grams) *</label>
+                <label className="text-sm font-medium">Amount to Transfer (grams) *</label>
                 <input
                   type="number"
                   step="0.001"
+                  max={parseFloat(mainWallet?.goldGrams || '0')}
                   value={fundAmount}
                   onChange={(e) => setFundAmount(e.target.value)}
                   className="w-full p-3 border rounded-lg"
@@ -836,12 +915,17 @@ export default function FinaBridge() {
                   required
                   data-testid="input-fund-amount"
                 />
+                <p className="text-xs text-muted-foreground">Maximum: {parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
               </div>
               <div className="flex justify-end gap-4">
                 <Button type="button" variant="outline" onClick={() => setShowFundDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={submitting} data-testid="button-confirm-fund">
+                <Button 
+                  type="submit" 
+                  disabled={submitting || parseFloat(fundAmount || '0') > parseFloat(mainWallet?.goldGrams || '0')} 
+                  data-testid="button-confirm-fund"
+                >
                   {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Transfer Gold
                 </Button>
