@@ -178,6 +178,12 @@ export default function UserDetails() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">{user.firstName} {user.lastName}</h2>
+                    {user.accountType === 'business' && user.companyName && (
+                      <p className="text-sm text-purple-600 flex items-center gap-1 mt-0.5">
+                        <Building className="w-3 h-3" /> {user.companyName}
+                        {user.registrationNumber && <span className="text-gray-400">({user.registrationNumber})</span>}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 text-gray-500 mt-1 flex-wrap">
                       <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {user.email}</span>
                       {user.phoneNumber && (

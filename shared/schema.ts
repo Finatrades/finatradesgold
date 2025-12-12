@@ -49,11 +49,28 @@ export const users = pgTable("users", {
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
   emailVerificationCode: varchar("email_verification_code", { length: 10 }),
   emailVerificationExpiry: timestamp("email_verification_expiry"),
+  // Business fields (for business accounts)
+  companyName: varchar("company_name", { length: 255 }),
+  registrationNumber: varchar("registration_number", { length: 100 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserSchema = createInsertSchema(users)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    // Make fields with database defaults optional for API validation
+    accountType: z.enum(['personal', 'business']).optional(),
+    role: z.enum(['user', 'admin']).optional(),
+    kycStatus: z.enum(['Not Started', 'In Progress', 'Approved', 'Rejected']).optional(),
+    isEmailVerified: z.boolean().optional(),
+    emailVerificationCode: z.string().nullable().optional(),
+    emailVerificationExpiry: z.date().nullable().optional(),
+    phoneNumber: z.string().nullable().optional(),
+    country: z.string().nullable().optional(),
+    companyName: z.string().nullable().optional(),
+    registrationNumber: z.string().nullable().optional(),
+  });
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

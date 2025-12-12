@@ -87,10 +87,16 @@ export default function Register() {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
+          phoneNumber: formData.phone,
           password: formData.password,
           accountType: accountType,
           role: 'user',
           kycStatus: 'Not Started',
+          // Include business fields if business account
+          ...(accountType === 'business' && {
+            companyName: formData.companyName,
+            registrationNumber: formData.registrationNumber,
+          }),
         })
       });
 

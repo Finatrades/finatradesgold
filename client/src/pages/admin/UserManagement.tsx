@@ -24,6 +24,8 @@ interface User {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
+  companyName?: string;
+  registrationNumber?: string;
   role: 'user' | 'admin';
   accountType: 'personal' | 'business';
   kycStatus: string;
@@ -245,7 +247,14 @@ export default function UserManagement() {
                               )}
                             </Badge>
                           </td>
-                          <td className="px-6 py-4 capitalize">{user.accountType}</td>
+                          <td className="px-6 py-4">
+                            <div>
+                              <span className="capitalize">{user.accountType}</span>
+                              {user.accountType === 'business' && user.companyName && (
+                                <div className="text-xs text-gray-500 mt-0.5">{user.companyName}</div>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-6 py-4">
                             <Badge 
                               variant={
