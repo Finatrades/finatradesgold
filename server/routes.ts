@@ -9,6 +9,7 @@ import {
   insertAuditLogSchema, insertContentPageSchema, insertContentBlockSchema,
   insertTemplateSchema, insertMediaAssetSchema, 
   insertPlatformBankAccountSchema, insertDepositRequestSchema, insertWithdrawalRequestSchema,
+  insertPeerTransferSchema, insertPeerRequestSchema,
   User
 } from "@shared/schema";
 import { z } from "zod";
@@ -53,9 +54,13 @@ export async function registerRoutes(
       const verificationCode = generateVerificationCode();
       const codeExpiry = new Date(Date.now() + 10 * 60 * 1000);
       
+      // Generate unique Finatrades ID
+      const finatradesId = storage.generateFinatradesId();
+      
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
+        finatradesId,
         isEmailVerified: false,
         emailVerificationCode: verificationCode,
         emailVerificationExpiry: codeExpiry,
@@ -2188,6 +2193,448 @@ export async function registerRoutes(
       res.json({ template: { slug: template.slug, name: template.name, body: template.body, variables: template.variables } });
     } catch (error) {
       res.status(400).json({ message: "Failed to get template" });
+    }
+  });
+
+  // ============================================================================
+  // FINAPAY - PEER TRANSFERS (SEND/REQUEST MONEY)
+  // ============================================================================
+
+  // Search user by email or Finatrades ID
+  app.get("/api/finapay/search-user", async (req, res) => {
+    try {
+      const { identifier } = req.query;
+      if (!identifier || typeof identifier !== 'string') {
+        return res.status(400).json({ message: "Identifier required" });
+      }
+      
+      const users = await storage.searchUsersByIdentifier(identifier);
+      if (users.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return basic info only (not sensitive data)
+      const user = users[0];
+      res.json({ 
+        user: { 
+          id: user.id, 
+          finatradesId: user.finatradesId,
+          firstName: user.firstName, 
+          lastName: user.lastName, 
+          email: user.email 
+        } 
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Search failed" });
+    }
+  });
+
+  // Send money to another user
+  app.post("/api/finapay/send", async (req, res) => {
+    try {
+      const { senderId, recipientIdentifier, amountUsd, channel, memo } = req.body;
+      
+      // Find sender
+      const sender = await storage.getUser(senderId);
+      if (!sender) {
+        return res.status(404).json({ message: "Sender not found" });
+      }
+      
+      // Find recipient by email or Finatrades ID
+      let recipient;
+      if (channel === 'email') {
+        recipient = await storage.getUserByEmail(recipientIdentifier);
+      } else if (channel === 'finatrades_id') {
+        recipient = await storage.getUserByFinatradesId(recipientIdentifier);
+      } else if (channel === 'qr_code') {
+        // QR code contains the Finatrades ID
+        recipient = await storage.getUserByFinatradesId(recipientIdentifier);
+      }
+      
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      if (sender.id === recipient.id) {
+        return res.status(400).json({ message: "Cannot send money to yourself" });
+      }
+      
+      // Check sender balance
+      const senderWallet = await storage.getWallet(sender.id);
+      if (!senderWallet) {
+        return res.status(400).json({ message: "Sender wallet not found" });
+      }
+      
+      const amount = parseFloat(amountUsd);
+      const senderBalance = parseFloat(senderWallet.usdBalance.toString());
+      
+      if (senderBalance < amount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Get recipient wallet
+      const recipientWallet = await storage.getWallet(recipient.id);
+      if (!recipientWallet) {
+        return res.status(400).json({ message: "Recipient wallet not found" });
+      }
+      
+      // Generate reference number
+      const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Debit sender wallet
+      await storage.updateWallet(senderWallet.id, {
+        usdBalance: (senderBalance - amount).toFixed(2),
+      });
+      
+      // Credit recipient wallet
+      const recipientBalance = parseFloat(recipientWallet.usdBalance.toString());
+      await storage.updateWallet(recipientWallet.id, {
+        usdBalance: (recipientBalance + amount).toFixed(2),
+      });
+      
+      // Create sender transaction (Send)
+      const senderTx = await storage.createTransaction({
+        userId: sender.id,
+        type: 'Send',
+        status: 'Completed',
+        amountUsd: amount.toFixed(2),
+        recipientEmail: recipient.email,
+        recipientUserId: recipient.id,
+        description: memo || `Sent to ${recipient.firstName} ${recipient.lastName}`,
+        referenceId: referenceNumber,
+        sourceModule: 'finapay',
+        completedAt: new Date(),
+      });
+      
+      // Create recipient transaction (Receive)
+      const recipientTx = await storage.createTransaction({
+        userId: recipient.id,
+        type: 'Receive',
+        status: 'Completed',
+        amountUsd: amount.toFixed(2),
+        senderEmail: sender.email,
+        description: memo || `Received from ${sender.firstName} ${sender.lastName}`,
+        referenceId: referenceNumber,
+        sourceModule: 'finapay',
+        completedAt: new Date(),
+      });
+      
+      // Create peer transfer record
+      const transfer = await storage.createPeerTransfer({
+        referenceNumber,
+        senderId: sender.id,
+        recipientId: recipient.id,
+        amountUsd: amount.toFixed(2),
+        channel,
+        recipientIdentifier,
+        memo,
+        status: 'Completed',
+        senderTransactionId: senderTx.id,
+        recipientTransactionId: recipientTx.id,
+      });
+      
+      res.json({ 
+        transfer, 
+        message: `Successfully sent $${amount.toFixed(2)} to ${recipient.firstName} ${recipient.lastName}` 
+      });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Transfer failed" });
+    }
+  });
+
+  // Get user's sent transfers
+  app.get("/api/finapay/transfers/sent/:userId", async (req, res) => {
+    try {
+      const transfers = await storage.getUserSentTransfers(req.params.userId);
+      res.json({ transfers });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get sent transfers" });
+    }
+  });
+
+  // Get user's received transfers
+  app.get("/api/finapay/transfers/received/:userId", async (req, res) => {
+    try {
+      const transfers = await storage.getUserReceivedTransfers(req.params.userId);
+      res.json({ transfers });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get received transfers" });
+    }
+  });
+
+  // Create money request
+  app.post("/api/finapay/request", async (req, res) => {
+    try {
+      const { requesterId, targetIdentifier, amountUsd, channel, memo } = req.body;
+      
+      const requester = await storage.getUser(requesterId);
+      if (!requester) {
+        return res.status(404).json({ message: "Requester not found" });
+      }
+      
+      // Generate reference and QR payload
+      const referenceNumber = `REQ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const qrPayload = `FTREQ:${referenceNumber}:${amountUsd}:${requester.finatradesId}`;
+      
+      // Find target if identifier provided
+      let targetId = null;
+      if (targetIdentifier) {
+        const targetUsers = await storage.searchUsersByIdentifier(targetIdentifier);
+        if (targetUsers.length > 0) {
+          targetId = targetUsers[0].id;
+        }
+      }
+      
+      // Set expiry to 7 days
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      
+      const request = await storage.createPeerRequest({
+        referenceNumber,
+        requesterId,
+        targetId,
+        targetIdentifier,
+        channel,
+        amountUsd: parseFloat(amountUsd).toFixed(2),
+        memo,
+        qrPayload,
+        status: 'Pending',
+        expiresAt,
+      });
+      
+      // Generate QR code as data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
+      
+      res.json({ request, qrCodeDataUrl });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create request" });
+    }
+  });
+
+  // Get user's money requests (created by user)
+  app.get("/api/finapay/requests/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserPeerRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get requests" });
+    }
+  });
+
+  // Get money requests received by user
+  app.get("/api/finapay/requests/received/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserReceivedPeerRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get received requests" });
+    }
+  });
+
+  // Pay a money request
+  app.post("/api/finapay/requests/:id/pay", async (req, res) => {
+    try {
+      const { payerId } = req.body;
+      const request = await storage.getPeerRequest(req.params.id);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      if (request.status !== 'Pending') {
+        return res.status(400).json({ message: "Request is no longer pending" });
+      }
+      
+      // Check if expired
+      if (request.expiresAt && new Date(request.expiresAt) < new Date()) {
+        await storage.updatePeerRequest(request.id, { status: 'Expired' });
+        return res.status(400).json({ message: "Request has expired" });
+      }
+      
+      // Get payer and requester
+      const payer = await storage.getUser(payerId);
+      const requester = await storage.getUser(request.requesterId);
+      
+      if (!payer || !requester) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (payer.id === requester.id) {
+        return res.status(400).json({ message: "Cannot pay your own request" });
+      }
+      
+      // Check payer balance
+      const payerWallet = await storage.getWallet(payer.id);
+      if (!payerWallet) {
+        return res.status(400).json({ message: "Wallet not found" });
+      }
+      
+      const amount = parseFloat(request.amountUsd.toString());
+      const payerBalance = parseFloat(payerWallet.usdBalance.toString());
+      
+      if (payerBalance < amount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Get requester wallet
+      const requesterWallet = await storage.getWallet(requester.id);
+      if (!requesterWallet) {
+        return res.status(400).json({ message: "Requester wallet not found" });
+      }
+      
+      // Generate reference
+      const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Debit payer
+      await storage.updateWallet(payerWallet.id, {
+        usdBalance: (payerBalance - amount).toFixed(2),
+      });
+      
+      // Credit requester
+      const requesterBalance = parseFloat(requesterWallet.usdBalance.toString());
+      await storage.updateWallet(requesterWallet.id, {
+        usdBalance: (requesterBalance + amount).toFixed(2),
+      });
+      
+      // Create transactions
+      const senderTx = await storage.createTransaction({
+        userId: payer.id,
+        type: 'Send',
+        status: 'Completed',
+        amountUsd: amount.toFixed(2),
+        recipientEmail: requester.email,
+        recipientUserId: requester.id,
+        description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
+        referenceId: referenceNumber,
+        sourceModule: 'finapay',
+        completedAt: new Date(),
+      });
+      
+      const recipientTx = await storage.createTransaction({
+        userId: requester.id,
+        type: 'Receive',
+        status: 'Completed',
+        amountUsd: amount.toFixed(2),
+        senderEmail: payer.email,
+        description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
+        referenceId: referenceNumber,
+        sourceModule: 'finapay',
+        completedAt: new Date(),
+      });
+      
+      // Create transfer record
+      const transfer = await storage.createPeerTransfer({
+        referenceNumber,
+        senderId: payer.id,
+        recipientId: requester.id,
+        amountUsd: amount.toFixed(2),
+        channel: request.channel,
+        recipientIdentifier: requester.email,
+        memo: request.memo,
+        status: 'Completed',
+        senderTransactionId: senderTx.id,
+        recipientTransactionId: recipientTx.id,
+      });
+      
+      // Update request status
+      await storage.updatePeerRequest(request.id, {
+        status: 'Fulfilled',
+        fulfilledTransferId: transfer.id,
+        respondedAt: new Date(),
+      });
+      
+      res.json({ transfer, message: "Payment successful" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Payment failed" });
+    }
+  });
+
+  // Decline a money request
+  app.post("/api/finapay/requests/:id/decline", async (req, res) => {
+    try {
+      const request = await storage.getPeerRequest(req.params.id);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      if (request.status !== 'Pending') {
+        return res.status(400).json({ message: "Request is no longer pending" });
+      }
+      
+      await storage.updatePeerRequest(request.id, {
+        status: 'Declined',
+        respondedAt: new Date(),
+      });
+      
+      res.json({ message: "Request declined" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to decline request" });
+    }
+  });
+
+  // Cancel a money request (by requester)
+  app.post("/api/finapay/requests/:id/cancel", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const request = await storage.getPeerRequest(req.params.id);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      if (request.requesterId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      
+      if (request.status !== 'Pending') {
+        return res.status(400).json({ message: "Request is no longer pending" });
+      }
+      
+      await storage.updatePeerRequest(request.id, {
+        status: 'Cancelled',
+        respondedAt: new Date(),
+      });
+      
+      res.json({ message: "Request cancelled" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to cancel request" });
+    }
+  });
+
+  // Get QR code for receiving money (user's profile QR)
+  app.get("/api/finapay/qr/:userId", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user || !user.finatradesId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const qrPayload = `FTPAY:${user.finatradesId}`;
+      const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
+      
+      res.json({ qrCodeDataUrl, finatradesId: user.finatradesId });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to generate QR code" });
+    }
+  });
+
+  // Admin: Get all peer transfers
+  app.get("/api/admin/finapay/peer-transfers", async (req, res) => {
+    try {
+      const transfers = await storage.getAllPeerTransfers();
+      res.json({ transfers });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get peer transfers" });
+    }
+  });
+
+  // Admin: Get all peer requests
+  app.get("/api/admin/finapay/peer-requests", async (req, res) => {
+    try {
+      const requests = await storage.getAllPeerRequests();
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get peer requests" });
     }
   });
 

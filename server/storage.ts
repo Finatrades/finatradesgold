@@ -5,6 +5,7 @@ import {
   chatSessions, chatMessages, auditLogs, certificates,
   contentPages, contentBlocks, templates, mediaAssets,
   platformBankAccounts, depositRequests, withdrawalRequests,
+  peerTransfers, peerRequests,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -25,7 +26,9 @@ import {
   type MediaAsset, type InsertMediaAsset,
   type PlatformBankAccount, type InsertPlatformBankAccount,
   type DepositRequest, type InsertDepositRequest,
-  type WithdrawalRequest, type InsertWithdrawalRequest
+  type WithdrawalRequest, type InsertWithdrawalRequest,
+  type PeerTransfer, type InsertPeerTransfer,
+  type PeerRequest, type InsertPeerRequest
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -784,6 +787,91 @@ export class DatabaseStorage implements IStorage {
   async updateWithdrawalRequest(id: string, updates: Partial<WithdrawalRequest>): Promise<WithdrawalRequest | undefined> {
     const [request] = await db.update(withdrawalRequests).set({ ...updates, updatedAt: new Date() }).where(eq(withdrawalRequests.id, id)).returning();
     return request || undefined;
+  }
+
+  // Peer Transfers (Send Money)
+  async getUserByFinatradesId(finatradesId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.finatradesId, finatradesId));
+    return user || undefined;
+  }
+
+  async searchUsersByIdentifier(identifier: string): Promise<User[]> {
+    return await db.select().from(users).where(
+      or(
+        eq(users.email, identifier),
+        eq(users.finatradesId, identifier)
+      )
+    );
+  }
+
+  async getPeerTransfer(id: string): Promise<PeerTransfer | undefined> {
+    const [transfer] = await db.select().from(peerTransfers).where(eq(peerTransfers.id, id));
+    return transfer || undefined;
+  }
+
+  async getUserSentTransfers(userId: string): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers).where(eq(peerTransfers.senderId, userId)).orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async getUserReceivedTransfers(userId: string): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers).where(eq(peerTransfers.recipientId, userId)).orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async getAllPeerTransfers(): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers).orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer> {
+    const [transfer] = await db.insert(peerTransfers).values(insertTransfer).returning();
+    return transfer;
+  }
+
+  async updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined> {
+    const [transfer] = await db.update(peerTransfers).set(updates).where(eq(peerTransfers.id, id)).returning();
+    return transfer || undefined;
+  }
+
+  // Peer Requests (Request Money)
+  async getPeerRequest(id: string): Promise<PeerRequest | undefined> {
+    const [request] = await db.select().from(peerRequests).where(eq(peerRequests.id, id));
+    return request || undefined;
+  }
+
+  async getPeerRequestByQrPayload(qrPayload: string): Promise<PeerRequest | undefined> {
+    const [request] = await db.select().from(peerRequests).where(eq(peerRequests.qrPayload, qrPayload));
+    return request || undefined;
+  }
+
+  async getUserPeerRequests(userId: string): Promise<PeerRequest[]> {
+    return await db.select().from(peerRequests).where(eq(peerRequests.requesterId, userId)).orderBy(desc(peerRequests.createdAt));
+  }
+
+  async getUserReceivedPeerRequests(userId: string): Promise<PeerRequest[]> {
+    return await db.select().from(peerRequests).where(eq(peerRequests.targetId, userId)).orderBy(desc(peerRequests.createdAt));
+  }
+
+  async getAllPeerRequests(): Promise<PeerRequest[]> {
+    return await db.select().from(peerRequests).orderBy(desc(peerRequests.createdAt));
+  }
+
+  async createPeerRequest(insertRequest: InsertPeerRequest): Promise<PeerRequest> {
+    const [request] = await db.insert(peerRequests).values(insertRequest).returning();
+    return request;
+  }
+
+  async updatePeerRequest(id: string, updates: Partial<PeerRequest>): Promise<PeerRequest | undefined> {
+    const [request] = await db.update(peerRequests).set(updates).where(eq(peerRequests.id, id)).returning();
+    return request || undefined;
+  }
+
+  // Generate Finatrades ID for new users
+  generateFinatradesId(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let id = 'FT';
+    for (let i = 0; i < 8; i++) {
+      id += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return id;
   }
 }
 
