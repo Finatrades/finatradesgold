@@ -1,541 +1,499 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/pages/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Briefcase, CheckCircle, XCircle, AlertTriangle, TrendingUp, Lock, Loader2, RefreshCw } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { 
+  Briefcase, CheckCircle, XCircle, TrendingUp, 
+  Loader2, RefreshCw, Eye, Send, ArrowRight, Package
+} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/context/AuthContext';
 
-interface DbTradeCase {
+interface TradeRequest {
   id: string;
-  caseNumber: string;
-  userId: string;
-  companyName: string;
-  tradeType: string;
-  commodityType: string;
+  tradeRefId: string;
+  importerUserId: string;
+  goodsName: string;
+  description: string | null;
+  quantity: string | null;
+  incoterms: string | null;
+  destination: string | null;
+  expectedShipDate: string | null;
   tradeValueUsd: string;
-  buyerName: string | null;
-  buyerCountry: string | null;
-  sellerName: string | null;
-  sellerCountry: string | null;
-  paymentTerms: string | null;
-  shipmentDetails: string | null;
+  settlementGoldGrams: string;
+  currency: string;
   status: string;
-  riskLevel: string;
-  opsApproval: boolean;
-  opsApprovedBy: string | null;
-  opsApprovedAt: string | null;
-  complianceApproval: boolean;
-  complianceApprovedBy: string | null;
-  complianceApprovedAt: string | null;
-  riskApproval: boolean;
-  riskApprovedBy: string | null;
-  riskApprovedAt: string | null;
-  notes: string | null;
   createdAt: string;
-  updatedAt: string;
+  importer?: {
+    id: string;
+    finatradesId: string | null;
+    fullName: string;
+    email: string;
+    companyName: string | null;
+  };
+  proposalCount: number;
 }
 
-const CURRENT_GOLD_PRICE = 85.22;
+interface TradeProposal {
+  id: string;
+  tradeRequestId: string;
+  exporterUserId: string;
+  quotePrice: string;
+  timelineDays: number;
+  notes: string | null;
+  status: string;
+  createdAt: string;
+  exporter?: {
+    id: string;
+    finatradesId: string | null;
+    fullName: string;
+    email: string;
+    companyName: string | null;
+  };
+}
 
 export default function FinaBridgeManagement() {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [cases, setCases] = useState<DbTradeCase[]>([]);
+  const [requests, setRequests] = useState<TradeRequest[]>([]);
+  const [proposals, setProposals] = useState<TradeProposal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCase, setSelectedCase] = useState<DbTradeCase | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<TradeRequest | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [adminNotes, setAdminNotes] = useState('');
+  const [selectedProposals, setSelectedProposals] = useState<string[]>([]);
 
-  const fetchCases = async () => {
+  const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await apiRequest('GET', '/api/admin/trade/cases');
+      const res = await apiRequest('GET', '/api/admin/finabridge/requests');
       const data = await res.json();
-      setCases(data.cases || []);
+      setRequests(data.requests || []);
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to load trade cases', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to load trade requests', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchProposals = async (requestId: string) => {
+    try {
+      const res = await apiRequest('GET', `/api/admin/finabridge/requests/${requestId}/proposals`);
+      const data = await res.json();
+      setProposals(data.proposals || []);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to load proposals', variant: 'destructive' });
+    }
+  };
+
   useEffect(() => {
-    fetchCases();
+    fetchRequests();
   }, []);
 
-  const handleOpenCase = (tradeCase: DbTradeCase) => {
-    setSelectedCase(tradeCase);
-    setAdminNotes(tradeCase.notes || '');
+  const handleOpenRequest = async (request: TradeRequest) => {
+    setSelectedRequest(request);
+    setSelectedProposals([]);
+    await fetchProposals(request.id);
     setDetailOpen(true);
   };
 
-  const handleUpdateStatus = async (newStatus: string) => {
-    if (!selectedCase) return;
+  const handleShortlist = async (proposalId: string) => {
     setUpdating(true);
     try {
-      const res = await apiRequest('PATCH', `/api/trade/cases/${selectedCase.id}`, {
-        status: newStatus,
-        notes: adminNotes
-      });
-      const data = await res.json();
-      setCases(cases.map(c => c.id === selectedCase.id ? data.tradeCase : c));
-      setSelectedCase(data.tradeCase);
-      toast({ title: 'Status Updated', description: `Case status changed to ${newStatus}` });
+      await apiRequest('POST', `/api/admin/finabridge/proposals/${proposalId}/shortlist`);
+      toast({ title: 'Success', description: 'Proposal shortlisted' });
+      if (selectedRequest) {
+        await fetchProposals(selectedRequest.id);
+      }
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to shortlist proposal', variant: 'destructive' });
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleApproval = async (type: 'ops' | 'compliance' | 'risk', approved: boolean) => {
-    if (!selectedCase) return;
+  const handleReject = async (proposalId: string) => {
     setUpdating(true);
     try {
-      const updates: any = { notes: adminNotes };
-      if (type === 'ops') updates.opsApproval = approved;
-      if (type === 'compliance') updates.complianceApproval = approved;
-      if (type === 'risk') updates.riskApproval = approved;
-
-      const res = await apiRequest('PATCH', `/api/trade/cases/${selectedCase.id}`, updates);
-      const data = await res.json();
-      setCases(cases.map(c => c.id === selectedCase.id ? data.tradeCase : c));
-      setSelectedCase(data.tradeCase);
-      toast({ title: 'Approval Updated', description: `${type} approval ${approved ? 'granted' : 'revoked'}` });
+      await apiRequest('POST', `/api/admin/finabridge/proposals/${proposalId}/reject`);
+      toast({ title: 'Success', description: 'Proposal rejected' });
+      if (selectedRequest) {
+        await fetchProposals(selectedRequest.id);
+      }
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to update approval', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to reject proposal', variant: 'destructive' });
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleUpdateRiskLevel = async (riskLevel: string) => {
-    if (!selectedCase) return;
+  const handleForwardProposals = async () => {
+    if (!selectedRequest || !user || selectedProposals.length === 0) return;
     setUpdating(true);
     try {
-      const res = await apiRequest('PATCH', `/api/trade/cases/${selectedCase.id}`, {
-        riskLevel,
-        notes: adminNotes
+      await apiRequest('POST', `/api/admin/finabridge/requests/${selectedRequest.id}/forward-proposals`, {
+        proposalIds: selectedProposals,
+        adminId: user.id,
       });
-      const data = await res.json();
-      setCases(cases.map(c => c.id === selectedCase.id ? data.tradeCase : c));
-      setSelectedCase(data.tradeCase);
-      toast({ title: 'Risk Level Updated', description: `Risk level set to ${riskLevel}` });
+      toast({ title: 'Success', description: `${selectedProposals.length} proposals forwarded to importer` });
+      setDetailOpen(false);
+      fetchRequests();
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to update risk level', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to forward proposals', variant: 'destructive' });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const toggleProposalSelection = (proposalId: string) => {
+    if (selectedProposals.includes(proposalId)) {
+      setSelectedProposals(selectedProposals.filter(id => id !== proposalId));
+    } else {
+      setSelectedProposals([...selectedProposals, proposalId]);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Draft': return 'bg-gray-100 text-gray-700';
-      case 'Submitted': return 'bg-blue-100 text-blue-700';
-      case 'Under Review': return 'bg-amber-100 text-amber-700';
-      case 'Approved': return 'bg-green-100 text-green-700';
-      case 'Active': return 'bg-purple-100 text-purple-700';
-      case 'Settled': return 'bg-emerald-100 text-emerald-700';
+      case 'Open': return 'bg-blue-100 text-blue-700';
+      case 'Proposal Review': return 'bg-amber-100 text-amber-700';
+      case 'Awaiting Importer': return 'bg-purple-100 text-purple-700';
+      case 'Active Trade': return 'bg-green-100 text-green-700';
+      case 'Completed': return 'bg-emerald-100 text-emerald-700';
       case 'Cancelled': return 'bg-red-100 text-red-700';
+      case 'Submitted': return 'bg-blue-100 text-blue-700';
+      case 'Shortlisted': return 'bg-amber-100 text-amber-700';
+      case 'Forwarded': return 'bg-purple-100 text-purple-700';
+      case 'Accepted': return 'bg-green-100 text-green-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
+      case 'Declined': return 'bg-gray-100 text-gray-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'Low': return 'bg-green-600';
-      case 'Medium': return 'bg-yellow-600';
-      case 'High': return 'bg-red-600';
-      default: return 'bg-gray-600';
-    }
+  const stats = {
+    total: requests.length,
+    open: requests.filter(r => r.status === 'Open' || r.status === 'Proposal Review').length,
+    awaitingImporter: requests.filter(r => r.status === 'Awaiting Importer').length,
+    activeTrades: requests.filter(r => r.status === 'Active Trade').length,
+    completed: requests.filter(r => r.status === 'Completed').length,
   };
-
-  const totalValueUsd = cases.reduce((sum, c) => sum + parseFloat(c.tradeValueUsd || '0'), 0);
-  const totalValueGold = totalValueUsd / CURRENT_GOLD_PRICE;
-  const pendingCases = cases.filter(c => c.status === 'Under Review' || c.status === 'Submitted').length;
-  const highRiskCases = cases.filter(c => c.riskLevel === 'High').length;
-  const activeCases = cases.filter(c => c.status !== 'Settled' && c.status !== 'Rejected' && c.status !== 'Cancelled').length;
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">FinaBridge – Trade Finance Admin</h1>
-            <p className="text-gray-500">Manage gold-backed trade cases, documents, and settlements.</p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-secondary/10 rounded-lg">
+              <Briefcase className="w-6 h-6 text-secondary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">FinaBridge Management</h1>
+              <p className="text-muted-foreground">Trade request matching and proposal moderation</p>
+            </div>
           </div>
-          <Button variant="outline" onClick={fetchCases} disabled={loading}>
+          <Button onClick={fetchRequests} variant="outline" disabled={loading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-blue-50 border-blue-100">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-blue-900">Active Trade Cases</p>
-                  <h3 className="text-2xl font-bold text-blue-700">{activeCases}</h3>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-xs text-muted-foreground">Total Requests</p>
             </CardContent>
           </Card>
-          
-          <Card className="bg-amber-50 border-amber-100">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
-                  <Lock className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-amber-900">Total Trade Value</p>
-                  <h3 className="text-2xl font-bold text-amber-700">${totalValueUsd.toLocaleString()}</h3>
-                </div>
-              </div>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-blue-600">{stats.open}</p>
+              <p className="text-xs text-muted-foreground">Open / Review</p>
             </CardContent>
           </Card>
-
-          <Card className="bg-green-50 border-green-100">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 text-green-700 rounded-lg">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-green-900">Pending Review</p>
-                  <h3 className="text-2xl font-bold text-green-700">{pendingCases}</h3>
-                </div>
-              </div>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-purple-600">{stats.awaitingImporter}</p>
+              <p className="text-xs text-muted-foreground">Awaiting Importer</p>
             </CardContent>
           </Card>
-
-          <Card className="bg-red-50 border-red-100">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-100 text-red-700 rounded-lg">
-                  <AlertTriangle className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-red-900">High Risk Cases</p>
-                  <h3 className="text-2xl font-bold text-red-700">{highRiskCases}</h3>
-                </div>
-              </div>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-green-600">{stats.activeTrades}</p>
+              <p className="text-xs text-muted-foreground">Active Trades</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
+              <p className="text-xs text-muted-foreground">Completed</p>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="cases" className="w-full">
-          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-            <TabsTrigger value="cases" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              All Trade Cases
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              Pending Approval
-            </TabsTrigger>
-            <TabsTrigger value="risk" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              Risk Monitor
-            </TabsTrigger>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList>
+            <TabsTrigger value="all">All Requests</TabsTrigger>
+            <TabsTrigger value="review">Needs Review</TabsTrigger>
+            <TabsTrigger value="active">Active Trades</TabsTrigger>
           </TabsList>
 
-          <div className="mt-6">
-            <TabsContent value="cases">
+          <TabsContent value="all" className="mt-4">
+            {loading ? (
               <Card>
-                <CardHeader>
-                  <CardTitle>Trade Case Management</CardTitle>
-                  <CardDescription>View and manage all corporate trade deals.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="p-12 text-center">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
-                      <p className="mt-4 text-gray-500">Loading trade cases...</p>
-                    </div>
-                  ) : cases.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">No Trade Cases</h3>
-                      <p className="text-gray-500">Trade cases will appear here when users create them.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {cases.map((tradeCase) => (
-                        <div 
-                          key={tradeCase.id} 
-                          onClick={() => handleOpenCase(tradeCase)} 
-                          className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-4 mb-4 md:mb-0">
-                            <div className={`p-2 rounded border ${tradeCase.status === 'Approved' || tradeCase.status === 'Settled' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                              <Briefcase className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">{tradeCase.caseNumber}</h4>
-                                <Badge className={getStatusColor(tradeCase.status)}>{tradeCase.status}</Badge>
-                                {tradeCase.riskLevel === 'High' && <Badge className="bg-red-600 text-white">High Risk</Badge>}
-                              </div>
-                              <p className="text-sm text-gray-600">{tradeCase.companyName} - {tradeCase.tradeType}</p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Value: ${parseFloat(tradeCase.tradeValueUsd).toLocaleString()} | {tradeCase.commodityType}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-1">
-                              <span className={`px-2 py-1 rounded text-xs ${tradeCase.opsApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                Ops
-                              </span>
-                              <span className={`px-2 py-1 rounded text-xs ${tradeCase.complianceApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                Comp
-                              </span>
-                              <span className={`px-2 py-1 rounded text-xs ${tradeCase.riskApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                Risk
-                              </span>
-                            </div>
-                            <Button variant="outline" size="sm">
-                              Review
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+                  <p className="mt-4 text-muted-foreground">Loading trade requests...</p>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="pending">
+            ) : requests.length === 0 ? (
               <Card>
-                <CardHeader>
-                  <CardTitle>Pending Approvals</CardTitle>
-                  <CardDescription>Cases awaiting review and approval.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {cases.filter(c => c.status === 'Submitted' || c.status === 'Under Review').length === 0 ? (
-                    <div className="p-12 text-center">
-                      <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-300" />
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">All Caught Up</h3>
-                      <p className="text-gray-500">No pending approvals at this time.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {cases.filter(c => c.status === 'Submitted' || c.status === 'Under Review').map((tradeCase) => (
-                        <div 
-                          key={tradeCase.id} 
-                          onClick={() => handleOpenCase(tradeCase)} 
-                          className="flex items-center justify-between p-4 border border-amber-100 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer"
-                        >
+                <CardContent className="p-12 text-center text-muted-foreground">
+                  <Package className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                  <p>No trade requests found.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {requests.map((request) => (
+                  <Card key={request.id} className="hover:border-secondary/50 transition-colors cursor-pointer" onClick={() => handleOpenRequest(request)}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-secondary/10 rounded-lg">
+                            <Package className="w-5 h-5 text-secondary" />
+                          </div>
                           <div>
-                            <h4 className="font-bold">{tradeCase.caseNumber}</h4>
-                            <p className="text-sm text-gray-600">{tradeCase.companyName} - ${parseFloat(tradeCase.tradeValueUsd).toLocaleString()}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                              <CheckCircle className="w-4 h-4 mr-1" /> Approve
-                            </Button>
-                            <Button size="sm" variant="destructive">
-                              <XCircle className="w-4 h-4 mr-1" /> Reject
-                            </Button>
+                            <h3 className="font-bold">{request.tradeRefId}</h3>
+                            <p className="text-sm text-muted-foreground">{request.goodsName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Importer: {request.importer?.fullName || 'Unknown'} ({request.importer?.finatradesId || 'N/A'})
+                            </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="risk">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Risk Monitor</CardTitle>
-                  <CardDescription>High risk cases requiring attention.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {cases.map((c) => (
-                      <div key={c.id} className="p-4 border rounded-lg flex justify-between items-center">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold">{c.caseNumber}</h4>
-                            <Badge className={getRiskColor(c.riskLevel)}>{c.riskLevel} Risk</Badge>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">{request.proposalCount} proposals</p>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{c.companyName} ({c.tradeType})</p>
-                          <p className="text-xs text-gray-500">
-                            {c.buyerName || 'TBD'} ({c.buyerCountry || '-'}) → {c.sellerName || 'TBD'} ({c.sellerCountry || '-'})
-                          </p>
+                          <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                          <Button size="sm" variant="ghost">
+                            <Eye className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => handleOpenCase(c)}>Review</Button>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="review" className="mt-4">
+            <div className="space-y-3">
+              {requests.filter(r => r.status === 'Open' || r.status === 'Proposal Review').map((request) => (
+                <Card key={request.id} className="hover:border-secondary/50 transition-colors cursor-pointer" onClick={() => handleOpenRequest(request)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-amber-100 rounded-lg">
+                          <TrendingUp className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold">{request.tradeRefId}</h3>
+                          <p className="text-sm text-muted-foreground">{request.goodsName}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="font-bold">{request.proposalCount} proposals</p>
+                        <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {requests.filter(r => r.status === 'Open' || r.status === 'Proposal Review').length === 0 && (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    No requests pending review.
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="active" className="mt-4">
+            <div className="space-y-3">
+              {requests.filter(r => r.status === 'Active Trade').map((request) => (
+                <Card key={request.id} className="hover:border-secondary/50 transition-colors cursor-pointer" onClick={() => handleOpenRequest(request)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold">{request.tradeRefId}</h3>
+                          <p className="text-sm text-muted-foreground">{request.goodsName}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
+                        <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {requests.filter(r => r.status === 'Active Trade').length === 0 && (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    No active trades.
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
 
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-          <DialogContent className="max-w-[800px] max-h-[90vh] overflow-y-auto">
-            {selectedCase && (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-3">
-                    <span>{selectedCase.caseNumber}</span>
-                    <Badge className={getStatusColor(selectedCase.status)}>{selectedCase.status}</Badge>
-                  </DialogTitle>
-                  <DialogDescription>
-                    {selectedCase.companyName} - {selectedCase.tradeType} - {selectedCase.commodityType}
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-6 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500">Trade Value</p>
-                      <p className="text-xl font-bold">${parseFloat(selectedCase.tradeValueUsd).toLocaleString()}</p>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500">Risk Level</p>
-                      <Select value={selectedCase.riskLevel} onValueChange={handleUpdateRiskLevel} disabled={updating}>
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Low">Low</SelectItem>
-                          <SelectItem value="Medium">Medium</SelectItem>
-                          <SelectItem value="High">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                Trade Request: {selectedRequest?.tradeRefId}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedRequest && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Goods</p>
+                    <p className="font-medium">{selectedRequest.goodsName}</p>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold border-b pb-2">Buyer Details</h4>
-                      <p><span className="text-gray-500">Name:</span> {selectedCase.buyerName || 'Not specified'}</p>
-                      <p><span className="text-gray-500">Country:</span> {selectedCase.buyerCountry || 'Not specified'}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold border-b pb-2">Seller Details</h4>
-                      <p><span className="text-gray-500">Name:</span> {selectedCase.sellerName || 'Not specified'}</p>
-                      <p><span className="text-gray-500">Country:</span> {selectedCase.sellerCountry || 'Not specified'}</p>
-                    </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Trade Value</p>
+                    <p className="font-medium">${parseFloat(selectedRequest.tradeValueUsd).toLocaleString()}</p>
                   </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-semibold border-b pb-2">Additional Info</h4>
-                    <p><span className="text-gray-500">Payment Terms:</span> {selectedCase.paymentTerms || 'Not specified'}</p>
-                    <p><span className="text-gray-500">Shipment Details:</span> {selectedCase.shipmentDetails || 'Not specified'}</p>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Settlement Gold</p>
+                    <p className="font-medium">{parseFloat(selectedRequest.settlementGoldGrams).toFixed(3)}g</p>
                   </div>
-
-                  <div className="space-y-4">
-                    <h4 className="font-semibold border-b pb-2">Approval Status</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className={`p-4 rounded-lg border ${selectedCase.opsApproval ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">Operations</span>
-                          {selectedCase.opsApproval ? (
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <XCircle className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant={selectedCase.opsApproval ? "destructive" : "default"}
-                          className="w-full"
-                          onClick={() => handleApproval('ops', !selectedCase.opsApproval)}
-                          disabled={updating}
-                        >
-                          {selectedCase.opsApproval ? 'Revoke' : 'Approve'}
-                        </Button>
-                      </div>
-                      <div className={`p-4 rounded-lg border ${selectedCase.complianceApproval ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">Compliance</span>
-                          {selectedCase.complianceApproval ? (
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <XCircle className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant={selectedCase.complianceApproval ? "destructive" : "default"}
-                          className="w-full"
-                          onClick={() => handleApproval('compliance', !selectedCase.complianceApproval)}
-                          disabled={updating}
-                        >
-                          {selectedCase.complianceApproval ? 'Revoke' : 'Approve'}
-                        </Button>
-                      </div>
-                      <div className={`p-4 rounded-lg border ${selectedCase.riskApproval ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">Risk</span>
-                          {selectedCase.riskApproval ? (
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <XCircle className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant={selectedCase.riskApproval ? "destructive" : "default"}
-                          className="w-full"
-                          onClick={() => handleApproval('risk', !selectedCase.riskApproval)}
-                          disabled={updating}
-                        >
-                          {selectedCase.riskApproval ? 'Revoke' : 'Approve'}
-                        </Button>
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge className={getStatusColor(selectedRequest.status)}>{selectedRequest.status}</Badge>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="font-semibold">Admin Notes</label>
-                    <Textarea 
-                      value={adminNotes} 
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Add notes about this case..."
-                      rows={3}
-                    />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Importer</p>
+                    <p className="font-medium">{selectedRequest.importer?.fullName}</p>
+                    <p className="text-xs text-muted-foreground">{selectedRequest.importer?.email}</p>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="font-semibold">Update Status</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['Submitted', 'Under Review', 'Approved', 'Active', 'Settled', 'Rejected', 'Cancelled'].map((status) => (
-                        <Button
-                          key={status}
-                          size="sm"
-                          variant={selectedCase.status === status ? 'default' : 'outline'}
-                          onClick={() => handleUpdateStatus(status)}
-                          disabled={updating || selectedCase.status === status}
-                        >
-                          {status}
-                        </Button>
-                      ))}
-                    </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Destination</p>
+                    <p className="font-medium">{selectedRequest.destination || 'Not specified'}</p>
                   </div>
                 </div>
 
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setDetailOpen(false)}>Close</Button>
-                </DialogFooter>
-              </>
+                <div className="border-t pt-4">
+                  <h3 className="font-bold mb-4">Proposals ({proposals.length})</h3>
+                  
+                  {proposals.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">No proposals submitted yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {proposals.map((proposal) => (
+                        <Card key={proposal.id} className={`border ${selectedProposals.includes(proposal.id) ? 'border-secondary ring-2 ring-secondary/20' : ''}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                {proposal.status === 'Shortlisted' && (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedProposals.includes(proposal.id)}
+                                    onChange={() => toggleProposalSelection(proposal.id)}
+                                    className="w-5 h-5"
+                                    data-testid={`checkbox-proposal-${proposal.id}`}
+                                  />
+                                )}
+                                <div>
+                                  <p className="font-bold">Exporter: {proposal.exporter?.fullName || 'Unknown'}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {proposal.exporter?.finatradesId} | {proposal.exporter?.email}
+                                  </p>
+                                  <p className="text-sm mt-1">
+                                    Quote: <strong>${parseFloat(proposal.quotePrice).toLocaleString()}</strong> | 
+                                    Timeline: <strong>{proposal.timelineDays} days</strong>
+                                  </p>
+                                  {proposal.notes && (
+                                    <p className="text-sm text-muted-foreground mt-1">{proposal.notes}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={getStatusColor(proposal.status)}>{proposal.status}</Badge>
+                                
+                                {proposal.status === 'Submitted' && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => { e.stopPropagation(); handleReject(proposal.id); }}
+                                      disabled={updating}
+                                      data-testid={`button-reject-${proposal.id}`}
+                                    >
+                                      <XCircle className="w-4 h-4 mr-1" /> Reject
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => { e.stopPropagation(); handleShortlist(proposal.id); }}
+                                      disabled={updating}
+                                      data-testid={`button-shortlist-${proposal.id}`}
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-1" /> Shortlist
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {proposals.some(p => p.status === 'Shortlisted') && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Select shortlisted proposals to forward to the importer for final selection.
+                    </p>
+                    <Button
+                      onClick={handleForwardProposals}
+                      disabled={updating || selectedProposals.length === 0}
+                      className="w-full"
+                      data-testid="button-forward-proposals"
+                    >
+                      {updating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      <Send className="w-4 h-4 mr-2" />
+                      Forward {selectedProposals.length} Proposal(s) to Importer
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetailOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

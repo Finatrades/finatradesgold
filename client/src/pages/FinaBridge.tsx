@@ -2,156 +2,297 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { BarChart3, ShieldCheck, PlusCircle, Briefcase, Loader2, RefreshCw } from 'lucide-react';
+import { 
+  BarChart3, PlusCircle, Briefcase, Loader2, RefreshCw, 
+  ArrowLeftRight, Package, Send, Eye, Check, X, Wallet
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-interface DbTradeCase {
+interface TradeRequest {
   id: string;
-  caseNumber: string;
-  userId: string;
-  companyName: string;
-  tradeType: string;
-  commodityType: string;
+  tradeRefId: string;
+  importerUserId: string;
+  goodsName: string;
+  description: string | null;
+  quantity: string | null;
+  incoterms: string | null;
+  destination: string | null;
+  expectedShipDate: string | null;
   tradeValueUsd: string;
-  buyerName: string | null;
-  buyerCountry: string | null;
-  sellerName: string | null;
-  sellerCountry: string | null;
-  paymentTerms: string | null;
-  shipmentDetails: string | null;
+  settlementGoldGrams: string;
+  currency: string;
   status: string;
-  riskLevel: string;
-  opsApproval: boolean;
-  complianceApproval: boolean;
-  riskApproval: boolean;
-  notes: string | null;
   createdAt: string;
-  updatedAt: string;
+  importer?: { finatradesId: string | null };
+}
+
+interface TradeProposal {
+  id: string;
+  tradeRequestId: string;
+  exporterUserId: string;
+  quotePrice: string;
+  timelineDays: number;
+  notes: string | null;
+  status: string;
+  createdAt: string;
+  exporter?: { finatradesId: string | null };
+  tradeRequest?: {
+    tradeRefId: string;
+    goodsName: string;
+    tradeValueUsd: string;
+    status: string;
+  };
+}
+
+interface FinabridgeWallet {
+  id: string;
+  userId: string;
+  availableGoldGrams: string;
+  lockedGoldGrams: string;
 }
 
 export default function FinaBridge() {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState('cases');
-  const [cases, setCases] = useState<DbTradeCase[]>([]);
+  const [role, setRole] = useState<'importer' | 'exporter'>('importer');
+  const [activeTab, setActiveTab] = useState('requests');
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [selectedCase, setSelectedCase] = useState<DbTradeCase | null>(null);
   
-  const [formData, setFormData] = useState({
-    companyName: '',
-    tradeType: 'Import',
-    commodityType: 'Gold Bullion',
+  const [myRequests, setMyRequests] = useState<TradeRequest[]>([]);
+  const [openRequests, setOpenRequests] = useState<TradeRequest[]>([]);
+  const [myProposals, setMyProposals] = useState<TradeProposal[]>([]);
+  const [forwardedProposals, setForwardedProposals] = useState<TradeProposal[]>([]);
+  const [wallet, setWallet] = useState<FinabridgeWallet | null>(null);
+  
+  const [selectedRequest, setSelectedRequest] = useState<TradeRequest | null>(null);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [showFundDialog, setShowFundDialog] = useState(false);
+  const [fundAmount, setFundAmount] = useState('');
+  
+  const [requestForm, setRequestForm] = useState({
+    goodsName: '',
+    description: '',
+    quantity: '',
+    incoterms: 'FOB',
+    destination: '',
+    expectedShipDate: '',
     tradeValueUsd: '',
-    buyerName: '',
-    buyerCountry: '',
-    sellerName: '',
-    sellerCountry: '',
-    paymentTerms: '',
-    shipmentDetails: ''
+    settlementGoldGrams: '',
+    suggestExporter: true,
+  });
+  
+  const [proposalForm, setProposalForm] = useState({
+    quotePrice: '',
+    timelineDays: '',
+    notes: '',
   });
 
-  const fetchCases = async () => {
+  const fetchImporterData = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await apiRequest('GET', `/api/trade/cases/${user.id}`);
-      const data = await res.json();
-      setCases(data.cases || []);
+      const [requestsRes, walletRes] = await Promise.all([
+        apiRequest('GET', `/api/finabridge/importer/requests/${user.id}`),
+        apiRequest('GET', `/api/finabridge/wallet/${user.id}`),
+      ]);
+      const requestsData = await requestsRes.json();
+      const walletData = await walletRes.json();
+      setMyRequests(requestsData.requests || []);
+      setWallet(walletData.wallet);
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to load trade cases', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to load importer data', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchCases();
-  }, [user]);
-
-  const generateCaseNumber = () => {
-    const year = new Date().getFullYear();
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `TF-${year}-${random}`;
+  const fetchExporterData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const [openRes, proposalsRes, walletRes] = await Promise.all([
+        apiRequest('GET', '/api/finabridge/exporter/open-requests'),
+        apiRequest('GET', `/api/finabridge/exporter/proposals/${user.id}`),
+        apiRequest('GET', `/api/finabridge/wallet/${user.id}`),
+      ]);
+      const openData = await openRes.json();
+      const proposalsData = await proposalsRes.json();
+      const walletData = await walletRes.json();
+      setOpenRequests(openData.requests || []);
+      setMyProposals(proposalsData.proposals || []);
+      setWallet(walletData.wallet);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to load exporter data', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreateCase = async (e: React.FormEvent) => {
+  const fetchForwardedProposals = async (requestId: string) => {
+    try {
+      const res = await apiRequest('GET', `/api/finabridge/importer/requests/${requestId}/forwarded-proposals`);
+      const data = await res.json();
+      setForwardedProposals(data.proposals || []);
+    } catch (err) {
+      console.error('Failed to fetch forwarded proposals');
+    }
+  };
+
+  useEffect(() => {
+    if (role === 'importer') {
+      fetchImporterData();
+    } else {
+      fetchExporterData();
+    }
+  }, [user, role]);
+
+  const handleCreateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
-    if (!formData.companyName || !formData.tradeValueUsd) {
+    if (!requestForm.goodsName || !requestForm.tradeValueUsd || !requestForm.settlementGoldGrams) {
       toast({ title: 'Missing Fields', description: 'Please fill in required fields', variant: 'destructive' });
       return;
     }
 
-    setCreating(true);
+    setSubmitting(true);
     try {
       const payload = {
-        caseNumber: generateCaseNumber(),
-        userId: user.id,
-        companyName: formData.companyName,
-        tradeType: formData.tradeType,
-        commodityType: formData.commodityType,
-        tradeValueUsd: formData.tradeValueUsd,
-        buyerName: formData.buyerName || null,
-        buyerCountry: formData.buyerCountry || null,
-        sellerName: formData.sellerName || null,
-        sellerCountry: formData.sellerCountry || null,
-        paymentTerms: formData.paymentTerms || null,
-        shipmentDetails: formData.shipmentDetails || null,
+        importerUserId: user.id,
+        ...requestForm,
         status: 'Draft',
-        riskLevel: 'Low'
       };
 
-      const res = await apiRequest('POST', '/api/trade/cases', payload);
+      const res = await apiRequest('POST', '/api/finabridge/importer/requests', payload);
       const data = await res.json();
       
-      toast({ title: 'Trade Case Created', description: `Case ${data.tradeCase.caseNumber} has been submitted` });
+      toast({ title: 'Trade Request Created', description: `Reference: ${data.tradeRequest.tradeRefId}` });
       addNotification({
-        title: 'New Trade Case',
-        message: `Trade case ${data.tradeCase.caseNumber} created successfully`,
+        title: 'Trade Request Created',
+        message: `Trade request ${data.tradeRequest.tradeRefId} created successfully`,
         type: 'success'
       });
       
-      setFormData({
-        companyName: '',
-        tradeType: 'Import',
-        commodityType: 'Gold Bullion',
+      setRequestForm({
+        goodsName: '',
+        description: '',
+        quantity: '',
+        incoterms: 'FOB',
+        destination: '',
+        expectedShipDate: '',
         tradeValueUsd: '',
-        buyerName: '',
-        buyerCountry: '',
-        sellerName: '',
-        sellerCountry: '',
-        paymentTerms: '',
-        shipmentDetails: ''
+        settlementGoldGrams: '',
+        suggestExporter: true,
       });
-      setActiveTab('cases');
-      fetchCases();
+      setActiveTab('requests');
+      fetchImporterData();
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to create trade case', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to create trade request', variant: 'destructive' });
     } finally {
-      setCreating(false);
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmitRequest = async (requestId: string) => {
+    setSubmitting(true);
+    try {
+      await apiRequest('POST', `/api/finabridge/importer/requests/${requestId}/submit`);
+      toast({ title: 'Success', description: 'Trade request submitted for matching' });
+      fetchImporterData();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to submit trade request', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmitProposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !selectedRequest) return;
+    
+    setSubmitting(true);
+    try {
+      const payload = {
+        tradeRequestId: selectedRequest.id,
+        exporterUserId: user.id,
+        quotePrice: proposalForm.quotePrice,
+        timelineDays: parseInt(proposalForm.timelineDays),
+        notes: proposalForm.notes || null,
+      };
+
+      await apiRequest('POST', '/api/finabridge/exporter/proposals', payload);
+      
+      toast({ title: 'Proposal Submitted', description: 'Your proposal has been submitted for review' });
+      setShowProposalDialog(false);
+      setProposalForm({ quotePrice: '', timelineDays: '', notes: '' });
+      fetchExporterData();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to submit proposal', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAcceptProposal = async (proposalId: string) => {
+    setSubmitting(true);
+    try {
+      await apiRequest('POST', `/api/finabridge/importer/proposals/${proposalId}/accept`);
+      toast({ title: 'Proposal Accepted', description: 'Gold has been locked in escrow. Trade is now active.' });
+      fetchImporterData();
+      setForwardedProposals([]);
+    } catch (err: any) {
+      const message = err?.message || 'Failed to accept proposal';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFundWallet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !fundAmount) return;
+    
+    setSubmitting(true);
+    try {
+      await apiRequest('POST', `/api/finabridge/wallet/${user.id}/fund`, { amountGrams: fundAmount });
+      toast({ title: 'Success', description: `${fundAmount}g transferred to FinaBridge wallet` });
+      setShowFundDialog(false);
+      setFundAmount('');
+      if (role === 'importer') {
+        fetchImporterData();
+      } else {
+        fetchExporterData();
+      }
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to fund wallet', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Draft': return 'bg-gray-100 text-gray-700';
-      case 'Submitted': return 'bg-blue-100 text-blue-700';
-      case 'Under Review': return 'bg-amber-100 text-amber-700';
-      case 'Approved': return 'bg-green-100 text-green-700';
-      case 'Active': return 'bg-purple-100 text-purple-700';
-      case 'Settled': return 'bg-emerald-100 text-emerald-700';
+      case 'Open': return 'bg-blue-100 text-blue-700';
+      case 'Proposal Review': return 'bg-amber-100 text-amber-700';
+      case 'Awaiting Importer': return 'bg-purple-100 text-purple-700';
+      case 'Active Trade': return 'bg-green-100 text-green-700';
+      case 'Completed': return 'bg-emerald-100 text-emerald-700';
       case 'Cancelled': return 'bg-red-100 text-red-700';
+      case 'Submitted': return 'bg-blue-100 text-blue-700';
+      case 'Shortlisted': return 'bg-amber-100 text-amber-700';
+      case 'Forwarded': return 'bg-purple-100 text-purple-700';
+      case 'Accepted': return 'bg-green-100 text-green-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
+      case 'Declined': return 'bg-gray-100 text-gray-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -169,150 +310,142 @@ export default function FinaBridge() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">FinaBridge Trade Finance</h1>
-              <p className="text-muted-foreground text-sm">Gold-backed trade financing for imports and exports.</p>
+              <p className="text-muted-foreground text-sm">Gold-backed trade matching for importers and exporters.</p>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={fetchCases} disabled={loading}>
+            <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
+              <Button
+                variant={role === 'importer' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setRole('importer')}
+                data-testid="button-role-importer"
+              >
+                <Package className="w-4 h-4 mr-2" />
+                Importer
+              </Button>
+              <Button
+                variant={role === 'exporter' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setRole('exporter')}
+                data-testid="button-role-exporter"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Exporter
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => role === 'importer' ? fetchImporterData() : fetchExporterData()} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <div className="hidden md:block text-right border-l border-border pl-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Gold Spot</p>
-              <p className="text-secondary font-bold font-mono">$85.22 <span className="text-xs text-muted-foreground">/g</span></p>
-            </div>
           </div>
         </div>
 
-        {selectedCase ? (
-          <Card className="bg-white shadow-sm border">
-            <CardContent className="p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold">{selectedCase.caseNumber}</h2>
-                  <p className="text-muted-foreground">{selectedCase.companyName}</p>
-                </div>
-                <Button variant="outline" onClick={() => setSelectedCase(null)}>Back to List</Button>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-white border">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Available Gold</p>
+                <p className="text-xl font-bold text-secondary">
+                  {parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g
+                </p>
               </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Trade Type</p>
-                  <p className="font-bold">{selectedCase.tradeType}</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Commodity</p>
-                  <p className="font-bold">{selectedCase.commodityType}</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Trade Value</p>
-                  <p className="font-bold">${parseFloat(selectedCase.tradeValueUsd).toLocaleString()}</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${getStatusColor(selectedCase.status)}`}>
-                    {selectedCase.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold border-b pb-2">Buyer Details</h3>
-                  <div className="space-y-2">
-                    <p><span className="text-muted-foreground">Name:</span> {selectedCase.buyerName || 'Not specified'}</p>
-                    <p><span className="text-muted-foreground">Country:</span> {selectedCase.buyerCountry || 'Not specified'}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <h3 className="font-semibold border-b pb-2">Seller Details</h3>
-                  <div className="space-y-2">
-                    <p><span className="text-muted-foreground">Name:</span> {selectedCase.sellerName || 'Not specified'}</p>
-                    <p><span className="text-muted-foreground">Country:</span> {selectedCase.sellerCountry || 'Not specified'}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-semibold border-b pb-2">Approval Status</h3>
-                <div className="flex gap-4">
-                  <div className={`px-4 py-2 rounded-lg ${selectedCase.opsApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    Operations: {selectedCase.opsApproval ? 'Approved' : 'Pending'}
-                  </div>
-                  <div className={`px-4 py-2 rounded-lg ${selectedCase.complianceApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    Compliance: {selectedCase.complianceApproval ? 'Approved' : 'Pending'}
-                  </div>
-                  <div className={`px-4 py-2 rounded-lg ${selectedCase.riskApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    Risk: {selectedCase.riskApproval ? 'Approved' : 'Pending'}
-                  </div>
-                </div>
-              </div>
-
-              {selectedCase.notes && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold border-b pb-2">Notes</h3>
-                  <p className="text-muted-foreground">{selectedCase.notes}</p>
-                </div>
-              )}
+              <Wallet className="w-8 h-8 text-muted-foreground/30" />
             </CardContent>
           </Card>
-        ) : (
+          <Card className="bg-white border">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Locked in Escrow</p>
+                <p className="text-xl font-bold text-amber-600">
+                  {parseFloat(wallet?.lockedGoldGrams || '0').toFixed(3)}g
+                </p>
+              </div>
+              <ArrowLeftRight className="w-8 h-8 text-muted-foreground/30" />
+            </CardContent>
+          </Card>
+          <Card className="bg-white border">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Balance</p>
+                <p className="text-xl font-bold">
+                  {(parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')).toFixed(3)}g
+                </p>
+              </div>
+              <Button size="sm" onClick={() => setShowFundDialog(true)} data-testid="button-fund-wallet">
+                Fund Wallet
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {role === 'importer' ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex">
-              <TabsTrigger value="cases" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
-                <Briefcase className="w-4 h-4 mr-2" /> My Trade Cases
+            <TabsList className="bg-muted border border-border p-1 mb-6 w-full md:w-auto flex">
+              <TabsTrigger value="requests" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+                <Briefcase className="w-4 h-4 mr-2" /> My Trade Requests
               </TabsTrigger>
               <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
-                <PlusCircle className="w-4 h-4 mr-2" /> Create New Trade
+                <PlusCircle className="w-4 h-4 mr-2" /> Create Request
               </TabsTrigger>
-              <TabsTrigger value="audit" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
-                <ShieldCheck className="w-4 h-4 mr-2" /> Audit & Compliance
+              <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+                <Eye className="w-4 h-4 mr-2" /> Forwarded Proposals
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="cases" className="mt-0">
+            <TabsContent value="requests" className="mt-0">
               {loading ? (
-                <Card className="bg-white shadow-sm border">
+                <Card className="bg-white border">
                   <CardContent className="p-12 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">Loading trade cases...</p>
+                    <p className="mt-4 text-muted-foreground">Loading trade requests...</p>
                   </CardContent>
                 </Card>
-              ) : cases.length === 0 ? (
-                <Card className="bg-white shadow-sm border">
+              ) : myRequests.length === 0 ? (
+                <Card className="bg-white border">
                   <CardContent className="p-12 text-center">
                     <Briefcase className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                    <h3 className="text-lg font-bold text-foreground mb-2">No Trade Cases Yet</h3>
-                    <p className="text-muted-foreground mb-4">Create your first trade case to get started with gold-backed trade finance.</p>
+                    <h3 className="text-lg font-bold mb-2">No Trade Requests Yet</h3>
+                    <p className="text-muted-foreground mb-4">Create your first trade request to find exporters.</p>
                     <Button onClick={() => setActiveTab('create')}>
-                      <PlusCircle className="w-4 h-4 mr-2" /> Create Trade Case
+                      <PlusCircle className="w-4 h-4 mr-2" /> Create Trade Request
                     </Button>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {cases.map((tradeCase) => (
-                    <Card key={tradeCase.id} className="bg-white shadow-sm border hover:border-secondary/50 transition-colors cursor-pointer" onClick={() => setSelectedCase(tradeCase)}>
+                  {myRequests.map((request) => (
+                    <Card key={request.id} className="bg-white border hover:border-secondary/50 transition-colors">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className="p-2 bg-secondary/10 rounded-lg">
-                              <Briefcase className="w-5 h-5 text-secondary" />
+                              <Package className="w-5 h-5 text-secondary" />
                             </div>
                             <div>
-                              <h3 className="font-bold">{tradeCase.caseNumber}</h3>
-                              <p className="text-sm text-muted-foreground">{tradeCase.companyName} - {tradeCase.tradeType}</p>
+                              <h3 className="font-bold">{request.tradeRefId}</h3>
+                              <p className="text-sm text-muted-foreground">{request.goodsName}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-right">
-                              <p className="font-bold">${parseFloat(tradeCase.tradeValueUsd).toLocaleString()}</p>
-                              <p className="text-xs text-muted-foreground">{tradeCase.commodityType}</p>
+                              <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</p>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(tradeCase.status)}`}>
-                              {tradeCase.status}
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(request.status)}`}>
+                              {request.status}
                             </span>
+                            {request.status === 'Draft' && (
+                              <Button size="sm" onClick={() => handleSubmitRequest(request.id)} disabled={submitting}>
+                                Submit
+                              </Button>
+                            )}
+                            {request.status === 'Awaiting Importer' && (
+                              <Button size="sm" onClick={() => { setSelectedRequest(request); fetchForwardedProposals(request.id); setActiveTab('proposals'); }}>
+                                View Proposals
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -323,151 +456,124 @@ export default function FinaBridge() {
             </TabsContent>
 
             <TabsContent value="create">
-              <Card className="bg-white shadow-sm border">
+              <Card className="bg-white border">
                 <CardContent className="p-6">
-                  <form onSubmit={handleCreateCase} className="space-y-6">
+                  <form onSubmit={handleCreateRequest} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Company Name *</label>
+                        <label className="text-sm font-medium">Goods Name *</label>
                         <input
                           type="text"
-                          value={formData.companyName}
-                          onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                          value={requestForm.goodsName}
+                          onChange={(e) => setRequestForm({ ...requestForm, goodsName: e.target.value })}
                           className="w-full p-3 border rounded-lg"
-                          placeholder="Your company name"
-                          data-testid="input-company-name"
+                          placeholder="e.g., Electronic Components"
+                          data-testid="input-goods-name"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Trade Type</label>
-                        <select
-                          value={formData.tradeType}
-                          onChange={(e) => setFormData({ ...formData, tradeType: e.target.value })}
+                        <label className="text-sm font-medium">Quantity</label>
+                        <input
+                          type="text"
+                          value={requestForm.quantity}
+                          onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })}
                           className="w-full p-3 border rounded-lg"
-                          data-testid="select-trade-type"
-                        >
-                          <option value="Import">Import</option>
-                          <option value="Export">Export</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Commodity Type</label>
-                        <select
-                          value={formData.commodityType}
-                          onChange={(e) => setFormData({ ...formData, commodityType: e.target.value })}
-                          className="w-full p-3 border rounded-lg"
-                          data-testid="select-commodity"
-                        >
-                          <option value="Gold Bullion">Gold Bullion</option>
-                          <option value="Gold Jewelry">Gold Jewelry</option>
-                          <option value="Gold Coins">Gold Coins</option>
-                          <option value="Other Precious Metals">Other Precious Metals</option>
-                        </select>
+                          placeholder="e.g., 1000 units"
+                          data-testid="input-quantity"
+                        />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Trade Value (USD) *</label>
                         <input
                           type="number"
-                          value={formData.tradeValueUsd}
-                          onChange={(e) => setFormData({ ...formData, tradeValueUsd: e.target.value })}
+                          value={requestForm.tradeValueUsd}
+                          onChange={(e) => setRequestForm({ ...requestForm, tradeValueUsd: e.target.value })}
                           className="w-full p-3 border rounded-lg"
                           placeholder="0.00"
                           data-testid="input-trade-value"
                         />
                       </div>
-                    </div>
-
-                    <div className="border-t pt-6">
-                      <h3 className="font-semibold mb-4">Buyer Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Buyer Name</label>
-                          <input
-                            type="text"
-                            value={formData.buyerName}
-                            onChange={(e) => setFormData({ ...formData, buyerName: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
-                            placeholder="Buyer company name"
-                            data-testid="input-buyer-name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Buyer Country</label>
-                          <input
-                            type="text"
-                            value={formData.buyerCountry}
-                            onChange={(e) => setFormData({ ...formData, buyerCountry: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
-                            placeholder="Country"
-                            data-testid="input-buyer-country"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Settlement Gold (grams) *</label>
+                        <input
+                          type="number"
+                          step="0.001"
+                          value={requestForm.settlementGoldGrams}
+                          onChange={(e) => setRequestForm({ ...requestForm, settlementGoldGrams: e.target.value })}
+                          className="w-full p-3 border rounded-lg"
+                          placeholder="0.000"
+                          data-testid="input-settlement-gold"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Incoterms</label>
+                        <select
+                          value={requestForm.incoterms}
+                          onChange={(e) => setRequestForm({ ...requestForm, incoterms: e.target.value })}
+                          className="w-full p-3 border rounded-lg"
+                          data-testid="select-incoterms"
+                        >
+                          <option value="FOB">FOB</option>
+                          <option value="CIF">CIF</option>
+                          <option value="EXW">EXW</option>
+                          <option value="DDP">DDP</option>
+                          <option value="FCA">FCA</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Destination</label>
+                        <input
+                          type="text"
+                          value={requestForm.destination}
+                          onChange={(e) => setRequestForm({ ...requestForm, destination: e.target.value })}
+                          className="w-full p-3 border rounded-lg"
+                          placeholder="e.g., Dubai, UAE"
+                          data-testid="input-destination"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Expected Ship Date</label>
+                        <input
+                          type="date"
+                          value={requestForm.expectedShipDate}
+                          onChange={(e) => setRequestForm({ ...requestForm, expectedShipDate: e.target.value })}
+                          className="w-full p-3 border rounded-lg"
+                          data-testid="input-ship-date"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Description</label>
+                        <textarea
+                          value={requestForm.description}
+                          onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
+                          className="w-full p-3 border rounded-lg"
+                          rows={3}
+                          placeholder="Additional details about your trade request..."
+                          data-testid="input-description"
+                        />
                       </div>
                     </div>
 
-                    <div className="border-t pt-6">
-                      <h3 className="font-semibold mb-4">Seller Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Seller Name</label>
-                          <input
-                            type="text"
-                            value={formData.sellerName}
-                            onChange={(e) => setFormData({ ...formData, sellerName: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
-                            placeholder="Seller company name"
-                            data-testid="input-seller-name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Seller Country</label>
-                          <input
-                            type="text"
-                            value={formData.sellerCountry}
-                            onChange={(e) => setFormData({ ...formData, sellerCountry: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
-                            placeholder="Country"
-                            data-testid="input-seller-country"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border-t pt-6">
-                      <h3 className="font-semibold mb-4">Additional Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Payment Terms</label>
-                          <input
-                            type="text"
-                            value={formData.paymentTerms}
-                            onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
-                            placeholder="e.g., LC at sight, 30 days net"
-                            data-testid="input-payment-terms"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Shipment Details</label>
-                          <input
-                            type="text"
-                            value={formData.shipmentDetails}
-                            onChange={(e) => setFormData({ ...formData, shipmentDetails: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
-                            placeholder="e.g., CIF Dubai, Sea freight"
-                            data-testid="input-shipment"
-                          />
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="suggestExporter"
+                        checked={requestForm.suggestExporter}
+                        onChange={(e) => setRequestForm({ ...requestForm, suggestExporter: e.target.checked })}
+                        data-testid="checkbox-suggest-exporter"
+                      />
+                      <label htmlFor="suggestExporter" className="text-sm">
+                        Suggest matching exporters (allow Finatrades to find exporters for me)
+                      </label>
                     </div>
 
                     <div className="flex justify-end gap-4 pt-4">
-                      <Button type="button" variant="outline" onClick={() => setActiveTab('cases')}>
+                      <Button type="button" variant="outline" onClick={() => setActiveTab('requests')}>
                         Cancel
                       </Button>
-                      <Button type="submit" disabled={creating} data-testid="button-submit-trade">
-                        {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        Submit Trade Case
+                      <Button type="submit" disabled={submitting} data-testid="button-submit-request">
+                        {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Create Trade Request
                       </Button>
                     </div>
                   </form>
@@ -475,17 +581,274 @@ export default function FinaBridge() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="audit">
-              <Card className="bg-white shadow-sm border border-border">
-                <CardContent className="p-12 text-center text-muted-foreground">
-                  <ShieldCheck className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                  <h3 className="text-lg font-bold text-foreground mb-2">Compliance Dashboard</h3>
-                  <p>Global view of all trade risks, AML flags, and audit trails.</p>
+            <TabsContent value="proposals">
+              <Card className="bg-white border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="w-5 h-5" />
+                    Forwarded Proposals
+                    {selectedRequest && (
+                      <span className="text-sm font-normal text-muted-foreground ml-2">
+                        for {selectedRequest.tradeRefId}
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {forwardedProposals.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No proposals have been forwarded yet.</p>
+                      <p className="text-sm mt-2">Admin will review and forward shortlisted proposals for your review.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {forwardedProposals.map((proposal) => (
+                        <Card key={proposal.id} className="border">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-bold">Exporter: {proposal.exporter?.finatradesId || 'Unknown'}</p>
+                                <p className="text-sm text-muted-foreground">Quote: ${parseFloat(proposal.quotePrice).toLocaleString()}</p>
+                                <p className="text-sm text-muted-foreground">Timeline: {proposal.timelineDays} days</p>
+                                {proposal.notes && (
+                                  <p className="text-sm mt-2">{proposal.notes}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {}}
+                                  disabled={submitting}
+                                  data-testid={`button-decline-${proposal.id}`}
+                                >
+                                  <X className="w-4 h-4 mr-1" /> Decline
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAcceptProposal(proposal.id)}
+                                  disabled={submitting}
+                                  data-testid={`button-accept-${proposal.id}`}
+                                >
+                                  <Check className="w-4 h-4 mr-1" /> Accept
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="bg-muted border border-border p-1 mb-6 w-full md:w-auto flex">
+              <TabsTrigger value="requests" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+                <Briefcase className="w-4 h-4 mr-2" /> Open Trade Requests
+              </TabsTrigger>
+              <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+                <Send className="w-4 h-4 mr-2" /> My Proposals
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="requests" className="mt-0">
+              {loading ? (
+                <Card className="bg-white border">
+                  <CardContent className="p-12 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+                    <p className="mt-4 text-muted-foreground">Loading open trade requests...</p>
+                  </CardContent>
+                </Card>
+              ) : openRequests.length === 0 ? (
+                <Card className="bg-white border">
+                  <CardContent className="p-12 text-center">
+                    <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                    <h3 className="text-lg font-bold mb-2">No Open Trade Requests</h3>
+                    <p className="text-muted-foreground">Check back later for new trade opportunities.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {openRequests.map((request) => (
+                    <Card key={request.id} className="bg-white border hover:border-secondary/50 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 bg-secondary/10 rounded-lg">
+                              <Package className="w-5 h-5 text-secondary" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold">{request.tradeRefId}</h3>
+                              <p className="text-sm text-muted-foreground">{request.goodsName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Importer: {request.importer?.finatradesId || 'N/A'} | {request.destination || 'Destination TBD'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</p>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => { setSelectedRequest(request); setShowProposalDialog(true); }}
+                              data-testid={`button-submit-proposal-${request.id}`}
+                            >
+                              Submit Proposal
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="proposals" className="mt-0">
+              {loading ? (
+                <Card className="bg-white border">
+                  <CardContent className="p-12 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+                    <p className="mt-4 text-muted-foreground">Loading your proposals...</p>
+                  </CardContent>
+                </Card>
+              ) : myProposals.length === 0 ? (
+                <Card className="bg-white border">
+                  <CardContent className="p-12 text-center">
+                    <Send className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                    <h3 className="text-lg font-bold mb-2">No Proposals Yet</h3>
+                    <p className="text-muted-foreground mb-4">Browse open trade requests to submit your proposals.</p>
+                    <Button onClick={() => setActiveTab('requests')}>
+                      <Briefcase className="w-4 h-4 mr-2" /> View Open Requests
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {myProposals.map((proposal) => (
+                    <Card key={proposal.id} className="bg-white border">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 bg-secondary/10 rounded-lg">
+                              <Send className="w-5 h-5 text-secondary" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold">{proposal.tradeRequest?.tradeRefId}</h3>
+                              <p className="text-sm text-muted-foreground">{proposal.tradeRequest?.goodsName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Quote: ${parseFloat(proposal.quotePrice).toLocaleString()} | Timeline: {proposal.timelineDays} days
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(proposal.status)}`}>
+                              {proposal.status}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
+
+        <Dialog open={showProposalDialog} onOpenChange={setShowProposalDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Submit Proposal for {selectedRequest?.tradeRefId}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmitProposal} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Quote Price (USD) *</label>
+                <input
+                  type="number"
+                  value={proposalForm.quotePrice}
+                  onChange={(e) => setProposalForm({ ...proposalForm, quotePrice: e.target.value })}
+                  className="w-full p-3 border rounded-lg"
+                  placeholder="0.00"
+                  required
+                  data-testid="input-quote-price"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Timeline (Days) *</label>
+                <input
+                  type="number"
+                  value={proposalForm.timelineDays}
+                  onChange={(e) => setProposalForm({ ...proposalForm, timelineDays: e.target.value })}
+                  className="w-full p-3 border rounded-lg"
+                  placeholder="30"
+                  required
+                  data-testid="input-timeline-days"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Notes</label>
+                <textarea
+                  value={proposalForm.notes}
+                  onChange={(e) => setProposalForm({ ...proposalForm, notes: e.target.value })}
+                  className="w-full p-3 border rounded-lg"
+                  rows={3}
+                  placeholder="Additional details about your proposal..."
+                  data-testid="input-proposal-notes"
+                />
+              </div>
+              <div className="flex justify-end gap-4">
+                <Button type="button" variant="outline" onClick={() => setShowProposalDialog(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting} data-testid="button-confirm-proposal">
+                  {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Submit Proposal
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showFundDialog} onOpenChange={setShowFundDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Fund FinaBridge Wallet</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleFundWallet} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Transfer gold from your main FinaPay wallet to your FinaBridge wallet for trade settlements.
+              </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Amount (grams) *</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  value={fundAmount}
+                  onChange={(e) => setFundAmount(e.target.value)}
+                  className="w-full p-3 border rounded-lg"
+                  placeholder="0.000"
+                  required
+                  data-testid="input-fund-amount"
+                />
+              </div>
+              <div className="flex justify-end gap-4">
+                <Button type="button" variant="outline" onClick={() => setShowFundDialog(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting} data-testid="button-confirm-fund">
+                  {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Transfer Gold
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </DashboardLayout>
