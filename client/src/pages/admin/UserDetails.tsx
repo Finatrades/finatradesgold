@@ -1,48 +1,132 @@
 import React from 'react';
 import AdminLayout from './AdminLayout';
 import { useRoute, Link } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { 
-  ArrowLeft, Mail, Phone, MapPin, Shield, Calendar, CreditCard, 
-  Ban, Lock, FileText, Activity, Building, Download, CheckCircle2, Eye 
+  ArrowLeft, Mail, Phone, MapPin, Shield, Calendar, 
+  Ban, Lock, FileText, Activity, Building, CheckCircle2, 
+  AlertCircle, Clock, User, Wallet, RefreshCw
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UserDetails() {
   const [, params] = useRoute("/admin/users/:id");
   const userId = params?.id;
+  const { user: adminUser } = useAuth();
+  const { toast } = useToast();
 
-  // Mock Data - In a real app, fetch based on userId
-  const user = {
-    id: userId,
-    firstName: "Alice",
-    lastName: "Freeman",
-    email: "alice@example.com",
-    phone: "+41 79 123 45 67",
-    address: "Bahnhofstrasse 12, 8001 Zurich, Switzerland",
-    status: "Active",
-    kycStatus: "Verified",
-    accountType: "Personal",
-    joinedDate: "Nov 15, 2024",
-    lastLogin: "Today, 10:42 AM",
-    balances: {
-      fiat: "CHF 45,250.00",
-      gold: "1,250g (Au)"
+  // Fetch user details
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['admin-user-details', userId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/users/${userId}`);
+      if (!res.ok) throw new Error('Failed to fetch user');
+      return res.json();
     },
-    documents: [
-      { name: "Passport.pdf", status: "Verified", date: "Nov 15, 2024" },
-      { name: "Utility_Bill.pdf", status: "Verified", date: "Nov 15, 2024" }
-    ],
-    recentActivity: [
-      { id: "TX-1", action: "Login", date: "Today, 10:42 AM", ip: "192.168.1.1" },
-      { id: "TX-2", action: "Gold Purchase", date: "Yesterday, 2:30 PM", details: "Bought 50g Gold" },
-      { id: "TX-3", action: "Deposit", date: "Dec 10, 2024", details: "Deposit CHF 5,000" }
-    ]
+    enabled: !!userId,
+  });
+
+  const user = data?.user;
+  const wallet = data?.wallet;
+  const transactions = data?.transactions || [];
+  const kycSubmission = data?.kycSubmission;
+  const auditLogs = data?.auditLogs || [];
+
+  // Admin actions
+  const handleVerifyEmail = async () => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminId: adminUser?.id }),
+      });
+      if (res.ok) {
+        toast({ title: "Email Verified", description: "User email has been verified." });
+        refetch();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to verify email", variant: "destructive" });
+    }
   };
+
+  const handleSuspend = async () => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/suspend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminId: adminUser?.id, reason: "Suspended by admin" }),
+      });
+      if (res.ok) {
+        toast({ title: "User Suspended", description: "User has been suspended." });
+        refetch();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to suspend user", variant: "destructive" });
+    }
+  };
+
+  const handleActivate = async () => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminId: adminUser?.id }),
+      });
+      if (res.ok) {
+        toast({ title: "User Activated", description: "User has been activated." });
+        refetch();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to activate user", variant: "destructive" });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-12">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900">User Not Found</h2>
+          <p className="text-gray-500 mt-2">The user you're looking for doesn't exist.</p>
+          <Link href="/admin/users">
+            <Button className="mt-4">Back to Users</Button>
+          </Link>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const getKycStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return <Badge className="bg-green-100 text-green-700"><CheckCircle2 className="w-3 h-3 mr-1" /> Approved</Badge>;
+      case 'Rejected':
+        return <Badge variant="destructive"><AlertCircle className="w-3 h-3 mr-1" /> Rejected</Badge>;
+      case 'In Progress':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-700"><Clock className="w-3 h-3 mr-1" /> In Progress</Badge>;
+      default:
+        return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" /> Not Started</Badge>;
+    }
+  };
+
+  const goldBalance = wallet ? parseFloat(wallet.goldGrams || '0') : 0;
+  const usdBalance = wallet ? parseFloat(wallet.usdBalance || '0') : 0;
 
   return (
     <AdminLayout>
@@ -50,7 +134,7 @@ export default function UserDetails() {
         {/* Header Navigation */}
         <div className="flex items-center gap-4">
           <Link href="/admin/users">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" data-testid="button-back">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
@@ -59,14 +143,22 @@ export default function UserDetails() {
             <p className="text-sm text-gray-500">Viewing profile for {user.firstName} {user.lastName}</p>
           </div>
           <div className="ml-auto flex gap-2">
-            <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-              <Ban className="w-4 h-4 mr-2" /> Suspend User
-            </Button>
-            <Button variant="outline">
-              <Lock className="w-4 h-4 mr-2" /> Reset Password
-            </Button>
-            <Button>
-              <Mail className="w-4 h-4 mr-2" /> Send Email
+            {user.kycStatus === 'Rejected' ? (
+              <Button variant="outline" onClick={handleActivate} className="text-green-600 border-green-200 hover:bg-green-50" data-testid="button-activate">
+                <CheckCircle2 className="w-4 h-4 mr-2" /> Activate User
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={handleSuspend} className="text-red-600 border-red-200 hover:bg-red-50" data-testid="button-suspend">
+                <Ban className="w-4 h-4 mr-2" /> Suspend User
+              </Button>
+            )}
+            {!user.isEmailVerified && (
+              <Button variant="outline" onClick={handleVerifyEmail} data-testid="button-verify-email">
+                <Mail className="w-4 h-4 mr-2" /> Verify Email
+              </Button>
+            )}
+            <Button onClick={() => refetch()} variant="outline" data-testid="button-refresh">
+              <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -78,7 +170,7 @@ export default function UserDetails() {
               <Avatar className="w-24 h-24 border-4 border-gray-50">
                 <AvatarImage src="" />
                 <AvatarFallback className="text-2xl bg-slate-900 text-white">
-                  {user.firstName[0]}{user.lastName[0]}
+                  {user.firstName?.[0]}{user.lastName?.[0]}
                 </AvatarFallback>
               </Avatar>
               
@@ -86,37 +178,57 @@ export default function UserDetails() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">{user.firstName} {user.lastName}</h2>
-                    <div className="flex items-center gap-2 text-gray-500 mt-1">
+                    <div className="flex items-center gap-2 text-gray-500 mt-1 flex-wrap">
                       <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {user.email}</span>
+                      {user.phoneNumber && (
+                        <>
+                          <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                          <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {user.phoneNumber}</span>
+                        </>
+                      )}
                       <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                      <span className="flex items-center gap-1"><span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-mono">ID: {user.id}</span></span>
+                      <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-mono">ID: {user.id?.substring(0, 8)}...</span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none px-3 py-1">
-                      {user.status}
+                  <div className="flex gap-2 flex-wrap">
+                    {user.isEmailVerified ? (
+                      <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none">
+                        <Mail className="w-3 h-3 mr-1" /> Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                        <Mail className="w-3 h-3 mr-1" /> Pending
+                      </Badge>
+                    )}
+                    <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="capitalize">
+                      {user.role === 'admin' ? <Shield className="w-3 h-3 mr-1" /> : <User className="w-3 h-3 mr-1" />}
+                      {user.role}
                     </Badge>
                     <Badge variant="outline" className="capitalize">
-                      {user.accountType} Account
+                      {user.accountType === 'business' ? <Building className="w-3 h-3 mr-1" /> : <User className="w-3 h-3 mr-1" />}
+                      {user.accountType}
                     </Badge>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">Total Balance</p>
-                    <p className="text-xl font-bold text-slate-900">{user.balances.fiat}</p>
+                    <p className="text-sm text-gray-500">USD Balance</p>
+                    <p className="text-xl font-bold text-slate-900">${usdBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-gray-500">Gold Holdings</p>
-                    <p className="text-xl font-bold text-yellow-600">{user.balances.gold}</p>
+                    <p className="text-xl font-bold text-yellow-600">{goldBalance.toLocaleString('en-US', { maximumFractionDigits: 4 })}g</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-gray-500">KYC Status</p>
-                    <div className="flex items-center gap-2">
-                       <CheckCircle2 className="w-5 h-5 text-green-500" />
-                       <span className="font-medium text-gray-900">{user.kycStatus}</span>
-                    </div>
+                    {getKycStatusBadge(user.kycStatus)}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">Member Since</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -127,33 +239,22 @@ export default function UserDetails() {
         {/* Detailed Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-            <TabsTrigger 
-              value="overview" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1"
-            >
+            <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1">
               Overview
             </TabsTrigger>
-            <TabsTrigger 
-              value="documents" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1"
-            >
-              Documents & KYC
+            <TabsTrigger value="transactions" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1">
+              Transactions ({transactions.length})
             </TabsTrigger>
-            <TabsTrigger 
-              value="activity" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1"
-            >
-              Activity Log
+            <TabsTrigger value="kyc" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1">
+              KYC Details
             </TabsTrigger>
-            <TabsTrigger 
-              value="notes" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1"
-            >
-              Admin Notes
+            <TabsTrigger value="activity" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1">
+              Activity Log ({auditLogs.length})
             </TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
+            {/* Overview Tab */}
             <TabsContent value="overview">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
@@ -172,14 +273,14 @@ export default function UserDetails() {
                       <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Phone Number</p>
-                        <p className="text-sm text-gray-500">{user.phone}</p>
+                        <p className="text-sm text-gray-500">{user.phoneNumber || 'Not provided'}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Address</p>
-                        <p className="text-sm text-gray-500">{user.address}</p>
+                        <p className="text-sm font-medium text-gray-900">Country</p>
+                        <p className="text-sm text-gray-500">{user.country || 'Not provided'}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -187,95 +288,224 @@ export default function UserDetails() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Account Summary</CardTitle>
+                    <CardTitle className="text-base">Account Details</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-500">Member Since</span>
-                      <span className="text-sm font-medium">{user.joinedDate}</span>
+                      <span className="text-sm text-gray-500">Account Type</span>
+                      <span className="text-sm font-medium capitalize">{user.accountType}</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-500">Last Login</span>
-                      <span className="text-sm font-medium">{user.lastLogin}</span>
+                      <span className="text-sm text-gray-500">Role</span>
+                      <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="capitalize">{user.role}</Badge>
                     </div>
                     <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-500">Risk Level</span>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Low</Badge>
-                    </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-sm text-gray-500">2FA Status</span>
-                      <span className="text-sm font-medium text-green-600 flex items-center gap-1">
-                        <Shield className="w-3 h-3" /> Enabled
+                      <span className="text-sm text-gray-500">Email Verified</span>
+                      <span className={`text-sm font-medium ${user.isEmailVerified ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {user.isEmailVerified ? 'Yes' : 'No'}
                       </span>
                     </div>
+                    <div className="flex justify-between py-2">
+                      <span className="text-sm text-gray-500">Last Updated</span>
+                      <span className="text-sm font-medium">
+                        {new Date(user.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Wallet Card */}
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Wallet className="w-5 h-5" /> Wallet Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {wallet ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                          <p className="text-sm text-yellow-700">Gold Balance</p>
+                          <p className="text-2xl font-bold text-yellow-800">{goldBalance.toLocaleString('en-US', { maximumFractionDigits: 4 })}g</p>
+                        </div>
+                        <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                          <p className="text-sm text-green-700">USD Balance</p>
+                          <p className="text-2xl font-bold text-green-800">${usdBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                          <p className="text-sm text-blue-700">EUR Balance</p>
+                          <p className="text-2xl font-bold text-blue-800">€{parseFloat(wallet.eurBalance || '0').toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No wallet found for this user.</p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
 
-            <TabsContent value="documents">
+            {/* Transactions Tab */}
+            <TabsContent value="transactions">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Submitted Documents</CardTitle>
-                  <CardDescription>KYC documents submitted by the user.</CardDescription>
+                  <CardTitle className="text-base">Transaction History</CardTitle>
+                  <CardDescription>All transactions for this user.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {user.documents.map((doc, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-white rounded border border-gray-200">
-                            <FileText className="w-5 h-5 text-orange-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                            <p className="text-xs text-gray-500">Uploaded on {doc.date}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            {doc.status}
-                          </Badge>
-                          <Button size="sm" variant="outline" className="gap-2">
-                             <Eye className="w-4 h-4" /> View
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {transactions.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">No transactions found.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                          <tr>
+                            <th className="px-4 py-3 text-left">Type</th>
+                            <th className="px-4 py-3 text-left">Amount</th>
+                            <th className="px-4 py-3 text-left">Status</th>
+                            <th className="px-4 py-3 text-left">Module</th>
+                            <th className="px-4 py-3 text-left">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {transactions.map((tx: any) => (
+                            <tr key={tx.id} className="border-b hover:bg-gray-50">
+                              <td className="px-4 py-3">
+                                <Badge variant="outline">{tx.type}</Badge>
+                              </td>
+                              <td className="px-4 py-3">
+                                {tx.amountGold && <span className="text-yellow-600">{parseFloat(tx.amountGold).toFixed(4)}g</span>}
+                                {tx.amountUsd && <span className="text-green-600 ml-2">${parseFloat(tx.amountUsd).toFixed(2)}</span>}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge variant={tx.status === 'Completed' ? 'default' : tx.status === 'Failed' ? 'destructive' : 'secondary'}>
+                                  {tx.status}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500">{tx.sourceModule || '-'}</td>
+                              <td className="px-4 py-3 text-sm text-gray-500">
+                                {new Date(tx.createdAt).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="activity">
-               <Card>
+            {/* KYC Tab */}
+            <TabsContent value="kyc">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Recent Activity</CardTitle>
+                  <CardTitle className="text-base">KYC Submission Details</CardTitle>
+                  <CardDescription>Identity verification information.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-6">
-                    {user.recentActivity.map((activity, i) => (
-                      <div key={i} className="flex gap-4">
-                        <div className="relative">
-                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 z-10 relative">
-                            <Activity className="w-4 h-4" />
-                          </div>
-                          {i !== user.recentActivity.length - 1 && (
-                            <div className="absolute top-8 left-4 w-px h-full bg-gray-200 -ml-px" />
-                          )}
+                  {kycSubmission ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <span className="font-medium">Status</span>
+                        {getKycStatusBadge(kycSubmission.status)}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Full Name</p>
+                          <p className="font-medium">{kycSubmission.fullName || 'Not provided'}</p>
                         </div>
-                        <div className="pb-6">
-                          <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                          <p className="text-xs text-gray-500 mt-1">{activity.date}</p>
-                          {activity.details && (
-                            <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded border border-gray-100">
-                              {activity.details}
-                            </p>
-                          )}
+                        <div>
+                          <p className="text-sm text-gray-500">Date of Birth</p>
+                          <p className="font-medium">{kycSubmission.dateOfBirth || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Nationality</p>
+                          <p className="font-medium">{kycSubmission.nationality || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Country</p>
+                          <p className="font-medium">{kycSubmission.country || 'Not provided'}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <p className="text-sm text-gray-500">Address</p>
+                          <p className="font-medium">{kycSubmission.address || 'Not provided'}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
+
+                      {kycSubmission.accountType === 'business' && (
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-4 flex items-center gap-2">
+                            <Building className="w-4 h-4" /> Business Information
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Company Name</p>
+                              <p className="font-medium">{kycSubmission.companyName || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Registration Number</p>
+                              <p className="font-medium">{kycSubmission.registrationNumber || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Tax ID</p>
+                              <p className="font-medium">{kycSubmission.taxId || 'Not provided'}</p>
+                            </div>
+                            <div className="md:col-span-2">
+                              <p className="text-sm text-gray-500">Company Address</p>
+                              <p className="font-medium">{kycSubmission.companyAddress || 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {kycSubmission.rejectionReason && (
+                        <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
+                          <p className="text-sm font-medium text-red-800">Rejection Reason</p>
+                          <p className="text-sm text-red-700">{kycSubmission.rejectionReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No KYC submission found.</p>
+                      <p className="text-sm text-gray-400">User has not submitted KYC documents yet.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Activity Tab */}
+            <TabsContent value="activity">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Activity Log</CardTitle>
+                  <CardDescription>Recent actions and system events.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {auditLogs.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">No activity logs found.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {auditLogs.map((log: any, i: number) => (
+                        <div key={log.id || i} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                            <Activity className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{log.actionType}</p>
+                            <p className="text-sm text-gray-500">{log.details}</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {new Date(log.createdAt).toLocaleString()} • By {log.actorRole}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

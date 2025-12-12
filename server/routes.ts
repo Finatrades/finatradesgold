@@ -242,6 +242,38 @@ export async function registerRoutes(
     }
   });
   
+  // Get single user details with wallet and transactions (Admin)
+  app.get("/api/admin/users/:userId", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get wallet
+      const wallet = await storage.getWallet(user.id);
+      
+      // Get transactions
+      const transactions = await storage.getUserTransactions(user.id);
+      
+      // Get KYC submission
+      const kycSubmission = await storage.getKycSubmission(user.id);
+      
+      // Get audit logs for this user
+      const auditLogs = await storage.getEntityAuditLogs('user', user.id);
+      
+      res.json({ 
+        user: sanitizeUser(user),
+        wallet,
+        transactions,
+        kycSubmission,
+        auditLogs
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get user details" });
+    }
+  });
+  
   // Admin: Manually verify user email
   app.post("/api/admin/users/:userId/verify-email", async (req, res) => {
     try {

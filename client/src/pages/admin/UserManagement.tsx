@@ -23,6 +23,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string;
   role: 'user' | 'admin';
   accountType: 'personal' | 'business';
   kycStatus: string;
@@ -198,6 +199,7 @@ export default function UserManagement() {
                     <tr>
                       <th className="px-6 py-3">Name</th>
                       <th className="px-6 py-3">Email</th>
+                      <th className="px-6 py-3">Phone</th>
                       <th className="px-6 py-3">Email Status</th>
                       <th className="px-6 py-3">Role</th>
                       <th className="px-6 py-3">Account Type</th>
@@ -209,7 +211,7 @@ export default function UserManagement() {
                   <tbody>
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                        <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                           No users found
                         </td>
                       </tr>
@@ -220,6 +222,7 @@ export default function UserManagement() {
                             {user.firstName} {user.lastName}
                           </td>
                           <td className="px-6 py-4">{user.email}</td>
+                          <td className="px-6 py-4 text-gray-500">{user.phoneNumber || '-'}</td>
                           <td className="px-6 py-4">
                             {user.isEmailVerified ? (
                               <Badge variant="default" className="bg-green-500 hover:bg-green-600">
