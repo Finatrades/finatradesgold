@@ -184,6 +184,91 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 
 // ============================================
+// FINAPAY - BANK ACCOUNTS (Admin-managed)
+// ============================================
+
+export const bankAccountStatusEnum = pgEnum('bank_account_status', ['Active', 'Inactive']);
+export const depositRequestStatusEnum = pgEnum('deposit_request_status', ['Pending', 'Confirmed', 'Rejected', 'Cancelled']);
+export const withdrawalRequestStatusEnum = pgEnum('withdrawal_request_status', ['Pending', 'Processing', 'Completed', 'Rejected', 'Cancelled']);
+
+// Admin-managed bank accounts for receiving deposits
+export const platformBankAccounts = pgTable("platform_bank_accounts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  bankName: varchar("bank_name", { length: 255 }).notNull(),
+  accountName: varchar("account_name", { length: 255 }).notNull(),
+  accountNumber: varchar("account_number", { length: 100 }).notNull(),
+  iban: varchar("iban", { length: 100 }),
+  swiftCode: varchar("swift_code", { length: 50 }),
+  routingNumber: varchar("routing_number", { length: 50 }),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  country: varchar("country", { length: 100 }).notNull(),
+  address: text("address"),
+  status: bankAccountStatusEnum("status").notNull().default('Active'),
+  isDefault: boolean("is_default").notNull().default(false),
+  notes: text("notes"),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPlatformBankAccountSchema = createInsertSchema(platformBankAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlatformBankAccount = z.infer<typeof insertPlatformBankAccountSchema>;
+export type PlatformBankAccount = typeof platformBankAccounts.$inferSelect;
+
+// User deposit requests (fiat to wallet)
+export const depositRequests = pgTable("deposit_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  bankAccountId: varchar("bank_account_id", { length: 255 }).notNull().references(() => platformBankAccounts.id),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  paymentMethod: varchar("payment_method", { length: 100 }).notNull().default('Bank Transfer'),
+  transactionReference: varchar("transaction_reference", { length: 255 }), // User's bank transfer reference
+  proofOfPayment: text("proof_of_payment"), // URL to uploaded receipt
+  notes: text("notes"),
+  status: depositRequestStatusEnum("status").notNull().default('Pending'),
+  processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
+  processedAt: timestamp("processed_at"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDepositRequestSchema = createInsertSchema(depositRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDepositRequest = z.infer<typeof insertDepositRequestSchema>;
+export type DepositRequest = typeof depositRequests.$inferSelect;
+
+// User withdrawal requests (wallet to bank)
+export const withdrawalRequests = pgTable("withdrawal_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  // User's bank account details
+  bankName: varchar("bank_name", { length: 255 }).notNull(),
+  accountName: varchar("account_name", { length: 255 }).notNull(),
+  accountNumber: varchar("account_number", { length: 100 }).notNull(),
+  iban: varchar("iban", { length: 100 }),
+  swiftCode: varchar("swift_code", { length: 50 }),
+  routingNumber: varchar("routing_number", { length: 50 }),
+  bankCountry: varchar("bank_country", { length: 100 }),
+  notes: text("notes"),
+  status: withdrawalRequestStatusEnum("status").notNull().default('Pending'),
+  processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
+  processedAt: timestamp("processed_at"),
+  transactionReference: varchar("transaction_reference", { length: 255 }), // Admin's transfer reference
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWithdrawalRequestSchema = createInsertSchema(withdrawalRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWithdrawalRequest = z.infer<typeof insertWithdrawalRequestSchema>;
+export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
+
+// ============================================
 // FINAVAULT - GOLD STORAGE
 // ============================================
 
