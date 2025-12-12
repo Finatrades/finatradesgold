@@ -3,11 +3,30 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2 } from 'lucide-react';
+import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2, Coins } from 'lucide-react';
 import { BnslPlan, BnslPlanStatus, BnslMarginPayout } from '@/types/bnsl';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useBnsl } from '@/context/BnslContext';
+
+// Helper: Calculate daily margin for a plan
+function calculateDailyMargin(plan: BnslPlan): number {
+  if (plan.status !== 'Active') return 0;
+  const startDate = new Date(plan.startDate);
+  const maturityDate = new Date(plan.maturityDate);
+  const totalDays = Math.max(1, Math.ceil((maturityDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  return plan.totalMarginComponentUsd / totalDays;
+}
+
+// Helper: Calculate accrued margin to date
+function calculateAccruedMargin(plan: BnslPlan): number {
+  if (plan.status !== 'Active') return 0;
+  const startDate = new Date(plan.startDate);
+  const today = new Date();
+  const daysSinceStart = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const dailyMargin = calculateDailyMargin(plan);
+  return Math.min(dailyMargin * daysSinceStart, plan.totalMarginComponentUsd);
+}
 
 // Components
 import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
@@ -32,6 +51,20 @@ export default function BNSL() {
     refreshPlans();
   }, [refreshPlans]);
 
+  // Daily margin notification
+  useEffect(() => {
+    if (plans.length > 0 && activePlansCount > 0) {
+      const dailyTotal = plans.reduce((sum, p) => sum + calculateDailyMargin(p), 0);
+      if (dailyTotal > 0) {
+        addNotification({
+          title: "Daily Margin Update",
+          message: `You're earning $${dailyTotal.toFixed(2)} in margin today across ${activePlansCount} active plan${activePlansCount > 1 ? 's' : ''}. Payouts are made quarterly.`,
+          type: 'info'
+        });
+      }
+    }
+  }, [plans.length, activePlansCount]);
+
   // State
   const [activeTab, setActiveTab] = useState('plans');
   const [selectedPlan, setSelectedPlan] = useState<BnslPlan | null>(null);
@@ -51,6 +84,12 @@ export default function BNSL() {
   
   // Calculate total locked gold in BNSL (Active plans)
   const totalLockedGold = plans.reduce((sum, p) => p.status === 'Active' ? sum + p.goldSoldGrams : sum, 0);
+
+  // Daily margin calculations
+  const totalDailyMargin = plans.reduce((sum, p) => sum + calculateDailyMargin(p), 0);
+  const totalAccruedMargin = plans.reduce((sum, p) => sum + calculateAccruedMargin(p), 0);
+  const totalPaidMargin = plans.reduce((sum, p) => sum + p.paidMarginUsd, 0);
+  const unpaidAccruedMargin = Math.max(0, totalAccruedMargin - totalPaidMargin);
 
   // Next Payout Finder
   const getNextPayout = (): { date: string; amount: number; planId: string } | null => {
@@ -223,7 +262,7 @@ export default function BNSL() {
         </div>
 
         {/* SUMMARY STRIP */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
            <BnslStatsCard 
              label="Active Plans" 
              value={activePlansCount.toString()} 
@@ -242,6 +281,26 @@ export default function BNSL() {
              value={`${weightedRate.toFixed(2)}% p.a.`} 
              icon={TrendingUp} 
              accentColor="text-secondary"
+           />
+        </div>
+
+        {/* DAILY MARGIN STRIP */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+           <BnslStatsCard 
+             label="Today's Margin Accrual" 
+             value={`$${totalDailyMargin.toFixed(2)}`} 
+             subValue="Earning daily, paid quarterly"
+             icon={Coins} 
+             accentColor="text-amber-600"
+             tooltip="Amount of margin accruing today across all active plans."
+           />
+           <BnslStatsCard 
+             label="Total Accrued (Unpaid)" 
+             value={`$${unpaidAccruedMargin.toFixed(2)}`} 
+             subValue="Pending next quarterly payout"
+             icon={TrendingUp} 
+             accentColor="text-orange-600"
+             tooltip="Total margin earned but not yet paid out."
            />
            <BnslStatsCard 
              label="Next Payout" 
