@@ -17,171 +17,6 @@ import { useLocation } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
-// Legacy Mock Data for fallback display
-const MOCK_REQUESTS: DepositRequest[] = [
-  {
-    id: 'FD-2024-0042',
-    userId: 'user-1',
-    vaultLocation: 'Swiss Vault',
-    depositType: 'Bars',
-    totalDeclaredWeightGrams: 125.4,
-    items: [
-      { id: '1', itemType: 'Bar', quantity: 1, weightPerUnitGrams: 100, totalWeightGrams: 100, purity: '999.9', brand: 'PAMP' },
-      { id: '2', itemType: 'Coin', quantity: 1, weightPerUnitGrams: 25.4, totalWeightGrams: 25.4, purity: '999.9', brand: 'Sovereign' }
-    ],
-    deliveryMethod: 'Courier',
-    documents: [],
-    status: 'Stored in Vault',
-    submittedAt: '2024-11-15T10:00:00Z',
-    vaultInternalReference: 'CH-ZH-99281'
-  },
-  {
-    id: 'FP-BUY-2024-001',
-    userId: 'user-1',
-    vaultLocation: 'Swiss Vault',
-    depositType: 'Mixed',
-    totalDeclaredWeightGrams: 50,
-    items: [
-      { id: '1', itemType: 'Bar', quantity: 5, weightPerUnitGrams: 10, totalWeightGrams: 50, purity: '999.9', brand: 'FinaTrades Allocation' }
-    ],
-    deliveryMethod: 'Pickup', // Internal transfer essentially
-    pickupDetails: {
-      address: 'FinaPay Digital Purchase',
-      contactName: 'System',
-      contactMobile: 'N/A',
-      date: '2024-12-10',
-      timeSlot: 'Instant'
-    },
-    documents: [],
-    status: 'Stored in Vault',
-    submittedAt: '2024-12-10T09:30:00Z',
-    vaultInternalReference: 'FP-DIG-8821'
-  },
-  {
-    id: 'TR-OUT-2024-882',
-    userId: 'user-1',
-    vaultLocation: 'Swiss Vault',
-    depositType: 'Bars',
-    totalDeclaredWeightGrams: 100,
-    items: [
-      { id: '1', itemType: 'Bar', quantity: 1, weightPerUnitGrams: 100, totalWeightGrams: 100, purity: '999.9', brand: 'PAMP' }
-    ],
-    deliveryMethod: 'Pickup', // Internal transfer essentially
-    pickupDetails: {
-      address: 'Internal Transfer to User: @alex_crypto',
-      contactName: 'Alex Johnson',
-      contactMobile: 'ID: 99281-22',
-      date: '2024-12-11',
-      timeSlot: 'Completed'
-    },
-    documents: [],
-    status: 'Transferred',
-    submittedAt: '2024-12-11T11:20:00Z',
-    vaultInternalReference: 'TR-INT-99282'
-  },
-  {
-    id: 'TR-IN-2024-991',
-    userId: 'user-1',
-    vaultLocation: 'Singapore Vault',
-    depositType: 'Coins',
-    totalDeclaredWeightGrams: 31.1,
-    items: [
-      { id: '1', itemType: 'Coin', quantity: 1, weightPerUnitGrams: 31.1, totalWeightGrams: 31.1, purity: '999.9', brand: 'Buffalo' }
-    ],
-    deliveryMethod: 'Courier',
-    pickupDetails: {
-      address: 'Received from User: @sarah_gold',
-      contactName: 'Sarah Smith',
-      contactMobile: 'ID: 7721-11',
-      date: '2024-12-11',
-      timeSlot: 'Completed'
-    },
-    documents: [],
-    status: 'Received', 
-    submittedAt: '2024-12-11T10:05:00Z',
-    vaultInternalReference: 'TR-INT-99283'
-  },
-  {
-    id: 'DIG-IN-2024-771',
-    userId: 'user-1',
-    vaultLocation: 'London Vault (Pool)',
-    depositType: 'Digital Allocation',
-    totalDeclaredWeightGrams: 2.500,
-    items: [
-      { id: '1', itemType: 'Digital Gold', quantity: 1, weightPerUnitGrams: 2.500, totalWeightGrams: 2.500, purity: '999.9', brand: 'FinaTrades Pool' }
-    ],
-    deliveryMethod: 'Pickup', // Virtual
-    pickupDetails: {
-      address: 'Digital Transfer from User: @sarah_gold',
-      contactName: 'Sarah Smith',
-      contactMobile: 'ID: 7721-11',
-      date: '2024-12-04',
-      timeSlot: 'Instant'
-    },
-    documents: [],
-    status: 'Received',
-    submittedAt: '2024-12-04T11:20:00Z',
-    vaultInternalReference: 'DIG-TR-5512'
-  },
-  {
-    id: 'TR-P2P-2024-998',
-    userId: 'user-1',
-    vaultLocation: 'Swiss Vault (Allocated)',
-    depositType: 'Digital Allocation',
-    totalDeclaredWeightGrams: 50.000,
-    items: [
-      { id: '1', itemType: 'Digital Gold', quantity: 1, weightPerUnitGrams: 50.000, totalWeightGrams: 50.000, purity: '999.9', brand: 'PAMP' }
-    ],
-    deliveryMethod: 'Pickup', // Virtual Transfer
-    pickupDetails: {
-      address: 'Ownership Changed: Charan -> Farah',
-      contactName: 'Farah',
-      contactMobile: 'ID: 8821-22',
-      date: '2024-12-11',
-      timeSlot: 'Completed'
-    },
-    documents: [],
-    status: 'Received',
-    submittedAt: '2024-12-11T12:00:00Z',
-    vaultInternalReference: 'TR-P2P-9982'
-  },
-  {
-    id: 'FD-2024-0089',
-    userId: 'user-1',
-    vaultLocation: 'Dubai Vault',
-    depositType: 'Mixed',
-    totalDeclaredWeightGrams: 250,
-    items: [
-      { id: '1', itemType: 'Bar', quantity: 2, weightPerUnitGrams: 100, totalWeightGrams: 200, purity: '999.9', brand: 'Valcambi' },
-      { id: '2', itemType: 'Coin', quantity: 5, weightPerUnitGrams: 10, totalWeightGrams: 50, purity: '999.9', brand: 'Maple Leaf' }
-    ],
-    deliveryMethod: 'Walk-in',
-    documents: [],
-    status: 'Approved – Awaiting Delivery',
-    submittedAt: '2024-12-05T14:30:00Z'
-  },
-  {
-     id: 'FD-2024-0091',
-     userId: 'user-1',
-     vaultLocation: 'Dubai Vault',
-     depositType: 'Coins',
-     totalDeclaredWeightGrams: 250,
-     items: [
-       { id: '1', itemType: 'Coin', quantity: 25, weightPerUnitGrams: 10, totalWeightGrams: 250, purity: '999.9', brand: 'Britannia' }
-     ],
-     deliveryMethod: 'Pickup',
-     pickupDetails: {
-        address: 'Downtown Dubai',
-        contactName: 'John Doe',
-        contactMobile: '+971500000000',
-        date: '2024-12-10',
-        timeSlot: '10:00 - 12:00'
-     },
-     documents: [],
-     status: 'Under Review',
-     submittedAt: '2024-12-03T09:15:00Z'
-   }
-];
 
 export default function FinaVault() {
   const { user } = useAuth();
@@ -473,9 +308,22 @@ export default function FinaVault() {
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
+                  ) : apiRequests.length === 0 ? (
+                    <Card className="bg-white border">
+                      <CardContent className="p-12 text-center">
+                        <Database className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                        <h3 className="text-lg font-bold mb-2">No Deposit Requests</h3>
+                        <p className="text-muted-foreground mb-4">
+                          You haven't submitted any gold deposit requests yet. Start by creating a new deposit request to store your physical gold in our secure vaults.
+                        </p>
+                        <Button onClick={() => setActiveTab('new-request')} data-testid="button-first-deposit">
+                          <PlusCircle className="w-4 h-4 mr-2" /> Create New Deposit Request
+                        </Button>
+                      </CardContent>
+                    </Card>
                   ) : (
                     <DepositList 
-                      requests={apiRequests.length > 0 ? apiRequests : MOCK_REQUESTS} 
+                      requests={apiRequests} 
                       onSelectRequest={setSelectedRequest}
                       onNewRequest={() => setActiveTab('new-request')}
                     />

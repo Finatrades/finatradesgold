@@ -3,85 +3,24 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
-import { Wallet as WalletIcon, RefreshCw, Bell, Settings } from 'lucide-react';
+import { useFinaPay } from '@/context/FinaPayContext';
+import { Wallet as WalletIcon, RefreshCw, Bell, Settings, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 
-// Components
 import WalletBalanceCards from '@/components/finapay/WalletBalanceCards';
 import LiveGoldChart from '@/components/finapay/LiveGoldChart';
 import WalletAnalytics from '@/components/finapay/WalletAnalytics';
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import QuickActions from '@/components/finapay/QuickActions';
 
-// Modals
 import BuyGoldModal from '@/components/finapay/modals/BuyGoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
-
-// Mock Initial State
-const INITIAL_WALLET: Wallet = {
-  goldBalanceGrams: 125.400,
-  usdBalance: 15420.50,
-  goldPriceUsdPerGram: 85.22,
-  usdAedRate: 3.67,
-  bnslLockedUsd: 5000.00,
-  finaBridgeLockedUsd: 12500.00
-};
-
-const INITIAL_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-001',
-    type: 'Buy',
-    amountGrams: 10.000,
-    amountUsd: 852.20,
-    feeUsd: 4.26,
-    timestamp: '2024-12-10T14:30:00Z',
-    referenceId: 'REF-8821',
-    status: 'Completed',
-    assetType: 'GOLD',
-    description: 'Spot Market Purchase'
-  },
-  {
-    id: 'tx-002',
-    type: 'Sell',
-    amountGrams: 5.000,
-    amountUsd: 426.10,
-    feeUsd: 6.39,
-    timestamp: '2024-12-08T09:15:00Z',
-    referenceId: 'REF-7732',
-    status: 'Completed',
-    assetType: 'GOLD',
-    description: 'Liquidated to USD'
-  },
-  {
-    id: 'tx-003',
-    type: 'Send',
-    amountUsd: 500.00,
-    feeUsd: 0,
-    timestamp: '2024-12-05T18:00:00Z',
-    referenceId: 'REF-6651',
-    status: 'Completed',
-    description: 'Sent to @alex_crypto',
-    assetType: 'USD'
-  },
-  {
-    id: 'tx-004',
-    type: 'Receive',
-    amountGrams: 2.500,
-    amountUsd: 213.05,
-    feeUsd: 0,
-    timestamp: '2024-12-04T11:20:00Z',
-    referenceId: 'REF-5512',
-    status: 'Completed',
-    description: 'Received from @sarah_gold',
-    assetType: 'GOLD'
-  }
-];
 
 import { useLocation } from 'wouter';
 
@@ -92,136 +31,160 @@ export default function FinaPay() {
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
 
-  const [wallet, setWallet] = useState<Wallet>(INITIAL_WALLET);
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const { 
+    wallet: rawWallet, 
+    transactions: rawTransactions, 
+    currentGoldPriceUsdPerGram, 
+    createTransaction,
+    refreshWallet,
+    refreshTransactions,
+    loading 
+  } = useFinaPay();
 
-  // Modals State
+  const parseNumericValue = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return isNaN(value) ? 0 : value;
+    const parsed = parseFloat(String(value));
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const goldGrams = rawWallet ? parseNumericValue(rawWallet.goldGrams) : 0;
+  const usdBalance = rawWallet ? parseNumericValue(rawWallet.usdBalance) : 0;
+
+  const wallet: Wallet = {
+    goldBalanceGrams: goldGrams,
+    usdBalance: usdBalance,
+    goldPriceUsdPerGram: currentGoldPriceUsdPerGram,
+    usdAedRate: 3.67,
+    bnslLockedUsd: 0,
+    finaBridgeLockedUsd: 0
+  };
+
+  const formatReferenceId = (id: any): string => {
+    if (!id) return 'N/A';
+    const idStr = String(id);
+    return idStr.length >= 10 ? idStr.substring(0, 10).toUpperCase() : idStr.toUpperCase();
+  };
+
+  const transactions: Transaction[] = (rawTransactions || []).map((tx: any) => ({
+    id: tx.id || String(Math.random()),
+    type: tx.type || 'Transfer',
+    amountGrams: tx.amountGold != null ? parseNumericValue(tx.amountGold) : undefined,
+    amountUsd: parseNumericValue(tx.amountUsd),
+    feeUsd: 0,
+    timestamp: tx.createdAt,
+    referenceId: formatReferenceId(tx.id),
+    status: tx.status || 'Pending',
+    assetType: tx.amountGold != null ? 'GOLD' : 'USD',
+    description: tx.description || ''
+  }));
+
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
-  // --- Actions ---
-
-  const handleBuyConfirm = (grams: number, cost: number) => {
-    if (wallet.usdBalance < cost) {
-       toast({ title: "Insufficient Funds", description: "You don't have enough USD.", variant: "destructive" });
-       return;
-    }
-    // Credit gold, Debit USD
-    setWallet(prev => ({ 
-      ...prev, 
-      goldBalanceGrams: prev.goldBalanceGrams + grams,
-      usdBalance: prev.usdBalance - cost
-    }));
-    
-    // Add Transaction
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      type: 'Buy',
-      amountGrams: grams,
-      amountUsd: cost,
-      feeUsd: cost * 0.005,
-      timestamp: new Date().toISOString(),
-      referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
-      status: 'Completed',
-      assetType: 'GOLD'
-    };
-    setTransactions(prev => [newTx, ...prev]);
-    
-    setActiveModal(null);
-    toast({ title: "Purchase Successful", description: `You bought ${grams.toFixed(4)}g of gold. Gold credited to your FinaVault.` });
-    addNotification({
-      title: "Gold Purchase Successful",
-      message: `You bought ${grams.toFixed(4)}g of gold for $${cost.toFixed(2)}.`,
-      type: 'success'
-    });
-  };
-
-  const handleSellConfirm = (grams: number, payout: number) => {
-    // Debit gold, Credit USD
-    setWallet(prev => ({ 
-      ...prev, 
-      goldBalanceGrams: prev.goldBalanceGrams - grams,
-      usdBalance: prev.usdBalance + payout
-    }));
-
-    // Add Transaction
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      type: 'Sell',
-      amountGrams: grams,
-      amountUsd: payout,
-      feeUsd: payout * 0.015,
-      timestamp: new Date().toISOString(),
-      referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
-      status: 'Completed',
-      assetType: 'GOLD'
-    };
-    setTransactions(prev => [newTx, ...prev]);
-
-    setActiveModal(null);
-    toast({ title: "Sell Order Executed", description: `Sold ${grams.toFixed(4)}g for $${payout.toFixed(2)}.` });
-    addNotification({
-      title: "Gold Sold Successfully",
-      message: `Sold ${grams.toFixed(4)}g of gold. $${payout.toFixed(2)} credited to USD balance.`,
-      type: 'success'
-    });
-  };
-
-  const handleSendConfirm = (recipient: string, amount: number, asset: 'USD' | 'GOLD') => {
-    if (asset === 'USD') {
-      setWallet(prev => ({ ...prev, usdBalance: prev.usdBalance - amount }));
-    } else {
-      setWallet(prev => ({ ...prev, goldBalanceGrams: prev.goldBalanceGrams - amount }));
+  const handleBuyConfirm = async (grams: number, cost: number) => {
+    if (usdBalance < cost) {
+      toast({ title: "Insufficient Funds", description: "You don't have enough USD balance.", variant: "destructive" });
+      return;
     }
 
-    // Add Transaction
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      type: 'Send',
-      amountUsd: asset === 'USD' ? amount : amount * wallet.goldPriceUsdPerGram,
-      amountGrams: asset === 'GOLD' ? amount : undefined,
-      feeUsd: 0,
-      timestamp: new Date().toISOString(),
-      referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
-      status: 'Completed',
-      description: `Sent to ${recipient}`,
-      assetType: asset
-    };
-    setTransactions(prev => [newTx, ...prev]);
-
-    setActiveModal(null);
-    const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
-    toast({ title: "Transfer Successful", description: `Sent ${amountDisplay} to ${recipient}. Ownership Transferred.` });
-    addNotification({
-      title: "Funds Sent",
-      message: `You sent ${amountDisplay} to ${recipient}.`,
-      type: 'transaction'
-    });
+    try {
+      await createTransaction({
+        type: 'Buy',
+        amountUsd: cost.toFixed(2),
+        amountGold: grams.toFixed(6),
+        description: 'Gold purchase via FinaPay'
+      });
+      
+      setActiveModal(null);
+      toast({ title: "Purchase Order Submitted", description: `Your order for ${grams.toFixed(4)}g of gold has been submitted for processing.` });
+      addNotification({
+        title: "Buy Order Submitted",
+        message: `Purchase of ${grams.toFixed(4)}g gold submitted for approval.`,
+        type: 'success'
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to submit buy order. Please try again.", variant: "destructive" });
+    }
   };
 
-  const handleRequestConfirm = (from: string, amount: number, asset: 'USD' | 'GOLD') => {
-    // Add Pending Transaction
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      type: 'Request',
-      amountUsd: asset === 'USD' ? amount : amount * wallet.goldPriceUsdPerGram,
-      amountGrams: asset === 'GOLD' ? amount : undefined,
-      feeUsd: 0,
-      timestamp: new Date().toISOString(),
-      referenceId: `REF-${Math.floor(Math.random() * 10000)}`,
-      status: 'Pending',
-      description: `Requested from ${from}`,
-      assetType: asset
-    };
-    setTransactions(prev => [newTx, ...prev]);
+  const handleSellConfirm = async (grams: number, payout: number) => {
+    if (grams > goldGrams) {
+      toast({ title: "Insufficient Gold", description: "You don't have enough gold to sell.", variant: "destructive" });
+      return;
+    }
 
-    setActiveModal(null);
-    const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
-    toast({ title: "Request Sent", description: `Request for ${amountDisplay} sent to ${from}.` });
-    addNotification({
-      title: "Payment Requested",
-      message: `You requested ${amountDisplay} from ${from}.`,
-      type: 'info'
-    });
+    try {
+      await createTransaction({
+        type: 'Sell',
+        amountUsd: payout.toFixed(2),
+        amountGold: grams.toFixed(6),
+        description: 'Gold sale via FinaPay'
+      });
+
+      setActiveModal(null);
+      toast({ title: "Sell Order Submitted", description: `Your order to sell ${grams.toFixed(4)}g has been submitted for processing.` });
+      addNotification({
+        title: "Sell Order Submitted",
+        message: `Sale of ${grams.toFixed(4)}g gold submitted for approval.`,
+        type: 'success'
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to submit sell order. Please try again.", variant: "destructive" });
+    }
+  };
+
+  const handleSendConfirm = async (recipient: string, amount: number, asset: 'USD' | 'GOLD') => {
+    if (asset === 'USD' && amount > usdBalance) {
+      toast({ title: "Insufficient USD", description: "You don't have enough USD balance.", variant: "destructive" });
+      return;
+    }
+    if (asset === 'GOLD' && amount > goldGrams) {
+      toast({ title: "Insufficient Gold", description: "You don't have enough gold balance.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await createTransaction({
+        type: 'Send',
+        amountUsd: asset === 'USD' ? amount.toFixed(2) : (amount * currentGoldPriceUsdPerGram).toFixed(2),
+        amountGold: asset === 'GOLD' ? amount.toFixed(6) : null,
+        recipientEmail: recipient,
+        description: `Transfer to ${recipient}`
+      });
+
+      setActiveModal(null);
+      const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
+      toast({ title: "Transfer Submitted", description: `Transfer of ${amountDisplay} to ${recipient} submitted for processing.` });
+      addNotification({
+        title: "Transfer Submitted",
+        message: `You initiated a transfer of ${amountDisplay} to ${recipient}.`,
+        type: 'transaction'
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to submit transfer. Please try again.", variant: "destructive" });
+    }
+  };
+
+  const handleRequestConfirm = async (from: string, amount: number, asset: 'USD' | 'GOLD') => {
+    try {
+      await createTransaction({
+        type: 'Receive',
+        amountUsd: asset === 'USD' ? amount.toFixed(2) : (amount * currentGoldPriceUsdPerGram).toFixed(2),
+        amountGold: asset === 'GOLD' ? amount.toFixed(6) : null,
+        description: `Request from ${from}`
+      });
+
+      setActiveModal(null);
+      const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
+      toast({ title: "Request Sent", description: `Your request for ${amountDisplay} from ${from} has been sent.` });
+      addNotification({
+        title: "Payment Requested",
+        message: `You requested ${amountDisplay} from ${from}.`,
+        type: 'info'
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to submit request. Please try again.", variant: "destructive" });
+    }
   };
 
   const handleQuickAction = (action: string) => {
@@ -233,7 +196,7 @@ export default function FinaPay() {
       case 'add_fund': setActiveModal('deposit'); break;
       case 'withdraw': setActiveModal('withdraw'); break;
       case 'deposit_gold':
-        toast({ title: "Coming Soon", description: "Gold Deposit functionality will be available shortly." });
+        toast({ title: "Coming Soon", description: "Physical gold deposit will be available through FinaVault." });
         break;
       case 'bnsl': 
         setLocation('/bnsl');
@@ -244,13 +207,31 @@ export default function FinaPay() {
     }
   };
 
+  const handleRefresh = () => {
+    refreshWallet();
+    refreshTransactions();
+    toast({ title: "Refreshing", description: "Updating your wallet data..." });
+  };
+
   if (!user) return null;
+
+  if (loading && !rawWallet) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+            <p className="text-muted-foreground">Loading your wallet...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-8 pb-12">
         
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
              <div className="p-2 bg-primary/10 rounded-lg border border-primary/20 text-primary">
@@ -265,11 +246,18 @@ export default function FinaPay() {
           <div className="flex items-center gap-4">
             <div className="hidden md:block text-right">
                <p className="text-xs text-muted-foreground uppercase tracking-wider">Live Gold Spot</p>
-               <p className="text-secondary font-bold font-mono">${wallet.goldPriceUsdPerGram.toFixed(2)} <span className="text-xs text-muted-foreground">/g</span></p>
+               <p className="text-secondary font-bold font-mono">${currentGoldPriceUsdPerGram.toFixed(2)} <span className="text-xs text-muted-foreground">/g</span></p>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
-                 <RefreshCw className="w-5 h-5" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
+                onClick={handleRefresh}
+                disabled={loading}
+                data-testid="button-refresh-wallet"
+              >
+                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </Button>
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
                  <Bell className="w-5 h-5" />
@@ -281,20 +269,17 @@ export default function FinaPay() {
           </div>
         </div>
 
-        {/* 1. Balance & Valuation */}
         <section>
           <WalletBalanceCards wallet={wallet} />
         </section>
 
-        {/* 2. Quick Actions */}
         <section>
           <div className="flex items-center justify-between mb-3">
              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Quick Actions</h3>
           </div>
-          <QuickActions onAction={handleQuickAction} goldPrice={wallet.goldPriceUsdPerGram} />
+          <QuickActions onAction={handleQuickAction} goldPrice={currentGoldPriceUsdPerGram} />
         </section>
 
-        {/* 3. Charts & Analytics Grid */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            <div className="lg:col-span-2 h-[450px]">
              <LiveGoldChart />
@@ -304,32 +289,43 @@ export default function FinaPay() {
            </div>
         </section>
 
-        {/* 4. Transactions Table */}
         <section>
-           <TransactionHistory transactions={transactions} />
+          {transactions.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
+              <h3 className="text-lg font-semibold mb-2">No Transactions Yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Your transaction history will appear here once you buy, sell, or transfer gold.
+              </p>
+              <Button onClick={() => setActiveModal('buy')} data-testid="button-first-buy">
+                Make Your First Purchase
+              </Button>
+            </div>
+          ) : (
+            <TransactionHistory transactions={transactions} />
+          )}
         </section>
 
-        {/* Modals */}
         <BuyGoldModal 
           isOpen={activeModal === 'buy'} 
           onClose={() => setActiveModal(null)}
-          goldPrice={wallet.goldPriceUsdPerGram}
+          goldPrice={currentGoldPriceUsdPerGram}
           spreadPercent={settings.buySpreadPercent}
           onConfirm={handleBuyConfirm}
         />
         <SellGoldModal 
           isOpen={activeModal === 'sell'} 
           onClose={() => setActiveModal(null)}
-          goldPrice={wallet.goldPriceUsdPerGram}
-          walletBalance={wallet.goldBalanceGrams}
+          goldPrice={currentGoldPriceUsdPerGram}
+          walletBalance={goldGrams}
           spreadPercent={settings.sellSpreadPercent}
           onConfirm={handleSellConfirm}
         />
         <SendGoldModal 
           isOpen={activeModal === 'send'} 
           onClose={() => setActiveModal(null)}
-          walletBalance={wallet.usdBalance}
-          goldBalance={wallet.goldBalanceGrams}
+          walletBalance={usdBalance}
+          goldBalance={goldGrams}
           onConfirm={handleSendConfirm}
         />
         <RequestGoldModal 
@@ -344,7 +340,7 @@ export default function FinaPay() {
         <WithdrawalModal 
           isOpen={activeModal === 'withdraw'} 
           onClose={() => setActiveModal(null)}
-          walletBalance={wallet.usdBalance}
+          walletBalance={usdBalance}
         />
 
       </div>
