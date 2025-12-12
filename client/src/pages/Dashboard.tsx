@@ -12,6 +12,7 @@ import WalletCard from '@/components/dashboard/WalletCard';
 import FinaPayCard from '@/components/dashboard/FinaPayCard';
 import DashboardSlider from '@/components/dashboard/DashboardSlider';
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
+import ReportsSection from '@/components/dashboard/ReportsSection';
 
 function formatNumber(num: number, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -130,6 +131,11 @@ export default function Dashboard() {
              <div className="h-px flex-1 bg-border ml-6" />
           </div>
           <DashboardSlider />
+        </section>
+
+        {/* 6. Reports Section */}
+        <section className="grid md:grid-cols-2 gap-6">
+          <ReportsSection />
         </section>
 
       </div>
