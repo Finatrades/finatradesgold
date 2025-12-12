@@ -5,7 +5,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, Search, Briefcase, User as UserIcon, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Menu, Briefcase, User as UserIcon, AlertTriangle, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -14,7 +14,7 @@ import { Link, useLocation } from 'wouter';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { accountType, toggleAccountType } = useAccountType();
+  const { accountType, setAccountType } = useAccountType();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [, setLocation] = useLocation();
@@ -29,22 +29,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
+  const needsKyc = user.kycStatus === 'Not Started' || user.kycStatus === 'In Progress';
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-white relative">
       
-      {/* KYC Blocking Overlay */}
-      {user.kycStatus === 'pending' && (
+      {needsKyc && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-zinc-900 border border-border shadow-2xl rounded-2xl p-8 max-w-md w-full text-center space-y-6 relative overflow-hidden"
           >
-            {/* Decorative background glow */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-red-500" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC]" />
             
-            <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-500" />
+            <div className="w-16 h-16 bg-[#D4AF37]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-[#D4AF37]" />
             </div>
             
             <div className="space-y-2">
@@ -56,14 +56,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="space-y-3 pt-2">
               <Link href="/kyc">
-                <Button className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg shadow-orange-500/20 transition-all hover:scale-[1.02]">
+                <Button className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] hover:opacity-90 text-[#0D001E] shadow-lg shadow-[#D4AF37]/20 transition-all hover:scale-[1.02]" data-testid="button-verify-kyc">
                   Verify Identity Now <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
               <Button 
                 variant="ghost" 
                 className="w-full text-muted-foreground hover:text-foreground"
-                onClick={() => window.location.href = '/'} // Logout logic or back to home
+                onClick={() => setLocation('/')}
+                data-testid="button-return-home"
               >
                 Return to Home
               </Button>
@@ -72,73 +73,77 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
-      {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      {/* Main Content Area */}
       <div className="lg:ml-64 min-h-screen flex flex-col transition-all duration-300">
         
-        {/* Top Header Bar */}
-        <header className={`sticky top-0 z-30 h-20 transition-all duration-300 ${scrolled ? 'bg-background/90 backdrop-blur-md border-b border-border shadow-sm' : 'bg-transparent'}`}>
-          <div className="container mx-auto px-6 h-full flex items-center justify-between">
+        <header className={`sticky top-0 z-30 h-16 transition-all duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-background border-b border-border'}`}>
+          <div className="h-full px-6 flex items-center justify-between">
             
-            {/* Left: Mobile Menu Trigger & Title */}
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
+                className="lg:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-mobile-sidebar"
               >
                 <Menu className="w-5 h-5" />
               </button>
               
-              <div className="hidden sm:flex items-center bg-muted border border-border rounded-full px-4 py-1.5">
-                  <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
-                  <span className="text-xs text-muted-foreground font-medium">Gold Spot: <span className="text-secondary">2,350.40 USD/oz</span></span>
+              <div className="hidden sm:flex items-center bg-gradient-to-r from-[#D4AF37]/10 to-[#F4E4BC]/10 border border-[#D4AF37]/20 rounded-full px-4 py-1.5">
+                <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
+                <span className="text-xs text-muted-foreground font-medium">Gold Spot: <span className="text-[#D4AF37] font-semibold">2,350.40 USD/oz</span></span>
               </div>
             </div>
 
-            {/* Right: User & Actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               
-              {/* Account Type Switcher */}
-              <div className="hidden md:flex items-center bg-muted/50 p-1 rounded-full border border-border">
-                 <button 
-                   onClick={() => accountType !== 'personal' && toggleAccountType()}
-                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                     accountType === 'personal' 
-                       ? 'bg-background shadow-sm text-foreground' 
-                       : 'text-muted-foreground hover:text-foreground'
-                   }`}
-                 >
-                   <UserIcon className="w-3 h-3" /> Personal
-                 </button>
-                 <button 
-                   onClick={() => accountType !== 'business' && toggleAccountType()}
-                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                     accountType === 'business' 
-                       ? 'bg-background shadow-sm text-foreground' 
-                       : 'text-muted-foreground hover:text-foreground'
-                   }`}
-                 >
-                   <Briefcase className="w-3 h-3" /> Business
-                 </button>
+              <div className="hidden md:flex relative items-center p-1 rounded-full bg-muted border border-border">
+                <motion.div 
+                  className="absolute top-1 bottom-1 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] shadow-sm"
+                  animate={{ 
+                    left: accountType === 'personal' ? 4 : '50%',
+                    width: 'calc(50% - 4px)'
+                  }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+                <button 
+                  onClick={() => setAccountType('personal')}
+                  className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    accountType === 'personal' 
+                      ? 'text-[#0D001E]' 
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  data-testid="dashboard-button-personal"
+                >
+                  <UserIcon className="w-3.5 h-3.5" /> Personal
+                </button>
+                <button 
+                  onClick={() => setAccountType('business')}
+                  className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    accountType === 'business' 
+                      ? 'text-[#0D001E]' 
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  data-testid="dashboard-button-business"
+                >
+                  <Briefcase className="w-3.5 h-3.5" /> Business
+                </button>
               </div>
 
-              {/* Language */}
               <div className="hidden md:block">
-                 <LanguageSwitcher variant="light" />
+                <LanguageSwitcher />
               </div>
 
               <NotificationCenter />
               
-              <div className="flex items-center gap-3 pl-4 border-l border-border">
+              <div className="flex items-center gap-3 pl-3 border-l border-border">
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-medium text-foreground">{user.firstName} {user.lastName}</p>
                   <p className="text-xs text-muted-foreground capitalize">{accountType} Account</p>
                 </div>
-                <Avatar className="h-10 w-10 border border-secondary/30 ring-2 ring-secondary/10">
+                <Avatar className="h-10 w-10 border-2 border-[#D4AF37]/30 ring-2 ring-[#D4AF37]/10">
                   <AvatarImage src="" alt={user.firstName} />
-                  <AvatarFallback className="bg-secondary text-white font-bold">
+                  <AvatarFallback className="bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] text-[#0D001E] font-bold">
                     {user.firstName[0]}{user.lastName[0]}
                   </AvatarFallback>
                 </Avatar>
@@ -147,8 +152,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6 overflow-x-hidden">
+        <main className="flex-1 p-6 overflow-x-hidden bg-muted/30">
           {children}
         </main>
         
