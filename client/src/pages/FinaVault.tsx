@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote } from 'lucide-react';
+import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 
 // Mock Data
 const MOCK_REQUESTS: DepositRequest[] = [
@@ -191,6 +192,25 @@ export default function FinaVault() {
   const [requests, setRequests] = useState<DepositRequest[]>(MOCK_REQUESTS);
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
 
+  // Fetch FinaBridge wallet data for locked gold display
+  const { data: finabridgeData } = useQuery({
+    queryKey: ['finabridge-wallet', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { wallet: null, holds: [] };
+      const [walletRes, holdsRes] = await Promise.all([
+        fetch(`/api/finabridge/wallet/${user.id}`),
+        fetch(`/api/finabridge/settlement-holds/${user.id}`)
+      ]);
+      const wallet = walletRes.ok ? (await walletRes.json()).wallet : null;
+      const holds = holdsRes.ok ? (await holdsRes.json()).holds : [];
+      return { wallet, holds };
+    },
+    enabled: !!user?.id
+  });
+
+  const finabridgeLockedGrams = parseFloat(finabridgeData?.wallet?.lockedGoldGrams || '0');
+  const goldPricePerGram = 85.22;
+
   // Check query params for initial tab
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -281,8 +301,16 @@ export default function FinaVault() {
                     <TrendingUp className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1">$0.00</div>
-              <div className="text-sm opacity-50 font-medium">0.00 g in BNSL</div>
+              <div className="text-3xl font-bold mb-1">${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="text-sm opacity-50 font-medium space-y-0.5">
+                <div>0.00 g in BNSL</div>
+                {finabridgeLockedGrams > 0 && (
+                  <div className="flex items-center gap-1 text-amber-600">
+                    <Briefcase className="w-3 h-3" />
+                    {finabridgeLockedGrams.toFixed(3)} g in FinaBridge
+                  </div>
+                )}
+              </div>
            </div>
 
            {/* Card 3: Value USD */}
