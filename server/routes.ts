@@ -4084,5 +4084,254 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================================================
+  // BINANCE PAY - CRYPTO PAYMENTS
+  // ============================================================================
+
+  const { BinancePayService, generateMerchantTradeNo } = await import("./binance-pay");
+
+  // Check if Binance Pay is configured
+  app.get("/api/binance-pay/status", async (req, res) => {
+    res.json({ 
+      configured: BinancePayService.isConfigured(),
+      message: BinancePayService.isConfigured() 
+        ? "Binance Pay is configured and ready" 
+        : "Binance Pay credentials not configured"
+    });
+  });
+
+  // Create a Binance Pay order for buying gold
+  app.post("/api/binance-pay/create-order", async (req, res) => {
+    try {
+      const { userId, amountUsd, goldGrams, goldPriceUsdPerGram, returnUrl, cancelUrl } = req.body;
+
+      if (!userId || !amountUsd) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const binanceService = BinancePayService.getInstance();
+      if (!binanceService) {
+        return res.status(503).json({ message: "Binance Pay is not configured. Please add your merchant API credentials." });
+      }
+
+      const merchantTradeNo = generateMerchantTradeNo();
+      const description = `Purchase ${goldGrams}g digital gold`;
+
+      // Create order with Binance Pay
+      const binanceResponse = await binanceService.createOrder({
+        merchantTradeNo,
+        orderAmount: parseFloat(amountUsd),
+        currency: 'USDT',
+        description,
+        returnUrl,
+        cancelUrl,
+      });
+
+      if (binanceResponse.status !== 'SUCCESS' || !binanceResponse.data) {
+        console.error('Binance Pay order creation failed:', binanceResponse);
+        return res.status(400).json({ 
+          message: binanceResponse.errorMessage || "Failed to create Binance Pay order" 
+        });
+      }
+
+      // Save transaction to database
+      const transaction = await storage.createBinanceTransaction({
+        userId,
+        merchantTradeNo,
+        prepayId: binanceResponse.data.prepayId,
+        orderType: 'Buy',
+        status: 'Created',
+        orderAmountUsd: amountUsd,
+        cryptoCurrency: 'USDT',
+        goldGrams: goldGrams?.toString(),
+        goldPriceUsdPerGram: goldPriceUsdPerGram?.toString(),
+        checkoutUrl: binanceResponse.data.checkoutUrl,
+        qrcodeLink: binanceResponse.data.qrcodeLink,
+        expireTime: new Date(binanceResponse.data.expireTime),
+        description,
+      });
+
+      res.json({
+        success: true,
+        transaction: {
+          id: transaction.id,
+          merchantTradeNo,
+          checkoutUrl: binanceResponse.data.checkoutUrl,
+          qrcodeLink: binanceResponse.data.qrcodeLink,
+          expireTime: binanceResponse.data.expireTime,
+        }
+      });
+    } catch (error) {
+      console.error('Create Binance Pay order error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create order" });
+    }
+  });
+
+  // Query Binance Pay order status
+  app.get("/api/binance-pay/order/:merchantTradeNo", async (req, res) => {
+    try {
+      const { merchantTradeNo } = req.params;
+      
+      const transaction = await storage.getBinanceTransactionByMerchantTradeNo(merchantTradeNo);
+      if (!transaction) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      const binanceService = BinancePayService.getInstance();
+      if (binanceService) {
+        // Query Binance for latest status
+        const binanceResponse = await binanceService.queryOrder(merchantTradeNo);
+        
+        if (binanceResponse.status === 'SUCCESS' && binanceResponse.data) {
+          const binanceStatus = binanceResponse.data.status;
+          let newStatus = transaction.status;
+
+          // Map Binance status to our status
+          if (binanceStatus === 'PAID' && transaction.status === 'Created') {
+            newStatus = 'Paid';
+          } else if (binanceStatus === 'EXPIRED') {
+            newStatus = 'Expired';
+          } else if (binanceStatus === 'FAILED') {
+            newStatus = 'Failed';
+          }
+
+          if (newStatus !== transaction.status) {
+            await storage.updateBinanceTransaction(transaction.id, {
+              status: newStatus as any,
+              transactionId: binanceResponse.data.transactionId,
+              cryptoAmount: binanceResponse.data.totalFee?.toString(),
+            });
+          }
+
+          return res.json({
+            transaction: {
+              ...transaction,
+              status: newStatus,
+              binanceStatus: binanceResponse.data.status,
+            }
+          });
+        }
+      }
+
+      res.json({ transaction });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to query order" });
+    }
+  });
+
+  // Binance Pay webhook handler
+  app.post("/api/binance-pay/webhook", async (req, res) => {
+    try {
+      const timestamp = req.headers['binancepay-timestamp'] as string;
+      const nonce = req.headers['binancepay-nonce'] as string;
+      const signature = req.headers['binancepay-signature'] as string;
+      
+      const binanceService = BinancePayService.getInstance();
+      
+      if (binanceService && timestamp && nonce && signature) {
+        const bodyString = JSON.stringify(req.body);
+        const isValid = binanceService.verifyWebhookSignature(timestamp, nonce, bodyString, signature);
+        
+        if (!isValid) {
+          console.error('Invalid Binance Pay webhook signature');
+          return res.status(400).json({ returnCode: 'FAIL', returnMessage: 'Invalid signature' });
+        }
+      }
+
+      const { bizType, bizId, data } = req.body;
+      console.log('Binance Pay webhook received:', { bizType, bizId });
+
+      if (bizType === 'PAY' && data) {
+        const merchantTradeNo = data.merchantTradeNo;
+        const transaction = await storage.getBinanceTransactionByMerchantTradeNo(merchantTradeNo);
+        
+        if (transaction) {
+          let newStatus = transaction.status;
+          
+          if (data.orderStatus === 'PAID') {
+            newStatus = 'Paid';
+            
+            // Process the gold purchase - credit user's wallet
+            if (transaction.goldGrams && transaction.orderType === 'Buy') {
+              const wallet = await storage.getWallet(transaction.userId);
+              if (wallet) {
+                const newGoldBalance = parseFloat(wallet.goldGrams) + parseFloat(transaction.goldGrams);
+                await storage.updateWallet(wallet.id, {
+                  goldGrams: newGoldBalance.toFixed(6),
+                });
+
+                // Create transaction record
+                await storage.createTransaction({
+                  userId: transaction.userId,
+                  type: 'Buy',
+                  status: 'Completed',
+                  amountGold: transaction.goldGrams,
+                  amountUsd: transaction.orderAmountUsd,
+                  goldPriceUsdPerGram: transaction.goldPriceUsdPerGram,
+                  description: `Binance Pay purchase: ${transaction.goldGrams}g gold`,
+                  sourceModule: 'binance_pay',
+                  referenceId: merchantTradeNo,
+                });
+
+                newStatus = 'Completed';
+              }
+            }
+          } else if (data.orderStatus === 'EXPIRED') {
+            newStatus = 'Expired';
+          } else if (data.orderStatus === 'CANCELED') {
+            newStatus = 'Cancelled';
+          }
+
+          await storage.updateBinanceTransaction(transaction.id, {
+            status: newStatus as any,
+            transactionId: data.transactionId,
+            cryptoAmount: data.totalFee?.toString(),
+            cryptoCurrency: data.currency,
+            webhookReceivedAt: new Date(),
+            webhookPayload: req.body,
+          });
+
+          await storage.createAuditLog({
+            entityType: 'binance_pay',
+            entityId: transaction.id,
+            actionType: 'webhook',
+            details: `Order ${merchantTradeNo} status: ${data.orderStatus}`,
+          });
+        }
+      }
+
+      res.json({ returnCode: 'SUCCESS', returnMessage: 'OK' });
+    } catch (error) {
+      console.error('Binance Pay webhook error:', error);
+      res.status(500).json({ returnCode: 'FAIL', returnMessage: 'Internal error' });
+    }
+  });
+
+  // Get user's Binance transactions
+  app.get("/api/binance-pay/transactions/:userId", async (req, res) => {
+    try {
+      const transactions = await storage.getUserBinanceTransactions(req.params.userId);
+      res.json({ transactions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+
+  // Admin: Get all Binance transactions
+  app.get("/api/admin/binance-pay/transactions", async (req, res) => {
+    try {
+      const transactions = await storage.getAllBinanceTransactions();
+      
+      const enrichedTransactions = await Promise.all(transactions.map(async (tx) => {
+        const user = await storage.getUser(tx.userId);
+        return { ...tx, user };
+      }));
+      
+      res.json({ transactions: enrichedTransactions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+
   return httpServer;
 }
