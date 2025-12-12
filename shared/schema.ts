@@ -217,6 +217,33 @@ export const insertPlatformBankAccountSchema = createInsertSchema(platformBankAc
 export type InsertPlatformBankAccount = z.infer<typeof insertPlatformBankAccountSchema>;
 export type PlatformBankAccount = typeof platformBankAccounts.$inferSelect;
 
+// ============================================
+// PLATFORM FEES - Centralized Fee Configuration
+// ============================================
+
+export const feeModuleEnum = pgEnum('fee_module', ['FinaPay', 'FinaVault', 'BNSL', 'FinaBridge']);
+
+export const platformFees = pgTable("platform_fees", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  module: feeModuleEnum("module").notNull(),
+  feeKey: varchar("fee_key", { length: 100 }).notNull(), // e.g., 'buy_gold_spread', 'sell_gold_spread'
+  feeName: varchar("fee_name", { length: 255 }).notNull(), // Display name
+  description: text("description"),
+  feeType: varchar("fee_type", { length: 50 }).notNull().default('percentage'), // 'percentage' or 'fixed'
+  feeValue: decimal("fee_value", { precision: 10, scale: 4 }).notNull(), // e.g., 0.50 for 0.5%
+  minAmount: decimal("min_amount", { precision: 18, scale: 2 }), // Minimum fee amount (for fixed or cap)
+  maxAmount: decimal("max_amount", { precision: 18, scale: 2 }), // Maximum fee amount (cap)
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  updatedBy: varchar("updated_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPlatformFeeSchema = createInsertSchema(platformFees).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlatformFee = z.infer<typeof insertPlatformFeeSchema>;
+export type PlatformFee = typeof platformFees.$inferSelect;
+
 // User deposit requests (fiat to wallet)
 export const depositRequests = pgTable("deposit_requests", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),

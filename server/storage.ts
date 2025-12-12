@@ -5,7 +5,7 @@ import {
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs, certificates,
   contentPages, contentBlocks, templates, mediaAssets,
-  platformBankAccounts, depositRequests, withdrawalRequests,
+  platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
@@ -29,6 +29,7 @@ import {
   type Template, type InsertTemplate,
   type MediaAsset, type InsertMediaAsset,
   type PlatformBankAccount, type InsertPlatformBankAccount,
+  type PlatformFee, type InsertPlatformFee,
   type DepositRequest, type InsertDepositRequest,
   type WithdrawalRequest, type InsertWithdrawalRequest,
   type PeerTransfer, type InsertPeerTransfer,
@@ -238,6 +239,17 @@ export interface IStorage {
   createPlatformBankAccount(account: InsertPlatformBankAccount): Promise<PlatformBankAccount>;
   updatePlatformBankAccount(id: string, updates: Partial<PlatformBankAccount>): Promise<PlatformBankAccount | undefined>;
   deletePlatformBankAccount(id: string): Promise<boolean>;
+  
+  // Platform Fees
+  getPlatformFee(id: string): Promise<PlatformFee | undefined>;
+  getPlatformFeeByKey(module: string, feeKey: string): Promise<PlatformFee | undefined>;
+  getAllPlatformFees(): Promise<PlatformFee[]>;
+  getModuleFees(module: string): Promise<PlatformFee[]>;
+  getActivePlatformFees(): Promise<PlatformFee[]>;
+  createPlatformFee(fee: InsertPlatformFee): Promise<PlatformFee>;
+  updatePlatformFee(id: string, updates: Partial<PlatformFee>): Promise<PlatformFee | undefined>;
+  deletePlatformFee(id: string): Promise<boolean>;
+  seedDefaultFees(): Promise<void>;
   
   // FinaPay - Deposit Requests
   getDepositRequest(id: string): Promise<DepositRequest | undefined>;
@@ -857,6 +869,82 @@ export class DatabaseStorage implements IStorage {
   async deletePlatformBankAccount(id: string): Promise<boolean> {
     await db.delete(platformBankAccounts).where(eq(platformBankAccounts.id, id));
     return true;
+  }
+
+  // Platform Fees
+  async getPlatformFee(id: string): Promise<PlatformFee | undefined> {
+    const [fee] = await db.select().from(platformFees).where(eq(platformFees.id, id));
+    return fee || undefined;
+  }
+
+  async getPlatformFeeByKey(module: string, feeKey: string): Promise<PlatformFee | undefined> {
+    const [fee] = await db.select().from(platformFees)
+      .where(and(eq(platformFees.module, module as any), eq(platformFees.feeKey, feeKey)));
+    return fee || undefined;
+  }
+
+  async getAllPlatformFees(): Promise<PlatformFee[]> {
+    return await db.select().from(platformFees).orderBy(platformFees.module, platformFees.displayOrder);
+  }
+
+  async getModuleFees(module: string): Promise<PlatformFee[]> {
+    return await db.select().from(platformFees)
+      .where(eq(platformFees.module, module as any))
+      .orderBy(platformFees.displayOrder);
+  }
+
+  async getActivePlatformFees(): Promise<PlatformFee[]> {
+    return await db.select().from(platformFees)
+      .where(eq(platformFees.isActive, true))
+      .orderBy(platformFees.module, platformFees.displayOrder);
+  }
+
+  async createPlatformFee(insertFee: InsertPlatformFee): Promise<PlatformFee> {
+    const [fee] = await db.insert(platformFees).values(insertFee).returning();
+    return fee;
+  }
+
+  async updatePlatformFee(id: string, updates: Partial<PlatformFee>): Promise<PlatformFee | undefined> {
+    const [fee] = await db.update(platformFees)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(platformFees.id, id))
+      .returning();
+    return fee || undefined;
+  }
+
+  async deletePlatformFee(id: string): Promise<boolean> {
+    await db.delete(platformFees).where(eq(platformFees.id, id));
+    return true;
+  }
+
+  async seedDefaultFees(): Promise<void> {
+    const existingFees = await this.getAllPlatformFees();
+    if (existingFees.length > 0) return; // Already seeded
+
+    const defaultFees: InsertPlatformFee[] = [
+      // FinaPay fees
+      { module: 'FinaPay', feeKey: 'buy_gold_spread', feeName: 'Buy Gold Spread', description: 'Spread applied when buying gold', feeType: 'percentage', feeValue: '0.50', displayOrder: 1 },
+      { module: 'FinaPay', feeKey: 'sell_gold_spread', feeName: 'Sell Gold Spread', description: 'Spread applied when selling gold', feeType: 'percentage', feeValue: '1.50', displayOrder: 2 },
+      { module: 'FinaPay', feeKey: 'deposit_fee', feeName: 'Deposit Fee', description: 'Fee for fiat deposits', feeType: 'percentage', feeValue: '0.50', displayOrder: 3 },
+      { module: 'FinaPay', feeKey: 'withdrawal_fee', feeName: 'Withdrawal Fee', description: 'Fee for fiat withdrawals', feeType: 'percentage', feeValue: '1.50', displayOrder: 4 },
+      { module: 'FinaPay', feeKey: 'p2p_transfer_fee', feeName: 'P2P Transfer Fee', description: 'Fee for peer-to-peer transfers', feeType: 'percentage', feeValue: '0.00', displayOrder: 5 },
+      
+      // FinaVault fees
+      { module: 'FinaVault', feeKey: 'annual_storage_fee', feeName: 'Annual Storage Fee', description: 'Annual storage fee for vault holdings', feeType: 'percentage', feeValue: '0.50', displayOrder: 1 },
+      { module: 'FinaVault', feeKey: 'cashout_bank_fee', feeName: 'Cash Out to Bank Fee', description: 'Fee for cashing out to bank', feeType: 'percentage', feeValue: '1.50', displayOrder: 2 },
+      { module: 'FinaVault', feeKey: 'cashout_wallet_fee', feeName: 'Cash Out to Wallet Fee', description: 'Fee for cashing out to FinaPay wallet', feeType: 'percentage', feeValue: '0.00', displayOrder: 3 },
+      
+      // BNSL fees
+      { module: 'BNSL', feeKey: 'early_termination_admin_fee', feeName: 'Early Termination Admin Fee', description: 'Admin fee for early termination', feeType: 'percentage', feeValue: '1.00', displayOrder: 1 },
+      { module: 'BNSL', feeKey: 'early_termination_penalty', feeName: 'Early Termination Penalty', description: 'Penalty for early termination', feeType: 'percentage', feeValue: '5.00', displayOrder: 2 },
+      
+      // FinaBridge fees
+      { module: 'FinaBridge', feeKey: 'platform_service_fee', feeName: 'Platform Service Fee', description: 'Service fee for trade finance', feeType: 'percentage', feeValue: '0.50', displayOrder: 1 },
+    ];
+
+    for (const fee of defaultFees) {
+      await this.createPlatformFee(fee);
+    }
   }
 
   // FinaPay - Deposit Requests
