@@ -17,7 +17,8 @@ import {
   ArrowRightLeft,
   TrendingUp,
   MessageSquare,
-  PanelLeft
+  PanelLeft,
+  DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: <Package className="w-5 h-5" />, label: 'FinaVault Manager', href: '/admin/vault' },
     { icon: <Briefcase className="w-5 h-5" />, label: 'FinaBridge Manager', href: '/admin/finabridge' },
     { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Manager', href: '/admin/bnsl' },
+    { icon: <DollarSign className="w-5 h-5" />, label: 'Fee Management', href: '/admin/fees' },
     { icon: <MessageSquare className="w-5 h-5" />, label: 'Support Chat', href: '/admin/chat' },
     { icon: <PanelLeft className="w-5 h-5" />, label: 'CMS', href: '/admin/cms' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/admin/settings' },
