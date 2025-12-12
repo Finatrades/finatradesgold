@@ -131,7 +131,7 @@ export default function FinaPayDashboard() {
       status: 'Completed',
       amountGold: grams.toFixed(6),
       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
-      counterparty: recipient,
+      recipientEmail: recipient,
       description: 'Internal Transfer'
     });
 

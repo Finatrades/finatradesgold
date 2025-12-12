@@ -259,9 +259,48 @@ export async function registerRoutes(
           case 'Send':
             // User sends gold to another user
             newGoldBalance = currentGold - goldAmount;
+            // Also credit the recipient's wallet if recipientEmail is provided
+            if (transaction.recipientEmail) {
+              const recipientUser = await storage.getUserByEmail(transaction.recipientEmail);
+              if (recipientUser) {
+                const recipientWallet = await storage.getWallet(recipientUser.id);
+                if (recipientWallet) {
+                  const recipientGold = parseFloat(recipientWallet.goldGrams || '0');
+                  await storage.updateWallet(recipientWallet.id, {
+                    goldGrams: (recipientGold + goldAmount).toFixed(6)
+                  });
+                  // Create corresponding Receive transaction for recipient
+                  await storage.createTransaction({
+                    userId: recipientUser.id,
+                    type: 'Receive',
+                    status: 'Completed',
+                    amountGold: goldAmount.toFixed(6),
+                    amountUsd: usdAmount.toFixed(2),
+                    senderEmail: (await storage.getUser(transactionData.userId))?.email || '',
+                    description: `Received from ${transactionData.userId}`
+                  });
+                  // Update recipient's vault holding
+                  const recipientHoldings = await storage.getUserVaultHoldings(recipientUser.id);
+                  if (recipientHoldings.length > 0) {
+                    const rHolding = recipientHoldings[0];
+                    const rGold = parseFloat(rHolding.goldGrams || '0');
+                    await storage.updateVaultHolding(rHolding.id, {
+                      goldGrams: (rGold + goldAmount).toFixed(6)
+                    });
+                  } else {
+                    await storage.createVaultHolding({
+                      userId: recipientUser.id,
+                      goldGrams: goldAmount.toFixed(6),
+                      vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
+                      certificateNumber: `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+                    });
+                  }
+                }
+              }
+            }
             break;
           case 'Receive':
-            // User receives gold from another user
+            // User receives gold from another user (handled automatically via Send)
             newGoldBalance = currentGold + goldAmount;
             break;
           case 'Deposit':
@@ -295,17 +334,19 @@ export async function registerRoutes(
           }
           
           await storage.updateVaultHolding(holding.id, {
-            goldGrams: newHoldingGold.toFixed(6),
-            lastAuditDate: new Date()
+            goldGrams: newHoldingGold.toFixed(6)
           });
         } else if (['Buy', 'Receive', 'Deposit'].includes(transaction.type) && goldAmount > 0) {
-          // Create new vault holding
+          // Create new vault holding with certificate number
+          const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+          const currentGoldPrice = 71.55; // USD per gram (should be fetched from price feed)
+          
           await storage.createVaultHolding({
             userId: transactionData.userId,
             goldGrams: goldAmount.toFixed(6),
-            storageLocation: 'Dubai DMCC Vault',
-            custodian: 'Wingold & Metals DMCC',
-            status: 'Active'
+            vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
+            certificateNumber: certificateNumber,
+            purchasePriceUsdPerGram: currentGoldPrice.toFixed(2)
           });
         }
       }
