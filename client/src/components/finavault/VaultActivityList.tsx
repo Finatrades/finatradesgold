@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
-import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, Send, Coins, Award, Eye, Printer, Share2, FileText, X } from 'lucide-react';
+import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, Send, Coins, Award, Eye, Printer, Share2, FileText, X, ShieldCheck, Box, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 
 interface VaultTransaction {
   id: string;
@@ -46,26 +48,28 @@ export default function VaultActivityList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedTx, setSelectedTx] = useState<VaultTransaction | null>(null);
-  const [viewingCert, setViewingCert] = useState<{
+  const [viewingCerts, setViewingCerts] = useState<{
     id: string;
     certificateNumber: string;
     type: string;
     status: string;
     goldGrams: string;
-  } | null>(null);
+  }[] | null>(null);
+  const [certTab, setCertTab] = useState('ownership');
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleShare = async (cert: typeof viewingCert) => {
-    if (!cert) return;
-    const shareText = `Finatrades Certificate\n${cert.type}\nCertificate #: ${cert.certificateNumber}\nGold: ${parseFloat(cert.goldGrams).toFixed(4)}g\nStatus: ${cert.status}`;
+  const handleShare = async (certs: typeof viewingCerts) => {
+    if (!certs || certs.length === 0) return;
+    const cert = certs[0];
+    const shareText = `Finatrades Gold Certificate\nGold Amount: ${parseFloat(cert.goldGrams).toFixed(4)}g\nCertificate #: ${cert.certificateNumber}\nStatus: ${cert.status}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${cert.type} Certificate`,
+          title: `Gold Certificate`,
           text: shareText,
         });
       } catch (err) {
@@ -345,12 +349,12 @@ export default function VaultActivityList() {
                           className="w-full bg-[#D4AF37] hover:bg-[#B8860B] text-black"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setViewingCert(cert);
+                            setViewingCerts(selectedTx?.certificates || []);
                           }}
                           data-testid={`button-view-cert-${cert.id}`}
                         >
                           <Eye className="w-4 h-4 mr-2" />
-                          View Certificate
+                          View Certificates
                         </Button>
                       </div>
                     ))}
@@ -362,85 +366,205 @@ export default function VaultActivityList() {
         </DialogContent>
       </Dialog>
 
-      {/* Certificate Viewing Modal */}
-      <Dialog open={!!viewingCert} onOpenChange={() => setViewingCert(null)}>
-        <DialogContent className="max-w-md print:max-w-full print:shadow-none">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Award className="w-6 h-6 text-[#D4AF37]" />
-              {viewingCert?.type}
-            </DialogTitle>
-            <DialogDescription>
-              Official certificate issued by {viewingCert?.type === 'Digital Ownership' ? 'Finatrades' : 'Wingold & Metals DMCC'}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Certificate Viewing Modal - Both Certificates with Tabs */}
+      <Dialog open={!!viewingCerts && viewingCerts.length > 0} onOpenChange={() => setViewingCerts(null)}>
+        <DialogContent className="max-w-4xl bg-[#0D0515] border-white/10 p-0 overflow-hidden flex flex-col max-h-[90vh]">
           
-          {viewingCert && (
-            <div className="space-y-6" id="certificate-content">
-              {/* Certificate Header */}
-              <div className="text-center py-4 bg-gradient-to-b from-[#D4AF37]/20 to-[#B8860B]/10 rounded-lg border-2 border-[#D4AF37]/40">
-                <div className="w-16 h-16 mx-auto mb-3 bg-[#D4AF37] rounded-full flex items-center justify-center">
-                  <Award className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-[#8B6914]">{viewingCert.type}</h3>
-                <p className="font-mono text-sm text-muted-foreground mt-1">{viewingCert.certificateNumber}</p>
-              </div>
+          {/* Tabs for switching certificates */}
+          <div className="bg-black/40 border-b border-white/10 p-4 flex justify-center sticky top-0 z-20">
+            <Tabs value={certTab} onValueChange={setCertTab} className="w-full max-w-md">
+              <TabsList className="grid w-full grid-cols-2 bg-white/5">
+                <TabsTrigger value="ownership" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
+                  <Award className="w-4 h-4 mr-2" />
+                  Digital Ownership
+                </TabsTrigger>
+                <TabsTrigger value="storage" className="data-[state=active]:bg-[#C0C0C0] data-[state=active]:text-black">
+                  <Box className="w-4 h-4 mr-2" />
+                  Storage Certificate
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
 
-              {/* Certificate Details */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Gold Amount</p>
-                    <p className="text-lg font-bold">{parseFloat(viewingCert.goldGrams).toFixed(6)}g</p>
-                  </div>
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <Badge className={viewingCert.status === 'Active' ? 'bg-green-100 text-green-700 mt-1' : 'bg-gray-100 text-gray-700 mt-1'}>
-                      {viewingCert.status}
-                    </Badge>
-                  </div>
-                </div>
+          <div className="overflow-y-auto p-4 md:p-8">
+            {viewingCerts && viewingCerts.length > 0 && (() => {
+              const ownershipCert = viewingCerts.find(c => c.type === 'Digital Ownership');
+              const storageCert = viewingCerts.find(c => c.type === 'Physical Storage');
+              const goldGrams = ownershipCert?.goldGrams || storageCert?.goldGrams || '0';
+              const issueDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Issuing Authority</p>
-                  <p className="font-medium">{viewingCert.type === 'Digital Ownership' ? 'Finatrades' : 'Wingold & Metals DMCC'}</p>
-                </div>
+              return (
+                <>
+                  {/* DIGITAL OWNERSHIP CERTIFICATE */}
+                  {certTab === 'ownership' && (
+                    <div className="relative p-8 md:p-12 border-8 border-double border-[#D4AF37]/30 m-2 bg-[#0D0515] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                      
+                      {/* Watermark Background */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
+                        <Award className="w-96 h-96" />
+                      </div>
 
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Vault Location</p>
-                  <p className="font-medium">Dubai - Wingold & Metals DMCC</p>
-                </div>
-              </div>
+                      {/* Header */}
+                      <div className="text-center space-y-4 mb-12 relative z-10">
+                        <div className="flex justify-center mb-4">
+                          <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]">
+                            <ShieldCheck className="w-8 h-8 text-[#D4AF37]" />
+                          </div>
+                        </div>
+                        <h2 className="text-3xl md:text-5xl font-serif text-[#D4AF37] tracking-wider uppercase">Certificate</h2>
+                        <h3 className="text-lg md:text-xl text-white/80 font-serif tracking-widest uppercase">of Digital Ownership</h3>
+                        <p className="text-white/40 text-sm font-mono mt-2">ID: {ownershipCert?.certificateNumber || 'N/A'}</p>
+                      </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 print:hidden">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={handlePrint}
-                  data-testid="button-print-cert"
-                >
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => handleShare(viewingCert)}
-                  data-testid="button-share-cert"
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share
-                </Button>
-              </div>
+                      {/* Content */}
+                      <div className="space-y-8 text-center relative z-10">
+                        <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">
+                          This certifies that the holder is the beneficial owner of the following precious metal assets, securely stored and insured at <strong>Dubai - Wingold & Metals DMCC</strong>.
+                        </p>
 
-              {/* Footer */}
-              <div className="text-center text-xs text-muted-foreground border-t pt-4">
-                <p>This certificate is digitally verified and stored on the Finatrades platform.</p>
-                <p className="mt-1">For verification, contact support@finatrades.com</p>
-              </div>
-            </div>
-          )}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-y border-[#D4AF37]/20 py-8 my-8">
+                          <div>
+                            <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-1">Asset Type</p>
+                            <p className="text-xl font-bold text-white">Gold</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-1">Total Weight</p>
+                            <p className="text-xl font-bold text-white">{parseFloat(goldGrams).toFixed(4)}g</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-1">Purity</p>
+                            <p className="text-xl font-bold text-white">999.9</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-1">Status</p>
+                            <p className="text-xl font-bold text-white">{ownershipCert?.status || 'Active'}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row justify-center items-center md:items-end px-8 md:px-16 mt-16 gap-8">
+                          <div className="text-center">
+                            <p className="text-white font-medium mb-2">{issueDate}</p>
+                            <Separator className="bg-[#D4AF37]/40 w-48 mb-2 mx-auto" />
+                            <p className="text-xs text-[#D4AF37] uppercase tracking-wider">Date of Issue</p>
+                            <p className="text-10 text-white/40">Dubai - Wingold & Metals DMCC</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-8 text-[10px] text-white/30 text-justify leading-relaxed px-4 md:px-0">
+                          <p>
+                            This Gold Ownership Certificate is valid solely until the occurrence of the next transaction affecting the Holder's gold balance. Upon execution of any new purchase, sale, transfer, allocation, redemption, or adjustment, this Certificate shall automatically become null and void.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Footer Actions */}
+                      <div className="mt-12 flex justify-center gap-4 relative z-10 print:hidden">
+                        <Button className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold" onClick={handlePrint}>
+                          <Printer className="w-4 h-4 mr-2" /> Print
+                        </Button>
+                        <Button variant="outline" className="border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10" onClick={() => handleShare(viewingCerts)}>
+                          <Share2 className="w-4 h-4 mr-2" /> Share
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STORAGE CERTIFICATE (WinGold Style) */}
+                  {certTab === 'storage' && (
+                    <div className="relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-white text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                      
+                      {/* Watermark Background */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none select-none">
+                        <Box className="w-96 h-96 text-black" />
+                      </div>
+
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-12 relative z-10 border-b-2 border-black pb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-black text-white flex items-center justify-center">
+                            <Box className="w-10 h-10" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-bold tracking-tight uppercase">WinGold & Metals Vault</h2>
+                            <p className="text-xs text-black/60 font-mono tracking-widest uppercase">Secure Logistics & Storage</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <h3 className="text-xl font-bold uppercase tracking-widest text-black/80">Certificate of Deposit</h3>
+                          <p className="text-sm font-mono mt-1">REF: {storageCert?.certificateNumber || 'N/A'}</p>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="space-y-6 text-left relative z-10 font-mono text-sm">
+                        <div className="grid grid-cols-2 gap-8 mb-8">
+                          <div>
+                            <p className="text-xs uppercase text-black/50 mb-1">Depositor / Owner</p>
+                            <p className="font-bold text-lg">FINATRADES CLIENT</p>
+                            <p>Via FinaTrades Custody Account</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs uppercase text-black/50 mb-1">Storage Location</p>
+                            <p className="font-bold text-lg">DUBAI DMCC VAULT</p>
+                            <p>High Security Zone A-14</p>
+                          </div>
+                        </div>
+
+                        <div className="border border-black p-0">
+                          <table className="w-full text-left">
+                            <thead className="bg-black text-white uppercase text-xs">
+                              <tr>
+                                <th className="p-3 border-r border-white/20">Description</th>
+                                <th className="p-3 border-r border-white/20 text-right">Weight (g)</th>
+                                <th className="p-3 text-right">Purity</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-black">
+                              <tr>
+                                <td className="p-3 border-r border-black">Gold - Allocated Storage</td>
+                                <td className="p-3 border-r border-black text-right">{parseFloat(goldGrams).toFixed(6)}</td>
+                                <td className="p-3 text-right">999.9</td>
+                              </tr>
+                              <tr className="bg-black/5 font-bold">
+                                <td className="p-3 border-r border-black">TOTAL NET WEIGHT</td>
+                                <td className="p-3 border-r border-black text-right">{parseFloat(goldGrams).toFixed(6)}</td>
+                                <td className="p-3 text-right">Au</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="text-xs text-black/60 leading-relaxed mt-8 text-justify">
+                          This certificate acknowledges the receipt and storage of the above-mentioned precious metals. The assets are held in a segregated account and are fully insured against all risks. Release of the assets is subject to the standard withdrawal procedures and fee settlement.
+                        </div>
+
+                        <div className="flex justify-between items-end mt-16 pt-8 border-t border-black/20">
+                          <div>
+                            <p className="font-bold uppercase">Vault Manager</p>
+                            <p className="text-xs text-black/50">Authorized Officer</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">{issueDate}</p>
+                            <p className="text-xs text-black/50 uppercase">Date of Issue</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Footer Actions */}
+                      <div className="mt-12 flex justify-center gap-4 relative z-10 print:hidden">
+                        <Button className="bg-black text-white hover:bg-black/80 font-bold" onClick={handlePrint}>
+                          <Printer className="w-4 h-4 mr-2" /> Print
+                        </Button>
+                        <Button variant="outline" className="border-black/20 text-black hover:bg-black/5" onClick={() => handleShare(viewingCerts)}>
+                          <Share2 className="w-4 h-4 mr-2" /> Share
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
         </DialogContent>
       </Dialog>
     </Card>
