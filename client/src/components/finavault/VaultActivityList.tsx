@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
-import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, Send, Coins, Award, Eye, Download, FileText } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, Send, Coins, Award, Eye, Printer, Share2, FileText, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface VaultTransaction {
   id: string;
@@ -46,6 +46,37 @@ export default function VaultActivityList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedTx, setSelectedTx] = useState<VaultTransaction | null>(null);
+  const [viewingCert, setViewingCert] = useState<{
+    id: string;
+    certificateNumber: string;
+    type: string;
+    status: string;
+    goldGrams: string;
+  } | null>(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleShare = async (cert: typeof viewingCert) => {
+    if (!cert) return;
+    const shareText = `Finatrades Certificate\n${cert.type}\nCertificate #: ${cert.certificateNumber}\nGold: ${parseFloat(cert.goldGrams).toFixed(4)}g\nStatus: ${cert.status}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${cert.type} Certificate`,
+          text: shareText,
+        });
+      } catch (err) {
+        navigator.clipboard.writeText(shareText);
+        alert('Certificate details copied to clipboard!');
+      }
+    } else {
+      navigator.clipboard.writeText(shareText);
+      alert('Certificate details copied to clipboard!');
+    }
+  };
 
   const fetchActivity = async () => {
     if (!user) return;
@@ -314,7 +345,7 @@ export default function VaultActivityList() {
                           className="w-full bg-[#D4AF37] hover:bg-[#B8860B] text-black"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(`/certificate/${cert.id}`, '_blank');
+                            setViewingCert(cert);
                           }}
                           data-testid={`button-view-cert-${cert.id}`}
                         >
@@ -326,6 +357,88 @@ export default function VaultActivityList() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Certificate Viewing Modal */}
+      <Dialog open={!!viewingCert} onOpenChange={() => setViewingCert(null)}>
+        <DialogContent className="max-w-md print:max-w-full print:shadow-none">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Award className="w-6 h-6 text-[#D4AF37]" />
+              {viewingCert?.type}
+            </DialogTitle>
+            <DialogDescription>
+              Official certificate issued by {viewingCert?.type === 'Digital Ownership' ? 'Finatrades' : 'Wingold & Metals DMCC'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {viewingCert && (
+            <div className="space-y-6" id="certificate-content">
+              {/* Certificate Header */}
+              <div className="text-center py-4 bg-gradient-to-b from-[#D4AF37]/20 to-[#B8860B]/10 rounded-lg border-2 border-[#D4AF37]/40">
+                <div className="w-16 h-16 mx-auto mb-3 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                  <Award className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-[#8B6914]">{viewingCert.type}</h3>
+                <p className="font-mono text-sm text-muted-foreground mt-1">{viewingCert.certificateNumber}</p>
+              </div>
+
+              {/* Certificate Details */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Gold Amount</p>
+                    <p className="text-lg font-bold">{parseFloat(viewingCert.goldGrams).toFixed(6)}g</p>
+                  </div>
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge className={viewingCert.status === 'Active' ? 'bg-green-100 text-green-700 mt-1' : 'bg-gray-100 text-gray-700 mt-1'}>
+                      {viewingCert.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Issuing Authority</p>
+                  <p className="font-medium">{viewingCert.type === 'Digital Ownership' ? 'Finatrades' : 'Wingold & Metals DMCC'}</p>
+                </div>
+
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Vault Location</p>
+                  <p className="font-medium">Dubai - Wingold & Metals DMCC</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 print:hidden">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={handlePrint}
+                  data-testid="button-print-cert"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleShare(viewingCert)}
+                  data-testid="button-share-cert"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
+              </div>
+
+              {/* Footer */}
+              <div className="text-center text-xs text-muted-foreground border-t pt-4">
+                <p>This certificate is digitally verified and stored on the Finatrades platform.</p>
+                <p className="mt-1">For verification, contact support@finatrades.com</p>
+              </div>
             </div>
           )}
         </DialogContent>
