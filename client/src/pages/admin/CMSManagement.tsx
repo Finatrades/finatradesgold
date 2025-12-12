@@ -657,6 +657,7 @@ function BlockDialog({
   const [content, setContent] = useState(block?.content || '');
   const [defaultContent, setDefaultContent] = useState(block?.defaultContent || '');
   const [status, setStatus] = useState<'draft' | 'published'>(block?.status || 'draft');
+  const [showPreview, setShowPreview] = useState(false);
 
   React.useEffect(() => {
     setPageId(block?.pageId || '');
@@ -681,125 +682,188 @@ function BlockDialog({
     });
   };
 
+  const displayContent = content || defaultContent || 'No content to preview';
+
+  const renderPreview = () => {
+    switch (type) {
+      case 'html':
+        return (
+          <div 
+            className="prose prose-sm max-w-none" 
+            dangerouslySetInnerHTML={{ __html: displayContent }}
+          />
+        );
+      case 'image':
+        return displayContent.startsWith('http') ? (
+          <img src={displayContent} alt="Preview" className="max-w-full h-auto rounded" />
+        ) : (
+          <div className="text-gray-500 italic">Enter a valid image URL to preview</div>
+        );
+      case 'json':
+        if (!displayContent || displayContent === 'No content to preview') {
+          return <div className="text-gray-500 italic">Enter JSON content to preview</div>;
+        }
+        try {
+          const parsed = JSON.parse(displayContent);
+          return <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">{JSON.stringify(parsed, null, 2)}</pre>;
+        } catch {
+          return <div className="text-amber-600 text-sm">JSON format will be validated on save</div>;
+        }
+      case 'rich_text':
+        return (
+          <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+            {displayContent.split('\n').map((line, i) => (
+              <p key={i} className={line.startsWith('#') ? 'font-bold text-lg' : ''}>{line}</p>
+            ))}
+          </div>
+        );
+      default:
+        return <p className="text-gray-800">{displayContent}</p>;
+    }
+  };
+
   return (
-    <DialogContent className="sm:max-w-[600px]">
+    <DialogContent className="sm:max-w-[900px]">
       <DialogHeader>
         <DialogTitle>{block ? 'Edit Block' : 'Create Block'}</DialogTitle>
         <DialogDescription>
           {block ? 'Update the content block.' : 'Create a new editable content block.'}
         </DialogDescription>
       </DialogHeader>
-      <form onSubmit={handleSubmit}>
-        <ScrollArea className="max-h-[60vh]">
-          <div className="grid gap-4 py-4 pr-4">
-            <div className="grid gap-2">
-              <Label htmlFor="pageId">Page</Label>
-              <Select value={pageId} onValueChange={setPageId}>
-                <SelectTrigger data-testid="select-block-page">
-                  <SelectValue placeholder="Select page (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pages.map((page) => (
-                    <SelectItem key={page.id} value={page.id}>{page.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+      <div className="flex gap-4">
+        <form onSubmit={handleSubmit} className={showPreview ? 'w-1/2' : 'w-full'}>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="grid gap-4 py-4 pr-4">
               <div className="grid gap-2">
-                <Label htmlFor="section">Section</Label>
-                <Input 
-                  id="section" 
-                  value={section} 
-                  onChange={(e) => setSection(e.target.value)}
-                  placeholder="hero, features, etc."
-                  required
-                  data-testid="input-block-section"
+                <Label htmlFor="pageId">Page</Label>
+                <Select value={pageId} onValueChange={setPageId}>
+                  <SelectTrigger data-testid="select-block-page">
+                    <SelectValue placeholder="Select page (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pages.map((page) => (
+                      <SelectItem key={page.id} value={page.id}>{page.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="section">Section</Label>
+                  <Input 
+                    id="section" 
+                    value={section} 
+                    onChange={(e) => setSection(e.target.value)}
+                    placeholder="hero, features, etc."
+                    required
+                    data-testid="input-block-section"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="key">Key</Label>
+                  <Input 
+                    id="key" 
+                    value={key} 
+                    onChange={(e) => setKey(e.target.value)}
+                    placeholder="title, subtitle, etc."
+                    required
+                    data-testid="input-block-key"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="type">Content Type</Label>
+                <Select value={type} onValueChange={(v) => setType(v as any)}>
+                  <SelectTrigger data-testid="select-block-type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Plain Text</SelectItem>
+                    <SelectItem value="rich_text">Rich Text</SelectItem>
+                    <SelectItem value="html">HTML</SelectItem>
+                    <SelectItem value="json">JSON</SelectItem>
+                    <SelectItem value="image">Image URL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="defaultContent">Default Content</Label>
+                <Textarea 
+                  id="defaultContent" 
+                  value={defaultContent} 
+                  onChange={(e) => setDefaultContent(e.target.value)}
+                  placeholder="Default content when no override is set"
+                  rows={3}
+                  data-testid="input-block-default"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="key">Key</Label>
-                <Input 
-                  id="key" 
-                  value={key} 
-                  onChange={(e) => setKey(e.target.value)}
-                  placeholder="title, subtitle, etc."
-                  required
-                  data-testid="input-block-key"
+                <Label htmlFor="content">Content Override</Label>
+                <Textarea 
+                  id="content" 
+                  value={content} 
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Override content (leave empty to use default)"
+                  rows={4}
+                  data-testid="input-block-content"
                 />
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="type">Content Type</Label>
-              <Select value={type} onValueChange={(v) => setType(v as any)}>
-                <SelectTrigger data-testid="select-block-type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">Plain Text</SelectItem>
-                  <SelectItem value="rich_text">Rich Text</SelectItem>
-                  <SelectItem value="html">HTML</SelectItem>
-                  <SelectItem value="json">JSON</SelectItem>
-                  <SelectItem value="image">Image URL</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="defaultContent">Default Content</Label>
-              <Textarea 
-                id="defaultContent" 
-                value={defaultContent} 
-                onChange={(e) => setDefaultContent(e.target.value)}
-                placeholder="Default content when no override is set"
-                rows={3}
-                data-testid="input-block-default"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="content">Content Override</Label>
-              <Textarea 
-                id="content" 
-                value={content} 
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Override content (leave empty to use default)"
-                rows={4}
-                data-testid="input-block-content"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <div className="flex gap-4">
-                <Button 
-                  type="button"
-                  variant={status === 'draft' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatus('draft')}
-                  data-testid="button-block-draft"
-                >
-                  <EyeOff className="w-4 h-4 mr-2" />
-                  Draft
-                </Button>
-                <Button 
-                  type="button"
-                  variant={status === 'published' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatus('published')}
-                  data-testid="button-block-publish"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Published
-                </Button>
+              <div className="grid gap-2">
+                <Label>Status</Label>
+                <div className="flex gap-4">
+                  <Button 
+                    type="button"
+                    variant={status === 'draft' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatus('draft')}
+                    data-testid="button-block-draft"
+                  >
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    Draft
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant={status === 'published' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatus('published')}
+                    data-testid="button-block-publish"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Published
+                  </Button>
+                </div>
               </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="mt-4">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={() => setShowPreview(!showPreview)}
+              data-testid="button-block-preview"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {showPreview ? 'Hide Preview' : 'Live Preview'}
+            </Button>
+            <Button type="submit" disabled={isPending} data-testid="button-save-block">
+              <Save className="w-4 h-4 mr-2" />
+              {isPending ? 'Saving...' : 'Save Block'}
+            </Button>
+          </DialogFooter>
+        </form>
+        {showPreview && (
+          <div className="w-1/2 border-l pl-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Eye className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-green-600">Live Preview</span>
+            </div>
+            <div className="bg-white border rounded-lg p-4 min-h-[200px]">
+              <div className="text-xs text-gray-400 mb-2">{section} / {key}</div>
+              {renderPreview()}
             </div>
           </div>
-        </ScrollArea>
-        <DialogFooter className="mt-4">
-          <Button type="submit" disabled={isPending} data-testid="button-save-block">
-            <Save className="w-4 h-4 mr-2" />
-            {isPending ? 'Saving...' : 'Save Block'}
-          </Button>
-        </DialogFooter>
-      </form>
+        )}
+      </div>
     </DialogContent>
   );
 }
@@ -821,8 +885,13 @@ function TemplateDialog({
   const [variablesText, setVariablesText] = useState(
     template?.variables?.map(v => v.name).join(', ') || ''
   );
+  const [existingVariables, setExistingVariables] = useState<Array<{name: string, description: string}>>(
+    template?.variables || []
+  );
   const [module, setModule] = useState(template?.module || '');
   const [status, setStatus] = useState<'draft' | 'published'>(template?.status || 'draft');
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<Record<string, string>>({});
 
   React.useEffect(() => {
     setName(template?.name || '');
@@ -831,17 +900,20 @@ function TemplateDialog({
     setSubject(template?.subject || '');
     setBody(template?.body || '');
     setVariablesText(template?.variables?.map(v => v.name).join(', ') || '');
+    setExistingVariables(template?.variables || []);
     setModule(template?.module || '');
     setStatus(template?.status || 'draft');
+    setShowPreview(false);
+    setPreviewData({});
   }, [template]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const variableNames = variablesText.split(',').map(v => v.trim()).filter(Boolean);
-    const variablesList = variableNames.map(name => ({ 
-      name, 
-      description: `Variable: ${name}` 
-    }));
+    const newVariableNames = variablesText.split(',').map(v => v.trim()).filter(Boolean);
+    const variablesList = newVariableNames.map(varName => {
+      const existing = existingVariables.find(v => v.name === varName);
+      return existing || { name: varName, description: `Variable: ${varName}` };
+    });
     onSave({ 
       name, 
       slug, 
@@ -854,142 +926,258 @@ function TemplateDialog({
     });
   };
 
+  const variableNames = variablesText.split(',').map(v => v.trim()).filter(Boolean);
+
+  const getSampleValue = (varName: string) => {
+    const samples: Record<string, string> = {
+      user_name: 'John Smith',
+      verification_code: '847293',
+      amount: '50.00',
+      gold_weight: '100',
+      usd_value: '7,500.00',
+      reference_id: 'TXN-2024-001234',
+      date: new Date().toLocaleDateString(),
+      certificate_number: 'CERT-2024-FT-001234',
+      owner_name: 'John Smith',
+      issue_date: new Date().toLocaleDateString(),
+      valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      bar_serial: 'AU-999-2024-56789',
+      transaction_type: 'Buy',
+      status: 'Completed',
+      price: '75.50',
+      duration: '12',
+      case_id: 'TC-2024-0042',
+      credit_limit: '250,000.00',
+    };
+    return previewData[varName] || samples[varName] || `[${varName}]`;
+  };
+
+  const replaceVariables = (text: string) => {
+    let result = text;
+    variableNames.forEach(varName => {
+      const regex = new RegExp(`\\{\\{${varName}\\}\\}`, 'g');
+      result = result.replace(regex, getSampleValue(varName));
+    });
+    return result;
+  };
+
+  const previewSubject = subject ? replaceVariables(subject) : '';
+  const previewBody = body ? replaceVariables(body) : '';
+
+  const getPreviewStyle = () => {
+    switch (type) {
+      case 'email':
+        return 'bg-white';
+      case 'certificate':
+        return 'bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200';
+      case 'notification':
+        return 'bg-blue-50 border-l-4 border-blue-500';
+      default:
+        return 'bg-white';
+    }
+  };
+
   return (
-    <DialogContent className="sm:max-w-[700px]">
+    <DialogContent className="sm:max-w-[1000px] max-h-[90vh]">
       <DialogHeader>
         <DialogTitle>{template ? 'Edit Template' : 'Create Template'}</DialogTitle>
         <DialogDescription>
           {template ? 'Update the template.' : 'Create a new template for emails, certificates, or notifications.'}
         </DialogDescription>
       </DialogHeader>
-      <form onSubmit={handleSubmit}>
-        <ScrollArea className="max-h-[60vh]">
-          <div className="grid gap-4 py-4 pr-4">
-            <div className="grid grid-cols-2 gap-4">
+      <div className="flex gap-4">
+        <form onSubmit={handleSubmit} className={showPreview ? 'w-1/2' : 'w-full'}>
+          <ScrollArea className="max-h-[55vh]">
+            <div className="grid gap-4 py-4 pr-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input 
+                    id="name" 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Template name"
+                    required
+                    data-testid="input-template-name"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="slug">Slug</Label>
+                  <Input 
+                    id="slug" 
+                    value={slug} 
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="template-slug"
+                    required
+                    data-testid="input-template-slug"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Select value={type} onValueChange={(v) => setType(v as any)}>
+                    <SelectTrigger data-testid="select-template-type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="certificate">Certificate</SelectItem>
+                      <SelectItem value="notification">Notification</SelectItem>
+                      <SelectItem value="page_section">Page Section</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="module">Module</Label>
+                  <Select value={module} onValueChange={setModule}>
+                    <SelectTrigger data-testid="select-template-module">
+                      <SelectValue placeholder="Select module" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="finavault">FinaVault</SelectItem>
+                      <SelectItem value="finapay">FinaPay</SelectItem>
+                      <SelectItem value="finabridge">FinaBridge</SelectItem>
+                      <SelectItem value="bnsl">BNSL</SelectItem>
+                      <SelectItem value="finacard">FinaCard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {type === 'email' && (
+                <div className="grid gap-2">
+                  <Label htmlFor="subject">Email Subject</Label>
+                  <Input 
+                    id="subject" 
+                    value={subject} 
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="Email subject line"
+                    data-testid="input-template-subject"
+                  />
+                </div>
+              )}
               <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="variables">Variables (comma-separated)</Label>
                 <Input 
-                  id="name" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Template name"
+                  id="variables" 
+                  value={variablesText} 
+                  onChange={(e) => setVariablesText(e.target.value)}
+                  placeholder="user_name, amount, date"
+                  data-testid="input-template-variables"
+                />
+                <p className="text-xs text-gray-500">Use &#123;&#123;variable_name&#125;&#125; in the body to insert values</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="body">Body</Label>
+                <Textarea 
+                  id="body" 
+                  value={body} 
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder="Template body content..."
+                  rows={8}
                   required
-                  data-testid="input-template-name"
+                  data-testid="input-template-body"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input 
-                  id="slug" 
-                  value={slug} 
-                  onChange={(e) => setSlug(e.target.value)}
-                  placeholder="template-slug"
-                  required
-                  data-testid="input-template-slug"
-                />
+                <Label>Status</Label>
+                <div className="flex gap-4">
+                  <Button 
+                    type="button"
+                    variant={status === 'draft' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatus('draft')}
+                    data-testid="button-template-draft"
+                  >
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    Draft
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant={status === 'published' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatus('published')}
+                    data-testid="button-template-publish"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Published
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="type">Type</Label>
-                <Select value={type} onValueChange={(v) => setType(v as any)}>
-                  <SelectTrigger data-testid="select-template-type">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="certificate">Certificate</SelectItem>
-                    <SelectItem value="notification">Notification</SelectItem>
-                    <SelectItem value="page_section">Page Section</SelectItem>
-                  </SelectContent>
-                </Select>
+          </ScrollArea>
+          <DialogFooter className="mt-4">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={() => setShowPreview(!showPreview)}
+              data-testid="button-template-preview"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {showPreview ? 'Hide Preview' : 'Live Preview'}
+            </Button>
+            <Button type="submit" disabled={isPending} data-testid="button-save-template">
+              <Save className="w-4 h-4 mr-2" />
+              {isPending ? 'Saving...' : 'Save Template'}
+            </Button>
+          </DialogFooter>
+        </form>
+        {showPreview && (
+          <div className="w-1/2 border-l pl-4 flex flex-col">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-green-600">Live Preview</span>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="module">Module</Label>
-                <Select value={module} onValueChange={setModule}>
-                  <SelectTrigger data-testid="select-template-module">
-                    <SelectValue placeholder="Select module" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="finavault">FinaVault</SelectItem>
-                    <SelectItem value="finapay">FinaPay</SelectItem>
-                    <SelectItem value="finabridge">FinaBridge</SelectItem>
-                    <SelectItem value="bnsl">BNSL</SelectItem>
-                    <SelectItem value="finacard">FinaCard</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Badge variant="outline">{type}</Badge>
             </div>
-            {type === 'email' && (
-              <div className="grid gap-2">
-                <Label htmlFor="subject">Email Subject</Label>
-                <Input 
-                  id="subject" 
-                  value={subject} 
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Email subject line"
-                  data-testid="input-template-subject"
-                />
+            {variableNames.length > 0 && (
+              <div className="mb-3 p-2 bg-gray-50 rounded text-xs">
+                <div className="font-medium mb-1 text-gray-600">Sample Data:</div>
+                <div className="grid grid-cols-2 gap-1">
+                  {variableNames.map(varName => (
+                    <div key={varName} className="flex gap-1">
+                      <span className="text-gray-500">{varName}:</span>
+                      <Input 
+                        className="h-5 text-xs px-1 py-0"
+                        value={previewData[varName] || ''}
+                        onChange={(e) => setPreviewData(prev => ({ ...prev, [varName]: e.target.value }))}
+                        placeholder={getSampleValue(varName)}
+                        data-testid={`input-preview-${varName}`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="variables">Variables (comma-separated)</Label>
-              <Input 
-                id="variables" 
-                value={variablesText} 
-                onChange={(e) => setVariablesText(e.target.value)}
-                placeholder="user_name, amount, date"
-                data-testid="input-template-variables"
-              />
-              <p className="text-xs text-gray-500">Use &#123;&#123;variable_name&#125;&#125; in the body to insert values</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="body">Body</Label>
-              <Textarea 
-                id="body" 
-                value={body} 
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Template body content..."
-                rows={8}
-                required
-                data-testid="input-template-body"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <div className="flex gap-4">
-                <Button 
-                  type="button"
-                  variant={status === 'draft' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatus('draft')}
-                  data-testid="button-template-draft"
-                >
-                  <EyeOff className="w-4 h-4 mr-2" />
-                  Draft
-                </Button>
-                <Button 
-                  type="button"
-                  variant={status === 'published' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatus('published')}
-                  data-testid="button-template-publish"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Published
-                </Button>
+            <ScrollArea className="flex-1">
+              <div className={`rounded-lg p-4 ${getPreviewStyle()}`}>
+                {type === 'email' && previewSubject && (
+                  <div className="mb-3 pb-2 border-b">
+                    <div className="text-xs text-gray-500">Subject:</div>
+                    <div className="font-semibold">{previewSubject}</div>
+                  </div>
+                )}
+                {type === 'certificate' && (
+                  <div className="text-center mb-4">
+                    <Award className="w-12 h-12 mx-auto text-amber-600" />
+                  </div>
+                )}
+                {type === 'notification' && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bell className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-600">Notification</span>
+                  </div>
+                )}
+                <div className="whitespace-pre-wrap text-sm">
+                  {previewBody || 'Enter template body to see preview...'}
+                </div>
               </div>
-            </div>
+            </ScrollArea>
           </div>
-        </ScrollArea>
-        <DialogFooter className="mt-4">
-          <Button type="submit" disabled={isPending} data-testid="button-save-template">
-            <Save className="w-4 h-4 mr-2" />
-            {isPending ? 'Saving...' : 'Save Template'}
-          </Button>
-        </DialogFooter>
-      </form>
+        )}
+      </div>
     </DialogContent>
   );
 }
