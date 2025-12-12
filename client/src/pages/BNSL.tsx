@@ -137,8 +137,8 @@ export default function BNSL() {
   const nextPayout = getNextPayout();
 
   // Actions
-  const handleTransferFromFinaPay = async (amount: number) => {
-    if (!user?.id) return;
+  const handleTransferFromFinaPay = async (amount: number): Promise<boolean> => {
+    if (!user?.id) return false;
     try {
       const { apiRequest } = await import('@/lib/queryClient');
       const res = await apiRequest('POST', '/api/bnsl/wallet/transfer', {
@@ -148,12 +148,12 @@ export default function BNSL() {
       const data = await res.json();
       
       if (data.success) {
-        // Refresh wallet balances
         await fetchWallets();
         toast({
           title: "Transfer Successful",
           description: `Transferred ${amount.toFixed(3)}g from FinaPay to BNSL wallet.`
         });
+        return true;
       } else {
         throw new Error(data.message || 'Transfer failed');
       }
@@ -163,6 +163,7 @@ export default function BNSL() {
         description: err instanceof Error ? err.message : "Could not complete transfer",
         variant: "destructive"
       });
+      return false;
     }
   };
 

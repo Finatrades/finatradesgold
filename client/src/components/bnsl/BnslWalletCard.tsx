@@ -11,7 +11,7 @@ interface BnslWalletCardProps {
   bnslBalanceGold: number;
   lockedBalanceGold: number;
   finaPayBalanceGold: number;
-  onTransferFromFinaPay: (amount: number) => void;
+  onTransferFromFinaPay: (amount: number) => Promise<boolean>;
   currentGoldPrice: number;
 }
 
@@ -27,7 +27,9 @@ export default function BnslWalletCard({
   const [transferAmount, setTransferAmount] = useState('');
   const [currency, setCurrency] = useState<'Grams' | 'USD'>('Grams');
 
-  const handleTransfer = () => {
+  const [isTransferring, setIsTransferring] = useState(false);
+
+  const handleTransfer = async () => {
     let amountGrams = parseFloat(transferAmount);
     
     if (currency === 'USD') {
@@ -43,10 +45,16 @@ export default function BnslWalletCard({
       return;
     }
     
-    onTransferFromFinaPay(amountGrams);
-    setIsTransferModalOpen(false);
-    setTransferAmount('');
-    toast({ title: "Transfer Successful", description: `Transferred ${amountGrams.toFixed(3)}g from FinaPay to BNSL Wallet.` });
+    setIsTransferring(true);
+    try {
+      const success = await onTransferFromFinaPay(amountGrams);
+      if (success) {
+        setIsTransferModalOpen(false);
+        setTransferAmount('');
+      }
+    } finally {
+      setIsTransferring(false);
+    }
   };
 
   const getMaxAmount = () => {
@@ -204,8 +212,9 @@ export default function BnslWalletCard({
              <Button 
                className="w-full bg-secondary text-white hover:bg-secondary/90 font-bold"
                onClick={handleTransfer}
+               disabled={isTransferring}
              >
-               Confirm Transfer
+               {isTransferring ? 'Transferring...' : 'Confirm Transfer'}
              </Button>
           </div>
         </DialogContent>
