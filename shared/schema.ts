@@ -353,6 +353,130 @@ export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
 export type Certificate = typeof certificates.$inferSelect;
 
 // ============================================
+// FINAVAULT - DEPOSIT & WITHDRAWAL REQUESTS
+// ============================================
+
+export const vaultDepositStatusEnum = pgEnum('vault_deposit_status', [
+  'Submitted', 'Under Review', 'Approved', 'Awaiting Delivery', 'Received', 'Stored', 'Rejected', 'Cancelled'
+]);
+
+export const vaultWithdrawalStatusEnum = pgEnum('vault_withdrawal_status', [
+  'Submitted', 'Under Review', 'Approved', 'Processing', 'Completed', 'Rejected', 'Cancelled'
+]);
+
+export const vaultWithdrawalMethodEnum = pgEnum('vault_withdrawal_method', ['Bank Transfer', 'Crypto']);
+
+// Vault Deposit Requests - Physical gold deposits requiring admin approval
+export const vaultDepositRequests = pgTable("vault_deposit_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  vaultLocation: varchar("vault_location", { length: 255 }).notNull(),
+  depositType: varchar("deposit_type", { length: 50 }).notNull(), // 'Bars', 'Coins', 'Mixed'
+  totalDeclaredWeightGrams: decimal("total_declared_weight_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  // Items stored as JSON
+  items: json("items").$type<{
+    id: string;
+    itemType: string;
+    quantity: number;
+    weightPerUnitGrams: number;
+    totalWeightGrams: number;
+    purity: string;
+    brand: string;
+    notes?: string;
+  }[]>().notNull(),
+  
+  deliveryMethod: varchar("delivery_method", { length: 50 }).notNull(), // 'Walk-in', 'Courier', 'Pickup'
+  pickupDetails: json("pickup_details").$type<{
+    address: string;
+    contactName: string;
+    contactMobile: string;
+    date: string;
+    timeSlot: string;
+  }>(),
+  
+  documents: json("documents").$type<{
+    id: string;
+    type: string;
+    name: string;
+    url?: string;
+  }[]>(),
+  
+  status: vaultDepositStatusEnum("status").notNull().default('Submitted'),
+  
+  // Admin processing
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  adminNotes: text("admin_notes"),
+  rejectionReason: text("rejection_reason"),
+  
+  // Fulfillment references
+  vaultHoldingId: varchar("vault_holding_id", { length: 255 }).references(() => vaultHoldings.id),
+  certificateId: varchar("certificate_id", { length: 255 }).references(() => certificates.id),
+  vaultInternalReference: varchar("vault_internal_reference", { length: 100 }),
+  
+  // Verified weight (may differ from declared)
+  verifiedWeightGrams: decimal("verified_weight_grams", { precision: 18, scale: 6 }),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  storedAt: timestamp("stored_at"),
+});
+
+export const insertVaultDepositRequestSchema = createInsertSchema(vaultDepositRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertVaultDepositRequest = z.infer<typeof insertVaultDepositRequestSchema>;
+export type VaultDepositRequest = typeof vaultDepositRequests.$inferSelect;
+
+// Vault Withdrawal Requests - Cash out via bank transfer or crypto
+export const vaultWithdrawalRequests = pgTable("vault_withdrawal_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }).notNull(),
+  totalValueUsd: decimal("total_value_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  withdrawalMethod: vaultWithdrawalMethodEnum("withdrawal_method").notNull(),
+  
+  // Bank details (if bank transfer)
+  bankName: varchar("bank_name", { length: 255 }),
+  accountName: varchar("account_name", { length: 255 }),
+  accountNumber: varchar("account_number", { length: 100 }),
+  iban: varchar("iban", { length: 100 }),
+  swiftCode: varchar("swift_code", { length: 50 }),
+  bankCountry: varchar("bank_country", { length: 100 }),
+  
+  // Crypto details (if crypto)
+  cryptoNetwork: varchar("crypto_network", { length: 50 }),
+  cryptoCurrency: varchar("crypto_currency", { length: 20 }),
+  walletAddress: varchar("wallet_address", { length: 255 }),
+  
+  notes: text("notes"),
+  status: vaultWithdrawalStatusEnum("status").notNull().default('Submitted'),
+  
+  // Admin processing
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  adminNotes: text("admin_notes"),
+  rejectionReason: text("rejection_reason"),
+  
+  // Fulfillment
+  transactionReference: varchar("transaction_reference", { length: 255 }),
+  processedAt: timestamp("processed_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertVaultWithdrawalRequestSchema = createInsertSchema(vaultWithdrawalRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertVaultWithdrawalRequest = z.infer<typeof insertVaultWithdrawalRequestSchema>;
+export type VaultWithdrawalRequest = typeof vaultWithdrawalRequests.$inferSelect;
+
+// ============================================
 // BNSL - BUY NOW SELL LATER
 // ============================================
 
