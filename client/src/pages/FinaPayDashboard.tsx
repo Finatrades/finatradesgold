@@ -75,14 +75,11 @@ export default function FinaPayDashboard() {
     const grams = usd / currentGoldPriceUsdPerGram;
     
     addTransaction({
-      id: crypto.randomUUID(),
-      type: 'BuyGold',
+      type: 'Buy',
       status: 'Completed',
-      createdAt: new Date().toISOString(),
-      amountUsd: usd,
-      goldGrams: grams,
-      feeUsd: usd * 0.0025,
-      note: 'Purchase via Card'
+      amountUsd: usd.toFixed(2),
+      amountGold: grams.toFixed(6),
+      description: 'Purchase via Card'
     });
 
     updateWallet({
@@ -105,14 +102,11 @@ export default function FinaPayDashboard() {
     const usd = grams * currentGoldPriceUsdPerGram;
 
     addTransaction({
-      id: crypto.randomUUID(),
-      type: 'SellGold',
+      type: 'Sell',
       status: 'Completed',
-      createdAt: new Date().toISOString(),
-      amountUsd: usd,
-      goldGrams: grams,
-      feeUsd: usd * 0.005,
-      note: 'Sell to Bank Account'
+      amountUsd: usd.toFixed(2),
+      amountGold: grams.toFixed(6),
+      description: 'Sell to Bank Account'
     });
 
     updateWallet({
@@ -133,15 +127,12 @@ export default function FinaPayDashboard() {
     }
 
     addTransaction({
-      id: crypto.randomUUID(),
-      type: 'SendGold',
+      type: 'Send',
       status: 'Completed',
-      createdAt: new Date().toISOString(),
-      goldGrams: grams,
-      amountUsd: grams * currentGoldPriceUsdPerGram,
-      toWalletId: recipient,
-      counterpartyLabel: recipient,
-      note: 'Internal Transfer'
+      amountGold: grams.toFixed(6),
+      amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
+      counterparty: recipient,
+      description: 'Internal Transfer'
     });
 
     updateWallet({
@@ -160,14 +151,12 @@ export default function FinaPayDashboard() {
     if (!grams || grams <= 0) return;
 
     addTransaction({
-       id: crypto.randomUUID(),
-       type: 'RequestGold',
+       type: 'Receive',
        status: 'Pending',
-       createdAt: new Date().toISOString(),
-       goldGrams: grams,
-       amountUsd: grams * currentGoldPriceUsdPerGram,
-       counterpartyLabel: recipient,
-       note: 'Request Sent'
+       amountGold: grams.toFixed(6),
+       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
+       counterparty: recipient,
+       description: 'Request Sent'
     });
 
     setRequestOpen(false);
@@ -184,13 +173,11 @@ export default function FinaPayDashboard() {
     }
 
     addTransaction({
-       id: crypto.randomUUID(),
-       type: 'BNSLJoin',
+       type: 'Deposit',
        status: 'Completed',
-       createdAt: new Date().toISOString(),
-       goldGrams: grams,
-       amountUsd: grams * currentGoldPriceUsdPerGram,
-       note: 'Locked for BNSL Plan'
+       amountGold: grams.toFixed(6),
+       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
+       description: 'Locked for BNSL Plan'
     });
 
     updateWallet({
@@ -211,13 +198,11 @@ export default function FinaPayDashboard() {
     }
 
     addTransaction({
-       id: crypto.randomUUID(),
-       type: 'TradeLock',
+       type: 'Deposit',
        status: 'Completed',
-       createdAt: new Date().toISOString(),
-       goldGrams: grams,
-       amountUsd: grams * currentGoldPriceUsdPerGram,
-       note: 'Locked for Trade Settlement'
+       amountGold: grams.toFixed(6),
+       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
+       description: 'Locked for Trade Settlement'
     });
 
     updateWallet({
