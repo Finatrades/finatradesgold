@@ -1585,6 +1585,101 @@ export async function registerRoutes(
     }
   });
   
+  // ============================================================================
+  // PLATFORM FEES - ADMIN MANAGEMENT
+  // ============================================================================
+  
+  // Get all platform fees (Admin)
+  app.get("/api/admin/fees", async (req, res) => {
+    try {
+      const fees = await storage.getAllPlatformFees();
+      res.json({ fees });
+    } catch (error) {
+      console.error('Get fees error:', error);
+      res.status(400).json({ message: "Failed to get platform fees" });
+    }
+  });
+  
+  // Get fees by module (Admin)
+  app.get("/api/admin/fees/module/:module", async (req, res) => {
+    try {
+      const fees = await storage.getModuleFees(req.params.module);
+      res.json({ fees });
+    } catch (error) {
+      console.error('Get module fees error:', error);
+      res.status(400).json({ message: "Failed to get module fees" });
+    }
+  });
+  
+  // Create platform fee (Admin)
+  app.post("/api/admin/fees", async (req, res) => {
+    try {
+      const fee = await storage.createPlatformFee(req.body);
+      res.json({ fee });
+    } catch (error) {
+      console.error('Create fee error:', error);
+      res.status(400).json({ message: "Failed to create platform fee" });
+    }
+  });
+  
+  // Update platform fee (Admin)
+  app.put("/api/admin/fees/:id", async (req, res) => {
+    try {
+      const fee = await storage.updatePlatformFee(req.params.id, req.body);
+      if (!fee) {
+        return res.status(404).json({ message: "Fee not found" });
+      }
+      res.json({ fee });
+    } catch (error) {
+      console.error('Update fee error:', error);
+      res.status(400).json({ message: "Failed to update platform fee" });
+    }
+  });
+  
+  // Delete platform fee (Admin)
+  app.delete("/api/admin/fees/:id", async (req, res) => {
+    try {
+      await storage.deletePlatformFee(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete fee error:', error);
+      res.status(400).json({ message: "Failed to delete platform fee" });
+    }
+  });
+  
+  // Seed default fees (Admin)
+  app.post("/api/admin/fees/seed", async (req, res) => {
+    try {
+      await storage.seedDefaultFees();
+      const fees = await storage.getAllPlatformFees();
+      res.json({ fees, message: "Default fees seeded successfully" });
+    } catch (error) {
+      console.error('Seed fees error:', error);
+      res.status(400).json({ message: "Failed to seed default fees" });
+    }
+  });
+  
+  // Public endpoint - get active fees (for frontend calculations)
+  app.get("/api/fees", async (req, res) => {
+    try {
+      const fees = await storage.getActivePlatformFees();
+      // Convert to a map for easy access by key
+      const feeMap: Record<string, { value: number; type: string; min?: number; max?: number }> = {};
+      for (const fee of fees) {
+        feeMap[`${fee.module}_${fee.feeKey}`] = {
+          value: parseFloat(fee.feeValue),
+          type: fee.feeType,
+          min: fee.minAmount ? parseFloat(fee.minAmount) : undefined,
+          max: fee.maxAmount ? parseFloat(fee.maxAmount) : undefined
+        };
+      }
+      res.json({ fees, feeMap });
+    } catch (error) {
+      console.error('Get public fees error:', error);
+      res.status(400).json({ message: "Failed to get platform fees" });
+    }
+  });
+  
   // Create BNSL plan (locks gold from BNSL wallet)
   app.post("/api/bnsl/plans", async (req, res) => {
     try {
