@@ -390,11 +390,23 @@ export async function registerRoutes(
     }
   });
   
-  // Admin: Get all transactions
+  // Admin: Get all transactions with user info
   app.get("/api/admin/transactions", async (req, res) => {
     try {
       const transactions = await storage.getAllTransactions();
-      res.json({ transactions });
+      // Enrich transactions with user info
+      const enrichedTransactions = await Promise.all(
+        transactions.map(async (tx) => {
+          const user = await storage.getUser(tx.userId);
+          return {
+            ...tx,
+            userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            userEmail: user?.email || 'Unknown',
+            finatradesId: `FT-${tx.userId.slice(0, 8).toUpperCase()}`
+          };
+        })
+      );
+      res.json({ transactions: enrichedTransactions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get all transactions" });
     }

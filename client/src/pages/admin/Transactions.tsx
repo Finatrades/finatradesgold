@@ -22,6 +22,9 @@ interface Transaction {
   counterparty: string | null;
   createdAt: string;
   completedAt: string | null;
+  userName?: string;
+  userEmail?: string;
+  finatradesId?: string;
 }
 
 export default function Transactions() {
@@ -177,11 +180,11 @@ export default function Transactions() {
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
                     <tr>
-                      <th className="px-4 py-3">ID</th>
-                      <th className="px-4 py-3">User ID</th>
+                      <th className="px-4 py-3">Transaction ID</th>
+                      <th className="px-4 py-3">Finatrades ID</th>
+                      <th className="px-4 py-3">User</th>
                       <th className="px-4 py-3">Type</th>
                       <th className="px-4 py-3">Amount</th>
-                      <th className="px-4 py-3">Description</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Actions</th>
@@ -190,11 +193,18 @@ export default function Transactions() {
                   <tbody>
                     {filteredTransactions.map((tx) => (
                       <tr key={tx.id} className="bg-white border-b hover:bg-gray-50" data-testid={`row-transaction-${tx.id}`}>
-                        <td className="px-4 py-4 font-mono text-xs text-gray-500">{tx.id.slice(0, 8)}...</td>
-                        <td className="px-4 py-4 font-mono text-xs text-gray-600">{tx.userId.slice(0, 8)}...</td>
+                        <td className="px-4 py-4 font-mono text-xs text-gray-500">TX-{tx.id.slice(0, 8).toUpperCase()}</td>
+                        <td className="px-4 py-4">
+                          <span className="font-mono text-sm font-medium text-orange-600">{tx.finatradesId || `FT-${tx.userId.slice(0, 8).toUpperCase()}`}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900">{tx.userName || 'Unknown'}</span>
+                            <span className="text-xs text-gray-500">{tx.userEmail || ''}</span>
+                          </div>
+                        </td>
                         <td className="px-4 py-4">{getTypeBadge(tx.type)}</td>
                         <td className="px-4 py-4 font-medium text-gray-900">{formatAmount(tx)}</td>
-                        <td className="px-4 py-4 text-gray-600 max-w-[200px] truncate">{tx.description || '-'}</td>
                         <td className="px-4 py-4">{getStatusBadge(tx.status)}</td>
                         <td className="px-4 py-4 text-gray-500">{format(new Date(tx.createdAt), 'MMM dd, yyyy HH:mm')}</td>
                         <td className="px-4 py-4">
