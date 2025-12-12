@@ -1,27 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, DollarSign, Wallet, Building, AlertCircle, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowRight, DollarSign, Building, AlertCircle, RefreshCw, CheckCircle2, Bitcoin, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFees, FEE_KEYS } from '@/context/FeeContext';
+import { useAuth } from '@/context/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 
 const GOLD_PRICE_USD = 85.22;
 
-export default function CashOutForm() {
+interface CashOutFormProps {
+  vaultBalance?: number;
+}
+
+export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { getFeeValue } = useFees();
+  const queryClient = useQueryClient();
   
   const [step, setStep] = useState<'input' | 'confirm' | 'success'>('input');
-  const [selectedVault, setSelectedVault] = useState('Dubai Vault');
   const [amountGrams, setAmountGrams] = useState('');
-  const [payoutMethod, setPayoutMethod] = useState('finapay');
+  const [withdrawalMethod, setWithdrawalMethod] = useState<'Bank Transfer' | 'Crypto'>('Bank Transfer');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Bank details
+  const [bankName, setBankName] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [iban, setIban] = useState('');
+  const [swiftCode, setSwiftCode] = useState('');
+  const [bankCountry, setBankCountry] = useState('');
+  
+  // Crypto details
+  const [cryptoNetwork, setCryptoNetwork] = useState('');
+  const [cryptoCurrency, setCryptoCurrency] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
+  
+  const [notes, setNotes] = useState('');
 
   const cashoutFeePercent = getFeeValue(FEE_KEYS.FINAVAULT_CASHOUT, 1.5);
   
@@ -32,31 +55,82 @@ export default function CashOutForm() {
 
   const handleProceed = () => {
     if (grams <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid weight to sell.", variant: "destructive" });
+      toast({ title: "Invalid Amount", description: "Please enter a valid weight to withdraw.", variant: "destructive" });
       return;
     }
-    if (grams > 1500) {
-      toast({ title: "Insufficient Balance", description: "You only have 1,500g available.", variant: "destructive" });
+    if (grams > vaultBalance) {
+      toast({ title: "Insufficient Balance", description: `You only have ${vaultBalance.toFixed(3)}g available.`, variant: "destructive" });
       return;
     }
+    
+    // Validate method-specific fields
+    if (withdrawalMethod === 'Bank Transfer') {
+      if (!bankName || !accountName || !accountNumber) {
+        toast({ title: "Missing Information", description: "Please fill in all bank details.", variant: "destructive" });
+        return;
+      }
+    } else {
+      if (!cryptoNetwork || !cryptoCurrency || !walletAddress) {
+        toast({ title: "Missing Information", description: "Please fill in all crypto details.", variant: "destructive" });
+        return;
+      }
+    }
+    
     setStep('confirm');
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await apiRequest('POST', '/api/vault/withdrawal', {
+        userId: user.id,
+        goldGrams: grams.toString(),
+        goldPriceUsdPerGram: GOLD_PRICE_USD.toString(),
+        withdrawalMethod,
+        bankName: withdrawalMethod === 'Bank Transfer' ? bankName : null,
+        accountName: withdrawalMethod === 'Bank Transfer' ? accountName : null,
+        accountNumber: withdrawalMethod === 'Bank Transfer' ? accountNumber : null,
+        iban: withdrawalMethod === 'Bank Transfer' ? iban : null,
+        swiftCode: withdrawalMethod === 'Bank Transfer' ? swiftCode : null,
+        bankCountry: withdrawalMethod === 'Bank Transfer' ? bankCountry : null,
+        cryptoNetwork: withdrawalMethod === 'Crypto' ? cryptoNetwork : null,
+        cryptoCurrency: withdrawalMethod === 'Crypto' ? cryptoCurrency : null,
+        walletAddress: withdrawalMethod === 'Crypto' ? walletAddress : null,
+        notes,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['vault-withdrawals'] });
       setStep('success');
       toast({
-        title: "Cash Out Successful",
-        description: `Sold ${grams}g of gold for $${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}.`,
+        title: "Withdrawal Request Submitted",
+        description: `Your request to withdraw ${grams}g ($${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}) has been submitted for admin approval.`,
       });
-    }, 2000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit withdrawal request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const reset = () => {
     setStep('input');
     setAmountGrams('');
+    setBankName('');
+    setAccountName('');
+    setAccountNumber('');
+    setIban('');
+    setSwiftCode('');
+    setBankCountry('');
+    setCryptoNetwork('');
+    setCryptoCurrency('');
+    setWalletAddress('');
+    setNotes('');
   };
 
   return (
@@ -77,30 +151,21 @@ export default function CashOutForm() {
                 <CardHeader>
                   <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-secondary" />
-                    Sell Gold
+                    Cash Out Gold
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   
-                  {/* Vault Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-foreground">Source Vault</Label>
-                    <Select value={selectedVault} onValueChange={setSelectedVault}>
-                      <SelectTrigger className="bg-background border-input text-foreground h-12">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-border text-foreground">
-                        <SelectItem value="Dubai Vault">Dubai Vault (Available: 1,000.00g)</SelectItem>
-                        <SelectItem value="Swiss Vault">Swiss Vault (Available: 500.00g)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   {/* Amount Input */}
                   <div className="space-y-4">
                     <div className="flex justify-between">
-                       <Label className="text-foreground">Amount to Sell (Grams)</Label>
-                       <span className="text-xs text-secondary cursor-pointer hover:underline" onClick={() => setAmountGrams('1000')}>Max: 1,000.00g</span>
+                       <Label className="text-foreground">Amount to Withdraw (Grams)</Label>
+                       <span 
+                         className="text-xs text-secondary cursor-pointer hover:underline" 
+                         onClick={() => setAmountGrams(vaultBalance.toFixed(3))}
+                       >
+                         Max: {vaultBalance.toFixed(3)}g
+                       </span>
                     </div>
                     <div className="relative">
                       <Input 
@@ -109,6 +174,7 @@ export default function CashOutForm() {
                         className="bg-background border-input text-foreground h-14 text-lg pl-4 pr-12 font-bold"
                         value={amountGrams}
                         onChange={(e) => setAmountGrams(e.target.value)}
+                        data-testid="input-withdrawal-amount"
                       />
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">g</div>
                     </div>
@@ -124,23 +190,16 @@ export default function CashOutForm() {
 
                   <Separator className="bg-border" />
 
-                  {/* Payout Method */}
+                  {/* Withdrawal Method */}
                   <div className="space-y-4">
-                    <Label className="text-foreground">Payout Method</Label>
-                    <RadioGroup value={payoutMethod} onValueChange={setPayoutMethod} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Label className="text-foreground">Withdrawal Method</Label>
+                    <RadioGroup 
+                      value={withdrawalMethod} 
+                      onValueChange={(v) => setWithdrawalMethod(v as 'Bank Transfer' | 'Crypto')} 
+                      className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                    >
                       <div>
-                        <RadioGroupItem value="finapay" id="finapay" className="peer sr-only" />
-                        <Label
-                          htmlFor="finapay"
-                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary text-foreground transition-all"
-                        >
-                          <Wallet className="w-6 h-6 mb-2" />
-                          <span className="font-semibold">FinaPay Wallet</span>
-                          <span className="text-xs opacity-60 mt-1">Instant • No Fees</span>
-                        </Label>
-                      </div>
-                      <div>
-                        <RadioGroupItem value="bank" id="bank" className="peer sr-only" />
+                        <RadioGroupItem value="Bank Transfer" id="bank" className="peer sr-only" />
                         <Label
                           htmlFor="bank"
                           className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary text-foreground transition-all"
@@ -150,14 +209,140 @@ export default function CashOutForm() {
                           <span className="text-xs opacity-60 mt-1">2-3 Business Days</span>
                         </Label>
                       </div>
+                      <div>
+                        <RadioGroupItem value="Crypto" id="crypto" className="peer sr-only" />
+                        <Label
+                          htmlFor="crypto"
+                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary text-foreground transition-all"
+                        >
+                          <Bitcoin className="w-6 h-6 mb-2" />
+                          <span className="font-semibold">Crypto</span>
+                          <span className="text-xs opacity-60 mt-1">1-24 Hours</span>
+                        </Label>
+                      </div>
                     </RadioGroup>
+                  </div>
+
+                  <Separator className="bg-border" />
+
+                  {/* Method-specific fields */}
+                  {withdrawalMethod === 'Bank Transfer' ? (
+                    <div className="space-y-4">
+                      <Label className="text-foreground font-medium">Bank Details</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Bank Name *</Label>
+                          <Input 
+                            value={bankName}
+                            onChange={(e) => setBankName(e.target.value)}
+                            placeholder="e.g. Emirates NBD"
+                            data-testid="input-bank-name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Account Name *</Label>
+                          <Input 
+                            value={accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            placeholder="Name on account"
+                            data-testid="input-account-name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Account Number *</Label>
+                          <Input 
+                            value={accountNumber}
+                            onChange={(e) => setAccountNumber(e.target.value)}
+                            placeholder="Account number"
+                            data-testid="input-account-number"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">IBAN</Label>
+                          <Input 
+                            value={iban}
+                            onChange={(e) => setIban(e.target.value)}
+                            placeholder="IBAN (optional)"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">SWIFT/BIC Code</Label>
+                          <Input 
+                            value={swiftCode}
+                            onChange={(e) => setSwiftCode(e.target.value)}
+                            placeholder="SWIFT code (optional)"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Bank Country</Label>
+                          <Input 
+                            value={bankCountry}
+                            onChange={(e) => setBankCountry(e.target.value)}
+                            placeholder="Country"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Label className="text-foreground font-medium">Crypto Details</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Network *</Label>
+                          <Input 
+                            value={cryptoNetwork}
+                            onChange={(e) => setCryptoNetwork(e.target.value)}
+                            placeholder="e.g. Ethereum, Bitcoin, TRON"
+                            data-testid="input-crypto-network"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Currency *</Label>
+                          <Input 
+                            value={cryptoCurrency}
+                            onChange={(e) => setCryptoCurrency(e.target.value)}
+                            placeholder="e.g. USDT, USDC, BTC"
+                            data-testid="input-crypto-currency"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Wallet Address *</Label>
+                        <Input 
+                          value={walletAddress}
+                          onChange={(e) => setWalletAddress(e.target.value)}
+                          placeholder="Your wallet address"
+                          className="font-mono text-sm"
+                          data-testid="input-wallet-address"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Notes (Optional)</Label>
+                    <Textarea 
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Any additional notes for your withdrawal..."
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-3 items-start">
+                    <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-amber-800">
+                      <p className="font-medium">Admin Approval Required</p>
+                      <p className="text-xs mt-1 opacity-80">Your withdrawal request will be reviewed by our team before processing.</p>
+                    </div>
                   </div>
 
                   <Button 
                     onClick={handleProceed}
                     className="w-full h-12 bg-secondary text-white hover:bg-secondary/90 font-bold text-lg"
+                    data-testid="button-review-withdrawal"
                   >
-                    Review Cash Out
+                    Review Withdrawal Request
                   </Button>
 
                 </CardContent>
@@ -175,22 +360,22 @@ export default function CashOutForm() {
             >
               <Card className="bg-white shadow-sm border border-border">
                 <CardHeader>
-                   <CardTitle className="text-lg font-medium text-foreground">Confirm Transaction</CardTitle>
+                   <CardTitle className="text-lg font-medium text-foreground">Confirm Withdrawal Request</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-700 text-sm flex gap-3">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                    <p>You are about to sell {grams}g of gold. This action cannot be undone. Funds will be credited to your {payoutMethod === 'finapay' ? 'FinaPay Wallet' : 'Bank Account'}.</p>
+                    <p>You are requesting to withdraw {grams}g of gold via {withdrawalMethod}. This request will be reviewed by our admin team.</p>
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex justify-between text-muted-foreground text-sm">
-                      <span>Source</span>
-                      <span className="text-foreground">{selectedVault}</span>
+                      <span>Withdrawal Method</span>
+                      <span className="text-foreground font-medium">{withdrawalMethod}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Weight</span>
-                      <span className="text-foreground font-medium">{grams.toFixed(2)} g</span>
+                      <span className="text-foreground font-medium">{grams.toFixed(3)} g</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Gold Price</span>
@@ -202,7 +387,7 @@ export default function CashOutForm() {
                       <span className="text-foreground">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground text-sm">
-                      <span>Service Fee (1.5%)</span>
+                      <span>Service Fee ({cashoutFeePercent}%)</span>
                       <span className="text-red-500">-${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <Separator className="bg-border" />
@@ -211,6 +396,27 @@ export default function CashOutForm() {
                       <span className="text-2xl font-bold text-secondary">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
+
+                  {withdrawalMethod === 'Bank Transfer' ? (
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-2 text-sm">
+                      <p className="font-medium text-foreground">Bank Details</p>
+                      <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                        <span>Bank:</span><span className="text-foreground">{bankName}</span>
+                        <span>Account:</span><span className="text-foreground">{accountName}</span>
+                        <span>Number:</span><span className="text-foreground">{accountNumber}</span>
+                        {iban && <><span>IBAN:</span><span className="text-foreground">{iban}</span></>}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-2 text-sm">
+                      <p className="font-medium text-foreground">Crypto Details</p>
+                      <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                        <span>Network:</span><span className="text-foreground">{cryptoNetwork}</span>
+                        <span>Currency:</span><span className="text-foreground">{cryptoCurrency}</span>
+                        <span>Address:</span><span className="text-foreground font-mono text-xs break-all">{walletAddress}</span>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex gap-4">
                     <Button 
@@ -225,13 +431,14 @@ export default function CashOutForm() {
                       onClick={handleConfirm}
                       className="flex-1 bg-secondary text-white hover:bg-secondary/90 font-bold h-12"
                       disabled={isLoading}
+                      data-testid="button-submit-withdrawal"
                     >
                       {isLoading ? (
                         <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Processing...
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Submitting...
                         </>
                       ) : (
-                        'Confirm Sale'
+                        'Submit Request'
                       )}
                     </Button>
                   </div>
@@ -251,16 +458,20 @@ export default function CashOutForm() {
               <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
               </div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Transaction Successful!</h3>
+              <h3 className="text-2xl font-bold text-foreground mb-2">Request Submitted!</h3>
               <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
-                You have successfully sold {grams}g of gold. <br />
-                <span className="text-secondary font-bold">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> has been credited to your wallet.
+                Your withdrawal request for {grams}g of gold has been submitted. <br />
+                <span className="text-secondary font-bold">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> will be sent via {withdrawalMethod} once approved.
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                <Clock className="w-4 h-4 inline mr-1" />
+                Expected processing time: {withdrawalMethod === 'Bank Transfer' ? '2-3 business days' : '1-24 hours'}
               </p>
               <Button 
                 onClick={reset}
                 className="bg-muted hover:bg-muted/80 text-foreground font-medium px-8"
               >
-                Make Another Transaction
+                Make Another Request
               </Button>
             </motion.div>
           )}
@@ -289,18 +500,18 @@ export default function CashOutForm() {
             
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Buy Price</span>
-                <span className="text-foreground font-medium">${(GOLD_PRICE_USD * 1.02).toFixed(2)}</span>
+                <span className="text-muted-foreground">Your Vault Balance</span>
+                <span className="text-foreground font-bold">{vaultBalance.toFixed(3)}g</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Sell Price</span>
-                <span className="text-secondary font-bold">${GOLD_PRICE_USD.toFixed(2)}</span>
+                <span className="text-muted-foreground">Value (USD)</span>
+                <span className="text-secondary font-bold">${(vaultBalance * GOLD_PRICE_USD).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
             <div className="p-3 bg-muted/50 rounded text-xs text-muted-foreground leading-relaxed">
               <AlertCircle className="w-3 h-3 inline mr-1 mb-0.5" />
-              Sell prices are updated every 60 seconds based on global spot rates. Final execution price may vary slightly.
+              All withdrawal requests require admin approval. Processing times vary by method.
             </div>
           </CardContent>
         </Card>

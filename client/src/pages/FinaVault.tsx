@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote, Briefcase } from 'lucide-react';
+import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -14,9 +14,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
-// Mock Data
+// Legacy Mock Data for fallback display
 const MOCK_REQUESTS: DepositRequest[] = [
   {
     id: 'FD-2024-0042',
@@ -186,11 +187,48 @@ export default function FinaVault() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [location] = useLocation();
+  const queryClient = useQueryClient();
   
   // State
   const [activeTab, setActiveTab] = useState('vault-activity');
-  const [requests, setRequests] = useState<DepositRequest[]>(MOCK_REQUESTS);
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch vault deposit requests
+  const { data: depositData, isLoading: depositsLoading } = useQuery({
+    queryKey: ['vault-deposits', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { requests: [] };
+      const res = await fetch(`/api/vault/deposits/${user.id}`);
+      if (!res.ok) return { requests: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch vault withdrawal requests
+  const { data: withdrawalData } = useQuery({
+    queryKey: ['vault-withdrawals', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { requests: [] };
+      const res = await fetch(`/api/vault/withdrawals/${user.id}`);
+      if (!res.ok) return { requests: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch vault holdings for balance calculation
+  const { data: holdingsData } = useQuery({
+    queryKey: ['vault-holdings', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { holdings: [] };
+      const res = await fetch(`/api/vault/${user.id}`);
+      if (!res.ok) return { holdings: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
 
   // Fetch FinaBridge wallet data for locked gold display
   const { data: finabridgeData } = useQuery({
@@ -208,8 +246,29 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Transform API deposit requests to match frontend type
+  const apiRequests = (depositData?.requests || []).map((req: any) => ({
+    id: req.referenceNumber,
+    requestId: req.id,
+    userId: req.userId,
+    vaultLocation: req.vaultLocation,
+    depositType: req.depositType,
+    totalDeclaredWeightGrams: parseFloat(req.totalDeclaredWeightGrams),
+    items: req.items || [],
+    deliveryMethod: req.deliveryMethod,
+    pickupDetails: req.pickupDetails,
+    documents: req.documents || [],
+    status: req.status as DepositRequestStatus,
+    submittedAt: req.createdAt,
+    vaultInternalReference: req.vaultInternalReference,
+    rejectionReason: req.rejectionReason,
+  }));
+
   const finabridgeLockedGrams = parseFloat(finabridgeData?.wallet?.lockedGoldGrams || '0');
   const goldPricePerGram = 85.22;
+  
+  // Calculate total vault holdings
+  const totalVaultGold = (holdingsData?.holdings || []).reduce((sum: number, h: any) => sum + parseFloat(h.goldGrams || '0'), 0);
 
   // Check query params for initial tab
   useEffect(() => {
@@ -221,34 +280,46 @@ export default function FinaVault() {
   }, [location]);
 
   // Handlers
-  const handleNewRequest = (data: Omit<DepositRequest, 'id' | 'status' | 'submittedAt'>) => {
-    const newRequest: DepositRequest = {
-      ...data,
-      id: `FD-2025-${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}`,
-      status: 'Submitted',
-      submittedAt: new Date().toISOString(),
-    };
+  const handleNewRequest = async (data: Omit<DepositRequest, 'id' | 'status' | 'submittedAt'>) => {
+    if (!user) return;
+    setSubmitting(true);
     
-    setRequests(prev => [newRequest, ...prev]);
-    setActiveTab('my-deposits');
-    setSelectedRequest(newRequest); // Auto-open details
-    
-    toast({
-      title: "Request Submitted",
-      description: `Deposit request #${newRequest.id} created. Your FinaPay gold balance will be credited once the physical metal is received and verified at the vault.`,
-    });
+    try {
+      const res = await apiRequest('POST', '/api/vault/deposit', {
+        userId: user.id,
+        vaultLocation: data.vaultLocation,
+        depositType: data.depositType,
+        totalDeclaredWeightGrams: data.totalDeclaredWeightGrams,
+        items: data.items,
+        deliveryMethod: data.deliveryMethod,
+        pickupDetails: data.pickupDetails,
+        documents: data.documents,
+      });
+      
+      const result = await res.json();
+      
+      queryClient.invalidateQueries({ queryKey: ['vault-deposits'] });
+      setActiveTab('my-deposits');
+      
+      toast({
+        title: "Request Submitted",
+        description: `Deposit request #${result.request.referenceNumber} created. Your FinaPay gold balance will be credited once the physical metal is received and verified at the vault.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit deposit request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleCancelRequest = (id: string) => {
-    setRequests(prev => prev.map(req => 
-      req.id === id ? { ...req, status: 'Cancelled' as DepositRequestStatus } : req
-    ));
-    if (selectedRequest?.id === id) {
-      setSelectedRequest(prev => prev ? { ...prev, status: 'Cancelled' as DepositRequestStatus } : null);
-    }
+  const handleCancelRequest = async (id: string) => {
     toast({
-      title: "Request Cancelled",
-      description: "The deposit request has been cancelled.",
+      title: "Request Cancellation",
+      description: "Please contact support to cancel your deposit request.",
     });
   };
 
@@ -289,8 +360,8 @@ export default function FinaVault() {
                     <Database className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold mb-1 text-secondary">${(125.400 * 85.22).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="text-sm opacity-50 font-medium">125.400 g • 4.03 oz</div>
+              <div className="text-3xl font-bold mb-1 text-secondary">${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="text-sm opacity-50 font-medium">{totalVaultGold.toFixed(3)} g • {(totalVaultGold / 31.1035).toFixed(2)} oz</div>
            </div>
 
            {/* Card 2: Locked Gold */}
@@ -316,25 +387,25 @@ export default function FinaVault() {
            {/* Card 3: Value USD */}
            <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Value (USD)</span>
+                 <span className="text-sm font-medium opacity-60">Available Value (USD)</span>
                  <div className="p-2 bg-green-500/20 rounded-lg text-green-600">
                     <DollarSign className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold text-secondary mb-1">$10,686.58</div>
-              <div className="text-sm opacity-50 font-medium">@ $85.22/g</div>
+              <div className="text-3xl font-bold text-secondary mb-1">${((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="text-sm opacity-50 font-medium">@ ${goldPricePerGram}/g</div>
            </div>
 
            {/* Card 4: Value AED */}
            <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Value (AED)</span>
+                 <span className="text-sm font-medium opacity-60">Available Value (AED)</span>
                  <div className="p-2 bg-blue-500/20 rounded-lg text-blue-600">
                     <Globe className="w-4 h-4" />
                  </div>
               </div>
-              <div className="text-3xl font-bold text-foreground mb-1">39,220.10</div>
-              <div className="text-sm opacity-50 font-medium">@ 312.76/g</div>
+              <div className="text-3xl font-bold text-foreground mb-1">{((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram * 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="text-sm opacity-50 font-medium">@ {(goldPricePerGram * 3.67).toFixed(2)}/g</div>
            </div>
         </div>
 
@@ -398,11 +469,17 @@ export default function FinaVault() {
                 </TabsContent>
 
                 <TabsContent value="my-deposits" className="mt-0">
-                  <DepositList 
-                    requests={requests} 
-                    onSelectRequest={setSelectedRequest}
-                    onNewRequest={() => setActiveTab('new-request')}
-                  />
+                  {depositsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <DepositList 
+                      requests={apiRequests.length > 0 ? apiRequests : MOCK_REQUESTS} 
+                      onSelectRequest={setSelectedRequest}
+                      onNewRequest={() => setActiveTab('new-request')}
+                    />
+                  )}
                 </TabsContent>
 
                 <TabsContent value="new-request">
@@ -413,7 +490,7 @@ export default function FinaVault() {
                 </TabsContent>
 
                 <TabsContent value="cash-out">
-                  <CashOutForm />
+                  <CashOutForm vaultBalance={totalVaultGold} />
                 </TabsContent>
               </Tabs>
             </motion.div>
