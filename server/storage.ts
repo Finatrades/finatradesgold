@@ -1,6 +1,7 @@
 import { 
   users, wallets, transactions, vaultHoldings, kycSubmissions,
   bnslPlans, bnslPayouts, bnslEarlyTerminations, bnslWallets,
+  bnslPlanTemplates, bnslTemplateVariants,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs, certificates,
   contentPages, contentBlocks, templates, mediaAssets,
@@ -15,6 +16,8 @@ import {
   type BnslPayout, type InsertBnslPayout,
   type BnslEarlyTermination, type InsertBnslEarlyTermination,
   type BnslWallet, type InsertBnslWallet,
+  type BnslPlanTemplate, type InsertBnslPlanTemplate,
+  type BnslTemplateVariant, type InsertBnslTemplateVariant,
   type TradeCase, type InsertTradeCase,
   type TradeDocument, type InsertTradeDocument,
   type ChatSession, type InsertChatSession,
@@ -177,6 +180,21 @@ export interface IStorage {
   createBnslWallet(wallet: InsertBnslWallet): Promise<BnslWallet>;
   updateBnslWallet(id: string, updates: Partial<BnslWallet>): Promise<BnslWallet | undefined>;
   getOrCreateBnslWallet(userId: string): Promise<BnslWallet>;
+  
+  // BNSL Plan Templates
+  getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined>;
+  getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
+  getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
+  createBnslPlanTemplate(template: InsertBnslPlanTemplate): Promise<BnslPlanTemplate>;
+  updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined>;
+  deleteBnslPlanTemplate(id: string): Promise<boolean>;
+  
+  // BNSL Template Variants
+  getBnslTemplateVariant(id: string): Promise<BnslTemplateVariant | undefined>;
+  getTemplateVariants(templateId: string): Promise<BnslTemplateVariant[]>;
+  createBnslTemplateVariant(variant: InsertBnslTemplateVariant): Promise<BnslTemplateVariant>;
+  updateBnslTemplateVariant(id: string, updates: Partial<BnslTemplateVariant>): Promise<BnslTemplateVariant | undefined>;
+  deleteBnslTemplateVariant(id: string): Promise<boolean>;
   
   // Trade Cases
   getTradeCase(id: string): Promise<TradeCase | undefined>;
@@ -460,6 +478,70 @@ export class DatabaseStorage implements IStorage {
       wallet = await this.createBnslWallet({ userId, availableGoldGrams: '0', lockedGoldGrams: '0' });
     }
     return wallet;
+  }
+
+  // BNSL Plan Templates
+  async getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined> {
+    const [template] = await db.select().from(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
+    return template || undefined;
+  }
+
+  async getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
+    return await db.select().from(bnslPlanTemplates).orderBy(bnslPlanTemplates.displayOrder);
+  }
+
+  async getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
+    return await db.select().from(bnslPlanTemplates)
+      .where(eq(bnslPlanTemplates.status, 'Active'))
+      .orderBy(bnslPlanTemplates.displayOrder);
+  }
+
+  async createBnslPlanTemplate(insertTemplate: InsertBnslPlanTemplate): Promise<BnslPlanTemplate> {
+    const [template] = await db.insert(bnslPlanTemplates).values(insertTemplate).returning();
+    return template;
+  }
+
+  async updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined> {
+    const [template] = await db.update(bnslPlanTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(bnslPlanTemplates.id, id))
+      .returning();
+    return template || undefined;
+  }
+
+  async deleteBnslPlanTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
+    return true;
+  }
+
+  // BNSL Template Variants
+  async getBnslTemplateVariant(id: string): Promise<BnslTemplateVariant | undefined> {
+    const [variant] = await db.select().from(bnslTemplateVariants).where(eq(bnslTemplateVariants.id, id));
+    return variant || undefined;
+  }
+
+  async getTemplateVariants(templateId: string): Promise<BnslTemplateVariant[]> {
+    return await db.select().from(bnslTemplateVariants)
+      .where(eq(bnslTemplateVariants.templateId, templateId))
+      .orderBy(bnslTemplateVariants.tenorMonths);
+  }
+
+  async createBnslTemplateVariant(insertVariant: InsertBnslTemplateVariant): Promise<BnslTemplateVariant> {
+    const [variant] = await db.insert(bnslTemplateVariants).values(insertVariant).returning();
+    return variant;
+  }
+
+  async updateBnslTemplateVariant(id: string, updates: Partial<BnslTemplateVariant>): Promise<BnslTemplateVariant | undefined> {
+    const [variant] = await db.update(bnslTemplateVariants)
+      .set(updates)
+      .where(eq(bnslTemplateVariants.id, id))
+      .returning();
+    return variant || undefined;
+  }
+
+  async deleteBnslTemplateVariant(id: string): Promise<boolean> {
+    await db.delete(bnslTemplateVariants).where(eq(bnslTemplateVariants.id, id));
+    return true;
   }
 
   // Trade Cases
