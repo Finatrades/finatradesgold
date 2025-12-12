@@ -1,0 +1,65 @@
+BUY GOLD — Narration
+
+“When a user buys gold through the FinaPay Wallet, the payment is securely collected by Finatrades and the equivalent amount of digital gold is instantly credited to the user’s wallet.
+
+At the same time, FinaVault records the user as the legal owner of the gold, while Wingold & Metals DMCC allocates the corresponding physical gold in a secure, regulated vault.
+
+The user receives:
+
+a Digital Ownership Certificate issued by Finatrades, and
+
+a Physical Storage Certificate issued by Wingold & Metals DMCC,
+
+confirming 1:1 physical gold backing.”
+
+SELL GOLD — Narration
+
+“When a user sells gold from their FinaPay Wallet, the selected gold quantity is deducted from their FinaVault balance, and ownership of that portion is removed.
+
+The equivalent fiat value is credited to the user’s FinaPay Wallet for withdrawal.
+Simultaneously, Wingold & Metals DMCC updates the vault records to reflect the reduced physical storage.
+
+All related digital and storage certificates automatically update to show the remaining gold holdings.”
+
+SEND GOLD — Narration
+
+“When a user sends gold to another user using the FinaPay Wallet, the sender’s gold balance in FinaVault is reduced by the transferred amount, and the same quantity is credited to the recipient’s FinaVault balance.
+
+Legal ownership of the gold moves instantly from sender to receiver within FinaVault.
+The sender’s certificates update to reflect the reduced balance, while the recipient receives:
+
+a new Digital Ownership Certificate, and
+
+an updated storage reference for the received gold.”
+
+RECEIVE GOLD — Narration
+
+“When a user receives gold in their FinaPay Wallet, their gold balance in FinaVault increases instantly, and they become the new legal owner of that gold.
+
+A fresh Digital Ownership Certificate is issued by Finatrades, and the corresponding Physical Storage Certificate is updated to reflect the increased physical allocation held with Wingold & Metals DMCC.”
+
+DEPOSIT PHYSICAL GOLD — Narration
+
+“When a user deposits physical gold into a Wingold & Metals DMCC vault, the gold is verified, assayed, and assigned to the user’s dedicated storage.
+
+Once confirmed, FinaVault credits the same gold quantity to the user’s FinaPay Wallet as digital gold.
+
+The user receives:
+
+a Digital Ownership Certificate from Finatrades, and
+
+a Physical Storage Certificate from Wingold & Metals DMCC,
+
+confirming both digital ownership and physical custody of the deposited gold.”
+
+WITHDRAW / DELIVERY OF GOLD — Narration
+
+“When a user requests a physical withdrawal through their FinaPay Wallet, FinaVault deducts the requested gold quantity and removes ownership of that portion from the user’s account.
+
+Wingold & Metals DMCC releases the matching physical gold from secure storage and prepares it for delivery or vault pickup.
+
+All certificates automatically adjust to reflect:
+
+the reduced digital balance, and
+
+the released physical gold batch.”
