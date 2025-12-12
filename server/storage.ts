@@ -3,6 +3,7 @@ import {
   bnslPlans, bnslPayouts, bnslEarlyTerminations,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs, certificates,
+  contentPages, contentBlocks, templates, mediaAssets,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -16,7 +17,11 @@ import {
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
   type AuditLog, type InsertAuditLog,
-  type Certificate, type InsertCertificate
+  type Certificate, type InsertCertificate,
+  type ContentPage, type InsertContentPage,
+  type ContentBlock, type InsertContentBlock,
+  type Template, type InsertTemplate,
+  type MediaAsset, type InsertMediaAsset
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -188,6 +193,38 @@ export interface IStorage {
   getUserActiveCertificates(userId: string): Promise<Certificate[]>;
   updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined>;
   generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string>;
+  
+  // CMS - Content Pages
+  getContentPage(id: string): Promise<ContentPage | undefined>;
+  getContentPageBySlug(slug: string): Promise<ContentPage | undefined>;
+  getAllContentPages(): Promise<ContentPage[]>;
+  createContentPage(page: InsertContentPage): Promise<ContentPage>;
+  updateContentPage(id: string, updates: Partial<ContentPage>): Promise<ContentPage | undefined>;
+  deleteContentPage(id: string): Promise<boolean>;
+  
+  // CMS - Content Blocks
+  getContentBlock(id: string): Promise<ContentBlock | undefined>;
+  getPageContentBlocks(pageId: string): Promise<ContentBlock[]>;
+  getContentBlockByKey(pageId: string, section: string, key: string): Promise<ContentBlock | undefined>;
+  getAllContentBlocks(): Promise<ContentBlock[]>;
+  createContentBlock(block: InsertContentBlock): Promise<ContentBlock>;
+  updateContentBlock(id: string, updates: Partial<ContentBlock>): Promise<ContentBlock | undefined>;
+  deleteContentBlock(id: string): Promise<boolean>;
+  
+  // CMS - Templates
+  getTemplate(id: string): Promise<Template | undefined>;
+  getTemplateBySlug(slug: string): Promise<Template | undefined>;
+  getAllTemplates(): Promise<Template[]>;
+  getTemplatesByType(type: string): Promise<Template[]>;
+  createTemplate(template: InsertTemplate): Promise<Template>;
+  updateTemplate(id: string, updates: Partial<Template>): Promise<Template | undefined>;
+  deleteTemplate(id: string): Promise<boolean>;
+  
+  // CMS - Media Assets
+  getMediaAsset(id: string): Promise<MediaAsset | undefined>;
+  getAllMediaAssets(): Promise<MediaAsset[]>;
+  createMediaAsset(asset: InsertMediaAsset): Promise<MediaAsset>;
+  deleteMediaAsset(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -524,6 +561,126 @@ export class DatabaseStorage implements IStorage {
   async createAuditLogTx(txDb: DbClient, insertLog: InsertAuditLog): Promise<AuditLog> {
     const [log] = await txDb.insert(auditLogs).values(insertLog).returning();
     return log;
+  }
+
+  // CMS - Content Pages
+  async getContentPage(id: string): Promise<ContentPage | undefined> {
+    const [page] = await db.select().from(contentPages).where(eq(contentPages.id, id));
+    return page || undefined;
+  }
+
+  async getContentPageBySlug(slug: string): Promise<ContentPage | undefined> {
+    const [page] = await db.select().from(contentPages).where(eq(contentPages.slug, slug));
+    return page || undefined;
+  }
+
+  async getAllContentPages(): Promise<ContentPage[]> {
+    return await db.select().from(contentPages).orderBy(contentPages.title);
+  }
+
+  async createContentPage(insertPage: InsertContentPage): Promise<ContentPage> {
+    const [page] = await db.insert(contentPages).values(insertPage).returning();
+    return page;
+  }
+
+  async updateContentPage(id: string, updates: Partial<ContentPage>): Promise<ContentPage | undefined> {
+    const [page] = await db.update(contentPages).set({ ...updates, updatedAt: new Date() }).where(eq(contentPages.id, id)).returning();
+    return page || undefined;
+  }
+
+  async deleteContentPage(id: string): Promise<boolean> {
+    const result = await db.delete(contentPages).where(eq(contentPages.id, id));
+    return true;
+  }
+
+  // CMS - Content Blocks
+  async getContentBlock(id: string): Promise<ContentBlock | undefined> {
+    const [block] = await db.select().from(contentBlocks).where(eq(contentBlocks.id, id));
+    return block || undefined;
+  }
+
+  async getPageContentBlocks(pageId: string): Promise<ContentBlock[]> {
+    return await db.select().from(contentBlocks).where(eq(contentBlocks.pageId, pageId)).orderBy(contentBlocks.sortOrder);
+  }
+
+  async getContentBlockByKey(pageId: string, section: string, key: string): Promise<ContentBlock | undefined> {
+    const [block] = await db.select().from(contentBlocks).where(
+      and(eq(contentBlocks.pageId, pageId), eq(contentBlocks.section, section), eq(contentBlocks.key, key))
+    );
+    return block || undefined;
+  }
+
+  async getAllContentBlocks(): Promise<ContentBlock[]> {
+    return await db.select().from(contentBlocks).orderBy(contentBlocks.pageId, contentBlocks.section, contentBlocks.sortOrder);
+  }
+
+  async createContentBlock(insertBlock: InsertContentBlock): Promise<ContentBlock> {
+    const [block] = await db.insert(contentBlocks).values(insertBlock).returning();
+    return block;
+  }
+
+  async updateContentBlock(id: string, updates: Partial<ContentBlock>): Promise<ContentBlock | undefined> {
+    const [block] = await db.update(contentBlocks).set({ ...updates, updatedAt: new Date() }).where(eq(contentBlocks.id, id)).returning();
+    return block || undefined;
+  }
+
+  async deleteContentBlock(id: string): Promise<boolean> {
+    await db.delete(contentBlocks).where(eq(contentBlocks.id, id));
+    return true;
+  }
+
+  // CMS - Templates
+  async getTemplate(id: string): Promise<Template | undefined> {
+    const [template] = await db.select().from(templates).where(eq(templates.id, id));
+    return template || undefined;
+  }
+
+  async getTemplateBySlug(slug: string): Promise<Template | undefined> {
+    const [template] = await db.select().from(templates).where(eq(templates.slug, slug));
+    return template || undefined;
+  }
+
+  async getAllTemplates(): Promise<Template[]> {
+    return await db.select().from(templates).orderBy(templates.type, templates.name);
+  }
+
+  async getTemplatesByType(type: string): Promise<Template[]> {
+    return await db.select().from(templates).where(eq(templates.type, type as any)).orderBy(templates.name);
+  }
+
+  async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
+    const [template] = await db.insert(templates).values(insertTemplate).returning();
+    return template;
+  }
+
+  async updateTemplate(id: string, updates: Partial<Template>): Promise<Template | undefined> {
+    const [template] = await db.update(templates).set({ ...updates, updatedAt: new Date() }).where(eq(templates.id, id)).returning();
+    return template || undefined;
+  }
+
+  async deleteTemplate(id: string): Promise<boolean> {
+    await db.delete(templates).where(eq(templates.id, id));
+    return true;
+  }
+
+  // CMS - Media Assets
+  async getMediaAsset(id: string): Promise<MediaAsset | undefined> {
+    const [asset] = await db.select().from(mediaAssets).where(eq(mediaAssets.id, id));
+    return asset || undefined;
+  }
+
+  async getAllMediaAssets(): Promise<MediaAsset[]> {
+    return await db.select().from(mediaAssets).orderBy(desc(mediaAssets.createdAt));
+  }
+
+  async createMediaAsset(insertAsset: InsertMediaAsset): Promise<MediaAsset> {
+    const [asset] = await db.insert(mediaAssets).values(insertAsset).returning();
+    return asset;
+  }
+
+  async deleteMediaAsset(id: string): Promise<boolean> {
+    await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
+    return true;
   }
 }
 

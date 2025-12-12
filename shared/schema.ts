@@ -401,3 +401,99 @@ export const auditLogs = pgTable("audit_logs", {
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// ============================================
+// CMS - CONTENT MANAGEMENT SYSTEM
+// ============================================
+
+export const contentBlockTypeEnum = pgEnum('content_block_type', ['text', 'rich_text', 'image', 'json', 'html']);
+export const contentStatusEnum = pgEnum('content_status', ['draft', 'published']);
+export const templateTypeEnum = pgEnum('template_type', ['email', 'certificate', 'notification', 'page_section']);
+
+// Content Pages - Groups content by page/module
+export const contentPages = pgTable("content_pages", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar("slug", { length: 255 }).notNull().unique(), // e.g., "home", "finapay", "finavault"
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  module: varchar("module", { length: 100 }), // FinaPay, FinaVault, BNSL, FinaBridge, etc.
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertContentPageSchema = createInsertSchema(contentPages).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertContentPage = z.infer<typeof insertContentPageSchema>;
+export type ContentPage = typeof contentPages.$inferSelect;
+
+// Content Blocks - Individual editable content pieces
+export const contentBlocks = pgTable("content_blocks", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  pageId: varchar("page_id", { length: 255 }).references(() => contentPages.id),
+  section: varchar("section", { length: 255 }).notNull(), // e.g., "hero", "features", "footer"
+  key: varchar("key", { length: 255 }).notNull(), // e.g., "title", "description", "cta_button"
+  label: varchar("label", { length: 255 }), // Human-readable label for admin UI
+  type: contentBlockTypeEnum("type").notNull().default('text'),
+  content: text("content"), // The actual content (text, HTML, or stringified JSON)
+  defaultContent: text("default_content"), // Fallback content if content is empty
+  metadata: json("metadata").$type<{
+    maxLength?: number;
+    placeholder?: string;
+    helpText?: string;
+    imageUrl?: string;
+    imageAlt?: string;
+  }>(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  status: contentStatusEnum("status").notNull().default('published'),
+  version: integer("version").notNull().default(1),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertContentBlockSchema = createInsertSchema(contentBlocks).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertContentBlock = z.infer<typeof insertContentBlockSchema>;
+export type ContentBlock = typeof contentBlocks.$inferSelect;
+
+// Templates - For emails, certificates, notifications
+export const templates = pgTable("templates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar("slug", { length: 255 }).notNull().unique(), // e.g., "welcome_email", "certificate_ownership"
+  name: varchar("name", { length: 255 }).notNull(),
+  type: templateTypeEnum("type").notNull(),
+  module: varchar("module", { length: 100 }), // Which module this template belongs to
+  subject: varchar("subject", { length: 500 }), // For emails
+  body: text("body").notNull(), // Template content (HTML/text with variables)
+  variables: json("variables").$type<{
+    name: string;
+    description: string;
+    example?: string;
+  }[]>(), // Available variables for this template
+  previewData: json("preview_data"), // Sample data for preview rendering
+  status: contentStatusEnum("status").notNull().default('draft'),
+  version: integer("version").notNull().default(1),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTemplateSchema = createInsertSchema(templates).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
+export type Template = typeof templates.$inferSelect;
+
+// Media Assets - For managing uploaded images
+export const mediaAssets = pgTable("media_assets", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  url: text("url").notNull(),
+  altText: varchar("alt_text", { length: 500 }),
+  mimeType: varchar("mime_type", { length: 100 }),
+  fileSize: integer("file_size"), // in bytes
+  tags: json("tags").$type<string[]>(),
+  uploadedBy: varchar("uploaded_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertMediaAssetSchema = createInsertSchema(mediaAssets).omit({ id: true, createdAt: true });
+export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
+export type MediaAsset = typeof mediaAssets.$inferSelect;
