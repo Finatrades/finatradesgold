@@ -1,49 +1,45 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Vault, Wallet, TrendingUp, GitBranch, ArrowRight } from 'lucide-react';
+import { Vault, Wallet, TrendingUp, Globe, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAccountType } from '@/context/AccountTypeContext';
+import { Button } from '@/components/ui/button';
 
-const getProducts = (accountType: string, t: (key: string) => string) => {
+const getProducts = (accountType: string) => {
   if (accountType === 'business') {
     return [
       {
         id: 'finavault',
         icon: Vault,
-        name: t('products.business.finavault.name'),
-        tagline: t('products.business.finavault.tagline'),
-        description: t('products.business.finavault.description'),
-        href: '/finavault',
-        color: 'from-[#D4AF37] to-[#F4E4BC]'
+        name: 'Deposit / Buy Gold',
+        description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
+        cta: 'Explore FinaVault',
+        href: '/finavault'
       },
       {
         id: 'finapay',
         icon: Wallet,
-        name: t('products.business.finapay.name'),
-        tagline: t('products.business.finapay.tagline'),
-        description: t('products.business.finapay.description'),
-        href: '/finapay',
-        color: 'from-[#FF6B2F] to-[#FF8F5F]'
+        name: 'Payments & Transfers',
+        description: 'Send and receive payments through the platform, manage your wallet and spend anywhere using your gold-backed debit card.',
+        cta: 'Explore FinaPay Wallet',
+        href: '/finapay'
       },
       {
         id: 'finabridge',
-        icon: GitBranch,
-        name: t('products.business.finabridge.name'),
-        tagline: t('products.business.finabridge.tagline'),
-        description: t('products.business.finabridge.description'),
-        href: '/finabridge',
-        featured: true,
-        color: 'from-[#6B21A8] to-[#9333EA]'
+        icon: Globe,
+        name: 'Global Trade Monitoring',
+        description: 'Monitor your imports and exports in real time, track gold-backed settlements and streamline every step of your cross-border business operations.',
+        cta: 'Explore FinaBridge',
+        href: '/finabridge'
       },
       {
         id: 'bnsl',
         icon: TrendingUp,
-        name: t('products.business.bnsl.name'),
-        tagline: t('products.business.bnsl.tagline'),
-        description: t('products.business.bnsl.description'),
-        href: '/bnsl',
-        color: 'from-[#059669] to-[#34D399]'
+        name: "Buy 'N' SeLL Gold Plans",
+        description: 'Get substantial margins and guaranteed returns thanks to our BNSL Plans.',
+        cta: 'Explore BNSL',
+        href: '/bnsl'
       }
     ];
   }
@@ -52,29 +48,26 @@ const getProducts = (accountType: string, t: (key: string) => string) => {
     {
       id: 'finavault',
       icon: Vault,
-      name: t('products.personal.finavault.name'),
-      tagline: t('products.personal.finavault.tagline'),
-      description: t('products.personal.finavault.description'),
-      href: '/finavault',
-      color: 'from-[#D4AF37] to-[#F4E4BC]'
+      name: 'Secure Gold Storage',
+      description: 'Store your physical gold in certified Swiss vaults with full insurance and regular audits.',
+      cta: 'Explore FinaVault',
+      href: '/finavault'
     },
     {
       id: 'finapay',
       icon: Wallet,
-      name: t('products.personal.finapay.name'),
-      tagline: t('products.personal.finapay.tagline'),
-      description: t('products.personal.finapay.description'),
-      href: '/finapay',
-      color: 'from-[#FF6B2F] to-[#FF8F5F]'
+      name: 'Digital Gold Wallet',
+      description: 'Buy, sell, and transfer gold digitally with instant settlement and low fees.',
+      cta: 'Explore FinaPay',
+      href: '/finapay'
     },
     {
       id: 'bnsl',
       icon: TrendingUp,
-      name: t('products.personal.bnsl.name'),
-      tagline: t('products.personal.bnsl.tagline'),
-      description: t('products.personal.bnsl.description'),
-      href: '/bnsl',
-      color: 'from-[#059669] to-[#34D399]'
+      name: 'Gold Savings Plans',
+      description: 'Earn guaranteed returns on your gold holdings with structured BNSL plans.',
+      cta: 'Explore BNSL',
+      href: '/bnsl'
     }
   ];
 };
@@ -82,23 +75,30 @@ const getProducts = (accountType: string, t: (key: string) => string) => {
 export default function ProductSuite() {
   const { t } = useLanguage();
   const { accountType } = useAccountType();
-  const products = getProducts(accountType, t);
+  const products = getProducts(accountType);
 
   return (
-    <section id="products" className="py-24 bg-white">
-      <div className="container mx-auto px-6">
+    <section id="products" className="py-24 bg-gradient-to-br from-purple-50/30 via-white to-pink-50/20 relative">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-100/40 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-pink-100/40 blur-[100px] rounded-full" />
+      </div>
+      
+      <div className="container mx-auto px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center mb-16"
         >
+          <span className="text-sm font-semibold tracking-widest text-[#9333EA] uppercase mb-4 block">
+            {accountType === 'business' ? 'BUSINESS ECOSYSTEM' : 'PERSONAL ECOSYSTEM'}
+          </span>
           <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-gray-900">
-            {t('products.title')}
+            {accountType === 'business' 
+              ? 'A Structured Ecosystem for High-Trust Business Transactions'
+              : 'Your Complete Gold Management Platform'}
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            {t('products.subtitle')}
-          </p>
         </motion.div>
 
         <div className={`grid gap-6 ${accountType === 'business' ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
@@ -109,35 +109,32 @@ export default function ProductSuite() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
+              className="group"
             >
-              <Link href={product.href} data-testid={`link-product-${product.id}`}>
-                <div className={`group relative h-full p-8 rounded-3xl bg-white border transition-all duration-300 hover:shadow-xl cursor-pointer ${product.featured ? 'border-[#6B21A8] shadow-[0_0_20px_rgba(107,33,168,0.15)]' : 'border-gray-200 hover:border-[#6B21A8]/30'}`} data-testid={`card-product-${product.id}`}>
-                  {product.featured && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-[#6B21A8] to-[#9333EA] text-xs font-semibold text-white">
-                      Featured
-                    </div>
-                  )}
-                  
-                  <div className={`mb-6 p-4 rounded-2xl bg-gradient-to-br ${product.color} w-fit group-hover:scale-110 transition-transform duration-300`}>
-                    <product.icon className="w-8 h-8 text-white" />
-                  </div>
-                  
-                  <h3 className="text-xl font-bold mb-2 text-gray-900 group-hover:text-[#6B21A8] transition-colors">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm font-medium text-[#6B21A8] mb-4">
-                    {product.tagline}
-                  </p>
-                  <p className="text-gray-600 leading-relaxed mb-6 text-sm">
-                    {product.description}
-                  </p>
-                  
-                  <div className="flex items-center text-sm font-medium text-gray-700 group-hover:text-[#6B21A8] transition-colors">
-                    Learn more 
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              <div className="h-full p-8 rounded-3xl bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300" data-testid={`card-product-${product.id}`}>
+                <div className="mb-6 relative">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#9333EA]/10 to-[#EC4899]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <product.icon className="w-8 h-8 text-[#9333EA]" strokeWidth={1.5} />
                   </div>
                 </div>
-              </Link>
+                
+                <h3 className="text-lg font-bold mb-3 text-gray-900">
+                  {product.name}
+                </h3>
+                <p className="text-gray-500 leading-relaxed mb-6 text-sm min-h-[80px]">
+                  {product.description}
+                </p>
+                
+                <Link href={product.href}>
+                  <Button 
+                    className="w-full bg-gradient-to-r from-[#EC4899] to-[#9333EA] hover:opacity-90 text-white rounded-full"
+                    data-testid={`button-explore-${product.id}`}
+                  >
+                    {product.cta}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
             </motion.div>
           ))}
         </div>

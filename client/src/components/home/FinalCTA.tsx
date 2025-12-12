@@ -9,8 +9,11 @@ export default function FinalCTA() {
   const { accountType } = useAccountType();
 
   return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/5 to-[#FF2FBF]/10" />
+    <section className="py-24 relative overflow-hidden bg-gradient-to-br from-purple-50/50 via-white to-pink-50/30">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-purple-100/50 blur-[150px] rounded-full" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-pink-100/50 blur-[120px] rounded-full" />
+      </div>
       
       <div className="container mx-auto px-6 relative z-10">
         <motion.div
@@ -19,19 +22,19 @@ export default function FinalCTA() {
           viewport={{ once: true }}
           className="max-w-4xl mx-auto text-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Start Today</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#EC4899]/10 to-[#9333EA]/10 border border-[#9333EA]/20 mb-8">
+            <Sparkles className="w-4 h-4 text-[#9333EA]" />
+            <span className="text-sm font-medium text-[#9333EA]">Start Today</span>
           </div>
           
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-foreground">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-gray-900">
             Ready to Start Your <br />
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#9333EA] to-[#EC4899] bg-clip-text text-transparent">
               Gold Journey?
             </span>
           </h2>
           
-          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
             {accountType === 'personal'
               ? 'Join thousands of individuals who trust Finatrades for secure gold ownership and wealth preservation.'
               : 'Partner with Finatrades for enterprise-grade gold management, trade finance, and treasury solutions.'}
@@ -41,7 +44,7 @@ export default function FinalCTA() {
             <Link href="/register">
               <Button 
                 size="lg" 
-                className="h-14 px-10 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white rounded-full text-base shadow-lg"
+                className="h-14 px-10 bg-gradient-to-r from-[#FF6B2F] to-[#FF8F5F] hover:opacity-90 text-white rounded-full text-base shadow-lg shadow-orange-200"
                 data-testid="button-cta-register"
               >
                 {accountType === 'personal' ? 'Create Free Account' : 'Get Enterprise Demo'}
@@ -52,7 +55,7 @@ export default function FinalCTA() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="h-14 px-10 border-border hover:bg-muted text-foreground rounded-full text-base"
+                className="h-14 px-10 border-gray-300 hover:bg-gray-50 text-gray-700 rounded-full text-base"
                 data-testid="button-cta-signin"
               >
                 Sign In
