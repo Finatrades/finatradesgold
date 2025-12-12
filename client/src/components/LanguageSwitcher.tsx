@@ -32,9 +32,10 @@ export default function LanguageSwitcher({ variant = 'default' }) {
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
           isLight 
-            ? 'bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20' 
+            ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20' 
             : 'bg-background border border-border text-foreground hover:bg-muted'
         } backdrop-blur-sm`}
+        data-testid="button-language-switcher"
       >
         <Globe className="w-4 h-4" />
         <span className="text-xs font-medium">{currentLang.code.toUpperCase()}</span>
