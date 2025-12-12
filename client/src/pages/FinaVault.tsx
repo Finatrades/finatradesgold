@@ -9,6 +9,7 @@ import NewDepositForm from '@/components/finavault/NewDepositForm';
 import RequestDetails from '@/components/finavault/RequestDetails';
 import CashOutForm from '@/components/finavault/CashOutForm';
 import CertificatesView from '@/components/finavault/CertificatesView';
+import VaultActivityList from '@/components/finavault/VaultActivityList';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -187,7 +188,7 @@ export default function FinaVault() {
   const [location] = useLocation();
   
   // State
-  const [activeTab, setActiveTab] = useState('my-deposits');
+  const [activeTab, setActiveTab] = useState('vault-activity');
   const [requests, setRequests] = useState<DepositRequest[]>(MOCK_REQUESTS);
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
 
@@ -333,27 +334,35 @@ export default function FinaVault() {
               exit={{ opacity: 0, y: -20 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex">
+                <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex flex-wrap">
+                  <TabsTrigger 
+                    value="vault-activity"
+                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    data-testid="tab-vault-activity"
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    Vault Activity
+                  </TabsTrigger>
                   <TabsTrigger 
                     value="my-deposits"
                     className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
                   >
-                    <History className="w-4 h-4 mr-2" />
-                    Transaction Record
+                    <Database className="w-4 h-4 mr-2" />
+                    Deposit Requests
                   </TabsTrigger>
                   <TabsTrigger 
                     value="new-request"
                     className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
                   >
                     <PlusCircle className="w-4 h-4 mr-2" />
-                    New Deposit Request
+                    New Deposit
                   </TabsTrigger>
                   <TabsTrigger 
                     value="cash-out"
                     className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
                   >
                     <Banknote className="w-4 h-4 mr-2" />
-                    Cash Out / Sell
+                    Cash Out
                   </TabsTrigger>
                   <TabsTrigger 
                     value="certificates"
@@ -364,6 +373,10 @@ export default function FinaVault() {
                     Certificates
                   </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="vault-activity" className="mt-0">
+                  <VaultActivityList />
+                </TabsContent>
 
                 <TabsContent value="my-deposits" className="mt-0">
                   <DepositList 

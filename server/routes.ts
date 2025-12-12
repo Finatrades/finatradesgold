@@ -928,6 +928,54 @@ export async function registerRoutes(
     }
   });
   
+  // Get vault activity (transactions related to vault operations)
+  app.get("/api/vault/activity/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      
+      // Get all transactions for this user
+      const allTransactions = await storage.getUserTransactions(userId);
+      
+      // Filter to vault-relevant transaction types
+      const vaultTypes = ['Buy', 'Sell', 'Send', 'Receive', 'Deposit', 'Withdrawal'];
+      const vaultTransactions = allTransactions.filter(tx => vaultTypes.includes(tx.type));
+      
+      // Get holdings and certificates
+      const holdings = await storage.getUserVaultHoldings(userId);
+      const certificates = await storage.getUserCertificates(userId);
+      
+      // Get wallet for current balance
+      const wallet = await storage.getWallet(userId);
+      
+      // Enrich transactions with certificate info
+      const enrichedTransactions = vaultTransactions.map(tx => {
+        const txCerts = certificates.filter(c => c.transactionId === tx.id);
+        return {
+          ...tx,
+          certificates: txCerts.map(c => ({
+            id: c.id,
+            certificateNumber: c.certificateNumber,
+            type: c.type,
+            status: c.status,
+            goldGrams: c.goldGrams
+          }))
+        };
+      });
+      
+      res.json({ 
+        transactions: enrichedTransactions,
+        holdings,
+        certificates,
+        currentBalance: {
+          goldGrams: wallet?.goldGrams || '0',
+          usdBalance: wallet?.usdBalance || '0'
+        }
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get vault activity" });
+    }
+  });
+  
   // ============================================
   // CERTIFICATES
   // ============================================
