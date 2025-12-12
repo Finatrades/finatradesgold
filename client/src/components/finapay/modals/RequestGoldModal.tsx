@@ -67,11 +67,12 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
     setIsLoading(true);
     
     try {
-      const res = await apiRequest('POST', '/api/finapay/request', {
+      const isFinatradesId = targetIdentifier && targetIdentifier.toUpperCase().startsWith('FT');
+      const res = await apiRequest('POST', '/api/finapay/peer/request', {
         requesterId: user.id,
         targetIdentifier: targetIdentifier || null,
         amountUsd: numericAmount.toFixed(2),
-        channel: targetIdentifier ? 'email' : 'qr_code',
+        channel: !targetIdentifier ? 'qr_code' : (isFinatradesId ? 'finatrades_id' : 'email'),
         memo: memo || null,
       });
       

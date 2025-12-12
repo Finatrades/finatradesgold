@@ -87,6 +87,33 @@ interface WithdrawalRequest {
   createdAt: string;
 }
 
+interface PeerTransfer {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  amountUsd: string;
+  channel: 'email' | 'finatrades_id' | 'qr_code';
+  memo: string | null;
+  referenceNumber: string;
+  status: 'Completed' | 'Failed';
+  createdAt: string;
+}
+
+interface PeerRequest {
+  id: string;
+  requesterId: string;
+  targetId: string | null;
+  amountUsd: string;
+  channel: 'email' | 'finatrades_id' | 'qr_code';
+  memo: string | null;
+  referenceNumber: string;
+  status: 'Pending' | 'Paid' | 'Declined' | 'Expired';
+  paidAt: string | null;
+  paidBy: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export default function FinaPayManagement() {
   const { user: currentUser } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -94,6 +121,8 @@ export default function FinaPayManagement() {
   const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  const [peerTransfers, setPeerTransfers] = useState<PeerTransfer[]>([]);
+  const [peerRequests, setPeerRequests] = useState<PeerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -126,12 +155,14 @@ export default function FinaPayManagement() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [txResponse, usersResponse, bankAccountsRes, depositsRes, withdrawalsRes] = await Promise.all([
+      const [txResponse, usersResponse, bankAccountsRes, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes] = await Promise.all([
         fetch('/api/admin/transactions'),
         fetch('/api/admin/users'),
         fetch('/api/admin/bank-accounts'),
         fetch('/api/admin/deposit-requests'),
-        fetch('/api/admin/withdrawal-requests')
+        fetch('/api/admin/withdrawal-requests'),
+        fetch('/api/admin/finapay/peer-transfers'),
+        fetch('/api/admin/finapay/peer-requests')
       ]);
       
       const txData = await txResponse.json();
@@ -139,11 +170,15 @@ export default function FinaPayManagement() {
       const bankData = await bankAccountsRes.json();
       const depositData = await depositsRes.json();
       const withdrawalData = await withdrawalsRes.json();
+      const peerTransfersData = await peerTransfersRes.json();
+      const peerRequestsData = await peerRequestsRes.json();
       
       setTransactions(txData.transactions || []);
       setBankAccounts(bankData.accounts || []);
       setDepositRequests(depositData.requests || []);
       setWithdrawalRequests(withdrawalData.requests || []);
+      setPeerTransfers(peerTransfersData.transfers || []);
+      setPeerRequests(peerRequestsData.requests || []);
       
       const userMap: Record<string, UserInfo> = {};
       (usersData.users || []).forEach((u: UserInfo) => {
@@ -495,6 +530,14 @@ export default function FinaPayManagement() {
               <Coins className="w-4 h-4 mr-2" />
               Transactions ({transactions.length})
             </TabsTrigger>
+            <TabsTrigger value="peer-transfers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <Send className="w-4 h-4 mr-2" />
+              Peer Transfers ({peerTransfers.length})
+            </TabsTrigger>
+            <TabsTrigger value="peer-requests" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Peer Requests ({peerRequests.length})
+            </TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -682,6 +725,120 @@ export default function FinaPayManagement() {
               ) : (
                 <div className="space-y-3">
                   {transactions.map(tx => <TransactionRow key={tx.id} tx={tx} showActions={tx.status === 'Pending'} />)}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="peer-transfers">
+              <h2 className="text-lg font-semibold mb-4">Peer-to-Peer Transfers</h2>
+              {peerTransfers.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    <Send className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No peer transfers yet</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {peerTransfers.map(transfer => (
+                    <Card key={transfer.id} data-testid={`card-peer-transfer-${transfer.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
+                              <Send className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900 text-lg">${parseFloat(transfer.amountUsd).toFixed(2)}</span>
+                                <Badge variant={transfer.status === 'Completed' ? 'default' : 'destructive'}>{transfer.status}</Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">{getUserName(transfer.senderId)}</span>
+                                <span className="mx-2">→</span>
+                                <span className="font-medium">{getUserName(transfer.recipientId)}</span>
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Ref: {transfer.referenceNumber} | Channel: {transfer.channel.replace('_', ' ')}
+                              </p>
+                              {transfer.memo && (
+                                <p className="text-xs text-gray-500 mt-1 italic">"{transfer.memo}"</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">{new Date(transfer.createdAt).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="peer-requests">
+              <h2 className="text-lg font-semibold mb-4">Payment Requests</h2>
+              {peerRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No payment requests yet</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {peerRequests.map(request => (
+                    <Card key={request.id} data-testid={`card-peer-request-${request.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-lg ${
+                              request.status === 'Paid' ? 'bg-green-100 text-green-700' :
+                              request.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                              request.status === 'Declined' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              <CreditCard className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900 text-lg">${parseFloat(request.amountUsd).toFixed(2)}</span>
+                                <Badge variant={
+                                  request.status === 'Paid' ? 'default' :
+                                  request.status === 'Pending' ? 'secondary' :
+                                  request.status === 'Declined' ? 'destructive' :
+                                  'outline'
+                                }>{request.status}</Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">Requested by: {getUserName(request.requesterId)}</span>
+                                {request.targetId && (
+                                  <span className="ml-2">→ {getUserName(request.targetId)}</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Ref: {request.referenceNumber} | Channel: {request.channel.replace('_', ' ')}
+                              </p>
+                              {request.memo && (
+                                <p className="text-xs text-gray-500 mt-1 italic">"{request.memo}"</p>
+                              )}
+                              {request.paidBy && (
+                                <p className="text-xs text-green-600 mt-1">Paid by: {getUserName(request.paidBy)}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">{new Date(request.createdAt).toLocaleString()}</p>
+                            <p className="text-xs text-gray-400">Expires: {new Date(request.expiresAt).toLocaleDateString()}</p>
+                            {request.paidAt && (
+                              <p className="text-xs text-green-600">Paid: {new Date(request.paidAt).toLocaleString()}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </TabsContent>

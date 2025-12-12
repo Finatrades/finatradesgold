@@ -88,11 +88,11 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     setIsLoading(true);
     
     try {
-      const res = await apiRequest('POST', '/api/finapay/send', {
+      const res = await apiRequest('POST', '/api/finapay/peer/send', {
         senderId: user.id,
         recipientIdentifier: activeTab === 'email' ? foundUser.email : foundUser.finatradesId,
         amountUsd: numericAmount.toFixed(2),
-        channel: activeTab,
+        channel: activeTab === 'qr_code' ? 'finatrades_id' : activeTab,
         memo: memo || null,
       });
       
