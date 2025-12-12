@@ -34,7 +34,7 @@ export default function WhyFinatrades() {
   const differentiators = getDifferentiators(accountType);
 
   return (
-    <section id="about" className="py-24 bg-gradient-to-br from-[#0D001E] via-[#2A0055] to-[#4B0082] text-white overflow-hidden">
+    <section id="about" className="py-24 bg-[#1a1a2e] text-white overflow-hidden">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -45,7 +45,7 @@ export default function WhyFinatrades() {
           <h2 className="text-3xl lg:text-5xl font-bold mb-4">
             Why <span className="bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] bg-clip-text text-transparent">Finatrades</span>?
           </h2>
-          <p className="text-lg text-white/70 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
             {accountType === 'personal' 
               ? 'Built for individuals who want secure, accessible gold ownership'
               : 'Enterprise solutions for corporate gold management'}
@@ -64,12 +64,12 @@ export default function WhyFinatrades() {
               data-testid={`card-differentiator-${index}`}
             >
               <div className="mb-4 p-3 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] w-fit group-hover:scale-110 transition-transform">
-                <item.icon className="w-6 h-6 text-[#0D001E]" />
+                <item.icon className="w-6 h-6 text-[#1a1a2e]" />
               </div>
               <h3 className="text-lg font-bold mb-2 text-white group-hover:text-[#D4AF37] transition-colors" data-testid={`text-differentiator-title-${index}`}>
                 {item.title}
               </h3>
-              <p className="text-sm text-white/60 leading-relaxed" data-testid={`text-differentiator-desc-${index}`}>
+              <p className="text-sm text-gray-400 leading-relaxed" data-testid={`text-differentiator-desc-${index}`}>
                 {item.description}
               </p>
             </motion.div>
@@ -92,7 +92,7 @@ export default function WhyFinatrades() {
               <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] bg-clip-text text-transparent mb-2" data-testid={`text-about-stat-value-${i}`}>
                 {stat.value}
               </div>
-              <div className="text-sm text-white/60" data-testid={`text-about-stat-label-${i}`}>{stat.label}</div>
+              <div className="text-sm text-gray-400" data-testid={`text-about-stat-label-${i}`}>{stat.label}</div>
             </div>
           ))}
         </motion.div>
