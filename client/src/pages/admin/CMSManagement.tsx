@@ -35,7 +35,14 @@ import {
   Hash,
   Image,
   Zap,
-  ChevronDown
+  ChevronDown,
+  LayoutDashboard,
+  Wallet,
+  Database,
+  TrendingUp,
+  CreditCard,
+  User,
+  Settings
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { ContentPage, ContentBlock, Template } from '@shared/schema';
@@ -1315,6 +1322,109 @@ const quickAddTemplates = [
       { name: 'Nav Item 3', section: 'navigation', key: 'nav_3', type: 'json' as const, defaultContent: JSON.stringify({ label: 'About', href: '/about', icon: 'info' }, null, 2) },
       { name: 'Sign In Button', section: 'navigation', key: 'signin_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Sign In', href: '/login', variant: 'outline' }, null, 2) },
       { name: 'Get Started Button', section: 'navigation', key: 'cta_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Get Started', href: '/register', variant: 'primary' }, null, 2) },
+    ]
+  },
+  // ==================== PRIVATE PAGES (Login Required) ====================
+  {
+    category: 'Dashboard (Private)',
+    icon: LayoutDashboard,
+    color: 'bg-slate-100 text-slate-700',
+    items: [
+      { name: 'Welcome Title', section: 'dashboard', key: 'welcome_title', type: 'text' as const, defaultContent: 'Dashboard Overview' },
+      { name: 'Welcome Subtitle', section: 'dashboard', key: 'welcome_subtitle', type: 'text' as const, defaultContent: 'Welcome back to your financial command center.' },
+      { name: 'KPI Card 1', section: 'dashboard', key: 'kpi_1', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Gold Storage', value: '0.000 kg', icon: 'database' }, null, 2) },
+      { name: 'KPI Card 2', section: 'dashboard', key: 'kpi_2', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Gold Value (USD)', value: '$0.00', icon: 'dollar-sign' }, null, 2) },
+      { name: 'KPI Card 3', section: 'dashboard', key: 'kpi_3', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Total Portfolio', value: '$0.00', icon: 'coins' }, null, 2) },
+      { name: 'Quick Action', section: 'dashboard', key: 'quick_action', type: 'json' as const, defaultContent: JSON.stringify({ label: 'Buy Gold', href: '/finapay', icon: 'plus' }, null, 2) },
+    ]
+  },
+  {
+    category: 'FinaPay Wallet (Private)',
+    icon: Wallet,
+    color: 'bg-green-100 text-green-700',
+    items: [
+      { name: 'Page Title', section: 'finapay', key: 'title', type: 'text' as const, defaultContent: 'FinaPay Wallet' },
+      { name: 'Page Subtitle', section: 'finapay', key: 'subtitle', type: 'text' as const, defaultContent: 'Buy, sell, and send gold instantly.' },
+      { name: 'Balance Label', section: 'finapay', key: 'balance_label', type: 'text' as const, defaultContent: 'Your Gold Balance' },
+      { name: 'Buy Button', section: 'finapay', key: 'buy_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Buy Gold', icon: 'plus', variant: 'primary' }, null, 2) },
+      { name: 'Sell Button', section: 'finapay', key: 'sell_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Sell Gold', icon: 'minus', variant: 'secondary' }, null, 2) },
+      { name: 'Send Button', section: 'finapay', key: 'send_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Send Gold', icon: 'send', variant: 'outline' }, null, 2) },
+    ]
+  },
+  {
+    category: 'FinaVault (Private)',
+    icon: Database,
+    color: 'bg-amber-100 text-amber-700',
+    items: [
+      { name: 'Page Title', section: 'finavault', key: 'title', type: 'text' as const, defaultContent: 'FinaVault' },
+      { name: 'Page Subtitle', section: 'finavault', key: 'subtitle', type: 'text' as const, defaultContent: 'Secure physical gold storage with dual certificates.' },
+      { name: 'Vault Location', section: 'finavault', key: 'vault_location', type: 'text' as const, defaultContent: 'Dubai DMCC Vault - Wingold & Metals' },
+      { name: 'Storage Info', section: 'finavault', key: 'storage_info', type: 'json' as const, defaultContent: JSON.stringify({ label: 'Annual Storage Fee', value: '1.50%' }, null, 2) },
+      { name: 'Certificate Info', section: 'finavault', key: 'certificate_info', type: 'json' as const, defaultContent: JSON.stringify({ digital: 'Finatrades Certificate', physical: 'Wingold & Metals DMCC Certificate' }, null, 2) },
+      { name: 'Deposit Button', section: 'finavault', key: 'deposit_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'New Deposit', icon: 'plus', variant: 'primary' }, null, 2) },
+    ]
+  },
+  {
+    category: 'BNSL Plans (Private)',
+    icon: TrendingUp,
+    color: 'bg-purple-100 text-purple-700',
+    items: [
+      { name: 'Page Title', section: 'bnsl_dashboard', key: 'title', type: 'text' as const, defaultContent: 'BNSL Plans' },
+      { name: 'Page Subtitle', section: 'bnsl_dashboard', key: 'subtitle', type: 'text' as const, defaultContent: 'Buy Now Sell Later - Lock prices, earn bonuses.' },
+      { name: 'Active Plans Label', section: 'bnsl_dashboard', key: 'active_label', type: 'text' as const, defaultContent: 'Active Plans' },
+      { name: 'Create Plan Button', section: 'bnsl_dashboard', key: 'create_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Create New Plan', icon: 'plus', variant: 'primary' }, null, 2) },
+      { name: 'Plan Card', section: 'bnsl_dashboard', key: 'plan_card', type: 'json' as const, defaultContent: JSON.stringify({ duration: '6 months', bonus: '1.5%', minAmount: '$500' }, null, 2) },
+    ]
+  },
+  {
+    category: 'FinaBridge (Private)',
+    icon: BarChart3,
+    color: 'bg-blue-100 text-blue-700',
+    items: [
+      { name: 'Page Title', section: 'finabridge', key: 'title', type: 'text' as const, defaultContent: 'FinaBridge' },
+      { name: 'Page Subtitle', section: 'finabridge', key: 'subtitle', type: 'text' as const, defaultContent: 'Trade finance solutions for importers and exporters.' },
+      { name: 'Business Only Notice', section: 'finabridge', key: 'business_notice', type: 'text' as const, defaultContent: 'Available for Business accounts only.' },
+      { name: 'Apply Button', section: 'finabridge', key: 'apply_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Apply for Trade Finance', icon: 'file-text', variant: 'primary' }, null, 2) },
+      { name: 'Case Status', section: 'finabridge', key: 'case_status', type: 'json' as const, defaultContent: JSON.stringify({ submitted: 'Submitted', underReview: 'Under Review', approved: 'Approved', rejected: 'Rejected' }, null, 2) },
+    ]
+  },
+  {
+    category: 'FinaCard (Private)',
+    icon: CreditCard,
+    color: 'bg-zinc-100 text-zinc-700',
+    items: [
+      { name: 'Page Title', section: 'finacard', key: 'title', type: 'text' as const, defaultContent: 'FinaCard Metal' },
+      { name: 'Page Subtitle', section: 'finacard', key: 'subtitle', type: 'text' as const, defaultContent: 'Spend your gold anywhere in the world.' },
+      { name: 'Coming Soon Badge', section: 'finacard', key: 'coming_soon', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Coming Soon to Your Region', icon: 'sparkles' }, null, 2) },
+      { name: 'Feature 1', section: 'finacard', key: 'feature_1', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Global Acceptance', description: 'Accepted worldwide', icon: 'globe' }, null, 2) },
+      { name: 'Feature 2', section: 'finacard', key: 'feature_2', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Real-time Conversion', description: 'Gold to fiat at POS', icon: 'zap' }, null, 2) },
+      { name: 'Waitlist Button', section: 'finacard', key: 'waitlist_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Join Waitlist', icon: 'bell', variant: 'primary' }, null, 2) },
+    ]
+  },
+  {
+    category: 'Profile (Private)',
+    icon: User,
+    color: 'bg-orange-100 text-orange-700',
+    items: [
+      { name: 'Page Title', section: 'profile', key: 'title', type: 'text' as const, defaultContent: 'My Profile' },
+      { name: 'Page Subtitle', section: 'profile', key: 'subtitle', type: 'text' as const, defaultContent: 'Manage your account settings and preferences.' },
+      { name: 'Personal Info Label', section: 'profile', key: 'personal_label', type: 'text' as const, defaultContent: 'Personal Information' },
+      { name: 'KYC Status Label', section: 'profile', key: 'kyc_label', type: 'text' as const, defaultContent: 'KYC Verification Status' },
+      { name: 'Edit Button', section: 'profile', key: 'edit_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Edit Profile', icon: 'edit', variant: 'outline' }, null, 2) },
+      { name: 'Save Button', section: 'profile', key: 'save_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Save Changes', icon: 'save', variant: 'primary' }, null, 2) },
+    ]
+  },
+  {
+    category: 'Settings (Private)',
+    icon: Settings,
+    color: 'bg-gray-100 text-gray-700',
+    items: [
+      { name: 'Page Title', section: 'settings', key: 'title', type: 'text' as const, defaultContent: 'Settings' },
+      { name: 'Page Subtitle', section: 'settings', key: 'subtitle', type: 'text' as const, defaultContent: 'Manage your account preferences and security.' },
+      { name: 'Security Section', section: 'settings', key: 'security_title', type: 'text' as const, defaultContent: 'Security Settings' },
+      { name: 'Notifications Section', section: 'settings', key: 'notifications_title', type: 'text' as const, defaultContent: 'Notification Preferences' },
+      { name: 'Change Password', section: 'settings', key: 'change_password', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Change Password', icon: 'key', variant: 'outline' }, null, 2) },
+      { name: 'Enable 2FA', section: 'settings', key: 'enable_2fa', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Enable Two-Factor Auth', icon: 'shield', variant: 'primary' }, null, 2) },
     ]
   },
 ];
