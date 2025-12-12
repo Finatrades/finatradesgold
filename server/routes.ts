@@ -6,7 +6,8 @@ import {
   insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
   insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertTradeCaseSchema,
   insertTradeDocumentSchema, insertChatSessionSchema, insertChatMessageSchema,
-  insertAuditLogSchema, User
+  insertAuditLogSchema, insertContentPageSchema, insertContentBlockSchema,
+  insertTemplateSchema, insertMediaAssetSchema, User
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -1347,6 +1348,272 @@ export async function registerRoutes(
       res.json({ logs });
     } catch (error) {
       res.status(400).json({ message: "Failed to get audit logs" });
+    }
+  });
+
+  // ============================================================================
+  // CMS - CONTENT MANAGEMENT SYSTEM
+  // ============================================================================
+  
+  // === Content Pages ===
+  
+  // Get all content pages (Admin)
+  app.get("/api/admin/cms/pages", async (req, res) => {
+    try {
+      const pages = await storage.getAllContentPages();
+      res.json({ pages });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get content pages" });
+    }
+  });
+  
+  // Get content page by ID (Admin)
+  app.get("/api/admin/cms/pages/:id", async (req, res) => {
+    try {
+      const page = await storage.getContentPage(req.params.id);
+      if (!page) {
+        return res.status(404).json({ message: "Content page not found" });
+      }
+      const blocks = await storage.getPageContentBlocks(page.id);
+      res.json({ page, blocks });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get content page" });
+    }
+  });
+  
+  // Create content page (Admin)
+  app.post("/api/admin/cms/pages", async (req, res) => {
+    try {
+      const pageData = insertContentPageSchema.parse(req.body);
+      const page = await storage.createContentPage(pageData);
+      res.json({ page });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create content page" });
+    }
+  });
+  
+  // Update content page (Admin)
+  app.patch("/api/admin/cms/pages/:id", async (req, res) => {
+    try {
+      const page = await storage.updateContentPage(req.params.id, req.body);
+      if (!page) {
+        return res.status(404).json({ message: "Content page not found" });
+      }
+      res.json({ page });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update content page" });
+    }
+  });
+  
+  // Delete content page (Admin)
+  app.delete("/api/admin/cms/pages/:id", async (req, res) => {
+    try {
+      await storage.deleteContentPage(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete content page" });
+    }
+  });
+  
+  // === Content Blocks ===
+  
+  // Get all content blocks (Admin)
+  app.get("/api/admin/cms/blocks", async (req, res) => {
+    try {
+      const blocks = await storage.getAllContentBlocks();
+      res.json({ blocks });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get content blocks" });
+    }
+  });
+  
+  // Get content block by ID (Admin)
+  app.get("/api/admin/cms/blocks/:id", async (req, res) => {
+    try {
+      const block = await storage.getContentBlock(req.params.id);
+      if (!block) {
+        return res.status(404).json({ message: "Content block not found" });
+      }
+      res.json({ block });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get content block" });
+    }
+  });
+  
+  // Create content block (Admin)
+  app.post("/api/admin/cms/blocks", async (req, res) => {
+    try {
+      const blockData = insertContentBlockSchema.parse(req.body);
+      const block = await storage.createContentBlock(blockData);
+      res.json({ block });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create content block" });
+    }
+  });
+  
+  // Update content block (Admin)
+  app.patch("/api/admin/cms/blocks/:id", async (req, res) => {
+    try {
+      const block = await storage.updateContentBlock(req.params.id, req.body);
+      if (!block) {
+        return res.status(404).json({ message: "Content block not found" });
+      }
+      res.json({ block });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update content block" });
+    }
+  });
+  
+  // Delete content block (Admin)
+  app.delete("/api/admin/cms/blocks/:id", async (req, res) => {
+    try {
+      await storage.deleteContentBlock(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete content block" });
+    }
+  });
+  
+  // === Templates ===
+  
+  // Get all templates (Admin)
+  app.get("/api/admin/cms/templates", async (req, res) => {
+    try {
+      const templates = await storage.getAllTemplates();
+      res.json({ templates });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get templates" });
+    }
+  });
+  
+  // Get templates by type (Admin)
+  app.get("/api/admin/cms/templates/type/:type", async (req, res) => {
+    try {
+      const templates = await storage.getTemplatesByType(req.params.type);
+      res.json({ templates });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get templates" });
+    }
+  });
+  
+  // Get template by ID (Admin)
+  app.get("/api/admin/cms/templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json({ template });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get template" });
+    }
+  });
+  
+  // Create template (Admin)
+  app.post("/api/admin/cms/templates", async (req, res) => {
+    try {
+      const templateData = insertTemplateSchema.parse(req.body);
+      const template = await storage.createTemplate(templateData);
+      res.json({ template });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create template" });
+    }
+  });
+  
+  // Update template (Admin)
+  app.patch("/api/admin/cms/templates/:id", async (req, res) => {
+    try {
+      const template = await storage.updateTemplate(req.params.id, req.body);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json({ template });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update template" });
+    }
+  });
+  
+  // Delete template (Admin)
+  app.delete("/api/admin/cms/templates/:id", async (req, res) => {
+    try {
+      await storage.deleteTemplate(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete template" });
+    }
+  });
+  
+  // === Media Assets ===
+  
+  // Get all media assets (Admin)
+  app.get("/api/admin/cms/media", async (req, res) => {
+    try {
+      const assets = await storage.getAllMediaAssets();
+      res.json({ assets });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get media assets" });
+    }
+  });
+  
+  // Create media asset (Admin)
+  app.post("/api/admin/cms/media", async (req, res) => {
+    try {
+      const assetData = insertMediaAssetSchema.parse(req.body);
+      const asset = await storage.createMediaAsset(assetData);
+      res.json({ asset });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create media asset" });
+    }
+  });
+  
+  // Delete media asset (Admin)
+  app.delete("/api/admin/cms/media/:id", async (req, res) => {
+    try {
+      await storage.deleteMediaAsset(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete media asset" });
+    }
+  });
+  
+  // === Public Content API (for frontend consumption) ===
+  
+  // Get content by page slug (Public)
+  app.get("/api/content/:slug", async (req, res) => {
+    try {
+      const page = await storage.getContentPageBySlug(req.params.slug);
+      if (!page || !page.isActive) {
+        return res.status(404).json({ message: "Content not found" });
+      }
+      const blocks = await storage.getPageContentBlocks(page.id);
+      
+      // Transform blocks into a structured object by section and key
+      const content: Record<string, Record<string, string>> = {};
+      for (const block of blocks) {
+        if (block.status === 'published') {
+          if (!content[block.section]) {
+            content[block.section] = {};
+          }
+          content[block.section][block.key] = block.content || block.defaultContent || '';
+        }
+      }
+      
+      res.json({ page: { slug: page.slug, title: page.title }, content });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get content" });
+    }
+  });
+  
+  // Get template by slug (Public - for rendering)
+  app.get("/api/templates/:slug", async (req, res) => {
+    try {
+      const template = await storage.getTemplateBySlug(req.params.slug);
+      if (!template || template.status !== 'published') {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json({ template: { slug: template.slug, name: template.name, body: template.body, variables: template.variables } });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get template" });
     }
   });
 
