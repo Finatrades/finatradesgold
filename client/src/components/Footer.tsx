@@ -53,7 +53,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/bnsl">
+                <Link href="/bnsl-explore">
                   <span className="text-gray-400 hover:text-[#D4AF37] transition-colors cursor-pointer" data-testid="footer-link-bnsl">
                     {t('nav.bnsl')}
                   </span>

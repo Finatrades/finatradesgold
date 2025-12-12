@@ -47,6 +47,7 @@ import CardManagement from "@/pages/admin/CardManagement";
 import TradeFinance from "@/pages/admin/TradeFinance";
 import BNSLManagement from "@/pages/admin/BNSLManagement";
 import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
+import BNSLExplore from "@/pages/BNSLExplore";
 
 import FinaPayDashboard from "@/pages/FinaPayDashboard";
 import { FinaPayProvider } from "@/context/FinaPayContext";
@@ -58,6 +59,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/bnsl-explore" component={BNSLExplore} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/login" component={Login} />

@@ -39,7 +39,7 @@ const getProducts = (accountType: string) => {
         name: "Buy 'N' SeLL Gold Plans",
         description: 'Get substantial margins and guaranteed returns thanks to our BNSL Plans.',
         cta: 'Explore BNSL',
-        href: '/bnsl'
+        href: '/bnsl-explore'
       }
     ];
   }
@@ -67,7 +67,7 @@ const getProducts = (accountType: string) => {
       name: 'Gold Savings Plans',
       description: 'Earn guaranteed returns on your gold holdings with structured BNSL plans.',
       cta: 'Explore BNSL',
-      href: '/bnsl'
+      href: '/bnsl-explore'
     }
   ];
 };
