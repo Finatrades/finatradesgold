@@ -1430,7 +1430,7 @@ function QuickAddTemplates({
   isPending: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedPage, setSelectedPage] = useState<string>('');
+  const [selectedPage, setSelectedPage] = useState<string>('_global');
   const [customSection, setCustomSection] = useState('');
   const [customKey, setCustomKey] = useState('');
 
@@ -1439,7 +1439,7 @@ function QuickAddTemplates({
     const key = customKey || template.key;
     
     onAddBlock({
-      pageId: selectedPage || null,
+      pageId: selectedPage === '_global' ? null : selectedPage,
       section,
       key,
       type: template.type,
@@ -1481,7 +1481,7 @@ function QuickAddTemplates({
                     <SelectValue placeholder="Select page..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No page (global)</SelectItem>
+                    <SelectItem value="_global">No page (global)</SelectItem>
                     {pages.map((page) => (
                       <SelectItem key={page.id} value={page.id}>{page.title}</SelectItem>
                     ))}
