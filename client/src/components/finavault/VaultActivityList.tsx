@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
-import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, Send, Coins, Award, Eye } from 'lucide-react';
+import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, Send, Coins, Award, Eye, Download, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface VaultTransaction {
@@ -280,21 +280,47 @@ export default function VaultActivityList() {
               
               {selectedTx.certificates.length > 0 && (
                 <div className="border-t pt-4">
-                  <p className="font-medium mb-2 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-[#D4AF37]" />
-                    Certificates Issued
+                  <p className="font-medium mb-3 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-[#D4AF37]" />
+                    Your Certificates
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {selectedTx.certificates.map((cert) => (
-                      <div key={cert.id} className="flex items-center justify-between p-3 bg-[#D4AF37]/5 rounded-lg border border-[#D4AF37]/20">
-                        <div>
-                          <p className="font-mono text-sm">{cert.certificateNumber}</p>
-                          <p className="text-xs text-muted-foreground">{cert.type}</p>
+                      <div key={cert.id} className="p-4 bg-gradient-to-r from-[#D4AF37]/10 to-[#B8860B]/5 rounded-lg border border-[#D4AF37]/30" data-testid={`cert-card-${cert.id}`}>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-[#D4AF37]" />
+                            <div>
+                              <p className="font-bold text-[#8B6914]">{cert.type}</p>
+                              <p className="font-mono text-xs text-muted-foreground">{cert.certificateNumber}</p>
+                            </div>
+                          </div>
+                          <Badge className={cert.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                            {cert.status}
+                          </Badge>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">{parseFloat(cert.goldGrams).toFixed(4)}g</p>
-                          <Badge variant="outline" className="text-xs">{cert.status}</Badge>
+                        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                          <div>
+                            <p className="text-muted-foreground text-xs">Gold Amount</p>
+                            <p className="font-bold">{parseFloat(cert.goldGrams).toFixed(4)}g</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">Issuer</p>
+                            <p className="font-medium text-xs">{cert.type === 'Digital Ownership' ? 'Finatrades' : 'Wingold & Metals DMCC'}</p>
+                          </div>
                         </div>
+                        <Button 
+                          size="sm" 
+                          className="w-full bg-[#D4AF37] hover:bg-[#B8860B] text-black"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`/certificate/${cert.id}`, '_blank');
+                          }}
+                          data-testid={`button-view-cert-${cert.id}`}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Certificate
+                        </Button>
                       </div>
                     ))}
                   </div>
