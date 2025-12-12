@@ -1469,6 +1469,122 @@ export async function registerRoutes(
     }
   });
   
+  // ============================================================================
+  // BNSL PLAN TEMPLATES - ADMIN MANAGEMENT
+  // ============================================================================
+  
+  // Get all templates (Admin)
+  app.get("/api/admin/bnsl/templates", async (req, res) => {
+    try {
+      const templates = await storage.getAllBnslPlanTemplates();
+      
+      // Get variants for each template
+      const templatesWithVariants = await Promise.all(templates.map(async (template) => {
+        const variants = await storage.getTemplateVariants(template.id);
+        return { ...template, variants };
+      }));
+      
+      res.json({ templates: templatesWithVariants });
+    } catch (error) {
+      console.error('Get templates error:', error);
+      res.status(400).json({ message: "Failed to get BNSL templates" });
+    }
+  });
+  
+  // Get active templates (for user selection)
+  app.get("/api/bnsl/templates", async (req, res) => {
+    try {
+      const templates = await storage.getActiveBnslPlanTemplates();
+      
+      // Get variants for each template
+      const templatesWithVariants = await Promise.all(templates.map(async (template) => {
+        const variants = await storage.getTemplateVariants(template.id);
+        const activeVariants = variants.filter(v => v.isActive);
+        return { ...template, variants: activeVariants };
+      }));
+      
+      res.json({ templates: templatesWithVariants });
+    } catch (error) {
+      console.error('Get active templates error:', error);
+      res.status(400).json({ message: "Failed to get BNSL templates" });
+    }
+  });
+  
+  // Create template (Admin)
+  app.post("/api/admin/bnsl/templates", async (req, res) => {
+    try {
+      const template = await storage.createBnslPlanTemplate(req.body);
+      res.json({ template });
+    } catch (error) {
+      console.error('Create template error:', error);
+      res.status(400).json({ message: "Failed to create BNSL template" });
+    }
+  });
+  
+  // Update template (Admin)
+  app.put("/api/admin/bnsl/templates/:id", async (req, res) => {
+    try {
+      const template = await storage.updateBnslPlanTemplate(req.params.id, req.body);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json({ template });
+    } catch (error) {
+      console.error('Update template error:', error);
+      res.status(400).json({ message: "Failed to update BNSL template" });
+    }
+  });
+  
+  // Delete template (Admin)
+  app.delete("/api/admin/bnsl/templates/:id", async (req, res) => {
+    try {
+      await storage.deleteBnslPlanTemplate(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete template error:', error);
+      res.status(400).json({ message: "Failed to delete BNSL template" });
+    }
+  });
+  
+  // Create variant (Admin)
+  app.post("/api/admin/bnsl/templates/:templateId/variants", async (req, res) => {
+    try {
+      const variant = await storage.createBnslTemplateVariant({
+        ...req.body,
+        templateId: req.params.templateId
+      });
+      res.json({ variant });
+    } catch (error) {
+      console.error('Create variant error:', error);
+      res.status(400).json({ message: "Failed to create template variant" });
+    }
+  });
+  
+  // Update variant (Admin)
+  app.put("/api/admin/bnsl/variants/:id", async (req, res) => {
+    try {
+      const variant = await storage.updateBnslTemplateVariant(req.params.id, req.body);
+      if (!variant) {
+        return res.status(404).json({ message: "Variant not found" });
+      }
+      res.json({ variant });
+    } catch (error) {
+      console.error('Update variant error:', error);
+      res.status(400).json({ message: "Failed to update template variant" });
+    }
+  });
+  
+  // Delete variant (Admin)
+  app.delete("/api/admin/bnsl/variants/:id", async (req, res) => {
+    try {
+      await storage.deleteBnslTemplateVariant(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete variant error:', error);
+      res.status(400).json({ message: "Failed to delete template variant" });
+    }
+  });
+  
   // Create BNSL plan (locks gold from BNSL wallet)
   app.post("/api/bnsl/plans", async (req, res) => {
     try {
