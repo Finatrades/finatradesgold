@@ -4313,6 +4313,8 @@ export async function registerRoutes(
             entityType: 'binance_pay',
             entityId: transaction.id,
             actionType: 'webhook',
+            actor: 'system',
+            actorRole: 'system',
             details: `Order ${merchantTradeNo} status: ${data.orderStatus}`,
           });
         }

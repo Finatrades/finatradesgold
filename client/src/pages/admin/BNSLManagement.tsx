@@ -51,10 +51,20 @@ function BnslTemplatesManager() {
   const [variantDialogOpen, setVariantDialogOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    status: 'Active' | 'Inactive' | 'Draft';
+    minGoldGrams: string;
+    maxGoldGrams: string;
+    payoutFrequency: string;
+    earlyTerminationFeePercent: string;
+    adminFeePercent: string;
+    termsAndConditions: string;
+  }>({
     name: '',
     description: '',
-    status: 'Draft' as const,
+    status: 'Draft',
     minGoldGrams: '10',
     maxGoldGrams: '10000',
     payoutFrequency: 'Quarterly',
