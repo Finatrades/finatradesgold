@@ -96,3 +96,25 @@ export type FinaPayContextType = {
   addTransaction: (tx: FinaPayTransaction) => void;
   updateWallet: (updates: Partial<FinaPayWallet>) => void;
 };
+
+export type Transaction = {
+  id: string;
+  type: string;
+  amountGrams?: number;
+  amountUsd: number;
+  feeUsd?: number;
+  timestamp: string;
+  referenceId: string;
+  status: string;
+  assetType?: string;
+  description?: string;
+};
+
+export type Wallet = {
+  goldBalanceGrams: number;
+  usdBalance: number;
+  goldPriceUsdPerGram: number;
+  usdAedRate: number;
+  bnslLockedUsd: number;
+  finaBridgeLockedUsd: number;
+};
