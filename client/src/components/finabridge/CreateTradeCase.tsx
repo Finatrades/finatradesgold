@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TradeItem } from '@/types/finabridge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useFees, FEE_KEYS } from '@/context/FeeContext';
 
 interface CreateTradeCaseProps {
   onSuccess: (newCase: TradeCase, lockAmount: number) => void;
@@ -23,7 +24,10 @@ interface CreateTradeCaseProps {
 
 export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPayBalanceGold = 0, onTransferFromFinaPay }: CreateTradeCaseProps) {
   const { toast } = useToast();
-  // Removed step state
+  const { getFeeValue } = useFees();
+  
+  const serviceFeePercent = getFeeValue(FEE_KEYS.FINABRIDGE_SERVICE_FEE, 0.5);
+  
   const [formData, setFormData] = useState<Partial<TradeCase>>({
     role: currentRole,
     status: 'Draft',
@@ -680,8 +684,8 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-2">
                   <h4 className="text-sm font-bold text-white">Estimated Fee Breakdown</h4>
                   <div className="flex justify-between text-xs text-white/60">
-                    <span>Platform Service Fee (0.5%)</span>
-                    <span>${((formData.valueUsd || 0) * 0.005).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span>Platform Service Fee ({serviceFeePercent}%)</span>
+                    <span>${((formData.valueUsd || 0) * (serviceFeePercent / 100)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
                   <div className="flex justify-between text-xs text-white/60">
                     <span>Regulatory & Compliance Check</span>
@@ -690,7 +694,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                   <div className="border-t border-white/10 my-2"></div>
                   <div className="flex justify-between text-sm font-bold text-white">
                     <span>Total Estimated Cost</span>
-                    <span>${((formData.valueUsd || 0) * 1.005 + 250).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span>${((formData.valueUsd || 0) * (1 + serviceFeePercent / 100) + 250).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
                </div>
 

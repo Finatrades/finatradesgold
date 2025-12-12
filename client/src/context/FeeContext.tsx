@@ -119,19 +119,18 @@ export function useFees() {
 }
 
 export const FEE_KEYS = {
-  FINAPAY_BUY_GOLD: 'finapay_buy_gold_spread',
-  FINAPAY_SELL_GOLD: 'finapay_sell_gold_spread',
-  FINAPAY_DEPOSIT: 'finapay_deposit_fee',
-  FINAPAY_WITHDRAW: 'finapay_withdraw_fee',
-  FINAPAY_TRANSFER: 'finapay_transfer_fee',
+  FINAPAY_BUY_GOLD: 'buy_gold_spread',
+  FINAPAY_SELL_GOLD: 'sell_gold_spread',
+  FINAPAY_DEPOSIT: 'deposit_fee',
+  FINAPAY_WITHDRAW: 'withdrawal_fee',
+  FINAPAY_TRANSFER: 'p2p_transfer_fee',
   
-  FINAVAULT_STORAGE: 'finavault_storage_fee',
-  FINAVAULT_CASHOUT: 'finavault_cashout_fee',
-  FINAVAULT_CUSTODIAL_FEE: 'finavault_custodial_fee',
+  FINAVAULT_STORAGE: 'annual_storage_fee',
+  FINAVAULT_CASHOUT: 'cashout_bank_fee',
+  FINAVAULT_CASHOUT_WALLET: 'cashout_wallet_fee',
   
-  BNSL_ADMIN_FEE: 'bnsl_admin_fee',
-  BNSL_EARLY_TERMINATION_PENALTY: 'bnsl_early_termination_penalty',
+  BNSL_ADMIN_FEE: 'early_termination_admin_fee',
+  BNSL_EARLY_TERMINATION_PENALTY: 'early_termination_penalty',
   
-  FINABRIDGE_SERVICE_FEE: 'finabridge_service_fee',
-  FINABRIDGE_DOCUMENT_FEE: 'finabridge_document_fee',
+  FINABRIDGE_SERVICE_FEE: 'platform_service_fee',
 } as const;

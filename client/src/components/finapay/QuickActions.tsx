@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Send, ArrowDownLeft, TrendingUp, Plus, ArrowDown, ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useFees, FEE_KEYS } from '@/context/FeeContext';
 
 interface QuickActionsProps {
   onAction: (action: string) => void;
@@ -9,9 +10,10 @@ interface QuickActionsProps {
 }
 
 export default function QuickActions({ onAction, goldPrice }: QuickActionsProps) {
+  const { getFeeValue } = useFees();
   
-  // Calculate estimated rates
-  const buyRate = goldPrice * 1.005;  // +0.5%
+  const buySpread = getFeeValue(FEE_KEYS.FINAPAY_BUY_GOLD, 0.5);
+  const buyRate = goldPrice * (1 + buySpread / 100);
 
   const actions = [
     { 

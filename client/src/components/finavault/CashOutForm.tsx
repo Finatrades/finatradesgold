@@ -9,12 +9,13 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowRight, DollarSign, Wallet, Building, AlertCircle, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFees, FEE_KEYS } from '@/context/FeeContext';
 
-// Mock Gold Price
 const GOLD_PRICE_USD = 85.22;
 
 export default function CashOutForm() {
   const { toast } = useToast();
+  const { getFeeValue } = useFees();
   
   const [step, setStep] = useState<'input' | 'confirm' | 'success'>('input');
   const [selectedVault, setSelectedVault] = useState('Dubai Vault');
@@ -22,10 +23,11 @@ export default function CashOutForm() {
   const [payoutMethod, setPayoutMethod] = useState('finapay');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Derived values
+  const cashoutFeePercent = getFeeValue(FEE_KEYS.FINAVAULT_CASHOUT, 1.5);
+  
   const grams = parseFloat(amountGrams) || 0;
   const grossAmount = grams * GOLD_PRICE_USD;
-  const fee = grossAmount * 0.015; // 1.5% fee
+  const fee = grossAmount * (cashoutFeePercent / 100);
   const netAmount = grossAmount - fee;
 
   const handleProceed = () => {
