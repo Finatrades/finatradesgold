@@ -58,16 +58,23 @@ export default function QuickActionsTop() {
   const { user } = useAuth();
   
   const isKycApproved = user?.kycStatus === 'Approved';
+  const kycPending = user?.kycStatus === 'In Progress';
 
   const handleAction = (action: typeof actions[0]) => {
     if (action.requiresKyc && !isKycApproved) {
-      toast.error('KYC Required', {
-        description: 'Please complete your KYC verification to access this feature.',
-        action: {
-          label: 'Complete KYC',
-          onClick: () => setLocation('/kyc')
-        }
-      });
+      if (kycPending) {
+        toast.error('Approval Pending', {
+          description: 'Your verification is under review. You will be notified once approved.',
+        });
+      } else {
+        toast.error('KYC Required', {
+          description: 'Please complete your KYC verification to access this feature.',
+          action: {
+            label: 'Complete KYC',
+            onClick: () => setLocation('/kyc')
+          }
+        });
+      }
       return;
     }
     setLocation(action.path);

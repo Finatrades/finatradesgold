@@ -5,7 +5,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, Briefcase, User as UserIcon, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Menu, Briefcase, User as UserIcon, AlertTriangle, ArrowRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -29,12 +29,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  const needsKyc = user.kycStatus === 'Not Started' || user.kycStatus === 'In Progress';
+  const kycNotStarted = user.kycStatus === 'Not Started';
+  const kycPending = user.kycStatus === 'In Progress';
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-white relative">
       
-      {needsKyc && (
+      {/* Block access completely only for users who haven't started KYC */}
+      {kycNotStarted && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -153,6 +155,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         <main className="flex-1 p-6 overflow-x-hidden bg-muted/30">
+          {/* Show pending approval banner for users who have submitted KYC */}
+          {kycPending && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4"
+            >
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900">Verification Pending</h3>
+                <p className="text-sm text-amber-700">
+                  Your documents are under review. You can view all features, but some actions are restricted until approved.
+                </p>
+              </div>
+            </motion.div>
+          )}
           {children}
         </main>
         

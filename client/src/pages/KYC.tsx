@@ -22,6 +22,13 @@ export default function KYC() {
   const [idType, setIdType] = useState('passport');
   const [uploadedFiles, setUploadedFiles] = useState<{front?: File, back?: File, selfie?: File, utility?: File, company_doc?: File}>({});
   
+  // Required form fields
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [nationality, setNationality] = useState('');
+  const [fullAddress, setFullAddress] = useState('');
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [jurisdiction, setJurisdiction] = useState('');
+  
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back' | 'selfie' | 'utility' | 'company_doc') => {
     if (e.target.files && e.target.files[0]) {
       setUploadedFiles(prev => ({...prev, [type]: e.target.files![0]}));
@@ -29,7 +36,46 @@ export default function KYC() {
     }
   };
 
-  const handleNextStep = (next: string, progressValue: number) => {
+  const validatePersonalStep = () => {
+    const isBusiness = user?.accountType === 'business';
+    if (isBusiness) {
+      if (!registrationNumber.trim()) {
+        toast.error("Registration number is required");
+        return false;
+      }
+      if (!jurisdiction.trim()) {
+        toast.error("Jurisdiction is required");
+        return false;
+      }
+    } else {
+      if (!dateOfBirth) {
+        toast.error("Date of birth is required");
+        return false;
+      }
+      if (!nationality.trim()) {
+        toast.error("Nationality is required");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const validateAddressStep = () => {
+    if (!fullAddress.trim()) {
+      toast.error("Full address is required");
+      return false;
+    }
+    if (!uploadedFiles.utility) {
+      toast.error("Proof of address document is required");
+      return false;
+    }
+    return true;
+  };
+
+  const handleNextStep = (next: string, progressValue: number, validate?: () => boolean) => {
+    if (validate && !validate()) {
+      return;
+    }
     setActiveStep(next);
     setProgress(progressValue);
   };
@@ -37,9 +83,15 @@ export default function KYC() {
   const handleComplete = async () => {
     if (!user) return;
     
+    // Validate address step before submitting
+    if (!validateAddressStep()) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
+      const isBusiness = user.accountType === 'business';
       const response = await fetch('/api/kyc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,9 +99,12 @@ export default function KYC() {
           userId: user.id,
           accountType: user.accountType,
           fullName: `${user.firstName} ${user.lastName}`,
-          country: user.country || 'Not specified',
+          country: nationality || user.country || 'Not specified',
+          dateOfBirth: dateOfBirth || null,
+          address: fullAddress,
           companyName: user.companyName,
-          registrationNumber: user.registrationNumber,
+          registrationNumber: isBusiness ? registrationNumber : user.registrationNumber,
+          jurisdiction: isBusiness ? jurisdiction : null,
         }),
       });
       
@@ -161,12 +216,22 @@ export default function KYC() {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>Registration Number</Label>
-                              <Input defaultValue="CHE-123.456.789" className="bg-background" />
+                              <Label>Registration Number <span className="text-red-500">*</span></Label>
+                              <Input 
+                                value={registrationNumber} 
+                                onChange={(e) => setRegistrationNumber(e.target.value)}
+                                placeholder="CHE-123.456.789" 
+                                className="bg-background" 
+                              />
                             </div>
                             <div className="space-y-2">
-                              <Label>Jurisdiction</Label>
-                              <Input defaultValue="Switzerland" className="bg-background" />
+                              <Label>Jurisdiction <span className="text-red-500">*</span></Label>
+                              <Input 
+                                value={jurisdiction}
+                                onChange={(e) => setJurisdiction(e.target.value)}
+                                placeholder="Switzerland" 
+                                className="bg-background" 
+                              />
                             </div>
                           </div>
                           <div className="space-y-2">
@@ -191,19 +256,29 @@ export default function KYC() {
                             <Input value={user.email} disabled className="bg-muted" />
                           </div>
                           <div className="space-y-2">
-                             <Label>Date of Birth</Label>
-                             <Input type="date" className="bg-background" />
+                             <Label>Date of Birth <span className="text-red-500">*</span></Label>
+                             <Input 
+                               type="date" 
+                               value={dateOfBirth}
+                               onChange={(e) => setDateOfBirth(e.target.value)}
+                               className="bg-background" 
+                             />
                           </div>
                           <div className="space-y-2">
-                             <Label>Nationality</Label>
-                             <Input placeholder="Select Nationality" className="bg-background" />
+                             <Label>Nationality <span className="text-red-500">*</span></Label>
+                             <Input 
+                               value={nationality}
+                               onChange={(e) => setNationality(e.target.value)}
+                               placeholder="Enter your nationality" 
+                               className="bg-background" 
+                             />
                           </div>
                         </>
                       )}
                     </CardContent>
                     <CardFooter className="flex justify-end">
                       <Button 
-                        onClick={() => handleNextStep(isBusiness ? 'company_docs' : 'document', isBusiness ? 40 : 50)}
+                        onClick={() => handleNextStep(isBusiness ? 'company_docs' : 'document', isBusiness ? 40 : 50, validatePersonalStep)}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
                         Confirm & Continue
@@ -296,7 +371,7 @@ export default function KYC() {
                       <Button variant="outline" onClick={() => handleNextStep(isBusiness ? 'company_docs' : 'personal', isBusiness ? 40 : 25)}>Back</Button>
                       <Button 
                         onClick={() => handleNextStep('selfie', isBusiness ? 80 : 75)}
-                        disabled={!uploadedFiles.front}
+                        disabled={!uploadedFiles.front || (idType !== 'passport' && !uploadedFiles.back)}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
                         Continue
@@ -355,8 +430,13 @@ export default function KYC() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                        <div className="space-y-2">
-                          <Label>Full {isBusiness ? "Business " : ""}Address</Label>
-                          <Input placeholder="Street Address, City, Zip Code" className="bg-background" />
+                          <Label>Full {isBusiness ? "Business " : ""}Address <span className="text-red-500">*</span></Label>
+                          <Input 
+                            value={fullAddress}
+                            onChange={(e) => setFullAddress(e.target.value)}
+                            placeholder="Street Address, City, Zip Code" 
+                            className="bg-background" 
+                          />
                        </div>
 
                        <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 transition-colors mt-4">

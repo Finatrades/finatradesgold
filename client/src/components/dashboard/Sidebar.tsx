@@ -33,7 +33,8 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
   ];
 
-  if (user?.kycStatus === 'Not Started' || user?.kycStatus === 'In Progress') {
+  // Only show "Complete Verification" link for users who haven't started KYC
+  if (user?.kycStatus === 'Not Started') {
     menuItems.splice(1, 0, { 
       icon: <ShieldCheck className="w-5 h-5" />, 
       label: 'Complete Verification', 
