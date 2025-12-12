@@ -773,7 +773,14 @@ export async function registerRoutes(
   // Update KYC status (Admin)
   app.patch("/api/kyc/:id", async (req, res) => {
     try {
-      const submission = await storage.updateKycSubmission(req.params.id, req.body);
+      const updates = { ...req.body };
+      
+      // Convert reviewedAt string to Date if provided
+      if (updates.reviewedAt && typeof updates.reviewedAt === 'string') {
+        updates.reviewedAt = new Date(updates.reviewedAt);
+      }
+      
+      const submission = await storage.updateKycSubmission(req.params.id, updates);
       if (!submission) {
         return res.status(404).json({ message: "KYC submission not found" });
       }
@@ -787,7 +794,9 @@ export async function registerRoutes(
       
       res.json({ submission });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update KYC" });
+      console.error("KYC update error:", error);
+      const message = error instanceof Error ? error.message : "Failed to update KYC";
+      res.status(400).json({ message });
     }
   });
   
