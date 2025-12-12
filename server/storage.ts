@@ -241,6 +241,7 @@ export interface IStorage {
   // Forwarded Proposals
   getForwardedProposals(tradeRequestId: string): Promise<ForwardedProposal[]>;
   createForwardedProposal(forwarded: InsertForwardedProposal): Promise<ForwardedProposal>;
+  removeForwardedProposal(proposalId: string): Promise<void>;
   
   // Trade Confirmations
   getTradeConfirmation(tradeRequestId: string): Promise<TradeConfirmation | undefined>;
@@ -716,6 +717,10 @@ export class DatabaseStorage implements IStorage {
   async createForwardedProposal(insertForwarded: InsertForwardedProposal): Promise<ForwardedProposal> {
     const [forwarded] = await db.insert(forwardedProposals).values(insertForwarded).returning();
     return forwarded;
+  }
+
+  async removeForwardedProposal(proposalId: string): Promise<void> {
+    await db.delete(forwardedProposals).where(eq(forwardedProposals.proposalId, proposalId));
   }
 
   // Trade Confirmations

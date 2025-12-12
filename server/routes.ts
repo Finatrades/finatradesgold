@@ -2759,6 +2759,26 @@ export async function registerRoutes(
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to accept proposal" });
     }
   });
+
+  // Decline a forwarded proposal
+  app.post("/api/finabridge/importer/proposals/:proposalId/decline", async (req, res) => {
+    try {
+      const proposal = await storage.getTradeProposal(req.params.proposalId);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      
+      // Update proposal status to Declined
+      await storage.updateTradeProposal(proposal.id, { status: 'Declined' });
+      
+      // Remove from forwarded proposals
+      await storage.removeForwardedProposal(proposal.id);
+      
+      res.json({ message: "Proposal declined successfully" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to decline proposal" });
+    }
+  });
   
   // EXPORTER ENDPOINTS
   

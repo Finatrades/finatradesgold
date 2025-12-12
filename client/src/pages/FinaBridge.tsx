@@ -286,6 +286,20 @@ export default function FinaBridge() {
     }
   };
 
+  const handleDeclineProposal = async (proposalId: string) => {
+    setSubmitting(true);
+    try {
+      await apiRequest('POST', `/api/finabridge/importer/proposals/${proposalId}/decline`);
+      toast({ title: 'Proposal Declined', description: 'The proposal has been declined.' });
+      setForwardedProposals(prev => prev.filter(p => p.id !== proposalId));
+    } catch (err: any) {
+      const message = err?.message || 'Failed to decline proposal';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleFundWallet = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !fundAmount) return;
@@ -684,7 +698,7 @@ export default function FinaBridge() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => {}}
+                                  onClick={() => handleDeclineProposal(proposal.id)}
                                   disabled={submitting}
                                   data-testid={`button-decline-${proposal.id}`}
                                 >
