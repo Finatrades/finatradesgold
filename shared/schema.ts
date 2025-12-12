@@ -46,6 +46,9 @@ export const users = pgTable("users", {
   accountType: accountTypeEnum("account_type").notNull().default('personal'),
   role: userRoleEnum("role").notNull().default('user'),
   kycStatus: kycStatusEnum("kyc_status").notNull().default('Not Started'),
+  isEmailVerified: boolean("is_email_verified").notNull().default(false),
+  emailVerificationCode: varchar("email_verification_code", { length: 10 }),
+  emailVerificationExpiry: timestamp("email_verification_expiry"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -12,6 +12,7 @@ import FinaBridge from "@/pages/FinaBridge";
 import Register from "@/pages/Register"; // Renamed component export, file still named Onboarding.tsx for now
 import KYC from "@/pages/KYC";
 import Login from "@/pages/Login";
+import VerifyEmail from "@/pages/VerifyEmail";
 import FinaCard from "@/pages/FinaCard";
 import Dashboard from "@/pages/Dashboard";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -57,6 +58,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/register" component={Register} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/login" component={Login} />
       <Route path="/kyc" component={KYC} />
       

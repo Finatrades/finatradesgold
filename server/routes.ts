@@ -12,9 +12,14 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 
 // Helper to strip sensitive fields from user object
-function sanitizeUser(user: User): Omit<User, 'password'> {
-  const { password, ...safeUser } = user;
+function sanitizeUser(user: User): Omit<User, 'password' | 'emailVerificationCode'> {
+  const { password, emailVerificationCode, ...safeUser } = user;
   return safeUser;
+}
+
+// Helper to generate 6-digit verification code
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 export async function registerRoutes(
@@ -38,9 +43,17 @@ export async function registerRoutes(
       
       // Hash the password before storing
       const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      // Generate verification code and expiry (10 minutes from now)
+      const verificationCode = generateVerificationCode();
+      const codeExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
+        isEmailVerified: false,
+        emailVerificationCode: verificationCode,
+        emailVerificationExpiry: codeExpiry,
       });
       
       // Create wallet for new user
@@ -58,12 +71,104 @@ export async function registerRoutes(
         actionType: "create",
         actor: user.id,
         actorRole: "user",
-        details: "User registered",
+        details: "User registered - pending email verification",
       });
       
-      res.json({ user: sanitizeUser(user) });
+      // In production, send email with verification code
+      // For now, we'll log it and the user can see it in the response for testing
+      console.log(`[Email Verification] Code for ${user.email}: ${verificationCode}`);
+      
+      res.json({ 
+        user: sanitizeUser(user),
+        message: "Registration successful. Please verify your email.",
+        requiresVerification: true 
+      });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
+    }
+  });
+  
+  // Send/Resend email verification code
+  app.post("/api/auth/send-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.isEmailVerified) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+      
+      // Generate new verification code
+      const verificationCode = generateVerificationCode();
+      const codeExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      
+      await storage.updateUser(user.id, {
+        emailVerificationCode: verificationCode,
+        emailVerificationExpiry: codeExpiry,
+      });
+      
+      // In production, send email
+      console.log(`[Email Verification] New code for ${email}: ${verificationCode}`);
+      
+      res.json({ message: "Verification code sent to your email" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to send verification code" });
+    }
+  });
+  
+  // Verify email with code
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { email, code } = req.body;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.isEmailVerified) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+      
+      if (!user.emailVerificationCode || !user.emailVerificationExpiry) {
+        return res.status(400).json({ message: "No verification code found. Please request a new one." });
+      }
+      
+      if (new Date() > user.emailVerificationExpiry) {
+        return res.status(400).json({ message: "Verification code expired. Please request a new one." });
+      }
+      
+      if (user.emailVerificationCode !== code) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+      
+      // Mark email as verified
+      const updatedUser = await storage.updateUser(user.id, {
+        isEmailVerified: true,
+        emailVerificationCode: null,
+        emailVerificationExpiry: null,
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        actionType: "update",
+        actor: user.id,
+        actorRole: "user",
+        details: "Email verified successfully",
+      });
+      
+      res.json({ 
+        message: "Email verified successfully", 
+        user: sanitizeUser(updatedUser!) 
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Verification failed" });
     }
   });
   
@@ -119,6 +224,123 @@ export async function registerRoutes(
       res.json({ user: sanitizeUser(user) });
     } catch (error) {
       res.status(400).json({ message: "Failed to update user" });
+    }
+  });
+  
+  // ============================================================================
+  // ADMIN - USER MANAGEMENT
+  // ============================================================================
+  
+  // Get all users (Admin)
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json({ users: users.map(sanitizeUser) });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get users" });
+    }
+  });
+  
+  // Admin: Manually verify user email
+  app.post("/api/admin/users/:userId/verify-email", async (req, res) => {
+    try {
+      const { adminId } = req.body;
+      const user = await storage.getUser(req.params.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.isEmailVerified) {
+        return res.status(400).json({ message: "User email is already verified" });
+      }
+      
+      const updatedUser = await storage.updateUser(user.id, {
+        isEmailVerified: true,
+        emailVerificationCode: null,
+        emailVerificationExpiry: null,
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: "Admin manually verified user email",
+      });
+      
+      res.json({ 
+        message: "User email verified by admin", 
+        user: sanitizeUser(updatedUser!) 
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to verify user email" });
+    }
+  });
+  
+  // Admin: Suspend user
+  app.post("/api/admin/users/:userId/suspend", async (req, res) => {
+    try {
+      const { adminId, reason } = req.body;
+      const user = await storage.getUser(req.params.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const updatedUser = await storage.updateUser(user.id, {
+        kycStatus: 'Rejected' as any,
+      });
+      
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `User suspended. Reason: ${reason || 'Not specified'}`,
+      });
+      
+      res.json({ 
+        message: "User suspended", 
+        user: sanitizeUser(updatedUser!) 
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to suspend user" });
+    }
+  });
+  
+  // Admin: Activate user
+  app.post("/api/admin/users/:userId/activate", async (req, res) => {
+    try {
+      const { adminId } = req.body;
+      const user = await storage.getUser(req.params.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const updatedUser = await storage.updateUser(user.id, {
+        kycStatus: 'Approved' as any,
+      });
+      
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: "User activated by admin",
+      });
+      
+      res.json({ 
+        message: "User activated", 
+        user: sanitizeUser(updatedUser!) 
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to activate user" });
     }
   });
   

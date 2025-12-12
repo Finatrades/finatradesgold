@@ -79,20 +79,36 @@ export default function Register() {
       // Update global context
       setContextAccountType(accountType);
 
-      // Register via API
-      await register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        accountType: accountType,
-        role: 'user',
-        kycStatus: 'Not Started',
+      // Register via API - this will return the user with email verification pending
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          accountType: accountType,
+          role: 'user',
+          kycStatus: 'Not Started',
+        })
       });
 
-      toast.success("Account Created Successfully!", {
-        description: "Identity verification is mandatory to access the platform."
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      // Store email for verification page
+      sessionStorage.setItem('verificationEmail', formData.email);
+      
+      toast.success("Account Created!", {
+        description: "Please check your email for the verification code."
       });
+      
+      // Redirect to email verification page
+      setLocation('/verify-email');
     } catch (error) {
       toast.error("Registration Failed", {
         description: error instanceof Error ? error.message : "Please try again."
