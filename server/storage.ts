@@ -1,6 +1,6 @@
 import { 
   users, wallets, transactions, vaultHoldings, kycSubmissions,
-  bnslPlans, bnslPayouts, bnslEarlyTerminations,
+  bnslPlans, bnslPayouts, bnslEarlyTerminations, bnslWallets,
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs, certificates,
   contentPages, contentBlocks, templates, mediaAssets,
@@ -14,6 +14,7 @@ import {
   type BnslPlan, type InsertBnslPlan,
   type BnslPayout, type InsertBnslPayout,
   type BnslEarlyTermination, type InsertBnslEarlyTermination,
+  type BnslWallet, type InsertBnslWallet,
   type TradeCase, type InsertTradeCase,
   type TradeDocument, type InsertTradeDocument,
   type ChatSession, type InsertChatSession,
@@ -170,6 +171,12 @@ export interface IStorage {
   getBnslEarlyTermination(planId: string): Promise<BnslEarlyTermination | undefined>;
   createBnslEarlyTermination(termination: InsertBnslEarlyTermination): Promise<BnslEarlyTermination>;
   updateBnslEarlyTermination(id: string, updates: Partial<BnslEarlyTermination>): Promise<BnslEarlyTermination | undefined>;
+  
+  // BNSL Wallets
+  getBnslWallet(userId: string): Promise<BnslWallet | undefined>;
+  createBnslWallet(wallet: InsertBnslWallet): Promise<BnslWallet>;
+  updateBnslWallet(id: string, updates: Partial<BnslWallet>): Promise<BnslWallet | undefined>;
+  getOrCreateBnslWallet(userId: string): Promise<BnslWallet>;
   
   // Trade Cases
   getTradeCase(id: string): Promise<TradeCase | undefined>;
@@ -429,6 +436,30 @@ export class DatabaseStorage implements IStorage {
   async updateBnslEarlyTermination(id: string, updates: Partial<BnslEarlyTermination>): Promise<BnslEarlyTermination | undefined> {
     const [termination] = await db.update(bnslEarlyTerminations).set(updates).where(eq(bnslEarlyTerminations.id, id)).returning();
     return termination || undefined;
+  }
+
+  // BNSL Wallets
+  async getBnslWallet(userId: string): Promise<BnslWallet | undefined> {
+    const [wallet] = await db.select().from(bnslWallets).where(eq(bnslWallets.userId, userId));
+    return wallet || undefined;
+  }
+
+  async createBnslWallet(insertWallet: InsertBnslWallet): Promise<BnslWallet> {
+    const [wallet] = await db.insert(bnslWallets).values(insertWallet).returning();
+    return wallet;
+  }
+
+  async updateBnslWallet(id: string, updates: Partial<BnslWallet>): Promise<BnslWallet | undefined> {
+    const [wallet] = await db.update(bnslWallets).set({ ...updates, updatedAt: new Date() }).where(eq(bnslWallets.id, id)).returning();
+    return wallet || undefined;
+  }
+
+  async getOrCreateBnslWallet(userId: string): Promise<BnslWallet> {
+    let wallet = await this.getBnslWallet(userId);
+    if (!wallet) {
+      wallet = await this.createBnslWallet({ userId, availableGoldGrams: '0', lockedGoldGrams: '0' });
+    }
+    return wallet;
   }
 
   // Trade Cases

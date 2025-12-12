@@ -1399,12 +1399,142 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to get BNSL plans" });
     }
   });
+
+  // Get BNSL wallet for user
+  app.get("/api/bnsl/wallet/:userId", async (req, res) => {
+    try {
+      const wallet = await storage.getOrCreateBnslWallet(req.params.userId);
+      res.json({ wallet });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get BNSL wallet" });
+    }
+  });
+
+  // Transfer gold from FinaPay wallet to BNSL wallet
+  app.post("/api/bnsl/wallet/transfer", async (req, res) => {
+    try {
+      const { userId, goldGrams } = req.body;
+      
+      if (!userId || !goldGrams || parseFloat(goldGrams) <= 0) {
+        return res.status(400).json({ message: "Invalid transfer amount" });
+      }
+
+      const amountGrams = parseFloat(goldGrams);
+      
+      // Get user's FinaPay wallet
+      const finapayWallet = await storage.getWallet(userId);
+      if (!finapayWallet) {
+        return res.status(404).json({ message: "FinaPay wallet not found" });
+      }
+      
+      const availableGold = parseFloat(finapayWallet.goldGrams);
+      if (availableGold < amountGrams) {
+        return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
+      }
+      
+      // Debit from FinaPay wallet
+      await storage.updateWallet(finapayWallet.id, {
+        goldGrams: (availableGold - amountGrams).toFixed(6)
+      });
+      
+      // Credit to BNSL wallet
+      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
+      const newAvailable = parseFloat(bnslWallet.availableGoldGrams) + amountGrams;
+      await storage.updateBnslWallet(bnslWallet.id, {
+        availableGoldGrams: newAvailable.toFixed(6)
+      });
+      
+      // Create transaction record
+      await storage.createTransaction({
+        userId,
+        type: 'Send',
+        status: 'Completed',
+        goldGrams: amountGrams.toFixed(6),
+        direction: 'outgoing',
+        description: `Transfer ${amountGrams.toFixed(3)}g from FinaPay to BNSL wallet`
+      });
+      
+      // Get updated wallets
+      const updatedFinapay = await storage.getWallet(userId);
+      const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
+      
+      res.json({ 
+        success: true, 
+        finapayWallet: updatedFinapay,
+        bnslWallet: updatedBnsl 
+      });
+    } catch (error) {
+      console.error('BNSL transfer error:', error);
+      res.status(400).json({ message: "Failed to transfer to BNSL wallet" });
+    }
+  });
   
-  // Create BNSL plan
+  // Create BNSL plan (locks gold from BNSL wallet)
   app.post("/api/bnsl/plans", async (req, res) => {
     try {
       const planData = insertBnslPlanSchema.parse(req.body);
+      const goldGrams = parseFloat(planData.goldSoldGrams);
+      
+      // Get BNSL wallet and verify sufficient funds
+      const bnslWallet = await storage.getOrCreateBnslWallet(planData.userId);
+      const availableGold = parseFloat(bnslWallet.availableGoldGrams);
+      
+      if (availableGold < goldGrams) {
+        return res.status(400).json({ 
+          message: `Insufficient BNSL wallet balance. Available: ${availableGold.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g`
+        });
+      }
+      
+      // Lock gold: move from available to locked
+      const newAvailable = availableGold - goldGrams;
+      const newLocked = parseFloat(bnslWallet.lockedGoldGrams) + goldGrams;
+      await storage.updateBnslWallet(bnslWallet.id, {
+        availableGoldGrams: newAvailable.toFixed(6),
+        lockedGoldGrams: newLocked.toFixed(6)
+      });
+      
+      // Create the plan
       const plan = await storage.createBnslPlan(planData);
+      
+      // Update vault holdings - mark gold as locked for BNSL
+      const vaultHoldings = await storage.getUserVaultHoldings(planData.userId);
+      let remainingToLock = goldGrams;
+      
+      for (const holding of vaultHoldings) {
+        if (remainingToLock <= 0) break;
+        const holdingGold = parseFloat(holding.goldGrams);
+        if (holdingGold > 0) {
+          const lockAmount = Math.min(holdingGold, remainingToLock);
+          // Reduce vault holding by locked amount
+          await storage.updateVaultHolding(holding.id, {
+            goldGrams: (holdingGold - lockAmount).toFixed(6)
+          });
+          remainingToLock -= lockAmount;
+          
+          // Update related certificates to "Updated" status
+          const certificates = await storage.getUserActiveCertificates(planData.userId);
+          for (const cert of certificates) {
+            if (cert.vaultHoldingId === holding.id) {
+              await storage.updateCertificate(cert.id, { status: 'Updated' });
+            }
+          }
+        }
+      }
+      
+      // Create a new certificate for the BNSL-locked gold
+      const certNumber = await storage.generateCertificateNumber('Digital Ownership');
+      await storage.createCertificate({
+        certificateNumber: certNumber,
+        userId: planData.userId,
+        type: 'Digital Ownership',
+        status: 'Active',
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: planData.enrollmentPriceUsdPerGram,
+        totalValueUsd: planData.basePriceComponentUsd,
+        issuer: 'Finatrades',
+        vaultLocation: 'Dubai - Wingold & Metals DMCC',
+        wingoldStorageRef: `BNSL-${plan.contractId}`
+      });
       
       // Create audit log
       await storage.createAuditLog({
@@ -1413,11 +1543,12 @@ export async function registerRoutes(
         actionType: "create",
         actor: planData.userId,
         actorRole: "user",
-        details: `BNSL plan created: ${planData.goldSoldGrams}g`,
+        details: `BNSL plan created: ${goldGrams.toFixed(3)}g locked, contract ${plan.contractId}`,
       });
       
       res.json({ plan });
     } catch (error) {
+      console.error('BNSL plan creation error:', error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create BNSL plan" });
     }
   });

@@ -55,9 +55,39 @@ export default function BNSL() {
   const [activeTab, setActiveTab] = useState('plans');
   const [selectedPlan, setSelectedPlan] = useState<BnslPlan | null>(null);
   
-  // Wallet State (Mock)
-  const [finaPayGoldBalance, setFinaPayGoldBalance] = useState(500.00); 
-  const [bnslWalletBalance, setBnslWalletBalance] = useState(0.00);
+  // Real Wallet State from API
+  const [finaPayGoldBalance, setFinaPayGoldBalance] = useState(0);
+  const [bnslWalletBalance, setBnslWalletBalance] = useState(0);
+  const [lockedBnslBalance, setLockedBnslBalance] = useState(0);
+
+  // Fetch wallet balances
+  const fetchWallets = async () => {
+    if (!user?.id) return;
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      
+      // Fetch FinaPay wallet
+      const finapayRes = await apiRequest('GET', `/api/finapay/wallet/${user.id}`);
+      const finapayData = await finapayRes.json();
+      if (finapayData.wallet) {
+        setFinaPayGoldBalance(parseFloat(finapayData.wallet.goldGrams || '0'));
+      }
+      
+      // Fetch BNSL wallet
+      const bnslRes = await apiRequest('GET', `/api/bnsl/wallet/${user.id}`);
+      const bnslData = await bnslRes.json();
+      if (bnslData.wallet) {
+        setBnslWalletBalance(parseFloat(bnslData.wallet.availableGoldGrams || '0'));
+        setLockedBnslBalance(parseFloat(bnslData.wallet.lockedGoldGrams || '0'));
+      }
+    } catch (err) {
+      console.error('Failed to fetch wallets:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchWallets();
+  }, [user?.id]);
 
   // Aggregated Stats
   const activePlansCount = plans.filter(p => p.status === 'Active').length;
@@ -68,8 +98,8 @@ export default function BNSL() {
     ? (plans.reduce((sum, p) => p.status === 'Active' ? sum + (p.agreedMarginAnnualPercent * p.basePriceComponentUsd) : sum, 0) / totalDeferredBase)
     : 0;
   
-  // Calculate total locked gold in BNSL (Active plans)
-  const totalLockedGold = plans.reduce((sum, p) => p.status === 'Active' ? sum + p.goldSoldGrams : sum, 0);
+  // Use real locked balance from BNSL wallet, fallback to calculated from plans
+  const totalLockedGold = lockedBnslBalance > 0 ? lockedBnslBalance : plans.reduce((sum, p) => p.status === 'Active' ? sum + p.goldSoldGrams : sum, 0);
 
   // Daily margin calculations
   const totalDailyMargin = plans.reduce((sum, p) => sum + calculateDailyMargin(p), 0);
@@ -107,9 +137,33 @@ export default function BNSL() {
   const nextPayout = getNextPayout();
 
   // Actions
-  const handleTransferFromFinaPay = (amount: number) => {
-    setFinaPayGoldBalance(prev => prev - amount);
-    setBnslWalletBalance(prev => prev + amount);
+  const handleTransferFromFinaPay = async (amount: number) => {
+    if (!user?.id) return;
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('POST', '/api/bnsl/wallet/transfer', {
+        userId: user.id,
+        goldGrams: amount.toFixed(6)
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Refresh wallet balances
+        await fetchWallets();
+        toast({
+          title: "Transfer Successful",
+          description: `Transferred ${amount.toFixed(3)}g from FinaPay to BNSL wallet.`
+        });
+      } else {
+        throw new Error(data.message || 'Transfer failed');
+      }
+    } catch (err) {
+      toast({
+        title: "Transfer Failed",
+        description: err instanceof Error ? err.message : "Could not complete transfer",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCreatePlan = async (newPlanData: Partial<BnslPlan>) => {
@@ -159,6 +213,8 @@ export default function BNSL() {
     
     if (createdPlan) {
       setActiveTab('plans');
+      // Refresh wallet balances after locking gold
+      await fetchWallets();
       addNotification({
         title: "BNSL Plan Activated",
         message: `Plan ${createdPlan.contractId} successfully created. ${goldSoldGrams}g locked for ${tenorMonths} months.`,

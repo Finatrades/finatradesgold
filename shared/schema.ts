@@ -329,6 +329,20 @@ export type Certificate = typeof certificates.$inferSelect;
 // BNSL - BUY NOW SELL LATER
 // ============================================
 
+// BNSL Wallets - Dedicated wallet for BNSL operations
+export const bnslWallets = pgTable("bnsl_wallets", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  availableGoldGrams: decimal("available_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  lockedGoldGrams: decimal("locked_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBnslWalletSchema = createInsertSchema(bnslWallets).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBnslWallet = z.infer<typeof insertBnslWalletSchema>;
+export type BnslWallet = typeof bnslWallets.$inferSelect;
+
 export const bnslPlans = pgTable("bnsl_plans", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   contractId: varchar("contract_id", { length: 100 }).notNull().unique(),
