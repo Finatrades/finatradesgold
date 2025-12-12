@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 interface Wallet {
   goldGrams: string;
@@ -60,7 +62,7 @@ export function useDashboardData(): DashboardData {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { data: walletData, isLoading: walletLoading } = useQuery({
+  const { data: walletData, isLoading: walletLoading, error: walletError } = useQuery({
     queryKey: ['wallet', userId],
     queryFn: async () => {
       if (!userId) return null;
@@ -70,7 +72,7 @@ export function useDashboardData(): DashboardData {
     enabled: !!userId,
   });
 
-  const { data: vaultData, isLoading: vaultLoading } = useQuery({
+  const { data: vaultData, isLoading: vaultLoading, error: vaultError } = useQuery({
     queryKey: ['vaultHoldings', userId],
     queryFn: async () => {
       if (!userId) return { holdings: [] };
@@ -80,7 +82,7 @@ export function useDashboardData(): DashboardData {
     enabled: !!userId,
   });
 
-  const { data: txData, isLoading: txLoading } = useQuery({
+  const { data: txData, isLoading: txLoading, error: txError } = useQuery({
     queryKey: ['transactions', userId],
     queryFn: async () => {
       if (!userId) return { transactions: [] };
@@ -90,7 +92,7 @@ export function useDashboardData(): DashboardData {
     enabled: !!userId,
   });
 
-  const { data: bnslData, isLoading: bnslLoading } = useQuery({
+  const { data: bnslData, isLoading: bnslLoading, error: bnslError } = useQuery({
     queryKey: ['bnslPlans', userId],
     queryFn: async () => {
       if (!userId) return { plans: [] };
@@ -108,6 +110,17 @@ export function useDashboardData(): DashboardData {
     },
     refetchInterval: 60000,
   });
+
+  const hasError = walletError || vaultError || txError || bnslError;
+  const errorMessage = hasError ? 'Failed to load dashboard data' : null;
+
+  useEffect(() => {
+    if (hasError) {
+      toast.error('Failed to load dashboard data', {
+        description: 'Some data may not be displayed. Please try refreshing.'
+      });
+    }
+  }, [hasError]);
 
   const wallet = walletData?.wallet || null;
   const vaultHoldings = vaultData?.holdings || [];
@@ -141,7 +154,7 @@ export function useDashboardData(): DashboardData {
     bnslPlans,
     goldPrice,
     isLoading: walletLoading || vaultLoading || txLoading || bnslLoading,
-    error: null,
+    error: errorMessage,
     totals: {
       vaultGoldGrams,
       vaultGoldValueUsd,

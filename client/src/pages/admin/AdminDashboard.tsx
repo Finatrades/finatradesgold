@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2 } from 'lucide-react';
+import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
+import { toast } from 'sonner';
 
 interface AdminStats {
   totalUsers: number;
@@ -55,6 +56,14 @@ export default function AdminDashboard() {
     },
     refetchInterval: 30000
   });
+
+  useEffect(() => {
+    if (error) {
+      toast.error('Failed to load dashboard stats', {
+        description: 'Please try refreshing the page.'
+      });
+    }
+  }, [error]);
 
   return (
     <AdminLayout>
