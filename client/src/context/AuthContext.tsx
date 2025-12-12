@@ -2,10 +2,17 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import type { User } from '@shared/schema';
 
+interface MfaChallenge {
+  requiresMfa: boolean;
+  challengeToken: string;
+  mfaMethod: 'totp' | 'email';
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<MfaChallenge | null>;
+  verifyMfa: (challengeToken: string, token: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -54,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<MfaChallenge | null> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -65,6 +72,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      
+      // Check if MFA is required
+      if (data.requiresMfa) {
+        return {
+          requiresMfa: true,
+          challengeToken: data.challengeToken,
+          mfaMethod: data.mfaMethod,
+        };
+      }
+      
+      setUser(data.user);
+      localStorage.setItem('fina_user_id', data.user.id);
+      
+      if (data.user.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/dashboard');
+      }
+      
+      return null;
+    } catch (error) {
+      throw error;
+    }
+  };
+  
+  const verifyMfa = async (challengeToken: string, token: string) => {
+    try {
+      const response = await fetch('/api/mfa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challengeToken, token }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'MFA verification failed');
       }
 
       const data = await response.json();
@@ -110,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, refreshUser, loading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, verifyMfa, register, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

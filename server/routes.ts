@@ -11,10 +11,12 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { authenticator } from "otplib";
+import * as QRCode from "qrcode";
 
 // Helper to strip sensitive fields from user object
-function sanitizeUser(user: User): Omit<User, 'password' | 'emailVerificationCode'> {
-  const { password, emailVerificationCode, ...safeUser } = user;
+function sanitizeUser(user: User): Omit<User, 'password' | 'emailVerificationCode' | 'mfaSecret' | 'mfaBackupCodes'> {
+  const { password, emailVerificationCode, mfaSecret, mfaBackupCodes, ...safeUser } = user;
   return safeUser;
 }
 
@@ -173,6 +175,19 @@ export async function registerRoutes(
     }
   });
   
+  // In-memory MFA challenge store (in production, use Redis or database with TTL)
+  const mfaChallenges = new Map<string, { userId: string; expiresAt: Date; attempts: number }>();
+  
+  // Clean up expired challenges periodically
+  setInterval(() => {
+    const now = new Date();
+    Array.from(mfaChallenges.entries()).forEach(([token, challenge]) => {
+      if (challenge.expiresAt < now) {
+        mfaChallenges.delete(token);
+      }
+    });
+  }, 60000); // Clean every minute
+
   // Login
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -194,6 +209,26 @@ export async function registerRoutes(
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Check if MFA is enabled
+      if (user.mfaEnabled) {
+        // Generate a challenge token for MFA verification
+        const challengeToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        
+        // Store challenge with 5 minute expiry and attempt counter
+        mfaChallenges.set(challengeToken, {
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+          attempts: 0
+        });
+        
+        return res.json({ 
+          requiresMfa: true, 
+          challengeToken,
+          mfaMethod: user.mfaMethod,
+          message: "MFA verification required" 
+        });
       }
       
       res.json({ user: sanitizeUser(user) });
@@ -225,6 +260,247 @@ export async function registerRoutes(
       res.json({ user: sanitizeUser(user) });
     } catch (error) {
       res.status(400).json({ message: "Failed to update user" });
+    }
+  });
+  
+  // ============================================================================
+  // MFA (Multi-Factor Authentication)
+  // ============================================================================
+  
+  // Generate MFA setup (TOTP secret and QR code)
+  app.post("/api/mfa/setup", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Generate a new secret
+      const secret = authenticator.generateSecret();
+      
+      // Create otpauth URL for QR code
+      const otpauthUrl = authenticator.keyuri(user.email, "Finatrades", secret);
+      
+      // Generate QR code as data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
+      
+      // Store secret temporarily (not enabled yet until verified)
+      await storage.updateUser(userId, { mfaSecret: secret });
+      
+      res.json({ 
+        secret, 
+        qrCode: qrCodeDataUrl,
+        message: "Scan the QR code with your authenticator app, then verify with a code"
+      });
+    } catch (error) {
+      console.error("MFA setup error:", error);
+      res.status(400).json({ message: "Failed to setup MFA" });
+    }
+  });
+  
+  // Verify and enable MFA
+  app.post("/api/mfa/enable", async (req, res) => {
+    try {
+      const { userId, token } = req.body;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!user.mfaSecret) {
+        return res.status(400).json({ message: "MFA not set up. Please run setup first." });
+      }
+      
+      // Verify the token
+      const isValid = authenticator.verify({ token, secret: user.mfaSecret });
+      
+      if (!isValid) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+      
+      // Generate backup codes
+      const backupCodes = Array.from({ length: 8 }, () => 
+        Math.random().toString(36).substring(2, 8).toUpperCase()
+      );
+      
+      // Hash backup codes for storage
+      const hashedBackupCodes = await Promise.all(
+        backupCodes.map(code => bcrypt.hash(code, 10))
+      );
+      
+      // Enable MFA
+      await storage.updateUser(userId, { 
+        mfaEnabled: true, 
+        mfaMethod: 'totp',
+        mfaBackupCodes: JSON.stringify(hashedBackupCodes)
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: userId,
+        actionType: "update",
+        actor: userId,
+        actorRole: "user",
+        details: "MFA enabled via authenticator app",
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "MFA enabled successfully",
+        backupCodes // Return plain backup codes once for user to save
+      });
+    } catch (error) {
+      console.error("MFA enable error:", error);
+      res.status(400).json({ message: "Failed to enable MFA" });
+    }
+  });
+  
+  // Verify MFA token during login (requires challenge token from login step)
+  app.post("/api/mfa/verify", async (req, res) => {
+    try {
+      const { challengeToken, token } = req.body;
+      
+      // Validate challenge token
+      const challenge = mfaChallenges.get(challengeToken);
+      if (!challenge) {
+        return res.status(401).json({ message: "Invalid or expired challenge. Please login again." });
+      }
+      
+      // Check if challenge is expired
+      if (challenge.expiresAt < new Date()) {
+        mfaChallenges.delete(challengeToken);
+        return res.status(401).json({ message: "Challenge expired. Please login again." });
+      }
+      
+      // Rate limiting: max 5 attempts per challenge
+      if (challenge.attempts >= 5) {
+        mfaChallenges.delete(challengeToken);
+        return res.status(429).json({ message: "Too many failed attempts. Please login again." });
+      }
+      
+      const user = await storage.getUser(challenge.userId);
+      
+      if (!user) {
+        mfaChallenges.delete(challengeToken);
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!user.mfaEnabled || !user.mfaSecret) {
+        mfaChallenges.delete(challengeToken);
+        return res.status(400).json({ message: "MFA not enabled for this user" });
+      }
+      
+      // First try TOTP verification
+      const isValid = authenticator.verify({ token, secret: user.mfaSecret });
+      
+      if (isValid) {
+        // Delete challenge after successful verification
+        mfaChallenges.delete(challengeToken);
+        return res.json({ success: true, user: sanitizeUser(user) });
+      }
+      
+      // Try backup codes
+      if (user.mfaBackupCodes) {
+        const backupCodes: string[] = JSON.parse(user.mfaBackupCodes);
+        
+        for (let i = 0; i < backupCodes.length; i++) {
+          const isBackupValid = await bcrypt.compare(token.toUpperCase(), backupCodes[i]);
+          if (isBackupValid) {
+            // Remove used backup code
+            backupCodes.splice(i, 1);
+            await storage.updateUser(challenge.userId, { 
+              mfaBackupCodes: JSON.stringify(backupCodes) 
+            });
+            
+            // Delete challenge after successful verification
+            mfaChallenges.delete(challengeToken);
+            
+            return res.json({ 
+              success: true, 
+              user: sanitizeUser(user),
+              message: "Backup code used. " + backupCodes.length + " codes remaining."
+            });
+          }
+        }
+      }
+      
+      // Increment attempt counter on failure
+      challenge.attempts += 1;
+      
+      res.status(400).json({ message: "Invalid verification code" });
+    } catch (error) {
+      console.error("MFA verify error:", error);
+      res.status(400).json({ message: "Failed to verify MFA" });
+    }
+  });
+  
+  // Disable MFA
+  app.post("/api/mfa/disable", async (req, res) => {
+    try {
+      const { userId, password } = req.body;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify password before disabling MFA
+      let isValidPassword = false;
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await bcrypt.compare(password, user.password);
+      } else {
+        isValidPassword = user.password === password;
+      }
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+      
+      // Disable MFA
+      await storage.updateUser(userId, { 
+        mfaEnabled: false, 
+        mfaMethod: null,
+        mfaSecret: null,
+        mfaBackupCodes: null
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: userId,
+        actionType: "update",
+        actor: userId,
+        actorRole: "user",
+        details: "MFA disabled",
+      });
+      
+      res.json({ success: true, message: "MFA disabled successfully" });
+    } catch (error) {
+      console.error("MFA disable error:", error);
+      res.status(400).json({ message: "Failed to disable MFA" });
+    }
+  });
+  
+  // Get MFA status
+  app.get("/api/mfa/status/:userId", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ 
+        mfaEnabled: user.mfaEnabled,
+        mfaMethod: user.mfaMethod,
+        hasBackupCodes: user.mfaBackupCodes ? JSON.parse(user.mfaBackupCodes).length > 0 : false
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get MFA status" });
     }
   });
   

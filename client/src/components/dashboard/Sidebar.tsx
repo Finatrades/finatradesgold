@@ -9,7 +9,7 @@ import {
   BarChart3, 
   CreditCard,
   User, 
-  Settings, 
+  Shield, 
   LogOut,
   ShieldCheck
 } from 'lucide-react';
@@ -30,7 +30,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     ...(accountType === 'business' ? [{ icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' }] : []),
     { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/profile' },
-    { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/dashboard/settings' },
+    { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
   ];
 
   if (user?.kycStatus === 'Not Started' || user?.kycStatus === 'In Progress') {

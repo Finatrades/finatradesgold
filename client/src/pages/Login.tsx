@@ -4,18 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, ArrowRight, Lock } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Lock, Shield, ArrowLeft } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link } from 'wouter';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, verifyMfa } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // MFA state
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaChallengeToken, setMfaChallengeToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,10 +33,19 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      toast.success("Welcome back!", {
-        description: "You have successfully logged in."
-      });
+      const mfaChallenge = await login(email, password);
+      
+      if (mfaChallenge?.requiresMfa) {
+        setMfaRequired(true);
+        setMfaChallengeToken(mfaChallenge.challengeToken);
+        toast.info("Two-factor authentication required", {
+          description: "Please enter the code from your authenticator app."
+        });
+      } else {
+        toast.success("Welcome back!", {
+          description: "You have successfully logged in."
+        });
+      }
     } catch (error) {
       toast.error("Invalid Credentials", {
         description: error instanceof Error ? error.message : "Please check your email and password."
@@ -39,6 +54,110 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  const handleMfaVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (mfaCode.length < 6) {
+      toast.error("Please enter a complete 6-digit code");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await verifyMfa(mfaChallengeToken, mfaCode);
+      toast.success("Welcome back!", {
+        description: "You have successfully logged in."
+      });
+    } catch (error) {
+      toast.error("Invalid Code", {
+        description: error instanceof Error ? error.message : "The code you entered is incorrect. Please try again."
+      });
+      setMfaCode('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setMfaRequired(false);
+    setMfaChallengeToken('');
+    setMfaCode('');
+  };
+
+  if (mfaRequired) {
+    return (
+      <Layout>
+        <div className="min-h-screen pt-20 pb-24 bg-background flex items-center justify-center">
+          <div className="container mx-auto px-6 max-w-md">
+            
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Two-Factor Authentication</h1>
+              <p className="text-muted-foreground">Enter the 6-digit code from your authenticator app.</p>
+            </div>
+
+            <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+              <form onSubmit={handleMfaVerify} className="space-y-6">
+                
+                <div className="flex flex-col items-center space-y-4">
+                  <Label>Verification Code</Label>
+                  <InputOTP 
+                    maxLength={6} 
+                    value={mfaCode}
+                    onChange={setMfaCode}
+                    data-testid="input-mfa-code"
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                  <p className="text-xs text-muted-foreground text-center">
+                    You can also use a backup code if you don't have access to your authenticator.
+                  </p>
+                </div>
+
+                <Button 
+                  type="submit"
+                  disabled={isLoading || mfaCode.length < 6}
+                  className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                  data-testid="button-verify-mfa"
+                >
+                  {isLoading ? "Verifying..." : (
+                    <>Verify & Sign In <ArrowRight className="w-5 h-5 ml-2" /></>
+                  )}
+                </Button>
+
+                <Button 
+                  type="button"
+                  variant="ghost"
+                  onClick={handleBackToLogin}
+                  className="w-full"
+                  data-testid="button-back-to-login"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
+                </Button>
+              </form>
+            </Card>
+            
+            <div className="mt-8 text-center text-xs text-muted-foreground">
+              <p className="flex justify-center items-center gap-2">
+                <Lock className="w-3 h-3" />
+                Secured by FinaTrades Switzerland
+              </p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -62,6 +181,7 @@ export default function Login() {
                   onChange={e => setEmail(e.target.value)}
                   className="bg-background border-input text-foreground" 
                   placeholder="john@example.com"
+                  data-testid="input-email"
                 />
               </div>
 
@@ -80,6 +200,7 @@ export default function Login() {
                     onChange={e => setPassword(e.target.value)}
                     className="bg-background border-input text-foreground pr-10" 
                     placeholder="••••••••"
+                    data-testid="input-password"
                   />
                   <button 
                     type="button"
@@ -105,6 +226,7 @@ export default function Login() {
                 type="submit"
                 disabled={isLoading}
                 className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                data-testid="button-login"
               >
                 {isLoading ? "Signing in..." : (
                   <>Sign In <ArrowRight className="w-5 h-5 ml-2" /></>
