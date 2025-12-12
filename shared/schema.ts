@@ -224,6 +224,8 @@ export const depositRequests = pgTable("deposit_requests", {
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
   paymentMethod: varchar("payment_method", { length: 100 }).notNull().default('Bank Transfer'),
+  senderBankName: varchar("sender_bank_name", { length: 255 }), // User's sending bank
+  senderAccountName: varchar("sender_account_name", { length: 255 }), // Name on user's bank account
   transactionReference: varchar("transaction_reference", { length: 255 }), // User's bank transfer reference
   proofOfPayment: text("proof_of_payment"), // URL to uploaded receipt
   notes: text("notes"),

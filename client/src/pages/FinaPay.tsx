@@ -21,6 +21,7 @@ import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
+import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 
 // Mock Initial State
 const INITIAL_WALLET: Wallet = {
@@ -230,6 +231,7 @@ export default function FinaPay() {
       case 'send': setActiveModal('send'); break;
       case 'request': setActiveModal('request'); break;
       case 'add_fund': setActiveModal('deposit'); break;
+      case 'withdraw': setActiveModal('withdraw'); break;
       case 'deposit_gold':
         toast({ title: "Coming Soon", description: "Gold Deposit functionality will be available shortly." });
         break;
@@ -338,6 +340,11 @@ export default function FinaPay() {
         <DepositModal 
           isOpen={activeModal === 'deposit'} 
           onClose={() => setActiveModal(null)}
+        />
+        <WithdrawalModal 
+          isOpen={activeModal === 'withdraw'} 
+          onClose={() => setActiveModal(null)}
+          walletBalance={wallet.usdBalance}
         />
 
       </div>

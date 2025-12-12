@@ -1697,14 +1697,28 @@ export async function registerRoutes(
         });
       }
       
-      // If rejecting, refund the held amount back to wallet
-      if (updates.status === 'Rejected' && request.status === 'Pending') {
+      // If rejecting from Pending or Processing, refund the held amount back to wallet
+      if (updates.status === 'Rejected' && (request.status === 'Pending' || request.status === 'Processing')) {
         const wallet = await storage.getWallet(request.userId);
         if (wallet) {
           const currentBalance = parseFloat(wallet.usdBalance.toString());
           const refundAmount = parseFloat(request.amountUsd.toString());
           await storage.updateWallet(wallet.id, {
             usdBalance: (currentBalance + refundAmount).toString(),
+          });
+          
+          // Create refund transaction record
+          await storage.createTransaction({
+            userId: request.userId,
+            type: 'Deposit',
+            status: 'Completed',
+            amountUsd: request.amountUsd.toString(),
+            description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
+            referenceId: `${request.referenceNumber}-REFUND`,
+            sourceModule: 'finapay',
+            approvedBy: updates.processedBy,
+            approvedAt: new Date(),
+            updatedAt: new Date(),
           });
         }
       }

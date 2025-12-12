@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Send, ArrowDownLeft, TrendingUp, Plus, ArrowDown } from 'lucide-react';
+import { ShoppingCart, Send, ArrowDownLeft, TrendingUp, Plus, ArrowDown, ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface QuickActionsProps {
@@ -16,10 +16,17 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
   const actions = [
     { 
       id: 'add_fund', 
-      label: 'Add Fund', 
+      label: 'Deposit', 
       icon: <Plus className="w-4 h-4" />, 
       color: 'text-blue-500', 
       bg: 'bg-blue-500/10' 
+    },
+    { 
+      id: 'withdraw', 
+      label: 'Withdraw', 
+      icon: <ArrowUpRight className="w-4 h-4" />, 
+      color: 'text-orange-500', 
+      bg: 'bg-orange-500/10' 
     },
     { 
       id: 'buy', 
@@ -60,7 +67,7 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
       {actions.map((action) => (
         <motion.button
           key={action.id}

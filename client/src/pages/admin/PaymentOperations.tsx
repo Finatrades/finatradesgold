@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, RefreshCw, TrendingUp, Coins, Send, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, RefreshCw, TrendingUp, Coins, Send, Eye, Building2, Plus, Edit2, Trash2, CreditCard, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
@@ -37,28 +40,110 @@ interface UserInfo {
   lastName: string;
 }
 
+interface PlatformBankAccount {
+  id: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  routingNumber: string | null;
+  swiftCode: string | null;
+  iban: string | null;
+  currency: string;
+  country: string;
+  status: 'Active' | 'Inactive';
+  createdAt: string;
+}
+
+interface DepositRequest {
+  id: string;
+  userId: string;
+  bankAccountId: string;
+  amountUsd: string;
+  referenceNumber: string;
+  proofOfPayment: string | null;
+  senderBankName: string | null;
+  senderAccountName: string | null;
+  status: 'Pending' | 'Confirmed' | 'Rejected';
+  adminNotes: string | null;
+  processedBy: string | null;
+  processedAt: string | null;
+  createdAt: string;
+}
+
+interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  amountUsd: string;
+  referenceNumber: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  routingNumber: string | null;
+  swiftCode: string | null;
+  status: 'Pending' | 'Processing' | 'Completed' | 'Rejected';
+  adminNotes: string | null;
+  processedBy: string | null;
+  processedAt: string | null;
+  createdAt: string;
+}
+
 export default function FinaPayManagement() {
   const { user: currentUser } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [users, setUsers] = useState<Record<string, UserInfo>>({});
+  const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
+  const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  
+  const [bankAccountDialogOpen, setBankAccountDialogOpen] = useState(false);
+  const [editingBankAccount, setEditingBankAccount] = useState<PlatformBankAccount | null>(null);
+  const [bankAccountForm, setBankAccountForm] = useState({
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+    routingNumber: '',
+    swiftCode: '',
+    iban: '',
+    currency: 'USD',
+    country: '',
+    status: 'Active' as 'Active' | 'Inactive'
+  });
+  
+  const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+  const [selectedDeposit, setSelectedDeposit] = useState<DepositRequest | null>(null);
+  const [depositAdminNotes, setDepositAdminNotes] = useState('');
+  
+  const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null);
+  const [withdrawalAdminNotes, setWithdrawalAdminNotes] = useState('');
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [txResponse, usersResponse] = await Promise.all([
+      const [txResponse, usersResponse, bankAccountsRes, depositsRes, withdrawalsRes] = await Promise.all([
         fetch('/api/admin/transactions'),
-        fetch('/api/admin/users')
+        fetch('/api/admin/users'),
+        fetch('/api/admin/bank-accounts'),
+        fetch('/api/admin/deposit-requests'),
+        fetch('/api/admin/withdrawal-requests')
       ]);
       
       const txData = await txResponse.json();
       const usersData = await usersResponse.json();
+      const bankData = await bankAccountsRes.json();
+      const depositData = await depositsRes.json();
+      const withdrawalData = await withdrawalsRes.json();
       
       setTransactions(txData.transactions || []);
+      setBankAccounts(bankData.accounts || []);
+      setDepositRequests(depositData.requests || []);
+      setWithdrawalRequests(withdrawalData.requests || []);
       
       const userMap: Record<string, UserInfo> = {};
       (usersData.users || []).forEach((u: UserInfo) => {
@@ -66,7 +151,7 @@ export default function FinaPayManagement() {
       });
       setUsers(userMap);
     } catch (error) {
-      toast.error("Failed to load transactions");
+      toast.error("Failed to load data");
     } finally {
       setIsLoading(false);
     }
@@ -125,20 +210,123 @@ export default function FinaPayManagement() {
     return users[userId]?.email || '';
   };
 
-  const pendingTxs = transactions.filter(t => t.status === 'Pending');
-  const buyTxs = pendingTxs.filter(t => t.type === 'Buy');
-  const sellTxs = pendingTxs.filter(t => t.type === 'Sell');
-  const sendTxs = pendingTxs.filter(t => t.type === 'Send' || t.type === 'Receive');
-  const depositTxs = pendingTxs.filter(t => t.type === 'Deposit');
-  const withdrawalTxs = pendingTxs.filter(t => t.type === 'Withdrawal');
-  const completedTxs = transactions.filter(t => t.status === 'Completed');
-  const allTxs = transactions;
+  const openBankAccountDialog = (account?: PlatformBankAccount) => {
+    if (account) {
+      setEditingBankAccount(account);
+      setBankAccountForm({
+        bankName: account.bankName,
+        accountName: account.accountName,
+        accountNumber: account.accountNumber,
+        routingNumber: account.routingNumber || '',
+        swiftCode: account.swiftCode || '',
+        iban: account.iban || '',
+        currency: account.currency,
+        country: account.country,
+        status: account.status
+      });
+    } else {
+      setEditingBankAccount(null);
+      setBankAccountForm({
+        bankName: '',
+        accountName: '',
+        accountNumber: '',
+        routingNumber: '',
+        swiftCode: '',
+        iban: '',
+        currency: 'USD',
+        country: '',
+        status: 'Active'
+      });
+    }
+    setBankAccountDialogOpen(true);
+  };
 
-  const stats = {
-    pendingCount: pendingTxs.length,
-    pendingGold: pendingTxs.reduce((sum, t) => sum + parseFloat(t.amountGold || '0'), 0),
-    pendingUsd: pendingTxs.reduce((sum, t) => sum + parseFloat(t.amountUsd || '0'), 0),
-    completedCount: completedTxs.length
+  const handleSaveBankAccount = async () => {
+    try {
+      if (editingBankAccount) {
+        await apiRequest('PATCH', `/api/admin/bank-accounts/${editingBankAccount.id}`, bankAccountForm);
+        toast.success("Bank account updated");
+      } else {
+        await apiRequest('POST', '/api/admin/bank-accounts', bankAccountForm);
+        toast.success("Bank account created");
+      }
+      setBankAccountDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to save bank account");
+    }
+  };
+
+  const handleDeleteBankAccount = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this bank account?')) return;
+    try {
+      await apiRequest('DELETE', `/api/admin/bank-accounts/${id}`);
+      toast.success("Bank account deleted");
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to delete bank account");
+    }
+  };
+
+  const openDepositDialog = (deposit: DepositRequest) => {
+    setSelectedDeposit(deposit);
+    setDepositAdminNotes(deposit.adminNotes || '');
+    setDepositDialogOpen(true);
+  };
+
+  const handleDepositAction = async (action: 'Confirmed' | 'Rejected') => {
+    if (!selectedDeposit) return;
+    try {
+      await apiRequest('PATCH', `/api/admin/deposit-requests/${selectedDeposit.id}`, {
+        status: action,
+        adminNotes: depositAdminNotes,
+        processedBy: currentUser?.id
+      });
+      toast.success(`Deposit ${action.toLowerCase()}`);
+      setDepositDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error(`Failed to ${action.toLowerCase()} deposit`);
+    }
+  };
+
+  const openWithdrawalDialog = (withdrawal: WithdrawalRequest) => {
+    setSelectedWithdrawal(withdrawal);
+    setWithdrawalAdminNotes(withdrawal.adminNotes || '');
+    setWithdrawalDialogOpen(true);
+  };
+
+  const handleWithdrawalAction = async (action: 'Processing' | 'Completed' | 'Rejected') => {
+    if (!selectedWithdrawal) return;
+    try {
+      await apiRequest('PATCH', `/api/admin/withdrawal-requests/${selectedWithdrawal.id}`, {
+        status: action,
+        adminNotes: withdrawalAdminNotes,
+        processedBy: currentUser?.id
+      });
+      toast.success(`Withdrawal ${action.toLowerCase()}`);
+      setWithdrawalDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error(`Failed to update withdrawal`);
+    }
+  };
+
+  const pendingDeposits = depositRequests.filter(d => d.status === 'Pending');
+  const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'Pending' || w.status === 'Processing');
+  const pendingTxs = transactions.filter(t => t.status === 'Pending');
+
+  const getBankAccountById = (id: string) => bankAccounts.find(a => a.id === id);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Pending': return <Badge variant="secondary">{status}</Badge>;
+      case 'Processing': return <Badge className="bg-blue-100 text-blue-700">{status}</Badge>;
+      case 'Confirmed':
+      case 'Completed': return <Badge className="bg-green-100 text-green-700">{status}</Badge>;
+      case 'Rejected': return <Badge variant="destructive">{status}</Badge>;
+      default: return <Badge>{status}</Badge>;
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -214,139 +402,524 @@ export default function FinaPayManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">FinaPay Management</h1>
-            <p className="text-gray-500">Manage gold transactions, deposits, withdrawals, and transfers.</p>
+            <p className="text-gray-500">Manage bank accounts, deposits, withdrawals, and transactions.</p>
           </div>
           <Button onClick={fetchData} variant="outline" size="icon" data-testid="button-refresh">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-yellow-50 border-yellow-100">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
-                  <Clock className="w-6 h-6" />
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card className="bg-purple-50 border-purple-100">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 text-purple-700 rounded-lg">
+                  <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-yellow-900">Pending Approval</p>
-                  <h3 className="text-2xl font-bold text-yellow-700" data-testid="text-pending-count">{stats.pendingCount}</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-amber-50 border-amber-100">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
-                  <Coins className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-amber-900">Pending Gold</p>
-                  <h3 className="text-2xl font-bold text-amber-700" data-testid="text-pending-gold">{stats.pendingGold.toFixed(4)}g</h3>
+                  <p className="text-xs font-medium text-purple-900">Bank Accounts</p>
+                  <h3 className="text-xl font-bold text-purple-700">{bankAccounts.filter(a => a.status === 'Active').length}</h3>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-green-50 border-green-100">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 text-green-700 rounded-lg">
-                  <DollarSign className="w-6 h-6" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 text-green-700 rounded-lg">
+                  <ArrowDownLeft className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-green-900">Pending USD</p>
-                  <h3 className="text-2xl font-bold text-green-700" data-testid="text-pending-usd">${stats.pendingUsd.toFixed(2)}</h3>
+                  <p className="text-xs font-medium text-green-900">Pending Deposits</p>
+                  <h3 className="text-xl font-bold text-green-700" data-testid="text-pending-deposits">{pendingDeposits.length}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-orange-50 border-orange-100">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 text-orange-700 rounded-lg">
+                  <ArrowUpRight className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-orange-900">Pending Withdrawals</p>
+                  <h3 className="text-xl font-bold text-orange-700" data-testid="text-pending-withdrawals">{pendingWithdrawals.length}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-yellow-50 border-yellow-100">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 text-yellow-700 rounded-lg">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-yellow-900">Pending Transactions</p>
+                  <h3 className="text-xl font-bold text-yellow-700" data-testid="text-pending-tx">{pendingTxs.length}</h3>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
-                  <CheckCircle2 className="w-6 h-6" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+                  <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Completed</p>
-                  <h3 className="text-2xl font-bold text-gray-900" data-testid="text-completed-count">{stats.completedCount}</h3>
+                  <p className="text-xs font-medium text-gray-900">Total Transactions</p>
+                  <h3 className="text-xl font-bold text-gray-900" data-testid="text-total-tx">{transactions.length}</h3>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="pending" className="w-full">
+        <Tabs defaultValue="bank-accounts" className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-            <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              Pending ({pendingTxs.length})
+            <TabsTrigger value="bank-accounts" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <Building2 className="w-4 h-4 mr-2" />
+              Bank Accounts ({bankAccounts.length})
             </TabsTrigger>
-            <TabsTrigger value="buy" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              Buy Orders ({buyTxs.length})
+            <TabsTrigger value="deposits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <ArrowDownLeft className="w-4 h-4 mr-2" />
+              Deposits ({depositRequests.length})
             </TabsTrigger>
-            <TabsTrigger value="sell" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              Sell Orders ({sellTxs.length})
+            <TabsTrigger value="withdrawals" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <ArrowUpRight className="w-4 h-4 mr-2" />
+              Withdrawals ({withdrawalRequests.length})
             </TabsTrigger>
-            <TabsTrigger value="transfers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              Transfers ({sendTxs.length})
-            </TabsTrigger>
-            <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              All Transactions
+            <TabsTrigger value="transactions" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <Coins className="w-4 h-4 mr-2" />
+              Transactions ({transactions.length})
             </TabsTrigger>
           </TabsList>
 
-          <div className="mt-6 space-y-4">
-            <TabsContent value="pending">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
-                </div>
-              ) : pendingTxs.length === 0 ? (
+          <div className="mt-6">
+            <TabsContent value="bank-accounts">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Platform Bank Accounts</h2>
+                <Button onClick={() => openBankAccountDialog()} data-testid="button-add-bank-account">
+                  <Plus className="w-4 h-4 mr-2" /> Add Bank Account
+                </Button>
+              </div>
+              
+              {bankAccounts.length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center text-gray-500">
-                    No pending transactions
+                    <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No bank accounts configured</p>
+                    <p className="text-sm">Add bank accounts for users to deposit funds</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {bankAccounts.map(account => (
+                    <Card key={account.id} className={account.status === 'Inactive' ? 'opacity-60' : ''} data-testid={`card-bank-${account.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-purple-100 text-purple-700 rounded-lg">
+                              <Building2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-gray-900">{account.bankName}</h3>
+                                <Badge variant={account.status === 'Active' ? 'default' : 'secondary'}>{account.status}</Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">{account.accountName}</p>
+                              <p className="text-xs text-gray-400">
+                                {account.accountNumber} {account.swiftCode && `| SWIFT: ${account.swiftCode}`} {account.iban && `| IBAN: ${account.iban}`}
+                              </p>
+                              <p className="text-xs text-gray-400">{account.country} | {account.currency}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => openBankAccountDialog(account)} data-testid={`button-edit-bank-${account.id}`}>
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => handleDeleteBankAccount(account.id)} data-testid={`button-delete-bank-${account.id}`}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="deposits">
+              <h2 className="text-lg font-semibold mb-4">Deposit Requests</h2>
+              {depositRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    <ArrowDownLeft className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No deposit requests</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {pendingTxs.map(tx => <TransactionRow key={tx.id} tx={tx} />)}
+                  {depositRequests.map(deposit => {
+                    const bankAccount = getBankAccountById(deposit.bankAccountId);
+                    return (
+                      <Card key={deposit.id} data-testid={`card-deposit-${deposit.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-green-100 text-green-700 rounded-lg">
+                                <ArrowDownLeft className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-gray-900 text-lg">${parseFloat(deposit.amountUsd).toFixed(2)}</span>
+                                  {getStatusBadge(deposit.status)}
+                                </div>
+                                <p className="text-sm text-gray-600">{getUserName(deposit.userId)} ({getUserEmail(deposit.userId)})</p>
+                                <p className="text-xs text-gray-400">Ref: {deposit.referenceNumber}</p>
+                                <p className="text-xs text-gray-400">To: {bankAccount?.bankName} - {bankAccount?.accountNumber}</p>
+                                {deposit.senderBankName && (
+                                  <p className="text-xs text-gray-400">From: {deposit.senderBankName} ({deposit.senderAccountName})</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="text-xs text-gray-400">{new Date(deposit.createdAt).toLocaleString()}</p>
+                                {deposit.processedAt && (
+                                  <p className="text-xs text-gray-400">Processed: {new Date(deposit.processedAt).toLocaleString()}</p>
+                                )}
+                              </div>
+                              {deposit.status === 'Pending' && (
+                                <Button size="sm" onClick={() => openDepositDialog(deposit)} data-testid={`button-process-deposit-${deposit.id}`}>
+                                  Process
+                                </Button>
+                              )}
+                              {deposit.status !== 'Pending' && (
+                                <Button size="sm" variant="ghost" onClick={() => openDepositDialog(deposit)}>
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="buy">
-              {buyTxs.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-gray-500">No pending buy orders</CardContent></Card>
+            <TabsContent value="withdrawals">
+              <h2 className="text-lg font-semibold mb-4">Withdrawal Requests</h2>
+              {withdrawalRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    <ArrowUpRight className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No withdrawal requests</p>
+                  </CardContent>
+                </Card>
               ) : (
-                <div className="space-y-3">{buyTxs.map(tx => <TransactionRow key={tx.id} tx={tx} />)}</div>
+                <div className="space-y-3">
+                  {withdrawalRequests.map(withdrawal => (
+                    <Card key={withdrawal.id} data-testid={`card-withdrawal-${withdrawal.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-orange-100 text-orange-700 rounded-lg">
+                              <ArrowUpRight className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900 text-lg">${parseFloat(withdrawal.amountUsd).toFixed(2)}</span>
+                                {getStatusBadge(withdrawal.status)}
+                              </div>
+                              <p className="text-sm text-gray-600">{getUserName(withdrawal.userId)} ({getUserEmail(withdrawal.userId)})</p>
+                              <p className="text-xs text-gray-400">Ref: {withdrawal.referenceNumber}</p>
+                              <p className="text-xs text-gray-400">
+                                To: {withdrawal.bankName} - {withdrawal.accountName} ({withdrawal.accountNumber})
+                              </p>
+                              {withdrawal.swiftCode && <p className="text-xs text-gray-400">SWIFT: {withdrawal.swiftCode}</p>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">{new Date(withdrawal.createdAt).toLocaleString()}</p>
+                              {withdrawal.processedAt && (
+                                <p className="text-xs text-gray-400">Processed: {new Date(withdrawal.processedAt).toLocaleString()}</p>
+                              )}
+                            </div>
+                            {(withdrawal.status === 'Pending' || withdrawal.status === 'Processing') && (
+                              <Button size="sm" onClick={() => openWithdrawalDialog(withdrawal)} data-testid={`button-process-withdrawal-${withdrawal.id}`}>
+                                Process
+                              </Button>
+                            )}
+                            {withdrawal.status !== 'Pending' && withdrawal.status !== 'Processing' && (
+                              <Button size="sm" variant="ghost" onClick={() => openWithdrawalDialog(withdrawal)}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </TabsContent>
 
-            <TabsContent value="sell">
-              {sellTxs.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-gray-500">No pending sell orders</CardContent></Card>
+            <TabsContent value="transactions">
+              <h2 className="text-lg font-semibold mb-4">All Transactions</h2>
+              {transactions.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    No transactions found
+                  </CardContent>
+                </Card>
               ) : (
-                <div className="space-y-3">{sellTxs.map(tx => <TransactionRow key={tx.id} tx={tx} />)}</div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="transfers">
-              {sendTxs.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-gray-500">No pending transfers</CardContent></Card>
-              ) : (
-                <div className="space-y-3">{sendTxs.map(tx => <TransactionRow key={tx.id} tx={tx} />)}</div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="all">
-              {allTxs.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-gray-500">No transactions found</CardContent></Card>
-              ) : (
-                <div className="space-y-3">{allTxs.map(tx => <TransactionRow key={tx.id} tx={tx} showActions={tx.status === 'Pending'} />)}</div>
+                <div className="space-y-3">
+                  {transactions.map(tx => <TransactionRow key={tx.id} tx={tx} showActions={tx.status === 'Pending'} />)}
+                </div>
               )}
             </TabsContent>
           </div>
         </Tabs>
+
+        <Dialog open={bankAccountDialogOpen} onOpenChange={setBankAccountDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingBankAccount ? 'Edit Bank Account' : 'Add Bank Account'}</DialogTitle>
+              <DialogDescription>Configure platform bank account for user deposits</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Bank Name</Label>
+                  <Input value={bankAccountForm.bankName} onChange={e => setBankAccountForm({...bankAccountForm, bankName: e.target.value})} placeholder="e.g., Chase Bank" data-testid="input-bank-name" />
+                </div>
+                <div>
+                  <Label>Account Name</Label>
+                  <Input value={bankAccountForm.accountName} onChange={e => setBankAccountForm({...bankAccountForm, accountName: e.target.value})} placeholder="e.g., Finatrades LLC" data-testid="input-account-name" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Account Number</Label>
+                  <Input value={bankAccountForm.accountNumber} onChange={e => setBankAccountForm({...bankAccountForm, accountNumber: e.target.value})} placeholder="Account number" data-testid="input-account-number" />
+                </div>
+                <div>
+                  <Label>Routing Number</Label>
+                  <Input value={bankAccountForm.routingNumber} onChange={e => setBankAccountForm({...bankAccountForm, routingNumber: e.target.value})} placeholder="Optional" data-testid="input-routing-number" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>SWIFT Code</Label>
+                  <Input value={bankAccountForm.swiftCode} onChange={e => setBankAccountForm({...bankAccountForm, swiftCode: e.target.value})} placeholder="Optional" data-testid="input-swift-code" />
+                </div>
+                <div>
+                  <Label>IBAN</Label>
+                  <Input value={bankAccountForm.iban} onChange={e => setBankAccountForm({...bankAccountForm, iban: e.target.value})} placeholder="Optional" data-testid="input-iban" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Currency</Label>
+                  <Select value={bankAccountForm.currency} onValueChange={v => setBankAccountForm({...bankAccountForm, currency: v})}>
+                    <SelectTrigger data-testid="select-currency"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="AED">AED</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Country</Label>
+                  <Input value={bankAccountForm.country} onChange={e => setBankAccountForm({...bankAccountForm, country: e.target.value})} placeholder="e.g., USA" data-testid="input-country" />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={bankAccountForm.status} onValueChange={v => setBankAccountForm({...bankAccountForm, status: v as 'Active' | 'Inactive'})}>
+                    <SelectTrigger data-testid="select-status"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBankAccountDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveBankAccount} data-testid="button-save-bank-account">Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Process Deposit Request</DialogTitle>
+            </DialogHeader>
+            {selectedDeposit && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Amount</p>
+                    <p className="font-bold text-lg">${parseFloat(selectedDeposit.amountUsd).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Status</p>
+                    {getStatusBadge(selectedDeposit.status)}
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Reference</p>
+                    <p className="font-mono text-xs">{selectedDeposit.referenceNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">User</p>
+                    <p>{getUserName(selectedDeposit.userId)}</p>
+                    <p className="text-xs text-gray-400">{getUserEmail(selectedDeposit.userId)}</p>
+                  </div>
+                  {selectedDeposit.senderBankName && (
+                    <>
+                      <div>
+                        <p className="text-gray-500">Sender Bank</p>
+                        <p>{selectedDeposit.senderBankName}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Sender Account</p>
+                        <p>{selectedDeposit.senderAccountName}</p>
+                      </div>
+                    </>
+                  )}
+                  <div className="col-span-2">
+                    <p className="text-gray-500">Submitted</p>
+                    <p>{new Date(selectedDeposit.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                {selectedDeposit.proofOfPayment && (
+                  <div>
+                    <p className="text-gray-500 text-sm mb-2">Proof of Payment</p>
+                    <a href={selectedDeposit.proofOfPayment} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm">
+                      View Document
+                    </a>
+                  </div>
+                )}
+                
+                <div>
+                  <Label>Admin Notes</Label>
+                  <Textarea 
+                    value={depositAdminNotes} 
+                    onChange={e => setDepositAdminNotes(e.target.value)} 
+                    placeholder="Add notes about this deposit..."
+                    disabled={selectedDeposit.status !== 'Pending'}
+                    data-testid="input-deposit-notes"
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDepositDialogOpen(false)}>Close</Button>
+              {selectedDeposit?.status === 'Pending' && (
+                <>
+                  <Button variant="destructive" onClick={() => handleDepositAction('Rejected')} data-testid="button-reject-deposit">
+                    <XCircle className="w-4 h-4 mr-2" /> Reject
+                  </Button>
+                  <Button className="bg-green-600 hover:bg-green-700" onClick={() => handleDepositAction('Confirmed')} data-testid="button-confirm-deposit">
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm Deposit
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={withdrawalDialogOpen} onOpenChange={setWithdrawalDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Process Withdrawal Request</DialogTitle>
+            </DialogHeader>
+            {selectedWithdrawal && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Amount</p>
+                    <p className="font-bold text-lg">${parseFloat(selectedWithdrawal.amountUsd).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Status</p>
+                    {getStatusBadge(selectedWithdrawal.status)}
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Reference</p>
+                    <p className="font-mono text-xs">{selectedWithdrawal.referenceNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">User</p>
+                    <p>{getUserName(selectedWithdrawal.userId)}</p>
+                    <p className="text-xs text-gray-400">{getUserEmail(selectedWithdrawal.userId)}</p>
+                  </div>
+                  <div className="col-span-2 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500 text-xs mb-1">Withdrawal Bank Details</p>
+                    <p className="font-medium">{selectedWithdrawal.bankName}</p>
+                    <p className="text-sm">{selectedWithdrawal.accountName}</p>
+                    <p className="text-sm text-gray-600">{selectedWithdrawal.accountNumber}</p>
+                    {selectedWithdrawal.routingNumber && <p className="text-xs text-gray-400">Routing: {selectedWithdrawal.routingNumber}</p>}
+                    {selectedWithdrawal.swiftCode && <p className="text-xs text-gray-400">SWIFT: {selectedWithdrawal.swiftCode}</p>}
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-gray-500">Submitted</p>
+                    <p>{new Date(selectedWithdrawal.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label>Admin Notes</Label>
+                  <Textarea 
+                    value={withdrawalAdminNotes} 
+                    onChange={e => setWithdrawalAdminNotes(e.target.value)} 
+                    placeholder="Add notes about this withdrawal..."
+                    disabled={selectedWithdrawal.status === 'Completed' || selectedWithdrawal.status === 'Rejected'}
+                    data-testid="input-withdrawal-notes"
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setWithdrawalDialogOpen(false)}>Close</Button>
+              {selectedWithdrawal?.status === 'Pending' && (
+                <>
+                  <Button variant="destructive" onClick={() => handleWithdrawalAction('Rejected')} data-testid="button-reject-withdrawal">
+                    <XCircle className="w-4 h-4 mr-2" /> Reject
+                  </Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => handleWithdrawalAction('Processing')} data-testid="button-processing-withdrawal">
+                    <Clock className="w-4 h-4 mr-2" /> Mark Processing
+                  </Button>
+                  <Button className="bg-green-600 hover:bg-green-700" onClick={() => handleWithdrawalAction('Completed')} data-testid="button-complete-withdrawal">
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> Complete
+                  </Button>
+                </>
+              )}
+              {selectedWithdrawal?.status === 'Processing' && (
+                <>
+                  <Button variant="destructive" onClick={() => handleWithdrawalAction('Rejected')} data-testid="button-reject-withdrawal">
+                    <XCircle className="w-4 h-4 mr-2" /> Reject
+                  </Button>
+                  <Button className="bg-green-600 hover:bg-green-700" onClick={() => handleWithdrawalAction('Completed')} data-testid="button-complete-withdrawal">
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> Complete
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
           <DialogContent>
