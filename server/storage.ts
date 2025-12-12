@@ -10,6 +10,7 @@ import {
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
   vaultDepositRequests, vaultWithdrawalRequests,
+  binanceTransactions,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -44,7 +45,8 @@ import {
   type PeerTransfer, type InsertPeerTransfer,
   type PeerRequest, type InsertPeerRequest,
   type VaultDepositRequest, type InsertVaultDepositRequest,
-  type VaultWithdrawalRequest, type InsertVaultWithdrawalRequest
+  type VaultWithdrawalRequest, type InsertVaultWithdrawalRequest,
+  type BinanceTransaction, type InsertBinanceTransaction
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -1362,6 +1364,48 @@ export class DatabaseStorage implements IStorage {
   async updateVaultWithdrawalRequest(id: string, updates: Partial<VaultWithdrawalRequest>): Promise<VaultWithdrawalRequest | undefined> {
     const [request] = await db.update(vaultWithdrawalRequests).set({ ...updates, updatedAt: new Date() }).where(eq(vaultWithdrawalRequests.id, id)).returning();
     return request || undefined;
+  }
+
+  // ============================================
+  // BINANCE PAY TRANSACTIONS
+  // ============================================
+
+  async createBinanceTransaction(insertTransaction: InsertBinanceTransaction): Promise<BinanceTransaction> {
+    const [transaction] = await db.insert(binanceTransactions).values(insertTransaction).returning();
+    return transaction;
+  }
+
+  async getBinanceTransaction(id: string): Promise<BinanceTransaction | undefined> {
+    const [transaction] = await db.select().from(binanceTransactions).where(eq(binanceTransactions.id, id));
+    return transaction || undefined;
+  }
+
+  async getBinanceTransactionByMerchantTradeNo(merchantTradeNo: string): Promise<BinanceTransaction | undefined> {
+    const [transaction] = await db.select().from(binanceTransactions).where(eq(binanceTransactions.merchantTradeNo, merchantTradeNo));
+    return transaction || undefined;
+  }
+
+  async getBinanceTransactionByPrepayId(prepayId: string): Promise<BinanceTransaction | undefined> {
+    const [transaction] = await db.select().from(binanceTransactions).where(eq(binanceTransactions.prepayId, prepayId));
+    return transaction || undefined;
+  }
+
+  async getUserBinanceTransactions(userId: string): Promise<BinanceTransaction[]> {
+    return await db.select().from(binanceTransactions).where(eq(binanceTransactions.userId, userId)).orderBy(desc(binanceTransactions.createdAt));
+  }
+
+  async getAllBinanceTransactions(): Promise<BinanceTransaction[]> {
+    return await db.select().from(binanceTransactions).orderBy(desc(binanceTransactions.createdAt));
+  }
+
+  async updateBinanceTransaction(id: string, updates: Partial<BinanceTransaction>): Promise<BinanceTransaction | undefined> {
+    const [transaction] = await db.update(binanceTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(binanceTransactions.id, id)).returning();
+    return transaction || undefined;
+  }
+
+  async updateBinanceTransactionByMerchantTradeNo(merchantTradeNo: string, updates: Partial<BinanceTransaction>): Promise<BinanceTransaction | undefined> {
+    const [transaction] = await db.update(binanceTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(binanceTransactions.merchantTradeNo, merchantTradeNo)).returning();
+    return transaction || undefined;
   }
 }
 

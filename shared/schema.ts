@@ -1002,3 +1002,67 @@ export const peerRequests = pgTable("peer_requests", {
 export const insertPeerRequestSchema = createInsertSchema(peerRequests).omit({ id: true, createdAt: true });
 export type InsertPeerRequest = z.infer<typeof insertPeerRequestSchema>;
 export type PeerRequest = typeof peerRequests.$inferSelect;
+
+// ============================================
+// BINANCE PAY TRANSACTIONS
+// ============================================
+
+export const binanceOrderTypeEnum = pgEnum('binance_order_type', ['Buy', 'Payout']);
+export const binanceOrderStatusEnum = pgEnum('binance_order_status', [
+  'Created',      // Order created, awaiting payment
+  'Processing',   // Payment in progress
+  'Paid',         // Payment confirmed
+  'Completed',    // Fully processed (gold credited/payout sent)
+  'Expired',      // Order expired
+  'Failed',       // Payment failed
+  'Cancelled'     // User cancelled
+]);
+
+export const binanceTransactions = pgTable("binance_transactions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Binance Pay Order Info
+  merchantTradeNo: varchar("merchant_trade_no", { length: 100 }).notNull().unique(), // Our order ID
+  prepayId: varchar("prepay_id", { length: 100 }),  // Binance's order ID
+  transactionId: varchar("transaction_id", { length: 100 }), // Binance's transaction ID (after payment)
+  
+  orderType: binanceOrderTypeEnum("order_type").notNull(), // Buy gold or Payout
+  status: binanceOrderStatusEnum("status").notNull().default('Created'),
+  
+  // Order amounts
+  orderAmountUsd: decimal("order_amount_usd", { precision: 18, scale: 2 }).notNull(),
+  cryptoCurrency: varchar("crypto_currency", { length: 20 }), // USDT, BTC, etc.
+  cryptoAmount: decimal("crypto_amount", { precision: 18, scale: 8 }),
+  
+  // Gold details (for Buy orders)
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  
+  // Payout details (for withdrawals)
+  payoutWalletAddress: varchar("payout_wallet_address", { length: 255 }),
+  payoutNetwork: varchar("payout_network", { length: 50 }), // BSC, ETH, TRX, etc.
+  
+  // Binance response data
+  checkoutUrl: text("checkout_url"),
+  qrcodeLink: text("qrcode_link"),
+  expireTime: timestamp("expire_time"),
+  
+  // Related records
+  walletTransactionId: varchar("wallet_transaction_id", { length: 255 }).references(() => transactions.id),
+  vaultWithdrawalId: varchar("vault_withdrawal_id", { length: 255 }),
+  
+  // Webhook tracking
+  webhookReceivedAt: timestamp("webhook_received_at"),
+  webhookPayload: json("webhook_payload"),
+  
+  // Metadata
+  description: text("description"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBinanceTransactionSchema = createInsertSchema(binanceTransactions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBinanceTransaction = z.infer<typeof insertBinanceTransactionSchema>;
+export type BinanceTransaction = typeof binanceTransactions.$inferSelect;
