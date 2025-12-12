@@ -67,7 +67,7 @@ export default function BNSL() {
       const { apiRequest } = await import('@/lib/queryClient');
       
       // Fetch FinaPay wallet
-      const finapayRes = await apiRequest('GET', `/api/finapay/wallet/${user.id}`);
+      const finapayRes = await apiRequest('GET', `/api/wallet/${user.id}`);
       const finapayData = await finapayRes.json();
       if (finapayData.wallet) {
         setFinaPayGoldBalance(parseFloat(finapayData.wallet.goldGrams || '0'));
