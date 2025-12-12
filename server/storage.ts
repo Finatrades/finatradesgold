@@ -9,6 +9,7 @@ import {
   contentPages, contentBlocks, templates, mediaAssets,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
+  vaultDepositRequests, vaultWithdrawalRequests,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -41,7 +42,9 @@ import {
   type DepositRequest, type InsertDepositRequest,
   type WithdrawalRequest, type InsertWithdrawalRequest,
   type PeerTransfer, type InsertPeerTransfer,
-  type PeerRequest, type InsertPeerRequest
+  type PeerRequest, type InsertPeerRequest,
+  type VaultDepositRequest, type InsertVaultDepositRequest,
+  type VaultWithdrawalRequest, type InsertVaultWithdrawalRequest
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -1258,6 +1261,107 @@ export class DatabaseStorage implements IStorage {
       id += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return id;
+  }
+
+  // ============================================
+  // VAULT DEPOSIT REQUESTS
+  // ============================================
+  
+  generateVaultDepositReferenceNumber(): string {
+    const prefix = 'VD';
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  async getVaultDepositRequest(id: string): Promise<VaultDepositRequest | undefined> {
+    const [request] = await db.select().from(vaultDepositRequests).where(eq(vaultDepositRequests.id, id));
+    return request || undefined;
+  }
+
+  async getVaultDepositRequestByRef(referenceNumber: string): Promise<VaultDepositRequest | undefined> {
+    const [request] = await db.select().from(vaultDepositRequests).where(eq(vaultDepositRequests.referenceNumber, referenceNumber));
+    return request || undefined;
+  }
+
+  async getUserVaultDepositRequests(userId: string): Promise<VaultDepositRequest[]> {
+    return await db.select().from(vaultDepositRequests).where(eq(vaultDepositRequests.userId, userId)).orderBy(desc(vaultDepositRequests.createdAt));
+  }
+
+  async getAllVaultDepositRequests(): Promise<VaultDepositRequest[]> {
+    return await db.select().from(vaultDepositRequests).orderBy(desc(vaultDepositRequests.createdAt));
+  }
+
+  async getPendingVaultDepositRequests(): Promise<VaultDepositRequest[]> {
+    return await db.select().from(vaultDepositRequests)
+      .where(or(
+        eq(vaultDepositRequests.status, 'Submitted'),
+        eq(vaultDepositRequests.status, 'Under Review'),
+        eq(vaultDepositRequests.status, 'Approved'),
+        eq(vaultDepositRequests.status, 'Awaiting Delivery'),
+        eq(vaultDepositRequests.status, 'Received')
+      ))
+      .orderBy(desc(vaultDepositRequests.createdAt));
+  }
+
+  async createVaultDepositRequest(insertRequest: InsertVaultDepositRequest): Promise<VaultDepositRequest> {
+    const [request] = await db.insert(vaultDepositRequests).values(insertRequest).returning();
+    return request;
+  }
+
+  async updateVaultDepositRequest(id: string, updates: Partial<VaultDepositRequest>): Promise<VaultDepositRequest | undefined> {
+    const [request] = await db.update(vaultDepositRequests).set({ ...updates, updatedAt: new Date() }).where(eq(vaultDepositRequests.id, id)).returning();
+    return request || undefined;
+  }
+
+  // ============================================
+  // VAULT WITHDRAWAL REQUESTS
+  // ============================================
+
+  generateVaultWithdrawalReferenceNumber(): string {
+    const prefix = 'VW';
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  async getVaultWithdrawalRequest(id: string): Promise<VaultWithdrawalRequest | undefined> {
+    const [request] = await db.select().from(vaultWithdrawalRequests).where(eq(vaultWithdrawalRequests.id, id));
+    return request || undefined;
+  }
+
+  async getVaultWithdrawalRequestByRef(referenceNumber: string): Promise<VaultWithdrawalRequest | undefined> {
+    const [request] = await db.select().from(vaultWithdrawalRequests).where(eq(vaultWithdrawalRequests.referenceNumber, referenceNumber));
+    return request || undefined;
+  }
+
+  async getUserVaultWithdrawalRequests(userId: string): Promise<VaultWithdrawalRequest[]> {
+    return await db.select().from(vaultWithdrawalRequests).where(eq(vaultWithdrawalRequests.userId, userId)).orderBy(desc(vaultWithdrawalRequests.createdAt));
+  }
+
+  async getAllVaultWithdrawalRequests(): Promise<VaultWithdrawalRequest[]> {
+    return await db.select().from(vaultWithdrawalRequests).orderBy(desc(vaultWithdrawalRequests.createdAt));
+  }
+
+  async getPendingVaultWithdrawalRequests(): Promise<VaultWithdrawalRequest[]> {
+    return await db.select().from(vaultWithdrawalRequests)
+      .where(or(
+        eq(vaultWithdrawalRequests.status, 'Submitted'),
+        eq(vaultWithdrawalRequests.status, 'Under Review'),
+        eq(vaultWithdrawalRequests.status, 'Approved'),
+        eq(vaultWithdrawalRequests.status, 'Processing')
+      ))
+      .orderBy(desc(vaultWithdrawalRequests.createdAt));
+  }
+
+  async createVaultWithdrawalRequest(insertRequest: InsertVaultWithdrawalRequest): Promise<VaultWithdrawalRequest> {
+    const [request] = await db.insert(vaultWithdrawalRequests).values(insertRequest).returning();
+    return request;
+  }
+
+  async updateVaultWithdrawalRequest(id: string, updates: Partial<VaultWithdrawalRequest>): Promise<VaultWithdrawalRequest | undefined> {
+    const [request] = await db.update(vaultWithdrawalRequests).set({ ...updates, updatedAt: new Date() }).where(eq(vaultWithdrawalRequests.id, id)).returning();
+    return request || undefined;
   }
 }
 
