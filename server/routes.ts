@@ -2132,7 +2132,7 @@ export async function registerRoutes(
         details: `Trade case created: ${caseData.tradeValueUsd} USD`,
       });
       
-      res.json({ case: tradeCase });
+      res.json({ tradeCase });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade case" });
     }
@@ -2145,7 +2145,7 @@ export async function registerRoutes(
       if (!tradeCase) {
         return res.status(404).json({ message: "Trade case not found" });
       }
-      res.json({ case: tradeCase });
+      res.json({ tradeCase });
     } catch (error) {
       res.status(400).json({ message: "Failed to update trade case" });
     }
