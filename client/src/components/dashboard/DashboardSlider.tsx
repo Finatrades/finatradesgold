@@ -1,77 +1,144 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Database, TrendingUp, BarChart3, ArrowRight, Briefcase } from 'lucide-react';
-import { useLocation } from 'wouter';
-
-const sliderItems = [
-  {
-    id: 'finapay',
-    title: 'FinaPay Wallet',
-    path: '/finapay',
-    desc: 'Buy, sell, send, and receive digital gold value.',
-    icon: <Wallet className="w-6 h-6" />,
-    color: 'text-primary',
-    bg: 'bg-primary/10',
-    border: 'border-primary/20'
-  },
-  {
-    id: 'finavault',
-    title: 'FinaVault',
-    path: '/finavault',
-    desc: 'Track and manage your stored physical gold.',
-    icon: <Database className="w-6 h-6" />,
-    color: 'text-secondary',
-    bg: 'bg-secondary/10',
-    border: 'border-secondary/20'
-  },
-  {
-    id: 'bnsl',
-    title: 'BNSL',
-    path: '/bnsl',
-    desc: 'Lock gold to earn structured rewards over time.',
-    icon: <TrendingUp className="w-6 h-6" />,
-    color: 'text-accent',
-    bg: 'bg-accent/10',
-    border: 'border-accent/20'
-  },
-  {
-    id: 'finabridge',
-    title: 'FinaBridge',
-    path: '/finabridge',
-    desc: 'Gold-backed trade finance wallet for business.',
-    icon: <Briefcase className="w-6 h-6" />,
-    color: 'text-purple-600',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/20'
-  }
-];
+import { Wallet, CreditCard, TrendingUp, ArrowRight } from 'lucide-react';
+import { Link } from 'wouter';
+import { Card } from '@/components/ui/card';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 export default function DashboardSlider() {
-  const [, setLocation] = useLocation();
+  const { totals, transactions, bnslPlans } = useDashboardData();
+  
+  const pendingTransactions = transactions.filter(t => t.status === 'Pending').length;
+  const activeBnslPlans = bnslPlans.filter((p: any) => p.status === 'Active').length;
 
   return (
-    <div className="w-full overflow-x-auto pb-4 pt-2 custom-scrollbar">
-      <div className="flex gap-4 min-w-max px-1">
-        {sliderItems.map((item) => (
-          <motion.div
-            key={item.id}
-            whileHover={{ scale: 1.02, y: -2 }}
-            className={`w-[280px] p-5 rounded-2xl bg-white shadow-sm border border-border cursor-pointer hover:border-secondary/50 transition-colors group`}
-            onClick={() => setLocation(item.path)}
-          >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${item.bg} ${item.color}`}>
-              {item.icon}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* FinaPay Wallet */}
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Card className="p-5 bg-white border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-emerald-600" />
+              </div>
+              <h4 className="font-semibold text-foreground">FinaPay Wallet</h4>
             </div>
-            <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-secondary transition-colors">{item.title}</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-4 min-h-[40px]">
-              {item.desc}
+            <Link href="/finapay">
+              <span className="text-xs text-emerald-600 font-medium hover:underline cursor-pointer flex items-center gap-1" data-testid="link-finapay-view">
+                View <ArrowRight className="w-3 h-3" />
+              </span>
+            </Link>
+          </div>
+          
+          <div className="mb-4">
+            <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+            <p className="text-2xl font-bold text-foreground" data-testid="text-finapay-balance">
+              {totals.walletGoldGrams.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-base font-normal text-muted-foreground">g</span>
             </p>
-            <div className="flex items-center text-xs font-medium text-muted-foreground/60 group-hover:text-foreground transition-colors">
-              Access Module <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+            <p className="text-xs text-muted-foreground">
+              ≈ ${(totals.walletGoldGrams * 85).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+            </p>
+          </div>
+          
+          <div className="flex gap-6 pt-3 border-t border-border">
+            <div>
+              <p className="text-xs text-muted-foreground">Pending</p>
+              <p className="text-sm font-semibold text-emerald-600" data-testid="text-finapay-pending">{pendingTransactions > 0 ? `${pendingTransactions}` : '0.00g'}</p>
             </div>
-          </motion.div>
-        ))}
-      </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Transactions</p>
+              <p className="text-sm font-semibold text-foreground" data-testid="text-finapay-transactions">{transactions.length}</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* FinaCard */}
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Card className="p-5 bg-white border-l-4 border-l-pink-500 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                <CreditCard className="w-4 h-4 text-pink-600" />
+              </div>
+              <h4 className="font-semibold text-foreground">FinaCard</h4>
+            </div>
+            <span className="text-xs text-pink-600 font-medium bg-pink-50 px-2 py-1 rounded-full">
+              Coming Soon
+            </span>
+          </div>
+          
+          <div className="mb-4">
+            <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+            <p className="text-2xl font-bold text-foreground">
+              0.00 <span className="text-base font-normal text-muted-foreground">g</span>
+            </p>
+            <p className="text-xs text-muted-foreground">≈ $0.00 USD</p>
+          </div>
+          
+          <div className="flex gap-6 pt-3 border-t border-border">
+            <div>
+              <p className="text-xs text-muted-foreground">Card Status</p>
+              <p className="text-sm font-semibold text-pink-600">Not Activated</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Rewards</p>
+              <p className="text-sm font-semibold text-foreground">0 pts</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* BNSL Wallet */}
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Card className="p-5 bg-white border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+              </div>
+              <h4 className="font-semibold text-foreground">BNSL Wallet</h4>
+            </div>
+            <Link href="/bnsl">
+              <span className="text-xs text-emerald-600 font-medium hover:underline cursor-pointer flex items-center gap-1" data-testid="link-bnsl-view">
+                View <ArrowRight className="w-3 h-3" />
+              </span>
+            </Link>
+          </div>
+          
+          <div className="mb-4">
+            <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+            <p className="text-2xl font-bold text-foreground" data-testid="text-bnsl-balance">
+              {totals.bnslLockedGrams.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-base font-normal text-muted-foreground">g</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              ≈ ${(totals.bnslLockedGrams * 85).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+            </p>
+          </div>
+          
+          <div className="flex gap-6 pt-3 border-t border-border">
+            <div>
+              <p className="text-xs text-muted-foreground">Locked</p>
+              <p className="text-sm font-semibold text-emerald-600" data-testid="text-bnsl-locked">
+                {totals.bnslLockedGrams.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}g
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Active Plans</p>
+              <p className="text-sm font-semibold text-foreground" data-testid="text-bnsl-plans">{activeBnslPlans}</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }

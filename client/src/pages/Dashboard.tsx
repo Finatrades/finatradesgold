@@ -123,10 +123,10 @@ export default function Dashboard() {
           <FinaPayCard />
         </section>
 
-        {/* 5. Dashboard Slider */}
+        {/* 5. Wallet Cards */}
         <section>
           <div className="flex items-center justify-between mb-4">
-             <h3 className="text-lg font-bold text-foreground">Quick Access</h3>
+             <h3 className="text-lg font-bold text-foreground">Wallets</h3>
              <div className="h-px flex-1 bg-border ml-6" />
           </div>
           <DashboardSlider />
