@@ -1,16 +1,65 @@
 import React from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'wouter';
+
+interface AdminStats {
+  totalUsers: number;
+  pendingKycCount: number;
+  totalVolume: number;
+  revenue: number;
+  pendingKycRequests: Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    createdAt: string;
+  }>;
+}
+
+function formatCurrency(amount: number): string {
+  if (amount >= 1000000) {
+    return `$${(amount / 1000000).toFixed(1)}M`;
+  } else if (amount >= 1000) {
+    return `$${(amount / 1000).toFixed(1)}k`;
+  }
+  return `$${amount.toFixed(0)}`;
+}
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
 
 export default function AdminDashboard() {
+  const { data: stats, isLoading, error } = useQuery<AdminStats>({
+    queryKey: ['/api/admin/stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/stats');
+      if (!res.ok) throw new Error('Failed to fetch stats');
+      return res.json();
+    },
+    refetchInterval: 30000
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+          <h1 className="text-3xl font-bold text-gray-900" data-testid="text-admin-title">Dashboard Overview</h1>
           <p className="text-gray-500">Welcome back, here's what's happening today.</p>
         </div>
 
@@ -18,35 +67,39 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard 
             title="Total Users" 
-            value="2,543" 
-            change="+12.5%" 
+            value={isLoading ? '...' : stats?.totalUsers?.toLocaleString() || '0'}
+            change="" 
             trend="up" 
             icon={<Users className="w-5 h-5 text-blue-600" />} 
             bg="bg-blue-50"
+            loading={isLoading}
           />
           <StatsCard 
             title="Total Volume" 
-            value="$4.2M" 
-            change="+8.2%" 
+            value={isLoading ? '...' : formatCurrency(stats?.totalVolume || 0)}
+            change="" 
             trend="up" 
             icon={<Activity className="w-5 h-5 text-purple-600" />} 
             bg="bg-purple-50"
+            loading={isLoading}
           />
           <StatsCard 
             title="Pending KYC" 
-            value="18" 
-            change="-2.4%" 
+            value={isLoading ? '...' : stats?.pendingKycCount?.toString() || '0'}
+            change="" 
             trend="down" 
             icon={<ShieldCheck className="w-5 h-5 text-orange-600" />} 
             bg="bg-orange-50"
+            loading={isLoading}
           />
           <StatsCard 
             title="Revenue" 
-            value="$125k" 
-            change="+15.3%" 
+            value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
+            change="" 
             trend="up" 
             icon={<DollarSign className="w-5 h-5 text-green-600" />} 
             bg="bg-green-50"
+            loading={isLoading}
           />
         </div>
 
@@ -57,36 +110,45 @@ export default function AdminDashboard() {
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Pending KYC Requests</CardTitle>
-              <Button variant="outline" size="sm">View All</Button>
+              <Link href="/admin/kyc">
+                <Button variant="outline" size="sm" data-testid="button-view-all-kyc">View All</Button>
+              </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  { name: 'Sarah Johnson', type: 'Personal', date: '2 mins ago', status: 'Pending' },
-                  { name: 'TechCorp Solutions AG', type: 'Corporate', date: '15 mins ago', status: 'In Review' },
-                  { name: 'Michael Chen', type: 'Personal', date: '1 hour ago', status: 'Pending' },
-                  { name: 'Global Trade Ltd', type: 'Corporate', date: '2 hours ago', status: 'Pending' },
-                  { name: 'Emma Davis', type: 'Personal', date: '3 hours ago', status: 'Pending' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-                        {item.name[0]}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                </div>
+              ) : stats?.pendingKycRequests && stats.pendingKycRequests.length > 0 ? (
+                <div className="space-y-4">
+                  {stats.pendingKycRequests.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors" data-testid={`row-kyc-${item.id}`}>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
+                          {item.name[0]}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{item.name}</p>
+                          <p className="text-xs text-gray-500">{item.type} Account • {formatTimeAgo(item.createdAt)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-xs text-gray-500">{item.type} Account • {item.date}</p>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">
+                          <Clock className="w-3 h-3 mr-1" /> {item.status}
+                        </Badge>
+                        <Link href={`/admin/users/${item.id}`}>
+                          <Button size="sm" variant="ghost" data-testid={`button-review-${item.id}`}>Review</Button>
+                        </Link>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">
-                        <Clock className="w-3 h-3 mr-1" /> {item.status}
-                      </Badge>
-                      <Button size="sm" variant="ghost">Review</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <ShieldCheck className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No pending KYC requests</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -98,13 +160,13 @@ export default function AdminDashboard() {
             <CardContent className="space-y-6">
               <StatusItem label="FinaVault Storage" status="Operational" color="green" />
               <StatusItem label="Payment Gateway" status="Operational" color="green" />
-              <StatusItem label="KYC Verification API" status="Degraded" color="yellow" />
+              <StatusItem label="KYC Verification API" status="Operational" color="green" />
               <StatusItem label="Email Service" status="Operational" color="green" />
               
               <div className="mt-8 p-4 bg-slate-50 rounded-lg border border-slate-100">
                 <h4 className="font-medium text-sm mb-2 text-slate-900">Admin Notices</h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Scheduled maintenance for the FinaBridge module is planned for Sunday at 02:00 UTC. Expect minor downtime.
+                  All systems operational. Platform is running smoothly.
                 </p>
               </div>
             </CardContent>
@@ -116,7 +178,7 @@ export default function AdminDashboard() {
   );
 }
 
-function StatsCard({ title, value, change, trend, icon, bg }: any) {
+function StatsCard({ title, value, change, trend, icon, bg, loading }: any) {
   return (
     <Card>
       <CardContent className="p-6">
@@ -124,14 +186,11 @@ function StatsCard({ title, value, change, trend, icon, bg }: any) {
           <div className={`p-3 rounded-xl ${bg}`}>
             {icon}
           </div>
-          <div className={`flex items-center gap-1 text-xs font-medium ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-            {trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-            {change}
-          </div>
+          {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
         </div>
         <div>
           <p className="text-sm text-gray-500 mb-1">{title}</p>
-          <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+          <h3 className="text-2xl font-bold text-gray-900" data-testid={`text-stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>{value}</h3>
         </div>
       </CardContent>
     </Card>

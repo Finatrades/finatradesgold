@@ -517,6 +517,55 @@ export async function registerRoutes(
   // ADMIN - USER MANAGEMENT
   // ============================================================================
   
+  // Admin Dashboard Stats
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const kycSubmissions = await storage.getAllKycSubmissions();
+      const allTransactions = await storage.getAllTransactions();
+      
+      // Total users count
+      const totalUsers = users.length;
+      
+      // Pending KYC count (In Progress status on users)
+      const pendingKycCount = users.filter(u => 
+        u.kycStatus === 'In Progress'
+      ).length;
+      
+      // Total transaction volume (sum of amountUsd)
+      const totalVolume = allTransactions.reduce((sum, tx) => {
+        const amount = parseFloat(tx.amountUsd || '0');
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0);
+      
+      // Revenue estimate (1% of volume as placeholder)
+      const revenue = totalVolume * 0.01;
+      
+      // Get pending KYC requests with user details
+      const pendingKycRequests = users
+        .filter(u => u.kycStatus === 'In Progress')
+        .map(u => ({
+          id: u.id,
+          name: u.companyName || `${u.firstName} ${u.lastName}`,
+          type: u.accountType === 'business' ? 'Corporate' : 'Personal',
+          status: u.kycStatus,
+          createdAt: u.createdAt
+        }))
+        .slice(0, 5);
+      
+      res.json({
+        totalUsers,
+        pendingKycCount,
+        totalVolume,
+        revenue,
+        pendingKycRequests
+      });
+    } catch (error) {
+      console.error("Failed to get admin stats:", error);
+      res.status(400).json({ message: "Failed to get admin stats" });
+    }
+  });
+
   // Get all users (Admin)
   app.get("/api/admin/users", async (req, res) => {
     try {
