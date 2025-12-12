@@ -52,6 +52,7 @@ import FinaPayDashboard from "@/pages/FinaPayDashboard";
 import { FinaPayProvider } from "@/context/FinaPayContext";
 
 import AdminChat from "@/pages/admin/AdminChat";
+import CMSManagement from "@/pages/admin/CMSManagement";
 
 function Router() {
   return (
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/admin/vault" component={VaultManagement} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/chat" component={AdminChat} />
+      <Route path="/admin/cms" component={CMSManagement} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />
