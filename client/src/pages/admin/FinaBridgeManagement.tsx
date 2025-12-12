@@ -1,393 +1,543 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Briefcase, Eye, CheckCircle, XCircle, AlertTriangle, TrendingUp, Lock, FileText } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import TradeCaseDetailAdmin from '@/components/finabridge/admin/TradeCaseDetailAdmin';
-import { TradeCase, TradeDocument, ApprovalStep, AuditLogEntry, TradeCaseStatus, LockedFundsSummary, LockStatus } from '@/types/finabridge';
+import { Briefcase, CheckCircle, XCircle, AlertTriangle, TrendingUp, Lock, Loader2, RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// --- MOCK DATA ---
-const CURRENT_GOLD_PRICE = 75.50;
+interface DbTradeCase {
+  id: string;
+  caseNumber: string;
+  userId: string;
+  companyName: string;
+  tradeType: string;
+  commodityType: string;
+  tradeValueUsd: string;
+  buyerName: string | null;
+  buyerCountry: string | null;
+  sellerName: string | null;
+  sellerCountry: string | null;
+  paymentTerms: string | null;
+  shipmentDetails: string | null;
+  status: string;
+  riskLevel: string;
+  opsApproval: boolean;
+  opsApprovedBy: string | null;
+  opsApprovedAt: string | null;
+  complianceApproval: boolean;
+  complianceApprovedBy: string | null;
+  complianceApprovedAt: string | null;
+  riskApproval: boolean;
+  riskApprovedBy: string | null;
+  riskApprovedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const MOCK_CASES: TradeCase[] = [
-  {
-    id: '1',
-    reference: 'TF-2025-0007',
-    importer: { id: 'IMP-001', name: 'TechGlobal Ltd', role: 'Importer', country: 'Switzerland', kycStatus: 'Approved', riskLevel: 'Low' },
-    exporter: { id: 'EXP-001', name: 'Shenzhen Electronics', role: 'Exporter', country: 'China', kycStatus: 'Approved', riskLevel: 'Medium' },
-    contractNumber: 'CTR-2025-001',
-    commodityDescription: 'Consumer Electronics Components',
-    valueUsd: 150000,
-    valueGoldGrams: 2000,
-    lockedGoldGrams: 2000,
-    lockStatus: 'Locked',
-    status: 'Funded – Docs Pending',
-    paymentTerms: 'LC at Sight',
-    deliveryTerms: 'FOB Shenzhen',
-    shipmentMethod: 'Air Freight',
-    expectedDeliveryDate: '2025-04-15',
-    createdAt: '2025-03-01T10:00:00Z',
-    updatedAt: '2025-03-05T14:30:00Z',
-    amlFlags: [],
-    jurisdictionRisk: 'Medium'
-  },
-  {
-    id: '2',
-    reference: 'TF-2025-0008',
-    importer: { id: 'IMP-002', name: 'Alpine Coffee Roasters', role: 'Importer', country: 'Switzerland', kycStatus: 'Approved', riskLevel: 'Low' },
-    exporter: { id: 'EXP-002', name: 'Colombian Growers Co-op', role: 'Exporter', country: 'Colombia', kycStatus: 'In Progress', riskLevel: 'Medium' },
-    contractNumber: 'CTR-2025-002',
-    commodityDescription: 'Premium Arabica Coffee Beans',
-    valueUsd: 45000,
-    valueGoldGrams: 600,
-    lockedGoldGrams: 600,
-    lockStatus: 'Locked',
-    status: 'Approved – Ready to Release',
-    paymentTerms: 'Net 30',
-    deliveryTerms: 'CIF Hamburg',
-    shipmentMethod: 'Sea Freight',
-    expectedDeliveryDate: '2025-05-01',
-    createdAt: '2025-03-02T09:15:00Z',
-    updatedAt: '2025-03-10T11:20:00Z',
-    amlFlags: [],
-    jurisdictionRisk: 'Low'
-  },
-  {
-    id: '3',
-    reference: 'TF-2025-0009',
-    importer: { id: 'IMP-003', name: 'BuildRight Construction', role: 'Importer', country: 'UAE', kycStatus: 'Approved', riskLevel: 'High' },
-    exporter: { id: 'EXP-003', name: 'German Engineering GmbH', role: 'Exporter', country: 'Germany', kycStatus: 'Approved', riskLevel: 'Low' },
-    contractNumber: 'CTR-2025-003',
-    commodityDescription: 'Industrial Excavators',
-    valueUsd: 850000,
-    valueGoldGrams: 11500,
-    lockedGoldGrams: 11500,
-    lockStatus: 'Locked',
-    status: 'Under Review',
-    paymentTerms: '50% Advance',
-    deliveryTerms: 'EXW Munich',
-    shipmentMethod: 'Land/Sea',
-    expectedDeliveryDate: '2025-06-20',
-    createdAt: '2025-03-08T16:45:00Z',
-    updatedAt: '2025-03-09T09:00:00Z',
-    amlFlags: ['High Transaction Value', 'High Risk Jurisdiction'],
-    jurisdictionRisk: 'High'
-  }
-];
-
-const MOCK_DOCS: TradeDocument[] = [
-  { id: 'DOC-1', caseId: '1', type: 'Invoice', fileName: 'inv_2025_001.pdf', status: 'Approved', uploadedBy: 'TechGlobal Ltd', uploadedAt: '2025-03-02' },
-  { id: 'DOC-2', caseId: '1', type: 'Bill of Lading', fileName: 'bl_air_882.pdf', status: 'Under Review', uploadedBy: 'Shenzhen Electronics', uploadedAt: '2025-03-05' },
-  { id: 'DOC-3', caseId: '2', type: 'Invoice', fileName: 'inv_coffee_99.pdf', status: 'Approved', uploadedBy: 'Alpine Coffee', uploadedAt: '2025-03-03' },
-  { id: 'DOC-4', caseId: '2', type: 'Certificate of Origin', fileName: 'co_colombia.pdf', status: 'Approved', uploadedBy: 'Colombian Growers', uploadedAt: '2025-03-04' },
-];
-
-const MOCK_APPROVALS: ApprovalStep[] = [
-  { id: 'APP-1', caseId: '1', name: 'Importer Verification', role: 'Ops', status: 'Approved', approverName: 'Alice Admin', decisionAt: '2025-03-01' },
-  { id: 'APP-2', caseId: '1', name: 'Compliance Review', role: 'Compliance', status: 'In Review' },
-  { id: 'APP-3', caseId: '1', name: 'Final Approval', role: 'Risk', status: 'Pending' },
-  
-  { id: 'APP-4', caseId: '2', name: 'Importer Verification', role: 'Ops', status: 'Approved', approverName: 'Alice Admin', decisionAt: '2025-03-02' },
-  { id: 'APP-5', caseId: '2', name: 'Compliance Review', role: 'Compliance', status: 'Approved', approverName: 'Bob Risk', decisionAt: '2025-03-05' },
-  { id: 'APP-6', caseId: '2', name: 'Final Approval', role: 'Risk', status: 'Approved', approverName: 'Charlie Chief', decisionAt: '2025-03-10' },
-];
-
-const MOCK_AUDIT: AuditLogEntry[] = [
-  { id: 'LOG-1', caseId: '1', actorName: 'System', actorRole: 'System', actionType: 'CaseCreated', timestamp: '2025-03-01T10:00:00Z', details: 'Case created via API' },
-  { id: 'LOG-2', caseId: '1', actorName: 'TechGlobal', actorRole: 'Importer', actionType: 'DocumentUploaded', timestamp: '2025-03-02T11:00:00Z', details: 'Uploaded Commercial Invoice' },
-  { id: 'LOG-3', caseId: '2', actorName: 'Charlie Chief', actorRole: 'Risk', actionType: 'StatusChanged', timestamp: '2025-03-10T11:20:00Z', details: 'Approved for release', oldValue: 'Under Review', newValue: 'Approved – Ready to Release' },
-];
+const CURRENT_GOLD_PRICE = 85.22;
 
 export default function FinaBridgeManagement() {
-  const [cases, setCases] = useState<TradeCase[]>(MOCK_CASES);
-  const [documents, setDocuments] = useState<TradeDocument[]>(MOCK_DOCS);
-  const [approvals, setApprovals] = useState<ApprovalStep[]>(MOCK_APPROVALS);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(MOCK_AUDIT);
-  
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [cases, setCases] = useState<DbTradeCase[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCase, setSelectedCase] = useState<DbTradeCase | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [adminNotes, setAdminNotes] = useState('');
 
-  const selectedCase = cases.find(c => c.id === selectedCaseId);
+  const fetchCases = async () => {
+    setLoading(true);
+    try {
+      const res = await apiRequest('GET', '/api/admin/trade/cases');
+      const data = await res.json();
+      setCases(data.cases || []);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to load trade cases', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleOpenCase = (id: string) => {
-    setSelectedCaseId(id);
+  useEffect(() => {
+    fetchCases();
+  }, []);
+
+  const handleOpenCase = (tradeCase: DbTradeCase) => {
+    setSelectedCase(tradeCase);
+    setAdminNotes(tradeCase.notes || '');
     setDetailOpen(true);
   };
 
-  const updateCaseStatus = (id: string, newStatus: TradeCaseStatus, lockStatus?: LockStatus, lockedGrams?: number) => {
-    setCases(cases.map(c => {
-      if (c.id !== id) return c;
-      return {
-        ...c,
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (!selectedCase) return;
+    setUpdating(true);
+    try {
+      const res = await apiRequest('PATCH', `/api/trade/cases/${selectedCase.id}`, {
         status: newStatus,
-        lockStatus: lockStatus || c.lockStatus,
-        lockedGoldGrams: lockedGrams !== undefined ? lockedGrams : c.lockedGoldGrams
-      };
-    }));
+        notes: adminNotes
+      });
+      const data = await res.json();
+      setCases(cases.map(c => c.id === selectedCase.id ? data.tradeCase : c));
+      setSelectedCase(data.tradeCase);
+      toast({ title: 'Status Updated', description: `Case status changed to ${newStatus}` });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' });
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const addAuditLog = (entry: AuditLogEntry) => {
-    setAuditLogs([entry, ...auditLogs]);
+  const handleApproval = async (type: 'ops' | 'compliance' | 'risk', approved: boolean) => {
+    if (!selectedCase) return;
+    setUpdating(true);
+    try {
+      const updates: any = { notes: adminNotes };
+      if (type === 'ops') updates.opsApproval = approved;
+      if (type === 'compliance') updates.complianceApproval = approved;
+      if (type === 'risk') updates.riskApproval = approved;
+
+      const res = await apiRequest('PATCH', `/api/trade/cases/${selectedCase.id}`, updates);
+      const data = await res.json();
+      setCases(cases.map(c => c.id === selectedCase.id ? data.tradeCase : c));
+      setSelectedCase(data.tradeCase);
+      toast({ title: 'Approval Updated', description: `${type} approval ${approved ? 'granted' : 'revoked'}` });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update approval', variant: 'destructive' });
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const updateDocumentStatus = (docId: string, status: any) => {
-    setDocuments(documents.map(d => d.id === docId ? { ...d, status } : d));
+  const handleUpdateRiskLevel = async (riskLevel: string) => {
+    if (!selectedCase) return;
+    setUpdating(true);
+    try {
+      const res = await apiRequest('PATCH', `/api/trade/cases/${selectedCase.id}`, {
+        riskLevel,
+        notes: adminNotes
+      });
+      const data = await res.json();
+      setCases(cases.map(c => c.id === selectedCase.id ? data.tradeCase : c));
+      setSelectedCase(data.tradeCase);
+      toast({ title: 'Risk Level Updated', description: `Risk level set to ${riskLevel}` });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update risk level', variant: 'destructive' });
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const updateApproval = (stepId: string, status: any, notes?: string) => {
-    setApprovals(approvals.map(a => a.id === stepId ? { ...a, status, notes: notes || a.notes } : a));
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Draft': return 'bg-gray-100 text-gray-700';
+      case 'Submitted': return 'bg-blue-100 text-blue-700';
+      case 'Under Review': return 'bg-amber-100 text-amber-700';
+      case 'Approved': return 'bg-green-100 text-green-700';
+      case 'Active': return 'bg-purple-100 text-purple-700';
+      case 'Settled': return 'bg-emerald-100 text-emerald-700';
+      case 'Cancelled': return 'bg-red-100 text-red-700';
+      case 'Rejected': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
   };
 
-  const updateRisk = (caseId: string, party: 'importer' | 'exporter', risk: any) => {
-     setCases(cases.map(c => {
-        if (c.id !== caseId) return c;
-        if (party === 'importer') return { ...c, importer: { ...c.importer, riskLevel: risk }};
-        return { ...c, exporter: { ...c.exporter, riskLevel: risk }};
-     }));
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case 'Low': return 'bg-green-600';
+      case 'Medium': return 'bg-yellow-600';
+      case 'High': return 'bg-red-600';
+      default: return 'bg-gray-600';
+    }
   };
 
-  // KPI Calculations
-  const totalLocked = cases.reduce((sum, c) => sum + c.lockedGoldGrams, 0);
-  const totalLockedUsd = totalLocked * CURRENT_GOLD_PRICE;
-  const pendingCases = cases.filter(c => c.status === 'Under Review' || c.status === 'Funded – Docs Pending').length;
-  const highRiskCases = cases.filter(c => c.jurisdictionRisk === 'High' || c.jurisdictionRisk === 'Critical').length;
-  const activeCases = cases.filter(c => c.status !== 'Closed' && c.status !== 'Rejected').length;
+  const totalValueUsd = cases.reduce((sum, c) => sum + parseFloat(c.tradeValueUsd || '0'), 0);
+  const totalValueGold = totalValueUsd / CURRENT_GOLD_PRICE;
+  const pendingCases = cases.filter(c => c.status === 'Under Review' || c.status === 'Submitted').length;
+  const highRiskCases = cases.filter(c => c.riskLevel === 'High').length;
+  const activeCases = cases.filter(c => c.status !== 'Settled' && c.status !== 'Rejected' && c.status !== 'Cancelled').length;
 
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">FinaBridge – Trade Finance Admin</h1>
-          <p className="text-gray-500">Manage gold-backed trade cases, documents, and settlements.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">FinaBridge – Trade Finance Admin</h1>
+            <p className="text-gray-500">Manage gold-backed trade cases, documents, and settlements.</p>
+          </div>
+          <Button variant="outline" onClick={fetchCases} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
-        {/* Overview KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-           <Card className="bg-blue-50 border-blue-100">
-             <CardContent className="p-6">
-               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
-                   <Briefcase className="w-6 h-6" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-blue-900">Active Trade Cases</p>
-                   <h3 className="text-2xl font-bold text-blue-700">{activeCases}</h3>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
-           
-           <Card className="bg-amber-50 border-amber-100">
-             <CardContent className="p-6">
-               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
-                   <Lock className="w-6 h-6" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-amber-900">Total Locked Gold</p>
-                   <h3 className="text-2xl font-bold text-amber-700">{totalLocked.toLocaleString()}g</h3>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
+          <Card className="bg-blue-50 border-blue-100">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
+                  <Briefcase className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Active Trade Cases</p>
+                  <h3 className="text-2xl font-bold text-blue-700">{activeCases}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-amber-50 border-amber-100">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-amber-900">Total Trade Value</p>
+                  <h3 className="text-2xl font-bold text-amber-700">${totalValueUsd.toLocaleString()}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-           <Card className="bg-green-50 border-green-100">
-             <CardContent className="p-6">
-               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-green-100 text-green-700 rounded-lg">
-                   <TrendingUp className="w-6 h-6" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-green-900">Locked Value (USD)</p>
-                   <h3 className="text-2xl font-bold text-green-700">${totalLockedUsd.toLocaleString()}</h3>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
+          <Card className="bg-green-50 border-green-100">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-100 text-green-700 rounded-lg">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-900">Pending Review</p>
+                  <h3 className="text-2xl font-bold text-green-700">{pendingCases}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-           <Card className="bg-red-50 border-red-100">
-             <CardContent className="p-6">
-               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-red-100 text-red-700 rounded-lg">
-                   <AlertTriangle className="w-6 h-6" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-red-900">High Risk Cases</p>
-                   <h3 className="text-2xl font-bold text-red-700">{highRiskCases}</h3>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
+          <Card className="bg-red-50 border-red-100">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-red-100 text-red-700 rounded-lg">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-red-900">High Risk Cases</p>
+                  <h3 className="text-2xl font-bold text-red-700">{highRiskCases}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="cases" className="w-full">
-           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-             <TabsTrigger value="cases" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-               Trade Cases
-             </TabsTrigger>
-             <TabsTrigger value="locked" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-               Locked Funds
-             </TabsTrigger>
-             <TabsTrigger value="compliance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-               Compliance & Risk
-             </TabsTrigger>
-             <TabsTrigger value="audit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-               Audit Log
-             </TabsTrigger>
-           </TabsList>
+          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
+            <TabsTrigger value="cases" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              All Trade Cases
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              Pending Approval
+            </TabsTrigger>
+            <TabsTrigger value="risk" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              Risk Monitor
+            </TabsTrigger>
+          </TabsList>
 
-           <div className="mt-6">
-             <TabsContent value="cases">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Trade Case Management</CardTitle>
-                    <CardDescription>Filter and manage all corporate trade deals.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                     <div className="space-y-4">
-                       {cases.map((tradeCase) => (
-                         <div key={tradeCase.id} onClick={() => handleOpenCase(tradeCase.id)} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors cursor-pointer group">
-                             <div className="flex items-center gap-4 mb-4 md:mb-0">
-                               <div className={`p-2 rounded border ${tradeCase.status.includes('Approved') || tradeCase.status === 'Released' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                                   <Briefcase className="w-6 h-6" />
-                               </div>
-                               <div>
-                                   <div className="flex items-center gap-2">
-                                     <h4 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">{tradeCase.reference}</h4>
-                                     <Badge variant="outline" className="text-xs">{tradeCase.status}</Badge>
-                                     {tradeCase.jurisdictionRisk === 'High' && <Badge variant="destructive" className="text-xs">High Risk</Badge>}
-                                   </div>
-                                   <p className="text-sm text-gray-600">
-                                     {tradeCase.importer.name} <span className="text-gray-400 mx-1">→</span> {tradeCase.exporter.name}
-                                   </p>
-                                   <p className="text-xs text-gray-500 mt-1">
-                                      Value: ${tradeCase.valueUsd.toLocaleString()} • Locked: {tradeCase.lockedGoldGrams}g Gold • {tradeCase.shipmentMethod}
-                                   </p>
-                               </div>
-                             </div>
-                             <div className="flex gap-2">
-                               <Button variant="outline" size="sm">
-                                 View Details
-                               </Button>
-                             </div>
-                         </div>
-                       ))}
-                     </div>
-                  </CardContent>
-                </Card>
-             </TabsContent>
-
-             <TabsContent value="locked">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Locked Settlement Funds</CardTitle>
-                    <CardDescription>Global view of gold reserved for trade settlement.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                     <div className="space-y-4">
-                       {cases.filter(c => c.lockedGoldGrams > 0).map((tradeCase) => (
-                         <div key={tradeCase.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
-                            <div className="flex items-center gap-4">
-                               <div className="p-2 bg-amber-100 rounded text-amber-700">
-                                 <Lock className="w-5 h-5" />
-                               </div>
-                               <div>
-                                 <h4 className="font-bold text-gray-900">{tradeCase.lockedGoldGrams}g Gold</h4>
-                                 <p className="text-sm text-gray-500">{tradeCase.reference} • {tradeCase.importer.name}</p>
-                                 <p className="text-xs text-gray-400">Lock Status: {tradeCase.lockStatus}</p>
-                               </div>
-                            </div>
-                            <Badge variant="outline">{tradeCase.status}</Badge>
-                         </div>
-                       ))}
-                     </div>
-                  </CardContent>
-                </Card>
-             </TabsContent>
-             
-             <TabsContent value="compliance">
-                <Card>
-                   <CardHeader>
-                      <CardTitle>Compliance & Risk Monitor</CardTitle>
-                      <CardDescription>High risk cases and AML flags.</CardDescription>
-                   </CardHeader>
-                   <CardContent>
-                      <div className="space-y-4">
-                         {cases.map((c) => (
-                            <div key={c.id} className="p-4 border rounded-lg flex justify-between items-center">
-                               <div>
-                                  <div className="flex items-center gap-2">
-                                     <h4 className="font-bold">{c.reference}</h4>
-                                     <Badge className={c.jurisdictionRisk === 'High' ? 'bg-red-600' : c.jurisdictionRisk === 'Medium' ? 'bg-yellow-600' : 'bg-green-600'}>{c.jurisdictionRisk} Risk</Badge>
-                                  </div>
-                                  <p className="text-sm text-gray-600 mt-1">{c.importer.name} ({c.importer.country}) → {c.exporter.name} ({c.exporter.country})</p>
-                                  {c.amlFlags.length > 0 && (
-                                     <div className="flex gap-1 mt-2">
-                                        {c.amlFlags.map(f => <Badge key={f} variant="outline" className="text-xs border-red-200 text-red-700 bg-red-50">{f}</Badge>)}
-                                     </div>
-                                  )}
-                               </div>
-                               <Button variant="outline" size="sm" onClick={() => handleOpenCase(c.id)}>Review</Button>
-                            </div>
-                         ))}
-                      </div>
-                   </CardContent>
-                </Card>
-             </TabsContent>
-
-             <TabsContent value="audit">
-               <Card>
-                 <CardHeader>
-                   <CardTitle>Global Audit Log</CardTitle>
-                 </CardHeader>
-                 <CardContent>
-                    <div className="space-y-0">
-                       {auditLogs.map((log) => (
-                         <div key={log.id} className="flex gap-4 p-3 border-b last:border-0 hover:bg-gray-50">
-                            <div className="text-xs text-gray-500 w-32 shrink-0">
-                               {new Date(log.timestamp).toLocaleString()}
+          <div className="mt-6">
+            <TabsContent value="cases">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Trade Case Management</CardTitle>
+                  <CardDescription>View and manage all corporate trade deals.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="p-12 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+                      <p className="mt-4 text-gray-500">Loading trade cases...</p>
+                    </div>
+                  ) : cases.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">No Trade Cases</h3>
+                      <p className="text-gray-500">Trade cases will appear here when users create them.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {cases.map((tradeCase) => (
+                        <div 
+                          key={tradeCase.id} 
+                          onClick={() => handleOpenCase(tradeCase)} 
+                          className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-4 mb-4 md:mb-0">
+                            <div className={`p-2 rounded border ${tradeCase.status === 'Approved' || tradeCase.status === 'Settled' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                              <Briefcase className="w-6 h-6" />
                             </div>
                             <div>
-                               <p className="font-medium text-sm text-gray-900">
-                                 <span className="font-bold">{log.actorName}</span> ({log.actorRole}) - {log.actionType}
-                               </p>
-                               <p className="text-sm text-gray-600">{log.details}</p>
-                               {log.caseId && <p className="text-xs text-blue-500 mt-1">Case: {cases.find(c => c.id === log.caseId)?.reference || log.caseId}</p>}
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">{tradeCase.caseNumber}</h4>
+                                <Badge className={getStatusColor(tradeCase.status)}>{tradeCase.status}</Badge>
+                                {tradeCase.riskLevel === 'High' && <Badge className="bg-red-600 text-white">High Risk</Badge>}
+                              </div>
+                              <p className="text-sm text-gray-600">{tradeCase.companyName} - {tradeCase.tradeType}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Value: ${parseFloat(tradeCase.tradeValueUsd).toLocaleString()} | {tradeCase.commodityType}
+                              </p>
                             </div>
-                         </div>
-                       ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <span className={`px-2 py-1 rounded text-xs ${tradeCase.opsApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                Ops
+                              </span>
+                              <span className={`px-2 py-1 rounded text-xs ${tradeCase.complianceApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                Comp
+                              </span>
+                              <span className={`px-2 py-1 rounded text-xs ${tradeCase.riskApproval ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                Risk
+                              </span>
+                            </div>
+                            <Button variant="outline" size="sm">
+                              Review
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                 </CardContent>
-               </Card>
-             </TabsContent>
-           </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="pending">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Approvals</CardTitle>
+                  <CardDescription>Cases awaiting review and approval.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {cases.filter(c => c.status === 'Submitted' || c.status === 'Under Review').length === 0 ? (
+                    <div className="p-12 text-center">
+                      <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-300" />
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">All Caught Up</h3>
+                      <p className="text-gray-500">No pending approvals at this time.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {cases.filter(c => c.status === 'Submitted' || c.status === 'Under Review').map((tradeCase) => (
+                        <div 
+                          key={tradeCase.id} 
+                          onClick={() => handleOpenCase(tradeCase)} 
+                          className="flex items-center justify-between p-4 border border-amber-100 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer"
+                        >
+                          <div>
+                            <h4 className="font-bold">{tradeCase.caseNumber}</h4>
+                            <p className="text-sm text-gray-600">{tradeCase.companyName} - ${parseFloat(tradeCase.tradeValueUsd).toLocaleString()}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                              <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                            </Button>
+                            <Button size="sm" variant="destructive">
+                              <XCircle className="w-4 h-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="risk">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Risk Monitor</CardTitle>
+                  <CardDescription>High risk cases requiring attention.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {cases.map((c) => (
+                      <div key={c.id} className="p-4 border rounded-lg flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold">{c.caseNumber}</h4>
+                            <Badge className={getRiskColor(c.riskLevel)}>{c.riskLevel} Risk</Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{c.companyName} ({c.tradeType})</p>
+                          <p className="text-xs text-gray-500">
+                            {c.buyerName || 'TBD'} ({c.buyerCountry || '-'}) → {c.sellerName || 'TBD'} ({c.sellerCountry || '-'})
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => handleOpenCase(c)}>Review</Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
         </Tabs>
 
-        {/* Detail Modal */}
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-          <DialogContent className="max-w-[95vw] w-[1200px] h-[90vh] p-0 overflow-hidden">
-             {selectedCase ? (
-               <TradeCaseDetailAdmin 
-                 tradeCase={selectedCase}
-                 documents={documents.filter(d => d.caseId === selectedCase.id)}
-                 approvals={approvals.filter(a => a.caseId === selectedCase.id)}
-                 auditLogs={auditLogs.filter(a => a.caseId === selectedCase.id)}
-                 currentGoldPrice={CURRENT_GOLD_PRICE}
-                 onClose={() => setDetailOpen(false)}
-                 onUpdateStatus={updateCaseStatus}
-                 onAddAuditLog={addAuditLog}
-                 onUpdateDocumentStatus={updateDocumentStatus}
-                 onUpdateApproval={updateApproval}
-               />
-             ) : (
-               <div className="p-10 text-center">Loading...</div>
-             )}
+          <DialogContent className="max-w-[800px] max-h-[90vh] overflow-y-auto">
+            {selectedCase && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <span>{selectedCase.caseNumber}</span>
+                    <Badge className={getStatusColor(selectedCase.status)}>{selectedCase.status}</Badge>
+                  </DialogTitle>
+                  <DialogDescription>
+                    {selectedCase.companyName} - {selectedCase.tradeType} - {selectedCase.commodityType}
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500">Trade Value</p>
+                      <p className="text-xl font-bold">${parseFloat(selectedCase.tradeValueUsd).toLocaleString()}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500">Risk Level</p>
+                      <Select value={selectedCase.riskLevel} onValueChange={handleUpdateRiskLevel} disabled={updating}>
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold border-b pb-2">Buyer Details</h4>
+                      <p><span className="text-gray-500">Name:</span> {selectedCase.buyerName || 'Not specified'}</p>
+                      <p><span className="text-gray-500">Country:</span> {selectedCase.buyerCountry || 'Not specified'}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold border-b pb-2">Seller Details</h4>
+                      <p><span className="text-gray-500">Name:</span> {selectedCase.sellerName || 'Not specified'}</p>
+                      <p><span className="text-gray-500">Country:</span> {selectedCase.sellerCountry || 'Not specified'}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold border-b pb-2">Additional Info</h4>
+                    <p><span className="text-gray-500">Payment Terms:</span> {selectedCase.paymentTerms || 'Not specified'}</p>
+                    <p><span className="text-gray-500">Shipment Details:</span> {selectedCase.shipmentDetails || 'Not specified'}</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold border-b pb-2">Approval Status</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className={`p-4 rounded-lg border ${selectedCase.opsApproval ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Operations</span>
+                          {selectedCase.opsApproval ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant={selectedCase.opsApproval ? "destructive" : "default"}
+                          className="w-full"
+                          onClick={() => handleApproval('ops', !selectedCase.opsApproval)}
+                          disabled={updating}
+                        >
+                          {selectedCase.opsApproval ? 'Revoke' : 'Approve'}
+                        </Button>
+                      </div>
+                      <div className={`p-4 rounded-lg border ${selectedCase.complianceApproval ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Compliance</span>
+                          {selectedCase.complianceApproval ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant={selectedCase.complianceApproval ? "destructive" : "default"}
+                          className="w-full"
+                          onClick={() => handleApproval('compliance', !selectedCase.complianceApproval)}
+                          disabled={updating}
+                        >
+                          {selectedCase.complianceApproval ? 'Revoke' : 'Approve'}
+                        </Button>
+                      </div>
+                      <div className={`p-4 rounded-lg border ${selectedCase.riskApproval ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Risk</span>
+                          {selectedCase.riskApproval ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant={selectedCase.riskApproval ? "destructive" : "default"}
+                          className="w-full"
+                          onClick={() => handleApproval('risk', !selectedCase.riskApproval)}
+                          disabled={updating}
+                        >
+                          {selectedCase.riskApproval ? 'Revoke' : 'Approve'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-semibold">Admin Notes</label>
+                    <Textarea 
+                      value={adminNotes} 
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      placeholder="Add notes about this case..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-semibold">Update Status</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Submitted', 'Under Review', 'Approved', 'Active', 'Settled', 'Rejected', 'Cancelled'].map((status) => (
+                        <Button
+                          key={status}
+                          size="sm"
+                          variant={selectedCase.status === status ? 'default' : 'outline'}
+                          onClick={() => handleUpdateStatus(status)}
+                          disabled={updating || selectedCase.status === status}
+                        >
+                          {status}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDetailOpen(false)}>Close</Button>
+                </DialogFooter>
+              </>
+            )}
           </DialogContent>
         </Dialog>
-
       </div>
     </AdminLayout>
   );
