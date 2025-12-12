@@ -91,3 +91,20 @@ Preferred communication style: Simple, everyday language.
 - **Zod**: Schema validation for API inputs
 - **drizzle-zod**: Auto-generated Zod schemas from Drizzle tables
 - **@hookform/resolvers**: Form validation integration
+
+### Payment Integrations
+
+#### Binance Pay
+- **Service**: `server/binance-pay.ts` - API service for Binance Pay Merchant integration
+- **Database**: `binanceTransactions` table tracks payment orders and status
+- **Required Secrets**:
+  - `BINANCE_PAY_API_KEY` - Merchant API key from merchant.binance.com
+  - `BINANCE_PAY_SECRET_KEY` - Merchant secret key
+  - `BINANCE_PAY_MERCHANT_ID` - Merchant ID (sub-merchant ID if applicable)
+- **Flow**: 
+  1. User selects crypto payment in BuyGoldModal
+  2. POST /api/binance-pay/create-order creates order with Binance
+  3. User redirected to Binance Pay hosted checkout
+  4. Webhook at POST /api/binance-pay/webhook receives payment confirmation
+  5. On success, wallet is credited with purchased gold
+- **Note**: Requires Binance Pay Merchant credentials (not trading API keys)
