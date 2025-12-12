@@ -7,7 +7,9 @@ import {
   insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertTradeCaseSchema,
   insertTradeDocumentSchema, insertChatSessionSchema, insertChatMessageSchema,
   insertAuditLogSchema, insertContentPageSchema, insertContentBlockSchema,
-  insertTemplateSchema, insertMediaAssetSchema, User
+  insertTemplateSchema, insertMediaAssetSchema, 
+  insertPlatformBankAccountSchema, insertDepositRequestSchema, insertWithdrawalRequestSchema,
+  User
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -1465,6 +1467,256 @@ export async function registerRoutes(
       res.json({ termination });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create early termination" });
+    }
+  });
+  
+  // ============================================================================
+  // FINAPAY - BANK ACCOUNTS & DEPOSIT/WITHDRAWAL REQUESTS
+  // ============================================================================
+  
+  // Get all platform bank accounts (Admin)
+  app.get("/api/admin/bank-accounts", async (req, res) => {
+    try {
+      const accounts = await storage.getAllPlatformBankAccounts();
+      res.json({ accounts });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get bank accounts" });
+    }
+  });
+  
+  // Get active bank accounts (User - for deposit form)
+  app.get("/api/bank-accounts/active", async (req, res) => {
+    try {
+      const accounts = await storage.getActivePlatformBankAccounts();
+      res.json({ accounts });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get bank accounts" });
+    }
+  });
+  
+  // Create platform bank account (Admin)
+  app.post("/api/admin/bank-accounts", async (req, res) => {
+    try {
+      const accountData = insertPlatformBankAccountSchema.parse(req.body);
+      const account = await storage.createPlatformBankAccount(accountData);
+      res.json({ account });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create bank account" });
+    }
+  });
+  
+  // Update platform bank account (Admin)
+  app.patch("/api/admin/bank-accounts/:id", async (req, res) => {
+    try {
+      const account = await storage.updatePlatformBankAccount(req.params.id, req.body);
+      if (!account) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      res.json({ account });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update bank account" });
+    }
+  });
+  
+  // Delete platform bank account (Admin)
+  app.delete("/api/admin/bank-accounts/:id", async (req, res) => {
+    try {
+      await storage.deletePlatformBankAccount(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete bank account" });
+    }
+  });
+  
+  // Get user deposit requests
+  app.get("/api/deposit-requests/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserDepositRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deposit requests" });
+    }
+  });
+  
+  // Get all deposit requests (Admin)
+  app.get("/api/admin/deposit-requests", async (req, res) => {
+    try {
+      const requests = await storage.getAllDepositRequests();
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deposit requests" });
+    }
+  });
+  
+  // Create deposit request (User)
+  app.post("/api/deposit-requests", async (req, res) => {
+    try {
+      // Generate reference number
+      const referenceNumber = `DEP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const requestData = insertDepositRequestSchema.parse({
+        ...req.body,
+        referenceNumber,
+      });
+      const request = await storage.createDepositRequest(requestData);
+      res.json({ request });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
+    }
+  });
+  
+  // Update deposit request (Admin - approve/reject)
+  app.patch("/api/admin/deposit-requests/:id", async (req, res) => {
+    try {
+      const request = await storage.getDepositRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Deposit request not found" });
+      }
+      
+      const updates = req.body;
+      
+      // If confirming deposit, credit the user's wallet
+      if (updates.status === 'Confirmed' && request.status === 'Pending') {
+        const wallet = await storage.getWallet(request.userId);
+        if (wallet) {
+          const currentBalance = parseFloat(wallet.usdBalance.toString());
+          const depositAmount = parseFloat(request.amountUsd.toString());
+          await storage.updateWallet(wallet.id, {
+            usdBalance: (currentBalance + depositAmount).toString(),
+          });
+          
+          // Create transaction record
+          await storage.createTransaction({
+            userId: request.userId,
+            type: 'Deposit',
+            status: 'Completed',
+            amountUsd: request.amountUsd.toString(),
+            description: `Deposit confirmed - Ref: ${request.referenceNumber}`,
+            referenceId: request.referenceNumber,
+            sourceModule: 'finapay',
+            approvedBy: updates.processedBy,
+            approvedAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+      
+      const updatedRequest = await storage.updateDepositRequest(req.params.id, {
+        ...updates,
+        processedAt: new Date(),
+      });
+      
+      res.json({ request: updatedRequest });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update deposit request" });
+    }
+  });
+  
+  // Get user withdrawal requests
+  app.get("/api/withdrawal-requests/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserWithdrawalRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get withdrawal requests" });
+    }
+  });
+  
+  // Get all withdrawal requests (Admin)
+  app.get("/api/admin/withdrawal-requests", async (req, res) => {
+    try {
+      const requests = await storage.getAllWithdrawalRequests();
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get withdrawal requests" });
+    }
+  });
+  
+  // Create withdrawal request (User)
+  app.post("/api/withdrawal-requests", async (req, res) => {
+    try {
+      const { userId, amountUsd, ...bankDetails } = req.body;
+      
+      // Check user has sufficient balance
+      const wallet = await storage.getWallet(userId);
+      if (!wallet) {
+        return res.status(400).json({ message: "Wallet not found" });
+      }
+      
+      const currentBalance = parseFloat(wallet.usdBalance.toString());
+      const withdrawAmount = parseFloat(amountUsd);
+      
+      if (currentBalance < withdrawAmount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Generate reference number
+      const referenceNumber = `WTH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      const requestData = insertWithdrawalRequestSchema.parse({
+        userId,
+        amountUsd,
+        referenceNumber,
+        ...bankDetails,
+      });
+      
+      // Debit the amount from wallet immediately (hold)
+      await storage.updateWallet(wallet.id, {
+        usdBalance: (currentBalance - withdrawAmount).toString(),
+      });
+      
+      const request = await storage.createWithdrawalRequest(requestData);
+      res.json({ request });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
+    }
+  });
+  
+  // Update withdrawal request (Admin - process/reject)
+  app.patch("/api/admin/withdrawal-requests/:id", async (req, res) => {
+    try {
+      const request = await storage.getWithdrawalRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Withdrawal request not found" });
+      }
+      
+      const updates = req.body;
+      
+      // If completing withdrawal, create transaction record
+      if (updates.status === 'Completed' && request.status !== 'Completed') {
+        await storage.createTransaction({
+          userId: request.userId,
+          type: 'Withdrawal',
+          status: 'Completed',
+          amountUsd: request.amountUsd.toString(),
+          description: `Withdrawal completed - Ref: ${request.referenceNumber}`,
+          referenceId: request.referenceNumber,
+          sourceModule: 'finapay',
+          approvedBy: updates.processedBy,
+          approvedAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+      
+      // If rejecting, refund the held amount back to wallet
+      if (updates.status === 'Rejected' && request.status === 'Pending') {
+        const wallet = await storage.getWallet(request.userId);
+        if (wallet) {
+          const currentBalance = parseFloat(wallet.usdBalance.toString());
+          const refundAmount = parseFloat(request.amountUsd.toString());
+          await storage.updateWallet(wallet.id, {
+            usdBalance: (currentBalance + refundAmount).toString(),
+          });
+        }
+      }
+      
+      const updatedRequest = await storage.updateWithdrawalRequest(req.params.id, {
+        ...updates,
+        processedAt: new Date(),
+      });
+      
+      res.json({ request: updatedRequest });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update withdrawal request" });
     }
   });
   

@@ -4,6 +4,7 @@ import {
   tradeCases, tradeDocuments,
   chatSessions, chatMessages, auditLogs, certificates,
   contentPages, contentBlocks, templates, mediaAssets,
+  platformBankAccounts, depositRequests, withdrawalRequests,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -21,7 +22,10 @@ import {
   type ContentPage, type InsertContentPage,
   type ContentBlock, type InsertContentBlock,
   type Template, type InsertTemplate,
-  type MediaAsset, type InsertMediaAsset
+  type MediaAsset, type InsertMediaAsset,
+  type PlatformBankAccount, type InsertPlatformBankAccount,
+  type DepositRequest, type InsertDepositRequest,
+  type WithdrawalRequest, type InsertWithdrawalRequest
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -193,6 +197,28 @@ export interface IStorage {
   getUserActiveCertificates(userId: string): Promise<Certificate[]>;
   updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined>;
   generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string>;
+  
+  // FinaPay - Platform Bank Accounts
+  getPlatformBankAccount(id: string): Promise<PlatformBankAccount | undefined>;
+  getAllPlatformBankAccounts(): Promise<PlatformBankAccount[]>;
+  getActivePlatformBankAccounts(): Promise<PlatformBankAccount[]>;
+  createPlatformBankAccount(account: InsertPlatformBankAccount): Promise<PlatformBankAccount>;
+  updatePlatformBankAccount(id: string, updates: Partial<PlatformBankAccount>): Promise<PlatformBankAccount | undefined>;
+  deletePlatformBankAccount(id: string): Promise<boolean>;
+  
+  // FinaPay - Deposit Requests
+  getDepositRequest(id: string): Promise<DepositRequest | undefined>;
+  getUserDepositRequests(userId: string): Promise<DepositRequest[]>;
+  getAllDepositRequests(): Promise<DepositRequest[]>;
+  createDepositRequest(request: InsertDepositRequest): Promise<DepositRequest>;
+  updateDepositRequest(id: string, updates: Partial<DepositRequest>): Promise<DepositRequest | undefined>;
+  
+  // FinaPay - Withdrawal Requests
+  getWithdrawalRequest(id: string): Promise<WithdrawalRequest | undefined>;
+  getUserWithdrawalRequests(userId: string): Promise<WithdrawalRequest[]>;
+  getAllWithdrawalRequests(): Promise<WithdrawalRequest[]>;
+  createWithdrawalRequest(request: InsertWithdrawalRequest): Promise<WithdrawalRequest>;
+  updateWithdrawalRequest(id: string, updates: Partial<WithdrawalRequest>): Promise<WithdrawalRequest | undefined>;
   
   // CMS - Content Pages
   getContentPage(id: string): Promise<ContentPage | undefined>;
@@ -681,6 +707,83 @@ export class DatabaseStorage implements IStorage {
   async deleteMediaAsset(id: string): Promise<boolean> {
     await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
     return true;
+  }
+
+  // FinaPay - Platform Bank Accounts
+  async getPlatformBankAccount(id: string): Promise<PlatformBankAccount | undefined> {
+    const [account] = await db.select().from(platformBankAccounts).where(eq(platformBankAccounts.id, id));
+    return account || undefined;
+  }
+
+  async getAllPlatformBankAccounts(): Promise<PlatformBankAccount[]> {
+    return await db.select().from(platformBankAccounts).orderBy(desc(platformBankAccounts.createdAt));
+  }
+
+  async getActivePlatformBankAccounts(): Promise<PlatformBankAccount[]> {
+    return await db.select().from(platformBankAccounts).where(eq(platformBankAccounts.status, 'Active')).orderBy(platformBankAccounts.bankName);
+  }
+
+  async createPlatformBankAccount(insertAccount: InsertPlatformBankAccount): Promise<PlatformBankAccount> {
+    const [account] = await db.insert(platformBankAccounts).values(insertAccount).returning();
+    return account;
+  }
+
+  async updatePlatformBankAccount(id: string, updates: Partial<PlatformBankAccount>): Promise<PlatformBankAccount | undefined> {
+    const [account] = await db.update(platformBankAccounts).set({ ...updates, updatedAt: new Date() }).where(eq(platformBankAccounts.id, id)).returning();
+    return account || undefined;
+  }
+
+  async deletePlatformBankAccount(id: string): Promise<boolean> {
+    await db.delete(platformBankAccounts).where(eq(platformBankAccounts.id, id));
+    return true;
+  }
+
+  // FinaPay - Deposit Requests
+  async getDepositRequest(id: string): Promise<DepositRequest | undefined> {
+    const [request] = await db.select().from(depositRequests).where(eq(depositRequests.id, id));
+    return request || undefined;
+  }
+
+  async getUserDepositRequests(userId: string): Promise<DepositRequest[]> {
+    return await db.select().from(depositRequests).where(eq(depositRequests.userId, userId)).orderBy(desc(depositRequests.createdAt));
+  }
+
+  async getAllDepositRequests(): Promise<DepositRequest[]> {
+    return await db.select().from(depositRequests).orderBy(desc(depositRequests.createdAt));
+  }
+
+  async createDepositRequest(insertRequest: InsertDepositRequest): Promise<DepositRequest> {
+    const [request] = await db.insert(depositRequests).values(insertRequest).returning();
+    return request;
+  }
+
+  async updateDepositRequest(id: string, updates: Partial<DepositRequest>): Promise<DepositRequest | undefined> {
+    const [request] = await db.update(depositRequests).set({ ...updates, updatedAt: new Date() }).where(eq(depositRequests.id, id)).returning();
+    return request || undefined;
+  }
+
+  // FinaPay - Withdrawal Requests
+  async getWithdrawalRequest(id: string): Promise<WithdrawalRequest | undefined> {
+    const [request] = await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.id, id));
+    return request || undefined;
+  }
+
+  async getUserWithdrawalRequests(userId: string): Promise<WithdrawalRequest[]> {
+    return await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.userId, userId)).orderBy(desc(withdrawalRequests.createdAt));
+  }
+
+  async getAllWithdrawalRequests(): Promise<WithdrawalRequest[]> {
+    return await db.select().from(withdrawalRequests).orderBy(desc(withdrawalRequests.createdAt));
+  }
+
+  async createWithdrawalRequest(insertRequest: InsertWithdrawalRequest): Promise<WithdrawalRequest> {
+    const [request] = await db.insert(withdrawalRequests).values(insertRequest).returning();
+    return request;
+  }
+
+  async updateWithdrawalRequest(id: string, updates: Partial<WithdrawalRequest>): Promise<WithdrawalRequest | undefined> {
+    const [request] = await db.update(withdrawalRequests).set({ ...updates, updatedAt: new Date() }).where(eq(withdrawalRequests.id, id)).returning();
+    return request || undefined;
   }
 }
 
