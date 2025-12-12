@@ -68,7 +68,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
     
     try {
       const isFinatradesId = targetIdentifier && targetIdentifier.toUpperCase().startsWith('FT');
-      const res = await apiRequest('POST', '/api/finapay/peer/request', {
+      const res = await apiRequest('POST', '/api/finapay/request', {
         requesterId: user.id,
         targetIdentifier: targetIdentifier || null,
         amountUsd: numericAmount.toFixed(2),
