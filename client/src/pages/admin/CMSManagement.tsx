@@ -1200,222 +1200,121 @@ function TemplateDialog({
   );
 }
 
-// Quick Add Templates for common content types
+// Quick Add Templates organized by page sections
 const quickAddTemplates = [
   {
-    category: 'Buttons & CTAs',
-    icon: MousePointer,
+    category: 'Hero Section',
+    icon: Zap,
     color: 'bg-purple-100 text-purple-700',
     items: [
-      { 
-        name: 'Primary Button', 
-        section: 'cta', 
-        key: 'primary_button', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'Get Started', href: '/register', variant: 'primary' }, null, 2)
-      },
-      { 
-        name: 'Secondary Button', 
-        section: 'cta', 
-        key: 'secondary_button', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'Learn More', href: '#', variant: 'secondary' }, null, 2)
-      },
-      { 
-        name: 'Link Button', 
-        section: 'cta', 
-        key: 'link_button', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'View Details', href: '#', variant: 'link' }, null, 2)
-      },
+      { name: 'Title', section: 'hero', key: 'title', type: 'text' as const, defaultContent: 'Your Page Title Here' },
+      { name: 'Subtitle', section: 'hero', key: 'subtitle', type: 'text' as const, defaultContent: 'Supporting text that explains your value proposition' },
+      { name: 'Description', section: 'hero', key: 'description', type: 'rich_text' as const, defaultContent: 'Detailed description text for the hero section.' },
+      { name: 'Badge Text', section: 'hero', key: 'badge', type: 'json' as const, defaultContent: JSON.stringify({ text: 'New Feature', icon: 'sparkles' }, null, 2) },
+      { name: 'Primary Button', section: 'hero', key: 'primary_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Get Started', href: '/register', variant: 'primary' }, null, 2) },
+      { name: 'Secondary Button', section: 'hero', key: 'secondary_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Learn More', href: '#', variant: 'secondary' }, null, 2) },
+      { name: 'Hero Image', section: 'hero', key: 'image', type: 'json' as const, defaultContent: JSON.stringify({ url: '/images/hero.jpg', alt: 'Hero image' }, null, 2) },
     ]
   },
   {
-    category: 'Stats & Numbers',
+    category: 'Stats Section',
     icon: BarChart3,
     color: 'bg-emerald-100 text-emerald-700',
     items: [
-      { 
-        name: 'Stat with Label', 
-        section: 'stats', 
-        key: 'stat_item', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ value: '99.99%', label: 'Gold Purity', icon: 'shield' }, null, 2)
-      },
-      { 
-        name: 'Percentage Display', 
-        section: 'stats', 
-        key: 'percentage', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ value: '2.5%', label: 'Monthly Bonus', prefix: '+' }, null, 2)
-      },
-      { 
-        name: 'Currency Amount', 
-        section: 'stats', 
-        key: 'currency', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ value: '50M', label: 'Gold in Custody', prefix: '$', suffix: '+' }, null, 2)
-      },
+      { name: 'Section Title', section: 'stats', key: 'title', type: 'text' as const, defaultContent: 'Our Numbers Speak' },
+      { name: 'Stat 1', section: 'stats', key: 'stat_1', type: 'json' as const, defaultContent: JSON.stringify({ value: '99.99%', label: 'Gold Purity', icon: 'shield' }, null, 2) },
+      { name: 'Stat 2', section: 'stats', key: 'stat_2', type: 'json' as const, defaultContent: JSON.stringify({ value: '2.5%', label: 'Monthly Bonus', icon: 'trending-up' }, null, 2) },
+      { name: 'Stat 3', section: 'stats', key: 'stat_3', type: 'json' as const, defaultContent: JSON.stringify({ value: '$50M+', label: 'Gold in Custody', icon: 'coins' }, null, 2) },
+      { name: 'Stat 4', section: 'stats', key: 'stat_4', type: 'json' as const, defaultContent: JSON.stringify({ value: '50,000+', label: 'Happy Investors', icon: 'users' }, null, 2) },
     ]
   },
   {
-    category: 'Text Elements',
-    icon: Type,
+    category: 'Features Section',
+    icon: List,
     color: 'bg-blue-100 text-blue-700',
     items: [
-      { 
-        name: 'Page Title', 
-        section: 'hero', 
-        key: 'title', 
-        type: 'text' as const,
-        defaultContent: 'Your Page Title Here'
-      },
-      { 
-        name: 'Subtitle', 
-        section: 'hero', 
-        key: 'subtitle', 
-        type: 'text' as const,
-        defaultContent: 'Supporting text that explains your value proposition'
-      },
-      { 
-        name: 'Section Heading', 
-        section: 'section', 
-        key: 'heading', 
-        type: 'text' as const,
-        defaultContent: 'Section Heading'
-      },
-      { 
-        name: 'Body Text', 
-        section: 'content', 
-        key: 'body', 
-        type: 'rich_text' as const,
-        defaultContent: 'Enter your content here. This field supports multi-line text.'
-      },
+      { name: 'Section Title', section: 'features', key: 'title', type: 'text' as const, defaultContent: 'Why Choose Us' },
+      { name: 'Section Subtitle', section: 'features', key: 'subtitle', type: 'text' as const, defaultContent: 'Everything you need for gold investment' },
+      { name: 'Feature 1', section: 'features', key: 'feature_1', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Secure Storage', description: 'Bank-grade security for your gold', icon: 'shield' }, null, 2) },
+      { name: 'Feature 2', section: 'features', key: 'feature_2', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Instant Transfers', description: 'Send gold in seconds', icon: 'zap' }, null, 2) },
+      { name: 'Feature 3', section: 'features', key: 'feature_3', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Monthly Bonuses', description: 'Earn rewards on your holdings', icon: 'gift' }, null, 2) },
+      { name: 'Feature 4', section: 'features', key: 'feature_4', type: 'json' as const, defaultContent: JSON.stringify({ title: 'Easy Withdrawals', description: 'Cash out anytime', icon: 'wallet' }, null, 2) },
     ]
   },
   {
-    category: 'Badges & Labels',
-    icon: Tag,
+    category: 'How It Works Section',
+    icon: Hash,
     color: 'bg-amber-100 text-amber-700',
     items: [
-      { 
-        name: 'Feature Badge', 
-        section: 'badges', 
-        key: 'feature_badge', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'New Feature', variant: 'success', icon: 'sparkles' }, null, 2)
-      },
-      { 
-        name: 'Popular Tag', 
-        section: 'badges', 
-        key: 'popular_tag', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'Most Popular', variant: 'gold' }, null, 2)
-      },
-      { 
-        name: 'Status Label', 
-        section: 'badges', 
-        key: 'status', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'Live', variant: 'success', pulse: true }, null, 2)
-      },
+      { name: 'Section Title', section: 'how_it_works', key: 'title', type: 'text' as const, defaultContent: 'How It Works' },
+      { name: 'Section Subtitle', section: 'how_it_works', key: 'subtitle', type: 'text' as const, defaultContent: 'Get started in 4 simple steps' },
+      { name: 'Step 1', section: 'how_it_works', key: 'step_1', type: 'json' as const, defaultContent: JSON.stringify({ number: 1, title: 'Create Account', description: 'Sign up in minutes', icon: 'user-plus' }, null, 2) },
+      { name: 'Step 2', section: 'how_it_works', key: 'step_2', type: 'json' as const, defaultContent: JSON.stringify({ number: 2, title: 'Verify Identity', description: 'Complete KYC verification', icon: 'check-circle' }, null, 2) },
+      { name: 'Step 3', section: 'how_it_works', key: 'step_3', type: 'json' as const, defaultContent: JSON.stringify({ number: 3, title: 'Buy Gold', description: 'Purchase at live prices', icon: 'shopping-cart' }, null, 2) },
+      { name: 'Step 4', section: 'how_it_works', key: 'step_4', type: 'json' as const, defaultContent: JSON.stringify({ number: 4, title: 'Earn & Grow', description: 'Watch your gold grow', icon: 'trending-up' }, null, 2) },
     ]
   },
   {
-    category: 'Links & Navigation',
-    icon: Link2,
-    color: 'bg-cyan-100 text-cyan-700',
-    items: [
-      { 
-        name: 'Text Link', 
-        section: 'links', 
-        key: 'text_link', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'Learn more', href: '#', external: false }, null, 2)
-      },
-      { 
-        name: 'Footer Link', 
-        section: 'footer', 
-        key: 'footer_link', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ text: 'Privacy Policy', href: '/privacy' }, null, 2)
-      },
-      { 
-        name: 'Nav Item', 
-        section: 'navigation', 
-        key: 'nav_item', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ label: 'Products', href: '/products', icon: 'package' }, null, 2)
-      },
-    ]
-  },
-  {
-    category: 'Lists & Features',
-    icon: List,
+    category: 'Pricing/Plans Section',
+    icon: Tag,
     color: 'bg-rose-100 text-rose-700',
     items: [
-      { 
-        name: 'Feature List', 
-        section: 'features', 
-        key: 'feature_list', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify([
-          { title: 'Feature 1', description: 'Description of feature 1' },
-          { title: 'Feature 2', description: 'Description of feature 2' },
-          { title: 'Feature 3', description: 'Description of feature 3' }
-        ], null, 2)
-      },
-      { 
-        name: 'Benefit Points', 
-        section: 'benefits', 
-        key: 'benefit_points', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify([
-          'Benefit point 1',
-          'Benefit point 2',
-          'Benefit point 3',
-          'Benefit point 4'
-        ], null, 2)
-      },
-      { 
-        name: 'Plan Features', 
-        section: 'pricing', 
-        key: 'plan_features', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify([
-          { feature: 'Unlimited access', included: true },
-          { feature: 'Priority support', included: true },
-          { feature: 'Custom branding', included: false }
-        ], null, 2)
-      },
+      { name: 'Section Title', section: 'pricing', key: 'title', type: 'text' as const, defaultContent: 'Choose Your Plan' },
+      { name: 'Section Subtitle', section: 'pricing', key: 'subtitle', type: 'text' as const, defaultContent: 'Find the perfect plan for your investment goals' },
+      { name: 'Plan 1', section: 'pricing', key: 'plan_1', type: 'json' as const, defaultContent: JSON.stringify({ name: 'Starter', duration: '3 months', bonus: '1.0%', minInvestment: '$100', features: ['Basic support', 'Mobile access'] }, null, 2) },
+      { name: 'Plan 2', section: 'pricing', key: 'plan_2', type: 'json' as const, defaultContent: JSON.stringify({ name: 'Growth', duration: '6 months', bonus: '1.5%', minInvestment: '$500', features: ['Priority support', 'Price alerts'], popular: false }, null, 2) },
+      { name: 'Plan 3', section: 'pricing', key: 'plan_3', type: 'json' as const, defaultContent: JSON.stringify({ name: 'Premium', duration: '9 months', bonus: '2.0%', minInvestment: '$1,000', features: ['VIP support', 'Analytics', 'Early exit'], popular: true }, null, 2) },
+      { name: 'Plan 4', section: 'pricing', key: 'plan_4', type: 'json' as const, defaultContent: JSON.stringify({ name: 'Elite', duration: '12 months', bonus: '2.5%', minInvestment: '$5,000', features: ['Dedicated manager', 'Full analytics', 'Exclusive benefits'] }, null, 2) },
     ]
   },
   {
-    category: 'Images & Media',
-    icon: Image,
+    category: 'FAQ Section',
+    icon: Type,
+    color: 'bg-cyan-100 text-cyan-700',
+    items: [
+      { name: 'Section Title', section: 'faq', key: 'title', type: 'text' as const, defaultContent: 'Frequently Asked Questions' },
+      { name: 'Section Subtitle', section: 'faq', key: 'subtitle', type: 'text' as const, defaultContent: 'Everything you need to know' },
+      { name: 'FAQ 1', section: 'faq', key: 'faq_1', type: 'json' as const, defaultContent: JSON.stringify({ question: 'What is BNSL?', answer: 'BNSL (Buy Now Sell Later) lets you lock in gold prices today and sell when you choose.' }, null, 2) },
+      { name: 'FAQ 2', section: 'faq', key: 'faq_2', type: 'json' as const, defaultContent: JSON.stringify({ question: 'How do I get started?', answer: 'Create an account, complete KYC, and start investing with as little as $100.' }, null, 2) },
+      { name: 'FAQ 3', section: 'faq', key: 'faq_3', type: 'json' as const, defaultContent: JSON.stringify({ question: 'Is my gold insured?', answer: 'Yes, all gold is fully insured and stored in certified vaults.' }, null, 2) },
+      { name: 'FAQ 4', section: 'faq', key: 'faq_4', type: 'json' as const, defaultContent: JSON.stringify({ question: 'How are bonuses paid?', answer: 'Bonuses are paid monthly in gold grams, credited to your account.' }, null, 2) },
+    ]
+  },
+  {
+    category: 'CTA Section',
+    icon: MousePointer,
     color: 'bg-indigo-100 text-indigo-700',
     items: [
-      { 
-        name: 'Hero Image', 
-        section: 'hero', 
-        key: 'hero_image', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ url: '/images/hero.jpg', alt: 'Hero image description', width: 1200, height: 600 }, null, 2)
-      },
-      { 
-        name: 'Logo', 
-        section: 'branding', 
-        key: 'logo', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ url: '/images/logo.svg', alt: 'Company logo', width: 150, height: 40 }, null, 2)
-      },
-      { 
-        name: 'Icon', 
-        section: 'icons', 
-        key: 'icon', 
-        type: 'json' as const,
-        defaultContent: JSON.stringify({ name: 'shield', color: 'amber', size: 24 }, null, 2)
-      },
+      { name: 'Title', section: 'cta', key: 'title', type: 'text' as const, defaultContent: 'Ready to Start Investing?' },
+      { name: 'Subtitle', section: 'cta', key: 'subtitle', type: 'text' as const, defaultContent: 'Join thousands of investors securing their wealth with gold.' },
+      { name: 'Primary Button', section: 'cta', key: 'primary_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Start Now', href: '/register', variant: 'primary' }, null, 2) },
+      { name: 'Secondary Button', section: 'cta', key: 'secondary_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Contact Sales', href: '/contact', variant: 'outline' }, null, 2) },
+    ]
+  },
+  {
+    category: 'Footer Section',
+    icon: Link2,
+    color: 'bg-gray-100 text-gray-700',
+    items: [
+      { name: 'Company Name', section: 'footer', key: 'company_name', type: 'text' as const, defaultContent: 'Finatrades' },
+      { name: 'Tagline', section: 'footer', key: 'tagline', type: 'text' as const, defaultContent: 'Gold-backed digital finance for everyone.' },
+      { name: 'Copyright Text', section: 'footer', key: 'copyright', type: 'text' as const, defaultContent: '© 2024 Finatrades. All rights reserved.' },
+      { name: 'Products Links', section: 'footer', key: 'products_links', type: 'json' as const, defaultContent: JSON.stringify([{ text: 'FinaVault', href: '/finavault' }, { text: 'FinaPay', href: '/finapay' }, { text: 'BNSL', href: '/bnsl-explore' }], null, 2) },
+      { name: 'Legal Links', section: 'footer', key: 'legal_links', type: 'json' as const, defaultContent: JSON.stringify([{ text: 'Privacy Policy', href: '/privacy' }, { text: 'Terms of Service', href: '/terms' }], null, 2) },
+      { name: 'Contact Info', section: 'footer', key: 'contact', type: 'json' as const, defaultContent: JSON.stringify({ email: 'support@finatrades.com', phone: '+971 4 XXX XXXX', address: 'Dubai, UAE' }, null, 2) },
+    ]
+  },
+  {
+    category: 'Navigation',
+    icon: List,
+    color: 'bg-violet-100 text-violet-700',
+    items: [
+      { name: 'Logo', section: 'navigation', key: 'logo', type: 'json' as const, defaultContent: JSON.stringify({ url: '/images/logo.svg', alt: 'Finatrades', width: 150 }, null, 2) },
+      { name: 'Nav Item 1', section: 'navigation', key: 'nav_1', type: 'json' as const, defaultContent: JSON.stringify({ label: 'Products', href: '/products', icon: 'package' }, null, 2) },
+      { name: 'Nav Item 2', section: 'navigation', key: 'nav_2', type: 'json' as const, defaultContent: JSON.stringify({ label: 'Pricing', href: '/pricing', icon: 'tag' }, null, 2) },
+      { name: 'Nav Item 3', section: 'navigation', key: 'nav_3', type: 'json' as const, defaultContent: JSON.stringify({ label: 'About', href: '/about', icon: 'info' }, null, 2) },
+      { name: 'Sign In Button', section: 'navigation', key: 'signin_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Sign In', href: '/login', variant: 'outline' }, null, 2) },
+      { name: 'Get Started Button', section: 'navigation', key: 'cta_button', type: 'json' as const, defaultContent: JSON.stringify({ text: 'Get Started', href: '/register', variant: 'primary' }, null, 2) },
     ]
   },
 ];
