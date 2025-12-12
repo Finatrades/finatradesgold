@@ -105,16 +105,18 @@ function Router() {
 }
 
 import { BnslProvider } from "@/context/BnslContext";
+import { FeeProvider } from "@/context/FeeContext";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
         <AuthProvider>
-          <PlatformProvider>
-            <TradeFinanceProvider>
-              <BnslProvider>
-                <FinaPayProvider>
+          <FeeProvider>
+            <PlatformProvider>
+              <TradeFinanceProvider>
+                <BnslProvider>
+                  <FinaPayProvider>
                   <LanguageProvider>
                     <AccountTypeProvider>
                       <NotificationProvider>
@@ -126,9 +128,10 @@ function App() {
                     </AccountTypeProvider>
                   </LanguageProvider>
                 </FinaPayProvider>
-              </BnslProvider>
-            </TradeFinanceProvider>
-          </PlatformProvider>
+                </BnslProvider>
+              </TradeFinanceProvider>
+            </PlatformProvider>
+          </FeeProvider>
         </AuthProvider>
       </UserProvider>
     </QueryClientProvider>
