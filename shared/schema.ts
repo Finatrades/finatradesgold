@@ -39,6 +39,7 @@ export const mfaMethodEnum = pgEnum('mfa_method', ['totp', 'email']);
 
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  finatradesId: varchar("finatrades_id", { length: 20 }).unique(), // Unique user identifier for transfers
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   firstName: varchar("first_name", { length: 255 }).notNull(),
@@ -67,6 +68,7 @@ export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
     // Make fields with database defaults optional for API validation
+    finatradesId: z.string().nullable().optional(),
     accountType: z.enum(['personal', 'business']).optional(),
     role: z.enum(['user', 'admin']).optional(),
     kycStatus: z.enum(['Not Started', 'In Progress', 'Approved', 'Rejected']).optional(),
@@ -613,3 +615,56 @@ export const mediaAssets = pgTable("media_assets", {
 export const insertMediaAssetSchema = createInsertSchema(mediaAssets).omit({ id: true, createdAt: true });
 export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
+
+// ============================================
+// PEER TRANSFERS (Send/Receive Money)
+// ============================================
+
+export const peerTransferStatusEnum = pgEnum('peer_transfer_status', ['Completed', 'Failed', 'Reversed']);
+export const peerTransferChannelEnum = pgEnum('peer_transfer_channel', ['email', 'finatrades_id', 'qr_code']);
+
+export const peerTransfers = pgTable("peer_transfers", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  senderId: varchar("sender_id", { length: 255 }).notNull().references(() => users.id),
+  recipientId: varchar("recipient_id", { length: 255 }).notNull().references(() => users.id),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  channel: peerTransferChannelEnum("channel").notNull(), // How the transfer was initiated
+  recipientIdentifier: varchar("recipient_identifier", { length: 255 }).notNull(), // email, finatrades_id, or qr token
+  memo: text("memo"),
+  status: peerTransferStatusEnum("status").notNull().default('Completed'),
+  senderTransactionId: varchar("sender_transaction_id", { length: 255 }).references(() => transactions.id),
+  recipientTransactionId: varchar("recipient_transaction_id", { length: 255 }).references(() => transactions.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPeerTransferSchema = createInsertSchema(peerTransfers).omit({ id: true, createdAt: true });
+export type InsertPeerTransfer = z.infer<typeof insertPeerTransferSchema>;
+export type PeerTransfer = typeof peerTransfers.$inferSelect;
+
+// ============================================
+// PEER REQUESTS (Request Money)
+// ============================================
+
+export const peerRequestStatusEnum = pgEnum('peer_request_status', ['Pending', 'Fulfilled', 'Declined', 'Expired', 'Cancelled']);
+
+export const peerRequests = pgTable("peer_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  requesterId: varchar("requester_id", { length: 255 }).notNull().references(() => users.id),
+  targetId: varchar("target_id", { length: 255 }).references(() => users.id), // If known
+  targetIdentifier: varchar("target_identifier", { length: 255 }), // email or finatrades_id if target unknown
+  channel: peerTransferChannelEnum("channel").notNull(),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  memo: text("memo"),
+  qrPayload: varchar("qr_payload", { length: 500 }), // Unique token for QR code requests
+  status: peerRequestStatusEnum("status").notNull().default('Pending'),
+  fulfilledTransferId: varchar("fulfilled_transfer_id", { length: 255 }).references(() => peerTransfers.id),
+  expiresAt: timestamp("expires_at"),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPeerRequestSchema = createInsertSchema(peerRequests).omit({ id: true, createdAt: true });
+export type InsertPeerRequest = z.infer<typeof insertPeerRequestSchema>;
+export type PeerRequest = typeof peerRequests.$inferSelect;
