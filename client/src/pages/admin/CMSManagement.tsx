@@ -25,8 +25,19 @@ import {
   Layers,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  MousePointer,
+  BarChart3,
+  Link2,
+  Tag,
+  List,
+  Type,
+  Hash,
+  Image,
+  Zap,
+  ChevronDown
 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { ContentPage, ContentBlock, Template } from '@shared/schema';
 
 type ContentPageWithBlocks = ContentPage & { blocks?: ContentBlock[] };
@@ -369,6 +380,13 @@ export default function CMSManagement() {
                 />
               </Dialog>
             </div>
+
+            {/* Quick Add Templates */}
+            <QuickAddTemplates 
+              pages={pages}
+              onAddBlock={(data) => createBlockMutation.mutate(data)}
+              isPending={createBlockMutation.isPending}
+            />
 
             <div className="grid gap-4">
               {blocksLoading ? (
@@ -1179,5 +1197,351 @@ function TemplateDialog({
         )}
       </div>
     </DialogContent>
+  );
+}
+
+// Quick Add Templates for common content types
+const quickAddTemplates = [
+  {
+    category: 'Buttons & CTAs',
+    icon: MousePointer,
+    color: 'bg-purple-100 text-purple-700',
+    items: [
+      { 
+        name: 'Primary Button', 
+        section: 'cta', 
+        key: 'primary_button', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'Get Started', href: '/register', variant: 'primary' }, null, 2)
+      },
+      { 
+        name: 'Secondary Button', 
+        section: 'cta', 
+        key: 'secondary_button', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'Learn More', href: '#', variant: 'secondary' }, null, 2)
+      },
+      { 
+        name: 'Link Button', 
+        section: 'cta', 
+        key: 'link_button', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'View Details', href: '#', variant: 'link' }, null, 2)
+      },
+    ]
+  },
+  {
+    category: 'Stats & Numbers',
+    icon: BarChart3,
+    color: 'bg-emerald-100 text-emerald-700',
+    items: [
+      { 
+        name: 'Stat with Label', 
+        section: 'stats', 
+        key: 'stat_item', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ value: '99.99%', label: 'Gold Purity', icon: 'shield' }, null, 2)
+      },
+      { 
+        name: 'Percentage Display', 
+        section: 'stats', 
+        key: 'percentage', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ value: '2.5%', label: 'Monthly Bonus', prefix: '+' }, null, 2)
+      },
+      { 
+        name: 'Currency Amount', 
+        section: 'stats', 
+        key: 'currency', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ value: '50M', label: 'Gold in Custody', prefix: '$', suffix: '+' }, null, 2)
+      },
+    ]
+  },
+  {
+    category: 'Text Elements',
+    icon: Type,
+    color: 'bg-blue-100 text-blue-700',
+    items: [
+      { 
+        name: 'Page Title', 
+        section: 'hero', 
+        key: 'title', 
+        type: 'text' as const,
+        defaultContent: 'Your Page Title Here'
+      },
+      { 
+        name: 'Subtitle', 
+        section: 'hero', 
+        key: 'subtitle', 
+        type: 'text' as const,
+        defaultContent: 'Supporting text that explains your value proposition'
+      },
+      { 
+        name: 'Section Heading', 
+        section: 'section', 
+        key: 'heading', 
+        type: 'text' as const,
+        defaultContent: 'Section Heading'
+      },
+      { 
+        name: 'Body Text', 
+        section: 'content', 
+        key: 'body', 
+        type: 'rich_text' as const,
+        defaultContent: 'Enter your content here. This field supports multi-line text.'
+      },
+    ]
+  },
+  {
+    category: 'Badges & Labels',
+    icon: Tag,
+    color: 'bg-amber-100 text-amber-700',
+    items: [
+      { 
+        name: 'Feature Badge', 
+        section: 'badges', 
+        key: 'feature_badge', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'New Feature', variant: 'success', icon: 'sparkles' }, null, 2)
+      },
+      { 
+        name: 'Popular Tag', 
+        section: 'badges', 
+        key: 'popular_tag', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'Most Popular', variant: 'gold' }, null, 2)
+      },
+      { 
+        name: 'Status Label', 
+        section: 'badges', 
+        key: 'status', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'Live', variant: 'success', pulse: true }, null, 2)
+      },
+    ]
+  },
+  {
+    category: 'Links & Navigation',
+    icon: Link2,
+    color: 'bg-cyan-100 text-cyan-700',
+    items: [
+      { 
+        name: 'Text Link', 
+        section: 'links', 
+        key: 'text_link', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'Learn more', href: '#', external: false }, null, 2)
+      },
+      { 
+        name: 'Footer Link', 
+        section: 'footer', 
+        key: 'footer_link', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ text: 'Privacy Policy', href: '/privacy' }, null, 2)
+      },
+      { 
+        name: 'Nav Item', 
+        section: 'navigation', 
+        key: 'nav_item', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ label: 'Products', href: '/products', icon: 'package' }, null, 2)
+      },
+    ]
+  },
+  {
+    category: 'Lists & Features',
+    icon: List,
+    color: 'bg-rose-100 text-rose-700',
+    items: [
+      { 
+        name: 'Feature List', 
+        section: 'features', 
+        key: 'feature_list', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify([
+          { title: 'Feature 1', description: 'Description of feature 1' },
+          { title: 'Feature 2', description: 'Description of feature 2' },
+          { title: 'Feature 3', description: 'Description of feature 3' }
+        ], null, 2)
+      },
+      { 
+        name: 'Benefit Points', 
+        section: 'benefits', 
+        key: 'benefit_points', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify([
+          'Benefit point 1',
+          'Benefit point 2',
+          'Benefit point 3',
+          'Benefit point 4'
+        ], null, 2)
+      },
+      { 
+        name: 'Plan Features', 
+        section: 'pricing', 
+        key: 'plan_features', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify([
+          { feature: 'Unlimited access', included: true },
+          { feature: 'Priority support', included: true },
+          { feature: 'Custom branding', included: false }
+        ], null, 2)
+      },
+    ]
+  },
+  {
+    category: 'Images & Media',
+    icon: Image,
+    color: 'bg-indigo-100 text-indigo-700',
+    items: [
+      { 
+        name: 'Hero Image', 
+        section: 'hero', 
+        key: 'hero_image', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ url: '/images/hero.jpg', alt: 'Hero image description', width: 1200, height: 600 }, null, 2)
+      },
+      { 
+        name: 'Logo', 
+        section: 'branding', 
+        key: 'logo', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ url: '/images/logo.svg', alt: 'Company logo', width: 150, height: 40 }, null, 2)
+      },
+      { 
+        name: 'Icon', 
+        section: 'icons', 
+        key: 'icon', 
+        type: 'json' as const,
+        defaultContent: JSON.stringify({ name: 'shield', color: 'amber', size: 24 }, null, 2)
+      },
+    ]
+  },
+];
+
+function QuickAddTemplates({ 
+  pages, 
+  onAddBlock, 
+  isPending 
+}: { 
+  pages: ContentPage[]; 
+  onAddBlock: (data: Partial<ContentBlock>) => void;
+  isPending: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<string>('');
+  const [customSection, setCustomSection] = useState('');
+  const [customKey, setCustomKey] = useState('');
+
+  const handleQuickAdd = (template: typeof quickAddTemplates[0]['items'][0]) => {
+    const section = customSection || template.section;
+    const key = customKey || template.key;
+    
+    onAddBlock({
+      pageId: selectedPage || null,
+      section,
+      key,
+      type: template.type,
+      defaultContent: template.defaultContent,
+      status: 'draft'
+    });
+    
+    setCustomSection('');
+    setCustomKey('');
+  };
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
+      <Card className="border-dashed">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100">
+                  <Zap className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Quick Add Content Blocks</CardTitle>
+                  <CardDescription>Pre-configured templates for buttons, stats, text, badges, links & more</CardDescription>
+                </div>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            {/* Page & Custom Overrides */}
+            <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <Label className="text-xs text-gray-500 mb-1.5 block">Target Page (Optional)</Label>
+                <Select value={selectedPage} onValueChange={setSelectedPage}>
+                  <SelectTrigger className="h-9" data-testid="select-quick-add-page">
+                    <SelectValue placeholder="Select page..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No page (global)</SelectItem>
+                    {pages.map((page) => (
+                      <SelectItem key={page.id} value={page.id}>{page.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-gray-500 mb-1.5 block">Custom Section (Override)</Label>
+                <Input 
+                  value={customSection}
+                  onChange={(e) => setCustomSection(e.target.value)}
+                  placeholder="e.g., hero, features"
+                  className="h-9"
+                  data-testid="input-quick-section"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-gray-500 mb-1.5 block">Custom Key (Override)</Label>
+                <Input 
+                  value={customKey}
+                  onChange={(e) => setCustomKey(e.target.value)}
+                  placeholder="e.g., title, cta_button"
+                  className="h-9"
+                  data-testid="input-quick-key"
+                />
+              </div>
+            </div>
+
+            {/* Template Categories */}
+            <div className="grid gap-4">
+              {quickAddTemplates.map((category) => (
+                <div key={category.category} className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`p-1.5 rounded ${category.color}`}>
+                      <category.icon className="w-4 h-4" />
+                    </div>
+                    <h4 className="font-medium text-sm">{category.category}</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {category.items.map((item) => (
+                      <Button
+                        key={item.key}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleQuickAdd(item)}
+                        disabled={isPending}
+                        className="h-8 text-xs"
+                        data-testid={`button-quick-add-${item.key}`}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        {item.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
