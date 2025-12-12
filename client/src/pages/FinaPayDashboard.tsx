@@ -15,7 +15,39 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { toast } from 'sonner';
 
 export default function FinaPayDashboard() {
-  const { wallet, transactions, limits, currentGoldPriceUsdPerGram, goldPriceHistory, addTransaction, updateWallet } = useFinaPay();
+  const { wallet: rawWallet, transactions, currentGoldPriceUsdPerGram, goldPriceHistory, createTransaction, refreshWallet, loading } = useFinaPay();
+
+  // Compute wallet values from API data
+  const goldGrams = rawWallet ? parseFloat(rawWallet.goldGrams as string) || 0 : 0;
+  const usdBalance = rawWallet ? parseFloat(rawWallet.usdBalance as string) || 0 : 0;
+  
+  // Computed wallet properties for UI
+  const wallet = {
+    goldBalanceGrams: goldGrams,
+    availableGoldGrams: goldGrams, // All gold is available for now
+    lockedForBnslGrams: 0,
+    lockedForTradeGrams: 0,
+    goldValueUsd: goldGrams * currentGoldPriceUsdPerGram,
+    goldValueAed: goldGrams * currentGoldPriceUsdPerGram * 3.67, // USD to AED
+    tier: goldGrams >= 100 ? 'Platinum' : goldGrams >= 50 ? 'Gold' : goldGrams >= 10 ? 'Silver' : 'Bronze',
+    usdBalance,
+  };
+
+  // Default limits
+  const limits = {
+    dailySendGoldGrams: 100,
+    remainingSendGoldGramsToday: 100,
+  };
+
+  // Helper functions for transaction handling
+  const addTransaction = (tx: any) => {
+    createTransaction(tx);
+  };
+
+  const updateWallet = (updates: any) => {
+    // Wallet updates happen via API, just refresh
+    refreshWallet();
+  };
 
   // Modal States
   const [buyOpen, setBuyOpen] = useState(false);
