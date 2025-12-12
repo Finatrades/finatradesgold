@@ -1,11 +1,9 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, LineChart, Globe, Coins, AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
-import { Link } from 'wouter';
-import { Button } from '@/components/ui/button';
+import { Database, DollarSign, TrendingUp, LineChart, Globe, Coins, Loader2 } from 'lucide-react';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
-// Components
 import KpiCard from '@/components/dashboard/KpiCard';
 import ChartCard from '@/components/dashboard/ChartCard';
 import TransactionsTable from '@/components/dashboard/TransactionsTable';
@@ -15,13 +13,22 @@ import FinaPayCard from '@/components/dashboard/FinaPayCard';
 import DashboardSlider from '@/components/dashboard/DashboardSlider';
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 
+function formatNumber(num: number, decimals = 2): string {
+  return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function formatGrams(grams: number): string {
+  if (grams >= 1000) {
+    return `${formatNumber(grams / 1000, 3)} kg`;
+  }
+  return `${formatNumber(grams, 3)} g`;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
+  const { totals, wallet, transactions, goldPrice, isLoading } = useDashboardData();
 
   if (!user) return null;
-
-  const isKycApproved = user.kycStatus === 'Approved';
-  const isKycPending = user.kycStatus === 'In Progress';
 
   return (
     <DashboardLayout>
@@ -40,53 +47,59 @@ export default function Dashboard() {
         
         {/* 2. Top KPI Cards Grid */}
         <section>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <KpiCard 
-              title="Gold Storage (KG)" 
-              value="12.500 kg" 
-              definition="Gold Storage Meaning You have Deposited Gold in FinaVault"
-              icon={<Database className="w-5 h-5" />}
-              delay={0}
-            />
-            <KpiCard 
-              title="Gold Value (USD)" 
-              value="$1,067,500.00" 
-              definition="Gold Value Meaning You have Deposited worth of Gold in FinaVault in USD"
-              icon={<DollarSign className="w-5 h-5" />}
-              delay={1}
-            />
-            <KpiCard 
-              title="Gold Value (AED)" 
-              value="AED 3,921,000.00" 
-              definition="Gold Value Meaning You have Deposited worth of Gold in FinaVault in AED"
-              icon={<Globe className="w-5 h-5" />}
-              delay={2}
-            />
-            <KpiCard 
-              title="Total Portfolio" 
-              value="$1,150,000.00" 
-              subValue="+2.4% this month"
-              definition="total Portfolio means overall investment in platform."
-              icon={<Coins className="w-5 h-5" />}
-              delay={3}
-            />
-            <KpiCard 
-              title="BNSL Invested" 
-              value="850.00 g" 
-              subValue="Locked in BNSL"
-              definition="total Staking means overall Staking Gold Quality."
-              icon={<TrendingUp className="w-5 h-5" />}
-              delay={4}
-            />
-            <KpiCard 
-              title="Total Profit" 
-              value="18.75 g" 
-              subValue="ROI (Daily)"
-              definition="total profit means what ever gold has been Staked we Shown ROI on day basis in profit section"
-              icon={<LineChart className="w-5 h-5" />}
-              delay={5}
-            />
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <KpiCard 
+                title="Gold Storage (Vault)" 
+                value={formatGrams(totals.vaultGoldGrams)}
+                definition="Total physical gold stored in FinaVault"
+                icon={<Database className="w-5 h-5" />}
+                delay={0}
+              />
+              <KpiCard 
+                title="Vault Value (USD)" 
+                value={`$${formatNumber(totals.vaultGoldValueUsd)}`}
+                definition="Current market value of your vault holdings in USD"
+                icon={<DollarSign className="w-5 h-5" />}
+                delay={1}
+              />
+              <KpiCard 
+                title="Vault Value (AED)" 
+                value={`AED ${formatNumber(totals.vaultGoldValueAed)}`}
+                definition="Current market value of your vault holdings in AED"
+                icon={<Globe className="w-5 h-5" />}
+                delay={2}
+              />
+              <KpiCard 
+                title="Total Portfolio" 
+                value={`$${formatNumber(totals.totalPortfolioUsd)}`}
+                subValue={`Gold @ $${formatNumber(goldPrice, 2)}/g`}
+                definition="Combined value of vault holdings, wallet balance, and cash"
+                icon={<Coins className="w-5 h-5" />}
+                delay={3}
+              />
+              <KpiCard 
+                title="BNSL Locked" 
+                value={formatGrams(totals.bnslLockedGrams)}
+                subValue="Locked in BNSL Plans"
+                definition="Gold locked in Buy Now Sell Later agreements"
+                icon={<TrendingUp className="w-5 h-5" />}
+                delay={4}
+              />
+              <KpiCard 
+                title="BNSL Earnings" 
+                value={`$${formatNumber(totals.bnslTotalProfit)}`}
+                subValue="Total margin received"
+                definition="Total margin payments received from BNSL plans"
+                icon={<LineChart className="w-5 h-5" />}
+                delay={5}
+              />
+            </div>
+          )}
         </section>
 
         {/* 3. Gold Live Spot Chart + Transactions */}
@@ -95,14 +108,18 @@ export default function Dashboard() {
             <ChartCard />
           </div>
           <div className="lg:col-span-1">
-            <TransactionsTable />
+            <TransactionsTable transactions={transactions} goldPrice={goldPrice} />
           </div>
         </section>
 
         {/* 4. Referral + Wallet + FinaCard */}
         <section className="grid md:grid-cols-3 gap-6">
           <ReferralCard />
-          <WalletCard />
+          <WalletCard 
+            goldGrams={totals.walletGoldGrams} 
+            usdBalance={totals.walletUsdBalance}
+            goldPrice={goldPrice}
+          />
           <FinaPayCard />
         </section>
 
