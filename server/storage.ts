@@ -52,6 +52,7 @@ export interface TransactionalStorage {
   getWallet(userId: string): Promise<Wallet | undefined>;
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer>;
 }
 
 function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
@@ -111,6 +112,10 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
     async getUserByEmail(email: string): Promise<User | undefined> {
       const [user] = await txDb.select().from(users).where(eq(users.email, email));
       return user || undefined;
+    },
+    async createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer> {
+      const [transfer] = await txDb.insert(peerTransfers).values(insertTransfer).returning();
+      return transfer;
     }
   };
 }

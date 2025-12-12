@@ -2229,10 +2229,14 @@ export async function registerRoutes(
     }
   });
 
-  // Send money to another user
+  // Send money to another user (USD or Gold)
   app.post("/api/finapay/send", async (req, res) => {
     try {
-      const { senderId, recipientIdentifier, amountUsd, channel, memo } = req.body;
+      const { senderId, recipientIdentifier, amountUsd, amountGold, assetType, channel, memo } = req.body;
+      
+      // Determine asset type (default to USD for backward compatibility)
+      const isGoldTransfer = assetType === 'GOLD' || (amountGold && !amountUsd);
+      const goldPrice = 71.55; // Current gold price per gram
       
       // Find sender
       const sender = await storage.getUser(senderId);
@@ -2247,7 +2251,6 @@ export async function registerRoutes(
       } else if (channel === 'finatrades_id') {
         recipient = await storage.getUserByFinatradesId(recipientIdentifier);
       } else if (channel === 'qr_code') {
-        // QR code contains the Finatrades ID
         recipient = await storage.getUserByFinatradesId(recipientIdentifier);
       }
       
@@ -2259,17 +2262,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Cannot send money to yourself" });
       }
       
-      // Check sender balance
+      // Check sender wallet
       const senderWallet = await storage.getWallet(sender.id);
       if (!senderWallet) {
         return res.status(400).json({ message: "Sender wallet not found" });
-      }
-      
-      const amount = parseFloat(amountUsd);
-      const senderBalance = parseFloat(senderWallet.usdBalance.toString());
-      
-      if (senderBalance < amount) {
-        return res.status(400).json({ message: "Insufficient balance" });
       }
       
       // Get recipient wallet
@@ -2278,65 +2274,259 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Recipient wallet not found" });
       }
       
-      // Generate reference number
       const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
-      // Debit sender wallet
-      await storage.updateWallet(senderWallet.id, {
-        usdBalance: (senderBalance - amount).toFixed(2),
-      });
-      
-      // Credit recipient wallet
-      const recipientBalance = parseFloat(recipientWallet.usdBalance.toString());
-      await storage.updateWallet(recipientWallet.id, {
-        usdBalance: (recipientBalance + amount).toFixed(2),
-      });
-      
-      // Create sender transaction (Send)
-      const senderTx = await storage.createTransaction({
-        userId: sender.id,
-        type: 'Send',
-        status: 'Completed',
-        amountUsd: amount.toFixed(2),
-        recipientEmail: recipient.email,
-        recipientUserId: recipient.id,
-        description: memo || `Sent to ${recipient.firstName} ${recipient.lastName}`,
-        referenceId: referenceNumber,
-        sourceModule: 'finapay',
-        completedAt: new Date(),
-      });
-      
-      // Create recipient transaction (Receive)
-      const recipientTx = await storage.createTransaction({
-        userId: recipient.id,
-        type: 'Receive',
-        status: 'Completed',
-        amountUsd: amount.toFixed(2),
-        senderEmail: sender.email,
-        description: memo || `Received from ${sender.firstName} ${sender.lastName}`,
-        referenceId: referenceNumber,
-        sourceModule: 'finapay',
-        completedAt: new Date(),
-      });
-      
-      // Create peer transfer record
-      const transfer = await storage.createPeerTransfer({
-        referenceNumber,
-        senderId: sender.id,
-        recipientId: recipient.id,
-        amountUsd: amount.toFixed(2),
-        channel,
-        recipientIdentifier,
-        memo,
-        status: 'Completed',
-        senderTransactionId: senderTx.id,
-        recipientTransactionId: recipientTx.id,
-      });
-      
-      res.json({ 
-        transfer, 
-        message: `Successfully sent $${amount.toFixed(2)} to ${recipient.firstName} ${recipient.lastName}` 
-      });
+      if (isGoldTransfer) {
+        // GOLD TRANSFER
+        const goldAmount = parseFloat(amountGold);
+        const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
+        
+        if (senderGoldBalance < goldAmount) {
+          return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
+        }
+        
+        // Check sender vault holdings
+        const senderHoldings = await storage.getUserVaultHoldings(sender.id);
+        if (senderHoldings.length === 0) {
+          return res.status(400).json({ message: "Sender has no vault holdings" });
+        }
+        
+        const senderHolding = senderHoldings[0];
+        const senderHoldingGold = parseFloat(senderHolding.goldGrams?.toString() || '0');
+        if (senderHoldingGold < goldAmount) {
+          return res.status(400).json({ message: `Insufficient vault holdings. You have ${senderHoldingGold.toFixed(4)}g in vault` });
+        }
+        
+        // Execute gold transfer atomically
+        const result = await storage.withTransaction(async (txStorage) => {
+          const generatedCertificates: any[] = [];
+          const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+          
+          // Helper to issue certificates
+          const issueCertificates = async (userId: string, txId: string, holdingId: string, wingoldRef: string, grams: number) => {
+            if (!holdingId || grams <= 0) return null;
+            
+            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
+            const digitalCert = await txStorage.createCertificate({
+              certificateNumber: docCertNum,
+              userId,
+              transactionId: txId,
+              vaultHoldingId: holdingId,
+              type: 'Digital Ownership',
+              status: 'Active',
+              goldGrams: grams.toFixed(6),
+              goldPriceUsdPerGram: goldPrice.toFixed(2),
+              totalValueUsd: (grams * goldPrice).toFixed(2),
+              issuer: 'Finatrades',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              wingoldStorageRef: wingoldRef
+            });
+            generatedCertificates.push(digitalCert);
+            
+            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
+            const storageCert = await txStorage.createCertificate({
+              certificateNumber: pscCertNum,
+              userId,
+              transactionId: txId,
+              vaultHoldingId: holdingId,
+              type: 'Physical Storage',
+              status: 'Active',
+              goldGrams: grams.toFixed(6),
+              goldPriceUsdPerGram: goldPrice.toFixed(2),
+              totalValueUsd: (grams * goldPrice).toFixed(2),
+              issuer: 'Wingold & Metals DMCC',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              wingoldStorageRef: wingoldRef
+            });
+            generatedCertificates.push(storageCert);
+            
+            return wingoldRef;
+          };
+          
+          // 1. Debit sender wallet gold
+          const newSenderGold = senderGoldBalance - goldAmount;
+          await txStorage.updateWallet(senderWallet.id, {
+            goldGrams: newSenderGold.toFixed(6)
+          });
+          
+          // 2. Credit recipient wallet gold
+          const recipientGoldBalance = parseFloat(recipientWallet.goldGrams?.toString() || '0');
+          await txStorage.updateWallet(recipientWallet.id, {
+            goldGrams: (recipientGoldBalance + goldAmount).toFixed(6)
+          });
+          
+          // 3. Update sender vault holding (reduce)
+          const newSenderHoldingGold = senderHoldingGold - goldAmount;
+          await txStorage.updateVaultHolding(senderHolding.id, {
+            goldGrams: newSenderHoldingGold.toFixed(6)
+          });
+          
+          // 4. Mark sender's old certificates as Updated
+          const senderActiveCerts = await txStorage.getUserActiveCertificates(sender.id);
+          for (const cert of senderActiveCerts) {
+            await txStorage.updateCertificate(cert.id, { 
+              status: 'Updated',
+              cancelledAt: new Date()
+            });
+          }
+          
+          // 5. Create sender transaction
+          const senderTx = await txStorage.createTransaction({
+            userId: sender.id,
+            type: 'Send',
+            status: 'Completed',
+            amountGold: goldAmount.toFixed(6),
+            amountUsd: (goldAmount * goldPrice).toFixed(2),
+            goldPriceUsdPerGram: goldPrice.toFixed(2),
+            recipientEmail: recipient.email,
+            recipientUserId: recipient.id,
+            description: memo || `Sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}`,
+            referenceId: referenceNumber,
+            sourceModule: 'finapay',
+            completedAt: new Date(),
+          });
+          
+          // 6. Issue new certificates for sender's remaining balance
+          if (newSenderHoldingGold > 0) {
+            const senderWingoldRef = senderHolding.wingoldStorageRef || generateWingoldRef();
+            await txStorage.updateVaultHolding(senderHolding.id, { wingoldStorageRef: senderWingoldRef });
+            await issueCertificates(sender.id, senderTx.id, senderHolding.id, senderWingoldRef, newSenderHoldingGold);
+          }
+          
+          // 7. Create recipient transaction
+          const recipientTx = await txStorage.createTransaction({
+            userId: recipient.id,
+            type: 'Receive',
+            status: 'Completed',
+            amountGold: goldAmount.toFixed(6),
+            amountUsd: (goldAmount * goldPrice).toFixed(2),
+            goldPriceUsdPerGram: goldPrice.toFixed(2),
+            senderEmail: sender.email,
+            description: memo || `Received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
+            referenceId: referenceNumber,
+            sourceModule: 'finapay',
+            completedAt: new Date(),
+          });
+          
+          // 8. Update or create recipient vault holding
+          const recipientHoldings = await txStorage.getUserVaultHoldings(recipient.id);
+          let recipientHoldingId: string;
+          let recipientWingoldRef: string;
+          
+          if (recipientHoldings.length > 0) {
+            const rHolding = recipientHoldings[0];
+            const rGold = parseFloat(rHolding.goldGrams?.toString() || '0');
+            recipientWingoldRef = generateWingoldRef();
+            await txStorage.updateVaultHolding(rHolding.id, {
+              goldGrams: (rGold + goldAmount).toFixed(6),
+              wingoldStorageRef: recipientWingoldRef
+            });
+            recipientHoldingId = rHolding.id;
+          } else {
+            recipientWingoldRef = generateWingoldRef();
+            const newHolding = await txStorage.createVaultHolding({
+              userId: recipient.id,
+              goldGrams: goldAmount.toFixed(6),
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              wingoldStorageRef: recipientWingoldRef,
+              purchasePriceUsdPerGram: goldPrice.toFixed(2),
+              isPhysicallyDeposited: false
+            });
+            recipientHoldingId = newHolding.id;
+          }
+          
+          // 9. Issue certificates for recipient
+          await issueCertificates(recipient.id, recipientTx.id, recipientHoldingId, recipientWingoldRef, goldAmount);
+          
+          // 10. Create peer transfer record
+          const transfer = await txStorage.createPeerTransfer({
+            referenceNumber,
+            senderId: sender.id,
+            recipientId: recipient.id,
+            amountUsd: (goldAmount * goldPrice).toFixed(2),
+            channel,
+            recipientIdentifier,
+            memo,
+            status: 'Completed',
+            senderTransactionId: senderTx.id,
+            recipientTransactionId: recipientTx.id,
+          });
+          
+          return { transfer, certificates: generatedCertificates, senderTx, recipientTx };
+        });
+        
+        res.json({ 
+          transfer: result.transfer,
+          certificates: result.certificates,
+          message: `Successfully sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}` 
+        });
+        
+      } else {
+        // USD TRANSFER (original logic)
+        const amount = parseFloat(amountUsd);
+        const senderBalance = parseFloat(senderWallet.usdBalance?.toString() || '0');
+        
+        if (senderBalance < amount) {
+          return res.status(400).json({ message: "Insufficient USD balance" });
+        }
+        
+        // Debit sender wallet
+        await storage.updateWallet(senderWallet.id, {
+          usdBalance: (senderBalance - amount).toFixed(2),
+        });
+        
+        // Credit recipient wallet
+        const recipientBalance = parseFloat(recipientWallet.usdBalance?.toString() || '0');
+        await storage.updateWallet(recipientWallet.id, {
+          usdBalance: (recipientBalance + amount).toFixed(2),
+        });
+        
+        // Create sender transaction (Send)
+        const senderTx = await storage.createTransaction({
+          userId: sender.id,
+          type: 'Send',
+          status: 'Completed',
+          amountUsd: amount.toFixed(2),
+          recipientEmail: recipient.email,
+          recipientUserId: recipient.id,
+          description: memo || `Sent to ${recipient.firstName} ${recipient.lastName}`,
+          referenceId: referenceNumber,
+          sourceModule: 'finapay',
+          completedAt: new Date(),
+        });
+        
+        // Create recipient transaction (Receive)
+        const recipientTx = await storage.createTransaction({
+          userId: recipient.id,
+          type: 'Receive',
+          status: 'Completed',
+          amountUsd: amount.toFixed(2),
+          senderEmail: sender.email,
+          description: memo || `Received from ${sender.firstName} ${sender.lastName}`,
+          referenceId: referenceNumber,
+          sourceModule: 'finapay',
+          completedAt: new Date(),
+        });
+        
+        // Create peer transfer record
+        const transfer = await storage.createPeerTransfer({
+          referenceNumber,
+          senderId: sender.id,
+          recipientId: recipient.id,
+          amountUsd: amount.toFixed(2),
+          channel,
+          recipientIdentifier,
+          memo,
+          status: 'Completed',
+          senderTransactionId: senderTx.id,
+          recipientTransactionId: recipientTx.id,
+        });
+        
+        res.json({ 
+          transfer, 
+          message: `Successfully sent $${amount.toFixed(2)} to ${recipient.firstName} ${recipient.lastName}` 
+        });
+      }
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Transfer failed" });
     }
