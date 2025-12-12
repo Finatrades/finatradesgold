@@ -51,20 +51,6 @@ export default function BNSL() {
     refreshPlans();
   }, [refreshPlans]);
 
-  // Daily margin notification
-  useEffect(() => {
-    if (plans.length > 0 && activePlansCount > 0) {
-      const dailyTotal = plans.reduce((sum, p) => sum + calculateDailyMargin(p), 0);
-      if (dailyTotal > 0) {
-        addNotification({
-          title: "Daily Margin Update",
-          message: `You're earning $${dailyTotal.toFixed(2)} in margin today across ${activePlansCount} active plan${activePlansCount > 1 ? 's' : ''}. Payouts are made quarterly.`,
-          type: 'info'
-        });
-      }
-    }
-  }, [plans.length, activePlansCount]);
-
   // State
   const [activeTab, setActiveTab] = useState('plans');
   const [selectedPlan, setSelectedPlan] = useState<BnslPlan | null>(null);
@@ -90,6 +76,19 @@ export default function BNSL() {
   const totalAccruedMargin = plans.reduce((sum, p) => sum + calculateAccruedMargin(p), 0);
   const totalPaidMargin = plans.reduce((sum, p) => sum + p.paidMarginUsd, 0);
   const unpaidAccruedMargin = Math.max(0, totalAccruedMargin - totalPaidMargin);
+
+  // Daily margin notification - show once when user loads BNSL page with active plans
+  const [hasShownDailyNotification, setHasShownDailyNotification] = useState(false);
+  useEffect(() => {
+    if (!hasShownDailyNotification && activePlansCount > 0 && totalDailyMargin > 0) {
+      addNotification({
+        title: "Daily Margin Update",
+        message: `You're earning $${totalDailyMargin.toFixed(2)} in margin today across ${activePlansCount} active plan${activePlansCount > 1 ? 's' : ''}. Payouts are made quarterly.`,
+        type: 'info'
+      });
+      setHasShownDailyNotification(true);
+    }
+  }, [activePlansCount, totalDailyMargin, hasShownDailyNotification, addNotification]);
 
   // Next Payout Finder
   const getNextPayout = (): { date: string; amount: number; planId: string } | null => {
