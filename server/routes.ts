@@ -527,31 +527,49 @@ export async function registerRoutes(
       // Total users count
       const totalUsers = users.length;
       
-      // Pending KYC count (In Progress status on users)
-      const pendingKycCount = users.filter(u => 
-        u.kycStatus === 'In Progress'
+      // Pending KYC count from submissions table
+      const pendingKycCount = kycSubmissions.filter(k => 
+        k.status === 'In Progress'
       ).length;
       
-      // Total transaction volume (sum of amountUsd)
+      // Total transaction volume - calculate USD equivalent from all monetary fields
       const totalVolume = allTransactions.reduce((sum, tx) => {
-        const amount = parseFloat(tx.amountUsd || '0');
-        return sum + (isNaN(amount) ? 0 : amount);
+        let txValue = 0;
+        
+        // If amountUsd is set, use it directly
+        if (tx.amountUsd) {
+          txValue = parseFloat(tx.amountUsd);
+        }
+        // If amountGold and price are set, calculate USD value
+        else if (tx.amountGold && tx.goldPriceUsdPerGram) {
+          txValue = parseFloat(tx.amountGold) * parseFloat(tx.goldPriceUsdPerGram);
+        }
+        // If amountEur is set, convert to USD (approximate rate)
+        else if (tx.amountEur) {
+          txValue = parseFloat(tx.amountEur) * 1.08;
+        }
+        
+        return sum + (isNaN(txValue) ? 0 : Math.abs(txValue));
       }, 0);
       
       // Revenue estimate (1% of volume as placeholder)
       const revenue = totalVolume * 0.01;
       
-      // Get pending KYC requests with user details
-      const pendingKycRequests = users
-        .filter(u => u.kycStatus === 'In Progress')
-        .map(u => ({
-          id: u.id,
-          name: u.companyName || `${u.firstName} ${u.lastName}`,
-          type: u.accountType === 'business' ? 'Corporate' : 'Personal',
-          status: u.kycStatus,
-          createdAt: u.createdAt
-        }))
-        .slice(0, 5);
+      // Get pending KYC requests from submissions table with user details
+      const pendingSubmissions = kycSubmissions.filter(k => k.status === 'In Progress');
+      const pendingKycRequests = await Promise.all(
+        pendingSubmissions.slice(0, 5).map(async (submission) => {
+          const user = await storage.getUser(submission.userId);
+          return {
+            id: submission.id,
+            userId: submission.userId,
+            name: submission.companyName || submission.fullName || (user ? `${user.firstName} ${user.lastName}` : 'Unknown'),
+            type: submission.accountType === 'business' ? 'Corporate' : 'Personal',
+            status: submission.status,
+            createdAt: submission.createdAt
+          };
+        })
+      );
       
       res.json({
         totalUsers,

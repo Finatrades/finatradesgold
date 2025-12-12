@@ -14,6 +14,7 @@ interface AdminStats {
   revenue: number;
   pendingKycRequests: Array<{
     id: string;
+    userId: string;
     name: string;
     type: string;
     status: string;
@@ -136,8 +137,8 @@ export default function AdminDashboard() {
                         <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">
                           <Clock className="w-3 h-3 mr-1" /> {item.status}
                         </Badge>
-                        <Link href={`/admin/users/${item.id}`}>
-                          <Button size="sm" variant="ghost" data-testid={`button-review-${item.id}`}>Review</Button>
+                        <Link href={`/admin/users/${item.userId}`}>
+                          <Button size="sm" variant="ghost" data-testid={`button-review-${item.userId}`}>Review</Button>
                         </Link>
                       </div>
                     </div>
