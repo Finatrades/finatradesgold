@@ -1383,7 +1383,18 @@ export async function registerRoutes(
   app.get("/api/admin/bnsl/plans", async (req, res) => {
     try {
       const plans = await storage.getAllBnslPlans();
-      res.json({ plans });
+      
+      // Enrich plans with user data
+      const enrichedPlans = await Promise.all(plans.map(async (plan) => {
+        try {
+          const user = await storage.getUser(plan.userId);
+          return { ...plan, user };
+        } catch {
+          return { ...plan, user: null };
+        }
+      }));
+      
+      res.json({ plans: enrichedPlans });
     } catch (error) {
       res.status(400).json({ message: "Failed to get BNSL plans" });
     }

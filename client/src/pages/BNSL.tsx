@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus } from 'lucide-react';
+import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2 } from 'lucide-react';
 import { BnslPlan, BnslPlanStatus, BnslMarginPayout } from '@/types/bnsl';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { useBnsl } from '@/context/BnslContext'; // Import Context
+import { useBnsl } from '@/context/BnslContext';
 
 // Components
 import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
@@ -25,8 +25,12 @@ export default function BNSL() {
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
 
-  // Use Context
-  const { plans, currentGoldPrice, addPlan, updatePayout, updatePlanStatus } = useBnsl();
+  // Use Context with real data
+  const { plans, currentGoldPrice, addPlan, updatePayout, updatePlanStatus, refreshPlans, isLoading } = useBnsl();
+  
+  useEffect(() => {
+    refreshPlans();
+  }, [refreshPlans]);
 
   // State
   const [activeTab, setActiveTab] = useState('plans');
@@ -70,64 +74,59 @@ export default function BNSL() {
     setBnslWalletBalance(prev => prev + amount);
   };
 
-  const handleCreatePlan = (newPlanData: Partial<BnslPlan>) => {
-    // 1. Deduct Gold from BNSL Wallet
-    if (newPlanData.goldSoldGrams) {
-      setBnslWalletBalance(prev => prev - newPlanData.goldSoldGrams!);
-    }
-
-    // 2. Create Plan Object
-    const planId = `BNSL-2025-${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}`;
+  const handleCreatePlan = async (newPlanData: Partial<BnslPlan>) => {
     const startDate = new Date();
     const maturityDate = new Date();
-    maturityDate.setMonth(startDate.getMonth() + (newPlanData.tenorMonths || 12));
+    const tenorMonths = newPlanData.tenorMonths || 12;
+    maturityDate.setMonth(startDate.getMonth() + tenorMonths);
+    
+    // Get rate based on tenor
+    let rate = 8;
+    if (tenorMonths === 24) rate = 10;
+    if (tenorMonths === 36) rate = 12;
+    
+    const goldSoldGrams = newPlanData.goldSoldGrams || 0;
+    const enrollmentPriceUsdPerGram = currentGoldPrice;
+    const basePriceComponentUsd = goldSoldGrams * enrollmentPriceUsdPerGram;
+    const totalMarginComponentUsd = basePriceComponentUsd * (rate / 100) * (tenorMonths / 12);
+    const quarterlyMarginUsd = totalMarginComponentUsd / (tenorMonths / 3);
+    const totalSaleProceedsUsd = basePriceComponentUsd + totalMarginComponentUsd;
 
-    // Generate Payouts
-    const payouts: BnslMarginPayout[] = [];
-    const numPayouts = (newPlanData.tenorMonths || 12) / 3;
-    for(let i=1; i<=numPayouts; i++) {
-       const d = new Date(startDate);
-       d.setMonth(d.getMonth() + (i * 3));
-       payouts.push({
-         id: `p-${planId}-${i}`,
-         planId: planId,
-         sequence: i,
-         scheduledDate: d.toISOString(),
-         monetaryAmountUsd: newPlanData.quarterlyMarginUsd || 0,
-         status: 'Scheduled'
-       });
-    }
-
-    const newPlan: BnslPlan = {
-      ...newPlanData as BnslPlan,
-      id: planId,
-      contractId: planId, // Added contractId mapping
-      status: 'Active',
-      startDate: startDate.toISOString(),
-      maturityDate: maturityDate.toISOString(),
-      payouts: payouts,
-      paidMarginUsd: 0, // Mapped from totalPaidMarginUsd
-      paidMarginGrams: 0, // Mapped from totalPaidMarginGrams
-      remainingMarginUsd: newPlanData.totalMarginComponentUsd || 0, // Added remainingMarginUsd
-      planRiskLevel: 'Low', // Default risk level
-      participant: { // Default participant
-        id: user?.email || 'U-001',
-        name: user?.firstName ? `${user.firstName} ${user.lastName}` : 'Current User',
+    const planDataForApi: Omit<BnslPlan, 'id' | 'contractId' | 'payouts'> = {
+      participant: {
+        id: user?.id || '',
+        name: user?.firstName ? `${user.firstName} ${user.lastName}` : 'User',
         country: 'Switzerland',
         kycStatus: 'Approved',
         riskLevel: 'Low'
       },
-      agreedMarginAnnualPercent: (newPlanData as any).marginRateAnnualPercent || 8, // Map legacy field name if needed
+      tenorMonths: tenorMonths as 12 | 24 | 36,
+      agreedMarginAnnualPercent: rate,
+      goldSoldGrams,
+      enrollmentPriceUsdPerGram,
+      basePriceComponentUsd,
+      totalMarginComponentUsd,
+      quarterlyMarginUsd,
+      totalSaleProceedsUsd,
+      startDate: startDate.toISOString(),
+      maturityDate: maturityDate.toISOString(),
+      status: 'Active',
+      paidMarginUsd: 0,
+      paidMarginGrams: 0,
+      remainingMarginUsd: totalMarginComponentUsd,
+      planRiskLevel: 'Low'
     };
 
-    addPlan(newPlan); // Use Context
-    setActiveTab('plans');
+    const createdPlan = await addPlan(planDataForApi);
     
-    addNotification({
-      title: "BNSL Plan Activated",
-      message: `Plan ${planId} successfully created. ${newPlanData.goldSoldGrams}g deducted from wallet.`,
-      type: 'success'
-    });
+    if (createdPlan) {
+      setActiveTab('plans');
+      addNotification({
+        title: "BNSL Plan Activated",
+        message: `Plan ${createdPlan.contractId} successfully created. ${goldSoldGrams}g locked for ${tenorMonths} months.`,
+        type: 'success'
+      });
+    }
   };
 
   const handleSimulatePayout = (payoutId: string, currentPrice: number) => {

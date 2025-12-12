@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Plus } from 'lucide-react';
+import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Plus, Loader2, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,14 +16,23 @@ import { BnslPlan, BnslEarlyTerminationRequest, AuditLogEntry, BnslMarginPayout,
 import { useBnsl } from '@/context/BnslContext';
 
 export default function BNSLManagement() {
-  const { plans, auditLogs, currentGoldPrice, updatePlanStatus, addAuditLog, updatePayout, updateEarlyTermination, addPlan } = useBnsl();
+  const { allPlans, auditLogs, currentGoldPrice, updatePlanStatus, addAuditLog, updatePayout, updateEarlyTermination, addPlan, refreshAllPlans, isLoading } = useBnsl();
+  
+  useEffect(() => {
+    refreshAllPlans();
+  }, [refreshAllPlans]);
+  
+  const plans = allPlans;
   
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   
   // Create Plan State
   const [createOpen, setCreateOpen] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [newPlanData, setNewPlanData] = useState({
+    userId: '',
     participantName: '',
     country: 'Switzerland',
     tenorMonths: '12',
@@ -32,15 +41,47 @@ export default function BNSLManagement() {
   });
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
+  
+  // Fetch users when create dialog opens
+  useEffect(() => {
+    if (createOpen && users.length === 0) {
+      setLoadingUsers(true);
+      import('@/lib/queryClient').then(({ apiRequest }) => {
+        apiRequest('GET', '/api/admin/users')
+          .then(res => res.json())
+          .then(data => {
+            setUsers(data.users || []);
+            setLoadingUsers(false);
+          })
+          .catch((err) => {
+            console.error('Failed to fetch users:', err);
+            toast.error('Failed to load users');
+            setLoadingUsers(false);
+          });
+      });
+    }
+  }, [createOpen, users.length]);
 
   const handleOpenPlan = (id: string) => {
     setSelectedPlanId(id);
     setDetailOpen(true);
   };
+  
+  const handleUserSelect = (userId: string) => {
+    const selectedUser = users.find(u => u.id === userId);
+    if (selectedUser) {
+      setNewPlanData(prev => ({
+        ...prev,
+        userId,
+        participantName: `${selectedUser.firstName} ${selectedUser.lastName}`,
+        country: selectedUser.country || 'Switzerland'
+      }));
+    }
+  };
 
-  const handleCreatePlan = () => {
-    if (!newPlanData.participantName || !newPlanData.goldSoldGrams || !newPlanData.enrollmentPrice) {
-      toast.error("Please fill in all fields");
+  const handleCreatePlan = async () => {
+    if (!newPlanData.userId || !newPlanData.goldSoldGrams || !newPlanData.enrollmentPrice) {
+      toast.error("Please select a user and fill in all fields");
       return;
     }
 
@@ -55,37 +96,20 @@ export default function BNSLManagement() {
 
     const basePriceUsd = goldGrams * price;
     const totalMarginUsd = basePriceUsd * (rate / 100) * (tenor / 12);
-    const quarterlyMarginUsd = totalMarginUsd / (tenor / 3); // 4 payouts per year
-
-    const planId = `BNSL-2025-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    const quarterlyMarginUsd = totalMarginUsd / (tenor / 3);
+    
     const startDate = new Date();
     const maturityDate = new Date();
     maturityDate.setMonth(startDate.getMonth() + tenor);
 
-    // Generate Payouts
-    const payouts: BnslMarginPayout[] = [];
-    const numPayouts = tenor / 3;
-    for(let i=1; i<=numPayouts; i++) {
-       const d = new Date(startDate);
-       d.setMonth(d.getMonth() + (i * 3));
-       payouts.push({
-         id: `p-${planId}-${i}`,
-         planId: planId,
-         sequence: i,
-         scheduledDate: d.toISOString(),
-         monetaryAmountUsd: quarterlyMarginUsd,
-         status: 'Scheduled'
-       });
-    }
-
-    const newPlan: BnslPlan = {
-      id: planId,
-      contractId: planId,
+    const selectedUser = users.find(u => u.id === newPlanData.userId);
+    
+    const planDataForApi: Omit<BnslPlan, 'id' | 'contractId' | 'payouts'> = {
       participant: {
-        id: `U-${Math.floor(Math.random()*1000)}`,
+        id: newPlanData.userId,
         name: newPlanData.participantName,
         country: newPlanData.country,
-        kycStatus: 'Approved',
+        kycStatus: selectedUser?.kycStatus || 'Approved',
         riskLevel: 'Low'
       },
       tenorMonths: tenor,
@@ -99,32 +123,37 @@ export default function BNSLManagement() {
       startDate: startDate.toISOString(),
       maturityDate: maturityDate.toISOString(),
       status: 'Active',
-      payouts: payouts,
       paidMarginUsd: 0,
       paidMarginGrams: 0,
       remainingMarginUsd: totalMarginUsd,
       planRiskLevel: 'Low'
     };
 
-    addPlan(newPlan);
-    addAuditLog({
-      id: crypto.randomUUID(),
-      planId: planId,
-      actor: 'Admin User',
-      actorRole: 'Admin',
-      actionType: 'PlanCreated',
-      timestamp: new Date().toISOString(),
-      details: `Created new ${tenor}-month plan for ${newPlanData.participantName}`
-    });
+    const createdPlan = await addPlan(planDataForApi);
+    
+    if (createdPlan) {
+      addAuditLog({
+        id: crypto.randomUUID(),
+        planId: createdPlan.id,
+        actor: 'Admin User',
+        actorRole: 'Admin',
+        actionType: 'PlanCreated',
+        timestamp: new Date().toISOString(),
+        details: `Created new ${tenor}-month plan for ${newPlanData.participantName}`
+      });
 
-    setCreateOpen(false);
-    setNewPlanData({
-      participantName: '',
-      country: 'Switzerland',
-      tenorMonths: '12',
-      goldSoldGrams: '',
-      enrollmentPrice: currentGoldPrice.toString()
-    });
+      setCreateOpen(false);
+      setNewPlanData({
+        userId: '',
+        participantName: '',
+        country: 'Switzerland',
+        tenorMonths: '12',
+        goldSoldGrams: '',
+        enrollmentPrice: currentGoldPrice.toString()
+      });
+      
+      await refreshAllPlans();
+    }
   };
 
   // KPIs
@@ -308,21 +337,34 @@ export default function BNSLManagement() {
              </DialogHeader>
              <div className="space-y-4 py-4">
                 <div>
-                   <Label>Participant Name</Label>
-                   <Input 
-                      value={newPlanData.participantName} 
-                      onChange={(e) => setNewPlanData({...newPlanData, participantName: e.target.value})} 
-                      placeholder="e.g. John Doe Corp"
-                   />
+                   <Label>Select User</Label>
+                   {loadingUsers ? (
+                     <div className="flex items-center gap-2 py-2 text-gray-500">
+                       <Loader2 className="w-4 h-4 animate-spin" />
+                       Loading users...
+                     </div>
+                   ) : (
+                     <Select value={newPlanData.userId} onValueChange={handleUserSelect}>
+                        <SelectTrigger>
+                           <SelectValue placeholder="Select a user..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                           {users.filter(u => u.role !== 'admin').map(user => (
+                             <SelectItem key={user.id} value={user.id}>
+                               {user.firstName} {user.lastName} ({user.email})
+                             </SelectItem>
+                           ))}
+                        </SelectContent>
+                     </Select>
+                   )}
                 </div>
+                {newPlanData.userId && (
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm">
+                    <p><strong>Selected:</strong> {newPlanData.participantName}</p>
+                    <p className="text-gray-500">Country: {newPlanData.country}</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
-                   <div>
-                      <Label>Country</Label>
-                      <Input 
-                        value={newPlanData.country} 
-                        onChange={(e) => setNewPlanData({...newPlanData, country: e.target.value})} 
-                      />
-                   </div>
                    <div>
                       <Label>Tenor</Label>
                       <Select value={newPlanData.tenorMonths} onValueChange={(v) => setNewPlanData({...newPlanData, tenorMonths: v})}>
@@ -336,10 +378,8 @@ export default function BNSLManagement() {
                          </SelectContent>
                       </Select>
                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                    <div>
-                      <Label>Gold To Sell (g)</Label>
+                      <Label>Gold To Lock (g)</Label>
                       <Input 
                         type="number"
                         value={newPlanData.goldSoldGrams} 
@@ -347,19 +387,21 @@ export default function BNSLManagement() {
                         placeholder="1000"
                       />
                    </div>
-                   <div>
-                      <Label>Enrollment Price (USD/g)</Label>
-                      <Input 
-                        type="number"
-                        value={newPlanData.enrollmentPrice} 
-                        onChange={(e) => setNewPlanData({...newPlanData, enrollmentPrice: e.target.value})} 
-                      />
-                   </div>
+                </div>
+                <div>
+                   <Label>Enrollment Price (USD/g)</Label>
+                   <Input 
+                     type="number"
+                     value={newPlanData.enrollmentPrice} 
+                     onChange={(e) => setNewPlanData({...newPlanData, enrollmentPrice: e.target.value})} 
+                   />
                 </div>
              </div>
              <DialogFooter>
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                <Button className="bg-orange-600 hover:bg-orange-700" onClick={handleCreatePlan}>Create Plan</Button>
+                <Button className="bg-orange-600 hover:bg-orange-700" onClick={handleCreatePlan} disabled={!newPlanData.userId}>
+                  Create Plan
+                </Button>
              </DialogFooter>
            </DialogContent>
         </Dialog>
