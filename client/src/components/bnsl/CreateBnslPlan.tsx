@@ -4,11 +4,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BnslTenor, BnslPlan } from '@/types/bnsl';
-import { ArrowRight, Wallet, ShieldCheck, AlertTriangle, CheckCircle2, FileText, Download } from 'lucide-react';
+import { ArrowRight, Wallet, ShieldCheck, AlertTriangle, CheckCircle2, FileText, Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { generateBnslAgreement } from '@/utils/generateBnslPdf';
+
+// Template types
+interface TemplateVariant {
+  id: string;
+  tenorMonths: number;
+  marginRatePercent: string;
+}
+
+interface PlanTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  minGoldGrams: string;
+  maxGoldGrams: string;
+  variants: TemplateVariant[];
+}
 
 interface CreateBnslPlanProps {
   bnslWalletBalance: number;
@@ -21,24 +38,60 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const { user } = useAuth();
   
   const [goldAmount, setGoldAmount] = useState<string>('100');
-  const [selectedTenor, setSelectedTenor] = useState<BnslTenor>(12);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [hasDownloadedDraft, setHasDownloadedDraft] = useState(false);
+  
+  // Template state
+  const [templates, setTemplates] = useState<PlanTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+  
+  // Fallback rates for when no templates are configured
+  const defaultVariants: TemplateVariant[] = [
+    { id: 'default-12', tenorMonths: 12, marginRatePercent: '8.00' },
+    { id: 'default-24', tenorMonths: 24, marginRatePercent: '10.00' },
+    { id: 'default-36', tenorMonths: 36, marginRatePercent: '12.00' }
+  ];
+  
+  // Fetch templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const { apiRequest } = await import('@/lib/queryClient');
+        const res = await apiRequest('GET', '/api/bnsl/templates');
+        const data = await res.json();
+        const activeTemplates = (data.templates || []).filter((t: PlanTemplate) => t.variants && t.variants.length > 0);
+        setTemplates(activeTemplates);
+        
+        // Auto-select first template and variant
+        if (activeTemplates.length > 0) {
+          setSelectedTemplateId(activeTemplates[0].id);
+          if (activeTemplates[0].variants.length > 0) {
+            setSelectedVariantId(activeTemplates[0].variants[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch templates:', err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+    fetchTemplates();
+  }, []);
+
+  // Get current template and variant
+  const currentTemplate = templates.find(t => t.id === selectedTemplateId);
+  const availableVariants = currentTemplate?.variants || (templates.length === 0 ? defaultVariants : []);
+  const currentVariant = availableVariants.find(v => v.id === selectedVariantId) || availableVariants[0];
 
   // Derived Values
   const amount = parseFloat(goldAmount) || 0;
   const enrollmentPrice = currentGoldPrice;
   const basePriceComponent = amount * enrollmentPrice;
   
-  const getMarginRate = (tenor: BnslTenor) => {
-    switch(tenor) {
-      case 12: return 0.08;
-      case 24: return 0.10;
-      case 36: return 0.12;
-    }
-  };
-
-  const annualRate = getMarginRate(selectedTenor);
+  const selectedTenor = currentVariant?.tenorMonths || 12;
+  const annualRate = currentVariant ? parseFloat(currentVariant.marginRatePercent) / 100 : 0.08;
   const years = selectedTenor / 12;
   const totalMarginComponent = basePriceComponent * annualRate * years;
   const numDisbursements = selectedTenor / 3; // Quarterly
@@ -148,36 +201,72 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
       {/* 2. Plan Selection */}
       <Card className="bg-white shadow-sm border border-border">
         <CardHeader className="border-b border-border pb-4">
-          <CardTitle className="text-lg font-bold text-foreground">2. Select Plan Tenure</CardTitle>
+          <CardTitle className="text-lg font-bold text-foreground">2. Select Plan Type & Tenure</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             {[12, 24, 36].map((tenor) => (
-               <div 
-                 key={tenor}
-                 onClick={() => setSelectedTenor(tenor as BnslTenor)}
-                 className={`cursor-pointer relative p-6 rounded-xl border transition-all duration-200 ${
-                   selectedTenor === tenor 
-                     ? 'bg-secondary/10 border-secondary shadow-[0_0_15px_rgba(255,184,77,0.2)]' 
-                     : 'bg-white border-border hover:bg-muted/50'
-                 }`}
-               >
-                 {selectedTenor === tenor && (
-                   <div className="absolute top-3 right-3 text-secondary">
-                     <CheckCircle2 className="w-5 h-5" />
+          {loadingTemplates ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading plan options...</span>
+            </div>
+          ) : (
+            <>
+              {/* Template Selection (if multiple templates) */}
+              {templates.length > 1 && (
+                <div className="mb-6">
+                  <Label className="mb-2 block">Plan Type</Label>
+                  <Select value={selectedTemplateId} onValueChange={(v) => {
+                    setSelectedTemplateId(v);
+                    const template = templates.find(t => t.id === v);
+                    if (template?.variants?.length) {
+                      setSelectedVariantId(template.variants[0].id);
+                    }
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select plan type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {currentTemplate?.description && (
+                    <p className="text-sm text-muted-foreground mt-2">{currentTemplate.description}</p>
+                  )}
+                </div>
+              )}
+              
+              {/* Variant/Tenor Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 {availableVariants.map((variant) => (
+                   <div 
+                     key={variant.id}
+                     onClick={() => setSelectedVariantId(variant.id)}
+                     className={`cursor-pointer relative p-6 rounded-xl border transition-all duration-200 ${
+                       selectedVariantId === variant.id 
+                         ? 'bg-secondary/10 border-secondary shadow-[0_0_15px_rgba(255,184,77,0.2)]' 
+                         : 'bg-white border-border hover:bg-muted/50'
+                     }`}
+                   >
+                     {selectedVariantId === variant.id && (
+                       <div className="absolute top-3 right-3 text-secondary">
+                         <CheckCircle2 className="w-5 h-5" />
+                       </div>
+                     )}
+                     <div className="text-center space-y-2">
+                       <h3 className="text-2xl font-bold text-foreground">{variant.tenorMonths} Months</h3>
+                       <div className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
+                         selectedVariantId === variant.id ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground'
+                       }`}>
+                         {variant.marginRatePercent}% p.a.
+                       </div>
+                     </div>
                    </div>
-                 )}
-                 <div className="text-center space-y-2">
-                   <h3 className="text-2xl font-bold text-foreground">{tenor} Months</h3>
-                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
-                     selectedTenor === tenor ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground'
-                   }`}>
-                     {getMarginRate(tenor as BnslTenor) * 100}% p.a.
-                   </div>
-                 </div>
-               </div>
-             ))}
-          </div>
+                 ))}
+              </div>
+            </>
+          )}
 
           {/* Calculator Output */}
           <div className="mt-8 p-6 bg-muted/30 rounded-xl border border-border grid grid-cols-2 md:grid-cols-4 gap-6">
