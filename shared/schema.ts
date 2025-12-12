@@ -148,14 +148,18 @@ export type Transaction = typeof transactions.$inferSelect;
 // FINAVAULT - GOLD STORAGE
 // ============================================
 
+export const certificateTypeEnum = pgEnum('certificate_type', ['Digital Ownership', 'Physical Storage']);
+export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred']);
+
 export const vaultHoldings = pgTable("vault_holdings", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
-  vaultLocation: varchar("vault_location", { length: 255 }).notNull(),
-  certificateNumber: varchar("certificate_number", { length: 100 }),
-  storageFeesAnnualPercent: decimal("storage_fees_annual_percent", { precision: 5, scale: 2 }).notNull().default('1.5'),
+  vaultLocation: varchar("vault_location", { length: 255 }).notNull().default('Dubai - Wingold & Metals DMCC'),
+  wingoldStorageRef: varchar("wingold_storage_ref", { length: 100 }),
+  storageFeesAnnualPercent: decimal("storage_fees_annual_percent", { precision: 5, scale: 2 }).notNull().default('0.5'),
   purchasePriceUsdPerGram: decimal("purchase_price_usd_per_gram", { precision: 12, scale: 2 }),
+  isPhysicallyDeposited: boolean("is_physically_deposited").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -163,6 +167,35 @@ export const vaultHoldings = pgTable("vault_holdings", {
 export const insertVaultHoldingSchema = createInsertSchema(vaultHoldings).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertVaultHolding = z.infer<typeof insertVaultHoldingSchema>;
 export type VaultHolding = typeof vaultHoldings.$inferSelect;
+
+// Certificates - Digital Ownership (Finatrades) + Physical Storage (Wingold)
+export const certificates = pgTable("certificates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  certificateNumber: varchar("certificate_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  vaultHoldingId: varchar("vault_holding_id", { length: 255 }).references(() => vaultHoldings.id),
+  
+  type: certificateTypeEnum("type").notNull(),
+  status: certificateStatusEnum("status").notNull().default('Active'),
+  
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  totalValueUsd: decimal("total_value_usd", { precision: 18, scale: 2 }),
+  
+  issuer: varchar("issuer", { length: 255 }).notNull(), // "Finatrades" or "Wingold & Metals DMCC"
+  vaultLocation: varchar("vault_location", { length: 255 }),
+  wingoldStorageRef: varchar("wingold_storage_ref", { length: 100 }),
+  
+  issuedAt: timestamp("issued_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  supersededBy: varchar("superseded_by", { length: 255 }),
+});
+
+export const insertCertificateSchema = createInsertSchema(certificates).omit({ id: true, issuedAt: true });
+export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
+export type Certificate = typeof certificates.$inferSelect;
 
 // ============================================
 // BNSL - BUY NOW SELL LATER

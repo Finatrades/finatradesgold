@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, type TransactionalStorage } from "./storage";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
   insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
@@ -273,9 +273,10 @@ export async function registerRoutes(
     }
   });
   
-  // Admin: Approve transaction - processes wallet/vault updates
+  // Admin: Approve transaction - processes wallet/vault updates and generates certificates
   app.post("/api/admin/transactions/:id/approve", async (req, res) => {
     try {
+      // Initial validation outside transaction
       const transaction = await storage.getTransaction(req.params.id);
       if (!transaction) {
         return res.status(404).json({ message: "Transaction not found" });
@@ -286,8 +287,9 @@ export async function registerRoutes(
       
       const goldAmount = parseFloat(transaction.amountGold || '0');
       const usdAmount = parseFloat(transaction.amountUsd || '0');
+      const goldPrice = parseFloat(transaction.goldPriceUsdPerGram || '71.55');
       
-      // Get user wallet
+      // Get user wallet for initial validation
       const wallet = await storage.getWallet(transaction.userId);
       if (!wallet) {
         return res.status(404).json({ message: "User wallet not found" });
@@ -296,124 +298,342 @@ export async function registerRoutes(
       const currentGold = parseFloat(wallet.goldGrams || '0');
       const currentUsd = parseFloat(wallet.usdBalance || '0');
       
-      let newGoldBalance = currentGold;
-      let newUsdBalance = currentUsd;
+      // Execute all mutations inside a database transaction for atomicity
+      const result = await storage.withTransaction(async (txStorage) => {
+        let newGoldBalance = currentGold;
+        let newUsdBalance = currentUsd;
+        const generatedCertificates: any[] = [];
+        
+        // Helper: Generate Wingold storage reference
+        const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+        // Helper: Issue certificates for a user (requires valid holdingId and positive grams)
+        const issueCertificates = async (userId: string, txId: string, holdingId: string, wingoldRef: string, grams: number, price: number) => {
+          // Validation: skip if invalid amounts
+          if (!holdingId || grams <= 0 || isNaN(grams)) {
+            return null;
+          }
+          
+          // Digital Ownership Certificate from Finatrades
+          const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
+          const digitalCert = await txStorage.createCertificate({
+            certificateNumber: docCertNum,
+            userId,
+            transactionId: txId,
+            vaultHoldingId: holdingId,
+            type: 'Digital Ownership',
+            status: 'Active',
+            goldGrams: grams.toFixed(6),
+            goldPriceUsdPerGram: price.toFixed(2),
+            totalValueUsd: (grams * price).toFixed(2),
+            issuer: 'Finatrades',
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            wingoldStorageRef: wingoldRef
+          });
+          generatedCertificates.push(digitalCert);
+          
+          // Physical Storage Certificate from Wingold & Metals DMCC
+          const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
+          const storageCert = await txStorage.createCertificate({
+            certificateNumber: pscCertNum,
+            userId,
+            transactionId: txId,
+            vaultHoldingId: holdingId,
+            type: 'Physical Storage',
+            status: 'Active',
+            goldGrams: grams.toFixed(6),
+            goldPriceUsdPerGram: price.toFixed(2),
+            totalValueUsd: (grams * price).toFixed(2),
+            issuer: 'Wingold & Metals DMCC',
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            wingoldStorageRef: wingoldRef
+          });
+          generatedCertificates.push(storageCert);
+          
+          return wingoldRef;
+        };
+        
+        // Helper: Update existing holding and issue certificates
+        const updateHoldingAndIssueCerts = async (userId: string, holdingId: string, currentGrams: number, addGrams: number, txId: string) => {
+          const newTotal = currentGrams + addGrams;
+          const wingoldRef = generateWingoldRef();
+          
+          // Update holding FIRST with new Wingold ref
+          await txStorage.updateVaultHolding(holdingId, {
+            goldGrams: newTotal.toFixed(6),
+            wingoldStorageRef: wingoldRef
+          });
+          
+          // Then issue certificates for the added amount
+          if (addGrams > 0) {
+            await issueCertificates(userId, txId, holdingId, wingoldRef, addGrams, goldPrice);
+          }
+          
+          return { holdingId, wingoldRef, newTotal };
+        };
+        
+        // Helper: Create new holding and issue certificates
+        const createHoldingAndIssueCerts = async (userId: string, grams: number, txId: string, isPhysicalDeposit: boolean = false) => {
+          if (grams <= 0) return null;
+          
+          const wingoldRef = generateWingoldRef();
+          const newHolding = await txStorage.createVaultHolding({
+            userId,
+            goldGrams: grams.toFixed(6),
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            wingoldStorageRef: wingoldRef,
+            purchasePriceUsdPerGram: goldPrice.toFixed(2),
+            isPhysicallyDeposited: isPhysicalDeposit
+          });
+          
+          // Issue certificates for the new holding
+          await issueCertificates(userId, txId, newHolding.id, wingoldRef, grams, goldPrice);
+          
+          return newHolding;
+        };
+        
+        // Helper: Reduce holdings and update certificates
+        const reduceHoldingsAndUpdateCerts = async (userId: string, reduceGrams: number, txId: string) => {
+          const holdings = await txStorage.getUserVaultHoldings(userId);
+          if (holdings.length === 0) return;
+          
+          const holding = holdings[0];
+          const currentGrams = parseFloat(holding.goldGrams || '0');
+          const newTotalGrams = Math.max(0, currentGrams - reduceGrams);
+          
+          // Update holding balance
+          await txStorage.updateVaultHolding(holding.id, {
+            goldGrams: newTotalGrams.toFixed(6)
+          });
+          
+          // Mark old active certificates as Updated
+          const activeCerts = await txStorage.getUserActiveCertificates(userId);
+          for (const cert of activeCerts) {
+            await txStorage.updateCertificate(cert.id, { 
+              status: 'Updated',
+              cancelledAt: new Date()
+            });
+          }
+          
+          // Issue new consolidated certificates for remaining balance
+          if (newTotalGrams > 0) {
+            const wingoldRef = holding.wingoldStorageRef || generateWingoldRef();
+            await txStorage.updateVaultHolding(holding.id, { wingoldStorageRef: wingoldRef });
+            await issueCertificates(userId, txId, holding.id, wingoldRef, newTotalGrams, goldPrice);
+          }
+        };
       
       // Process based on transaction type
       switch (transaction.type) {
         case 'Buy':
+          // BUY: Credit gold to wallet, record in FinaVault, issue both certificates
           newGoldBalance = currentGold + goldAmount;
           if (currentUsd >= usdAmount) {
             newUsdBalance = currentUsd - usdAmount;
           }
           break;
-        case 'Sell':
+          
+        case 'Sell': {
+          // SELL: Deduct gold, credit fiat, update/cancel certificates
+          // Validate sufficient holdings exist before processing
+          const sellHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
+          if (sellHoldings.length === 0) {
+            throw new Error('User has no vault holdings to sell');
+          }
+          const sellHoldingGold = parseFloat(sellHoldings[0].goldGrams || '0');
+          if (sellHoldingGold < goldAmount) {
+            throw new Error(`Insufficient holdings: ${sellHoldingGold}g available, ${goldAmount}g requested`);
+          }
+          if (currentGold < goldAmount) {
+            throw new Error(`Insufficient wallet balance: ${currentGold}g available, ${goldAmount}g requested`);
+          }
           newGoldBalance = currentGold - goldAmount;
           newUsdBalance = currentUsd + usdAmount;
           break;
-        case 'Send':
+        }
+          
+        case 'Send': {
+          // SEND: Deduct from sender, credit recipient, transfer ownership
+          // Both sender and recipient must update atomically
+          // Sender's certs get Transferred, recipient gets new certs
+          
+          // === VALIDATION PHASE - All checks before any state changes ===
+          if (!transaction.recipientEmail) {
+            throw new Error('Send transaction requires recipient email');
+          }
+          if (goldAmount <= 0) {
+            throw new Error('Send transaction requires positive gold amount');
+          }
+          
+          // Validate sender has sufficient wallet balance
+          if (currentGold < goldAmount) {
+            throw new Error(`Insufficient wallet balance: ${currentGold}g available, ${goldAmount}g requested`);
+          }
+          
+          // Validate sender has sufficient vault holdings
+          const senderHoldingsCheck = await txStorage.getUserVaultHoldings(transaction.userId);
+          if (senderHoldingsCheck.length === 0) {
+            throw new Error('Sender has no vault holdings to send');
+          }
+          const senderHoldingGold = parseFloat(senderHoldingsCheck[0].goldGrams || '0');
+          if (senderHoldingGold < goldAmount) {
+            throw new Error(`Insufficient holdings: ${senderHoldingGold}g available, ${goldAmount}g requested`);
+          }
+          
+          // Validate recipient exists
+          const recipientUser = await txStorage.getUserByEmail(transaction.recipientEmail);
+          if (!recipientUser) {
+            throw new Error(`Recipient not found: ${transaction.recipientEmail}`);
+          }
+          
+          const recipientWallet = await txStorage.getWallet(recipientUser.id);
+          if (!recipientWallet) {
+            throw new Error(`Recipient wallet not found for: ${transaction.recipientEmail}`);
+          }
+          
+          // === EXECUTION PHASE - All validations passed, now update state ===
           newGoldBalance = currentGold - goldAmount;
-          // Credit recipient
-          if (transaction.recipientEmail) {
-            const recipientUser = await storage.getUserByEmail(transaction.recipientEmail);
-            if (recipientUser) {
-              const recipientWallet = await storage.getWallet(recipientUser.id);
-              if (recipientWallet) {
-                const recipientGold = parseFloat(recipientWallet.goldGrams || '0');
-                await storage.updateWallet(recipientWallet.id, {
-                  goldGrams: (recipientGold + goldAmount).toFixed(6)
-                });
-                // Create Receive transaction for recipient
-                const senderUser = await storage.getUser(transaction.userId);
-                await storage.createTransaction({
-                  userId: recipientUser.id,
-                  type: 'Receive',
-                  status: 'Completed',
-                  amountGold: goldAmount.toFixed(6),
-                  amountUsd: usdAmount.toFixed(2),
-                  senderEmail: senderUser?.email || '',
-                  description: `Received from ${senderUser?.firstName} ${senderUser?.lastName}`
-                });
-                // Update recipient vault holding
-                const recipientHoldings = await storage.getUserVaultHoldings(recipientUser.id);
-                if (recipientHoldings.length > 0) {
-                  const rHolding = recipientHoldings[0];
-                  const rGold = parseFloat(rHolding.goldGrams || '0');
-                  await storage.updateVaultHolding(rHolding.id, {
-                    goldGrams: (rGold + goldAmount).toFixed(6)
-                  });
-                } else {
-                  await storage.createVaultHolding({
-                    userId: recipientUser.id,
-                    goldGrams: goldAmount.toFixed(6),
-                    vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
-                    certificateNumber: `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-                  });
-                }
-              }
+          
+          const recipientGold = parseFloat(recipientWallet.goldGrams || '0');
+          await txStorage.updateWallet(recipientWallet.id, {
+            goldGrams: (recipientGold + goldAmount).toFixed(6)
+          });
+          
+          // Create Receive transaction for recipient
+          const senderUser = await txStorage.getUser(transaction.userId);
+          const receiveTransaction = await txStorage.createTransaction({
+            userId: recipientUser.id,
+            type: 'Receive',
+            status: 'Completed',
+            amountGold: goldAmount.toFixed(6),
+            amountUsd: usdAmount.toFixed(2),
+            goldPriceUsdPerGram: goldPrice.toFixed(2),
+            senderEmail: senderUser?.email || '',
+            description: `Received from ${senderUser?.firstName} ${senderUser?.lastName}`,
+            completedAt: new Date()
+          });
+          
+          // Update recipient vault holding and issue new certs for recipient
+          const recipientHoldings = await txStorage.getUserVaultHoldings(recipientUser.id);
+          if (recipientHoldings.length > 0) {
+            const rHolding = recipientHoldings[0];
+            const rGold = parseFloat(rHolding.goldGrams || '0');
+            await updateHoldingAndIssueCerts(recipientUser.id, rHolding.id, rGold, goldAmount, receiveTransaction.id);
+          } else {
+            await createHoldingAndIssueCerts(recipientUser.id, goldAmount, receiveTransaction.id, false);
+          }
+          
+          // Update sender's holdings and mark sender's certs as Transferred
+          const senderHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
+          if (senderHoldings.length > 0) {
+            const sHolding = senderHoldings[0];
+            const sGold = parseFloat(sHolding.goldGrams || '0');
+            const newSenderGold = Math.max(0, sGold - goldAmount);
+            
+            await txStorage.updateVaultHolding(sHolding.id, {
+              goldGrams: newSenderGold.toFixed(6)
+            });
+            
+            // Mark sender's active certs as Transferred
+            const senderCerts = await txStorage.getUserActiveCertificates(transaction.userId);
+            for (const cert of senderCerts) {
+              await txStorage.updateCertificate(cert.id, { 
+                status: 'Transferred',
+                cancelledAt: new Date()
+              });
+            }
+            
+            // Issue new consolidated certs for sender's remaining balance
+            if (newSenderGold > 0) {
+              const wingoldRef = sHolding.wingoldStorageRef || generateWingoldRef();
+              await txStorage.updateVaultHolding(sHolding.id, { wingoldStorageRef: wingoldRef });
+              await issueCertificates(transaction.userId, transaction.id, sHolding.id, wingoldRef, newSenderGold, goldPrice);
             }
           }
           break;
+        }
+          
         case 'Receive':
           newGoldBalance = currentGold + goldAmount;
           break;
+          
         case 'Deposit':
+          // Physical deposit: gold verified at Wingold, credited to wallet
           newGoldBalance = currentGold + goldAmount;
           break;
-        case 'Withdrawal':
+          
+        case 'Withdrawal': {
+          // Physical withdrawal: deduct from wallet, release from Wingold
+          // Validate sufficient holdings exist before processing
+          const wdHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
+          if (wdHoldings.length === 0) {
+            throw new Error('User has no vault holdings for withdrawal');
+          }
+          const wdHoldingGold = parseFloat(wdHoldings[0].goldGrams || '0');
+          if (wdHoldingGold < goldAmount) {
+            throw new Error(`Insufficient holdings: ${wdHoldingGold}g available, ${goldAmount}g requested`);
+          }
+          if (currentGold < goldAmount) {
+            throw new Error(`Insufficient wallet balance: ${currentGold}g available, ${goldAmount}g requested`);
+          }
           newGoldBalance = currentGold - goldAmount;
           break;
-      }
-      
-      // Update sender wallet
-      await storage.updateWallet(wallet.id, {
-        goldGrams: newGoldBalance.toFixed(6),
-        usdBalance: newUsdBalance.toFixed(2)
-      });
-      
-      // Update sender vault holding
-      const existingHoldings = await storage.getUserVaultHoldings(transaction.userId);
-      if (existingHoldings.length > 0) {
-        const holding = existingHoldings[0];
-        const holdingGold = parseFloat(holding.goldGrams || '0');
-        let newHoldingGold = holdingGold;
-        
-        if (['Buy', 'Receive', 'Deposit'].includes(transaction.type)) {
-          newHoldingGold = holdingGold + goldAmount;
-        } else if (['Sell', 'Send', 'Withdrawal'].includes(transaction.type)) {
-          newHoldingGold = holdingGold - goldAmount;
+        }
         }
         
-        await storage.updateVaultHolding(holding.id, {
-          goldGrams: newHoldingGold.toFixed(6)
+        // Update user wallet
+        await txStorage.updateWallet(wallet.id, {
+          goldGrams: newGoldBalance.toFixed(6),
+          usdBalance: newUsdBalance.toFixed(2)
         });
-      } else if (['Buy', 'Receive', 'Deposit'].includes(transaction.type) && goldAmount > 0) {
-        await storage.createVaultHolding({
-          userId: transaction.userId,
-          goldGrams: goldAmount.toFixed(6),
-          vaultLocation: 'Dubai DMCC Vault - Wingold & Metals',
-          certificateNumber: `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          purchasePriceUsdPerGram: '71.55'
+        
+        // Update vault holding and handle certificates using new helper functions
+        // Note: Send transactions are fully handled in the switch above (both sender and recipient)
+        if (transaction.type !== 'Send' && goldAmount > 0) {
+          const existingHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
+          
+          if (['Buy', 'Receive', 'Deposit'].includes(transaction.type)) {
+            // Adding gold: update holding first, then issue certificates
+            if (existingHoldings.length > 0) {
+              const holding = existingHoldings[0];
+              const holdingGold = parseFloat(holding.goldGrams || '0');
+              await updateHoldingAndIssueCerts(transaction.userId, holding.id, holdingGold, goldAmount, transaction.id);
+            } else {
+              await createHoldingAndIssueCerts(transaction.userId, goldAmount, transaction.id, transaction.type === 'Deposit');
+            }
+          } else if (['Sell', 'Withdrawal'].includes(transaction.type)) {
+            // Reducing gold: update holdings and certificates
+            await reduceHoldingsAndUpdateCerts(transaction.userId, goldAmount, transaction.id);
+          }
+        }
+        
+        // Mark transaction as completed
+        const updatedTransaction = await txStorage.updateTransaction(req.params.id, {
+          status: 'Completed',
+          completedAt: new Date()
         });
-      }
-      
-      // Mark transaction as completed
-      const updatedTransaction = await storage.updateTransaction(req.params.id, {
-        status: 'Completed',
-        completedAt: new Date()
+        
+        // Audit log
+        await txStorage.createAuditLog({
+          entityType: "transaction",
+          entityId: transaction.id,
+          actionType: "approve",
+          actor: req.body.adminId || 'admin',
+          actorRole: "admin",
+          details: `Transaction approved - Type: ${transaction.type}, Gold: ${goldAmount}g, USD: $${usdAmount}. Certificates issued: ${generatedCertificates.length}`,
+        });
+        
+        return { 
+          updatedTransaction, 
+          generatedCertificates
+        };
       });
       
-      // Audit log
-      await storage.createAuditLog({
-        entityType: "transaction",
-        entityId: transaction.id,
-        actionType: "approve",
-        actor: req.body.adminId || 'admin',
-        actorRole: "admin",
-        details: `Transaction approved - Type: ${transaction.type}, Gold: ${goldAmount}g, USD: $${usdAmount}`,
+      res.json({ 
+        transaction: result.updatedTransaction, 
+        certificates: result.generatedCertificates,
+        message: 'Transaction approved and processed with certificates issued' 
       });
-      
-      res.json({ transaction: updatedTransaction, message: 'Transaction approved and processed' });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Approval failed" });
     }
@@ -483,6 +703,34 @@ export async function registerRoutes(
       res.json({ holdings });
     } catch (error) {
       res.status(400).json({ message: "Failed to get vault holdings" });
+    }
+  });
+  
+  // ============================================
+  // CERTIFICATES
+  // ============================================
+  
+  // Get user certificates
+  app.get("/api/certificates/:userId", async (req, res) => {
+    try {
+      const allCertificates = await storage.getUserCertificates(req.params.userId);
+      const activeCertificates = await storage.getUserActiveCertificates(req.params.userId);
+      res.json({ certificates: allCertificates, activeCertificates });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get certificates" });
+    }
+  });
+  
+  // Get single certificate
+  app.get("/api/certificate/:id", async (req, res) => {
+    try {
+      const certificate = await storage.getCertificate(req.params.id);
+      if (!certificate) {
+        return res.status(404).json({ message: "Certificate not found" });
+      }
+      res.json({ certificate });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get certificate" });
     }
   });
   

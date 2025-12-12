@@ -2,7 +2,7 @@ import {
   users, wallets, transactions, vaultHoldings, kycSubmissions,
   bnslPlans, bnslPayouts, bnslEarlyTerminations,
   tradeCases, tradeDocuments,
-  chatSessions, chatMessages, auditLogs,
+  chatSessions, chatMessages, auditLogs, certificates,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -15,10 +15,93 @@ import {
   type TradeDocument, type InsertTradeDocument,
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
-  type AuditLog, type InsertAuditLog
+  type AuditLog, type InsertAuditLog,
+  type Certificate, type InsertCertificate
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc, and, or, sql } from "drizzle-orm";
+import * as schema from "@shared/schema";
+
+export type DbClient = typeof db;
+
+export interface TransactionalStorage {
+  updateWallet(id: string, updates: Partial<Wallet>): Promise<Wallet | undefined>;
+  createTransaction(insertTransaction: InsertTransaction): Promise<Transaction>;
+  updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined>;
+  createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding>;
+  updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined>;
+  createCertificate(insertCertificate: InsertCertificate): Promise<Certificate>;
+  updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined>;
+  createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog>;
+  generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string>;
+  getUserVaultHoldings(userId: string): Promise<VaultHolding[]>;
+  getUserActiveCertificates(userId: string): Promise<Certificate[]>;
+  getWallet(userId: string): Promise<Wallet | undefined>;
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+}
+
+function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
+  return {
+    async updateWallet(id: string, updates: Partial<Wallet>): Promise<Wallet | undefined> {
+      const [wallet] = await txDb.update(wallets).set({ ...updates, updatedAt: new Date() }).where(eq(wallets.id, id)).returning();
+      return wallet || undefined;
+    },
+    async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
+      const [transaction] = await txDb.insert(transactions).values(insertTransaction).returning();
+      return transaction;
+    },
+    async updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
+      const [transaction] = await txDb.update(transactions).set({ ...updates, updatedAt: new Date() }).where(eq(transactions.id, id)).returning();
+      return transaction || undefined;
+    },
+    async createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding> {
+      const [holding] = await txDb.insert(vaultHoldings).values(insertHolding).returning();
+      return holding;
+    },
+    async updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined> {
+      const [holding] = await txDb.update(vaultHoldings).set({ ...updates, updatedAt: new Date() }).where(eq(vaultHoldings.id, id)).returning();
+      return holding || undefined;
+    },
+    async createCertificate(insertCertificate: InsertCertificate): Promise<Certificate> {
+      const [certificate] = await txDb.insert(certificates).values(insertCertificate).returning();
+      return certificate;
+    },
+    async updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined> {
+      const [certificate] = await txDb.update(certificates).set(updates).where(eq(certificates.id, id)).returning();
+      return certificate || undefined;
+    },
+    async createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog> {
+      const [log] = await txDb.insert(auditLogs).values(insertLog).returning();
+      return log;
+    },
+    async generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string> {
+      const prefix = type === 'Digital Ownership' ? 'FT-DOC' : 'WG-PSC';
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+      return `${prefix}-${timestamp}-${random}`;
+    },
+    async getUserVaultHoldings(userId: string): Promise<VaultHolding[]> {
+      return await txDb.select().from(vaultHoldings).where(eq(vaultHoldings.userId, userId)).orderBy(desc(vaultHoldings.createdAt));
+    },
+    async getUserActiveCertificates(userId: string): Promise<Certificate[]> {
+      return await txDb.select().from(certificates).where(and(eq(certificates.userId, userId), eq(certificates.status, 'Active'))).orderBy(desc(certificates.issuedAt));
+    },
+    async getWallet(userId: string): Promise<Wallet | undefined> {
+      const [wallet] = await txDb.select().from(wallets).where(eq(wallets.userId, userId));
+      return wallet || undefined;
+    },
+    async getUser(id: string): Promise<User | undefined> {
+      const [user] = await txDb.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    },
+    async getUserByEmail(email: string): Promise<User | undefined> {
+      const [user] = await txDb.select().from(users).where(eq(users.email, email));
+      return user || undefined;
+    }
+  };
+}
 
 export interface IStorage {
   // Users
@@ -96,6 +179,14 @@ export interface IStorage {
   // Audit Logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getEntityAuditLogs(entityType: string, entityId: string): Promise<AuditLog[]>;
+  
+  // Certificates
+  createCertificate(certificate: InsertCertificate): Promise<Certificate>;
+  getCertificate(id: string): Promise<Certificate | undefined>;
+  getUserCertificates(userId: string): Promise<Certificate[]>;
+  getUserActiveCertificates(userId: string): Promise<Certificate[]>;
+  updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined>;
+  generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -350,6 +441,84 @@ export class DatabaseStorage implements IStorage {
 
   async getEntityAuditLogs(entityType: string, entityId: string): Promise<AuditLog[]> {
     return await db.select().from(auditLogs).where(and(eq(auditLogs.entityType, entityType), eq(auditLogs.entityId, entityId))).orderBy(desc(auditLogs.timestamp));
+  }
+
+  // Certificates
+  async createCertificate(insertCertificate: InsertCertificate): Promise<Certificate> {
+    const [certificate] = await db.insert(certificates).values(insertCertificate).returning();
+    return certificate;
+  }
+
+  async getCertificate(id: string): Promise<Certificate | undefined> {
+    const [certificate] = await db.select().from(certificates).where(eq(certificates.id, id));
+    return certificate || undefined;
+  }
+
+  async getUserCertificates(userId: string): Promise<Certificate[]> {
+    return await db.select().from(certificates).where(eq(certificates.userId, userId)).orderBy(desc(certificates.issuedAt));
+  }
+
+  async getUserActiveCertificates(userId: string): Promise<Certificate[]> {
+    return await db.select().from(certificates).where(and(eq(certificates.userId, userId), eq(certificates.status, 'Active'))).orderBy(desc(certificates.issuedAt));
+  }
+
+  async updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined> {
+    const [certificate] = await db.update(certificates).set(updates).where(eq(certificates.id, id)).returning();
+    return certificate || undefined;
+  }
+
+  async generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string> {
+    const prefix = type === 'Digital Ownership' ? 'FT-DOC' : 'WG-PSC';
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  async withTransaction<T>(fn: (txStorage: TransactionalStorage) => Promise<T>): Promise<T> {
+    return await db.transaction(async (tx) => {
+      const txStorage = createTransactionalStorage(tx as unknown as DbClient);
+      return await fn(txStorage);
+    });
+  }
+
+  async updateWalletTx(txDb: DbClient, id: string, updates: Partial<Wallet>): Promise<Wallet | undefined> {
+    const [wallet] = await txDb.update(wallets).set({ ...updates, updatedAt: new Date() }).where(eq(wallets.id, id)).returning();
+    return wallet || undefined;
+  }
+
+  async createTransactionTx(txDb: DbClient, insertTransaction: InsertTransaction): Promise<Transaction> {
+    const [transaction] = await txDb.insert(transactions).values(insertTransaction).returning();
+    return transaction;
+  }
+
+  async updateTransactionTx(txDb: DbClient, id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
+    const [transaction] = await txDb.update(transactions).set({ ...updates, updatedAt: new Date() }).where(eq(transactions.id, id)).returning();
+    return transaction || undefined;
+  }
+
+  async createVaultHoldingTx(txDb: DbClient, insertHolding: InsertVaultHolding): Promise<VaultHolding> {
+    const [holding] = await txDb.insert(vaultHoldings).values(insertHolding).returning();
+    return holding;
+  }
+
+  async updateVaultHoldingTx(txDb: DbClient, id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined> {
+    const [holding] = await txDb.update(vaultHoldings).set({ ...updates, updatedAt: new Date() }).where(eq(vaultHoldings.id, id)).returning();
+    return holding || undefined;
+  }
+
+  async createCertificateTx(txDb: DbClient, insertCertificate: InsertCertificate): Promise<Certificate> {
+    const [certificate] = await txDb.insert(certificates).values(insertCertificate).returning();
+    return certificate;
+  }
+
+  async updateCertificateTx(txDb: DbClient, id: string, updates: Partial<Certificate>): Promise<Certificate | undefined> {
+    const [certificate] = await txDb.update(certificates).set(updates).where(eq(certificates.id, id)).returning();
+    return certificate || undefined;
+  }
+
+  async createAuditLogTx(txDb: DbClient, insertLog: InsertAuditLog): Promise<AuditLog> {
+    const [log] = await txDb.insert(auditLogs).values(insertLog).returning();
+    return log;
   }
 }
 

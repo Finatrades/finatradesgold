@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote } from 'lucide-react';
+import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
 import NewDepositForm from '@/components/finavault/NewDepositForm';
 import RequestDetails from '@/components/finavault/RequestDetails';
 import CashOutForm from '@/components/finavault/CashOutForm';
+import CertificatesView from '@/components/finavault/CertificatesView';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -354,6 +355,14 @@ export default function FinaVault() {
                     <Banknote className="w-4 h-4 mr-2" />
                     Cash Out / Sell
                   </TabsTrigger>
+                  <TabsTrigger 
+                    value="certificates"
+                    className="flex-1 md:flex-none data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+                    data-testid="tab-certificates"
+                  >
+                    <Award className="w-4 h-4 mr-2" />
+                    Certificates
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="my-deposits" className="mt-0">
@@ -373,6 +382,10 @@ export default function FinaVault() {
 
                 <TabsContent value="cash-out">
                   <CashOutForm />
+                </TabsContent>
+
+                <TabsContent value="certificates">
+                  <CertificatesView />
                 </TabsContent>
               </Tabs>
             </motion.div>
