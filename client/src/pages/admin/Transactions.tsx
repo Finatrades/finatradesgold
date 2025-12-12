@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 
 interface Transaction {
   id: string;
@@ -140,9 +142,51 @@ export default function Transactions() {
             <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">All Transactions</h1>
             <p className="text-gray-500">Monitor all platform financial activities in real-time.</p>
           </div>
-          <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh">
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" data-testid="button-admin-export">
+                  <Download className="w-4 h-4 mr-2" /> Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem 
+                  onClick={() => exportToCSV(filteredTransactions.map(tx => ({
+                    id: tx.id,
+                    type: tx.type,
+                    status: tx.status,
+                    amountGold: tx.amountGold,
+                    amountUsd: tx.amountUsd,
+                    description: tx.description,
+                    createdAt: tx.createdAt,
+                  })), 'admin_transactions')}
+                  data-testid="button-admin-export-csv"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export to CSV
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => exportToPDF(filteredTransactions.map(tx => ({
+                    id: tx.id,
+                    type: tx.type,
+                    status: tx.status,
+                    amountGold: tx.amountGold,
+                    amountUsd: tx.amountUsd,
+                    description: tx.description,
+                    createdAt: tx.createdAt,
+                  })), 'Platform Transaction Report')}
+                  data-testid="button-admin-export-pdf"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export to PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh">
+              <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+            </Button>
+          </div>
         </div>
 
         {pendingCount > 0 && (

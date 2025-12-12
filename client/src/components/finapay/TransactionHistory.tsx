@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types/finapay';
-import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import TransactionDetailsModal from './modals/TransactionDetailsModal';
+import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
@@ -84,9 +85,51 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                  </DropdownMenuContent>
                </DropdownMenu>
 
-               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                 <Download className="w-4 h-4" />
-               </Button>
+               <DropdownMenu>
+                 <DropdownMenuTrigger asChild>
+                   <Button variant="outline" size="sm" className="h-8 bg-background border-border text-muted-foreground" data-testid="button-export-dropdown">
+                     <Download className="w-3.5 h-3.5 mr-2" />
+                     Export
+                   </Button>
+                 </DropdownMenuTrigger>
+                 <DropdownMenuContent className="bg-popover border-border text-foreground">
+                   <DropdownMenuItem 
+                     onClick={() => exportToCSV(filteredTransactions.map(tx => ({
+                       id: tx.id,
+                       type: tx.type,
+                       status: tx.status,
+                       amountGold: tx.amountGrams,
+                       amountUsd: tx.amountUsd,
+                       description: tx.description,
+                       referenceId: tx.referenceId,
+                       timestamp: tx.timestamp,
+                       assetType: tx.assetType
+                     })), 'finapay_transactions')}
+                     data-testid="button-export-csv"
+                   >
+                     <FileSpreadsheet className="w-4 h-4 mr-2" />
+                     Export to CSV
+                   </DropdownMenuItem>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem 
+                     onClick={() => exportToPDF(filteredTransactions.map(tx => ({
+                       id: tx.id,
+                       type: tx.type,
+                       status: tx.status,
+                       amountGold: tx.amountGrams,
+                       amountUsd: tx.amountUsd,
+                       description: tx.description,
+                       referenceId: tx.referenceId,
+                       timestamp: tx.timestamp,
+                       assetType: tx.assetType
+                     })), 'FinaPay Transaction History')}
+                     data-testid="button-export-pdf"
+                   >
+                     <FileText className="w-4 h-4 mr-2" />
+                     Export to PDF
+                   </DropdownMenuItem>
+                 </DropdownMenuContent>
+               </DropdownMenu>
             </div>
           </div>
         </CardHeader>
