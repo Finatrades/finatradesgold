@@ -4,294 +4,348 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, QrCode, Scan, Upload, X, ArrowRightLeft, User, Search } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useAuth } from '@/context/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
+import { toast } from 'sonner';
 
 interface SendGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
-  walletBalance: number; // USD Balance
-  goldBalance: number;   // Gold Balance in Grams
+  walletBalance: number;
+  goldBalance: number;
   onConfirm: (recipient: string, amount: number, asset: 'USD' | 'GOLD') => void;
 }
 
-const RECENT_CONTACTS = [
-  { id: 'u1', name: 'Alex Johnson', username: '@alex_crypto', avatar: 'AJ' },
-  { id: 'u2', name: 'Sarah Smith', username: '@sarah_gold', avatar: 'SS' },
-  { id: 'u3', name: 'Mike Ross', username: '@mike_r', avatar: 'MR' },
-  { id: 'u4', name: 'Emily Chen', username: '@emily_c', avatar: 'EC' },
-];
+interface FoundUser {
+  id: string;
+  finatradesId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
 
 export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBalance, onConfirm }: SendGoldModalProps) {
-  const [recipient, setRecipient] = useState('');
+  const { user } = useAuth();
+  const [identifier, setIdentifier] = useState('');
   const [amount, setAmount] = useState('');
-  const [assetType, setAssetType] = useState<'USD' | 'GOLD'>('USD');
-  const [note, setNote] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1);
+  const [memo, setMemo] = useState('');
+  const [step, setStep] = useState<'search' | 'confirm' | 'success'>('search');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('direct');
-  const [attachment, setAttachment] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [activeTab, setActiveTab] = useState<'email' | 'finatrades_id' | 'qr_code'>('email');
+  const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
+  const [searchError, setSearchError] = useState('');
+  const [transferRef, setTransferRef] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      setStep(1);
-      setRecipient('');
+      setStep('search');
+      setIdentifier('');
       setAmount('');
-      setAssetType('USD');
-      setNote('');
-      setOtp('');
+      setMemo('');
       setIsLoading(false);
-      setActiveTab('direct');
-      setAttachment(null);
+      setIsSearching(false);
+      setActiveTab('email');
+      setFoundUser(null);
+      setSearchError('');
+      setTransferRef('');
     }
   }, [isOpen]);
 
   const numericAmount = parseFloat(amount) || 0;
-  
-  // Determine max balance based on asset type
-  const currentBalance = assetType === 'USD' ? walletBalance : goldBalance;
-  const currencyLabel = assetType === 'USD' ? '$' : 'g';
 
-  const handleSendOtp = () => {
-    setStep(2);
+  const handleSearch = async () => {
+    if (!identifier.trim()) return;
+    
+    setIsSearching(true);
+    setSearchError('');
+    setFoundUser(null);
+    
+    try {
+      const res = await apiRequest('GET', `/api/finapay/search-user?identifier=${encodeURIComponent(identifier.trim())}`);
+      const data = await res.json();
+      
+      if (data.user) {
+        if (data.user.id === user?.id) {
+          setSearchError("You cannot send money to yourself");
+        } else {
+          setFoundUser(data.user);
+        }
+      }
+    } catch (error) {
+      setSearchError("User not found. Check the email or Finatrades ID.");
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  const handleConfirm = () => {
+  const handleConfirmSend = async () => {
+    if (!user || !foundUser || numericAmount <= 0) return;
+    
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const res = await apiRequest('POST', '/api/finapay/send', {
+        senderId: user.id,
+        recipientIdentifier: activeTab === 'email' ? foundUser.email : foundUser.finatradesId,
+        amountUsd: numericAmount.toFixed(2),
+        channel: activeTab,
+        memo: memo || null,
+      });
+      
+      const data = await res.json();
+      setTransferRef(data.transfer.referenceNumber);
+      setStep('success');
+      toast.success("Transfer successful!");
+      onConfirm(foundUser.email, numericAmount, 'USD');
+    } catch (error: any) {
+      toast.error(error.message || "Transfer failed");
+    } finally {
       setIsLoading(false);
-      onConfirm(recipient, numericAmount, assetType);
-    }, 1500);
+    }
   };
 
-  const handleAttachment = () => {
-    setAttachment('invoice_123.pdf');
-  };
-
-  const handleContactSelect = (username: string) => {
-    setRecipient(username);
+  const handleClose = () => {
+    setStep('search');
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border-border text-foreground sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="bg-white border-border text-foreground sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className={assetType === 'USD' ? "text-green-600" : "text-secondary"}>
-              Send {assetType === 'USD' ? 'USD' : 'Gold'}
-            </span>
+            <Send className="w-5 h-5 text-primary" />
+            <span>Send Money</span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Transfer assets instantly to another FinaPay user.
+            {step === 'search' && "Send USD instantly to any Finatrades user"}
+            {step === 'confirm' && "Review and confirm your transfer"}
+            {step === 'success' && "Transfer completed successfully"}
           </DialogDescription>
         </DialogHeader>
 
-        {step === 1 && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-muted border border-border mb-4">
-              <TabsTrigger value="direct">Direct Send</TabsTrigger>
-              <TabsTrigger value="scan">Scan QR</TabsTrigger>
-            </TabsList>
+        {step === 'search' && (
+          <div className="space-y-4 py-2">
+            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setFoundUser(null); setSearchError(''); setIdentifier(''); }}>
+              <TabsList className="grid w-full grid-cols-3 bg-muted border border-border">
+                <TabsTrigger value="email" className="text-xs">
+                  <Mail className="w-3 h-3 mr-1" />
+                  Email
+                </TabsTrigger>
+                <TabsTrigger value="finatrades_id" className="text-xs">
+                  <Hash className="w-3 h-3 mr-1" />
+                  Finatrades ID
+                </TabsTrigger>
+                <TabsTrigger value="qr_code" className="text-xs">
+                  <QrCode className="w-3 h-3 mr-1" />
+                  QR Code
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="direct" className="space-y-4">
-              
-              {/* Asset Selection */}
-              <div className="flex justify-center bg-muted p-1 rounded-lg border border-border">
-                 <button 
-                   onClick={() => setAssetType('USD')}
-                   className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'USD' ? 'bg-green-600 text-white' : 'text-muted-foreground hover:text-foreground'}`}
-                 >
-                   USD ($)
-                 </button>
-                 <button 
-                   onClick={() => setAssetType('GOLD')}
-                   className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${assetType === 'GOLD' ? 'bg-secondary text-white' : 'text-muted-foreground hover:text-foreground'}`}
-                 >
-                   Gold (g)
-                 </button>
-              </div>
-
-              <div className="space-y-3">
-                <Label>Recipient</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Username, Email, or ID" 
-                    className="bg-background border-input pl-9"
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                  />
-                </div>
-
-                {/* Recent Contacts Horizontal Scroll */}
+              <TabsContent value="email" className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Recent Contacts</Label>
-                  <ScrollArea className="w-full whitespace-nowrap">
-                    <div className="flex gap-2 pb-2">
-                      {RECENT_CONTACTS.map((contact) => (
-                        <button
-                          key={contact.id}
-                          onClick={() => handleContactSelect(contact.username)}
-                          className="flex flex-col items-center gap-1 min-w-[70px] p-2 rounded-lg hover:bg-muted/50 transition-colors group"
-                        >
-                          <Avatar className="w-10 h-10 border border-border group-hover:border-secondary/30 transition-colors">
-                            <AvatarFallback className="bg-muted text-muted-foreground text-xs">{contact.avatar}</AvatarFallback>
-                          </Avatar>
-                          <span className="text-[10px] text-muted-foreground truncate w-full text-center">{contact.name}</span>
-                        </button>
-                      ))}
+                  <Label>Recipient Email</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="recipient@email.com" 
+                        className="bg-background border-input pl-9"
+                        value={identifier}
+                        onChange={(e) => { setIdentifier(e.target.value); setFoundUser(null); setSearchError(''); }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      />
                     </div>
-                  </ScrollArea>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Amount ({assetType})</Label>
-                  <span className="text-xs text-muted-foreground">
-                    Available: {assetType === 'USD' ? '$' : ''}{currentBalance.toFixed(assetType === 'USD' ? 2 : 4)}{assetType === 'GOLD' ? ' g' : ''}
-                  </span>
-                </div>
-                <div className="relative">
-                   <Input 
-                     type="number" 
-                     placeholder="0.00" 
-                     className="bg-background border-input pl-8 text-lg font-medium"
-                     value={amount}
-                     onChange={(e) => setAmount(e.target.value)}
-                   />
-                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currencyLabel}</span>
-                   <Button 
-                     size="sm" 
-                     variant="ghost" 
-                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-secondary hover:text-secondary/80"
-                     onClick={() => setAmount(currentBalance.toString())}
-                   >
-                     MAX
-                   </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                   <Label>Note (Optional)</Label>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                     onClick={handleAttachment}
-                   >
-                     <Upload className="w-3 h-3 mr-1" />
-                     Upload File
-                   </Button>
-                </div>
-                
-                {attachment ? (
-                  <div className="flex items-center justify-between bg-muted/30 p-2 rounded border border-border text-sm">
-                    <div className="flex items-center text-foreground/80">
-                      <Upload className="w-3 h-3 mr-2" />
-                      {attachment}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-muted-foreground hover:text-red-500"
-                      onClick={() => setAttachment(null)}
-                    >
-                      <X className="w-3 h-3" />
+                    <Button onClick={handleSearch} disabled={isSearching || !identifier.trim()}>
+                      {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     </Button>
                   </div>
-                ) : (
+                </div>
+              </TabsContent>
+
+              <TabsContent value="finatrades_id" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Finatrades ID</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="FT12345678" 
+                        className="bg-background border-input pl-9 uppercase"
+                        value={identifier}
+                        onChange={(e) => { setIdentifier(e.target.value.toUpperCase()); setFoundUser(null); setSearchError(''); }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      />
+                    </div>
+                    <Button onClick={handleSearch} disabled={isSearching || !identifier.trim()}>
+                      {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="qr_code" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-2 border-dashed border-border rounded-xl h-[200px] flex flex-col items-center justify-center">
+                  <Scan className="w-12 h-12 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground text-sm font-medium">Scan recipient's QR code</p>
+                  <p className="text-xs text-muted-foreground mt-1">Camera access required</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Or enter Finatrades ID from QR</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="FT12345678" 
+                      className="bg-background border-input uppercase"
+                      value={identifier}
+                      onChange={(e) => { setIdentifier(e.target.value.toUpperCase()); setFoundUser(null); setSearchError(''); }}
+                    />
+                    <Button onClick={handleSearch} disabled={isSearching || !identifier.trim()}>
+                      {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            {searchError && (
+              <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+                <AlertCircle className="w-4 h-4" />
+                {searchError}
+              </div>
+            )}
+
+            {foundUser && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-green-300">
+                    <AvatarFallback className="bg-green-100 text-green-700 font-bold">
+                      {foundUser.firstName[0]}{foundUser.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold text-foreground">{foundUser.firstName} {foundUser.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{foundUser.email}</p>
+                    <p className="text-xs text-green-600 font-mono">{foundUser.finatradesId}</p>
+                  </div>
+                  <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto" />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Amount (USD)</Label>
+                    <span className="text-xs text-muted-foreground">Balance: ${walletBalance.toFixed(2)}</span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
+                    <Input 
+                      type="number" 
+                      placeholder="0.00" 
+                      className="bg-background border-input pl-8 text-lg font-medium"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-primary"
+                      onClick={() => setAmount(walletBalance.toString())}
+                    >
+                      MAX
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Note (Optional)</Label>
                   <Textarea 
                     placeholder="What's this for?" 
-                    className="bg-background border-input resize-none h-20"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
+                    className="bg-background border-input resize-none h-16"
+                    value={memo}
+                    onChange={(e) => setMemo(e.target.value)}
                   />
-                )}
+                </div>
+
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold"
+                  disabled={numericAmount <= 0 || numericAmount > walletBalance}
+                  onClick={() => setStep('confirm')}
+                >
+                  Continue to Review
+                </Button>
               </div>
-
-              <Button 
-                className={`w-full text-white font-bold ${assetType === 'USD' ? 'bg-green-600 hover:bg-green-700' : 'bg-secondary hover:bg-secondary/90'}`}
-                disabled={!recipient || numericAmount <= 0 || numericAmount > currentBalance}
-                onClick={handleSendOtp}
-              >
-                Next
-              </Button>
-            </TabsContent>
-
-            <TabsContent value="scan" className="space-y-4">
-              <div className="bg-muted/50 border-2 border-dashed border-border rounded-xl h-[250px] flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-green-500/50 transition-colors">
-                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-500/5 to-transparent animate-pulse pointer-events-none" />
-                 <Scan className="w-12 h-12 text-muted-foreground mb-3 group-hover:text-green-500 transition-colors" />
-                 <p className="text-muted-foreground text-sm font-medium">Click to Activate Camera</p>
-              </div>
-              
-              <Button 
-                className="w-full bg-muted text-foreground hover:bg-muted/80"
-                onClick={() => {
-                   setRecipient('@qr_scanned_user');
-                   setActiveTab('direct');
-                }}
-              >
-                Simulate Scan
-              </Button>
-            </TabsContent>
-          </Tabs>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-6 py-4">
-            <div className="bg-muted/30 p-6 rounded-xl border border-border text-center space-y-4">
-               <div className="space-y-1">
-                 <p className="text-muted-foreground text-sm uppercase tracking-wider">Review Transfer</p>
-                 <div className="flex items-center justify-center gap-2 text-2xl font-bold text-foreground">
-                   <Avatar className="w-8 h-8 border border-border">
-                      <AvatarFallback className="bg-secondary text-white text-xs font-bold">ME</AvatarFallback>
-                   </Avatar>
-                   <ArrowRightLeft className="w-5 h-5 text-muted-foreground" />
-                   <Avatar className="w-8 h-8 border border-border">
-                      <AvatarFallback className="bg-muted text-muted-foreground text-xs">TO</AvatarFallback>
-                   </Avatar>
-                 </div>
-               </div>
-               
-               <div>
-                 <p className={`text-3xl font-bold ${assetType === 'USD' ? 'text-green-600' : 'text-secondary'}`}>
-                   {assetType === 'USD' ? '$' : ''}{numericAmount.toFixed(assetType === 'USD' ? 2 : 4)}{assetType === 'GOLD' ? ' g' : ''}
-                 </p>
-                 <p className="text-muted-foreground text-sm mt-1">{recipient}</p>
-               </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-center block w-full">Security Verification</Label>
-              <div className="relative">
-                <Input 
-                  placeholder="000000" 
-                  className="bg-background border-input text-center tracking-[0.5em] text-2xl font-mono h-14"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  maxLength={6}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground text-center">Enter the 6-digit code sent to your device.</p>
-            </div>
-
-            <Button 
-              className={`w-full text-white font-bold h-12 ${assetType === 'USD' ? 'bg-green-600 hover:bg-green-700' : 'bg-secondary hover:bg-secondary/90'}`}
-              disabled={otp.length < 4 || isLoading}
-              onClick={handleConfirm}
-            >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
-              Confirm Transfer
-            </Button>
+            )}
           </div>
         )}
 
+        {step === 'confirm' && foundUser && (
+          <div className="space-y-6 py-4">
+            <div className="bg-muted/30 p-6 rounded-xl border border-border text-center space-y-4">
+              <div className="space-y-1">
+                <p className="text-muted-foreground text-sm uppercase tracking-wider">Sending To</p>
+                <div className="flex items-center justify-center gap-3">
+                  <Avatar className="w-12 h-12 border border-border">
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                      {foundUser.firstName[0]}{foundUser.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-left">
+                    <p className="font-semibold">{foundUser.firstName} {foundUser.lastName}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{foundUser.finatradesId}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-4xl font-bold text-primary">${numericAmount.toFixed(2)}</p>
+                {memo && <p className="text-muted-foreground text-sm mt-2">"{memo}"</p>}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setStep('search')}>
+                Back
+              </Button>
+              <Button 
+                className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold"
+                disabled={isLoading}
+                onClick={handleConfirmSend}
+              >
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+                Send Now
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'success' && foundUser && (
+          <div className="space-y-6 py-4 text-center">
+            <div className="flex justify-center">
+              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="w-10 h-10 text-green-500" />
+              </div>
+            </div>
+            
+            <div>
+              <p className="text-2xl font-bold text-foreground">Transfer Complete!</p>
+              <p className="text-muted-foreground mt-1">
+                ${numericAmount.toFixed(2)} sent to {foundUser.firstName}
+              </p>
+            </div>
+
+            <div className="bg-muted/30 p-4 rounded-lg text-sm">
+              <p className="text-muted-foreground">Reference Number</p>
+              <p className="font-mono font-bold text-foreground">{transferRef}</p>
+            </div>
+
+            <Button className="w-full" onClick={handleClose}>
+              Done
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
