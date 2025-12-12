@@ -35,6 +35,8 @@ export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'adm
 // USERS & AUTH
 // ============================================
 
+export const mfaMethodEnum = pgEnum('mfa_method', ['totp', 'email']);
+
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email", { length: 255 }).notNull().unique(),
@@ -49,6 +51,11 @@ export const users = pgTable("users", {
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
   emailVerificationCode: varchar("email_verification_code", { length: 10 }),
   emailVerificationExpiry: timestamp("email_verification_expiry"),
+  // MFA fields
+  mfaEnabled: boolean("mfa_enabled").notNull().default(false),
+  mfaMethod: mfaMethodEnum("mfa_method"),
+  mfaSecret: varchar("mfa_secret", { length: 255 }),
+  mfaBackupCodes: text("mfa_backup_codes"), // JSON array of hashed backup codes
   // Business fields (for business accounts)
   companyName: varchar("company_name", { length: 255 }),
   registrationNumber: varchar("registration_number", { length: 100 }),
@@ -70,6 +77,11 @@ export const insertUserSchema = createInsertSchema(users)
     country: z.string().nullable().optional(),
     companyName: z.string().nullable().optional(),
     registrationNumber: z.string().nullable().optional(),
+    // MFA fields
+    mfaEnabled: z.boolean().optional(),
+    mfaMethod: z.enum(['totp', 'email']).nullable().optional(),
+    mfaSecret: z.string().nullable().optional(),
+    mfaBackupCodes: z.string().nullable().optional(),
   });
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = z.infer<typeof insertUserSchema>;
