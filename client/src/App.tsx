@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import FinaVault from "@/pages/FinaVault";
@@ -111,32 +112,34 @@ import { FeeProvider } from "@/context/FeeContext";
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <AuthProvider>
-          <FeeProvider>
-            <PlatformProvider>
-              <TradeFinanceProvider>
-                <BnslProvider>
-                  <FinaPayProvider>
-                  <LanguageProvider>
-                    <AccountTypeProvider>
-                      <NotificationProvider>
-                        <TooltipProvider>
-                          <Toaster />
-                          <Router />
-                        </TooltipProvider>
-                      </NotificationProvider>
-                    </AccountTypeProvider>
-                  </LanguageProvider>
-                </FinaPayProvider>
-                </BnslProvider>
-              </TradeFinanceProvider>
-            </PlatformProvider>
-          </FeeProvider>
-        </AuthProvider>
-      </UserProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <UserProvider>
+          <AuthProvider>
+            <FeeProvider>
+              <PlatformProvider>
+                <TradeFinanceProvider>
+                  <BnslProvider>
+                    <FinaPayProvider>
+                    <LanguageProvider>
+                      <AccountTypeProvider>
+                        <NotificationProvider>
+                          <TooltipProvider>
+                            <Toaster />
+                            <Router />
+                          </TooltipProvider>
+                        </NotificationProvider>
+                      </AccountTypeProvider>
+                    </LanguageProvider>
+                  </FinaPayProvider>
+                  </BnslProvider>
+                </TradeFinanceProvider>
+              </PlatformProvider>
+            </FeeProvider>
+          </AuthProvider>
+        </UserProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

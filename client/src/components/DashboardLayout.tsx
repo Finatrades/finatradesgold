@@ -9,6 +9,7 @@ import { Menu, Briefcase, User as UserIcon, AlertTriangle, ArrowRight, Clock } f
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'wouter';
 
@@ -135,6 +136,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="hidden md:block">
                 <LanguageSwitcher />
               </div>
+
+              <ThemeToggle />
 
               <NotificationCenter />
               
