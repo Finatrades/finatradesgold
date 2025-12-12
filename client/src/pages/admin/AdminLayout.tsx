@@ -33,6 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Overview', href: '/admin' },
     { icon: <Users className="w-5 h-5" />, label: 'User Management', href: '/admin/users' },
     { icon: <ShieldAlert className="w-5 h-5" />, label: 'KYC Reviews', href: '/admin/kyc' },
+    { icon: <ArrowRightLeft className="w-5 h-5" />, label: 'All Transactions', href: '/admin/transactions' },
     { icon: <CreditCard className="w-5 h-5" />, label: 'FinaPay Manager', href: '/admin/finapay' },
     { icon: <Package className="w-5 h-5" />, label: 'FinaVault Manager', href: '/admin/vault' },
     { icon: <Briefcase className="w-5 h-5" />, label: 'FinaBridge Manager', href: '/admin/finabridge' },
