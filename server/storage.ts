@@ -42,11 +42,13 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getUserTransactions(userId: string): Promise<Transaction[]>;
+  getAllTransactions(): Promise<Transaction[]>;
   updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined>;
   
   // Vault Holdings
   getVaultHolding(id: string): Promise<VaultHolding | undefined>;
   getUserVaultHoldings(userId: string): Promise<VaultHolding[]>;
+  getAllVaultHoldings(): Promise<VaultHolding[]>;
   createVaultHolding(holding: InsertVaultHolding): Promise<VaultHolding>;
   updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined>;
   
@@ -169,6 +171,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.createdAt));
   }
 
+  async getAllTransactions(): Promise<Transaction[]> {
+    return await db.select().from(transactions).orderBy(desc(transactions.createdAt));
+  }
+
   async updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
     const [transaction] = await db.update(transactions).set(updates).where(eq(transactions.id, id)).returning();
     return transaction || undefined;
@@ -182,6 +188,10 @@ export class DatabaseStorage implements IStorage {
 
   async getUserVaultHoldings(userId: string): Promise<VaultHolding[]> {
     return await db.select().from(vaultHoldings).where(eq(vaultHoldings.userId, userId)).orderBy(desc(vaultHoldings.createdAt));
+  }
+
+  async getAllVaultHoldings(): Promise<VaultHolding[]> {
+    return await db.select().from(vaultHoldings).orderBy(desc(vaultHoldings.createdAt));
   }
 
   async createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding> {

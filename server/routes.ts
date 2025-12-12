@@ -224,11 +224,91 @@ export async function registerRoutes(
     }
   });
   
-  // Create transaction
+  // Create transaction with automatic wallet and vault updates
   app.post("/api/transactions", async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
       const transaction = await storage.createTransaction(transactionData);
+      
+      // Get user wallet to update balances
+      const wallet = await storage.getWallet(transactionData.userId);
+      if (wallet && transaction.status === 'Completed') {
+        const goldAmount = parseFloat(transaction.amountGold || '0');
+        const usdAmount = parseFloat(transaction.amountUsd || '0');
+        const currentGold = parseFloat(wallet.goldGrams || '0');
+        const currentUsd = parseFloat(wallet.usdBalance || '0');
+        
+        let newGoldBalance = currentGold;
+        let newUsdBalance = currentUsd;
+        
+        switch (transaction.type) {
+          case 'Buy':
+            // User pays USD (from wallet if available), receives gold
+            newGoldBalance = currentGold + goldAmount;
+            // Deduct USD from wallet if user has sufficient balance
+            if (currentUsd >= usdAmount) {
+              newUsdBalance = currentUsd - usdAmount;
+            }
+            // If insufficient USD, payment is assumed to be external (card/bank)
+            break;
+          case 'Sell':
+            // User sells gold, receives USD
+            newGoldBalance = currentGold - goldAmount;
+            newUsdBalance = currentUsd + usdAmount;
+            break;
+          case 'Send':
+            // User sends gold to another user
+            newGoldBalance = currentGold - goldAmount;
+            break;
+          case 'Receive':
+            // User receives gold from another user
+            newGoldBalance = currentGold + goldAmount;
+            break;
+          case 'Deposit':
+            // Physical gold deposited, credited digitally
+            newGoldBalance = currentGold + goldAmount;
+            break;
+          case 'Withdrawal':
+            // Physical gold withdrawn
+            newGoldBalance = currentGold - goldAmount;
+            break;
+        }
+        
+        // Update wallet with new balances
+        await storage.updateWallet(wallet.id, {
+          goldGrams: newGoldBalance.toFixed(6),
+          usdBalance: newUsdBalance.toFixed(2)
+        });
+        
+        // Create/update FinaVault holding for ownership record
+        const existingHoldings = await storage.getUserVaultHoldings(transactionData.userId);
+        if (existingHoldings.length > 0) {
+          // Update existing holding
+          const holding = existingHoldings[0];
+          const holdingGold = parseFloat(holding.goldGrams || '0');
+          let newHoldingGold = holdingGold;
+          
+          if (['Buy', 'Receive', 'Deposit'].includes(transaction.type)) {
+            newHoldingGold = holdingGold + goldAmount;
+          } else if (['Sell', 'Send', 'Withdrawal'].includes(transaction.type)) {
+            newHoldingGold = holdingGold - goldAmount;
+          }
+          
+          await storage.updateVaultHolding(holding.id, {
+            goldGrams: newHoldingGold.toFixed(6),
+            lastAuditDate: new Date()
+          });
+        } else if (['Buy', 'Receive', 'Deposit'].includes(transaction.type) && goldAmount > 0) {
+          // Create new vault holding
+          await storage.createVaultHolding({
+            userId: transactionData.userId,
+            goldGrams: goldAmount.toFixed(6),
+            storageLocation: 'Dubai DMCC Vault',
+            custodian: 'Wingold & Metals DMCC',
+            status: 'Active'
+          });
+        }
+      }
       
       // Create audit log
       await storage.createAuditLog({
@@ -237,7 +317,7 @@ export async function registerRoutes(
         actionType: "create",
         actor: transactionData.userId,
         actorRole: "user",
-        details: `Transaction type: ${transactionData.type}`,
+        details: `Transaction type: ${transactionData.type}, Gold: ${transaction.amountGold || 0}g, USD: $${transaction.amountUsd || 0}`,
       });
       
       res.json({ transaction });
@@ -266,6 +346,16 @@ export async function registerRoutes(
       res.json({ transaction });
     } catch (error) {
       res.status(400).json({ message: "Failed to update transaction" });
+    }
+  });
+  
+  // Admin: Get all transactions
+  app.get("/api/admin/transactions", async (req, res) => {
+    try {
+      const transactions = await storage.getAllTransactions();
+      res.json({ transactions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get all transactions" });
     }
   });
   
@@ -315,6 +405,16 @@ export async function registerRoutes(
       res.json({ holding });
     } catch (error) {
       res.status(400).json({ message: "Failed to update holding" });
+    }
+  });
+  
+  // Admin: Get all vault holdings
+  app.get("/api/admin/vault", async (req, res) => {
+    try {
+      const holdings = await storage.getAllVaultHoldings();
+      res.json({ holdings });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get all vault holdings" });
     }
   });
   
