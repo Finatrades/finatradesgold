@@ -9,9 +9,10 @@ import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { 
   Vault, Wallet, TrendingUp, Globe, ArrowRight, Shield, Zap, Clock, 
-  Building2, User, FileCheck, CreditCard, Award, BarChart3, Lock,
+  Building2, User, FileCheck, Award, BarChart3, Lock,
   Users, FileText, Landmark, CheckCircle2
 } from 'lucide-react';
+import FinatradesLogo from '@/components/FinatradesLogo';
 
 export default function Home() {
   const { accountType, setAccountType } = useAccountType();
@@ -220,14 +221,9 @@ export default function Home() {
 
                       <div className="relative z-10 h-full flex flex-col justify-between">
                         <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#E91E8C] to-[#9333EA] rounded-lg flex items-center justify-center">
-                              <CheckCircle2 className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="text-white font-bold text-lg tracking-wide">FINATRADES</span>
-                          </div>
+                          <FinatradesLogo variant="white" size="sm" />
                           <div className="flex flex-col items-end">
-                            <span className="text-[#E91E8C] text-xs font-semibold">GOLD CARD</span>
+                            <span className="text-[#D4A020] text-xs font-semibold">GOLD CARD</span>
                             <span className="text-gray-400 text-[10px]">PREMIUM</span>
                           </div>
                         </div>

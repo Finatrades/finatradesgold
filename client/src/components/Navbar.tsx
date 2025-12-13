@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Building2, LogOut, LayoutDashboard, Menu, X, Check } from 'lucide-react';
+import { User, Building2, LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
+import FinatradesLogo from '@/components/FinatradesLogo';
 
 export default function Navbar() {
   const { t, language } = useLanguage();
@@ -60,11 +61,8 @@ export default function Navbar() {
     }`} data-testid="navbar">
       <div className="container mx-auto px-6 h-20 flex items-center justify-between">
         <Link href="/">
-          <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home-logo">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#E91E8C] to-[#9333EA] rounded-lg flex items-center justify-center">
-              <Check className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">FINATRADES</span>
+          <div className="cursor-pointer" data-testid="link-home-logo">
+            <FinatradesLogo variant="color" size="md" />
           </div>
         </Link>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'wouter';
-import { Check } from 'lucide-react';
+import FinatradesLogo from '@/components/FinatradesLogo';
 
 export default function Footer() {
   const quickLinks = [
@@ -34,11 +34,8 @@ export default function Footer() {
       <div className="container mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div className="lg:col-span-1">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#E91E8C] to-[#9333EA] rounded-lg flex items-center justify-center">
-                <Check className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold tracking-tight">FINATRADES</span>
+            <div className="mb-6">
+              <FinatradesLogo variant="color" size="md" />
             </div>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Swiss-regulated gold-backed financial infrastructure designed for corporates, importers, exporters, and trading houses seeking secure and compliant solutions.
