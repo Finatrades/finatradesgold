@@ -473,6 +473,75 @@ export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
 export type Certificate = typeof certificates.$inferSelect;
 
 // ============================================
+// INVOICES - GOLD PURCHASE INVOICES
+// ============================================
+
+export const invoiceStatusEnum = pgEnum('invoice_status', ['Generated', 'Sent', 'Failed']);
+
+export const invoices = pgTable("invoices", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNumber: varchar("invoice_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  
+  issuer: varchar("issuer", { length: 255 }).notNull().default('Wingold and Metals DMCC'),
+  issuerAddress: text("issuer_address"),
+  issuerTaxId: varchar("issuer_tax_id", { length: 100 }),
+  
+  customerName: varchar("customer_name", { length: 255 }).notNull(),
+  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
+  customerAddress: text("customer_address"),
+  
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }).notNull(),
+  subtotalUsd: decimal("subtotal_usd", { precision: 18, scale: 2 }).notNull(),
+  feesUsd: decimal("fees_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  totalUsd: decimal("total_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  paymentMethod: varchar("payment_method", { length: 100 }),
+  paymentReference: varchar("payment_reference", { length: 255 }),
+  
+  status: invoiceStatusEnum("status").notNull().default('Generated'),
+  pdfData: text("pdf_data"), // Base64 encoded PDF
+  
+  issuedAt: timestamp("issued_at").notNull().defaultNow(),
+  emailedAt: timestamp("emailed_at"),
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, issuedAt: true });
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+
+// ============================================
+// CERTIFICATE DELIVERIES - EMAIL TRACKING
+// ============================================
+
+export const deliveryStatusEnum = pgEnum('delivery_status', ['Pending', 'Sent', 'Failed', 'Resent']);
+
+export const certificateDeliveries = pgTable("certificate_deliveries", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  certificateId: varchar("certificate_id", { length: 255 }).notNull().references(() => certificates.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  
+  deliveryMethod: varchar("delivery_method", { length: 50 }).notNull().default('email'),
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  
+  status: deliveryStatusEnum("status").notNull().default('Pending'),
+  pdfData: text("pdf_data"), // Base64 encoded PDF
+  
+  sentAt: timestamp("sent_at"),
+  failureReason: text("failure_reason"),
+  retryCount: integer("retry_count").notNull().default(0),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCertificateDeliverySchema = createInsertSchema(certificateDeliveries).omit({ id: true, createdAt: true });
+export type InsertCertificateDelivery = z.infer<typeof insertCertificateDeliverySchema>;
+export type CertificateDelivery = typeof certificateDeliveries.$inferSelect;
+
+// ============================================
 // FINAVAULT - DEPOSIT & WITHDRAWAL REQUESTS
 // ============================================
 
