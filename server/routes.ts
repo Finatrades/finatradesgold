@@ -3523,6 +3523,35 @@ export async function registerRoutes(
     }
   });
   
+  // === Branding Settings ===
+  
+  // Get branding settings (Public - for theming)
+  app.get("/api/branding", async (req, res) => {
+    try {
+      const settings = await storage.getOrCreateBrandingSettings();
+      res.json({ settings });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get branding settings" });
+    }
+  });
+  
+  // Update branding settings (Admin only)
+  app.patch("/api/admin/branding", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const updates = req.body;
+      const settings = await storage.updateBrandingSettings({
+        ...updates,
+        updatedBy: req.user.id
+      });
+      res.json({ settings });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update branding settings" });
+    }
+  });
+  
   // === Public Content API (for frontend consumption) ===
   
   // Get content by page slug (Public)

@@ -29,43 +29,65 @@
 }
 
 :root {
+  /* Brand Variables - Set dynamically via BrandingContext */
+  --brand-primary: #f97316;
+  --brand-primary-foreground: #ffffff;
+  --brand-secondary: #eab308;
+  --brand-secondary-foreground: #ffffff;
+  --brand-accent: #f59e0b;
+  --brand-button-radius: 0.5rem;
+  --brand-button-primary-bg: #f97316;
+  --brand-button-primary-text: #ffffff;
+  --brand-button-secondary-bg: #f3f4f6;
+  --brand-button-secondary-text: #1f2937;
+  --brand-font-family: 'Inter', system-ui, sans-serif;
+  --brand-heading-font-family: var(--brand-font-family);
+  --brand-background: #ffffff;
+  --brand-card-background: #ffffff;
+  --brand-sidebar-background: #1f2937;
+  --brand-border-radius: 0.5rem;
+  --brand-border-color: #e5e7eb;
+
   /* Light Theme with Orange Gradient Aesthetic */
   
-  /* White Background */
-  --background: hsl(0 0% 100%);
+  /* Background - uses brand background color */
+  --background: var(--brand-background);
   --foreground: hsl(20 14% 4%); /* Almost black with hint of brown */
 
-  /* Cards - White with subtle border/shadow */
-  --card: hsl(0 0% 100%);
+  /* Cards - uses brand card background color */
+  --card: var(--brand-card-background);
   --card-foreground: hsl(20 14% 4%);
 
-  --popover: hsl(0 0% 100%);
+  --popover: var(--brand-card-background);
   --popover-foreground: hsl(20 14% 4%);
+  
+  /* Sidebar background */
+  --sidebar-background: var(--brand-sidebar-background);
 
-  /* Primary Orange Gradient Base - #FF6B00 */
-  --primary: hsl(25 100% 50%);
-  --primary-foreground: hsl(0 0% 100%);
+  /* Primary - uses brand primary color */
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-foreground);
 
-  /* Secondary - Lighter Orange/Gold #FF9500 */
-  --secondary: hsl(35 100% 50%);
-  --secondary-foreground: hsl(0 0% 100%);
+  /* Secondary - uses brand secondary color */
+  --secondary: var(--brand-secondary);
+  --secondary-foreground: var(--brand-secondary-foreground);
 
   /* Muted backgrounds - Very light orange/gray */
   --muted: hsl(30 20% 96%);
   --muted-foreground: hsl(25 5% 45%);
 
-  /* Accent - Deep Orange/Red for gradients */
-  --accent: hsl(15 90% 55%);
+  /* Accent - uses brand accent color */
+  --accent: var(--brand-accent);
   --accent-foreground: hsl(0 0% 100%);
 
   --destructive: hsl(0 84% 60%);
   --destructive-foreground: hsl(0 0% 98%);
 
-  --border: hsl(30 10% 90%);
-  --input: hsl(30 10% 90%);
-  --ring: hsl(25 100% 50%);
+  --border: var(--brand-border-color);
+  --input: var(--brand-border-color);
+  --ring: var(--brand-primary);
 
-  --radius: 0.75rem;
+  --radius: var(--brand-border-radius);
 }
 
 .dark {
@@ -111,7 +133,11 @@
     @apply border-border;
   }
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply antialiased bg-background text-foreground;
+    font-family: var(--brand-font-family);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--brand-heading-font-family);
   }
 }
 

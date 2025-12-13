@@ -11,6 +11,7 @@ import {
   peerTransfers, peerRequests,
   vaultDepositRequests, vaultWithdrawalRequests,
   binanceTransactions,
+  brandingSettings,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -46,7 +47,8 @@ import {
   type PeerRequest, type InsertPeerRequest,
   type VaultDepositRequest, type InsertVaultDepositRequest,
   type VaultWithdrawalRequest, type InsertVaultWithdrawalRequest,
-  type BinanceTransaction, type InsertBinanceTransaction
+  type BinanceTransaction, type InsertBinanceTransaction,
+  type BrandingSettings, type InsertBrandingSettings
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -348,6 +350,11 @@ export interface IStorage {
   getAllMediaAssets(): Promise<MediaAsset[]>;
   createMediaAsset(asset: InsertMediaAsset): Promise<MediaAsset>;
   deleteMediaAsset(id: string): Promise<boolean>;
+  
+  // Branding Settings
+  getBrandingSettings(): Promise<BrandingSettings | undefined>;
+  getOrCreateBrandingSettings(): Promise<BrandingSettings>;
+  updateBrandingSettings(updates: Partial<BrandingSettings>): Promise<BrandingSettings | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1411,6 +1418,29 @@ export class DatabaseStorage implements IStorage {
   async updateBinanceTransactionByMerchantTradeNo(merchantTradeNo: string, updates: Partial<BinanceTransaction>): Promise<BinanceTransaction | undefined> {
     const [transaction] = await db.update(binanceTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(binanceTransactions.merchantTradeNo, merchantTradeNo)).returning();
     return transaction || undefined;
+  }
+
+  // ============================================
+  // BRANDING SETTINGS
+  // ============================================
+
+  async getBrandingSettings(): Promise<BrandingSettings | undefined> {
+    const [settings] = await db.select().from(brandingSettings).where(eq(brandingSettings.isActive, true)).limit(1);
+    return settings || undefined;
+  }
+
+  async getOrCreateBrandingSettings(): Promise<BrandingSettings> {
+    const existing = await this.getBrandingSettings();
+    if (existing) return existing;
+    
+    const [settings] = await db.insert(brandingSettings).values({}).returning();
+    return settings;
+  }
+
+  async updateBrandingSettings(updates: Partial<BrandingSettings>): Promise<BrandingSettings | undefined> {
+    const existing = await this.getOrCreateBrandingSettings();
+    const [settings] = await db.update(brandingSettings).set({ ...updates, updatedAt: new Date() }).where(eq(brandingSettings.id, existing.id)).returning();
+    return settings || undefined;
   }
 }
 

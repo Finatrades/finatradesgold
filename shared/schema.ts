@@ -1066,3 +1066,61 @@ export const binanceTransactions = pgTable("binance_transactions", {
 export const insertBinanceTransactionSchema = createInsertSchema(binanceTransactions).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertBinanceTransaction = z.infer<typeof insertBinanceTransactionSchema>;
 export type BinanceTransaction = typeof binanceTransactions.$inferSelect;
+
+// ============================================
+// BRANDING & THEME SETTINGS
+// ============================================
+
+export const brandingSettings = pgTable("branding_settings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Company Info
+  companyName: varchar("company_name", { length: 255 }).notNull().default('Finatrades'),
+  tagline: varchar("tagline", { length: 500 }),
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
+  
+  // Colors - Primary theme
+  primaryColor: varchar("primary_color", { length: 20 }).notNull().default('#f97316'),
+  primaryForeground: varchar("primary_foreground", { length: 20 }).notNull().default('#ffffff'),
+  secondaryColor: varchar("secondary_color", { length: 20 }).notNull().default('#eab308'),
+  secondaryForeground: varchar("secondary_foreground", { length: 20 }).notNull().default('#ffffff'),
+  accentColor: varchar("accent_color", { length: 20 }).notNull().default('#f59e0b'),
+  
+  // Button styles
+  buttonRadius: varchar("button_radius", { length: 20 }).notNull().default('0.5rem'),
+  buttonPrimaryBg: varchar("button_primary_bg", { length: 20 }).notNull().default('#f97316'),
+  buttonPrimaryText: varchar("button_primary_text", { length: 20 }).notNull().default('#ffffff'),
+  buttonSecondaryBg: varchar("button_secondary_bg", { length: 20 }).notNull().default('#f3f4f6'),
+  buttonSecondaryText: varchar("button_secondary_text", { length: 20 }).notNull().default('#1f2937'),
+  
+  // Typography
+  fontFamily: varchar("font_family", { length: 100 }).notNull().default('Inter'),
+  headingFontFamily: varchar("heading_font_family", { length: 100 }),
+  
+  // Background colors
+  backgroundColor: varchar("background_color", { length: 20 }).notNull().default('#ffffff'),
+  cardBackground: varchar("card_background", { length: 20 }).notNull().default('#ffffff'),
+  sidebarBackground: varchar("sidebar_background", { length: 20 }).notNull().default('#1f2937'),
+  
+  // Border and effects
+  borderRadius: varchar("border_radius", { length: 20 }).notNull().default('0.5rem'),
+  borderColor: varchar("border_color", { length: 20 }).notNull().default('#e5e7eb'),
+  
+  // Navigation link names (JSON for custom names)
+  navLinkNames: json("nav_link_names").$type<Record<string, string>>(),
+  
+  // Footer
+  footerText: text("footer_text"),
+  socialLinks: json("social_links").$type<{twitter?: string; linkedin?: string; facebook?: string; instagram?: string}>(),
+  
+  // Meta
+  isActive: boolean("is_active").notNull().default(true),
+  updatedBy: varchar("updated_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBrandingSettingsSchema = createInsertSchema(brandingSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBrandingSettings = z.infer<typeof insertBrandingSettingsSchema>;
+export type BrandingSettings = typeof brandingSettings.$inferSelect;

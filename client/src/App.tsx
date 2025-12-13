@@ -109,35 +109,38 @@ function Router() {
 
 import { BnslProvider } from "@/context/BnslContext";
 import { FeeProvider } from "@/context/FeeContext";
+import { BrandingProvider } from "@/context/BrandingContext";
 
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
-        <UserProvider>
-          <AuthProvider>
-            <FeeProvider>
-              <PlatformProvider>
-                <TradeFinanceProvider>
-                  <BnslProvider>
-                    <FinaPayProvider>
-                    <LanguageProvider>
-                      <AccountTypeProvider>
-                        <NotificationProvider>
-                          <TooltipProvider>
-                            <Toaster />
-                            <Router />
-                          </TooltipProvider>
-                        </NotificationProvider>
-                      </AccountTypeProvider>
-                    </LanguageProvider>
-                  </FinaPayProvider>
-                  </BnslProvider>
-                </TradeFinanceProvider>
-              </PlatformProvider>
-            </FeeProvider>
-          </AuthProvider>
-        </UserProvider>
+        <BrandingProvider>
+          <UserProvider>
+            <AuthProvider>
+              <FeeProvider>
+                <PlatformProvider>
+                  <TradeFinanceProvider>
+                    <BnslProvider>
+                      <FinaPayProvider>
+                        <LanguageProvider>
+                          <AccountTypeProvider>
+                            <NotificationProvider>
+                              <TooltipProvider>
+                                <Toaster />
+                                <Router />
+                              </TooltipProvider>
+                            </NotificationProvider>
+                          </AccountTypeProvider>
+                        </LanguageProvider>
+                      </FinaPayProvider>
+                    </BnslProvider>
+                  </TradeFinanceProvider>
+                </PlatformProvider>
+              </FeeProvider>
+            </AuthProvider>
+          </UserProvider>
+        </BrandingProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

@@ -86,6 +86,29 @@ export default function CMSManagement() {
     }
   });
 
+  const { data: brandingData, isLoading: brandingLoading } = useQuery({
+    queryKey: ['/api/branding'],
+    queryFn: async () => {
+      const res = await fetch('/api/branding');
+      return res.json();
+    }
+  });
+
+  const updateBrandingMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch('/api/admin/branding', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/branding'] });
+      toast({ title: 'Branding updated successfully' });
+    }
+  });
+
   const createPageMutation = useMutation({
     mutationFn: async (data: Partial<ContentPage>) => {
       const res = await fetch('/api/admin/cms/pages', {
@@ -250,7 +273,7 @@ export default function CMSManagement() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-xl">
             <TabsTrigger value="pages" className="flex gap-2" data-testid="tab-pages">
               <FileText className="w-4 h-4" />
               Pages
@@ -262,6 +285,10 @@ export default function CMSManagement() {
             <TabsTrigger value="templates" className="flex gap-2" data-testid="tab-templates">
               <Layout className="w-4 h-4" />
               Templates
+            </TabsTrigger>
+            <TabsTrigger value="branding" className="flex gap-2" data-testid="tab-branding">
+              <Settings className="w-4 h-4" />
+              Branding
             </TabsTrigger>
           </TabsList>
 
@@ -551,6 +578,15 @@ export default function CMSManagement() {
                 ))
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="branding" className="mt-6">
+            <BrandingTab 
+              settings={brandingData?.settings} 
+              isLoading={brandingLoading}
+              onSave={(data) => updateBrandingMutation.mutate(data)}
+              isPending={updateBrandingMutation.isPending}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -1575,5 +1611,416 @@ function QuickAddTemplates({
         </CollapsibleContent>
       </Card>
     </Collapsible>
+  );
+}
+
+function BrandingTab({
+  settings,
+  isLoading,
+  onSave,
+  isPending
+}: {
+  settings: any;
+  isLoading: boolean;
+  onSave: (data: any) => void;
+  isPending: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    companyName: '',
+    tagline: '',
+    logoUrl: '',
+    faviconUrl: '',
+    primaryColor: '#f97316',
+    primaryForeground: '#ffffff',
+    secondaryColor: '#eab308',
+    secondaryForeground: '#ffffff',
+    accentColor: '#f59e0b',
+    buttonRadius: '0.5rem',
+    buttonPrimaryBg: '#f97316',
+    buttonPrimaryText: '#ffffff',
+    buttonSecondaryBg: '#f3f4f6',
+    buttonSecondaryText: '#1f2937',
+    fontFamily: 'Inter',
+    headingFontFamily: '',
+    backgroundColor: '#ffffff',
+    cardBackground: '#ffffff',
+    sidebarBackground: '#1f2937',
+    borderRadius: '0.5rem',
+    borderColor: '#e5e7eb',
+    footerText: '',
+    twitterUrl: '',
+    linkedinUrl: '',
+    facebookUrl: '',
+    instagramUrl: ''
+  });
+
+  React.useEffect(() => {
+    if (settings) {
+      setFormData({
+        companyName: settings.companyName || 'Finatrades',
+        tagline: settings.tagline || '',
+        logoUrl: settings.logoUrl || '',
+        faviconUrl: settings.faviconUrl || '',
+        primaryColor: settings.primaryColor || '#f97316',
+        primaryForeground: settings.primaryForeground || '#ffffff',
+        secondaryColor: settings.secondaryColor || '#eab308',
+        secondaryForeground: settings.secondaryForeground || '#ffffff',
+        accentColor: settings.accentColor || '#f59e0b',
+        buttonRadius: settings.buttonRadius || '0.5rem',
+        buttonPrimaryBg: settings.buttonPrimaryBg || '#f97316',
+        buttonPrimaryText: settings.buttonPrimaryText || '#ffffff',
+        buttonSecondaryBg: settings.buttonSecondaryBg || '#f3f4f6',
+        buttonSecondaryText: settings.buttonSecondaryText || '#1f2937',
+        fontFamily: settings.fontFamily || 'Inter',
+        headingFontFamily: settings.headingFontFamily || '',
+        backgroundColor: settings.backgroundColor || '#ffffff',
+        cardBackground: settings.cardBackground || '#ffffff',
+        sidebarBackground: settings.sidebarBackground || '#1f2937',
+        borderRadius: settings.borderRadius || '0.5rem',
+        borderColor: settings.borderColor || '#e5e7eb',
+        footerText: settings.footerText || '',
+        twitterUrl: settings.socialLinks?.twitter || '',
+        linkedinUrl: settings.socialLinks?.linkedin || '',
+        facebookUrl: settings.socialLinks?.facebook || '',
+        instagramUrl: settings.socialLinks?.instagram || ''
+      });
+    }
+  }, [settings]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const dataToSave = {
+      ...formData,
+      socialLinks: {
+        twitter: formData.twitterUrl || null,
+        linkedin: formData.linkedinUrl || null,
+        facebook: formData.facebookUrl || null,
+        instagram: formData.instagramUrl || null
+      }
+    };
+    delete (dataToSave as any).twitterUrl;
+    delete (dataToSave as any).linkedinUrl;
+    delete (dataToSave as any).facebookUrl;
+    delete (dataToSave as any).instagramUrl;
+    onSave(dataToSave);
+  };
+
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const ColorInput = ({ label, field, value }: { label: string; field: string; value: string }) => (
+    <div className="flex items-center gap-3">
+      <div className="flex-1">
+        <Label className="text-sm text-gray-600">{label}</Label>
+        <div className="flex gap-2 mt-1">
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => updateField(field, e.target.value)}
+            className="w-10 h-10 rounded cursor-pointer border border-gray-200"
+            data-testid={`input-color-${field}`}
+          />
+          <Input
+            value={value}
+            onChange={(e) => updateField(field, e.target.value)}
+            placeholder="#000000"
+            className="flex-1"
+            data-testid={`input-text-${field}`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8 text-gray-500">Loading branding settings...</div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Type className="w-5 h-5" />
+              Company Identity
+            </CardTitle>
+            <CardDescription>Basic company branding information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="companyName">Company Name</Label>
+              <Input
+                id="companyName"
+                value={formData.companyName}
+                onChange={(e) => updateField('companyName', e.target.value)}
+                placeholder="Your Company Name"
+                data-testid="input-company-name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tagline">Tagline</Label>
+              <Input
+                id="tagline"
+                value={formData.tagline}
+                onChange={(e) => updateField('tagline', e.target.value)}
+                placeholder="Your company tagline"
+                data-testid="input-tagline"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="logoUrl">Logo URL</Label>
+              <Input
+                id="logoUrl"
+                value={formData.logoUrl}
+                onChange={(e) => updateField('logoUrl', e.target.value)}
+                placeholder="https://example.com/logo.png"
+                data-testid="input-logo-url"
+              />
+              {formData.logoUrl && (
+                <div className="mt-2 p-4 bg-gray-100 rounded flex items-center justify-center">
+                  <img src={formData.logoUrl} alt="Logo preview" className="max-h-16 max-w-full" />
+                </div>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="faviconUrl">Favicon URL</Label>
+              <Input
+                id="faviconUrl"
+                value={formData.faviconUrl}
+                onChange={(e) => updateField('faviconUrl', e.target.value)}
+                placeholder="https://example.com/favicon.ico"
+                data-testid="input-favicon-url"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Tag className="w-5 h-5" />
+              Brand Colors
+            </CardTitle>
+            <CardDescription>Primary theme colors</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <ColorInput label="Primary Color" field="primaryColor" value={formData.primaryColor} />
+              <ColorInput label="Primary Text" field="primaryForeground" value={formData.primaryForeground} />
+              <ColorInput label="Secondary Color" field="secondaryColor" value={formData.secondaryColor} />
+              <ColorInput label="Secondary Text" field="secondaryForeground" value={formData.secondaryForeground} />
+              <ColorInput label="Accent Color" field="accentColor" value={formData.accentColor} />
+              <ColorInput label="Border Color" field="borderColor" value={formData.borderColor} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MousePointer className="w-5 h-5" />
+              Button Styling
+            </CardTitle>
+            <CardDescription>Customize button appearance</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <ColorInput label="Primary Button Bg" field="buttonPrimaryBg" value={formData.buttonPrimaryBg} />
+              <ColorInput label="Primary Button Text" field="buttonPrimaryText" value={formData.buttonPrimaryText} />
+              <ColorInput label="Secondary Button Bg" field="buttonSecondaryBg" value={formData.buttonSecondaryBg} />
+              <ColorInput label="Secondary Button Text" field="buttonSecondaryText" value={formData.buttonSecondaryText} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="buttonRadius">Button Border Radius</Label>
+              <Select value={formData.buttonRadius} onValueChange={(v) => updateField('buttonRadius', v)}>
+                <SelectTrigger data-testid="select-button-radius">
+                  <SelectValue placeholder="Select radius" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Square (0)</SelectItem>
+                  <SelectItem value="0.25rem">Small (0.25rem)</SelectItem>
+                  <SelectItem value="0.5rem">Medium (0.5rem)</SelectItem>
+                  <SelectItem value="0.75rem">Large (0.75rem)</SelectItem>
+                  <SelectItem value="1rem">Extra Large (1rem)</SelectItem>
+                  <SelectItem value="9999px">Pill (Full)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 mb-3">Preview</p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  style={{
+                    backgroundColor: formData.buttonPrimaryBg,
+                    color: formData.buttonPrimaryText,
+                    borderRadius: formData.buttonRadius,
+                    padding: '0.5rem 1rem',
+                    border: 'none',
+                    fontWeight: 500
+                  }}
+                >
+                  Primary Button
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    backgroundColor: formData.buttonSecondaryBg,
+                    color: formData.buttonSecondaryText,
+                    borderRadius: formData.buttonRadius,
+                    padding: '0.5rem 1rem',
+                    border: `1px solid ${formData.borderColor}`,
+                    fontWeight: 500
+                  }}
+                >
+                  Secondary Button
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Layout className="w-5 h-5" />
+              Layout & Typography
+            </CardTitle>
+            <CardDescription>Fonts and background colors</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="fontFamily">Body Font</Label>
+              <Select value={formData.fontFamily} onValueChange={(v) => updateField('fontFamily', v)}>
+                <SelectTrigger data-testid="select-font-family">
+                  <SelectValue placeholder="Select font" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Inter">Inter</SelectItem>
+                  <SelectItem value="Roboto">Roboto</SelectItem>
+                  <SelectItem value="Open Sans">Open Sans</SelectItem>
+                  <SelectItem value="Lato">Lato</SelectItem>
+                  <SelectItem value="Poppins">Poppins</SelectItem>
+                  <SelectItem value="Montserrat">Montserrat</SelectItem>
+                  <SelectItem value="Source Sans Pro">Source Sans Pro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="headingFontFamily">Heading Font (Optional)</Label>
+              <Select value={formData.headingFontFamily || 'same'} onValueChange={(v) => updateField('headingFontFamily', v === 'same' ? '' : v)}>
+                <SelectTrigger data-testid="select-heading-font">
+                  <SelectValue placeholder="Same as body" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="same">Same as body</SelectItem>
+                  <SelectItem value="Inter">Inter</SelectItem>
+                  <SelectItem value="Roboto">Roboto</SelectItem>
+                  <SelectItem value="Playfair Display">Playfair Display</SelectItem>
+                  <SelectItem value="Poppins">Poppins</SelectItem>
+                  <SelectItem value="Montserrat">Montserrat</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <ColorInput label="Background" field="backgroundColor" value={formData.backgroundColor} />
+              <ColorInput label="Card Background" field="cardBackground" value={formData.cardBackground} />
+              <ColorInput label="Sidebar Background" field="sidebarBackground" value={formData.sidebarBackground} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="borderRadius">Border Radius</Label>
+              <Select value={formData.borderRadius} onValueChange={(v) => updateField('borderRadius', v)}>
+                <SelectTrigger data-testid="select-border-radius">
+                  <SelectValue placeholder="Select radius" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Square (0)</SelectItem>
+                  <SelectItem value="0.25rem">Small (0.25rem)</SelectItem>
+                  <SelectItem value="0.5rem">Medium (0.5rem)</SelectItem>
+                  <SelectItem value="0.75rem">Large (0.75rem)</SelectItem>
+                  <SelectItem value="1rem">Extra Large (1rem)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Link2 className="w-5 h-5" />
+              Footer & Social Links
+            </CardTitle>
+            <CardDescription>Footer text and social media links</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="footerText">Footer Text</Label>
+              <Textarea
+                id="footerText"
+                value={formData.footerText}
+                onChange={(e) => updateField('footerText', e.target.value)}
+                placeholder="© 2025 Your Company. All rights reserved."
+                rows={2}
+                data-testid="input-footer-text"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="twitterUrl">Twitter/X URL</Label>
+                <Input
+                  id="twitterUrl"
+                  value={formData.twitterUrl}
+                  onChange={(e) => updateField('twitterUrl', e.target.value)}
+                  placeholder="https://twitter.com/yourcompany"
+                  data-testid="input-twitter-url"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+                <Input
+                  id="linkedinUrl"
+                  value={formData.linkedinUrl}
+                  onChange={(e) => updateField('linkedinUrl', e.target.value)}
+                  placeholder="https://linkedin.com/company/yourcompany"
+                  data-testid="input-linkedin-url"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="facebookUrl">Facebook URL</Label>
+                <Input
+                  id="facebookUrl"
+                  value={formData.facebookUrl}
+                  onChange={(e) => updateField('facebookUrl', e.target.value)}
+                  placeholder="https://facebook.com/yourcompany"
+                  data-testid="input-facebook-url"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="instagramUrl">Instagram URL</Label>
+                <Input
+                  id="instagramUrl"
+                  value={formData.instagramUrl}
+                  onChange={(e) => updateField('instagramUrl', e.target.value)}
+                  placeholder="https://instagram.com/yourcompany"
+                  data-testid="input-instagram-url"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <Button type="submit" disabled={isPending} size="lg" data-testid="button-save-branding">
+          <Save className="w-4 h-4 mr-2" />
+          {isPending ? 'Saving...' : 'Save Branding Settings'}
+        </Button>
+      </div>
+    </form>
   );
 }
