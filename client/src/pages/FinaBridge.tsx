@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   BarChart3, PlusCircle, Briefcase, Loader2, RefreshCw, 
-  ArrowLeftRight, Package, Send, Eye, Check, X, Wallet
+  ArrowLeftRight, Package, Send, Eye, Check, X, Wallet,
+  CreditCard, Truck, Ship, Plane, Train, Shield, FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -82,6 +83,9 @@ export default function FinaBridge() {
   const [insufficientFundsError, setInsufficientFundsError] = useState<string | null>(null);
   
   const [requestForm, setRequestForm] = useState({
+    financeType: 'LC',
+    currency: 'USD',
+    paymentTerms: '',
     goodsName: '',
     description: '',
     quantity: '',
@@ -90,6 +94,13 @@ export default function FinaBridge() {
     expectedShipDate: '',
     tradeValueUsd: '',
     settlementGoldGrams: '',
+    modeOfTransport: 'Sea',
+    portOfLoading: '',
+    portOfDischarge: '',
+    partialShipment: false,
+    transshipment: false,
+    insuranceCoverage: '',
+    insuranceProvider: '',
     suggestExporter: true,
     exporterCompanyName: '',
     exporterContactName: '',
@@ -240,6 +251,9 @@ export default function FinaBridge() {
       });
       
       setRequestForm({
+        financeType: 'LC',
+        currency: 'USD',
+        paymentTerms: '',
         goodsName: '',
         description: '',
         quantity: '',
@@ -248,6 +262,13 @@ export default function FinaBridge() {
         expectedShipDate: '',
         tradeValueUsd: '',
         settlementGoldGrams: '',
+        modeOfTransport: 'Sea',
+        portOfLoading: '',
+        portOfDischarge: '',
+        partialShipment: false,
+        transshipment: false,
+        insuranceCoverage: '',
+        insuranceProvider: '',
         suggestExporter: true,
         exporterCompanyName: '',
         exporterContactName: '',
@@ -745,135 +766,298 @@ export default function FinaBridge() {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Goods Name *</label>
-                        <input
-                          type="text"
-                          value={requestForm.goodsName}
-                          onChange={(e) => setRequestForm({ ...requestForm, goodsName: e.target.value })}
-                          className="w-full p-3 border rounded-lg"
-                          placeholder="e.g., Electronic Components"
-                          data-testid="input-goods-name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Quantity</label>
-                        <input
-                          type="text"
-                          value={requestForm.quantity}
-                          onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })}
-                          className="w-full p-3 border rounded-lg"
-                          placeholder="e.g., 1000 units"
-                          data-testid="input-quantity"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Trade Value (USD) *</label>
-                        <input
-                          type="number"
-                          value={requestForm.tradeValueUsd}
-                          onChange={(e) => {
-                            const usdValue = e.target.value;
-                            const goldGrams = usdValue && currentGoldPriceUsdPerGram > 0
-                              ? (parseFloat(usdValue) / currentGoldPriceUsdPerGram).toFixed(3)
-                              : '';
-                            setRequestForm({ 
-                              ...requestForm, 
-                              tradeValueUsd: usdValue,
-                              settlementGoldGrams: goldGrams
-                            });
-                            setInsufficientFundsError(null);
-                          }}
-                          className="w-full p-3 border rounded-lg"
-                          placeholder="0.00"
-                          data-testid="input-trade-value"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Current gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/gram
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Settlement Gold (grams) *</label>
-                        <input
-                          type="number"
-                          step="0.001"
-                          value={requestForm.settlementGoldGrams}
-                          onChange={(e) => {
-                            setRequestForm({ ...requestForm, settlementGoldGrams: e.target.value });
-                            setInsufficientFundsError(null);
-                          }}
-                          className="w-full p-3 border rounded-lg"
-                          placeholder="0.000"
-                          data-testid="input-settlement-gold"
-                        />
-                        <div className="flex flex-wrap gap-4 text-xs mt-1">
-                          <span className="text-muted-foreground">
-                            FinaBridge Balance: <span className="font-medium text-green-600">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>
-                          </span>
-                          <span className="text-muted-foreground">
-                            FinaPay Balance: <span className="font-medium text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setShowFundDialog(true)}
-                            className="text-primary hover:underline"
+                    <div className="p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+                      <h4 className="font-medium mb-4 flex items-center gap-2 text-blue-800">
+                        <CreditCard className="w-4 h-4" />
+                        Trade Finance Type & Payment
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Finance Type *</label>
+                          <select
+                            value={requestForm.financeType}
+                            onChange={(e) => setRequestForm({ ...requestForm, financeType: e.target.value })}
+                            className="w-full p-3 border rounded-lg bg-white"
+                            data-testid="select-finance-type"
                           >
-                            + Fund FinaBridge
-                          </button>
+                            <option value="LC">Letter of Credit (LC)</option>
+                            <option value="SBLC">Standby Letter of Credit (SBLC)</option>
+                            <option value="BG">Bank Guarantee (BG)</option>
+                            <option value="Invoice Finance">Invoice Finance</option>
+                            <option value="Supply Chain Finance">Supply Chain Finance</option>
+                          </select>
                         </div>
-                        {insufficientFundsError && (
-                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                            {insufficientFundsError}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Currency</label>
+                          <select
+                            value={requestForm.currency}
+                            onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })}
+                            className="w-full p-3 border rounded-lg bg-white"
+                            data-testid="select-currency"
+                          >
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="AED">AED - UAE Dirham</option>
+                            <option value="CNY">CNY - Chinese Yuan</option>
+                            <option value="JPY">JPY - Japanese Yen</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Payment Terms</label>
+                          <input
+                            type="text"
+                            value={requestForm.paymentTerms}
+                            onChange={(e) => setRequestForm({ ...requestForm, paymentTerms: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="e.g., 30 days from B/L date"
+                            data-testid="input-payment-terms"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-green-50/50 border-green-200">
+                      <h4 className="font-medium mb-4 flex items-center gap-2 text-green-800">
+                        <Package className="w-4 h-4" />
+                        Trade Details & Gold Settlement
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Goods Name *</label>
+                          <input
+                            type="text"
+                            value={requestForm.goodsName}
+                            onChange={(e) => setRequestForm({ ...requestForm, goodsName: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="e.g., Electronic Components"
+                            data-testid="input-goods-name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Quantity</label>
+                          <input
+                            type="text"
+                            value={requestForm.quantity}
+                            onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="e.g., 1000 units"
+                            data-testid="input-quantity"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Trade Value ({requestForm.currency}) *</label>
+                          <input
+                            type="number"
+                            value={requestForm.tradeValueUsd}
+                            onChange={(e) => {
+                              const usdValue = e.target.value;
+                              const goldGrams = usdValue && currentGoldPriceUsdPerGram > 0
+                                ? (parseFloat(usdValue) / currentGoldPriceUsdPerGram).toFixed(3)
+                                : '';
+                              setRequestForm({ 
+                                ...requestForm, 
+                                tradeValueUsd: usdValue,
+                                settlementGoldGrams: goldGrams
+                              });
+                              setInsufficientFundsError(null);
+                            }}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="0.00"
+                            data-testid="input-trade-value"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Current gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/gram
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Settlement Gold (grams) *</label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            value={requestForm.settlementGoldGrams}
+                            onChange={(e) => {
+                              setRequestForm({ ...requestForm, settlementGoldGrams: e.target.value });
+                              setInsufficientFundsError(null);
+                            }}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="0.000"
+                            data-testid="input-settlement-gold"
+                          />
+                          <div className="flex flex-wrap gap-4 text-xs mt-1">
+                            <span className="text-muted-foreground">
+                              FinaBridge Balance: <span className="font-medium text-green-600">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>
+                            </span>
+                            <span className="text-muted-foreground">
+                              FinaPay Balance: <span className="font-medium text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setShowFundDialog(true)}
+                              className="text-primary hover:underline"
+                            >
+                              + Fund FinaBridge
+                            </button>
                           </div>
-                        )}
+                          {insufficientFundsError && (
+                            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                              {insufficientFundsError}
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-sm font-medium">Description</label>
+                          <textarea
+                            value={requestForm.description}
+                            onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            rows={2}
+                            placeholder="Additional details about your trade request..."
+                            data-testid="input-description"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Incoterms</label>
-                        <select
-                          value={requestForm.incoterms}
-                          onChange={(e) => setRequestForm({ ...requestForm, incoterms: e.target.value })}
-                          className="w-full p-3 border rounded-lg"
-                          data-testid="select-incoterms"
-                        >
-                          <option value="FOB">FOB</option>
-                          <option value="CIF">CIF</option>
-                          <option value="EXW">EXW</option>
-                          <option value="DDP">DDP</option>
-                          <option value="FCA">FCA</option>
-                        </select>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-purple-50/50 border-purple-200">
+                      <h4 className="font-medium mb-4 flex items-center gap-2 text-purple-800">
+                        <Truck className="w-4 h-4" />
+                        Shipping & Logistics
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Mode of Transport</label>
+                          <select
+                            value={requestForm.modeOfTransport}
+                            onChange={(e) => setRequestForm({ ...requestForm, modeOfTransport: e.target.value })}
+                            className="w-full p-3 border rounded-lg bg-white"
+                            data-testid="select-transport-mode"
+                          >
+                            <option value="Sea">Sea Freight</option>
+                            <option value="Air">Air Freight</option>
+                            <option value="Road">Road Transport</option>
+                            <option value="Rail">Rail Freight</option>
+                            <option value="Multimodal">Multimodal</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Incoterms</label>
+                          <select
+                            value={requestForm.incoterms}
+                            onChange={(e) => setRequestForm({ ...requestForm, incoterms: e.target.value })}
+                            className="w-full p-3 border rounded-lg bg-white"
+                            data-testid="select-incoterms"
+                          >
+                            <option value="FOB">FOB - Free on Board</option>
+                            <option value="CIF">CIF - Cost, Insurance & Freight</option>
+                            <option value="EXW">EXW - Ex Works</option>
+                            <option value="DDP">DDP - Delivered Duty Paid</option>
+                            <option value="FCA">FCA - Free Carrier</option>
+                            <option value="CFR">CFR - Cost and Freight</option>
+                            <option value="DAP">DAP - Delivered at Place</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Expected Ship Date</label>
+                          <input
+                            type="date"
+                            value={requestForm.expectedShipDate}
+                            onChange={(e) => setRequestForm({ ...requestForm, expectedShipDate: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            data-testid="input-ship-date"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Port of Loading</label>
+                          <input
+                            type="text"
+                            value={requestForm.portOfLoading}
+                            onChange={(e) => setRequestForm({ ...requestForm, portOfLoading: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="e.g., Shanghai Port, China"
+                            data-testid="input-port-loading"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Port of Discharge / Destination</label>
+                          <input
+                            type="text"
+                            value={requestForm.destination}
+                            onChange={(e) => setRequestForm({ ...requestForm, destination: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="e.g., Jebel Ali Port, UAE"
+                            data-testid="input-destination"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Final Destination (if different)</label>
+                          <input
+                            type="text"
+                            value={requestForm.portOfDischarge}
+                            onChange={(e) => setRequestForm({ ...requestForm, portOfDischarge: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="e.g., Dubai, UAE"
+                            data-testid="input-port-discharge"
+                          />
+                        </div>
+                        <div className="flex items-center gap-6 md:col-span-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={requestForm.partialShipment}
+                              onChange={(e) => setRequestForm({ ...requestForm, partialShipment: e.target.checked })}
+                              className="rounded border-gray-300"
+                              data-testid="checkbox-partial-shipment"
+                            />
+                            <span className="text-sm">Partial Shipment Allowed</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={requestForm.transshipment}
+                              onChange={(e) => setRequestForm({ ...requestForm, transshipment: e.target.checked })}
+                              className="rounded border-gray-300"
+                              data-testid="checkbox-transshipment"
+                            />
+                            <span className="text-sm">Transshipment Allowed</span>
+                          </label>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Destination</label>
-                        <input
-                          type="text"
-                          value={requestForm.destination}
-                          onChange={(e) => setRequestForm({ ...requestForm, destination: e.target.value })}
-                          className="w-full p-3 border rounded-lg"
-                          placeholder="e.g., Dubai, UAE"
-                          data-testid="input-destination"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Expected Ship Date</label>
-                        <input
-                          type="date"
-                          value={requestForm.expectedShipDate}
-                          onChange={(e) => setRequestForm({ ...requestForm, expectedShipDate: e.target.value })}
-                          className="w-full p-3 border rounded-lg"
-                          data-testid="input-ship-date"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Description</label>
-                        <textarea
-                          value={requestForm.description}
-                          onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
-                          className="w-full p-3 border rounded-lg"
-                          rows={3}
-                          placeholder="Additional details about your trade request..."
-                          data-testid="input-description"
-                        />
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-teal-50/50 border-teal-200">
+                      <h4 className="font-medium mb-4 flex items-center gap-2 text-teal-800">
+                        <Shield className="w-4 h-4" />
+                        Insurance (Optional)
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Insurance Coverage Type</label>
+                          <select
+                            value={requestForm.insuranceCoverage}
+                            onChange={(e) => setRequestForm({ ...requestForm, insuranceCoverage: e.target.value })}
+                            className="w-full p-3 border rounded-lg bg-white"
+                            data-testid="select-insurance-coverage"
+                          >
+                            <option value="">Select coverage type...</option>
+                            <option value="All Risks">All Risks (Institute Cargo Clauses A)</option>
+                            <option value="Named Perils">Named Perils (Institute Cargo Clauses B)</option>
+                            <option value="FPA">Free of Particular Average (FPA - Clauses C)</option>
+                            <option value="War Risk">War Risk Coverage</option>
+                            <option value="Strike Risk">Strike, Riot & Civil Commotion</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Insurance Provider (if known)</label>
+                          <input
+                            type="text"
+                            value={requestForm.insuranceProvider}
+                            onChange={(e) => setRequestForm({ ...requestForm, insuranceProvider: e.target.value })}
+                            className="w-full p-3 border rounded-lg"
+                            placeholder="e.g., Lloyd's of London, AIG, etc."
+                            data-testid="input-insurance-provider"
+                          />
+                        </div>
                       </div>
                     </div>
 
