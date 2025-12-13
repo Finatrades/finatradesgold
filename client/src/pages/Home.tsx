@@ -138,33 +138,6 @@ export default function Home() {
                 <span className="text-sm font-medium text-[#7C3AED]">Swiss-Regulated Platform</span>
               </div>
 
-              <div className="flex items-center p-1 rounded-full border border-gray-200 bg-white w-fit mb-8">
-                <button
-                  onClick={() => setAccountType('personal')}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                    accountType === 'personal' 
-                      ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  data-testid="hero-toggle-personal"
-                >
-                  <User className="w-4 h-4" />
-                  Personal
-                </button>
-                <button
-                  onClick={() => setAccountType('business')}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                    accountType === 'business' 
-                      ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  data-testid="hero-toggle-business"
-                >
-                  <Building2 className="w-4 h-4" />
-                  Business
-                </button>
-              </div>
-
               <h1 
                 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight"
                 data-testid="text-hero-title"
