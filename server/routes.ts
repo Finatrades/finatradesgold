@@ -4849,6 +4849,295 @@ export async function registerRoutes(
   });
 
   // ============================================================================
+  // NGENIUS CARD PAYMENTS
+  // ============================================================================
+
+  const { NgeniusService, generateOrderReference } = await import("./ngenius");
+
+  // Check NGenius status
+  app.get("/api/ngenius/status", async (req, res) => {
+    try {
+      const settings = await storage.getPaymentGatewaySettings();
+      res.json({ 
+        enabled: settings?.ngeniusEnabled || false,
+        mode: settings?.ngeniusMode || 'sandbox'
+      });
+    } catch (error) {
+      res.json({ enabled: false });
+    }
+  });
+
+  // Create NGenius card deposit order
+  app.post("/api/ngenius/create-order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = req.user as User;
+      const { amount, currency = 'USD', returnUrl, cancelUrl } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // Get payment gateway settings
+      const settings = await storage.getPaymentGatewaySettings();
+      if (!settings?.ngeniusEnabled || !settings.ngeniusApiKey || !settings.ngeniusOutletRef) {
+        return res.status(400).json({ message: "Card payments are not configured" });
+      }
+
+      // Create NGenius service
+      const ngeniusService = NgeniusService.getInstance({
+        apiKey: settings.ngeniusApiKey,
+        outletRef: settings.ngeniusOutletRef,
+        mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
+      });
+
+      const orderReference = generateOrderReference();
+      const description = `Wallet deposit - ${amount} ${currency}`;
+
+      // Build return URL with order reference
+      let finalReturnUrl: string;
+      if (returnUrl) {
+        const separator = returnUrl.includes('?') ? '&' : '?';
+        finalReturnUrl = `${returnUrl}${separator}ref=${orderReference}`;
+      } else {
+        finalReturnUrl = `${req.protocol}://${req.get('host')}/deposit/callback?ref=${orderReference}`;
+      }
+
+      // Create order with NGenius
+      const orderResponse = await ngeniusService.createOrder({
+        orderReference,
+        amount: parseFloat(amount),
+        currency,
+        description,
+        returnUrl: finalReturnUrl,
+        cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/deposit?cancelled=true`,
+      });
+
+      const paymentUrl = ngeniusService.extractPaymentPageUrl(orderResponse);
+
+      // Store transaction in database
+      const ngeniusTx = await storage.createNgeniusTransaction({
+        userId: user.id,
+        orderReference,
+        ngeniusOrderId: orderResponse._id,
+        status: 'Created',
+        amountUsd: amount.toString(),
+        currency,
+        paymentUrl,
+        description,
+      });
+
+      await storage.createAuditLog({
+        entityType: 'ngenius',
+        entityId: ngeniusTx.id,
+        actionType: 'create',
+        actor: user.id,
+        actorRole: user.role || 'user',
+        details: `Created card deposit order for ${amount} ${currency}`,
+      });
+
+      res.json({
+        success: true,
+        orderReference,
+        paymentUrl,
+        orderId: orderResponse._id,
+      });
+    } catch (error: any) {
+      console.error('NGenius create order error:', error);
+      res.status(500).json({ 
+        message: "Failed to create payment order",
+        error: error.message 
+      });
+    }
+  });
+
+  // Get NGenius order status
+  app.get("/api/ngenius/order/:orderReference", async (req, res) => {
+    try {
+      const { orderReference } = req.params;
+      const transaction = await storage.getNgeniusTransactionByOrderReference(orderReference);
+
+      if (!transaction) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Optionally fetch latest status from NGenius API
+      const settings = await storage.getPaymentGatewaySettings();
+      if (settings?.ngeniusEnabled && settings.ngeniusApiKey && settings.ngeniusOutletRef && transaction.ngeniusOrderId) {
+        try {
+          const ngeniusService = NgeniusService.getInstance({
+            apiKey: settings.ngeniusApiKey,
+            outletRef: settings.ngeniusOutletRef,
+            mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
+          });
+
+          const orderStatus = await ngeniusService.getOrder(transaction.ngeniusOrderId);
+          
+          // Update local status if different
+          let newStatus = transaction.status;
+          if (orderStatus.state === 'AUTHORISED') newStatus = 'Authorised';
+          else if (orderStatus.state === 'CAPTURED') newStatus = 'Captured';
+          else if (orderStatus.state === 'FAILED') newStatus = 'Failed';
+          else if (orderStatus.state === 'CANCELLED') newStatus = 'Cancelled';
+
+          if (newStatus !== transaction.status) {
+            await storage.updateNgeniusTransaction(transaction.id, { status: newStatus as any });
+            
+            // If captured, credit the wallet
+            if (newStatus === 'Captured' && transaction.status !== 'Captured') {
+              const wallet = await storage.getWallet(transaction.userId);
+              if (wallet) {
+                const currentBalance = parseFloat(wallet.usdBalance || '0');
+                const depositAmount = parseFloat(transaction.amountUsd || '0');
+                await storage.updateWallet(wallet.id, {
+                  usdBalance: (currentBalance + depositAmount).toString(),
+                });
+
+                // Create transaction record
+                const walletTx = await storage.createTransaction({
+                  userId: transaction.userId,
+                  type: 'Deposit',
+                  status: 'Completed',
+                  amountUsd: transaction.amountUsd,
+                  description: `Card deposit via NGenius - ${orderReference}`,
+                  referenceId: orderReference,
+                  sourceModule: 'finapay',
+                  completedAt: new Date(),
+                });
+
+                await storage.updateNgeniusTransaction(transaction.id, {
+                  walletTransactionId: walletTx.id,
+                });
+              }
+            }
+          }
+
+          return res.json({ 
+            ...transaction,
+            status: newStatus,
+            ngeniusStatus: orderStatus.state
+          });
+        } catch (apiError) {
+          console.error('NGenius API error:', apiError);
+        }
+      }
+
+      res.json(transaction);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get order status" });
+    }
+  });
+
+  // NGenius webhook handler
+  app.post("/api/ngenius/webhook", async (req, res) => {
+    try {
+      console.log('NGenius webhook received:', JSON.stringify(req.body, null, 2));
+
+      const settings = await storage.getPaymentGatewaySettings();
+      if (!settings?.ngeniusEnabled || !settings.ngeniusApiKey || !settings.ngeniusOutletRef) {
+        return res.status(400).json({ message: "NGenius not configured" });
+      }
+
+      const ngeniusService = NgeniusService.getInstance({
+        apiKey: settings.ngeniusApiKey,
+        outletRef: settings.ngeniusOutletRef,
+        mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
+      });
+
+      const webhookData = ngeniusService.parseWebhookPayload(req.body);
+      
+      // Find transaction by NGenius order ID
+      const transaction = await storage.getNgeniusTransactionByNgeniusOrderId(webhookData.orderId);
+
+      if (transaction) {
+        const updates: any = {
+          status: webhookData.status,
+          webhookReceivedAt: new Date(),
+          webhookPayload: req.body,
+        };
+
+        if (webhookData.paymentId) updates.ngeniusPaymentId = webhookData.paymentId;
+        if (webhookData.cardBrand) updates.cardBrand = webhookData.cardBrand;
+        if (webhookData.cardLast4) updates.cardLast4 = webhookData.cardLast4;
+        if (webhookData.cardholderName) updates.cardholderName = webhookData.cardholderName;
+
+        await storage.updateNgeniusTransaction(transaction.id, updates);
+
+        // If payment captured, credit wallet
+        if (webhookData.status === 'Captured' && transaction.status !== 'Captured') {
+          const wallet = await storage.getWallet(transaction.userId);
+          if (wallet) {
+            const currentBalance = parseFloat(wallet.usdBalance || '0');
+            const depositAmount = parseFloat(transaction.amountUsd || '0');
+            await storage.updateWallet(wallet.id, {
+              usdBalance: (currentBalance + depositAmount).toString(),
+            });
+
+            // Create transaction record
+            const walletTx = await storage.createTransaction({
+              userId: transaction.userId,
+              type: 'Deposit',
+              status: 'Completed',
+              amountUsd: transaction.amountUsd,
+              description: `Card deposit via NGenius - ${transaction.orderReference}`,
+              referenceId: transaction.orderReference,
+              sourceModule: 'finapay',
+              completedAt: new Date(),
+            });
+
+            await storage.updateNgeniusTransaction(transaction.id, {
+              walletTransactionId: walletTx.id,
+            });
+          }
+        }
+
+        await storage.createAuditLog({
+          entityType: 'ngenius',
+          entityId: transaction.id,
+          actionType: 'webhook',
+          actor: 'system',
+          actorRole: 'system',
+          details: `Order ${transaction.orderReference} status: ${webhookData.status}`,
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('NGenius webhook error:', error);
+      res.status(500).json({ success: false });
+    }
+  });
+
+  // Get user's NGenius transactions
+  app.get("/api/ngenius/transactions/:userId", async (req, res) => {
+    try {
+      const transactions = await storage.getUserNgeniusTransactions(req.params.userId);
+      res.json({ transactions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+
+  // Admin: Get all NGenius transactions
+  app.get("/api/admin/ngenius/transactions", async (req, res) => {
+    try {
+      const transactions = await storage.getAllNgeniusTransactions();
+      
+      const enrichedTransactions = await Promise.all(transactions.map(async (tx) => {
+        const user = await storage.getUser(tx.userId);
+        return { ...tx, user };
+      }));
+      
+      res.json({ transactions: enrichedTransactions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+
+  // ============================================================================
   // ADMIN - FINANCIAL REPORTS
   // ============================================================================
 

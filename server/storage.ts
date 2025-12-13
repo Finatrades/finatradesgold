@@ -11,6 +11,8 @@ import {
   peerTransfers, peerRequests,
   vaultDepositRequests, vaultWithdrawalRequests,
   binanceTransactions,
+  ngeniusTransactions,
+  paymentGatewaySettings,
   brandingSettings,
   employees, rolePermissions,
   securitySettings, otpVerifications, userPasskeys,
@@ -50,6 +52,8 @@ import {
   type VaultDepositRequest, type InsertVaultDepositRequest,
   type VaultWithdrawalRequest, type InsertVaultWithdrawalRequest,
   type BinanceTransaction, type InsertBinanceTransaction,
+  type NgeniusTransaction, type InsertNgeniusTransaction,
+  type PaymentGatewaySettings, type InsertPaymentGatewaySettings,
   type BrandingSettings, type InsertBrandingSettings,
   type Employee, type InsertEmployee,
   type RolePermission, type InsertRolePermission,
@@ -1462,6 +1466,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ============================================
+  // NGENIUS TRANSACTIONS
+  // ============================================
+
+  async createNgeniusTransaction(insertTransaction: InsertNgeniusTransaction): Promise<NgeniusTransaction> {
+    const [transaction] = await db.insert(ngeniusTransactions).values(insertTransaction).returning();
+    return transaction;
+  }
+
+  async getNgeniusTransaction(id: string): Promise<NgeniusTransaction | undefined> {
+    const [transaction] = await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.id, id));
+    return transaction || undefined;
+  }
+
+  async getNgeniusTransactionByOrderReference(orderReference: string): Promise<NgeniusTransaction | undefined> {
+    const [transaction] = await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.orderReference, orderReference));
+    return transaction || undefined;
+  }
+
+  async getNgeniusTransactionByNgeniusOrderId(ngeniusOrderId: string): Promise<NgeniusTransaction | undefined> {
+    const [transaction] = await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.ngeniusOrderId, ngeniusOrderId));
+    return transaction || undefined;
+  }
+
+  async getUserNgeniusTransactions(userId: string): Promise<NgeniusTransaction[]> {
+    return await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.userId, userId)).orderBy(desc(ngeniusTransactions.createdAt));
+  }
+
+  async getAllNgeniusTransactions(): Promise<NgeniusTransaction[]> {
+    return await db.select().from(ngeniusTransactions).orderBy(desc(ngeniusTransactions.createdAt));
+  }
+
+  async updateNgeniusTransaction(id: string, updates: Partial<NgeniusTransaction>): Promise<NgeniusTransaction | undefined> {
+    const [transaction] = await db.update(ngeniusTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(ngeniusTransactions.id, id)).returning();
+    return transaction || undefined;
+  }
+
+  async updateNgeniusTransactionByOrderReference(orderReference: string, updates: Partial<NgeniusTransaction>): Promise<NgeniusTransaction | undefined> {
+    const [transaction] = await db.update(ngeniusTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(ngeniusTransactions.orderReference, orderReference)).returning();
+    return transaction || undefined;
+  }
+
+  // ============================================
   // BRANDING SETTINGS
   // ============================================
 
@@ -1481,6 +1527,29 @@ export class DatabaseStorage implements IStorage {
   async updateBrandingSettings(updates: Partial<BrandingSettings>): Promise<BrandingSettings | undefined> {
     const existing = await this.getOrCreateBrandingSettings();
     const [settings] = await db.update(brandingSettings).set({ ...updates, updatedAt: new Date() }).where(eq(brandingSettings.id, existing.id)).returning();
+    return settings || undefined;
+  }
+
+  // ============================================
+  // PAYMENT GATEWAY SETTINGS
+  // ============================================
+
+  async getPaymentGatewaySettings(): Promise<PaymentGatewaySettings | undefined> {
+    const [settings] = await db.select().from(paymentGatewaySettings).limit(1);
+    return settings || undefined;
+  }
+
+  async getOrCreatePaymentGatewaySettings(): Promise<PaymentGatewaySettings> {
+    const existing = await this.getPaymentGatewaySettings();
+    if (existing) return existing;
+    
+    const [settings] = await db.insert(paymentGatewaySettings).values({}).returning();
+    return settings;
+  }
+
+  async updatePaymentGatewaySettings(updates: Partial<PaymentGatewaySettings>): Promise<PaymentGatewaySettings | undefined> {
+    const existing = await this.getOrCreatePaymentGatewaySettings();
+    const [settings] = await db.update(paymentGatewaySettings).set({ ...updates, updatedAt: new Date() }).where(eq(paymentGatewaySettings.id, existing.id)).returning();
     return settings || undefined;
   }
 

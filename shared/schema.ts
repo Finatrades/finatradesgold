@@ -1188,6 +1188,61 @@ export type InsertBinanceTransaction = z.infer<typeof insertBinanceTransactionSc
 export type BinanceTransaction = typeof binanceTransactions.$inferSelect;
 
 // ============================================
+// NGENIUS CARD PAYMENT TRANSACTIONS
+// ============================================
+
+export const ngeniusOrderStatusEnum = pgEnum('ngenius_order_status', [
+  'Created',      // Order created, awaiting payment
+  'Pending',      // Payment pending
+  'Authorised',   // Payment authorized
+  'Captured',     // Payment captured/completed
+  'Failed',       // Payment failed
+  'Cancelled',    // Order cancelled
+  'Refunded'      // Payment refunded
+]);
+
+export const ngeniusTransactions = pgTable("ngenius_transactions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Order reference
+  orderReference: varchar("order_reference", { length: 100 }).notNull().unique(), // Our unique order ID
+  ngeniusOrderId: varchar("ngenius_order_id", { length: 100 }), // NGenius order ID (from response)
+  ngeniusPaymentId: varchar("ngenius_payment_id", { length: 100 }), // NGenius payment ID
+  
+  status: ngeniusOrderStatusEnum("status").notNull().default('Created'),
+  
+  // Order amounts
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  
+  // Payment details (populated after payment)
+  cardBrand: varchar("card_brand", { length: 50 }), // VISA, Mastercard, etc.
+  cardLast4: varchar("card_last4", { length: 4 }), // Last 4 digits
+  cardholderName: varchar("cardholder_name", { length: 255 }),
+  
+  // URLs
+  paymentUrl: text("payment_url"), // Redirect URL for hosted payment page
+  
+  // Related records
+  walletTransactionId: varchar("wallet_transaction_id", { length: 255 }).references(() => transactions.id),
+  
+  // Webhook/callback tracking
+  webhookReceivedAt: timestamp("webhook_received_at"),
+  webhookPayload: json("webhook_payload"),
+  
+  // Metadata
+  description: text("description"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertNgeniusTransactionSchema = createInsertSchema(ngeniusTransactions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertNgeniusTransaction = z.infer<typeof insertNgeniusTransactionSchema>;
+export type NgeniusTransaction = typeof ngeniusTransactions.$inferSelect;
+
+// ============================================
 // BRANDING & THEME SETTINGS
 // ============================================
 
@@ -1280,6 +1335,14 @@ export const paymentGatewaySettings = pgTable("payment_gateway_settings", {
   
   // Crypto Payment (Binance Pay) - already exists separately
   binancePayEnabled: boolean("binance_pay_enabled").notNull().default(false),
+  
+  // NGenius (Card Payments) Configuration
+  ngeniusEnabled: boolean("ngenius_enabled").notNull().default(false),
+  ngeniusApiKey: text("ngenius_api_key"),
+  ngeniusOutletRef: varchar("ngenius_outlet_ref", { length: 100 }),
+  ngeniusMode: varchar("ngenius_mode", { length: 20 }).default('sandbox'), // 'sandbox' or 'live'
+  ngeniusFeePercent: decimal("ngenius_fee_percent", { precision: 5, scale: 2 }).default('2.5'),
+  ngeniusFixedFee: decimal("ngenius_fixed_fee", { precision: 10, scale: 2 }).default('0.30'),
   
   // General Settings
   minDepositUsd: decimal("min_deposit_usd", { precision: 10, scale: 2 }).default('10'),

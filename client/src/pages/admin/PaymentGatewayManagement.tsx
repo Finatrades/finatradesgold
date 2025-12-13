@@ -33,6 +33,12 @@ interface PaymentGatewaySettings {
   bankIban: string;
   bankInstructions: string;
   binancePayEnabled: boolean;
+  ngeniusEnabled: boolean;
+  ngeniusApiKey: string;
+  ngeniusOutletRef: string;
+  ngeniusMode: string;
+  ngeniusFeePercent: string;
+  ngeniusFixedFee: string;
   minDepositUsd: string;
   maxDepositUsd: string;
 }
@@ -60,6 +66,12 @@ export default function PaymentGatewayManagement() {
     bankIban: '',
     bankInstructions: '',
     binancePayEnabled: false,
+    ngeniusEnabled: false,
+    ngeniusApiKey: '',
+    ngeniusOutletRef: '',
+    ngeniusMode: 'sandbox',
+    ngeniusFeePercent: '2.5',
+    ngeniusFixedFee: '0.30',
     minDepositUsd: '10',
     maxDepositUsd: '100000',
   });
@@ -98,6 +110,12 @@ export default function PaymentGatewayManagement() {
           bankIban: data.bankIban || '',
           bankInstructions: data.bankInstructions || '',
           binancePayEnabled: data.binancePayEnabled || false,
+          ngeniusEnabled: data.ngeniusEnabled || false,
+          ngeniusApiKey: data.ngeniusApiKey || '',
+          ngeniusOutletRef: data.ngeniusOutletRef || '',
+          ngeniusMode: data.ngeniusMode || 'sandbox',
+          ngeniusFeePercent: data.ngeniusFeePercent || '2.5',
+          ngeniusFixedFee: data.ngeniusFixedFee || '0.30',
           minDepositUsd: data.minDepositUsd || '10',
           maxDepositUsd: data.maxDepositUsd || '100000',
         });
@@ -146,7 +164,7 @@ export default function PaymentGatewayManagement() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className={settings.stripeEnabled ? 'border-green-500' : ''}>
           <CardContent className="pt-6 text-center">
             <CreditCard className={`w-8 h-8 mx-auto mb-2 ${settings.stripeEnabled ? 'text-green-500' : 'text-muted-foreground'}`} />
@@ -183,10 +201,19 @@ export default function PaymentGatewayManagement() {
             </p>
           </CardContent>
         </Card>
+        <Card className={settings.ngeniusEnabled ? 'border-purple-500' : ''}>
+          <CardContent className="pt-6 text-center">
+            <CreditCard className={`w-8 h-8 mx-auto mb-2 ${settings.ngeniusEnabled ? 'text-purple-500' : 'text-muted-foreground'}`} />
+            <p className="font-semibold">NGenius</p>
+            <p className={`text-sm ${settings.ngeniusEnabled ? 'text-purple-500' : 'text-muted-foreground'}`}>
+              {settings.ngeniusEnabled ? 'Enabled' : 'Disabled'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="stripe" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="stripe" data-testid="tab-stripe">
             <CreditCard className="w-4 h-4 mr-2" /> Stripe
           </TabsTrigger>
@@ -194,10 +221,13 @@ export default function PaymentGatewayManagement() {
             <Wallet className="w-4 h-4 mr-2" /> PayPal
           </TabsTrigger>
           <TabsTrigger value="bank" data-testid="tab-bank">
-            <Landmark className="w-4 h-4 mr-2" /> Bank Transfer
+            <Landmark className="w-4 h-4 mr-2" /> Bank
           </TabsTrigger>
           <TabsTrigger value="crypto" data-testid="tab-crypto">
             <Bitcoin className="w-4 h-4 mr-2" /> Crypto
+          </TabsTrigger>
+          <TabsTrigger value="ngenius" data-testid="tab-ngenius">
+            <CreditCard className="w-4 h-4 mr-2" /> NGenius
           </TabsTrigger>
         </TabsList>
 
@@ -479,6 +509,102 @@ export default function PaymentGatewayManagement() {
                 <p className="text-sm text-amber-800">
                   Binance Pay credentials are configured via environment variables (BINANCE_PAY_API_KEY, BINANCE_PAY_SECRET_KEY, BINANCE_PAY_MERCHANT_ID). 
                   Toggle the switch above to enable/disable this payment method.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ngenius">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>NGenius Card Payments</CardTitle>
+                  <CardDescription>Accept Visa/Mastercard payments via Network International (NGenius)</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label>Enable NGenius</Label>
+                  <Switch
+                    checked={settings.ngeniusEnabled}
+                    onCheckedChange={(checked) => setSettings(prev => ({ ...prev, ngeniusEnabled: checked }))}
+                    data-testid="switch-ngenius-enabled"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>API Key</Label>
+                  <div className="relative">
+                    <Input
+                      type={showSecrets['ngeniusApiKey'] ? 'text' : 'password'}
+                      placeholder="NGenius API Key"
+                      value={settings.ngeniusApiKey}
+                      onChange={(e) => setSettings(prev => ({ ...prev, ngeniusApiKey: e.target.value }))}
+                      data-testid="input-ngenius-api-key"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => toggleSecret('ngeniusApiKey')}
+                    >
+                      {showSecrets['ngeniusApiKey'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Outlet Reference</Label>
+                  <Input
+                    placeholder="Outlet Reference ID"
+                    value={settings.ngeniusOutletRef}
+                    onChange={(e) => setSettings(prev => ({ ...prev, ngeniusOutletRef: e.target.value }))}
+                    data-testid="input-ngenius-outlet-ref"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mode</Label>
+                  <Select
+                    value={settings.ngeniusMode}
+                    onValueChange={(value) => setSettings(prev => ({ ...prev, ngeniusMode: value }))}
+                  >
+                    <SelectTrigger data-testid="select-ngenius-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sandbox">Sandbox (Testing)</SelectItem>
+                      <SelectItem value="live">Live (Production)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Fee Percentage (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={settings.ngeniusFeePercent}
+                    onChange={(e) => setSettings(prev => ({ ...prev, ngeniusFeePercent: e.target.value }))}
+                    data-testid="input-ngenius-fee-percent"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fixed Fee (USD)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={settings.ngeniusFixedFee}
+                    onChange={(e) => setSettings(prev => ({ ...prev, ngeniusFixedFee: e.target.value }))}
+                    data-testid="input-ngenius-fixed-fee"
+                  />
+                </div>
+              </div>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+                <p className="text-sm text-purple-800">
+                  NGenius is a card payment gateway by Network International. Once enabled, users will see a "Card Payment" option when depositing funds. 
+                  They will be redirected to the secure NGenius hosted payment page to complete the transaction.
                 </p>
               </div>
             </CardContent>

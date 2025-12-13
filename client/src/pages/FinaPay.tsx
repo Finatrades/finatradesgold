@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
-import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3 } from 'lucide-react';
+import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 
@@ -18,7 +19,7 @@ import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 
 export default function FinaPay() {
   const { user } = useAuth();
@@ -26,6 +27,56 @@ export default function FinaPay() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
+  
+  const [depositCallbackStatus, setDepositCallbackStatus] = useState<'success' | 'cancelled' | 'checking' | null>(null);
+  const [depositCallbackDetails, setDepositCallbackDetails] = useState<{ amount?: string; orderRef?: string } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const isCallback = params.get('deposit_callback');
+    const isCancelled = params.get('deposit_cancelled');
+    const orderRef = params.get('ref');
+    
+    if (isCancelled === '1') {
+      setDepositCallbackStatus('cancelled');
+      window.history.replaceState({}, '', '/finapay');
+    } else if (isCallback === '1' && orderRef) {
+      setDepositCallbackStatus('checking');
+      checkDepositStatus(orderRef);
+      window.history.replaceState({}, '', '/finapay');
+    }
+  }, [searchString]);
+
+  const checkDepositStatus = async (orderRef: string) => {
+    try {
+      const response = await fetch(`/api/ngenius/order/${orderRef}`);
+      const data = await response.json();
+      
+      if (data.status === 'Captured' || data.status === 'Authorised') {
+        setDepositCallbackStatus('success');
+        setDepositCallbackDetails({
+          amount: data.amountUsd ? `$${parseFloat(data.amountUsd).toFixed(2)}` : undefined,
+          orderRef: orderRef,
+        });
+        refreshWallet();
+        refreshTransactions();
+      } else if (data.status === 'Failed' || data.status === 'Cancelled') {
+        setDepositCallbackStatus('cancelled');
+        setDepositCallbackDetails({ orderRef });
+      } else {
+        setDepositCallbackStatus('checking');
+        setTimeout(() => checkDepositStatus(orderRef), 3000);
+      }
+    } catch (error) {
+      setDepositCallbackStatus('cancelled');
+    }
+  };
+
+  const closeDepositCallback = () => {
+    setDepositCallbackStatus(null);
+    setDepositCallbackDetails(null);
+  };
 
   const { 
     wallet: rawWallet, 
@@ -366,6 +417,87 @@ export default function FinaPay() {
           onClose={() => setActiveModal(null)}
           walletBalance={usdBalance}
         />
+
+        {/* Deposit Callback Modal */}
+        <Dialog open={depositCallbackStatus !== null} onOpenChange={closeDepositCallback}>
+          <DialogContent className="bg-white border-border text-foreground sm:max-w-[450px]">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                {depositCallbackStatus === 'success' && (
+                  <>
+                    <CheckCircle2 className="w-6 h-6 text-green-600" />
+                    <span>Deposit Successful</span>
+                  </>
+                )}
+                {depositCallbackStatus === 'cancelled' && (
+                  <>
+                    <XCircle className="w-6 h-6 text-red-600" />
+                    <span>Deposit Cancelled</span>
+                  </>
+                )}
+                {depositCallbackStatus === 'checking' && (
+                  <>
+                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                    <span>Processing Payment</span>
+                  </>
+                )}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                {depositCallbackStatus === 'success' && "Your card payment was successful."}
+                {depositCallbackStatus === 'cancelled' && "Your card payment was cancelled or failed."}
+                {depositCallbackStatus === 'checking' && "Please wait while we confirm your payment..."}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-6">
+              {depositCallbackStatus === 'success' && (
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-10 h-10 text-green-600" />
+                  </div>
+                  {depositCallbackDetails?.amount && (
+                    <div>
+                      <p className="text-3xl font-bold text-green-600">{depositCallbackDetails.amount}</p>
+                      <p className="text-sm text-muted-foreground mt-1">has been added to your wallet</p>
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Your updated balance is now available. You can start using your funds immediately.
+                  </p>
+                </div>
+              )}
+              
+              {depositCallbackStatus === 'cancelled' && (
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                    <XCircle className="w-10 h-10 text-red-600" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    The payment was not completed. No funds have been deducted from your card.
+                    You can try again whenever you're ready.
+                  </p>
+                </div>
+              )}
+              
+              {depositCallbackStatus === 'checking' && (
+                <div className="text-center space-y-4">
+                  <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
+                  <p className="text-sm text-muted-foreground">
+                    Confirming your payment with the payment provider...
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {depositCallbackStatus !== 'checking' && (
+              <DialogFooter>
+                <Button onClick={closeDepositCallback} data-testid="button-close-callback">
+                  {depositCallbackStatus === 'success' ? 'Done' : 'Close'}
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
 
       </div>
     </DashboardLayout>

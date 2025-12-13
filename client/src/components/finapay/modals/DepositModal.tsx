@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
-import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2 } from 'lucide-react';
+import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -26,28 +26,54 @@ interface DepositModalProps {
   onClose: () => void;
 }
 
+type PaymentMethod = 'bank' | 'card';
+type Step = 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing';
+
 export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const { user } = useAuth();
   const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<'select' | 'details' | 'submitted'>('select');
+  const [step, setStep] = useState<Step>('method');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<PlatformBankAccount | null>(null);
   const [amount, setAmount] = useState('');
   const [senderBankName, setSenderBankName] = useState('');
   const [senderAccountName, setSenderAccountName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [ngeniusEnabled, setNgeniusEnabled] = useState(false);
+  const [checkingNgenius, setCheckingNgenius] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
+      checkNgeniusStatus();
       fetchBankAccounts();
-      setStep('select');
-      setSelectedAccount(null);
-      setAmount('');
-      setSenderBankName('');
-      setSenderAccountName('');
+      resetForm();
     }
   }, [isOpen]);
+
+  const resetForm = () => {
+    setStep('method');
+    setPaymentMethod(null);
+    setSelectedAccount(null);
+    setAmount('');
+    setSenderBankName('');
+    setSenderAccountName('');
+    setReferenceNumber('');
+  };
+
+  const checkNgeniusStatus = async () => {
+    setCheckingNgenius(true);
+    try {
+      const response = await fetch('/api/ngenius/status');
+      const data = await response.json();
+      setNgeniusEnabled(data.enabled);
+    } catch (error) {
+      setNgeniusEnabled(false);
+    } finally {
+      setCheckingNgenius(false);
+    }
+  };
 
   const fetchBankAccounts = async () => {
     setLoading(true);
@@ -67,6 +93,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     toast.success("Copied to clipboard", {
       description: `${label} copied`
     });
+  };
+
+  const handleSelectMethod = (method: PaymentMethod) => {
+    setPaymentMethod(method);
+    if (method === 'bank') {
+      setStep('select');
+    } else if (method === 'card') {
+      setStep('card-amount');
+    }
   };
 
   const handleSelectAccount = (account: PlatformBankAccount) => {
@@ -104,9 +139,62 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     }
   };
 
+  const handleCardPayment = async () => {
+    if (!user || !amount) return;
+    
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum < 10) {
+      toast.error("Minimum deposit amount is $10");
+      return;
+    }
+
+    if (amountNum > 10000) {
+      toast.error("Maximum card deposit is $10,000. For larger amounts, please use bank transfer.");
+      return;
+    }
+
+    setSubmitting(true);
+    setStep('card-processing');
+    
+    try {
+      const returnUrl = `${window.location.origin}/finapay?deposit_callback=1`;
+      const cancelUrl = `${window.location.origin}/finapay?deposit_cancelled=1`;
+      
+      const res = await apiRequest('POST', '/api/ngenius/create-order', {
+        amount: amountNum,
+        currency: 'USD',
+        returnUrl,
+        cancelUrl,
+        description: `FinaPay wallet deposit - $${amountNum.toFixed(2)}`,
+      });
+      
+      const data = await res.json();
+      
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initiate card payment");
+      setStep('card-amount');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleClose = () => {
-    setStep('select');
+    resetForm();
     onClose();
+  };
+
+  const handleBack = () => {
+    if (step === 'select' || step === 'card-amount') {
+      setStep('method');
+      setPaymentMethod(null);
+    } else if (step === 'details') {
+      setStep('select');
+    }
   };
 
   return (
@@ -114,19 +202,60 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       <DialogContent className="bg-white border-border text-foreground sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <Building className="w-5 h-5 text-primary" />
+            <Wallet className="w-5 h-5 text-primary" />
             <span>Deposit Funds</span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
+            {step === 'method' && "Choose your preferred deposit method"}
             {step === 'select' && "Select a bank account to deposit to"}
             {step === 'details' && "Enter deposit details and make your transfer"}
             {step === 'submitted' && "Deposit request submitted successfully"}
+            {step === 'card-amount' && "Enter the amount to deposit via card"}
+            {step === 'card-processing' && "Redirecting to secure payment..."}
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
+        {(loading || checkingNgenius) && step === 'method' ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : step === 'method' ? (
+          <div className="space-y-4 py-4">
+            <button
+              onClick={() => handleSelectMethod('bank')}
+              className="w-full border border-border rounded-xl p-4 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
+              data-testid="button-select-bank-transfer"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Building className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-foreground">Bank Transfer</h4>
+                  <p className="text-sm text-muted-foreground">Transfer from your bank account (1-3 business days)</p>
+                </div>
+                <ArrowRight className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </button>
+
+            {ngeniusEnabled && (
+              <button
+                onClick={() => handleSelectMethod('card')}
+                className="w-full border border-border rounded-xl p-4 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
+                data-testid="button-select-card-payment"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-foreground">Card Payment</h4>
+                    <p className="text-sm text-muted-foreground">Pay with Visa or Mastercard (instant)</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </button>
+            )}
           </div>
         ) : step === 'select' ? (
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
@@ -270,6 +399,53 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                <p>After making your bank transfer, your deposit request will be reviewed by our team. Once the funds are received and verified, your wallet will be credited within 1-3 business days.</p>
             </div>
           </div>
+        ) : step === 'card-amount' ? (
+          <div className="space-y-6 py-4">
+            <div className="border border-border rounded-xl p-4 bg-gradient-to-br from-green-50 to-emerald-50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-foreground">Card Payment</h4>
+                  <p className="text-xs text-muted-foreground">Visa, Mastercard accepted</p>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm">Amount (USD) *</Label>
+                <div className="relative mt-1">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-9 bg-white"
+                    min="10"
+                    max="10000"
+                    data-testid="input-card-amount"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Min: $10 | Max: $10,000</p>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex items-start gap-2">
+               <div className="mt-0.5">ℹ️</div>
+               <p>You will be redirected to a secure payment page to complete your card payment. Your wallet will be credited instantly upon successful payment.</p>
+            </div>
+          </div>
+        ) : step === 'card-processing' ? (
+          <div className="py-12 text-center space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Processing...</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Redirecting you to secure payment page
+              </p>
+            </div>
+          </div>
         ) : step === 'submitted' ? (
           <div className="py-8 text-center space-y-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
@@ -293,12 +469,27 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : null}
 
         <DialogFooter>
-          {step === 'select' && (
+          {step === 'method' && (
             <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          )}
+          {(step === 'select' || step === 'card-amount') && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              {step === 'card-amount' && (
+                <Button 
+                  onClick={handleCardPayment} 
+                  disabled={!amount || submitting}
+                  data-testid="button-proceed-card-payment"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                  Proceed to Payment
+                </Button>
+              )}
+            </>
           )}
           {step === 'details' && (
             <>
-              <Button variant="outline" onClick={() => setStep('select')}>Back</Button>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
                 onClick={handleSubmit} 
                 disabled={!amount || submitting}
