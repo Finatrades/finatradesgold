@@ -91,6 +91,13 @@ export default function FinaBridge() {
     tradeValueUsd: '',
     settlementGoldGrams: '',
     suggestExporter: true,
+    exporterCompanyName: '',
+    exporterContactName: '',
+    exporterEmail: '',
+    exporterPhone: '',
+    proposedQuotePrice: '',
+    proposedTimelineDays: '',
+    proposalNotes: '',
   });
   
   const [proposalForm, setProposalForm] = useState({
@@ -175,6 +182,13 @@ export default function FinaBridge() {
       return;
     }
 
+    if (!requestForm.suggestExporter) {
+      if (!requestForm.exporterCompanyName || !requestForm.exporterEmail || !requestForm.proposedQuotePrice || !requestForm.proposedTimelineDays) {
+        toast({ title: 'Missing Exporter Details', description: 'Please fill in exporter company, email, quote price, and timeline', variant: 'destructive' });
+        return;
+      }
+    }
+
     const requiredGold = parseFloat(requestForm.settlementGoldGrams);
     const availableInFinaBridge = parseFloat(wallet?.availableGoldGrams || '0');
     
@@ -223,6 +237,13 @@ export default function FinaBridge() {
         tradeValueUsd: '',
         settlementGoldGrams: '',
         suggestExporter: true,
+        exporterCompanyName: '',
+        exporterContactName: '',
+        exporterEmail: '',
+        exporterPhone: '',
+        proposedQuotePrice: '',
+        proposedTimelineDays: '',
+        proposalNotes: '',
       });
       setActiveTab('requests');
       fetchImporterData();
@@ -662,6 +683,94 @@ export default function FinaBridge() {
                         Suggest matching exporters (allow Finatrades to find exporters for me)
                       </label>
                     </div>
+
+                    {!requestForm.suggestExporter && (
+                      <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+                        <h4 className="font-medium mb-4 flex items-center gap-2">
+                          <Send className="w-4 h-4" />
+                          My Exporter Details & Proposal
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Exporter Company Name *</label>
+                            <input
+                              type="text"
+                              value={requestForm.exporterCompanyName}
+                              onChange={(e) => setRequestForm({ ...requestForm, exporterCompanyName: e.target.value })}
+                              className="w-full p-3 border rounded-lg"
+                              placeholder="e.g., ABC Trading Ltd."
+                              data-testid="input-exporter-company"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Contact Person Name</label>
+                            <input
+                              type="text"
+                              value={requestForm.exporterContactName}
+                              onChange={(e) => setRequestForm({ ...requestForm, exporterContactName: e.target.value })}
+                              className="w-full p-3 border rounded-lg"
+                              placeholder="e.g., John Smith"
+                              data-testid="input-exporter-contact"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Exporter Email *</label>
+                            <input
+                              type="email"
+                              value={requestForm.exporterEmail}
+                              onChange={(e) => setRequestForm({ ...requestForm, exporterEmail: e.target.value })}
+                              className="w-full p-3 border rounded-lg"
+                              placeholder="exporter@company.com"
+                              data-testid="input-exporter-email"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Exporter Phone</label>
+                            <input
+                              type="tel"
+                              value={requestForm.exporterPhone}
+                              onChange={(e) => setRequestForm({ ...requestForm, exporterPhone: e.target.value })}
+                              className="w-full p-3 border rounded-lg"
+                              placeholder="+1 234 567 8900"
+                              data-testid="input-exporter-phone"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Quote Price (USD) *</label>
+                            <input
+                              type="number"
+                              value={requestForm.proposedQuotePrice}
+                              onChange={(e) => setRequestForm({ ...requestForm, proposedQuotePrice: e.target.value })}
+                              className="w-full p-3 border rounded-lg"
+                              placeholder="0.00"
+                              data-testid="input-quote-price"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Timeline (Days) *</label>
+                            <input
+                              type="number"
+                              value={requestForm.proposedTimelineDays}
+                              onChange={(e) => setRequestForm({ ...requestForm, proposedTimelineDays: e.target.value })}
+                              className="w-full p-3 border rounded-lg"
+                              placeholder="30"
+                              data-testid="input-timeline-days"
+                            />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium">Notes / Terms</label>
+                            <textarea
+                              value={requestForm.proposalNotes}
+                              onChange={(e) => setRequestForm({ ...requestForm, proposalNotes: e.target.value })}
+                              className="w-full p-3 border rounded-lg"
+                              rows={2}
+                              placeholder="Additional terms or notes about this proposal..."
+                              data-testid="input-proposal-notes"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex justify-end gap-4 pt-4">
                       <Button type="button" variant="outline" onClick={() => setActiveTab('requests')}>
