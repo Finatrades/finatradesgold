@@ -87,7 +87,6 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       defaultOpen: true,
       items: [
         { icon: <TrendingUp className="w-5 h-5" />, label: 'My Plans', href: '/bnsl' },
-        { icon: <Compass className="w-5 h-5" />, label: 'Explore Plans', href: '/bnsl/explore' },
       ]
     },
     ...(accountType === 'business' ? [{
