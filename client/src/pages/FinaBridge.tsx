@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFinaPay } from '@/context/FinaPayContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,6 +63,7 @@ export default function FinaBridge() {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
   const { toast } = useToast();
+  const { getContent } = useCMSPage('finabridge');
   const { currentGoldPriceUsdPerGram } = useFinaPay();
   
   const [role, setRole] = useState<'importer' | 'exporter'>('importer');
@@ -434,7 +436,7 @@ export default function FinaBridge() {
               <BarChart3 className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">FinaBridge Trade Finance</h1>
+              <h1 className="text-2xl font-bold text-foreground" data-testid="text-finabridge-title">{getContent('hero', 'title', 'FinaBridge Trade Finance')}</h1>
               <p className="text-muted-foreground text-sm">Gold-backed trade matching for importers and exporters.</p>
             </div>
           </div>

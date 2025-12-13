@@ -120,37 +120,40 @@ function Router() {
 import { BnslProvider } from "@/context/BnslContext";
 import { FeeProvider } from "@/context/FeeContext";
 import { BrandingProvider } from "@/context/BrandingContext";
+import { CMSProvider } from "@/context/CMSContext";
 
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
         <BrandingProvider>
-          <UserProvider>
-            <AuthProvider>
-              <FeeProvider>
-                <PlatformProvider>
-                  <TradeFinanceProvider>
-                    <BnslProvider>
-                      <FinaPayProvider>
-                        <LanguageProvider>
-                          <AccountTypeProvider>
-                            <NotificationProvider>
-                              <TooltipProvider>
-                                <Toaster />
-                                <SonnerToaster position="top-right" richColors />
-                                <Router />
-                              </TooltipProvider>
-                            </NotificationProvider>
-                          </AccountTypeProvider>
-                        </LanguageProvider>
-                      </FinaPayProvider>
-                    </BnslProvider>
-                  </TradeFinanceProvider>
-                </PlatformProvider>
-              </FeeProvider>
-            </AuthProvider>
-          </UserProvider>
+          <CMSProvider>
+            <UserProvider>
+              <AuthProvider>
+                <FeeProvider>
+                  <PlatformProvider>
+                    <TradeFinanceProvider>
+                      <BnslProvider>
+                        <FinaPayProvider>
+                          <LanguageProvider>
+                            <AccountTypeProvider>
+                              <NotificationProvider>
+                                <TooltipProvider>
+                                  <Toaster />
+                                  <SonnerToaster position="top-right" richColors />
+                                  <Router />
+                                </TooltipProvider>
+                              </NotificationProvider>
+                            </AccountTypeProvider>
+                          </LanguageProvider>
+                        </FinaPayProvider>
+                      </BnslProvider>
+                    </TradeFinanceProvider>
+                  </PlatformProvider>
+                </FeeProvider>
+              </AuthProvider>
+            </UserProvider>
+          </CMSProvider>
         </BrandingProvider>
       </QueryClientProvider>
     </ThemeProvider>

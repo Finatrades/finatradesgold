@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useCMSPage } from '@/context/CMSContext';
 import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -21,6 +22,7 @@ import { apiRequest } from '@/lib/queryClient';
 export default function FinaVault() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { getContent } = useCMSPage('finavault');
   const [location] = useLocation();
   const queryClient = useQueryClient();
   
@@ -170,8 +172,8 @@ export default function FinaVault() {
              <div className="p-2 bg-secondary/10 rounded-lg border border-secondary/20 text-secondary">
                 <Database className="w-6 h-6" />
              </div>
-             <h1 className="text-2xl font-bold text-foreground">
-               FinaVault — <span className="text-muted-foreground font-normal">Gold Deposit</span>
+             <h1 className="text-2xl font-bold text-foreground" data-testid="text-finavault-title">
+               {getContent('hero', 'title', 'FinaVault')} — <span className="text-muted-foreground font-normal">Gold Deposit</span>
              </h1>
           </div>
           

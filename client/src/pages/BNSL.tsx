@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2, Coins } from 'lucide-react';
@@ -41,6 +42,7 @@ import { useLocation } from 'wouter';
 export default function BNSL() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { getContent } = useCMSPage('bnsl');
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
 
@@ -276,7 +278,7 @@ export default function BNSL() {
                 <TrendingUp className="w-6 h-6" />
              </div>
              <div>
-               <h1 className="text-2xl font-bold text-foreground">BNSL – Buy Now Sell Later</h1>
+               <h1 className="text-2xl font-bold text-foreground" data-testid="text-bnsl-title">{getContent('hero', 'title', 'BNSL – Buy Now Sell Later')}</h1>
                <p className="text-muted-foreground text-sm">Deferred price gold sale with quarterly margin payouts.</p>
              </div>
           </div>

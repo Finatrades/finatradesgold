@@ -3669,7 +3669,69 @@ export async function registerRoutes(
   });
 
   // ============================================================================
-  // CMS - CONTENT MANAGEMENT SYSTEM
+  // CMS - CONTENT MANAGEMENT SYSTEM (PUBLIC)
+  // ============================================================================
+  
+  // Get content by page slug (Public - for frontend consumption)
+  app.get("/api/cms/page/:slug", async (req, res) => {
+    try {
+      const page = await storage.getContentPageBySlug(req.params.slug);
+      if (!page || !page.isActive) {
+        return res.status(404).json({ message: "Page not found" });
+      }
+      const blocks = await storage.getPageContentBlocks(page.id);
+      // Only return published blocks
+      const publishedBlocks = blocks.filter(b => b.status === 'published');
+      
+      // Transform blocks into a convenient format: { section: { key: content } }
+      const content: Record<string, Record<string, string | null>> = {};
+      for (const block of publishedBlocks) {
+        if (!content[block.section]) {
+          content[block.section] = {};
+        }
+        content[block.section][block.key] = block.content || block.defaultContent || null;
+      }
+      
+      res.json({ page, content });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get page content" });
+    }
+  });
+  
+  // Get all active pages with their content (Public - for frontend)
+  app.get("/api/cms/pages", async (req, res) => {
+    try {
+      const allPages = await storage.getAllContentPages();
+      const activePages = allPages.filter(p => p.isActive);
+      
+      const pagesWithContent: Record<string, {
+        page: typeof activePages[0];
+        content: Record<string, Record<string, string | null>>;
+      }> = {};
+      
+      for (const page of activePages) {
+        const blocks = await storage.getPageContentBlocks(page.id);
+        const publishedBlocks = blocks.filter(b => b.status === 'published');
+        
+        const content: Record<string, Record<string, string | null>> = {};
+        for (const block of publishedBlocks) {
+          if (!content[block.section]) {
+            content[block.section] = {};
+          }
+          content[block.section][block.key] = block.content || block.defaultContent || null;
+        }
+        
+        pagesWithContent[page.slug] = { page, content };
+      }
+      
+      res.json({ pages: pagesWithContent });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get pages" });
+    }
+  });
+  
+  // ============================================================================
+  // CMS - CONTENT MANAGEMENT SYSTEM (ADMIN)
   // ============================================================================
   
   // === Content Pages ===

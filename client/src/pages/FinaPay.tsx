@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
@@ -25,6 +26,7 @@ export default function FinaPay() {
   const { user } = useAuth();
   const { settings } = usePlatform();
   const { toast } = useToast();
+  const { getContent } = useCMSPage('finapay');
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
@@ -239,7 +241,7 @@ export default function FinaPay() {
               <div className="p-2 bg-amber-100 rounded-lg">
                 <WalletIcon className="w-5 h-5 text-amber-600" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">FinaPay Wallet</h2>
+              <h2 className="text-lg font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'FinaPay Wallet')}</h2>
             </div>
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveModal('deposit')}>
               <Plus className="w-4 h-4 mr-2" />
