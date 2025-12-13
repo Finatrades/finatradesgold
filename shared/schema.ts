@@ -1127,3 +1127,101 @@ export const brandingSettings = pgTable("branding_settings", {
 export const insertBrandingSettingsSchema = createInsertSchema(brandingSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertBrandingSettings = z.infer<typeof insertBrandingSettingsSchema>;
 export type BrandingSettings = typeof brandingSettings.$inferSelect;
+
+// ============================================
+// ADMIN FINANCIAL REPORTING
+// ============================================
+
+export const feeSourceEnum = pgEnum('fee_source', ['FinaPay', 'FinaVault', 'BNSL', 'FinaBridge', 'Other']);
+export const feeTypeDetailEnum = pgEnum('fee_type_detail', [
+  'buy_spread', 'sell_spread', 'transaction_fee', 'transfer_fee',
+  'storage_fee', 'withdrawal_fee', 'deposit_fee',
+  'bnsl_interest', 'bnsl_early_termination', 'bnsl_late_fee',
+  'trade_finance_fee', 'other'
+]);
+
+// Track every fee/revenue transaction
+export const feeTransactions = pgTable("fee_transactions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  source: feeSourceEnum("source").notNull(),
+  feeType: feeTypeDetailEnum("fee_type").notNull(),
+  
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }), // If fee was in gold
+  
+  relatedTransactionId: varchar("related_transaction_id", { length: 255 }),
+  relatedEntityType: varchar("related_entity_type", { length: 50 }), // 'transaction', 'bnsl_plan', 'vault_holding'
+  relatedEntityId: varchar("related_entity_id", { length: 255 }),
+  
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertFeeTransactionSchema = createInsertSchema(feeTransactions).omit({ id: true, createdAt: true });
+export type InsertFeeTransaction = z.infer<typeof insertFeeTransactionSchema>;
+export type FeeTransaction = typeof feeTransactions.$inferSelect;
+
+// Daily financial snapshots for reporting
+export const dailyFinancialSnapshots = pgTable("daily_financial_snapshots", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  snapshotDate: timestamp("snapshot_date").notNull().unique(),
+  
+  // User metrics
+  totalUsers: integer("total_users").notNull().default(0),
+  activeUsers: integer("active_users").notNull().default(0), // Users with activity in last 30 days
+  newUsersToday: integer("new_users_today").notNull().default(0),
+  kycApprovedUsers: integer("kyc_approved_users").notNull().default(0),
+  
+  // Assets Under Management
+  totalGoldGrams: decimal("total_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  totalGoldValueUsd: decimal("total_gold_value_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  totalFiatBalanceUsd: decimal("total_fiat_balance_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  goldPriceUsd: decimal("gold_price_usd", { precision: 12, scale: 2 }).notNull(),
+  
+  // FinaPay metrics
+  finapayTransactionCount: integer("finapay_transaction_count").notNull().default(0),
+  finapayVolumeUsd: decimal("finapay_volume_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  finapayFeesUsd: decimal("finapay_fees_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  
+  // FinaVault metrics
+  vaultTotalGoldGrams: decimal("vault_total_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  vaultStorageFeesUsd: decimal("vault_storage_fees_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  vaultActiveHoldings: integer("vault_active_holdings").notNull().default(0),
+  
+  // BNSL metrics
+  bnslActivePlans: integer("bnsl_active_plans").notNull().default(0),
+  bnslTotalPrincipalUsd: decimal("bnsl_total_principal_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  bnslExpectedPayoutsUsd: decimal("bnsl_expected_payouts_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  bnslInterestEarnedUsd: decimal("bnsl_interest_earned_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  
+  // Revenue summary
+  totalRevenueUsd: decimal("total_revenue_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  
+  // Liabilities
+  totalGoldLiabilityGrams: decimal("total_gold_liability_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  totalFiatLiabilityUsd: decimal("total_fiat_liability_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  pendingWithdrawalsUsd: decimal("pending_withdrawals_usd", { precision: 18, scale: 2 }).notNull().default('0'),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDailyFinancialSnapshotSchema = createInsertSchema(dailyFinancialSnapshots).omit({ id: true, createdAt: true });
+export type InsertDailyFinancialSnapshot = z.infer<typeof insertDailyFinancialSnapshotSchema>;
+export type DailyFinancialSnapshot = typeof dailyFinancialSnapshots.$inferSelect;
+
+// Platform expenses tracking
+export const platformExpenses = pgTable("platform_expenses", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  category: varchar("category", { length: 100 }).notNull(), // 'custody', 'insurance', 'operations', 'hedging'
+  description: text("description").notNull(),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  expenseDate: timestamp("expense_date").notNull(),
+  recordedBy: varchar("recorded_by", { length: 255 }).references(() => users.id),
+  attachmentUrl: text("attachment_url"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPlatformExpenseSchema = createInsertSchema(platformExpenses).omit({ id: true, createdAt: true });
+export type InsertPlatformExpense = z.infer<typeof insertPlatformExpenseSchema>;
+export type PlatformExpense = typeof platformExpenses.$inferSelect;
