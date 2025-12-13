@@ -252,57 +252,57 @@ export default function FinaPay() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
-            onClick={() => setActiveModal('buy')}
+            onClick={() => setActiveModal('deposit')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
-            data-testid="button-buy"
+            data-testid="button-add-funds"
           >
             <div className="p-3 bg-green-100 rounded-full">
-              <ShoppingCart className="w-5 h-5 text-green-600" />
+              <Plus className="w-5 h-5 text-green-600" />
             </div>
-            <span className="text-sm font-medium">Buy Gold</span>
+            <span className="text-sm font-medium">Add Funds</span>
           </button>
 
           <button
-            onClick={() => setActiveModal('sell')}
+            onClick={() => setActiveModal('withdraw')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
-            data-testid="button-sell"
+            data-testid="button-withdrawals"
           >
             <div className="p-3 bg-orange-100 rounded-full">
-              <Coins className="w-5 h-5 text-orange-600" />
+              <ArrowUpRight className="w-5 h-5 text-orange-600" />
             </div>
-            <span className="text-sm font-medium">Sell Gold</span>
+            <span className="text-sm font-medium">Withdrawals</span>
           </button>
 
           <button
             onClick={() => setActiveModal('send')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
-            data-testid="button-send"
+            data-testid="button-send-funds"
           >
             <div className="p-3 bg-blue-100 rounded-full">
               <Send className="w-5 h-5 text-blue-600" />
             </div>
-            <span className="text-sm font-medium">Send</span>
+            <span className="text-sm font-medium">Send Funds</span>
           </button>
 
           <button
             onClick={() => setActiveModal('request')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
-            data-testid="button-request"
+            data-testid="button-request-funds"
           >
             <div className="p-3 bg-purple-100 rounded-full">
               <ArrowDownLeft className="w-5 h-5 text-purple-600" />
             </div>
-            <span className="text-sm font-medium">Request</span>
+            <span className="text-sm font-medium">Request Funds</span>
           </button>
         </div>
 
         {/* Secondary Actions */}
         <div className="flex flex-wrap gap-2 justify-center">
-          <button onClick={() => setActiveModal('deposit')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
-            <Plus className="w-4 h-4 inline mr-1" /> Deposit USD
+          <button onClick={() => setActiveModal('buy')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <ShoppingCart className="w-4 h-4 inline mr-1" /> Buy Gold
           </button>
-          <button onClick={() => setActiveModal('withdraw')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
-            <ArrowUpRight className="w-4 h-4 inline mr-1" /> Withdraw
+          <button onClick={() => setActiveModal('sell')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <Coins className="w-4 h-4 inline mr-1" /> Sell Gold
           </button>
           <button onClick={() => setLocation('/bnsl')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
             <TrendingUp className="w-4 h-4 inline mr-1" /> BNSL Plans

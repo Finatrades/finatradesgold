@@ -126,10 +126,10 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <ArrowDownLeft className="w-5 h-5 text-purple-500" />
-            <span>Request Money</span>
+            <span>Request Funds</span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {step === 'create' && "Request payment from another user or generate a QR code"}
+            {step === 'create' && "Request payment from another user or share your QR code"}
             {step === 'success' && "Share this QR code or link to receive payment"}
           </DialogDescription>
         </DialogHeader>

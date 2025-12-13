@@ -150,10 +150,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
-            <span>Send Money</span>
+            <span>Send Funds</span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {step === 'search' && "Send USD instantly to any Finatrades user"}
+            {step === 'search' && "Send funds instantly to any Finatrades user via Email, ID, or QR Code"}
             {step === 'confirm' && "Review and confirm your transfer"}
             {step === 'success' && "Transfer completed successfully"}
           </DialogDescription>
