@@ -20,6 +20,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
+import { sendEmail, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
 
 // Helper to strip sensitive fields from user object
 function sanitizeUser(user: User): Omit<User, 'password' | 'emailVerificationCode' | 'mfaSecret' | 'mfaBackupCodes'> {
@@ -36,6 +37,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // Seed email templates on startup (must await to ensure templates exist before handling requests)
+  await seedEmailTemplates().catch(err => console.error('[Email] Failed to seed templates:', err));
   
   // ============================================================================
   // AUTHENTICATION & USER MANAGEMENT
@@ -88,14 +92,19 @@ export async function registerRoutes(
         details: "User registered - pending email verification",
       });
       
-      // In production, send email with verification code
-      // For now, we'll log it and the user can see it in the response for testing
-      console.log(`[Email Verification] Code for ${user.email}: ${verificationCode}`);
+      // Send verification email
+      const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.EMAIL_VERIFICATION, {
+        user_name: `${user.firstName} ${user.lastName}`,
+        verification_code: verificationCode,
+      });
       
       res.json({ 
         user: sanitizeUser(user),
-        message: "Registration successful. Please verify your email.",
-        requiresVerification: true 
+        message: emailResult.success 
+          ? "Registration successful. Please verify your email." 
+          : "Registration successful. Email could not be sent - you can request a new verification code.",
+        requiresVerification: true,
+        emailSent: emailResult.success
       });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
@@ -125,8 +134,15 @@ export async function registerRoutes(
         emailVerificationExpiry: codeExpiry,
       });
       
-      // In production, send email
-      console.log(`[Email Verification] New code for ${email}: ${verificationCode}`);
+      // Send verification email
+      const emailResult = await sendEmail(email, EMAIL_TEMPLATES.EMAIL_VERIFICATION, {
+        user_name: `${user.firstName} ${user.lastName}`,
+        verification_code: verificationCode,
+      });
+      
+      if (!emailResult.success) {
+        return res.status(500).json({ message: "Failed to send verification email. Please try again." });
+      }
       
       res.json({ message: "Verification code sent to your email" });
     } catch (error) {
@@ -534,12 +550,13 @@ export async function registerRoutes(
         return res.json({ userExists: true, userId: existingUser.id });
       }
       
-      // User does not exist - log invitation (in production, send email)
-      console.log(`[Invitation] Sending invite to ${email}`);
-      console.log(`  From: ${senderName}`);
-      console.log(`  Amount: ${amount}g gold`);
-      console.log(`  Type: ${type}`);
-      console.log(`  Join link: ${process.env.REPLIT_DEV_DOMAIN || 'https://finatrades.com'}/register?ref=${encodeURIComponent(senderName || '')}`);
+      // User does not exist - send invitation email
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN || 'https://finatrades.com';
+      const emailResult = await sendEmail(email, EMAIL_TEMPLATES.INVITATION, {
+        sender_name: senderName || 'A Finatrades user',
+        amount: `${amount}g gold`,
+        register_url: `${baseUrl}/register?ref=${encodeURIComponent(senderName || '')}`,
+      });
       
       // Create audit log for the invitation
       await storage.createAuditLog({
@@ -548,13 +565,15 @@ export async function registerRoutes(
         actionType: "create",
         actor: "0",
         actorRole: "system",
-        details: `Invitation sent to ${email} from ${senderName} for ${type} of ${amount}g gold`,
+        details: `Invitation ${emailResult.success ? 'sent' : 'failed'} to ${email} from ${senderName} for ${type} of ${amount}g gold`,
       });
       
       res.json({ 
         userExists: false, 
-        invitationSent: true,
-        message: `Invitation sent to ${email}` 
+        invitationSent: emailResult.success,
+        message: emailResult.success 
+          ? `Invitation sent to ${email}` 
+          : `Could not send invitation email to ${email}. Please try again.`
       });
     } catch (error) {
       console.error("Check and invite error:", error);
@@ -1088,11 +1107,35 @@ export async function registerRoutes(
         return res.status(404).json({ message: "KYC submission not found" });
       }
       
-      // Update user KYC status
+      // Update user KYC status and send notification email
       if (req.body.status) {
         await storage.updateUser(submission.userId, {
           kycStatus: req.body.status,
         });
+        
+        // Send email notification based on status
+        const user = await storage.getUser(submission.userId);
+        let emailSent = false;
+        if (user) {
+          const baseUrl = process.env.REPLIT_DEV_DOMAIN || 'https://finatrades.com';
+          if (req.body.status === 'Approved') {
+            const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.KYC_APPROVED, {
+              user_name: `${user.firstName} ${user.lastName}`,
+              dashboard_url: `${baseUrl}/dashboard`,
+            });
+            emailSent = emailResult.success;
+          } else if (req.body.status === 'Rejected') {
+            const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.KYC_REJECTED, {
+              user_name: `${user.firstName} ${user.lastName}`,
+              rejection_reason: req.body.rejectionReason || 'Documents could not be verified',
+              kyc_url: `${baseUrl}/kyc`,
+            });
+            emailSent = emailResult.success;
+          }
+        }
+        
+        // Include email status in response for admin visibility
+        return res.json({ submission, emailSent });
       }
       
       res.json({ submission });
