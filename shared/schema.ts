@@ -745,6 +745,41 @@ export const insertBnslEarlyTerminationSchema = createInsertSchema(bnslEarlyTerm
 export type InsertBnslEarlyTermination = z.infer<typeof insertBnslEarlyTerminationSchema>;
 export type BnslEarlyTermination = typeof bnslEarlyTerminations.$inferSelect;
 
+// BNSL Agreements - Signed agreements storage
+export const bnslAgreements = pgTable("bnsl_agreements", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  planId: varchar("plan_id", { length: 255 }).notNull().references(() => bnslPlans.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  templateVersion: varchar("template_version", { length: 50 }).notNull().default('V3'),
+  signatureName: varchar("signature_name", { length: 255 }).notNull(),
+  signedAt: timestamp("signed_at").notNull(),
+  
+  pdfPath: text("pdf_path").notNull(),
+  pdfFileName: varchar("pdf_file_name", { length: 255 }).notNull(),
+  
+  planDetails: json("plan_details").$type<{
+    tenorMonths: number;
+    goldSoldGrams: number;
+    enrollmentPriceUsdPerGram: number;
+    basePriceComponentUsd: number;
+    totalMarginComponentUsd: number;
+    quarterlyMarginUsd: number;
+    agreedMarginAnnualPercent: number;
+    startDate: string;
+    maturityDate: string;
+  }>().notNull(),
+  
+  emailSentAt: timestamp("email_sent_at"),
+  emailMessageId: varchar("email_message_id", { length: 255 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBnslAgreementSchema = createInsertSchema(bnslAgreements).omit({ id: true, createdAt: true });
+export type InsertBnslAgreement = z.infer<typeof insertBnslAgreementSchema>;
+export type BnslAgreement = typeof bnslAgreements.$inferSelect;
+
 // ============================================
 // FINABRIDGE - TRADE FINANCE
 // ============================================
