@@ -880,25 +880,72 @@ export default function FinaBridge() {
                               setRequestForm({ ...requestForm, settlementGoldGrams: e.target.value });
                               setInsufficientFundsError(null);
                             }}
-                            className="w-full p-3 border rounded-lg"
+                            className={`w-full p-3 border rounded-lg ${
+                              requestForm.settlementGoldGrams && 
+                              parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
+                                ? 'border-red-400 bg-red-50/50'
+                                : ''
+                            }`}
                             placeholder="0.000"
                             data-testid="input-settlement-gold"
                           />
                           <div className="flex flex-wrap gap-4 text-xs mt-1">
                             <span className="text-muted-foreground">
-                              FinaBridge Balance: <span className="font-medium text-green-600">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>
+                              FinaBridge Balance: <span className={`font-medium ${
+                                requestForm.settlementGoldGrams && 
+                                parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
+                                  ? 'text-red-600'
+                                  : 'text-green-600'
+                              }`}>{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>
                             </span>
                             <span className="text-muted-foreground">
                               FinaPay Balance: <span className="font-medium text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => setShowFundDialog(true)}
-                              className="text-primary hover:underline"
-                            >
-                              + Fund FinaBridge
-                            </button>
                           </div>
+                          
+                          {requestForm.settlementGoldGrams && 
+                           parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0') && (
+                            <div className="mt-2 p-3 bg-amber-50 border border-amber-300 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <Wallet className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <p className="text-amber-800 text-sm font-medium">Insufficient FinaBridge Balance</p>
+                                  <p className="text-amber-700 text-xs mt-1">
+                                    You need <span className="font-bold">{parseFloat(requestForm.settlementGoldGrams).toFixed(3)}g</span> but only have{' '}
+                                    <span className="font-bold">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span> in FinaBridge.
+                                    Transfer <span className="font-bold">
+                                      {(parseFloat(requestForm.settlementGoldGrams) - parseFloat(wallet?.availableGoldGrams || '0')).toFixed(3)}g
+                                    </span> from FinaPay to continue.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const deficit = parseFloat(requestForm.settlementGoldGrams) - parseFloat(wallet?.availableGoldGrams || '0');
+                                      const mainBalance = parseFloat(mainWallet?.goldGrams || '0');
+                                      setFundAmount(Math.min(deficit, mainBalance).toFixed(3));
+                                      setShowFundDialog(true);
+                                    }}
+                                    className="mt-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                    data-testid="button-transfer-finapay"
+                                  >
+                                    Transfer from FinaPay
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {requestForm.settlementGoldGrams && 
+                           parseFloat(requestForm.settlementGoldGrams) <= parseFloat(wallet?.availableGoldGrams || '0') &&
+                           parseFloat(requestForm.settlementGoldGrams) > 0 && (
+                            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                              <p className="text-green-700 text-xs flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                                Sufficient balance available in FinaBridge wallet
+                              </p>
+                            </div>
+                          )}
+                          
                           {insufficientFundsError && (
                             <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                               {insufficientFundsError}
