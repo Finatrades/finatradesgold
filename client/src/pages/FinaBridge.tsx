@@ -98,7 +98,18 @@ export default function FinaBridge() {
     proposedQuotePrice: '',
     proposedTimelineDays: '',
     proposalNotes: '',
+    requiredDocs: {
+      certificateOfOrigin: false,
+      inspectionCertificate: false,
+      billOfLading: false,
+      commercialInvoice: false,
+      packingList: false,
+      insuranceCertificate: false,
+      agreementsCopy: false,
+      other: false,
+    },
   });
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   
   const [proposalForm, setProposalForm] = useState({
     quotePrice: '',
@@ -244,7 +255,18 @@ export default function FinaBridge() {
         proposedQuotePrice: '',
         proposedTimelineDays: '',
         proposalNotes: '',
+        requiredDocs: {
+          certificateOfOrigin: false,
+          inspectionCertificate: false,
+          billOfLading: false,
+          commercialInvoice: false,
+          packingList: false,
+          insuranceCertificate: false,
+          agreementsCopy: false,
+          other: false,
+        },
       });
+      setUploadedFiles([]);
       setActiveTab('requests');
       fetchImporterData();
     } catch (err) {
@@ -635,6 +657,73 @@ export default function FinaBridge() {
                               placeholder="Additional terms or notes about this proposal..."
                               data-testid="input-proposal-notes"
                             />
+                          </div>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t">
+                          <h4 className="font-medium mb-3 text-orange-800">Required Exporter Documents</h4>
+                          <p className="text-sm text-muted-foreground mb-4">Exporter should upload all the necessary documents</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {[
+                              { key: 'certificateOfOrigin', label: 'Certificate of Origin' },
+                              { key: 'inspectionCertificate', label: 'Inspection / Quality Certificate' },
+                              { key: 'billOfLading', label: 'Bill of Lading (B/L)' },
+                              { key: 'commercialInvoice', label: 'Commercial Invoice' },
+                              { key: 'packingList', label: 'Packing List' },
+                              { key: 'insuranceCertificate', label: 'Insurance Certificate' },
+                              { key: 'agreementsCopy', label: 'Agreements / Contract Copy' },
+                              { key: 'other', label: 'Other' },
+                            ].map(({ key, label }) => (
+                              <label key={key} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={requestForm.requiredDocs[key as keyof typeof requestForm.requiredDocs]}
+                                  onChange={(e) => setRequestForm({
+                                    ...requestForm,
+                                    requiredDocs: { ...requestForm.requiredDocs, [key]: e.target.checked }
+                                  })}
+                                  className="rounded border-gray-300"
+                                  data-testid={`checkbox-doc-${key}`}
+                                />
+                                <span className="text-sm">{label}</span>
+                              </label>
+                            ))}
+                          </div>
+
+                          <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <label className="cursor-pointer">
+                              <span className="text-primary font-medium">Click to upload</span>
+                              <input
+                                type="file"
+                                multiple
+                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files) {
+                                    setUploadedFiles([...uploadedFiles, ...Array.from(e.target.files)]);
+                                  }
+                                }}
+                                data-testid="input-file-upload"
+                              />
+                            </label>
+                            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 10MB each)</p>
+                            <p className="text-xs text-muted-foreground">{uploadedFiles.length} file(s) uploaded</p>
+                            {uploadedFiles.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2 justify-center">
+                                {uploadedFiles.map((file, idx) => (
+                                  <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded flex items-center gap-1">
+                                    {file.name}
+                                    <button
+                                      type="button"
+                                      onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
