@@ -37,10 +37,11 @@ export default function NotificationCenter() {
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors relative"
+        data-testid="button-notification-bell"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 border border-background animate-pulse" />
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 border border-background animate-pulse" data-testid="badge-unread-count" />
         )}
       </button>
 
@@ -70,6 +71,7 @@ export default function NotificationCenter() {
                   className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={markAllAsRead}
                   title="Mark all as read"
+                  data-testid="button-mark-all-read"
                 >
                   <Check className="w-4 h-4" />
                 </Button>
@@ -79,6 +81,7 @@ export default function NotificationCenter() {
                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
                   onClick={clearAll}
                   title="Clear all"
+                  data-testid="button-clear-all-notifications"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -93,12 +96,13 @@ export default function NotificationCenter() {
                   <p>No notifications yet</p>
                 </div>
               ) : (
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border" data-testid="notification-list">
                   {notifications.map((notification) => (
                     <div 
                       key={notification.id}
-                      className={`p-4 hover:bg-muted/50 transition-colors flex gap-4 ${!notification.read ? 'bg-secondary/5' : ''}`}
+                      className={`p-4 hover:bg-muted/50 transition-colors flex gap-4 cursor-pointer ${!notification.read ? 'bg-secondary/5' : ''}`}
                       onClick={() => markAsRead(notification.id)}
+                      data-testid={`notification-item-${notification.id}`}
                     >
                       <div className="shrink-0 mt-1">
                         {getIcon(notification.type)}
