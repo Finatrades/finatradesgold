@@ -4,14 +4,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
-import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, TrendingUp } from 'lucide-react';
+import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 
-import WalletBalanceCards from '@/components/finapay/WalletBalanceCards';
 import TransactionHistory from '@/components/finapay/TransactionHistory';
-import QuickActions from '@/components/finapay/QuickActions';
 
 import BuyGoldModal from '@/components/finapay/modals/BuyGoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
@@ -48,6 +46,8 @@ export default function FinaPay() {
 
   const goldGrams = rawWallet ? parseNumericValue(rawWallet.goldGrams) : 0;
   const usdBalance = rawWallet ? parseNumericValue(rawWallet.usdBalance) : 0;
+  const goldValueUsd = goldGrams * currentGoldPriceUsdPerGram;
+  const totalAvailableUsd = usdBalance + goldValueUsd;
 
   const wallet: Wallet = {
     goldBalanceGrams: goldGrams,
@@ -84,7 +84,6 @@ export default function FinaPay() {
       toast({ title: "Insufficient Funds", description: "You don't have enough USD balance.", variant: "destructive" });
       return;
     }
-
     try {
       await createTransaction({
         type: 'Buy',
@@ -92,16 +91,10 @@ export default function FinaPay() {
         amountGold: grams.toFixed(6),
         description: 'Gold purchase via FinaPay'
       });
-      
       setActiveModal(null);
-      toast({ title: "Purchase Order Submitted", description: `Your order for ${grams.toFixed(4)}g of gold has been submitted for processing.` });
-      addNotification({
-        title: "Buy Order Submitted",
-        message: `Purchase of ${grams.toFixed(4)}g gold submitted for approval.`,
-        type: 'success'
-      });
+      toast({ title: "Purchase Order Submitted", description: `Your order for ${grams.toFixed(4)}g of gold has been submitted.` });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to submit buy order. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to submit buy order.", variant: "destructive" });
     }
   };
 
@@ -110,7 +103,6 @@ export default function FinaPay() {
       toast({ title: "Insufficient Gold", description: "You don't have enough gold to sell.", variant: "destructive" });
       return;
     }
-
     try {
       await createTransaction({
         type: 'Sell',
@@ -118,16 +110,10 @@ export default function FinaPay() {
         amountGold: grams.toFixed(6),
         description: 'Gold sale via FinaPay'
       });
-
       setActiveModal(null);
-      toast({ title: "Sell Order Submitted", description: `Your order to sell ${grams.toFixed(4)}g has been submitted for processing.` });
-      addNotification({
-        title: "Sell Order Submitted",
-        message: `Sale of ${grams.toFixed(4)}g gold submitted for approval.`,
-        type: 'success'
-      });
+      toast({ title: "Sell Order Submitted", description: `Your order to sell ${grams.toFixed(4)}g has been submitted.` });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to submit sell order. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to submit sell order.", variant: "destructive" });
     }
   };
 
@@ -140,7 +126,6 @@ export default function FinaPay() {
       toast({ title: "Insufficient Gold", description: "You don't have enough gold balance.", variant: "destructive" });
       return;
     }
-
     try {
       await createTransaction({
         type: 'Send',
@@ -149,17 +134,10 @@ export default function FinaPay() {
         recipientEmail: recipient,
         description: `Transfer to ${recipient}`
       });
-
       setActiveModal(null);
-      const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
-      toast({ title: "Transfer Submitted", description: `Transfer of ${amountDisplay} to ${recipient} submitted for processing.` });
-      addNotification({
-        title: "Transfer Submitted",
-        message: `You initiated a transfer of ${amountDisplay} to ${recipient}.`,
-        type: 'transaction'
-      });
+      toast({ title: "Transfer Submitted", description: `Transfer submitted for processing.` });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to submit transfer. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to submit transfer.", variant: "destructive" });
     }
   };
 
@@ -171,37 +149,10 @@ export default function FinaPay() {
         amountGold: asset === 'GOLD' ? amount.toFixed(6) : null,
         description: `Request from ${from}`
       });
-
       setActiveModal(null);
-      const amountDisplay = asset === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(4)}g Gold`;
-      toast({ title: "Request Sent", description: `Your request for ${amountDisplay} from ${from} has been sent.` });
-      addNotification({
-        title: "Payment Requested",
-        message: `You requested ${amountDisplay} from ${from}.`,
-        type: 'info'
-      });
+      toast({ title: "Request Sent", description: `Your request has been sent.` });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to submit request. Please try again.", variant: "destructive" });
-    }
-  };
-
-  const handleQuickAction = (action: string) => {
-    switch(action) {
-      case 'buy': setActiveModal('buy'); break;
-      case 'sell': setActiveModal('sell'); break;
-      case 'send': setActiveModal('send'); break;
-      case 'request': setActiveModal('request'); break;
-      case 'add_fund': setActiveModal('deposit'); break;
-      case 'withdraw': setActiveModal('withdraw'); break;
-      case 'deposit_gold':
-        toast({ title: "Coming Soon", description: "Physical gold deposit will be available through FinaVault." });
-        break;
-      case 'bnsl': 
-        setLocation('/bnsl');
-        break;
-      case 'trade':
-        setLocation('/finabridge');
-        break;
+      toast({ title: "Error", description: "Failed to submit request.", variant: "destructive" });
     }
   };
 
@@ -230,74 +181,153 @@ export default function FinaPay() {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl text-white shadow-lg">
-              <WalletIcon className="w-7 h-7" />
+        {/* FinaPay Wallet Card */}
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <WalletIcon className="w-5 h-5 text-amber-600" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">FinaPay Wallet</h2>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">FinaPay</h1>
-              <p className="text-muted-foreground text-sm">Your digital gold wallet</p>
-            </div>
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveModal('deposit')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Deposit Funds
+            </Button>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Live Gold Price Badge */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-full">
-              <TrendingUp className="w-4 h-4 text-amber-600" />
-              <div className="text-sm">
-                <span className="text-muted-foreground">Gold: </span>
-                <span className="font-bold text-amber-700">${currentGoldPriceUsdPerGram.toFixed(2)}</span>
-                <span className="text-muted-foreground text-xs">/g</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <WalletIcon className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
+                <p className="text-3xl font-bold text-foreground mb-1">
+                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-muted-foreground">{goldGrams.toFixed(3)} g</p>
+                <p className="text-xs text-muted-foreground mt-3">Funds available for trading and transfers.</p>
               </div>
             </div>
-            
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="rounded-full"
-              onClick={handleRefresh}
-              disabled={loading}
-              data-testid="button-refresh-wallet"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <Lock className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
+                <p className="text-3xl font-bold text-amber-500 mb-1">$0.00</p>
+                <p className="text-sm text-amber-500/70">0.000 g</p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  <Lock className="w-3 h-3 inline mr-1" />
+                  Assets locked in active plans and trades.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <TrendingUp className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
+                <p className="text-3xl font-bold text-amber-500 mb-1">
+                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-muted-foreground">{goldGrams.toFixed(3)} g Total</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="mt-4 text-center">
+            <button onClick={handleRefresh} className="text-sm text-amber-600 hover:text-amber-700 hover:underline">
+              {loading ? 'Refreshing...' : 'Refresh Balance'}
+            </button>
           </div>
         </div>
 
-        {/* Wallet Balance Cards */}
-        <section>
-          <WalletBalanceCards wallet={wallet} />
-        </section>
-
         {/* Quick Actions */}
-        <section>
-          <QuickActions onAction={handleQuickAction} goldPrice={currentGoldPriceUsdPerGram} />
-        </section>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button
+            onClick={() => setActiveModal('buy')}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-buy"
+          >
+            <div className="p-3 bg-green-100 rounded-full">
+              <ShoppingCart className="w-5 h-5 text-green-600" />
+            </div>
+            <span className="text-sm font-medium">Buy Gold</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModal('sell')}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-sell"
+          >
+            <div className="p-3 bg-orange-100 rounded-full">
+              <Coins className="w-5 h-5 text-orange-600" />
+            </div>
+            <span className="text-sm font-medium">Sell Gold</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModal('send')}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-send"
+          >
+            <div className="p-3 bg-blue-100 rounded-full">
+              <Send className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="text-sm font-medium">Send</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModal('request')}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-request"
+          >
+            <div className="p-3 bg-purple-100 rounded-full">
+              <ArrowDownLeft className="w-5 h-5 text-purple-600" />
+            </div>
+            <span className="text-sm font-medium">Request</span>
+          </button>
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <button onClick={() => setActiveModal('deposit')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <Plus className="w-4 h-4 inline mr-1" /> Deposit USD
+          </button>
+          <button onClick={() => setActiveModal('withdraw')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <ArrowUpRight className="w-4 h-4 inline mr-1" /> Withdraw
+          </button>
+          <button onClick={() => setLocation('/bnsl')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <TrendingUp className="w-4 h-4 inline mr-1" /> BNSL Plans
+          </button>
+          <button onClick={() => setLocation('/finabridge')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <BarChart3 className="w-4 h-4 inline mr-1" /> Trade Finance
+          </button>
+        </div>
 
         {/* Transaction History */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Recent Transactions</h2>
-          </div>
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-foreground mb-4">Recent Transactions</h3>
           {transactions.length === 0 ? (
-            <div className="bg-white border border-border rounded-2xl p-12 text-center shadow-sm">
-              <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No Transactions Yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Your transaction history will appear here once you buy, sell, or transfer gold.
-              </p>
-              <Button onClick={() => setActiveModal('buy')} data-testid="button-first-buy" className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700">
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
+              <h4 className="text-lg font-semibold mb-2">No Transactions Yet</h4>
+              <p className="text-muted-foreground mb-4">Your transaction history will appear here.</p>
+              <Button onClick={() => setActiveModal('buy')} className="bg-amber-500 hover:bg-amber-600">
                 Make Your First Purchase
               </Button>
             </div>
           ) : (
             <TransactionHistory transactions={transactions} />
           )}
-        </section>
+        </div>
 
         {/* Modals */}
         <BuyGoldModal 
