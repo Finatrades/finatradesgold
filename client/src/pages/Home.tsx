@@ -24,7 +24,31 @@ export default function Home() {
     message: ''
   });
 
-  const products = [
+  const personalProducts = [
+    {
+      icon: <Vault className="w-8 h-8" />,
+      title: 'Deposit / Buy Gold',
+      description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
+      link: '/finavault',
+      cta: 'Explore FinaVault'
+    },
+    {
+      icon: <Wallet className="w-8 h-8" />,
+      title: 'Payments & Transfers',
+      description: 'Send and receive payments through the platform, manage your wallet and spend anywhere using your gold-backed debit card.',
+      link: '/finapay',
+      cta: 'Explore FinaPay Wallet'
+    },
+    {
+      icon: <TrendingUp className="w-8 h-8" />,
+      title: "Buy 'N' SeLL Gold Plans",
+      description: 'Get substantial margins and guaranteed returns thanks to our BNSL Plans.',
+      link: '/bnsl',
+      cta: 'Explore BNSL'
+    }
+  ];
+
+  const businessProducts = [
     {
       icon: <Vault className="w-8 h-8" />,
       title: 'Deposit/Buy Gold',
@@ -55,15 +79,28 @@ export default function Home() {
     }
   ];
 
-  const workflowSteps = [
-    { number: 1, title: 'Register Corporate Profile', icon: <Building2 className="w-5 h-5" /> },
-    { number: 2, title: 'KYB & Compliance Review', icon: <FileCheck className="w-5 h-5" /> },
-    { number: 3, title: 'Establish Gold Reserve Account', icon: <Landmark className="w-5 h-5" /> },
-    { number: 4, title: 'Buy/Deposit Physical Gold', icon: <Vault className="w-5 h-5" /> },
-    { number: 5, title: 'Receive Holding Certificates', icon: <Award className="w-5 h-5" /> },
-    { number: 6, title: 'Use Gold for Trade & Treasury', icon: <BarChart3 className="w-5 h-5" /> },
-    { number: 7, title: 'Reporting & Audit Controls', icon: <FileText className="w-5 h-5" /> },
+  const products = accountType === 'personal' ? personalProducts : businessProducts;
+
+  const personalWorkflowSteps = [
+    { number: 1, title: 'Create Your Account', description: 'Register as an Individual and start your personal gold account.' },
+    { number: 2, title: 'Verify Your Identity', description: 'Complete Swiss-aligned KYC verification securely.' },
+    { number: 3, title: 'Deposit or Buy Gold', description: 'Deposit physical gold via partners or buy new gold on-platform (where available).' },
+    { number: 4, title: 'Secure Vault Storage', description: 'Your gold is stored in approved, regulated vaults with full documentation.' },
+    { number: 5, title: 'Track Your Gold 24/7', description: 'See grams, estimated value, and certificates in real time.' },
+    { number: 6, title: 'Optional: Join Holding Plans', description: 'Lock gold into structured holding plans for defined durations.' },
   ];
+
+  const businessWorkflowSteps = [
+    { number: 1, title: 'Register Corporate Profile', description: 'Set up your business account' },
+    { number: 2, title: 'KYB & Compliance Review', description: 'Complete business verification' },
+    { number: 3, title: 'Establish Gold Reserve Account', description: 'Create your gold reserve' },
+    { number: 4, title: 'Buy/Deposit Physical Gold', description: 'Add gold to your account' },
+    { number: 5, title: 'Receive Holding Certificates', description: 'Get certified documentation' },
+    { number: 6, title: 'Use Gold for Trade & Treasury', description: 'Utilize gold for operations' },
+    { number: 7, title: 'Reporting & Audit Controls', description: 'Access full reporting' },
+  ];
+
+  const workflowSteps = accountType === 'personal' ? personalWorkflowSteps : businessWorkflowSteps;
 
   const bnslPlans = [
     { duration: 12, returns: '~10%', price: '5,000', minInvestment: '5,000 CHF' },
