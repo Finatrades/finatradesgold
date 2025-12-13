@@ -183,50 +183,118 @@ export default function Home() {
 
             <div className="relative hidden lg:block">
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="relative"
+                initial={{ opacity: 0, y: 20, rotateY: -15 }}
+                animate={{ opacity: 1, y: 0, rotateY: 0 }}
+                transition={{ duration: 1, delay: 0.2, type: "spring" }}
+                className="relative perspective-1000"
               >
-                <div className="relative w-full aspect-square max-w-lg mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#E91E8C]/20 to-[#9333EA]/20 rounded-3xl blur-2xl" />
-                  <div className="relative bg-gradient-to-br from-[#1a0a2e] to-[#0D001E] rounded-3xl p-8 shadow-2xl">
-                    <div className="w-full aspect-[1.6/1] bg-gradient-to-br from-[#E91E8C] to-[#9333EA] rounded-2xl p-6 relative overflow-hidden">
-                      <div className="absolute top-4 left-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                            <CheckCircle2 className="w-4 h-4 text-white" />
+                <div className="relative w-full max-w-md mx-auto">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#E91E8C]/30 to-[#9333EA]/30 rounded-3xl blur-3xl animate-pulse" />
+                  
+                  <motion.div
+                    animate={{ 
+                      rotateY: [0, 5, 0, -5, 0],
+                      rotateX: [0, 2, 0, -2, 0]
+                    }}
+                    transition={{ 
+                      duration: 6, 
+                      repeat: Infinity, 
+                      ease: "easeInOut" 
+                    }}
+                    className="relative"
+                    style={{ transformStyle: 'preserve-3d' }}
+                  >
+                    <div className="relative aspect-[1.586/1] bg-gradient-to-br from-[#1a0a2e] via-[#2d1a4a] to-[#0D001E] rounded-2xl p-6 shadow-2xl overflow-hidden border border-[#E91E8C]/20">
+                      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9IiNFOTFFOEMiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9nPjwvc3ZnPg==')] opacity-50" />
+                      
+                      <motion.div 
+                        className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-[#E91E8C]/20 to-transparent rounded-full blur-2xl"
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                      />
+                      <motion.div 
+                        className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-[#9333EA]/20 to-transparent rounded-full blur-2xl"
+                        animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.3, 0.5] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                      />
+
+                      <div className="relative z-10 h-full flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-[#E91E8C] to-[#9333EA] rounded-lg flex items-center justify-center">
+                              <CheckCircle2 className="w-5 h-5 text-white" />
+                            </div>
+                            <span className="text-white font-bold text-lg tracking-wide">FINATRADES</span>
                           </div>
-                          <span className="text-white font-bold text-sm">FINATRADES</span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-[#E91E8C] text-xs font-semibold">GOLD CARD</span>
+                            <span className="text-gray-400 text-[10px]">PREMIUM</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <motion.div 
+                            className="w-12 h-10 bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] rounded-md flex items-center justify-center"
+                            animate={{ opacity: [0.8, 1, 0.8] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <div className="w-8 h-6 border-2 border-[#B8860B] rounded-sm" />
+                          </motion.div>
+                          <div className="flex gap-1">
+                            <motion.div 
+                              className="w-6 h-6 rounded-full border-2 border-white/30"
+                              animate={{ scale: [1, 1.1, 1] }}
+                              transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-white/60 text-xs mb-1 tracking-widest">CARD NUMBER</div>
+                          <div className="text-white font-mono text-lg tracking-[0.3em]">
+                            •••• •••• •••• 4582
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <div className="text-white/60 text-[10px] mb-0.5">CARD HOLDER</div>
+                            <div className="text-white font-medium text-sm">GOLD MEMBER</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-white/60 text-[10px] mb-0.5">VALID THRU</div>
+                            <div className="text-white font-medium text-sm">12/28</div>
+                          </div>
+                          <div className="flex">
+                            <div className="w-8 h-8 rounded-full bg-[#EB001B] opacity-80" />
+                            <div className="w-8 h-8 rounded-full bg-[#F79E1B] opacity-80 -ml-3" />
+                          </div>
                         </div>
                       </div>
-                      <div className="absolute bottom-6 left-6">
-                        <div className="text-white/80 text-xs mb-1">Gold Balance</div>
-                        <div className="text-white font-bold text-2xl">125.50 g</div>
-                      </div>
-                      <div className="absolute bottom-6 right-6">
-                        <div className="text-white/80 text-xs mb-1">Value (CHF)</div>
-                        <div className="text-white font-bold text-lg">8,542.00</div>
-                      </div>
-                      <div className="absolute top-1/2 right-6 -translate-y-1/2">
-                        <CreditCard className="w-12 h-12 text-white/30" />
-                      </div>
                     </div>
-                    <div className="mt-6 grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-gray-400 text-xs mb-1">Vault</div>
-                        <div className="text-white font-semibold">100g</div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="mt-6 bg-[#1a0a2e]/80 backdrop-blur-sm rounded-2xl p-4 border border-[#E91E8C]/10"
+                  >
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className="text-gray-400 text-xs mb-1">Vault Balance</div>
+                        <div className="text-white font-bold text-lg">100g</div>
                       </div>
-                      <div className="text-center">
+                      <div>
                         <div className="text-gray-400 text-xs mb-1">Wallet</div>
-                        <div className="text-white font-semibold">25.5g</div>
+                        <div className="text-white font-bold text-lg">25.5g</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-gray-400 text-xs mb-1">BNSL</div>
-                        <div className="text-white font-semibold">2 Plans</div>
+                      <div>
+                        <div className="text-gray-400 text-xs mb-1">BNSL Plans</div>
+                        <div className="text-white font-bold text-lg">2 Active</div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
             </div>
