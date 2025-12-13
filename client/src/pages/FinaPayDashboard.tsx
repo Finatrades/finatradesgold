@@ -1,584 +1,425 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useFinaPay } from '@/context/FinaPayContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { TrendingUp, ArrowUpRight, ArrowDownLeft, Wallet, ShieldCheck, Lock, CreditCard, RefreshCw, Send, Download, PlusCircle, ChevronRight } from 'lucide-react';
-import { Link } from 'wouter';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Wallet, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, PlusCircle, RefreshCw, AlertCircle } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 
 export default function FinaPayDashboard() {
-  const { wallet: rawWallet, transactions, currentGoldPriceUsdPerGram, goldPriceHistory, createTransaction, refreshWallet, loading } = useFinaPay();
+  const { wallet: rawWallet, transactions, currentGoldPriceUsdPerGram, createTransaction, refreshWallet, loading } = useFinaPay();
+  const [, setLocation] = useLocation();
 
-  // Compute wallet values from API data
   const goldGrams = rawWallet ? parseFloat(rawWallet.goldGrams as string) || 0 : 0;
   const usdBalance = rawWallet ? parseFloat(rawWallet.usdBalance as string) || 0 : 0;
-  
-  // Computed wallet properties for UI
-  const wallet = {
-    goldBalanceGrams: goldGrams,
-    availableGoldGrams: goldGrams, // All gold is available for now
-    lockedForBnslGrams: 0,
-    lockedForTradeGrams: 0,
-    goldValueUsd: goldGrams * currentGoldPriceUsdPerGram,
-    goldValueAed: goldGrams * currentGoldPriceUsdPerGram * 3.67, // USD to AED
-    tier: goldGrams >= 100 ? 'Platinum' : goldGrams >= 50 ? 'Gold' : goldGrams >= 10 ? 'Silver' : 'Bronze',
-    usdBalance,
-  };
+  const goldValueUsd = goldGrams * currentGoldPriceUsdPerGram;
+  const totalAvailableUsd = usdBalance + goldValueUsd;
 
-  // Default limits
-  const limits = {
-    dailySendGoldGrams: 100,
-    remainingSendGoldGramsToday: 100,
-  };
-
-  // Helper functions for transaction handling
-  const addTransaction = (tx: any) => {
-    createTransaction(tx);
-  };
-
-  const updateWallet = (updates: any) => {
-    // Wallet updates happen via API, just refresh
-    refreshWallet();
-  };
-
-  // Modal States
   const [buyOpen, setBuyOpen] = useState(false);
   const [sellOpen, setSellOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
-  const [bnslOpen, setBnslOpen] = useState(false);
-  const [tradeOpen, setTradeOpen] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
 
-  // Form States
   const [buyAmountUsd, setBuyAmountUsd] = useState('');
   const [sellGrams, setSellGrams] = useState('');
   const [sendGrams, setSendGrams] = useState('');
   const [recipient, setRecipient] = useState('');
   const [requestGrams, setRequestGrams] = useState('');
-  const [bnslGrams, setBnslGrams] = useState('');
-  const [tradeGrams, setTradeGrams] = useState('');
-
-  // --- Handlers ---
 
   const handleBuyGold = () => {
     const usd = parseFloat(buyAmountUsd);
     if (!usd || usd <= 0) return;
-
     const grams = usd / currentGoldPriceUsdPerGram;
-    
-    addTransaction({
+    createTransaction({
       type: 'Buy',
       amountUsd: usd.toFixed(2),
       amountGold: grams.toFixed(6),
       description: 'Purchase via Card'
     });
-
-    // Wallet update happens only after admin approval - do not update locally
-
     setBuyOpen(false);
     setBuyAmountUsd('');
-    toast.success(`Buy order for ${grams.toFixed(4)}g Gold submitted for admin approval`);
+    toast.success(`Buy order for ${grams.toFixed(4)}g Gold submitted`);
   };
 
   const handleSellGold = () => {
     const grams = parseFloat(sellGrams);
-    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
-        toast.error('Invalid amount or insufficient balance');
-        return;
+    if (!grams || grams <= 0 || grams > goldGrams) {
+      toast.error('Invalid amount or insufficient balance');
+      return;
     }
-
     const usd = grams * currentGoldPriceUsdPerGram;
-
-    addTransaction({
+    createTransaction({
       type: 'Sell',
       amountUsd: usd.toFixed(2),
       amountGold: grams.toFixed(6),
       description: 'Sell to Bank Account'
     });
-
-    // Wallet update happens only after admin approval - do not update locally
-
     setSellOpen(false);
     setSellGrams('');
-    toast.success(`Sell order for ${grams.toFixed(4)}g Gold submitted for admin approval`);
+    toast.success(`Sell order for ${grams.toFixed(4)}g Gold submitted`);
   };
 
   const handleSendGold = () => {
     const grams = parseFloat(sendGrams);
-    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
-        toast.error('Invalid amount or insufficient balance');
-        return;
+    if (!grams || grams <= 0 || grams > goldGrams) {
+      toast.error('Invalid amount or insufficient balance');
+      return;
     }
-
-    addTransaction({
+    createTransaction({
       type: 'Send',
       amountGold: grams.toFixed(6),
       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
       recipientEmail: recipient,
       description: 'Internal Transfer'
     });
-
-    // Wallet update happens only after admin approval - do not update locally
-
     setSendOpen(false);
     setSendGrams('');
     setRecipient('');
-    toast.success(`Send request for ${grams.toFixed(4)}g to ${recipient} submitted for admin approval`);
+    toast.success(`Send request for ${grams.toFixed(4)}g submitted`);
   };
 
   const handleRequestGold = () => {
     const grams = parseFloat(requestGrams);
     if (!grams || grams <= 0) return;
-
-    addTransaction({
-       type: 'Receive',
-       amountGold: grams.toFixed(6),
-       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
-       counterparty: recipient,
-       description: 'Request Sent'
+    createTransaction({
+      type: 'Receive',
+      amountGold: grams.toFixed(6),
+      amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
+      counterparty: recipient,
+      description: 'Request Sent'
     });
-
     setRequestOpen(false);
     setRequestGrams('');
     setRecipient('');
-    toast.success('Request submitted for admin approval');
+    toast.success('Request submitted');
   };
 
-  const handleMoveToBnsl = () => {
-    const grams = parseFloat(bnslGrams);
-    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
-       toast.error('Insufficient available balance');
-       return;
-    }
-
-    addTransaction({
-       type: 'Deposit',
-       amountGold: grams.toFixed(6),
-       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
-       description: 'Locked for BNSL Plan'
-    });
-
-    // Wallet update happens only after admin approval
-
-    setBnslOpen(false);
-    setBnslGrams('');
-    toast.success(`BNSL deposit of ${grams.toFixed(4)}g submitted for admin approval`);
-  };
-
-  const handleMoveToTrade = () => {
-    const grams = parseFloat(tradeGrams);
-    if (!grams || grams <= 0 || grams > wallet.availableGoldGrams) {
-       toast.error('Insufficient available balance');
-       return;
-    }
-
-    addTransaction({
-       type: 'Deposit',
-       amountGold: grams.toFixed(6),
-       amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
-       description: 'Locked for Trade Settlement'
-    });
-
-    // Wallet update happens only after admin approval
-
-    setTradeOpen(false);
-    setTradeGrams('');
-    toast.success(`Trade deposit of ${grams.toFixed(4)}g submitted for admin approval`);
+  const handleRefresh = () => {
+    refreshWallet();
+    toast.success('Refreshing wallet data...');
   };
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8 pb-12">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">FinaPay – Digital Gold Wallet</h1>
-          <p className="text-gray-500">View your gold balance, valuations and move value across Finatrades.</p>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-           <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-none shadow-lg col-span-1 md:col-span-2">
-             <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-2 opacity-90">
-                   <Wallet className="w-5 h-5" />
-                   <span className="text-sm font-medium">Total Gold Balance</span>
-                </div>
-                <h2 className="text-4xl font-bold mb-1">{wallet.goldBalanceGrams.toFixed(4)} g</h2>
-                <p className="opacity-80 text-sm">Reflected from FinaVault Ledger</p>
-                <div className="mt-6 flex gap-4">
-                   <div>
-                      <p className="text-xs opacity-70 uppercase">USD Value</p>
-                      <p className="font-bold text-xl">${wallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                   </div>
-                   <div className="border-l border-white/20 pl-4">
-                      <p className="text-xs opacity-70 uppercase">AED Value</p>
-                      <p className="font-bold text-xl">AED {wallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                   </div>
-                </div>
-             </CardContent>
-           </Card>
-
-           <Card className="bg-white col-span-1 md:col-span-2">
-              <CardHeader className="pb-2">
-                 <CardTitle className="text-sm font-medium text-gray-500">Liquidity Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="flex items-center justify-between mb-4">
-                    <div>
-                       <p className="text-2xl font-bold text-green-600">{wallet.availableGoldGrams.toFixed(2)} g</p>
-                       <p className="text-xs text-gray-500">Available</p>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-2xl font-bold text-amber-600">{(wallet.lockedForBnslGrams + wallet.lockedForTradeGrams).toFixed(2)} g</p>
-                       <p className="text-xs text-gray-500">Locked (BNSL + Trade)</p>
-                    </div>
-                 </div>
-                 <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
-                    <div className="bg-green-500 h-2.5" style={{ width: `${(wallet.availableGoldGrams / wallet.goldBalanceGrams) * 100}%` }}></div>
-                    <div className="bg-amber-500 h-2.5" style={{ width: `${((wallet.lockedForBnslGrams + wallet.lockedForTradeGrams) / wallet.goldBalanceGrams) * 100}%` }}></div>
-                 </div>
-              </CardContent>
-           </Card>
-
-           <Card className="bg-gray-900 text-white col-span-1">
-              <CardContent className="p-6 flex flex-col justify-between h-full">
-                 <div>
-                    <div className="flex justify-between items-start">
-                       <ShieldCheck className="w-8 h-8 text-amber-400 mb-2" />
-                       <Badge variant="outline" className="text-amber-400 border-amber-400">{wallet.tier}</Badge>
-                    </div>
-                    <p className="font-bold text-lg mt-2">Tier Status</p>
-                 </div>
-                 <div>
-                    <p className="text-xs text-gray-400 mb-1">Daily Send Limit</p>
-                    <p className="font-mono text-sm">{limits.remainingSendGoldGramsToday}g / {limits.dailySendGoldGrams}g left</p>
-                 </div>
-              </CardContent>
-           </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           {/* Left Column: Chart & Actions */}
-           <div className="lg:col-span-2 space-y-8">
-              {/* Chart */}
-              <Card>
-                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div>
-                       <CardTitle>Live Gold Price (USD/g)</CardTitle>
-                       <CardDescription>Real-time market data from LBMA feed.</CardDescription>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-2xl font-bold text-amber-600">${currentGoldPriceUsdPerGram.toFixed(2)}</p>
-                       <p className="text-xs text-green-600 flex items-center justify-end"><TrendingUp className="w-3 h-3 mr-1" /> +1.2%</p>
-                    </div>
-                 </CardHeader>
-                 <CardContent>
-                    <div className="h-[250px] w-full">
-                       <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={goldPriceHistory}>
-                             <defs>
-                                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                   <stop offset="5%" stopColor="#D1A954" stopOpacity={0.3}/>
-                                   <stop offset="95%" stopColor="#D1A954" stopOpacity={0}/>
-                                </linearGradient>
-                             </defs>
-                             <XAxis dataKey="timestamp" hide />
-                             <YAxis domain={['auto', 'auto']} hide />
-                             <Tooltip 
-                                contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
-                                itemStyle={{ color: '#D1A954' }}
-                                labelFormatter={() => ''}
-                                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
-                             />
-                             <Area type="monotone" dataKey="priceUsd" stroke="#D1A954" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" />
-                          </AreaChart>
-                       </ResponsiveContainer>
-                    </div>
-                 </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <div>
-                 <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setBuyOpen(true)}>
-                       <PlusCircle className="w-8 h-8" />
-                       Buy Gold
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setSellOpen(true)}>
-                       <Download className="w-8 h-8" />
-                       Sell Gold
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setSendOpen(true)}>
-                       <Send className="w-8 h-8" />
-                       Send Gold
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setRequestOpen(true)}>
-                       <ArrowDownLeft className="w-8 h-8" />
-                       Request
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-blue-500 hover:text-blue-600 transition-all" onClick={() => setBnslOpen(true)}>
-                       <Lock className="w-8 h-8" />
-                       Move to BNSL
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-purple-500 hover:text-purple-600 transition-all" onClick={() => setTradeOpen(true)}>
-                       <RefreshCw className="w-8 h-8" />
-                       Trade Finance
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-gray-500 hover:text-gray-900 transition-all">
-                       <CreditCard className="w-8 h-8" />
-                       Top Up Card
-                    </Button>
-                 </div>
+      <div className="max-w-5xl mx-auto space-y-6 pb-12">
+        
+        {/* FinaPay Wallet Card */}
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Wallet className="w-5 h-5 text-amber-600" />
               </div>
-           </div>
+              <h2 className="text-lg font-bold text-foreground">FinaPay Wallet</h2>
+            </div>
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setDepositOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Deposit Funds
+            </Button>
+          </div>
 
-           {/* Right Column: Transactions */}
-           <div className="lg:col-span-1">
-              <Card className="h-full">
-                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Recent Transactions</CardTitle>
-                    <Link href="/finapay/transactions">
-                      <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-700" data-testid="button-view-all-transactions">
-                        View All <ChevronRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    </Link>
-                 </CardHeader>
-                 <CardContent>
-                    <div className="space-y-4">
-                       {transactions.slice(0, 8).map((tx) => (
-                          <div key={tx.id} className="flex items-center justify-between p-3 border-b last:border-0 hover:bg-gray-50 rounded transition-colors">
-                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${
-                                   tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? 'bg-green-100 text-green-600' :
-                                   tx.type === 'Sell' || tx.type === 'Send' || tx.type === 'Withdrawal' ? 'bg-red-100 text-red-600' :
-                                   'bg-gray-100 text-gray-600'
-                                }`}>
-                                   {tx.type === 'Buy' || tx.type === 'Deposit' ? <PlusCircle className="w-4 h-4" /> : 
-                                    tx.type === 'Send' || tx.type === 'Sell' ? <ArrowUpRight className="w-4 h-4" /> : 
-                                    <RefreshCw className="w-4 h-4" />}
-                                </div>
-                                <div>
-                                   <p className="font-medium text-sm">{tx.type}</p>
-                                   <p className="text-xs text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</p>
-                                </div>
-                             </div>
-                             <div className="text-right">
-                                <p className={`font-bold text-sm ${
-                                   tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? 'text-green-600' : 'text-gray-900'
-                                }`}>
-                                   {tx.amountGold ? parseFloat(tx.amountGold).toFixed(4) : '0.00'} g
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                   {tx.status}
-                                </p>
-                             </div>
-                          </div>
-                       ))}
-                       {transactions.length === 0 && (
-                          <div className="text-center py-8 text-gray-500 text-sm">No transactions yet.</div>
-                       )}
-                    </div>
-                 </CardContent>
-              </Card>
-           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <Wallet className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
+                <p className="text-3xl font-bold text-foreground mb-1">
+                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-muted-foreground">{goldGrams.toFixed(3)} g</p>
+                <p className="text-xs text-muted-foreground mt-3">Funds available for trading and transfers.</p>
+              </div>
+            </div>
+
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <Lock className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
+                <p className="text-3xl font-bold text-amber-500 mb-1">$0.00</p>
+                <p className="text-sm text-amber-500/70">0.000 g</p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  <Lock className="w-3 h-3 inline mr-1" />
+                  Assets locked in active plans and trades.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <TrendingUp className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
+                <p className="text-3xl font-bold text-amber-500 mb-1">
+                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-muted-foreground">{goldGrams.toFixed(3)} g Total</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="mt-4 text-center">
+            <button onClick={handleRefresh} className="text-sm text-amber-600 hover:text-amber-700 hover:underline">
+              {loading ? 'Refreshing...' : 'Refresh Balance'}
+            </button>
+          </div>
         </div>
 
-        {/* --- MODALS --- */}
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button
+            onClick={() => setBuyOpen(true)}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-buy"
+          >
+            <div className="p-3 bg-green-100 rounded-full">
+              <ShoppingCart className="w-5 h-5 text-green-600" />
+            </div>
+            <span className="text-sm font-medium">Buy Gold</span>
+          </button>
 
-        {/* Buy Gold Modal */}
+          <button
+            onClick={() => setSellOpen(true)}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-sell"
+          >
+            <div className="p-3 bg-orange-100 rounded-full">
+              <Coins className="w-5 h-5 text-orange-600" />
+            </div>
+            <span className="text-sm font-medium">Sell Gold</span>
+          </button>
+
+          <button
+            onClick={() => setSendOpen(true)}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-send"
+          >
+            <div className="p-3 bg-blue-100 rounded-full">
+              <Send className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="text-sm font-medium">Send</span>
+          </button>
+
+          <button
+            onClick={() => setRequestOpen(true)}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-request"
+          >
+            <div className="p-3 bg-purple-100 rounded-full">
+              <ArrowDownLeft className="w-5 h-5 text-purple-600" />
+            </div>
+            <span className="text-sm font-medium">Request</span>
+          </button>
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <button onClick={() => setDepositOpen(true)} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <Plus className="w-4 h-4 inline mr-1" /> Deposit USD
+          </button>
+          <button className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <ArrowUpRight className="w-4 h-4 inline mr-1" /> Withdraw
+          </button>
+          <button onClick={() => setLocation('/bnsl')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <TrendingUp className="w-4 h-4 inline mr-1" /> BNSL Plans
+          </button>
+          <button onClick={() => setLocation('/finabridge')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
+            <BarChart3 className="w-4 h-4 inline mr-1" /> Trade Finance
+          </button>
+        </div>
+
+        {/* Transaction History */}
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
+            <Link href="/finapay/transactions">
+              <span className="text-sm text-amber-600 hover:underline cursor-pointer">View All</span>
+            </Link>
+          </div>
+          {transactions.length === 0 ? (
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
+              <h4 className="text-lg font-semibold mb-2">No Transactions Yet</h4>
+              <p className="text-muted-foreground mb-4">Your transaction history will appear here.</p>
+              <Button onClick={() => setBuyOpen(true)} className="bg-amber-500 hover:bg-amber-600">
+                Make Your First Purchase
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {transactions.slice(0, 5).map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${
+                      tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? 'bg-green-100 text-green-600' :
+                      tx.type === 'Sell' || tx.type === 'Send' || tx.type === 'Withdrawal' ? 'bg-red-100 text-red-600' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {tx.type === 'Buy' || tx.type === 'Deposit' ? <PlusCircle className="w-4 h-4" /> : 
+                       tx.type === 'Send' || tx.type === 'Sell' ? <ArrowUpRight className="w-4 h-4" /> : 
+                       <RefreshCw className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{tx.type}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-bold text-sm ${
+                      tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? 'text-green-600' : 'text-foreground'
+                    }`}>
+                      {tx.amountGold ? parseFloat(tx.amountGold).toFixed(4) : '0.00'} g
+                    </p>
+                    <p className="text-xs text-muted-foreground">{tx.status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Modals */}
         <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
-           <DialogContent>
-              <DialogHeader>
-                 <DialogTitle>Buy Gold</DialogTitle>
-                 <DialogDescription>Convert fiat to vaulted gold instantly.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                 <div className="space-y-2">
-                    <Label>Funding Method</Label>
-                    <Select defaultValue="card">
-                       <SelectTrigger><SelectValue /></SelectTrigger>
-                       <SelectContent>
-                          <SelectItem value="card">Credit/Debit Card</SelectItem>
-                          <SelectItem value="bank">Bank Transfer</SelectItem>
-                       </SelectContent>
-                    </Select>
-                 </div>
-                 <div className="space-y-2">
-                    <Label>Amount (USD)</Label>
-                    <Input 
-                       type="number" 
-                       placeholder="0.00" 
-                       value={buyAmountUsd} 
-                       onChange={(e) => setBuyAmountUsd(e.target.value)} 
-                    />
-                 </div>
-                 {buyAmountUsd && (
-                    <div className="bg-amber-50 p-4 rounded-lg text-sm text-amber-800">
-                       <div className="flex justify-between mb-1">
-                          <span>Est. Gold:</span>
-                          <span className="font-bold">{(parseFloat(buyAmountUsd) / currentGoldPriceUsdPerGram).toFixed(4)} g</span>
-                       </div>
-                       <div className="flex justify-between">
-                          <span>Rate:</span>
-                          <span>${currentGoldPriceUsdPerGram.toFixed(2)} / g</span>
-                       </div>
-                    </div>
-                 )}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Buy Gold</DialogTitle>
+              <DialogDescription>Convert fiat to vaulted gold.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Funding Method</Label>
+                <Select defaultValue="card">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="card">Credit/Debit Card</SelectItem>
+                    <SelectItem value="bank">Bank Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <DialogFooter>
-                 <Button variant="outline" onClick={() => setBuyOpen(false)}>Cancel</Button>
-                 <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleBuyGold}>Confirm Purchase</Button>
-              </DialogFooter>
-           </DialogContent>
+              <div className="space-y-2">
+                <Label>Amount (USD)</Label>
+                <Input type="number" placeholder="0.00" value={buyAmountUsd} onChange={(e) => setBuyAmountUsd(e.target.value)} />
+              </div>
+              {buyAmountUsd && (
+                <div className="bg-amber-50 p-4 rounded-lg text-sm text-amber-800">
+                  <div className="flex justify-between mb-1">
+                    <span>Est. Gold:</span>
+                    <span className="font-bold">{(parseFloat(buyAmountUsd) / currentGoldPriceUsdPerGram).toFixed(4)} g</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Rate:</span>
+                    <span>${currentGoldPriceUsdPerGram.toFixed(2)} / g</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBuyOpen(false)}>Cancel</Button>
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleBuyGold}>Confirm Purchase</Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
-        {/* Sell Gold Modal */}
         <Dialog open={sellOpen} onOpenChange={setSellOpen}>
-           <DialogContent>
-              <DialogHeader>
-                 <DialogTitle>Sell Gold</DialogTitle>
-                 <DialogDescription>Liquify your gold holdings to fiat.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                 <div className="space-y-2">
-                    <Label>Payout Method</Label>
-                    <Select defaultValue="bank">
-                       <SelectTrigger><SelectValue /></SelectTrigger>
-                       <SelectContent>
-                          <SelectItem value="bank">Bank Transfer</SelectItem>
-                          <SelectItem value="card">Card Refund</SelectItem>
-                       </SelectContent>
-                    </Select>
-                 </div>
-                 <div className="space-y-2">
-                    <Label>Amount (Grams)</Label>
-                    <Input 
-                       type="number" 
-                       placeholder="0.00" 
-                       value={sellGrams} 
-                       onChange={(e) => setSellGrams(e.target.value)} 
-                    />
-                    <p className="text-xs text-gray-500">Available: {wallet.availableGoldGrams.toFixed(4)} g</p>
-                 </div>
-                 {sellGrams && (
-                    <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-800">
-                       <div className="flex justify-between mb-1">
-                          <span>Est. Payout:</span>
-                          <span className="font-bold">${(parseFloat(sellGrams) * currentGoldPriceUsdPerGram).toFixed(2)}</span>
-                       </div>
-                    </div>
-                 )}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Sell Gold</DialogTitle>
+              <DialogDescription>Convert gold to fiat.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Amount (Grams)</Label>
+                <Input type="number" placeholder="0.00" value={sellGrams} onChange={(e) => setSellGrams(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Available: {goldGrams.toFixed(4)} g</p>
               </div>
-              <DialogFooter>
-                 <Button variant="outline" onClick={() => setSellOpen(false)}>Cancel</Button>
-                 <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleSellGold}>Confirm Sell</Button>
-              </DialogFooter>
-           </DialogContent>
+              {sellGrams && (
+                <div className="bg-gray-50 p-4 rounded-lg text-sm">
+                  <div className="flex justify-between">
+                    <span>Est. Payout:</span>
+                    <span className="font-bold">${(parseFloat(sellGrams) * currentGoldPriceUsdPerGram).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSellOpen(false)}>Cancel</Button>
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleSellGold}>Confirm Sell</Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
-        {/* Send Gold Modal */}
         <Dialog open={sendOpen} onOpenChange={setSendOpen}>
-           <DialogContent>
-              <DialogHeader>
-                 <DialogTitle>Send Gold</DialogTitle>
-                 <DialogDescription>Transfer gold to another FinaPay wallet.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                 <div className="space-y-2">
-                    <Label>Recipient (Wallet ID or Email)</Label>
-                    <Input placeholder="Enter wallet ID..." value={recipient} onChange={(e) => setRecipient(e.target.value)} />
-                 </div>
-                 <div className="space-y-2">
-                    <Label>Amount (Grams)</Label>
-                    <Input type="number" placeholder="0.00" value={sendGrams} onChange={(e) => setSendGrams(e.target.value)} />
-                 </div>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Send Gold</DialogTitle>
+              <DialogDescription>Transfer gold to another wallet.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Recipient (Email)</Label>
+                <Input placeholder="Enter email..." value={recipient} onChange={(e) => setRecipient(e.target.value)} />
               </div>
-              <DialogFooter>
-                 <Button variant="outline" onClick={() => setSendOpen(false)}>Cancel</Button>
-                 <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleSendGold}>Send Now</Button>
-              </DialogFooter>
-           </DialogContent>
+              <div className="space-y-2">
+                <Label>Amount (Grams)</Label>
+                <Input type="number" placeholder="0.00" value={sendGrams} onChange={(e) => setSendGrams(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Available: {goldGrams.toFixed(4)} g</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSendOpen(false)}>Cancel</Button>
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleSendGold}>Send</Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
-        {/* Request Gold Modal */}
         <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
-           <DialogContent>
-              <DialogHeader>
-                 <DialogTitle>Request Gold</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                 <div className="space-y-2">
-                    <Label>From (Wallet ID or Email)</Label>
-                    <Input placeholder="Enter identifier..." value={recipient} onChange={(e) => setRecipient(e.target.value)} />
-                 </div>
-                 <div className="space-y-2">
-                    <Label>Amount (Grams)</Label>
-                    <Input type="number" placeholder="0.00" value={requestGrams} onChange={(e) => setRequestGrams(e.target.value)} />
-                 </div>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Request Gold</DialogTitle>
+              <DialogDescription>Request gold from another user.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>From (Email)</Label>
+                <Input placeholder="Enter email..." value={recipient} onChange={(e) => setRecipient(e.target.value)} />
               </div>
-              <DialogFooter>
-                 <Button variant="outline" onClick={() => setRequestOpen(false)}>Cancel</Button>
-                 <Button onClick={handleRequestGold}>Send Request</Button>
-              </DialogFooter>
-           </DialogContent>
+              <div className="space-y-2">
+                <Label>Amount (Grams)</Label>
+                <Input type="number" placeholder="0.00" value={requestGrams} onChange={(e) => setRequestGrams(e.target.value)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRequestOpen(false)}>Cancel</Button>
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleRequestGold}>Request</Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
-        {/* Move to BNSL Modal */}
-        <Dialog open={bnslOpen} onOpenChange={setBnslOpen}>
-           <DialogContent>
-              <DialogHeader>
-                 <DialogTitle>Move to BNSL</DialogTitle>
-                 <DialogDescription>Lock gold in a Buy Now Sell Later plan.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                 <div className="space-y-2">
-                    <Label>Amount to Lock (Grams)</Label>
-                    <Input type="number" placeholder="0.00" value={bnslGrams} onChange={(e) => setBnslGrams(e.target.value)} />
-                 </div>
-                 <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800 flex gap-2">
-                    <Lock className="w-4 h-4 mt-0.5" />
-                    <p>These funds will be moved to your BNSL wallet and locked according to the plan terms.</p>
-                 </div>
-              </div>
-              <DialogFooter>
-                 <Button variant="outline" onClick={() => setBnslOpen(false)}>Cancel</Button>
-                 <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleMoveToBnsl}>Confirm Lock</Button>
-              </DialogFooter>
-           </DialogContent>
-        </Dialog>
-
-         {/* Move to Trade Modal */}
-         <Dialog open={tradeOpen} onOpenChange={setTradeOpen}>
-           <DialogContent>
-              <DialogHeader>
-                 <DialogTitle>Move to Trade Finance</DialogTitle>
-                 <DialogDescription>Fund your trade wallet for settlement.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                 <div className="space-y-2">
-                    <Label>Amount to Transfer (Grams)</Label>
-                    <Input type="number" placeholder="0.00" value={tradeGrams} onChange={(e) => setTradeGrams(e.target.value)} />
-                 </div>
-                 <div className="bg-purple-50 p-4 rounded-lg text-sm text-purple-800 flex gap-2">
-                    <RefreshCw className="w-4 h-4 mt-0.5" />
-                    <p>Funds will be transferred to FinaBridge wallet and may be locked for active trade cases.</p>
-                 </div>
-              </div>
-              <DialogFooter>
-                 <Button variant="outline" onClick={() => setTradeOpen(false)}>Cancel</Button>
-                 <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={handleMoveToTrade}>Transfer Funds</Button>
-              </DialogFooter>
-           </DialogContent>
+        <Dialog open={depositOpen} onOpenChange={setDepositOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Deposit Funds</DialogTitle>
+              <DialogDescription>Add USD to your wallet.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 text-center text-muted-foreground">
+              <p>Contact support to deposit funds to your account.</p>
+              <p className="text-sm mt-2">Email: support@finatrades.com</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDepositOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
       </div>
