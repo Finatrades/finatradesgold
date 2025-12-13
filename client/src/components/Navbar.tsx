@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Building2, LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
+import { User, Building2, LogOut, LayoutDashboard, Menu, X, ChevronRight } from 'lucide-react';
 import FinatradesLogo from '@/components/FinatradesLogo';
 
 export default function Navbar() {
@@ -27,7 +27,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -56,211 +56,269 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-      scrolled ? 'bg-[#0D001E]/95 backdrop-blur-md shadow-lg' : 'bg-[#0D001E]'
-    }`} data-testid="navbar">
-      <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-        <Link href="/">
-          <div className="cursor-pointer" data-testid="link-home-logo">
-            <FinatradesLogo variant="color" size="md" />
-          </div>
-        </Link>
+    <motion.nav 
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+        scrolled 
+          ? 'bg-[#0D001E]/98 backdrop-blur-xl shadow-2xl shadow-purple-900/20 border-b border-[#E91E8C]/10' 
+          : 'bg-gradient-to-b from-[#0D001E] to-[#0D001E]/95'
+      }`} 
+      data-testid="navbar"
+    >
+      <div className="container mx-auto px-6">
+        <div className="h-20 flex items-center justify-between">
+          <Link href="/">
+            <motion.div 
+              className="cursor-pointer"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              data-testid="link-home-logo"
+            >
+              <FinatradesLogo variant="color" size="md" />
+            </motion.div>
+          </Link>
 
-        <div className="hidden lg:flex items-center">
-          <div className="flex items-center bg-[#1a0a2e] rounded-full p-1">
-            {navLinks.map((link) => (
-              <button
+          <div className="hidden lg:flex items-center gap-1">
+            {navLinks.map((link, index) => (
+              <motion.button
                 key={link.id}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
                 onClick={() => {
                   if (!scrollToSection(link.href)) {
                     window.location.href = link.href;
                   }
                 }}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-300 rounded-lg group ${
                   isActive(link.href) || (link.href === '/' && location === '/')
-                    ? 'bg-[#7C3AED] text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-[#2d1a4a]'
+                    ? 'text-white'
+                    : 'text-gray-400 hover:text-white'
                 }`}
                 data-testid={`link-nav-${link.id}`}
               >
                 {link.label}
-              </button>
+                {(isActive(link.href) || (link.href === '/' && location === '/')) && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-gradient-to-r from-[#E91E8C]/20 to-[#9333EA]/20 rounded-lg border border-[#E91E8C]/30"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-[#E91E8C] to-[#9333EA] group-hover:w-full transition-all duration-300 rounded-full" />
+              </motion.button>
             ))}
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <LanguageSwitcher />
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
 
-          {!user && (
-            <div className="hidden md:flex items-center p-1 rounded-full border border-gray-600 bg-[#1a0a2e]">
-              <button
-                onClick={() => setAccountType('personal')}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  accountType === 'personal' 
-                    ? 'bg-white text-gray-800'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                data-testid="button-account-personal"
+            {!user && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="hidden md:flex items-center p-1 rounded-full bg-[#1a0a2e]/80 backdrop-blur-sm border border-[#E91E8C]/20"
               >
-                <User className="w-3.5 h-3.5" />
-                Personal
-              </button>
-              <button
-                onClick={() => setAccountType('business')}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  accountType === 'business' 
-                    ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                data-testid="button-account-business"
+                <button
+                  onClick={() => setAccountType('personal')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
+                    accountType === 'personal' 
+                      ? 'bg-white text-[#0D001E] shadow-lg'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  data-testid="button-account-personal"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  Personal
+                </button>
+                <button
+                  onClick={() => setAccountType('business')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
+                    accountType === 'business' 
+                      ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white shadow-lg shadow-[#E91E8C]/30'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  data-testid="button-account-business"
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  Business
+                </button>
+              </motion.div>
+            )}
+
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 hover:bg-transparent" data-testid="button-user-menu">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Avatar className="h-11 w-11 border-2 border-[#E91E8C]/40 shadow-lg shadow-[#E91E8C]/20">
+                        <AvatarImage src="" alt={user.firstName} />
+                        <AvatarFallback className="bg-gradient-to-br from-[#E91E8C] to-[#9333EA] text-white font-bold text-sm">
+                          {user.firstName[0]}{user.lastName[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    </motion.div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-[#1a0a2e] border-[#E91E8C]/20 text-white" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium text-white">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-400">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-[#E91E8C]/20" />
+                  <DropdownMenuItem onClick={() => window.location.href = '/dashboard'} className="hover:bg-[#E91E8C]/10 cursor-pointer" data-testid="menu-item-dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4 text-[#E91E8C]" />
+                    <span>Dashboard</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="hover:bg-[#E91E8C]/10 cursor-pointer" data-testid="menu-item-profile">
+                    <User className="mr-2 h-4 w-4 text-[#E91E8C]" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-[#E91E8C]/20" />
+                  <DropdownMenuItem onClick={logout} className="hover:bg-red-500/10 cursor-pointer text-red-400" data-testid="menu-item-logout">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="hidden md:flex items-center gap-3"
               >
-                <Building2 className="w-3.5 h-3.5" />
-                Business
-              </button>
-            </div>
-          )}
+                <Link href="/login">
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-full text-white hover:bg-white/10 hover:text-white px-5 font-medium"
+                    data-testid="button-login"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button 
+                      className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:shadow-lg hover:shadow-[#E91E8C]/30 text-white rounded-full px-6 font-semibold transition-all duration-300"
+                      data-testid="button-register"
+                    >
+                      Get Started
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </motion.div>
+                </Link>
+              </motion.div>
+            )}
 
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="button-user-menu">
-                  <Avatar className="h-10 w-10 border-2 border-[#E91E8C]/30">
-                    <AvatarImage src="" alt={user.firstName} />
-                    <AvatarFallback className="bg-gradient-to-br from-[#E91E8C] to-[#9333EA] text-white font-semibold">
-                      {user.firstName[0]}{user.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => window.location.href = '/dashboard'} data-testid="menu-item-dashboard">
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.location.href = '/profile'} data-testid="menu-item-profile">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} data-testid="menu-item-logout">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="hidden md:flex items-center gap-2">
-              <Link href="/login">
-                <Button 
-                  variant="ghost" 
-                  className="rounded-full text-white hover:bg-[#1a0a2e] border border-gray-600"
-                  data-testid="button-login"
-                >
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button 
-                  className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white rounded-full px-6"
-                  data-testid="button-register"
-                >
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          )}
-
-          <button 
-            className="lg:hidden p-2 rounded-lg text-white hover:bg-[#1a0a2e]"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            data-testid="button-mobile-menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="lg:hidden p-2.5 rounded-xl text-white bg-[#1a0a2e] border border-[#E91E8C]/20 hover:border-[#E91E8C]/40 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </motion.button>
+          </div>
         </div>
       </div>
 
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden absolute top-20 left-0 right-0 bg-[#0D001E] border-t border-[#1a0a2e]"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="lg:hidden overflow-hidden bg-[#0D001E] border-t border-[#E91E8C]/10"
           >
-            <div className="container mx-auto px-6 py-4 space-y-2">
-              {navLinks.map((link) => (
-                <button
+            <div className="container mx-auto px-6 py-6 space-y-3">
+              {navLinks.map((link, index) => (
+                <motion.button
                   key={link.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
                   onClick={() => {
                     if (!scrollToSection(link.href)) {
                       window.location.href = link.href;
                     }
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium ${
+                  className={`w-full text-left px-5 py-4 rounded-xl text-sm font-medium flex items-center justify-between transition-all ${
                     isActive(link.href)
-                      ? 'bg-[#7C3AED] text-white'
-                      : 'text-gray-300 hover:bg-[#1a0a2e]'
+                      ? 'bg-gradient-to-r from-[#E91E8C]/20 to-[#9333EA]/20 text-white border border-[#E91E8C]/30'
+                      : 'text-gray-400 hover:bg-[#1a0a2e] hover:text-white'
                   }`}
                   data-testid={`mobile-link-${link.id}`}
                 >
                   {link.label}
-                </button>
+                  <ChevronRight className="w-4 h-4 opacity-50" />
+                </motion.button>
               ))}
               
               {!user && (
-                <>
-                  <div className="flex items-center p-1 rounded-full border border-gray-600 bg-[#1a0a2e] mt-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="pt-4 space-y-4"
+                >
+                  <div className="flex items-center p-1.5 rounded-full bg-[#1a0a2e] border border-[#E91E8C]/20">
                     <button
                       onClick={() => setAccountType('personal')}
-                      className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
                         accountType === 'personal' 
-                          ? 'bg-white text-gray-800'
+                          ? 'bg-white text-[#0D001E]'
                           : 'text-gray-400'
                       }`}
                     >
-                      <User className="w-3.5 h-3.5" />
+                      <User className="w-4 h-4" />
                       Personal
                     </button>
                     <button
                       onClick={() => setAccountType('business')}
-                      className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
                         accountType === 'business' 
                           ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white'
                           : 'text-gray-400'
                       }`}
                     >
-                      <Building2 className="w-3.5 h-3.5" />
+                      <Building2 className="w-4 h-4" />
                       Business
                     </button>
                   </div>
-                  <div className="flex gap-2 pt-4 border-t border-[#1a0a2e]">
+                  <div className="flex gap-3 pt-2">
                     <Link href="/login" className="flex-1">
-                      <Button variant="outline" className="w-full rounded-full border-gray-600 text-white hover:bg-[#1a0a2e]" onClick={() => setMobileMenuOpen(false)}>
+                      <Button 
+                        variant="outline" 
+                        className="w-full rounded-full border-[#E91E8C]/30 text-white bg-transparent hover:bg-[#1a0a2e] py-5"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
                         Sign In
                       </Button>
                     </Link>
                     <Link href="/register" className="flex-1">
-                      <Button className="w-full bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white rounded-full" onClick={() => setMobileMenuOpen(false)}>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white rounded-full py-5 font-semibold"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
                         Get Started
                       </Button>
                     </Link>
                   </div>
-                </>
+                </motion.div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 }
