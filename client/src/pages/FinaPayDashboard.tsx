@@ -204,67 +204,153 @@ export default function FinaPayDashboard() {
           <p className="text-gray-500">View your gold balance, valuations and move value across Finatrades.</p>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-           <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-none shadow-lg col-span-1 md:col-span-2">
-             <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-2 opacity-90">
-                   <Wallet className="w-5 h-5" />
-                   <span className="text-sm font-medium">Total Gold Balance</span>
+        {/* Balance Cards with Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           {/* Gold Balance Card */}
+           <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-none shadow-xl overflow-hidden relative">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+             <CardContent className="p-6 relative">
+                <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center gap-2">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <Wallet className="w-5 h-5" />
+                      </div>
+                      <span className="font-medium">Gold Balance</span>
+                   </div>
+                   <Badge className="bg-white/20 text-white border-0">{wallet.tier}</Badge>
                 </div>
-                <h2 className="text-4xl font-bold mb-1">{wallet.goldBalanceGrams.toFixed(4)} g</h2>
-                <p className="opacity-80 text-sm">Reflected from FinaVault Ledger</p>
-                <div className="mt-6 flex gap-4">
-                   <div>
-                      <p className="text-xs opacity-70 uppercase">USD Value</p>
-                      <p className="font-bold text-xl">${wallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                   </div>
-                   <div className="border-l border-white/20 pl-4">
-                      <p className="text-xs opacity-70 uppercase">AED Value</p>
-                      <p className="font-bold text-xl">AED {wallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                   </div>
+                
+                <div className="mb-6">
+                   <h2 className="text-4xl font-bold mb-1">{wallet.goldBalanceGrams.toFixed(4)} g</h2>
+                   <p className="text-white/80 text-lg font-medium">${wallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                   <p className="text-white/60 text-sm">AED {wallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                </div>
+
+                <div className="flex gap-2">
+                   <Button 
+                     size="sm" 
+                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                     onClick={() => setBuyOpen(true)}
+                     data-testid="button-quick-buy"
+                   >
+                     <PlusCircle className="w-4 h-4 mr-1" /> Buy
+                   </Button>
+                   <Button 
+                     size="sm" 
+                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                     onClick={() => setSellOpen(true)}
+                     data-testid="button-quick-sell"
+                   >
+                     <Download className="w-4 h-4 mr-1" /> Sell
+                   </Button>
+                   <Button 
+                     size="sm" 
+                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                     onClick={() => setSendOpen(true)}
+                     data-testid="button-quick-send-gold"
+                   >
+                     <Send className="w-4 h-4 mr-1" /> Send
+                   </Button>
                 </div>
              </CardContent>
            </Card>
 
-           <Card className="bg-white col-span-1 md:col-span-2">
-              <CardHeader className="pb-2">
-                 <CardTitle className="text-sm font-medium text-gray-500">Liquidity Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="flex items-center justify-between mb-4">
-                    <div>
-                       <p className="text-2xl font-bold text-green-600">{wallet.availableGoldGrams.toFixed(2)} g</p>
-                       <p className="text-xs text-gray-500">Available</p>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-2xl font-bold text-amber-600">{(wallet.lockedForBnslGrams + wallet.lockedForTradeGrams).toFixed(2)} g</p>
-                       <p className="text-xs text-gray-500">Locked (BNSL + Trade)</p>
-                    </div>
-                 </div>
-                 <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
-                    <div className="bg-green-500 h-2.5" style={{ width: `${(wallet.availableGoldGrams / wallet.goldBalanceGrams) * 100}%` }}></div>
-                    <div className="bg-amber-500 h-2.5" style={{ width: `${((wallet.lockedForBnslGrams + wallet.lockedForTradeGrams) / wallet.goldBalanceGrams) * 100}%` }}></div>
-                 </div>
-              </CardContent>
-           </Card>
+           {/* USD Balance Card */}
+           <Card className="bg-gradient-to-br from-green-600 to-emerald-700 text-white border-none shadow-xl overflow-hidden relative">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+             <CardContent className="p-6 relative">
+                <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center gap-2">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <span className="font-medium">USD Balance</span>
+                   </div>
+                   <Badge className="bg-white/20 text-white border-0">Available</Badge>
+                </div>
+                
+                <div className="mb-6">
+                   <h2 className="text-4xl font-bold mb-1">${wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                   <p className="text-white/80 text-lg font-medium">AED {(wallet.usdBalance * 3.67).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                   <p className="text-white/60 text-sm">Ready for transactions</p>
+                </div>
 
-           <Card className="bg-gray-900 text-white col-span-1">
-              <CardContent className="p-6 flex flex-col justify-between h-full">
-                 <div>
-                    <div className="flex justify-between items-start">
-                       <ShieldCheck className="w-8 h-8 text-amber-400 mb-2" />
-                       <Badge variant="outline" className="text-amber-400 border-amber-400">{wallet.tier}</Badge>
-                    </div>
-                    <p className="font-bold text-lg mt-2">Tier Status</p>
-                 </div>
-                 <div>
-                    <p className="text-xs text-gray-400 mb-1">Daily Send Limit</p>
-                    <p className="font-mono text-sm">{limits.remainingSendGoldGramsToday}g / {limits.dailySendGoldGrams}g left</p>
-                 </div>
-              </CardContent>
+                <div className="flex gap-2">
+                   <Button 
+                     size="sm" 
+                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                     onClick={() => setBuyOpen(true)}
+                     data-testid="button-quick-buy-with-usd"
+                   >
+                     <PlusCircle className="w-4 h-4 mr-1" /> Buy Gold
+                   </Button>
+                   <Button 
+                     size="sm" 
+                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                     onClick={() => setSendOpen(true)}
+                     data-testid="button-quick-send-usd"
+                   >
+                     <Send className="w-4 h-4 mr-1" /> Send
+                   </Button>
+                   <Button 
+                     size="sm" 
+                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                     onClick={() => setRequestOpen(true)}
+                     data-testid="button-quick-request"
+                   >
+                     <ArrowDownLeft className="w-4 h-4 mr-1" /> Request
+                   </Button>
+                </div>
+             </CardContent>
            </Card>
         </div>
+
+        {/* Live Gold Price Banner */}
+        <Card className="bg-gray-900 text-white border-none">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4 md:mb-0">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Live Gold Spot Price</p>
+                  <p className="text-2xl font-bold text-amber-400">${currentGoldPriceUsdPerGram.toFixed(2)} <span className="text-sm text-gray-400">per gram</span></p>
+                </div>
+              </div>
+              <div className="hidden md:flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-xs text-gray-400">Available Gold</p>
+                  <p className="font-semibold text-green-400">{wallet.availableGoldGrams.toFixed(2)} g</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-400">Locked (BNSL)</p>
+                  <p className="font-semibold text-amber-400">{wallet.lockedForBnslGrams.toFixed(2)} g</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                onClick={() => setBnslOpen(true)}
+                data-testid="button-lock-bnsl"
+              >
+                <Lock className="w-4 h-4 mr-1" /> Lock for BNSL
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+                onClick={() => setTradeOpen(true)}
+                data-testid="button-trade-finance"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" /> Trade Finance
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
            {/* Left Column: Chart & Actions */}
@@ -305,41 +391,6 @@ export default function FinaPayDashboard() {
                     </div>
                  </CardContent>
               </Card>
-
-              {/* Quick Actions */}
-              <div>
-                 <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setBuyOpen(true)}>
-                       <PlusCircle className="w-8 h-8" />
-                       Buy Gold
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setSellOpen(true)}>
-                       <Download className="w-8 h-8" />
-                       Sell Gold
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setSendOpen(true)}>
-                       <Send className="w-8 h-8" />
-                       Send Gold
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-amber-500 hover:text-amber-600 transition-all" onClick={() => setRequestOpen(true)}>
-                       <ArrowDownLeft className="w-8 h-8" />
-                       Request
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-blue-500 hover:text-blue-600 transition-all" onClick={() => setBnslOpen(true)}>
-                       <Lock className="w-8 h-8" />
-                       Move to BNSL
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-purple-500 hover:text-purple-600 transition-all" onClick={() => setTradeOpen(true)}>
-                       <RefreshCw className="w-8 h-8" />
-                       Trade Finance
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2 hover:border-gray-500 hover:text-gray-900 transition-all">
-                       <CreditCard className="w-8 h-8" />
-                       Top Up Card
-                    </Button>
-                 </div>
-              </div>
            </div>
 
            {/* Right Column: Transactions */}
@@ -355,7 +406,7 @@ export default function FinaPayDashboard() {
                  </CardHeader>
                  <CardContent>
                     <div className="space-y-4">
-                       {transactions.slice(0, 8).map((tx) => (
+                       {transactions.slice(0, 5).map((tx) => (
                           <div key={tx.id} className="flex items-center justify-between p-3 border-b last:border-0 hover:bg-gray-50 rounded transition-colors">
                              <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-full ${
