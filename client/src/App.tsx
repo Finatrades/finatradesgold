@@ -74,7 +74,7 @@ function Router() {
       {/* User Dashboard Routes */}
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/finapay/transactions" component={FinaPayTransactions} />
-      <ProtectedRoute path="/finapay" component={FinaPayDashboard} />
+      <ProtectedRoute path="/finapay" component={FinaPay} />
       <ProtectedRoute path="/finavault" component={FinaVault} />
       <ProtectedRoute path="/bnsl" component={BNSL} />
       <ProtectedRoute path="/finabridge" component={FinaBridge} />
