@@ -3229,7 +3229,7 @@ export async function registerRoutes(
   // EXPORTER ENDPOINTS
   
   // Get open trade requests for exporters (privacy filtered - no importer PII)
-  app.get("/api/finabridge/exporter/open-requests", async (req, res) => {
+  app.get("/api/finabridge/exporter/open-requests/:userId", async (req, res) => {
     try {
       const requests = await storage.getOpenTradeRequests();
       
