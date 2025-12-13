@@ -54,6 +54,9 @@ import FinaVaultManagement from "@/pages/admin/FinaVaultManagement";
 import FeeManagement from "@/pages/admin/FeeManagement";
 import FinancialReports from "@/pages/admin/FinancialReports";
 import BNSLExplore from "@/pages/BNSLExplore";
+import FinaVaultHistory from "@/pages/FinaVaultHistory";
+import FinaBridgeRequests from "@/pages/FinaBridgeRequests";
+import FinaBridgeProposals from "@/pages/FinaBridgeProposals";
 
 import FinaPayTransactions from "@/pages/FinaPayTransactions";
 import { FinaPayProvider } from "@/context/FinaPayContext";
@@ -78,12 +81,12 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/finapay/transactions" component={FinaPayTransactions} />
       <ProtectedRoute path="/finapay" component={FinaPay} />
-      <ProtectedRoute path="/finavault/history" component={FinaVault} />
+      <ProtectedRoute path="/finavault/history" component={FinaVaultHistory} />
       <ProtectedRoute path="/finavault" component={FinaVault} />
       <ProtectedRoute path="/bnsl/explore" component={BNSLExplore} />
       <ProtectedRoute path="/bnsl" component={BNSL} />
-      <ProtectedRoute path="/finabridge/requests" component={FinaBridge} />
-      <ProtectedRoute path="/finabridge/proposals" component={FinaBridge} />
+      <ProtectedRoute path="/finabridge/requests" component={FinaBridgeRequests} />
+      <ProtectedRoute path="/finabridge/proposals" component={FinaBridgeProposals} />
       <ProtectedRoute path="/finabridge" component={FinaBridge} />
       <ProtectedRoute path="/finacard" component={FinaCard} />
       <ProtectedRoute path="/profile" component={Profile} />
