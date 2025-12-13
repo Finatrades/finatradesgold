@@ -108,6 +108,7 @@ export default function FinaBridge() {
       agreementsCopy: false,
       other: false,
     },
+    otherDocNote: '',
   });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   
@@ -265,6 +266,7 @@ export default function FinaBridge() {
           agreementsCopy: false,
           other: false,
         },
+        otherDocNote: '',
       });
       setUploadedFiles([]);
       setActiveTab('requests');
@@ -689,6 +691,20 @@ export default function FinaBridge() {
                               </label>
                             ))}
                           </div>
+                          
+                          {requestForm.requiredDocs.other && (
+                            <div className="mt-3">
+                              <label className="text-sm font-medium">Please specify other document(s)</label>
+                              <textarea
+                                value={requestForm.otherDocNote}
+                                onChange={(e) => setRequestForm({ ...requestForm, otherDocNote: e.target.value })}
+                                className="w-full p-3 border rounded-lg mt-1"
+                                rows={2}
+                                placeholder="Describe the other document(s) required..."
+                                data-testid="input-other-doc-note"
+                              />
+                            </div>
+                          )}
 
                           <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                             <label className="cursor-pointer">
