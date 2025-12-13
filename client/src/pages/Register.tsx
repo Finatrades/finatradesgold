@@ -233,13 +233,6 @@ export default function Register() {
                 </div>
 
                 <div className="flex flex-col items-center gap-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={handleDemoAccess}
-                    className="border-muted-foreground/30"
-                  >
-                    Try Demo Account <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
                   <p className="text-sm text-muted-foreground">
                     Already have an account?{' '}
                     <Link href="/login">
