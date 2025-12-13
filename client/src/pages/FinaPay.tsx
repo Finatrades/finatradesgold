@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 
 import WalletBalanceCards from '@/components/finapay/WalletBalanceCards';
-import LiveGoldChart from '@/components/finapay/LiveGoldChart';
 import WalletAnalytics from '@/components/finapay/WalletAnalytics';
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import QuickActions from '@/components/finapay/QuickActions';
@@ -280,13 +279,8 @@ export default function FinaPay() {
           <QuickActions onAction={handleQuickAction} goldPrice={currentGoldPriceUsdPerGram} />
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           <div className="lg:col-span-2 h-[450px]">
-             <LiveGoldChart />
-           </div>
-           <div className="lg:col-span-1 h-[450px]">
-             <WalletAnalytics wallet={wallet} />
-           </div>
+        <section>
+          <WalletAnalytics wallet={wallet} />
         </section>
 
         <section>
