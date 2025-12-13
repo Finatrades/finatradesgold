@@ -1,192 +1,526 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/Layout';
-import { useCMSPage } from '@/context/CMSContext';
-import { useBranding } from '@/context/BrandingContext';
+import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Link } from 'wouter';
-import { Vault, Wallet, TrendingUp, Globe, ArrowRight, Shield, Zap, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  Vault, Wallet, TrendingUp, Globe, ArrowRight, Shield, Zap, Clock, 
+  Building2, User, FileCheck, CreditCard, Award, BarChart3, Lock,
+  Users, FileText, Landmark, CheckCircle2
+} from 'lucide-react';
 
 export default function Home() {
-  const { getContent, isLoading } = useCMSPage('home');
-  const { settings } = useBranding();
+  const { accountType, setAccountType } = useAccountType();
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    company: '',
+    accountType: 'business',
+    message: ''
+  });
 
-  const heroTitle = getContent('hero', 'title', 'Secure Your Wealth with Gold-Backed Digital Finance');
-  const heroSubtitle = getContent('hero', 'subtitle', 'Experience the future of finance with Finatrades - where traditional gold meets modern technology');
-
-  const features = [
+  const products = [
     {
       icon: <Vault className="w-8 h-8" />,
-      title: getContent('features', 'finavault_title', 'FinaVault'),
-      description: getContent('features', 'finavault_description', 'Secure physical gold storage with digital ownership certificates'),
+      title: 'Deposit/Buy Gold',
+      description: 'Secure physical gold storage with digital ownership certificates',
       link: '/finavault',
-      color: 'from-amber-500 to-yellow-600'
+      cta: 'Explore FinaVault'
     },
     {
       icon: <Wallet className="w-8 h-8" />,
-      title: getContent('features', 'finapay_title', 'FinaPay'),
-      description: getContent('features', 'finapay_description', 'Digital gold wallet for seamless transactions and payments'),
+      title: 'Payments & Transfers',
+      description: 'Digital gold wallet for seamless transactions and payments',
       link: '/finapay',
-      color: 'from-orange-500 to-amber-600'
-    },
-    {
-      icon: <TrendingUp className="w-8 h-8" />,
-      title: getContent('features', 'bnsl_title', 'BNSL'),
-      description: getContent('features', 'bnsl_description', 'Buy Now Sell Later - Lock in today\'s gold price'),
-      link: '/bnsl',
-      color: 'from-green-500 to-emerald-600'
+      cta: 'Explore FinaPay Wallet'
     },
     {
       icon: <Globe className="w-8 h-8" />,
-      title: getContent('features', 'finabridge_title', 'FinaBridge'),
-      description: getContent('features', 'finabridge_description', 'Trade finance solutions for importers and exporters'),
+      title: 'Global Trade Monitoring',
+      description: 'Trade finance solutions for importers and exporters',
       link: '/finabridge',
-      color: 'from-blue-500 to-indigo-600'
+      cta: 'Explore FinaBridge'
+    },
+    {
+      icon: <TrendingUp className="w-8 h-8" />,
+      title: "Buy 'N' Sell Gold Plans",
+      description: 'Lock in today\'s gold price with structured BNSL plans',
+      link: '/bnsl',
+      cta: 'Explore BNSL'
     }
   ];
 
-  const benefits = [
-    {
-      icon: <Shield className="w-6 h-6 text-orange-500" />,
-      title: 'Secure & Insured',
-      description: 'Your gold is stored in fully insured vaults with 24/7 security'
-    },
-    {
-      icon: <Zap className="w-6 h-6 text-orange-500" />,
-      title: 'Instant Transactions',
-      description: 'Buy, sell, and transfer gold instantly with low fees'
-    },
-    {
-      icon: <Clock className="w-6 h-6 text-orange-500" />,
-      title: '24/7 Access',
-      description: 'Manage your gold holdings anytime, anywhere'
-    }
+  const workflowSteps = [
+    { number: 1, title: 'Register Corporate Profile', icon: <Building2 className="w-5 h-5" /> },
+    { number: 2, title: 'KYB & Compliance Review', icon: <FileCheck className="w-5 h-5" /> },
+    { number: 3, title: 'Establish Gold Reserve Account', icon: <Landmark className="w-5 h-5" /> },
+    { number: 4, title: 'Buy/Deposit Physical Gold', icon: <Vault className="w-5 h-5" /> },
+    { number: 5, title: 'Receive Holding Certificates', icon: <Award className="w-5 h-5" /> },
+    { number: 6, title: 'Use Gold for Trade & Treasury', icon: <BarChart3 className="w-5 h-5" /> },
+    { number: 7, title: 'Reporting & Audit Controls', icon: <FileText className="w-5 h-5" /> },
   ];
+
+  const bnslPlans = [
+    { duration: 12, returns: '~10%', price: '5,000', minInvestment: '5,000 CHF' },
+    { duration: 24, returns: '~11%', price: '10,000', minInvestment: '10,000 CHF' },
+    { duration: 36, returns: '~12%', price: '25,000', minInvestment: '25,000 CHF' },
+  ];
+
+  const advantages = [
+    { icon: <Shield className="w-6 h-6" />, title: 'Swiss Regulation', description: 'Fully compliant with Swiss financial regulations and standards' },
+    { icon: <Lock className="w-6 h-6" />, title: 'Secure Storage', description: 'Physical gold stored in fully insured Swiss vaults' },
+    { icon: <Zap className="w-6 h-6" />, title: 'Instant Transactions', description: 'Buy, sell, and transfer gold instantly with low fees' },
+    { icon: <Clock className="w-6 h-6" />, title: '24/7 Access', description: 'Manage your gold holdings anytime, anywhere' },
+    { icon: <Users className="w-6 h-6" />, title: 'Dedicated Support', description: 'Enterprise-grade support for all your needs' },
+    { icon: <BarChart3 className="w-6 h-6" />, title: 'Transparent Reporting', description: 'Real-time reporting and audit controls' },
+  ];
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Contact form submitted:', formData);
+  };
 
   return (
     <Layout>
-      <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden" data-testid="section-hero">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-orange-400 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-b from-white via-purple-50/30 to-white" data-testid="section-hero">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-40 left-20 w-96 h-96 bg-purple-300 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-pink-300 rounded-full blur-3xl" />
         </div>
         
-        <div className="relative z-10 container mx-auto px-4 py-20 text-center">
-          <h1 
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
-            data-testid="text-hero-title"
-          >
-            {heroTitle}
-          </h1>
-          <p 
-            className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-10 max-w-3xl mx-auto"
-            data-testid="text-hero-subtitle"
-          >
-            {heroSubtitle}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-8 py-6 text-lg"
-                data-testid="button-get-started"
+        <div className="relative z-10 container mx-auto px-6 py-32">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E91E8C]/10 to-[#9333EA]/10 border border-[#E91E8C]/20 rounded-full px-4 py-2 mb-6">
+                <CheckCircle2 className="w-4 h-4 text-[#E91E8C]" />
+                <span className="text-sm font-medium text-[#7C3AED]">Swiss-Regulated Platform</span>
+              </div>
+
+              <div className="flex items-center p-1 rounded-full border border-gray-200 bg-white w-fit mb-8">
+                <button
+                  onClick={() => setAccountType('personal')}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
+                    accountType === 'personal' 
+                      ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  data-testid="hero-toggle-personal"
+                >
+                  <User className="w-4 h-4" />
+                  Personal
+                </button>
+                <button
+                  onClick={() => setAccountType('business')}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
+                    accountType === 'business' 
+                      ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  data-testid="hero-toggle-business"
+                >
+                  <Building2 className="w-4 h-4" />
+                  Business
+                </button>
+              </div>
+
+              <h1 
+                className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+                data-testid="text-hero-title"
               >
-                Get Started
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link href="/bnsl-explore">
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="px-8 py-6 text-lg border-2"
-                data-testid="button-explore-bnsl"
+                Finatrades - Regulated Gold-Backed Financial Infrastructure
+              </h1>
+              <p 
+                className="text-lg md:text-xl text-gray-600 mb-10 max-w-xl"
+                data-testid="text-hero-subtitle"
               >
-                Explore BNSL Plans
-              </Button>
-            </Link>
+                {accountType === 'business' 
+                  ? 'Designed for corporates, importers, exporters, trading houses, and high-net-worth clients seeking secure and compliant gold-backed solutions.'
+                  : 'Secure your wealth with gold-backed digital finance. Buy, store, and trade gold with confidence.'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/login">
+                  <Button 
+                    variant="outline"
+                    size="lg" 
+                    className="rounded-full border-gray-300 px-8"
+                    data-testid="button-hero-signin"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button 
+                    size="lg" 
+                    className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white px-8 rounded-full"
+                    data-testid="button-get-started"
+                  >
+                    Get Started
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative hidden lg:block">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative"
+              >
+                <div className="relative w-full aspect-square max-w-lg mx-auto">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#E91E8C]/20 to-[#9333EA]/20 rounded-3xl blur-2xl" />
+                  <div className="relative bg-gradient-to-br from-[#1a0a2e] to-[#0D001E] rounded-3xl p-8 shadow-2xl">
+                    <div className="w-full aspect-[1.6/1] bg-gradient-to-br from-[#E91E8C] to-[#9333EA] rounded-2xl p-6 relative overflow-hidden">
+                      <div className="absolute top-4 left-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-white font-bold text-sm">FINATRADES</span>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-6 left-6">
+                        <div className="text-white/80 text-xs mb-1">Gold Balance</div>
+                        <div className="text-white font-bold text-2xl">125.50 g</div>
+                      </div>
+                      <div className="absolute bottom-6 right-6">
+                        <div className="text-white/80 text-xs mb-1">Value (CHF)</div>
+                        <div className="text-white font-bold text-lg">8,542.00</div>
+                      </div>
+                      <div className="absolute top-1/2 right-6 -translate-y-1/2">
+                        <CreditCard className="w-12 h-12 text-white/30" />
+                      </div>
+                    </div>
+                    <div className="mt-6 grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-gray-400 text-xs mb-1">Vault</div>
+                        <div className="text-white font-semibold">100g</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-gray-400 text-xs mb-1">Wallet</div>
+                        <div className="text-white font-semibold">25.5g</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-gray-400 text-xs mb-1">BNSL</div>
+                        <div className="text-white font-semibold">2 Plans</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-white dark:bg-gray-900" data-testid="section-features">
-        <div className="container mx-auto px-4">
+      <section id="products" className="py-24 bg-white" data-testid="section-products">
+        <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Our Products & Services
+            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+              {accountType === 'business' ? 'BUSINESS ECOSYSTEM' : 'OUR PRODUCTS'}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {accountType === 'business' 
+                ? 'A Structured Ecosystem for High-Trust Business Transactions'
+                : 'Gold-Backed Financial Solutions'}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-              Comprehensive gold-backed financial solutions designed for the modern investor
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Comprehensive solutions designed for the modern investor and enterprise
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <Link href={feature.link} key={index}>
+            {products.map((product, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
                 <Card 
-                  className="h-full cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 overflow-hidden group"
-                  data-testid={`card-feature-${index}`}
+                  className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 group bg-white"
+                  data-testid={`card-product-${index}`}
                 >
-                  <div className={`h-2 bg-gradient-to-r ${feature.color}`} />
-                  <CardHeader>
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${feature.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
-                      {feature.icon}
+                  <CardContent className="p-6">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E91E8C]/10 to-[#9333EA]/10 flex items-center justify-center mb-6 group-hover:from-[#E91E8C]/20 group-hover:to-[#9333EA]/20 transition-colors">
+                      <div className="text-[#E91E8C]">{product.icon}</div>
                     </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-base">{feature.description}</CardDescription>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.title}</h3>
+                    <p className="text-gray-500 text-sm mb-4">{product.description}</p>
+                    <Link href={product.link}>
+                      <Button variant="ghost" className="p-0 h-auto text-[#E91E8C] hover:text-[#9333EA] font-medium group/btn">
+                        {product.cta}
+                        <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
-              </Link>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-900" data-testid="section-benefits">
-        <div className="container mx-auto px-4">
+      <section id="how-it-works" className="py-24 bg-gradient-to-b from-purple-50/50 to-white" data-testid="section-how-it-works">
+        <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Why Choose {settings?.companyName || 'Finatrades'}?
+            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+              ENTERPRISE WORKFLOW
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              How It Works
             </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              A streamlined process designed for enterprise compliance and efficiency
+            </p>
+          </div>
+
+          <div className="relative max-w-5xl mx-auto">
+            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-[#E91E8C] to-[#9333EA] -translate-y-1/2 rounded-full" style={{ top: '40px' }} />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
+              {workflowSteps.map((step, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="text-center relative"
+                >
+                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#E91E8C] to-[#9333EA] flex items-center justify-center mb-4 relative z-10 shadow-lg">
+                    <div className="text-white font-bold text-xl">{step.number}</div>
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">{step.title}</h4>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <Link href="/register">
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white rounded-full px-8"
+                data-testid="button-explore-business"
+              >
+                Explore Business Platform
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 bg-white" data-testid="section-bnsl">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+              STRUCTURED BNSL PLANS
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Buy Now, Sell Later
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Lock in today's gold price and benefit from structured returns
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {benefits.map((benefit, index) => (
-              <div 
-                key={index} 
-                className="text-center p-6"
-                data-testid={`benefit-${index}`}
+            {bnslPlans.map((plan, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
               >
-                <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mx-auto mb-4">
-                  {benefit.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {benefit.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {benefit.description}
-                </p>
-              </div>
+                <Card 
+                  className={`h-full border-2 transition-all duration-300 hover:shadow-xl ${
+                    index === 1 ? 'border-[#E91E8C] shadow-lg scale-105' : 'border-gray-200'
+                  }`}
+                  data-testid={`card-bnsl-${plan.duration}`}
+                >
+                  <CardContent className="p-8 text-center">
+                    {index === 1 && (
+                      <div className="inline-block bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                        MOST POPULAR
+                      </div>
+                    )}
+                    <div className="text-4xl font-bold text-gray-900 mb-2">{plan.duration}</div>
+                    <div className="text-gray-500 text-sm mb-6">Months</div>
+                    <div className="text-3xl font-bold text-[#E91E8C] mb-2">{plan.returns}</div>
+                    <div className="text-gray-500 text-sm mb-6">Expected Returns</div>
+                    <div className="text-sm text-gray-600 mb-6">Min. Investment: {plan.minInvestment}</div>
+                    <Link href="/bnsl">
+                      <Button 
+                        className={`w-full rounded-full ${
+                          index === 1 
+                            ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Learn More
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-r from-orange-500 to-amber-500" data-testid="section-cta">
-        <div className="container mx-auto px-4 text-center">
+      <section id="about" className="py-24 bg-gradient-to-b from-purple-50/50 to-white" data-testid="section-about">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+              WHY CHOOSE US
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              The Finatrades Advantage
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Swiss-regulated, secure, and designed for enterprise excellence
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {advantages.map((advantage, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="text-center p-6"
+                data-testid={`advantage-${index}`}
+              >
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E91E8C]/10 to-[#9333EA]/10 flex items-center justify-center mx-auto mb-4">
+                  <div className="text-[#E91E8C]">{advantage.icon}</div>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {advantage.title}
+                </h3>
+                <p className="text-gray-600">
+                  {advantage.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" className="py-24 bg-white" data-testid="section-contact">
+        <div className="container mx-auto px-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-12">
+              <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+                CONTACT US
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Get in Touch
+              </h2>
+              <p className="text-gray-600 text-lg">
+                Have questions? We'd love to hear from you.
+              </p>
+            </div>
+
+            <Card className="border-0 shadow-xl">
+              <CardContent className="p-8">
+                <form onSubmit={handleContactSubmit} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                      <Input 
+                        placeholder="John Doe"
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                        className="rounded-lg"
+                        data-testid="input-contact-name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                      <Input 
+                        type="email"
+                        placeholder="john@company.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        className="rounded-lg"
+                        data-testid="input-contact-email"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                      <Input 
+                        placeholder="Company Name"
+                        value={formData.company}
+                        onChange={(e) => setFormData({...formData, company: e.target.value})}
+                        className="rounded-lg"
+                        data-testid="input-contact-company"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+                      <select 
+                        value={formData.accountType}
+                        onChange={(e) => setFormData({...formData, accountType: e.target.value})}
+                        className="w-full h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#E91E8C]"
+                        data-testid="select-contact-account-type"
+                      >
+                        <option value="personal">Personal</option>
+                        <option value="business">Business</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                    <Textarea 
+                      placeholder="How can we help you?"
+                      value={formData.message}
+                      onChange={(e) => setFormData({...formData, message: e.target.value})}
+                      rows={4}
+                      className="rounded-lg"
+                      data-testid="textarea-contact-message"
+                    />
+                  </div>
+                  <Button 
+                    type="submit"
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white rounded-full"
+                    data-testid="button-contact-submit"
+                  >
+                    Send Message
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-gradient-to-r from-[#E91E8C] to-[#9333EA]" data-testid="section-cta">
+        <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Start Your Gold Journey?
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of investors who trust us with their gold investments
+            Join thousands of investors and enterprises who trust us with their gold investments
           </p>
           <Link href="/register">
             <Button 
               size="lg" 
-              className="bg-white text-orange-600 hover:bg-gray-100 px-10 py-6 text-lg font-semibold"
+              className="bg-white text-[#E91E8C] hover:bg-gray-100 px-10 py-6 text-lg font-semibold rounded-full"
               data-testid="button-cta-register"
             >
               Create Your Account

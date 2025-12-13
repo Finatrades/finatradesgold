@@ -14,8 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { motion } from 'framer-motion';
-import { User, Building2, LogOut, LayoutDashboard, Menu, X, Globe, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Building2, LogOut, LayoutDashboard, Menu, X, Check } from 'lucide-react';
 
 export default function Navbar() {
   const { t, language } = useLanguage();
@@ -41,33 +41,52 @@ export default function Navbar() {
     { href: '/#contact', label: 'Contact', id: 'contact' },
   ];
 
+  const scrollToSection = (href: string) => {
+    if (href.startsWith('/#')) {
+      const sectionId = href.substring(2);
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        setMobileMenuOpen(false);
+        return true;
+      }
+    }
+    return false;
+  };
+
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-      scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'
+      scrolled ? 'bg-[#0D001E]/95 backdrop-blur-md shadow-lg' : 'bg-[#0D001E]'
     }`} data-testid="navbar">
-      <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="container mx-auto px-6 h-20 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home-logo">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] rounded-lg" />
-            <span className="text-lg font-bold tracking-tight text-gray-900">FINATRADES</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-[#E91E8C] to-[#9333EA] rounded-lg flex items-center justify-center">
+              <Check className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-white">FINATRADES</span>
           </div>
         </Link>
 
         <div className="hidden lg:flex items-center">
-          <div className="flex items-center bg-[#1a1a2e] rounded-full p-1">
+          <div className="flex items-center bg-[#1a0a2e] rounded-full p-1">
             {navLinks.map((link) => (
-              <Link key={link.id} href={link.href}>
-                <button
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    isActive(link.href) || (link.href === '/' && location === '/')
-                      ? 'bg-[#6B21A8] text-white'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                  data-testid={`link-nav-${link.id}`}
-                >
-                  {link.label}
-                </button>
-              </Link>
+              <button
+                key={link.id}
+                onClick={() => {
+                  if (!scrollToSection(link.href)) {
+                    window.location.href = link.href;
+                  }
+                }}
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  isActive(link.href) || (link.href === '/' && location === '/')
+                    ? 'bg-[#7C3AED] text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-[#2d1a4a]'
+                }`}
+                data-testid={`link-nav-${link.id}`}
+              >
+                {link.label}
+              </button>
             ))}
           </div>
         </div>
@@ -76,13 +95,13 @@ export default function Navbar() {
           <LanguageSwitcher />
 
           {!user && (
-            <div className="hidden md:flex items-center p-1 rounded-full border border-gray-200 bg-white">
+            <div className="hidden md:flex items-center p-1 rounded-full border border-gray-600 bg-[#1a0a2e]">
               <button
                 onClick={() => setAccountType('personal')}
                 className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                   accountType === 'personal' 
-                    ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-white text-gray-800'
+                    : 'text-gray-400 hover:text-white'
                 }`}
                 data-testid="button-account-personal"
               >
@@ -93,8 +112,8 @@ export default function Navbar() {
                 onClick={() => setAccountType('business')}
                 className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                   accountType === 'business' 
-                    ? 'bg-[#6B21A8] text-white'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white'
+                    : 'text-gray-400 hover:text-white'
                 }`}
                 data-testid="button-account-business"
               >
@@ -108,9 +127,9 @@ export default function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="button-user-menu">
-                  <Avatar className="h-10 w-10 border-2 border-[#D4AF37]/30">
+                  <Avatar className="h-10 w-10 border-2 border-[#E91E8C]/30">
                     <AvatarImage src="" alt={user.firstName} />
-                    <AvatarFallback className="bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] text-[#1a1a2e] font-semibold">
+                    <AvatarFallback className="bg-gradient-to-br from-[#E91E8C] to-[#9333EA] text-white font-semibold">
                       {user.firstName[0]}{user.lastName[0]}
                     </AvatarFallback>
                   </Avatar>
@@ -143,8 +162,8 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-2">
               <Link href="/login">
                 <Button 
-                  variant="outline" 
-                  className="rounded-full border-gray-300 text-gray-700"
+                  variant="ghost" 
+                  className="rounded-full text-white hover:bg-[#1a0a2e] border border-gray-600"
                   data-testid="button-login"
                 >
                   Sign In
@@ -152,7 +171,7 @@ export default function Navbar() {
               </Link>
               <Link href="/register">
                 <Button 
-                  className="bg-gradient-to-r from-[#FF6B2F] to-[#FF8F5F] hover:opacity-90 text-white rounded-full"
+                  className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white rounded-full px-6"
                   data-testid="button-register"
                 >
                   Get Started
@@ -162,7 +181,7 @@ export default function Navbar() {
           )}
 
           <button 
-            className="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100"
+            className="lg:hidden p-2 rounded-lg text-white hover:bg-[#1a0a2e]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             data-testid="button-mobile-menu"
           >
@@ -171,46 +190,79 @@ export default function Navbar() {
         </div>
       </div>
 
-      {mobileMenuOpen && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="lg:hidden absolute top-16 left-0 right-0 bg-white border-b border-gray-100 shadow-lg"
-        >
-          <div className="container mx-auto px-6 py-4 space-y-2">
-            {navLinks.map((link) => (
-              <Link key={link.id} href={link.href}>
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden absolute top-20 left-0 right-0 bg-[#0D001E] border-t border-[#1a0a2e]"
+          >
+            <div className="container mx-auto px-6 py-4 space-y-2">
+              {navLinks.map((link) => (
                 <button
-                  onClick={() => setMobileMenuOpen(false)}
+                  key={link.id}
+                  onClick={() => {
+                    if (!scrollToSection(link.href)) {
+                      window.location.href = link.href;
+                    }
+                    setMobileMenuOpen(false);
+                  }}
                   className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium ${
                     isActive(link.href)
-                      ? 'bg-[#6B21A8] text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-[#7C3AED] text-white'
+                      : 'text-gray-300 hover:bg-[#1a0a2e]'
                   }`}
                   data-testid={`mobile-link-${link.id}`}
                 >
                   {link.label}
                 </button>
-              </Link>
-            ))}
-            
-            {!user && (
-              <div className="flex gap-2 pt-4 border-t border-gray-100">
-                <Link href="/login" className="flex-1">
-                  <Button variant="outline" className="w-full rounded-full" onClick={() => setMobileMenuOpen(false)}>
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/register" className="flex-1">
-                  <Button className="w-full bg-gradient-to-r from-[#FF6B2F] to-[#FF8F5F] text-white rounded-full" onClick={() => setMobileMenuOpen(false)}>
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
+              ))}
+              
+              {!user && (
+                <>
+                  <div className="flex items-center p-1 rounded-full border border-gray-600 bg-[#1a0a2e] mt-4">
+                    <button
+                      onClick={() => setAccountType('personal')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                        accountType === 'personal' 
+                          ? 'bg-white text-gray-800'
+                          : 'text-gray-400'
+                      }`}
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      Personal
+                    </button>
+                    <button
+                      onClick={() => setAccountType('business')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                        accountType === 'business' 
+                          ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white'
+                          : 'text-gray-400'
+                      }`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      Business
+                    </button>
+                  </div>
+                  <div className="flex gap-2 pt-4 border-t border-[#1a0a2e]">
+                    <Link href="/login" className="flex-1">
+                      <Button variant="outline" className="w-full rounded-full border-gray-600 text-white hover:bg-[#1a0a2e]" onClick={() => setMobileMenuOpen(false)}>
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link href="/register" className="flex-1">
+                      <Button className="w-full bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white rounded-full" onClick={() => setMobileMenuOpen(false)}>
+                        Get Started
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
