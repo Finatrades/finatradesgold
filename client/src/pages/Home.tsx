@@ -128,18 +128,30 @@ export default function Home() {
               </div>
 
               <h1 
-                className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+                className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight"
                 data-testid="text-hero-title"
               >
-                Finatrades - Regulated Gold-Backed Financial Infrastructure
+                Finatrades
               </h1>
-              <p 
-                className="text-lg md:text-xl text-gray-600 mb-10 max-w-xl"
+              <h2 
+                className="text-2xl md:text-3xl font-semibold text-gray-700 mb-6"
                 data-testid="text-hero-subtitle"
               >
+                Regulated Gold-Backed Financial Infrastructure
+              </h2>
+              <p 
+                className="text-lg md:text-xl text-gray-600 mb-4 max-w-xl"
+                data-testid="text-hero-description"
+              >
                 {accountType === 'business' 
-                  ? 'Designed for corporates, importers, exporters, trading houses, and high-net-worth clients seeking secure and compliant gold-backed solutions.'
+                  ? 'Designed for corporates, importers, exporters, trading houses, and institutional partners.'
                   : 'Secure your wealth with gold-backed digital finance. Buy, store, and trade gold with confidence.'}
+              </p>
+              <p 
+                className="text-base text-gray-500 mb-10 max-w-xl"
+                data-testid="text-hero-partnership"
+              >
+                Thanks to a strategic partnership with <span className="font-semibold text-[#7C3AED]">Wingold and Metals DMCC</span>, Finatrades transforms physical gold into settlement-ready financial instruments.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/login">
