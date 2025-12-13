@@ -145,12 +145,15 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
             </Link>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2 custom-scrollbar">
-            {menuGroups.map((group) => (
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 custom-scrollbar">
+            {menuGroups.map((group, index) => (
               <div key={group.title} className="space-y-1">
+                {index > 0 && (
+                  <div className="h-px bg-white/10 mx-2 mb-3" />
+                )}
                 <button
                   onClick={() => toggleGroup(group.title)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37]/80 hover:text-[#D4AF37] transition-colors bg-white/5 rounded-lg"
                   data-testid={`sidebar-group-${group.title.toLowerCase().replace(' ', '-')}`}
                 >
                   <span>{group.title}</span>
@@ -168,14 +171,14 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
+                      className="overflow-hidden pl-2 mt-1 space-y-0.5"
                     >
                       {group.items.map((item) => (
                         <Link key={item.href} href={item.href}>
                           <div 
                             className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all cursor-pointer group ${
                               isActive(item.href) 
-                                ? 'bg-white/15 text-[#D4AF37]' 
+                                ? 'bg-[#D4AF37]/20 text-[#D4AF37] border-l-2 border-[#D4AF37]' 
                                 : 'text-white/70 hover:text-white hover:bg-white/10'
                             }`}
                             onClick={() => setIsOpen(false)}
@@ -185,12 +188,6 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
                               {item.icon}
                             </div>
                             <span className="font-medium text-sm">{item.label}</span>
-                            {isActive(item.href) && (
-                              <motion.div 
-                                layoutId="sidebar-active"
-                                className="absolute left-0 w-1 h-6 bg-gradient-to-b from-[#D4AF37] to-[#F4E4BC] rounded-r-full"
-                              />
-                            )}
                           </div>
                         </Link>
                       ))}
