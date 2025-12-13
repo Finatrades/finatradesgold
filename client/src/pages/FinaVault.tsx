@@ -185,117 +185,81 @@ export default function FinaVault() {
           </div>
         </div>
         
-        {/* Professional Wallet Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          
-          {/* Total Vault Holdings - Primary Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-6 text-white shadow-lg">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-            
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                    <Database className="w-5 h-5" />
-                  </div>
-                  <span className="text-sm font-medium text-white/80">Total Vault Holdings</span>
-                </div>
+        {/* FinaVault Wallet Card */}
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Database className="w-5 h-5 text-amber-600" />
               </div>
-              
-              <div className="mb-1">
-                <span className="text-4xl font-bold tracking-tight">
-                  ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              
-              <div className="text-white/70 text-sm font-medium">
-                {totalVaultGold.toFixed(4)} g Gold
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between text-sm">
-                <div>
-                  <span className="text-white/60">Troy Ounces</span>
-                  <p className="font-semibold">{(totalVaultGold / 31.1035).toFixed(4)} oz</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-white/60">Price/g</span>
-                  <p className="font-semibold">${goldPricePerGram.toFixed(2)}</p>
-                </div>
-              </div>
+              <h2 className="text-lg font-bold text-foreground">FinaVault Wallet</h2>
             </div>
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveTab('new-request')}>
+              <Database className="w-4 h-4 mr-2" />
+              Deposit Gold
+            </Button>
           </div>
 
-          {/* Locked Assets */}
-          <div className="relative overflow-hidden rounded-2xl bg-white border border-border p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <Briefcase className="w-5 h-5 text-amber-600" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">Locked Assets</span>
-              </div>
-            </div>
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
-            <div className="mb-1">
-              <span className="text-3xl font-bold text-amber-600 tracking-tight">
-                ${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-            
-            <div className="text-muted-foreground text-sm font-medium">
-              {finabridgeLockedGrams.toFixed(4)} g Gold
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-border space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">BNSL Locked</span>
-                <span className="font-medium">$0.00</span>
+            {/* Available Balance */}
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <Database className="w-20 h-20 text-amber-500" />
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Trade Finance</span>
-                <span className="font-medium">${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Available Balance */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                  <span className="text-sm font-medium text-white/70">Available Balance</span>
-                </div>
-              </div>
-              
-              <div className="mb-1">
-                <span className="text-3xl font-bold tracking-tight">
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
+                <p className="text-3xl font-bold text-foreground mb-1">
                   ${((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              
-              <div className="text-white/60 text-sm font-medium">
-                {(totalVaultGold - finabridgeLockedGrams).toFixed(4)} g Gold
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-white/20 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/60">In AED</span>
-                  <span className="font-medium">{((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram * 3.67).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED</span>
-                </div>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-white/60">Rate</span>
-                  <span className="font-medium text-green-400">1 USD = 3.67 AED</span>
-                </div>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {(totalVaultGold - finabridgeLockedGrams).toFixed(3)} g
+                </p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Gold available for withdrawal or transfer.
+                </p>
               </div>
             </div>
+
+            {/* Locked Assets */}
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <Briefcase className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in Trades</p>
+                <p className="text-3xl font-bold text-amber-500 mb-1">
+                  ${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-amber-500/70">
+                  {finabridgeLockedGrams.toFixed(3)} g
+                </p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  <Briefcase className="w-3 h-3 inline mr-1" />
+                  Gold secured in active trade finance.
+                </p>
+              </div>
+            </div>
+
+            {/* Total Value */}
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <TrendingUp className="w-20 h-20 text-amber-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Vault Value</p>
+                <p className="text-3xl font-bold text-amber-500 mb-1">
+                  ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {totalVaultGold.toFixed(3)} g Total
+                </p>
+              </div>
+            </div>
+
           </div>
-          
         </div>
 
         {/* Main Content */}
