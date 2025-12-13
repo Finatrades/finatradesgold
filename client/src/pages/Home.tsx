@@ -103,9 +103,9 @@ export default function Home() {
   const workflowSteps = accountType === 'personal' ? personalWorkflowSteps : businessWorkflowSteps;
 
   const bnslPlans = [
-    { duration: 12, returns: '~10%', price: '5,000', minInvestment: '5,000 CHF' },
-    { duration: 24, returns: '~11%', price: '10,000', minInvestment: '10,000 CHF' },
-    { duration: 36, returns: '~12%', price: '25,000', minInvestment: '25,000 CHF' },
+    { duration: 12, returns: '10%', price: '5,000', minInvestment: '5,000 CHF' },
+    { duration: 24, returns: '11%', price: '10,000', minInvestment: '10,000 CHF' },
+    { duration: 36, returns: '12%', price: '25,000', minInvestment: '25,000 CHF' },
   ];
 
   const advantages = [
