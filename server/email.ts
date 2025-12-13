@@ -116,6 +116,8 @@ export const EMAIL_TEMPLATES = {
   INVITATION: 'invitation',
   MFA_ENABLED: 'mfa_enabled',
   BNSL_AGREEMENT_SIGNED: 'bnsl_agreement_signed',
+  CERTIFICATE_DELIVERY: 'certificate_delivery',
+  INVOICE_DELIVERY: 'invoice_delivery',
 } as const;
 
 export const DEFAULT_EMAIL_TEMPLATES = [
@@ -455,6 +457,109 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'signature_name', description: 'Name used for digital signature' },
       { name: 'signed_date', description: 'Date the agreement was signed' },
       { name: 'dashboard_url', description: 'Link to BNSL dashboard' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.CERTIFICATE_DELIVERY,
+    name: 'Certificate Delivery',
+    type: 'email' as const,
+    module: 'finapay',
+    subject: 'Your Gold Certificate - {{certificate_number}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Certificate of Ownership</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Dear {{user_name}},</p>
+          <p>Congratulations on your gold purchase! Your {{certificate_type}} certificate has been generated and is attached to this email.</p>
+          
+          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f97316;">
+            <h3 style="margin: 0 0 15px 0; color: #ea580c;">Certificate Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Certificate No:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
+              <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
+              <tr><td style="padding: 8px 0;">Type:</td><td style="text-align: right; font-weight: bold;">{{certificate_type}}</td></tr>
+              <tr><td style="padding: 8px 0;">Issued By:</td><td style="text-align: right;">{{issuer}}</td></tr>
+              <tr><td style="padding: 8px 0;">Issue Date:</td><td style="text-align: right;">{{issue_date}}</td></tr>
+            </table>
+          </div>
+
+          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Important:</strong> Please save the attached PDF certificate for your records. This document certifies your ownership of the specified gold holdings.</p>
+          </div>
+
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="{{dashboard_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Your Holdings</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+          <p style="margin-top: 10px;">If you have any questions, please contact our support team.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: 'User\'s full name' },
+      { name: 'certificate_number', description: 'Certificate reference number' },
+      { name: 'gold_amount', description: 'Amount of gold in grams' },
+      { name: 'certificate_type', description: 'Digital Ownership or Physical Storage' },
+      { name: 'issuer', description: 'Issuing entity name' },
+      { name: 'issue_date', description: 'Date certificate was issued' },
+      { name: 'dashboard_url', description: 'Link to user dashboard' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.INVOICE_DELIVERY,
+    name: 'Invoice Delivery',
+    type: 'email' as const,
+    module: 'finapay',
+    subject: 'Your Gold Purchase Invoice - {{invoice_number}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Purchase Invoice</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Dear {{user_name}},</p>
+          <p>Thank you for your gold purchase! Your invoice is attached to this email for your records.</p>
+          
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin: 0 0 15px 0; color: #404040;">Invoice Summary</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Invoice No:</td><td style="text-align: right; font-weight: bold;">{{invoice_number}}</td></tr>
+              <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
+              <tr><td style="padding: 8px 0;">Price per Gram:</td><td style="text-align: right;">\${{price_per_gram}}</td></tr>
+              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb;"><strong>Total Amount:</strong></td><td style="text-align: right; font-weight: bold; color: #f97316; border-top: 1px solid #e5e7eb;">\${{total_amount}}</td></tr>
+            </table>
+          </div>
+
+          <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; color: #166534;"><strong>Payment Status:</strong> {{payment_status}}</p>
+          </div>
+
+          <p>Please keep this invoice for your records. The attached PDF contains all the details of your transaction.</p>
+
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="{{dashboard_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Transaction History</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Wingold and Metals DMCC</p>
+          <p style="margin-top: 10px;">For billing inquiries, please contact our support team.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: 'User\'s full name' },
+      { name: 'invoice_number', description: 'Invoice reference number' },
+      { name: 'gold_amount', description: 'Amount of gold in grams' },
+      { name: 'price_per_gram', description: 'Gold price per gram in USD' },
+      { name: 'total_amount', description: 'Total invoice amount in USD' },
+      { name: 'payment_status', description: 'Payment status (Paid/Pending)' },
+      { name: 'dashboard_url', description: 'Link to user dashboard' },
     ],
     status: 'published' as const,
   },

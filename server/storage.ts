@@ -16,6 +16,7 @@ import {
   brandingSettings,
   employees, rolePermissions,
   securitySettings, otpVerifications, userPasskeys,
+  invoices, certificateDeliveries,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -60,7 +61,9 @@ import {
   type RolePermission, type InsertRolePermission,
   type SecuritySettings, type InsertSecuritySettings,
   type OtpVerification, type InsertOtpVerification,
-  type UserPasskey, type InsertUserPasskey
+  type UserPasskey, type InsertUserPasskey,
+  type Invoice, type InsertInvoice,
+  type CertificateDelivery, type InsertCertificateDelivery
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -85,6 +88,9 @@ export interface TransactionalStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer>;
+  createInvoice(insertInvoice: InsertInvoice): Promise<Invoice>;
+  createCertificateDelivery(insertDelivery: InsertCertificateDelivery): Promise<CertificateDelivery>;
+  generateInvoiceNumber(): Promise<string>;
 }
 
 function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
@@ -148,6 +154,20 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
     async createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer> {
       const [transfer] = await txDb.insert(peerTransfers).values(insertTransfer).returning();
       return transfer;
+    },
+    async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
+      const [invoice] = await txDb.insert(invoices).values(insertInvoice).returning();
+      return invoice;
+    },
+    async createCertificateDelivery(insertDelivery: InsertCertificateDelivery): Promise<CertificateDelivery> {
+      const [delivery] = await txDb.insert(certificateDeliveries).values(insertDelivery).returning();
+      return delivery;
+    },
+    async generateInvoiceNumber(): Promise<string> {
+      const prefix = 'INV';
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+      return `${prefix}-${timestamp}-${random}`;
     }
   };
 }
@@ -303,6 +323,7 @@ export interface IStorage {
   getCertificate(id: string): Promise<Certificate | undefined>;
   getUserCertificates(userId: string): Promise<Certificate[]>;
   getUserActiveCertificates(userId: string): Promise<Certificate[]>;
+  getAllCertificates(): Promise<Certificate[]>;
   updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined>;
   generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string>;
   
@@ -409,6 +430,24 @@ export interface IStorage {
   getPasskeyByCredentialId(credentialId: string): Promise<UserPasskey | undefined>;
   updateUserPasskey(id: string, updates: Partial<UserPasskey>): Promise<UserPasskey | undefined>;
   deleteUserPasskey(id: string): Promise<boolean>;
+  
+  // Invoices
+  getInvoice(id: string): Promise<Invoice | undefined>;
+  getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined>;
+  getInvoiceByTransaction(transactionId: string): Promise<Invoice | undefined>;
+  getUserInvoices(userId: string): Promise<Invoice[]>;
+  getAllInvoices(): Promise<Invoice[]>;
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | undefined>;
+  generateInvoiceNumber(): Promise<string>;
+  
+  // Certificate Deliveries
+  getCertificateDelivery(id: string): Promise<CertificateDelivery | undefined>;
+  getCertificateDeliveryByCertificate(certificateId: string): Promise<CertificateDelivery | undefined>;
+  getUserCertificateDeliveries(userId: string): Promise<CertificateDelivery[]>;
+  getAllCertificateDeliveries(): Promise<CertificateDelivery[]>;
+  createCertificateDelivery(delivery: InsertCertificateDelivery): Promise<CertificateDelivery>;
+  updateCertificateDelivery(id: string, updates: Partial<CertificateDelivery>): Promise<CertificateDelivery | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -941,6 +980,10 @@ export class DatabaseStorage implements IStorage {
 
   async getUserActiveCertificates(userId: string): Promise<Certificate[]> {
     return await db.select().from(certificates).where(and(eq(certificates.userId, userId), eq(certificates.status, 'Active'))).orderBy(desc(certificates.issuedAt));
+  }
+
+  async getAllCertificates(): Promise<Certificate[]> {
+    return await db.select().from(certificates).orderBy(desc(certificates.issuedAt));
   }
 
   async updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined> {
@@ -1740,6 +1783,82 @@ export class DatabaseStorage implements IStorage {
   async deleteUserPasskey(id: string): Promise<boolean> {
     const result = await db.delete(userPasskeys).where(eq(userPasskeys.id, id)).returning();
     return result.length > 0;
+  }
+
+  // ============================================
+  // INVOICES
+  // ============================================
+
+  async getInvoice(id: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice || undefined;
+  }
+
+  async getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.invoiceNumber, invoiceNumber));
+    return invoice || undefined;
+  }
+
+  async getInvoiceByTransaction(transactionId: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.transactionId, transactionId));
+    return invoice || undefined;
+  }
+
+  async getUserInvoices(userId: string): Promise<Invoice[]> {
+    return await db.select().from(invoices).where(eq(invoices.userId, userId)).orderBy(desc(invoices.issuedAt));
+  }
+
+  async getAllInvoices(): Promise<Invoice[]> {
+    return await db.select().from(invoices).orderBy(desc(invoices.issuedAt));
+  }
+
+  async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
+    const [newInvoice] = await db.insert(invoices).values(invoice).returning();
+    return newInvoice;
+  }
+
+  async updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | undefined> {
+    const [invoice] = await db.update(invoices).set(updates).where(eq(invoices.id, id)).returning();
+    return invoice || undefined;
+  }
+
+  async generateInvoiceNumber(): Promise<string> {
+    const prefix = 'INV';
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  // ============================================
+  // CERTIFICATE DELIVERIES
+  // ============================================
+
+  async getCertificateDelivery(id: string): Promise<CertificateDelivery | undefined> {
+    const [delivery] = await db.select().from(certificateDeliveries).where(eq(certificateDeliveries.id, id));
+    return delivery || undefined;
+  }
+
+  async getCertificateDeliveryByCertificate(certificateId: string): Promise<CertificateDelivery | undefined> {
+    const [delivery] = await db.select().from(certificateDeliveries).where(eq(certificateDeliveries.certificateId, certificateId));
+    return delivery || undefined;
+  }
+
+  async getUserCertificateDeliveries(userId: string): Promise<CertificateDelivery[]> {
+    return await db.select().from(certificateDeliveries).where(eq(certificateDeliveries.userId, userId)).orderBy(desc(certificateDeliveries.createdAt));
+  }
+
+  async getAllCertificateDeliveries(): Promise<CertificateDelivery[]> {
+    return await db.select().from(certificateDeliveries).orderBy(desc(certificateDeliveries.createdAt));
+  }
+
+  async createCertificateDelivery(delivery: InsertCertificateDelivery): Promise<CertificateDelivery> {
+    const [newDelivery] = await db.insert(certificateDeliveries).values(delivery).returning();
+    return newDelivery;
+  }
+
+  async updateCertificateDelivery(id: string, updates: Partial<CertificateDelivery>): Promise<CertificateDelivery | undefined> {
+    const [delivery] = await db.update(certificateDeliveries).set(updates).where(eq(certificateDeliveries.id, id)).returning();
+    return delivery || undefined;
   }
 }
 
