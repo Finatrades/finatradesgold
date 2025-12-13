@@ -2799,8 +2799,7 @@ export async function registerRoutes(
       if (result.success) {
         // Update agreement to mark email as sent
         await storage.updateBnslAgreement(agreement.id, { 
-          emailSent: true,
-          emailSentAt: new Date().toISOString()
+          emailSentAt: new Date()
         });
         
         res.json({ success: true, messageId: result.messageId });

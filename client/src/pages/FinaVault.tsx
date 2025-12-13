@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
-import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2 } from 'lucide-react';
+import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -83,6 +83,18 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Fetch BNSL plans for locked gold calculation
+  const { data: bnslData } = useQuery({
+    queryKey: ['bnsl-plans', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { plans: [] };
+      const res = await fetch(`/api/bnsl/plans/${user.id}`);
+      if (!res.ok) return { plans: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Transform API deposit requests to match frontend type
   const apiRequests = (depositData?.requests || []).map((req: any) => ({
     id: req.referenceNumber,
@@ -104,8 +116,19 @@ export default function FinaVault() {
   const finabridgeLockedGrams = parseFloat(finabridgeData?.wallet?.lockedGoldGrams || '0');
   const goldPricePerGram = 85.22;
   
+  // Calculate BNSL locked gold from active plans
+  const bnslLockedGrams = (bnslData?.plans || [])
+    .filter((plan: any) => ['Active', 'Pending Activation', 'Maturing'].includes(plan.status))
+    .reduce((sum: number, plan: any) => sum + parseFloat(plan.goldSoldGrams || '0'), 0);
+  
+  // Calculate total locked gold
+  const totalLockedGrams = finabridgeLockedGrams + bnslLockedGrams;
+  
   // Calculate total vault holdings
   const totalVaultGold = (holdingsData?.holdings || []).reduce((sum: number, h: any) => sum + parseFloat(h.goldGrams || '0'), 0);
+  
+  // Available gold is total minus all locked
+  const availableGold = Math.max(0, totalVaultGold - totalLockedGrams);
 
   // Check query params for initial tab
   useEffect(() => {
@@ -204,20 +227,20 @@ export default function FinaVault() {
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Available Balance */}
-            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-available-balance">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <Database className="w-20 h-20 text-amber-500" />
+                <Database className="w-20 h-20 text-green-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
-                <p className="text-3xl font-bold text-foreground mb-1">
-                  ${((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-3xl font-bold text-green-600 mb-1">
+                  ${(availableGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {(totalVaultGold - finabridgeLockedGrams).toFixed(3)} g
+                <p className="text-sm text-green-600/70">
+                  {availableGold.toFixed(3)} g
                 </p>
                 <p className="text-xs text-muted-foreground mt-3">
                   Gold available for withdrawal or transfer.
@@ -225,8 +248,28 @@ export default function FinaVault() {
               </div>
             </div>
 
-            {/* Locked Assets */}
-            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+            {/* Locked in BNSL */}
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-bnsl-locked">
+              <div className="absolute right-2 bottom-2 opacity-5">
+                <Clock className="w-20 h-20 text-purple-500" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in BNSL</p>
+                <p className="text-3xl font-bold text-purple-600 mb-1">
+                  ${(bnslLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-purple-600/70">
+                  {bnslLockedGrams.toFixed(3)} g
+                </p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  <Clock className="w-3 h-3 inline mr-1" />
+                  Gold in Buy Now Sell Later plans.
+                </p>
+              </div>
+            </div>
+
+            {/* Locked in Trade Finance */}
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-trade-locked">
               <div className="absolute right-2 bottom-2 opacity-5">
                 <Briefcase className="w-20 h-20 text-amber-500" />
               </div>
@@ -240,19 +283,19 @@ export default function FinaVault() {
                 </p>
                 <p className="text-xs text-muted-foreground mt-3">
                   <Briefcase className="w-3 h-3 inline mr-1" />
-                  Gold secured in active trade finance.
+                  Gold secured in trade finance.
                 </p>
               </div>
             </div>
 
             {/* Total Value */}
-            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-total-value">
               <div className="absolute right-2 bottom-2 opacity-5">
                 <TrendingUp className="w-20 h-20 text-amber-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Vault Value</p>
-                <p className="text-3xl font-bold text-amber-500 mb-1">
+                <p className="text-3xl font-bold text-foreground mb-1">
                   ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-sm text-muted-foreground">
