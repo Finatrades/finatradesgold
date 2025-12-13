@@ -204,108 +204,79 @@ export default function FinaPayDashboard() {
           <p className="text-gray-600 mt-1">Your secure wallet for buying, selling, and transferring digital gold. Use the buttons below to manage your balances instantly.</p>
         </div>
 
-        {/* Balance Cards with Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           {/* Gold Balance Card */}
-           <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-none shadow-xl overflow-hidden relative">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-             <CardContent className="p-6 relative">
-                <div className="flex items-center justify-between mb-4">
-                   <div className="flex items-center gap-2">
-                      <div className="p-2 bg-white/20 rounded-lg">
-                        <Wallet className="w-5 h-5" />
-                      </div>
-                      <span className="font-medium">Gold Balance</span>
-                   </div>
-                   <Badge className="bg-white/20 text-white border-0">{wallet.tier}</Badge>
+        {/* Single Gold-Backed Wallet Card */}
+        <Card className="bg-gradient-to-br from-amber-500 via-amber-600 to-yellow-600 text-white border-none shadow-2xl overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <CardContent className="p-8 relative">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <Wallet className="w-6 h-6" />
                 </div>
-                
-                <div className="mb-4">
-                   <h2 className="text-4xl font-bold mb-1">{wallet.goldBalanceGrams.toFixed(4)} g</h2>
-                   <p className="text-white/80 text-lg font-medium">${wallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                   <p className="text-white/60 text-sm">AED {wallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                <div>
+                  <span className="font-bold text-lg">Gold-Backed Wallet</span>
+                  <p className="text-white/70 text-xs">100% backed by physical gold in secure vaults</p>
                 </div>
-                <p className="text-white/70 text-xs mb-3">Your vaulted gold stored securely. Buy more, sell to cash, or send to other users.</p>
+              </div>
+              <Badge className="bg-white/20 text-white border-0 px-3 py-1">{wallet.tier}</Badge>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="md:col-span-1">
+                <p className="text-white/70 text-sm mb-1">Your Gold Holdings</p>
+                <h2 className="text-4xl font-bold">{wallet.goldBalanceGrams.toFixed(4)} <span className="text-2xl">g</span></h2>
+              </div>
+              <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-white/70 text-xs mb-1">Value in USD</p>
+                  <p className="text-2xl font-bold">${wallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-white/70 text-xs mb-1">Value in AED</p>
+                  <p className="text-2xl font-bold">AED {wallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+            </div>
 
-                <div className="flex gap-2">
-                   <Button 
-                     size="sm" 
-                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
-                     onClick={() => setBuyOpen(true)}
-                     data-testid="button-quick-buy"
-                   >
-                     <PlusCircle className="w-4 h-4 mr-1" /> Buy
-                   </Button>
-                   <Button 
-                     size="sm" 
-                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
-                     onClick={() => setSellOpen(true)}
-                     data-testid="button-quick-sell"
-                   >
-                     <Download className="w-4 h-4 mr-1" /> Sell
-                   </Button>
-                   <Button 
-                     size="sm" 
-                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
-                     onClick={() => setSendOpen(true)}
-                     data-testid="button-quick-send-gold"
-                   >
-                     <Send className="w-4 h-4 mr-1" /> Send
-                   </Button>
-                </div>
-             </CardContent>
-           </Card>
+            <p className="text-white/80 text-sm mb-4">Your wallet holds real gold. The USD and AED values shown update live based on current gold prices.</p>
 
-           {/* USD Balance Card */}
-           <Card className="bg-gradient-to-br from-green-600 to-emerald-700 text-white border-none shadow-xl overflow-hidden relative">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-             <CardContent className="p-6 relative">
-                <div className="flex items-center justify-between mb-4">
-                   <div className="flex items-center gap-2">
-                      <div className="p-2 bg-white/20 rounded-lg">
-                        <CreditCard className="w-5 h-5" />
-                      </div>
-                      <span className="font-medium">USD Balance</span>
-                   </div>
-                   <Badge className="bg-white/20 text-white border-0">Available</Badge>
-                </div>
-                
-                <div className="mb-4">
-                   <h2 className="text-4xl font-bold mb-1">${wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
-                   <p className="text-white/80 text-lg font-medium">AED {(wallet.usdBalance * 3.67).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                   <p className="text-white/60 text-sm">Ready for transactions</p>
-                </div>
-                <p className="text-white/70 text-xs mb-3">Cash available for purchases. Buy gold, send money, or request funds from others.</p>
-
-                <div className="flex gap-2">
-                   <Button 
-                     size="sm" 
-                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
-                     onClick={() => setBuyOpen(true)}
-                     data-testid="button-quick-buy-with-usd"
-                   >
-                     <PlusCircle className="w-4 h-4 mr-1" /> Buy Gold
-                   </Button>
-                   <Button 
-                     size="sm" 
-                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
-                     onClick={() => setSendOpen(true)}
-                     data-testid="button-quick-send-usd"
-                   >
-                     <Send className="w-4 h-4 mr-1" /> Send
-                   </Button>
-                   <Button 
-                     size="sm" 
-                     className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
-                     onClick={() => setRequestOpen(true)}
-                     data-testid="button-quick-request"
-                   >
-                     <ArrowDownLeft className="w-4 h-4 mr-1" /> Request
-                   </Button>
-                </div>
-             </CardContent>
-           </Card>
-        </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white border-0 h-12"
+                onClick={() => setBuyOpen(true)}
+                data-testid="button-quick-buy"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" /> Buy Gold
+              </Button>
+              <Button 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white border-0 h-12"
+                onClick={() => setSellOpen(true)}
+                data-testid="button-quick-sell"
+              >
+                <Download className="w-4 h-4 mr-2" /> Sell Gold
+              </Button>
+              <Button 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white border-0 h-12"
+                onClick={() => setSendOpen(true)}
+                data-testid="button-quick-send-gold"
+              >
+                <Send className="w-4 h-4 mr-2" /> Send
+              </Button>
+              <Button 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white border-0 h-12"
+                onClick={() => setRequestOpen(true)}
+                data-testid="button-quick-request"
+              >
+                <ArrowDownLeft className="w-4 h-4 mr-2" /> Request
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Live Gold Price Banner */}
         <Card className="bg-gray-900 text-white border-none">
