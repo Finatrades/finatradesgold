@@ -1,7 +1,12 @@
 import { jsPDF } from 'jspdf';
 import { BnslPlan } from '@/types/bnsl';
 
-export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any) => {
+interface SignatureData {
+  signatureName: string;
+  signedAt: string;
+}
+
+export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signatureData?: SignatureData) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -215,21 +220,59 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any) => {
   y = res.newY + 15;
 
   // --- SIGNATURE SECTION ---
-  if (y + 40 > pageHeight - margin) {
+  if (y + 60 > pageHeight - margin) {
     doc.addPage();
     y = margin;
   }
 
+  // Signature box
   doc.setDrawColor(0);
-  doc.line(margin, y, margin + 80, y); // User line
-  doc.line(pageWidth - margin - 80, y, pageWidth - margin, y); // Wingold line
-
-  doc.text("Participant Signature", margin, y + 5);
-  doc.text("Wingold & Metals DMCC", pageWidth - margin - 80, y + 5);
+  doc.setFillColor(250, 250, 250);
+  doc.rect(margin, y, contentWidth, 50, 'F');
+  doc.rect(margin, y, contentWidth, 50, 'S');
+  
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("DIGITAL SIGNATURE", margin + 5, y + 8);
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  
+  if (signatureData) {
+    // Signed agreement - show signature details
+    doc.text("Participant Signature:", margin + 5, y + 18);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text(signatureData.signatureName, margin + 5, y + 28);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const signedDate = new Date(signatureData.signedAt);
+    doc.text(`Signed on: ${signedDate.toLocaleString()}`, margin + 5, y + 36);
+    doc.text(`Timestamp: ${signatureData.signedAt}`, margin + 5, y + 42);
+    
+    // Wingold side
+    doc.setFontSize(10);
+    doc.text("Wingold & Metals DMCC", pageWidth - margin - 70, y + 18);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.text("Auto-accepted upon enrollment", pageWidth - margin - 70, y + 26);
+  } else {
+    // Draft - show signature line
+    doc.line(margin + 5, y + 28, margin + 85, y + 28);
+    doc.text("Participant Signature", margin + 5, y + 35);
+    
+    doc.line(pageWidth - margin - 85, y + 28, pageWidth - margin - 5, y + 28);
+    doc.text("Wingold & Metals DMCC", pageWidth - margin - 85, y + 35);
+  }
+  
+  y += 55;
   
   doc.setFontSize(8);
-  doc.text("Digitally Generated and Accepted via Finatrades Platform", margin, y + 15);
-  doc.text(`Timestamp: ${new Date().toISOString()}`, margin, y + 20);
+  doc.setFont("helvetica", "italic");
+  doc.text("This document was digitally generated and accepted via the Finatrades Platform.", margin, y);
+  doc.text(`Document generated: ${new Date().toISOString()}`, margin, y + 5);
+  doc.text("Agreement Version: V3-2025-12-09", margin, y + 10);
 
   return doc;
 };

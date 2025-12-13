@@ -380,6 +380,101 @@ function BnslTemplatesManager() {
   );
 }
 
+// Agreements Manager Component
+interface BnslAgreement {
+  id: string;
+  planId: string;
+  userId: string;
+  templateVersion: string;
+  signatureName: string;
+  signedAt: string;
+  emailSent?: boolean;
+  emailSentAt?: string;
+  planDetails?: any;
+  createdAt: string;
+}
+
+function BnslAgreementsManager() {
+  const [agreements, setAgreements] = useState<BnslAgreement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAgreements = async () => {
+    setLoading(true);
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('GET', '/api/admin/bnsl/agreements');
+      const data = await res.json();
+      setAgreements(data.agreements || []);
+    } catch (err) {
+      toast.error('Failed to load agreements');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAgreements();
+  }, []);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Signed Agreements</CardTitle>
+          <CardDescription>View and download signed BNSL agreements</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchAgreements}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          </div>
+        ) : agreements.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No signed agreements found.</div>
+        ) : (
+          <div className="space-y-4">
+            {agreements.map((agreement) => (
+              <div key={agreement.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-4 mb-4 md:mb-0">
+                  <div className="p-2 rounded border bg-purple-50 border-purple-100 text-purple-600">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-gray-900">Plan: {agreement.planId.substring(0, 8)}...</h4>
+                      <Badge variant="outline" className="text-xs">v{agreement.templateVersion}</Badge>
+                      {agreement.emailSent && <Badge className="bg-green-100 text-green-700 text-xs">Email Sent</Badge>}
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Signed by: <span className="font-medium">{agreement.signatureName}</span>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Signed: {new Date(agreement.signedAt).toLocaleString()} 
+                      {agreement.planDetails?.goldSoldGrams && ` • ${agreement.planDetails.goldSoldGrams.toFixed(2)}g`}
+                      {agreement.planDetails?.tenorMonths && ` • ${agreement.planDetails.tenorMonths} months`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`/api/bnsl/agreements/${agreement.id}/download`} target="_blank" rel="noopener noreferrer" data-testid={`btn-download-agreement-${agreement.id}`}>
+                      Download PDF
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function BNSLManagement() {
   const { allPlans, auditLogs, currentGoldPrice, updatePlanStatus, addAuditLog, updatePayout, updateEarlyTermination, refreshAllPlans } = useBnsl();
   
@@ -488,6 +583,9 @@ export default function BNSLManagement() {
              <TabsTrigger value="audit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
                Global Audit Log
              </TabsTrigger>
+             <TabsTrigger value="agreements" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+               Signed Agreements
+             </TabsTrigger>
            </TabsList>
 
            <div className="mt-6">
@@ -571,6 +669,10 @@ export default function BNSLManagement() {
                     </div>
                  </CardContent>
                </Card>
+             </TabsContent>
+
+             <TabsContent value="agreements">
+               <BnslAgreementsManager />
              </TabsContent>
            </div>
         </Tabs>

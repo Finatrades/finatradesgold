@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
   insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
-  insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertTradeCaseSchema,
+  insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertBnslAgreementSchema, insertTradeCaseSchema,
   insertTradeDocumentSchema, insertChatSessionSchema, insertChatMessageSchema,
   insertAuditLogSchema, insertContentPageSchema, insertContentBlockSchema,
   insertTemplateSchema, insertMediaAssetSchema, 
@@ -21,7 +21,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
-import { sendEmail, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
+import { sendEmail, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
 
 // Middleware to ensure admin access using header-based auth
 // This middleware validates that the X-Admin-User-Id header contains a valid admin user ID
@@ -2681,6 +2681,138 @@ export async function registerRoutes(
       res.json({ termination });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create early termination" });
+    }
+  });
+  
+  // ============================================================================
+  // BNSL AGREEMENTS
+  // ============================================================================
+  
+  // Get all BNSL agreements (Admin)
+  app.get("/api/admin/bnsl/agreements", async (req, res) => {
+    try {
+      const agreements = await storage.getAllBnslAgreements();
+      res.json({ agreements });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get agreements" });
+    }
+  });
+  
+  // Get agreement by plan ID
+  app.get("/api/bnsl/agreements/plan/:planId", async (req, res) => {
+    try {
+      const agreement = await storage.getBnslAgreementByPlanId(req.params.planId);
+      res.json({ agreement: agreement || null });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get agreement" });
+    }
+  });
+  
+  // Get user agreements
+  app.get("/api/bnsl/agreements/user/:userId", async (req, res) => {
+    try {
+      const agreements = await storage.getUserBnslAgreements(req.params.userId);
+      res.json({ agreements });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get user agreements" });
+    }
+  });
+  
+  // Create BNSL agreement
+  app.post("/api/bnsl/agreements", async (req, res) => {
+    try {
+      const agreementData = insertBnslAgreementSchema.parse(req.body);
+      const agreement = await storage.createBnslAgreement(agreementData);
+      res.json({ agreement });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create agreement" });
+    }
+  });
+  
+  // Update BNSL agreement (for email sent status)
+  app.patch("/api/bnsl/agreements/:id", async (req, res) => {
+    try {
+      const agreement = await storage.updateBnslAgreement(req.params.id, req.body);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+      res.json({ agreement });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update agreement" });
+    }
+  });
+  
+  // Send BNSL agreement email with PDF attachment
+  app.post("/api/bnsl/agreements/:id/send-email", async (req, res) => {
+    try {
+      const { pdfBase64 } = req.body;
+      
+      if (!pdfBase64) {
+        return res.status(400).json({ success: false, message: "PDF data is required" });
+      }
+      
+      // Get the agreement with plan details
+      const agreement = await storage.getBnslAgreement(req.params.id);
+      if (!agreement) {
+        return res.status(404).json({ success: false, message: "Agreement not found" });
+      }
+      
+      // Get user details
+      const user = await storage.getUser(agreement.userId);
+      if (!user || !user.email) {
+        return res.status(400).json({ success: false, message: "User email not found" });
+      }
+      
+      // Parse plan details
+      const planDetails = agreement.planDetails as any;
+      
+      // Prepare email data
+      const emailData = {
+        user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Customer',
+        plan_id: agreement.planId,
+        gold_amount: planDetails?.goldSoldGrams?.toFixed(3) || '0',
+        tenure_months: planDetails?.tenorMonths?.toString() || '12',
+        margin_rate: planDetails?.marginRate?.toString() || '8',
+        base_price: planDetails?.basePriceComponentUsd?.toLocaleString() || '0',
+        total_margin: planDetails?.totalMarginComponentUsd?.toLocaleString() || '0',
+        quarterly_payout: planDetails?.quarterlyMarginUsd?.toLocaleString() || '0',
+        signature_name: agreement.signatureName,
+        signed_date: new Date(agreement.signedAt).toLocaleDateString(),
+        dashboard_url: `${req.protocol}://${req.get('host')}/bnsl`,
+      };
+      
+      // Convert base64 PDF to buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      
+      // Send email with PDF attachment
+      const result = await sendEmailWithAttachment(
+        user.email,
+        EMAIL_TEMPLATES.BNSL_AGREEMENT_SIGNED,
+        emailData,
+        {
+          filename: `BNSL_Agreement_${agreement.planId}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        }
+      );
+      
+      if (result.success) {
+        // Update agreement to mark email as sent
+        await storage.updateBnslAgreement(agreement.id, { 
+          emailSent: true,
+          emailSentAt: new Date().toISOString()
+        });
+        
+        res.json({ success: true, messageId: result.messageId });
+      } else {
+        res.status(500).json({ success: false, message: result.error || 'Failed to send email' });
+      }
+    } catch (error) {
+      console.error('Failed to send BNSL agreement email:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : "Failed to send email" 
+      });
     }
   });
   

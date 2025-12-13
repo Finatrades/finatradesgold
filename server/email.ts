@@ -115,6 +115,7 @@ export const EMAIL_TEMPLATES = {
   TRANSFER_RECEIVED: 'transfer_received',
   INVITATION: 'invitation',
   MFA_ENABLED: 'mfa_enabled',
+  BNSL_AGREEMENT_SIGNED: 'bnsl_agreement_signed',
 } as const;
 
 export const DEFAULT_EMAIL_TEMPLATES = [
@@ -395,7 +396,124 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     ],
     status: 'published' as const,
   },
+  {
+    slug: EMAIL_TEMPLATES.BNSL_AGREEMENT_SIGNED,
+    name: 'BNSL Agreement Signed',
+    type: 'email' as const,
+    module: 'bnsl',
+    subject: 'Your BNSL Agreement - Plan {{plan_id}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">BNSL Agreement Confirmed</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Dear {{user_name}},</p>
+          <p>Thank you for enrolling in the BNSL (Buy Now Sell Later) Plan. Your signed agreement is attached to this email for your records.</p>
+          
+          <div style="background: #f8f4fc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8A2BE2;">
+            <h3 style="margin: 0 0 15px 0; color: #6B21A8;">Plan Summary</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Plan ID:</td><td style="text-align: right; font-weight: bold;">{{plan_id}}</td></tr>
+              <tr><td style="padding: 8px 0;">Gold Sold:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
+              <tr><td style="padding: 8px 0;">Tenure:</td><td style="text-align: right; font-weight: bold;">{{tenure_months}} months</td></tr>
+              <tr><td style="padding: 8px 0;">Margin Rate:</td><td style="text-align: right; font-weight: bold;">{{margin_rate}}% p.a.</td></tr>
+              <tr><td style="padding: 8px 0;">Base Price:</td><td style="text-align: right; font-weight: bold; color: #8A2BE2;">\${{base_price}}</td></tr>
+              <tr><td style="padding: 8px 0;">Total Margin:</td><td style="text-align: right; font-weight: bold; color: #22c55e;">\${{total_margin}}</td></tr>
+              <tr><td style="padding: 8px 0;">Quarterly Payout:</td><td style="text-align: right; font-weight: bold;">\${{quarterly_payout}}</td></tr>
+            </table>
+          </div>
+
+          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Important:</strong> Please keep this email and the attached PDF for your records. This document confirms your irrevocable sale of gold to Wingold and Metals DMCC.</p>
+          </div>
+
+          <p><strong>Signed by:</strong> {{signature_name}}</p>
+          <p><strong>Date:</strong> {{signed_date}}</p>
+
+          <p style="margin-top: 20px;">Your quarterly margin payments will be credited to your FinaPay wallet according to the disbursement schedule outlined in your agreement.</p>
+          
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="{{dashboard_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Your Plan</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+          <p style="margin-top: 10px;">If you have any questions, please contact our support team.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: 'User\'s full name' },
+      { name: 'plan_id', description: 'BNSL Plan ID' },
+      { name: 'gold_amount', description: 'Amount of gold sold in grams' },
+      { name: 'tenure_months', description: 'Plan tenure in months' },
+      { name: 'margin_rate', description: 'Annual margin rate percentage' },
+      { name: 'base_price', description: 'Base price component in USD' },
+      { name: 'total_margin', description: 'Total margin component in USD' },
+      { name: 'quarterly_payout', description: 'Quarterly payout amount in USD' },
+      { name: 'signature_name', description: 'Name used for digital signature' },
+      { name: 'signed_date', description: 'Date the agreement was signed' },
+      { name: 'dashboard_url', description: 'Link to BNSL dashboard' },
+    ],
+    status: 'published' as const,
+  },
 ];
+
+export async function sendEmailWithAttachment(
+  to: string,
+  templateSlug: string,
+  data: EmailData,
+  attachment?: { filename: string; content: Buffer; contentType?: string }
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const template = await getEmailTemplate(templateSlug);
+    
+    if (!template) {
+      console.error(`[Email] Template not found: ${templateSlug}`);
+      return { success: false, error: `Template not found: ${templateSlug}` };
+    }
+
+    const subject = replaceVariables(template.subject, data);
+    const htmlBody = replaceVariables(template.body, data);
+
+    if (!SMTP_USER || !SMTP_PASS) {
+      console.log(`[Email Preview] To: ${to}`);
+      console.log(`[Email Preview] Subject: ${subject}`);
+      console.log(`[Email Preview] Body: ${htmlBody.substring(0, 200)}...`);
+      if (attachment) {
+        console.log(`[Email Preview] Attachment: ${attachment.filename} (${attachment.content.length} bytes)`);
+      }
+      console.log(`[Email] SMTP not configured - email logged only`);
+      return { success: true, messageId: 'preview-mode' };
+    }
+
+    const mailOptions: any = {
+      from: SMTP_FROM,
+      to,
+      subject,
+      html: htmlBody,
+    };
+
+    if (attachment) {
+      mailOptions.attachments = [
+        {
+          filename: attachment.filename,
+          content: attachment.content,
+          contentType: attachment.contentType || 'application/pdf',
+        },
+      ];
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log(`[Email] Sent to ${to}: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`[Email] Failed to send to ${to}:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
 
 export async function seedEmailTemplates(): Promise<void> {
   console.log('[Email] Seeding default email templates...');

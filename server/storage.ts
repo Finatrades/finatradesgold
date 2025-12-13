@@ -1,7 +1,7 @@
 import { 
   users, wallets, transactions, vaultHoldings, kycSubmissions,
   bnslPlans, bnslPayouts, bnslEarlyTerminations, bnslWallets,
-  bnslPlanTemplates, bnslTemplateVariants,
+  bnslPlanTemplates, bnslTemplateVariants, bnslAgreements,
   tradeCases, tradeDocuments,
   tradeRequests, tradeProposals, forwardedProposals, tradeConfirmations,
   finabridgeWallets, settlementHolds,
@@ -27,6 +27,7 @@ import {
   type BnslWallet, type InsertBnslWallet,
   type BnslPlanTemplate, type InsertBnslPlanTemplate,
   type BnslTemplateVariant, type InsertBnslTemplateVariant,
+  type BnslAgreement, type InsertBnslAgreement,
   type TradeCase, type InsertTradeCase,
   type TradeDocument, type InsertTradeDocument,
   type TradeRequest, type InsertTradeRequest,
@@ -222,6 +223,14 @@ export interface IStorage {
   createBnslTemplateVariant(variant: InsertBnslTemplateVariant): Promise<BnslTemplateVariant>;
   updateBnslTemplateVariant(id: string, updates: Partial<BnslTemplateVariant>): Promise<BnslTemplateVariant | undefined>;
   deleteBnslTemplateVariant(id: string): Promise<boolean>;
+  
+  // BNSL Agreements
+  getBnslAgreement(id: string): Promise<BnslAgreement | undefined>;
+  getBnslAgreementByPlanId(planId: string): Promise<BnslAgreement | undefined>;
+  getUserBnslAgreements(userId: string): Promise<BnslAgreement[]>;
+  getAllBnslAgreements(): Promise<BnslAgreement[]>;
+  createBnslAgreement(agreement: InsertBnslAgreement): Promise<BnslAgreement>;
+  updateBnslAgreement(id: string, updates: Partial<BnslAgreement>): Promise<BnslAgreement | undefined>;
   
   // Trade Cases
   getTradeCase(id: string): Promise<TradeCase | undefined>;
@@ -658,6 +667,35 @@ export class DatabaseStorage implements IStorage {
   async deleteBnslTemplateVariant(id: string): Promise<boolean> {
     await db.delete(bnslTemplateVariants).where(eq(bnslTemplateVariants.id, id));
     return true;
+  }
+
+  // BNSL Agreements
+  async getBnslAgreement(id: string): Promise<BnslAgreement | undefined> {
+    const [agreement] = await db.select().from(bnslAgreements).where(eq(bnslAgreements.id, id));
+    return agreement || undefined;
+  }
+
+  async getBnslAgreementByPlanId(planId: string): Promise<BnslAgreement | undefined> {
+    const [agreement] = await db.select().from(bnslAgreements).where(eq(bnslAgreements.planId, planId));
+    return agreement || undefined;
+  }
+
+  async getUserBnslAgreements(userId: string): Promise<BnslAgreement[]> {
+    return await db.select().from(bnslAgreements).where(eq(bnslAgreements.userId, userId)).orderBy(desc(bnslAgreements.createdAt));
+  }
+
+  async getAllBnslAgreements(): Promise<BnslAgreement[]> {
+    return await db.select().from(bnslAgreements).orderBy(desc(bnslAgreements.createdAt));
+  }
+
+  async createBnslAgreement(insertAgreement: InsertBnslAgreement): Promise<BnslAgreement> {
+    const [agreement] = await db.insert(bnslAgreements).values(insertAgreement).returning();
+    return agreement;
+  }
+
+  async updateBnslAgreement(id: string, updates: Partial<BnslAgreement>): Promise<BnslAgreement | undefined> {
+    const [agreement] = await db.update(bnslAgreements).set(updates).where(eq(bnslAgreements.id, id)).returning();
+    return agreement || undefined;
   }
 
   // Trade Cases

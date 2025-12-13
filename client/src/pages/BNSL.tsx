@@ -9,6 +9,7 @@ import { BnslPlan, BnslPlanStatus, BnslMarginPayout } from '@/types/bnsl';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useBnsl } from '@/context/BnslContext';
+import { generateBnslAgreement } from '@/utils/generateBnslPdf';
 
 // Helper: Calculate daily margin for a plan
 function calculateDailyMargin(plan: BnslPlan): number {
@@ -169,7 +170,7 @@ export default function BNSL() {
     }
   };
 
-  const handleCreatePlan = async (newPlanData: Partial<BnslPlan>) => {
+  const handleCreatePlan = async (newPlanData: Partial<BnslPlan>, signatureData?: { signatureName: string; signedAt: string }) => {
     const startDate = new Date();
     const maturityDate = new Date();
     const tenorMonths = newPlanData.tenorMonths || 12;
@@ -215,6 +216,71 @@ export default function BNSL() {
     const createdPlan = await addPlan(planDataForApi);
     
     if (createdPlan) {
+      // Store agreement with signature if provided
+      if (signatureData) {
+        try {
+          const { apiRequest } = await import('@/lib/queryClient');
+          const agreementRes = await apiRequest('POST', '/api/bnsl/agreements', {
+            planId: createdPlan.id,
+            userId: user?.id,
+            templateVersion: 'V3-2025-12-09',
+            signatureName: signatureData.signatureName,
+            signedAt: signatureData.signedAt,
+            planDetails: {
+              tenorMonths,
+              goldSoldGrams,
+              enrollmentPriceUsdPerGram,
+              basePriceComponentUsd,
+              totalMarginComponentUsd,
+              quarterlyMarginUsd,
+              totalSaleProceedsUsd,
+              marginRate: rate,
+              startDate: startDate.toISOString(),
+              maturityDate: maturityDate.toISOString(),
+            }
+          });
+          const agreementData = await agreementRes.json();
+          
+          // Generate PDF with signature and send email
+          if (agreementData.agreement) {
+            const planForPdf = {
+              id: createdPlan.id,
+              tenorMonths: tenorMonths as 12 | 24 | 36,
+              goldSoldGrams,
+              enrollmentPriceUsdPerGram,
+              basePriceComponentUsd,
+              totalMarginComponentUsd,
+              quarterlyMarginUsd,
+              marginRateAnnualPercent: rate / 100,
+            };
+            
+            const userForPdf = {
+              name: user?.firstName ? `${user.firstName} ${user.lastName}` : 'User',
+              email: user?.email || 'N/A',
+            };
+            
+            // Generate signed PDF
+            const doc = generateBnslAgreement(planForPdf, userForPdf, signatureData);
+            const pdfBase64 = doc.output('datauristring').split(',')[1];
+            
+            // Send email with PDF attachment
+            try {
+              await apiRequest('POST', `/api/bnsl/agreements/${agreementData.agreement.id}/send-email`, {
+                pdfBase64
+              });
+              toast({
+                title: "Agreement Email Sent",
+                description: "A copy of your signed agreement has been sent to your email.",
+              });
+            } catch (emailErr) {
+              console.error('Failed to send agreement email:', emailErr);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to save agreement:', err);
+        }
+      }
+      
       setActiveTab('plans');
       // Refresh wallet balances after locking gold
       await fetchWallets();
