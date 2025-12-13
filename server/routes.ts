@@ -514,6 +514,53 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // USER CHECK AND INVITE
+  // ============================================================================
+  
+  // Check if user exists and send invitation if not
+  app.post("/api/users/check-and-invite", async (req, res) => {
+    try {
+      const { email, senderName, amount, type } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      const existingUser = await storage.getUserByEmail(email);
+      
+      if (existingUser) {
+        return res.json({ userExists: true, userId: existingUser.id });
+      }
+      
+      // User does not exist - log invitation (in production, send email)
+      console.log(`[Invitation] Sending invite to ${email}`);
+      console.log(`  From: ${senderName}`);
+      console.log(`  Amount: ${amount}g gold`);
+      console.log(`  Type: ${type}`);
+      console.log(`  Join link: ${process.env.REPLIT_DEV_DOMAIN || 'https://finatrades.com'}/register?ref=${encodeURIComponent(senderName || '')}`);
+      
+      // Create audit log for the invitation
+      await storage.createAuditLog({
+        entityType: "invitation",
+        entityId: "0",
+        actionType: "create",
+        actor: "0",
+        actorRole: "system",
+        details: `Invitation sent to ${email} from ${senderName} for ${type} of ${amount}g gold`,
+      });
+      
+      res.json({ 
+        userExists: false, 
+        invitationSent: true,
+        message: `Invitation sent to ${email}` 
+      });
+    } catch (error) {
+      console.error("Check and invite error:", error);
+      res.status(500).json({ message: "Failed to process request" });
+    }
+  });
+  
+  // ============================================================================
   // ADMIN - USER MANAGEMENT
   // ============================================================================
   

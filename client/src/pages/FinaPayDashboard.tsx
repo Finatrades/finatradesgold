@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wallet, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, PlusCircle, RefreshCw, AlertCircle, QrCode, Copy, Download } from 'lucide-react';
+import { Wallet, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, PlusCircle, RefreshCw, AlertCircle, QrCode, Copy, Download, Upload, Link2, FileText, Share2 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
@@ -35,6 +35,15 @@ export default function FinaPayDashboard() {
   const [sendGrams, setSendGrams] = useState('');
   const [recipient, setRecipient] = useState('');
   const [requestGrams, setRequestGrams] = useState('');
+  const [sendNote, setSendNote] = useState('');
+  const [requestNote, setRequestNote] = useState('');
+  const [sendInvoice, setSendInvoice] = useState<File | null>(null);
+  const [requestInvoice, setRequestInvoice] = useState<File | null>(null);
+  const [sendQrDataUrl, setSendQrDataUrl] = useState('');
+  const [requestQrDataUrl, setRequestQrDataUrl] = useState('');
+  const [sendLinkGenerated, setSendLinkGenerated] = useState(false);
+  const [requestLinkGenerated, setRequestLinkGenerated] = useState(false);
+  const [checkingUser, setCheckingUser] = useState(false);
 
   useEffect(() => {
     if (qrOpen && user) {
@@ -70,6 +79,102 @@ export default function FinaPayDashboard() {
     toast.success('QR code downloaded');
   };
 
+  const generateRequestLink = () => {
+    const grams = parseFloat(requestGrams);
+    if (!grams || grams <= 0) {
+      toast.error('Please enter amount first');
+      return;
+    }
+    const baseUrl = window.location.origin;
+    const requestData = {
+      platform: 'Finatrades',
+      type: 'request',
+      from: user?.email,
+      finatradesId: user?.finatradesId || user?.id,
+      amount: grams,
+      note: requestNote,
+    };
+    const encodedData = btoa(JSON.stringify(requestData));
+    const shareLink = `${baseUrl}/pay?r=${encodedData}`;
+    
+    QRCode.toDataURL(shareLink, { width: 200, margin: 2 })
+      .then(setRequestQrDataUrl)
+      .catch(console.error);
+    setRequestLinkGenerated(true);
+  };
+
+  const generateSendLink = () => {
+    const grams = parseFloat(sendGrams);
+    if (!grams || grams <= 0) {
+      toast.error('Please enter amount first');
+      return;
+    }
+    const baseUrl = window.location.origin;
+    const sendData = {
+      platform: 'Finatrades',
+      type: 'send',
+      to: recipient,
+      from: user?.email,
+      amount: grams,
+      note: sendNote,
+    };
+    const encodedData = btoa(JSON.stringify(sendData));
+    const shareLink = `${baseUrl}/pay?s=${encodedData}`;
+    
+    QRCode.toDataURL(shareLink, { width: 200, margin: 2 })
+      .then(setSendQrDataUrl)
+      .catch(console.error);
+    setSendLinkGenerated(true);
+  };
+
+  const copyRequestLink = () => {
+    const grams = parseFloat(requestGrams);
+    if (!grams) return;
+    const baseUrl = window.location.origin;
+    const requestData = {
+      platform: 'Finatrades',
+      type: 'request',
+      from: user?.email,
+      finatradesId: user?.finatradesId || user?.id,
+      amount: grams,
+      note: requestNote,
+    };
+    const encodedData = btoa(JSON.stringify(requestData));
+    const shareLink = `${baseUrl}/pay?r=${encodedData}`;
+    navigator.clipboard.writeText(shareLink);
+    toast.success('Request link copied to clipboard');
+  };
+
+  const copySendLink = () => {
+    const grams = parseFloat(sendGrams);
+    if (!grams || !recipient) return;
+    const baseUrl = window.location.origin;
+    const sendData = {
+      platform: 'Finatrades',
+      type: 'send',
+      to: recipient,
+      from: user?.email,
+      amount: grams,
+      note: sendNote,
+    };
+    const encodedData = btoa(JSON.stringify(sendData));
+    const shareLink = `${baseUrl}/pay?s=${encodedData}`;
+    navigator.clipboard.writeText(shareLink);
+    toast.success('Send link copied to clipboard');
+  };
+
+  const handleInvoiceUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'send' | 'request') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (type === 'send') {
+        setSendInvoice(file);
+      } else {
+        setRequestInvoice(file);
+      }
+      toast.success(`Invoice "${file.name}" attached`);
+    }
+  };
+
   const handleBuyGold = () => {
     const usd = parseFloat(buyAmountUsd);
     if (!usd || usd <= 0) return;
@@ -103,39 +208,122 @@ export default function FinaPayDashboard() {
     toast.success(`Sell order for ${grams.toFixed(4)}g Gold submitted`);
   };
 
-  const handleSendGold = () => {
+  const handleSendGold = async () => {
     const grams = parseFloat(sendGrams);
     if (!grams || grams <= 0 || grams > goldGrams) {
       toast.error('Invalid amount or insufficient balance');
       return;
     }
-    createTransaction({
-      type: 'Send',
-      amountGold: grams.toFixed(6),
-      amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
-      recipientEmail: recipient,
-      description: 'Internal Transfer'
-    });
-    setSendOpen(false);
-    setSendGrams('');
-    setRecipient('');
-    toast.success(`Send request for ${grams.toFixed(4)}g submitted`);
+    if (!recipient) {
+      toast.error('Please enter recipient email');
+      return;
+    }
+    
+    setCheckingUser(true);
+    try {
+      const response = await fetch('/api/users/check-and-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: recipient, 
+          senderName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email,
+          amount: grams,
+          type: 'send'
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to validate recipient');
+        return;
+      }
+      
+      const data = await response.json();
+      
+      if (!data.userExists) {
+        toast.info(`${recipient} is not a Finatrades user yet. An invitation has been sent!`);
+      }
+      
+      createTransaction({
+        type: 'Send',
+        amountGold: grams.toFixed(6),
+        amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
+        recipientEmail: recipient,
+        description: sendNote || 'Internal Transfer'
+      });
+      
+      setSendOpen(false);
+      setSendGrams('');
+      setRecipient('');
+      setSendNote('');
+      setSendInvoice(null);
+      setSendQrDataUrl('');
+      setSendLinkGenerated(false);
+      toast.success(`Send request for ${grams.toFixed(4)}g submitted`);
+    } catch (error) {
+      toast.error('Failed to process request');
+    } finally {
+      setCheckingUser(false);
+    }
   };
 
-  const handleRequestGold = () => {
+  const handleRequestGold = async () => {
     const grams = parseFloat(requestGrams);
-    if (!grams || grams <= 0) return;
-    createTransaction({
-      type: 'Receive',
-      amountGold: grams.toFixed(6),
-      amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
-      counterparty: recipient,
-      description: 'Request Sent'
-    });
-    setRequestOpen(false);
-    setRequestGrams('');
-    setRecipient('');
-    toast.success('Request submitted');
+    if (!grams || grams <= 0) {
+      toast.error('Please enter amount');
+      return;
+    }
+    if (!recipient) {
+      toast.error('Please enter email address');
+      return;
+    }
+    
+    setCheckingUser(true);
+    try {
+      const response = await fetch('/api/users/check-and-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: recipient, 
+          senderName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email,
+          amount: grams,
+          type: 'request'
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to validate recipient');
+        return;
+      }
+      
+      const data = await response.json();
+      
+      if (!data.userExists) {
+        toast.info(`${recipient} is not a Finatrades user yet. An invitation has been sent!`);
+      }
+      
+      createTransaction({
+        type: 'Receive',
+        amountGold: grams.toFixed(6),
+        amountUsd: (grams * currentGoldPriceUsdPerGram).toFixed(2),
+        counterparty: recipient,
+        description: requestNote || 'Request Sent'
+      });
+      
+      setRequestOpen(false);
+      setRequestGrams('');
+      setRecipient('');
+      setRequestNote('');
+      setRequestInvoice(null);
+      setRequestQrDataUrl('');
+      setRequestLinkGenerated(false);
+      toast.success('Request submitted');
+    } catch (error) {
+      toast.error('Failed to process request');
+    } finally {
+      setCheckingUser(false);
+    }
   };
 
   const handleRefresh = () => {
@@ -409,8 +597,18 @@ export default function FinaPayDashboard() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={sendOpen} onOpenChange={setSendOpen}>
-          <DialogContent>
+        <Dialog open={sendOpen} onOpenChange={(open) => {
+          setSendOpen(open);
+          if (!open) {
+            setSendGrams('');
+            setRecipient('');
+            setSendNote('');
+            setSendInvoice(null);
+            setSendQrDataUrl('');
+            setSendLinkGenerated(false);
+          }
+        }}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Send Gold</DialogTitle>
               <DialogDescription>Transfer gold to another wallet.</DialogDescription>
@@ -418,23 +616,95 @@ export default function FinaPayDashboard() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>Recipient (Email)</Label>
-                <Input placeholder="Enter email..." value={recipient} onChange={(e) => setRecipient(e.target.value)} />
+                <Input placeholder="Enter email..." value={recipient} onChange={(e) => setRecipient(e.target.value)} data-testid="input-send-recipient" />
               </div>
               <div className="space-y-2">
                 <Label>Amount (Grams)</Label>
-                <Input type="number" placeholder="0.00" value={sendGrams} onChange={(e) => setSendGrams(e.target.value)} />
+                <Input type="number" placeholder="0.00" value={sendGrams} onChange={(e) => setSendGrams(e.target.value)} data-testid="input-send-amount" />
                 <p className="text-xs text-muted-foreground">Available: {goldGrams.toFixed(4)} g</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Note (Optional)</Label>
+                <Input placeholder="Add a note..." value={sendNote} onChange={(e) => setSendNote(e.target.value)} data-testid="input-send-note" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Attach Invoice (Optional)</Label>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors flex-1">
+                    <Upload className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {sendInvoice ? sendInvoice.name : 'Upload invoice'}
+                    </span>
+                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleInvoiceUpload(e, 'send')} data-testid="input-send-invoice" />
+                  </label>
+                  {sendInvoice && (
+                    <Button variant="ghost" size="sm" onClick={() => setSendInvoice(null)}>
+                      <AlertCircle className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium">Share Link & QR Code</Label>
+                  <Button variant="outline" size="sm" onClick={generateSendLink} disabled={!sendGrams || !recipient} data-testid="button-generate-send-link">
+                    <QrCode className="w-4 h-4 mr-1" />
+                    Generate
+                  </Button>
+                </div>
+                
+                {sendLinkGenerated && (
+                  <div className="space-y-3">
+                    {sendQrDataUrl && (
+                      <div className="flex justify-center">
+                        <div className="p-2 bg-white rounded-lg border border-border">
+                          <img src={sendQrDataUrl} alt="Send QR Code" className="w-40 h-40" data-testid="img-send-qrcode" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={copySendLink} data-testid="button-copy-send-link">
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copy Link
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({ title: 'Send Gold', text: `Send ${sendGrams}g gold`, url: '' });
+                        } else {
+                          copySendLink();
+                        }
+                      }} data-testid="button-share-send">
+                        <Share2 className="w-4 h-4 mr-1" />
+                        Share
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setSendOpen(false)}>Cancel</Button>
-              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleSendGold}>Send</Button>
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleSendGold} disabled={checkingUser} data-testid="button-confirm-send">
+                {checkingUser ? 'Processing...' : 'Send'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
-          <DialogContent>
+        <Dialog open={requestOpen} onOpenChange={(open) => {
+          setRequestOpen(open);
+          if (!open) {
+            setRequestGrams('');
+            setRecipient('');
+            setRequestNote('');
+            setRequestInvoice(null);
+            setRequestQrDataUrl('');
+            setRequestLinkGenerated(false);
+          }
+        }}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Request Gold</DialogTitle>
               <DialogDescription>Request gold from another user.</DialogDescription>
@@ -442,16 +712,78 @@ export default function FinaPayDashboard() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>From (Email)</Label>
-                <Input placeholder="Enter email..." value={recipient} onChange={(e) => setRecipient(e.target.value)} />
+                <Input placeholder="Enter email..." value={recipient} onChange={(e) => setRecipient(e.target.value)} data-testid="input-request-recipient" />
               </div>
               <div className="space-y-2">
                 <Label>Amount (Grams)</Label>
-                <Input type="number" placeholder="0.00" value={requestGrams} onChange={(e) => setRequestGrams(e.target.value)} />
+                <Input type="number" placeholder="0.00" value={requestGrams} onChange={(e) => setRequestGrams(e.target.value)} data-testid="input-request-amount" />
+              </div>
+              <div className="space-y-2">
+                <Label>Note (Optional)</Label>
+                <Input placeholder="Add a note..." value={requestNote} onChange={(e) => setRequestNote(e.target.value)} data-testid="input-request-note" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Attach Invoice (Optional)</Label>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors flex-1">
+                    <Upload className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {requestInvoice ? requestInvoice.name : 'Upload invoice'}
+                    </span>
+                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleInvoiceUpload(e, 'request')} data-testid="input-request-invoice" />
+                  </label>
+                  {requestInvoice && (
+                    <Button variant="ghost" size="sm" onClick={() => setRequestInvoice(null)}>
+                      <AlertCircle className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium">Share Link & QR Code</Label>
+                  <Button variant="outline" size="sm" onClick={generateRequestLink} disabled={!requestGrams} data-testid="button-generate-request-link">
+                    <QrCode className="w-4 h-4 mr-1" />
+                    Generate
+                  </Button>
+                </div>
+                
+                {requestLinkGenerated && (
+                  <div className="space-y-3">
+                    {requestQrDataUrl && (
+                      <div className="flex justify-center">
+                        <div className="p-2 bg-white rounded-lg border border-border">
+                          <img src={requestQrDataUrl} alt="Request QR Code" className="w-40 h-40" data-testid="img-request-qrcode" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={copyRequestLink} data-testid="button-copy-request-link">
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copy Link
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({ title: 'Request Gold', text: `Request ${requestGrams}g gold`, url: '' });
+                        } else {
+                          copyRequestLink();
+                        }
+                      }} data-testid="button-share-request">
+                        <Share2 className="w-4 h-4 mr-1" />
+                        Share
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setRequestOpen(false)}>Cancel</Button>
-              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleRequestGold}>Request</Button>
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleRequestGold} disabled={checkingUser} data-testid="button-confirm-request">
+                {checkingUser ? 'Processing...' : 'Request'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
