@@ -1129,6 +1129,56 @@ export type InsertBrandingSettings = z.infer<typeof insertBrandingSettingsSchema
 export type BrandingSettings = typeof brandingSettings.$inferSelect;
 
 // ============================================
+// PAYMENT GATEWAY SETTINGS
+// ============================================
+
+export const paymentGatewaySettings = pgTable("payment_gateway_settings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Stripe Configuration
+  stripeEnabled: boolean("stripe_enabled").notNull().default(false),
+  stripePublishableKey: text("stripe_publishable_key"),
+  stripeSecretKey: text("stripe_secret_key"),
+  stripeWebhookSecret: text("stripe_webhook_secret"),
+  stripeFeePercent: decimal("stripe_fee_percent", { precision: 5, scale: 2 }).default('2.9'),
+  stripeFixedFee: decimal("stripe_fixed_fee", { precision: 10, scale: 2 }).default('0.30'),
+  
+  // PayPal Configuration
+  paypalEnabled: boolean("paypal_enabled").notNull().default(false),
+  paypalClientId: text("paypal_client_id"),
+  paypalClientSecret: text("paypal_client_secret"),
+  paypalMode: varchar("paypal_mode", { length: 20 }).default('sandbox'), // 'sandbox' or 'live'
+  paypalFeePercent: decimal("paypal_fee_percent", { precision: 5, scale: 2 }).default('2.9'),
+  paypalFixedFee: decimal("paypal_fixed_fee", { precision: 10, scale: 2 }).default('0.30'),
+  
+  // Bank Transfer / Wire Configuration
+  bankTransferEnabled: boolean("bank_transfer_enabled").notNull().default(false),
+  bankName: varchar("bank_name", { length: 255 }),
+  bankAccountName: varchar("bank_account_name", { length: 255 }),
+  bankAccountNumber: varchar("bank_account_number", { length: 100 }),
+  bankRoutingNumber: varchar("bank_routing_number", { length: 100 }),
+  bankSwiftCode: varchar("bank_swift_code", { length: 50 }),
+  bankIban: varchar("bank_iban", { length: 100 }),
+  bankInstructions: text("bank_instructions"),
+  
+  // Crypto Payment (Binance Pay) - already exists separately
+  binancePayEnabled: boolean("binance_pay_enabled").notNull().default(false),
+  
+  // General Settings
+  minDepositUsd: decimal("min_deposit_usd", { precision: 10, scale: 2 }).default('10'),
+  maxDepositUsd: decimal("max_deposit_usd", { precision: 10, scale: 2 }).default('100000'),
+  
+  // Audit
+  updatedBy: varchar("updated_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPaymentGatewaySettingsSchema = createInsertSchema(paymentGatewaySettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPaymentGatewaySettings = z.infer<typeof insertPaymentGatewaySettingsSchema>;
+export type PaymentGatewaySettings = typeof paymentGatewaySettings.$inferSelect;
+
+// ============================================
 // ADMIN FINANCIAL REPORTING
 // ============================================
 
