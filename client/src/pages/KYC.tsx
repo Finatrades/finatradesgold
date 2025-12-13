@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import Layout from '@/components/Layout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,8 +135,8 @@ export default function KYC() {
   const isBusiness = user.accountType === 'business';
 
   return (
-    <Layout>
-      <div className="min-h-screen pt-24 pb-12 bg-background">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen py-12 bg-background">
         <div className="container mx-auto px-6 max-w-4xl">
           
           <div className="text-center mb-10">
@@ -481,7 +480,7 @@ export default function KYC() {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }
 

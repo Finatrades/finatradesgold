@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Mail, CheckCircle2, RefreshCw, ArrowLeft } from 'lucide-react';
-import Layout from '@/components/Layout';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -116,8 +115,8 @@ export default function VerifyEmail() {
   };
 
   return (
-    <Layout>
-      <div className="min-h-screen pt-20 pb-24 bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen py-12 bg-background flex items-center justify-center">
         <div className="container mx-auto px-6 max-w-md">
           
           <div className="text-center mb-8">
@@ -204,6 +203,6 @@ export default function VerifyEmail() {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }

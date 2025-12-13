@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Building, User, ShieldCheck, Eye, EyeOff, Camera, ArrowRight, ArrowLeft, X, Upload } from 'lucide-react';
-import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
@@ -190,8 +189,8 @@ export default function Register() {
   };
 
   return (
-    <Layout>
-      <div className="min-h-screen pt-20 pb-24 bg-background">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen py-12 bg-background">
         <div className="container mx-auto px-6 max-w-2xl">
           
           <AnimatePresence mode="wait">
@@ -499,7 +498,7 @@ export default function Register() {
 
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }
 

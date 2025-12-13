@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import Layout from '@/components/Layout';
 import BNSLHeroVault from '@/components/bnsl-explore/BNSLHeroVault';
 import BNSLHowItWorks from '@/components/bnsl-explore/BNSLHowItWorks';
 import BNSLGoldPlanner from '@/components/bnsl-explore/BNSLGoldPlanner';
@@ -18,7 +17,7 @@ export default function BNSLExplore() {
   };
 
   return (
-    <Layout>
+    <div className="min-h-screen bg-background text-foreground">
       <main className="bg-gradient-to-br from-[#FAFBFF] via-[#F4F6FC] to-[#FFFFFF] min-h-screen">
         <BNSLHeroVault />
         
@@ -38,6 +37,6 @@ export default function BNSLExplore() {
         
         <BNSLFinalCTA />
       </main>
-    </Layout>
+    </div>
   );
 }

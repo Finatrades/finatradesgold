@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, ArrowRight, Lock, Shield, ArrowLeft } from 'lucide-react';
-import Layout from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
@@ -94,8 +93,8 @@ export default function Login() {
 
   if (mfaRequired) {
     return (
-      <Layout>
-        <div className="min-h-screen pt-20 pb-24 bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen py-12 bg-background flex items-center justify-center">
           <div className="container mx-auto px-6 max-w-md">
             
             <div className="text-center mb-8">
@@ -162,13 +161,13 @@ export default function Login() {
             </div>
           </div>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen pt-20 pb-24 bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen py-12 bg-background flex items-center justify-center">
         <div className="container mx-auto px-6 max-w-md">
           
           <div className="text-center mb-8">
@@ -257,6 +256,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }
