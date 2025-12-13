@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
   insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
@@ -12,7 +14,7 @@ import {
   insertPeerTransferSchema, insertPeerRequestSchema,
   insertTradeRequestSchema, insertTradeProposalSchema, insertForwardedProposalSchema,
   insertTradeConfirmationSchema, insertSettlementHoldSchema, insertFinabridgeWalletSchema,
-  User
+  User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -4753,6 +4755,95 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to get user financials:", error);
       res.status(400).json({ message: "Failed to get user financials" });
+    }
+  });
+
+  // ============================================================================
+  // PAYMENT GATEWAY SETTINGS (Admin)
+  // ============================================================================
+
+  // Get payment gateway settings (Admin)
+  app.get("/api/admin/payment-gateways", async (req, res) => {
+    try {
+      const settings = await db.select().from(paymentGatewaySettings).limit(1);
+      res.json(settings[0] || null);
+    } catch (error) {
+      console.error("Failed to get payment gateway settings:", error);
+      res.status(400).json({ message: "Failed to get payment gateway settings" });
+    }
+  });
+
+  // Update payment gateway settings (Admin)
+  app.put("/api/admin/payment-gateways", async (req, res) => {
+    try {
+      const settings = await db.select().from(paymentGatewaySettings).limit(1);
+      
+      if (settings.length === 0) {
+        // Create new settings
+        const newSettings = await db.insert(paymentGatewaySettings).values({
+          id: 'default',
+          ...req.body,
+          updatedAt: new Date()
+        }).returning();
+        res.json(newSettings[0]);
+      } else {
+        // Update existing settings
+        const updatedSettings = await db.update(paymentGatewaySettings)
+          .set({ ...req.body, updatedAt: new Date() })
+          .where(eq(paymentGatewaySettings.id, settings[0].id))
+          .returning();
+        res.json(updatedSettings[0]);
+      }
+    } catch (error) {
+      console.error("Failed to update payment gateway settings:", error);
+      res.status(400).json({ message: "Failed to update payment gateway settings" });
+    }
+  });
+
+  // Get enabled payment methods (Public - for frontend)
+  app.get("/api/payment-methods", async (req, res) => {
+    try {
+      const settings = await db.select().from(paymentGatewaySettings).limit(1);
+      
+      if (!settings[0]) {
+        return res.json({
+          stripe: { enabled: false },
+          paypal: { enabled: false },
+          bankTransfer: { enabled: false },
+          binancePay: { enabled: false },
+          minDeposit: 10,
+          maxDeposit: 100000
+        });
+      }
+
+      const s = settings[0];
+      res.json({
+        stripe: { 
+          enabled: s.stripeEnabled,
+          publishableKey: s.stripeEnabled ? s.stripePublishableKey : null
+        },
+        paypal: { 
+          enabled: s.paypalEnabled,
+          clientId: s.paypalEnabled ? s.paypalClientId : null,
+          mode: s.paypalEnabled ? s.paypalMode : null
+        },
+        bankTransfer: { 
+          enabled: s.bankTransferEnabled,
+          bankName: s.bankTransferEnabled ? s.bankName : null,
+          accountName: s.bankTransferEnabled ? s.bankAccountName : null,
+          accountNumber: s.bankTransferEnabled ? s.bankAccountNumber : null,
+          routingNumber: s.bankTransferEnabled ? s.bankRoutingNumber : null,
+          swiftCode: s.bankTransferEnabled ? s.bankSwiftCode : null,
+          iban: s.bankTransferEnabled ? s.bankIban : null,
+          instructions: s.bankTransferEnabled ? s.bankInstructions : null
+        },
+        binancePay: { enabled: s.binancePayEnabled },
+        minDeposit: parseFloat(s.minDepositUsd || '10'),
+        maxDeposit: parseFloat(s.maxDepositUsd || '100000')
+      });
+    } catch (error) {
+      console.error("Failed to get payment methods:", error);
+      res.status(400).json({ message: "Failed to get payment methods" });
     }
   });
 
