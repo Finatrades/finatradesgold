@@ -20,7 +20,8 @@ import {
   MessageSquare,
   PanelLeft,
   DollarSign,
-  UserCog
+  UserCog,
+  Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Manager', href: '/admin/bnsl' },
     { icon: <DollarSign className="w-5 h-5" />, label: 'Fee Management', href: '/admin/fees' },
     { icon: <FileText className="w-5 h-5" />, label: 'Financial Reports', href: '/admin/financial-reports' },
+    { icon: <Receipt className="w-5 h-5" />, label: 'Documents', href: '/admin/documents' },
     { icon: <MessageSquare className="w-5 h-5" />, label: 'Support Chat', href: '/admin/chat' },
     { icon: <PanelLeft className="w-5 h-5" />, label: 'CMS', href: '/admin/cms' },
     { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/admin/security' },

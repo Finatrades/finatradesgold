@@ -22,6 +22,13 @@ import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
 import { sendEmail, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
+import { 
+  processTransactionDocuments, 
+  resendCertificate, 
+  resendInvoice, 
+  downloadCertificatePDF, 
+  downloadInvoicePDF 
+} from "./document-service";
 
 // Middleware to ensure admin access using header-based auth
 // This middleware validates that the X-Admin-User-Id header contains a valid admin user ID
@@ -1614,6 +1621,26 @@ export async function registerRoutes(
           generatedCertificates
         };
       });
+      
+      // Send invoice and certificate emails (non-blocking, after transaction completes)
+      if (result.generatedCertificates.length > 0 && ['Buy', 'Deposit'].includes(transaction.type)) {
+        const transactionUser = await storage.getUser(transaction.userId);
+        if (transactionUser) {
+          const goldPricePerGram = parseFloat(transaction.goldPriceUsdPerGram || '0') || 95;
+          processTransactionDocuments(
+            result.updatedTransaction!,
+            result.generatedCertificates,
+            transactionUser,
+            goldPricePerGram
+          ).then(docResults => {
+            console.log(`[Routes] Document processing complete for transaction ${transaction.id}:`, 
+              `Invoice ${docResults.invoiceResult.success ? 'sent' : 'failed'}, ` +
+              `${docResults.certificateResults.filter(r => r.success).length}/${docResults.certificateResults.length} certificates sent`);
+          }).catch(err => {
+            console.error(`[Routes] Document processing error for transaction ${transaction.id}:`, err);
+          });
+        }
+      }
       
       res.json({ 
         transaction: result.updatedTransaction, 
@@ -5932,6 +5959,188 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to check OTP requirement:", error);
       res.status(400).json({ message: "Failed to check OTP requirement" });
+    }
+  });
+
+  // ============================================================================
+  // ADMIN - DOCUMENTS MANAGEMENT (Invoices & Certificate Deliveries)
+  // ============================================================================
+
+  // Get all invoices with user info
+  app.get("/api/admin/documents/invoices", ensureAdminAsync, async (req, res) => {
+    try {
+      const invoices = await storage.getAllInvoices();
+      const enrichedInvoices = await Promise.all(
+        invoices.map(async (invoice) => {
+          const user = await storage.getUser(invoice.userId);
+          return {
+            ...invoice,
+            userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            userEmail: user?.email || invoice.customerEmail,
+          };
+        })
+      );
+      res.json({ invoices: enrichedInvoices });
+    } catch (error) {
+      console.error("Failed to get invoices:", error);
+      res.status(400).json({ message: "Failed to get invoices" });
+    }
+  });
+
+  // Get all certificate deliveries with certificate and user info
+  app.get("/api/admin/documents/certificate-deliveries", ensureAdminAsync, async (req, res) => {
+    try {
+      const deliveries = await storage.getAllCertificateDeliveries();
+      const enrichedDeliveries = await Promise.all(
+        deliveries.map(async (delivery) => {
+          const user = await storage.getUser(delivery.userId);
+          const certificate = await storage.getCertificate(delivery.certificateId);
+          return {
+            ...delivery,
+            userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            userEmail: user?.email || delivery.recipientEmail,
+            certificateNumber: certificate?.certificateNumber || 'Unknown',
+            certificateType: certificate?.type || 'Unknown',
+            goldGrams: certificate?.goldGrams || '0',
+          };
+        })
+      );
+      res.json({ deliveries: enrichedDeliveries });
+    } catch (error) {
+      console.error("Failed to get certificate deliveries:", error);
+      res.status(400).json({ message: "Failed to get certificate deliveries" });
+    }
+  });
+
+  // Download invoice PDF
+  app.get("/api/admin/documents/invoices/:id/download", ensureAdminAsync, async (req, res) => {
+    try {
+      const result = await downloadInvoicePDF(req.params.id);
+      if (result.error) {
+        return res.status(404).json({ message: result.error });
+      }
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.send(result.buffer);
+    } catch (error) {
+      console.error("Failed to download invoice:", error);
+      res.status(400).json({ message: "Failed to download invoice" });
+    }
+  });
+
+  // Download certificate PDF
+  app.get("/api/admin/documents/certificates/:id/download", ensureAdminAsync, async (req, res) => {
+    try {
+      const result = await downloadCertificatePDF(req.params.id);
+      if (result.error) {
+        return res.status(404).json({ message: result.error });
+      }
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.send(result.buffer);
+    } catch (error) {
+      console.error("Failed to download certificate:", error);
+      res.status(400).json({ message: "Failed to download certificate" });
+    }
+  });
+
+  // Resend invoice email
+  app.post("/api/admin/documents/invoices/:id/resend", ensureAdminAsync, async (req, res) => {
+    try {
+      const result = await resendInvoice(req.params.id);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error || "Failed to resend invoice" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "invoice",
+        entityId: req.params.id,
+        actionType: "resend",
+        actor: (req as any).adminUser?.id || 'admin',
+        actorRole: "admin",
+        details: "Invoice email resent",
+      });
+      
+      res.json({ message: "Invoice resent successfully" });
+    } catch (error) {
+      console.error("Failed to resend invoice:", error);
+      res.status(400).json({ message: "Failed to resend invoice" });
+    }
+  });
+
+  // Resend certificate email
+  app.post("/api/admin/documents/certificates/:id/resend", ensureAdminAsync, async (req, res) => {
+    try {
+      const result = await resendCertificate(req.params.id);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error || "Failed to resend certificate" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "certificate",
+        entityId: req.params.id,
+        actionType: "resend",
+        actor: (req as any).adminUser?.id || 'admin',
+        actorRole: "admin",
+        details: "Certificate email resent",
+      });
+      
+      res.json({ message: "Certificate resent successfully" });
+    } catch (error) {
+      console.error("Failed to resend certificate:", error);
+      res.status(400).json({ message: "Failed to resend certificate" });
+    }
+  });
+
+  // User endpoints for downloading their own documents
+  app.get("/api/documents/invoices/:id/download", async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      const result = await downloadInvoicePDF(req.params.id);
+      if (result.error) {
+        return res.status(404).json({ message: result.error });
+      }
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.send(result.buffer);
+    } catch (error) {
+      console.error("Failed to download invoice:", error);
+      res.status(400).json({ message: "Failed to download invoice" });
+    }
+  });
+
+  app.get("/api/documents/certificates/:id/download", async (req, res) => {
+    try {
+      const certificate = await storage.getCertificate(req.params.id);
+      if (!certificate) {
+        return res.status(404).json({ message: "Certificate not found" });
+      }
+      
+      const result = await downloadCertificatePDF(req.params.id);
+      if (result.error) {
+        return res.status(404).json({ message: result.error });
+      }
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.send(result.buffer);
+    } catch (error) {
+      console.error("Failed to download certificate:", error);
+      res.status(400).json({ message: "Failed to download certificate" });
+    }
+  });
+
+  // Get user's invoices
+  app.get("/api/documents/invoices/user/:userId", async (req, res) => {
+    try {
+      const invoices = await storage.getUserInvoices(req.params.userId);
+      res.json({ invoices });
+    } catch (error) {
+      console.error("Failed to get user invoices:", error);
+      res.status(400).json({ message: "Failed to get invoices" });
     }
   });
 

@@ -66,6 +66,7 @@ import CMSManagement from "@/pages/admin/CMSManagement";
 import EmployeeManagement from "@/pages/admin/EmployeeManagement";
 import PaymentGatewayManagement from "@/pages/admin/PaymentGatewayManagement";
 import SecuritySettings from "@/pages/admin/SecuritySettings";
+import DocumentsManagement from "@/pages/admin/DocumentsManagement";
 
 function Router() {
   return (
@@ -106,6 +107,7 @@ function Router() {
       <Route path="/admin/employees" component={EmployeeManagement} />
       <Route path="/admin/payment-gateways" component={PaymentGatewayManagement} />
       <Route path="/admin/security" component={SecuritySettings} />
+      <Route path="/admin/documents" component={DocumentsManagement} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />
