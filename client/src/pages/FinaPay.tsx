@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
-import { Wallet as WalletIcon, RefreshCw, Bell, Settings, Loader2, AlertCircle } from 'lucide-react';
+import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
@@ -229,69 +229,74 @@ export default function FinaPay() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20 text-primary">
-                <WalletIcon className="w-6 h-6" />
-             </div>
-             <div>
-               <h1 className="text-2xl font-bold text-foreground">FinaPay Wallet</h1>
-               <p className="text-muted-foreground text-sm">USD & Gold wallet for digital finance.</p>
-             </div>
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl text-white shadow-lg">
+              <WalletIcon className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">FinaPay</h1>
+              <p className="text-muted-foreground text-sm">Your digital gold wallet</p>
+            </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="hidden md:block text-right">
-               <p className="text-xs text-muted-foreground uppercase tracking-wider">Live Gold Spot</p>
-               <p className="text-secondary font-bold font-mono">${currentGoldPriceUsdPerGram.toFixed(2)} <span className="text-xs text-muted-foreground">/g</span></p>
+          <div className="flex items-center gap-3">
+            {/* Live Gold Price Badge */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-full">
+              <TrendingUp className="w-4 h-4 text-amber-600" />
+              <div className="text-sm">
+                <span className="text-muted-foreground">Gold: </span>
+                <span className="font-bold text-amber-700">${currentGoldPriceUsdPerGram.toFixed(2)}</span>
+                <span className="text-muted-foreground text-xs">/g</span>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
-                onClick={handleRefresh}
-                disabled={loading}
-                data-testid="button-refresh-wallet"
-              >
-                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
-                 <Bell className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
-                 <Settings className="w-5 h-5" />
-              </Button>
-            </div>
+            
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="rounded-full"
+              onClick={handleRefresh}
+              disabled={loading}
+              data-testid="button-refresh-wallet"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
         </div>
 
+        {/* Wallet Balance Cards */}
         <section>
           <WalletBalanceCards wallet={wallet} />
         </section>
 
+        {/* Quick Actions */}
         <section>
-          <div className="flex items-center justify-between mb-3">
-             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Quick Actions</h3>
-          </div>
           <QuickActions onAction={handleQuickAction} goldPrice={currentGoldPriceUsdPerGram} />
         </section>
 
+        {/* Portfolio Analytics */}
         <section>
           <WalletAnalytics wallet={wallet} />
         </section>
 
+        {/* Transaction History */}
         <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Recent Transactions</h2>
+          </div>
           {transactions.length === 0 ? (
-            <div className="bg-card border border-border rounded-xl p-8 text-center">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
+            <div className="bg-white border border-border rounded-2xl p-12 text-center shadow-sm">
+              <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-muted-foreground" />
+              </div>
               <h3 className="text-lg font-semibold mb-2">No Transactions Yet</h3>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Your transaction history will appear here once you buy, sell, or transfer gold.
               </p>
-              <Button onClick={() => setActiveModal('buy')} data-testid="button-first-buy">
+              <Button onClick={() => setActiveModal('buy')} data-testid="button-first-buy" className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700">
                 Make Your First Purchase
               </Button>
             </div>
@@ -300,6 +305,7 @@ export default function FinaPay() {
           )}
         </section>
 
+        {/* Modals */}
         <BuyGoldModal 
           isOpen={activeModal === 'buy'} 
           onClose={() => setActiveModal(null)}
