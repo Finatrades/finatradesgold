@@ -423,7 +423,14 @@ export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
 // FINAVAULT - GOLD STORAGE
 // ============================================
 
-export const certificateTypeEnum = pgEnum('certificate_type', ['Digital Ownership', 'Physical Storage']);
+export const certificateTypeEnum = pgEnum('certificate_type', [
+  'Digital Ownership',    // Finatrades - issued when gold is purchased
+  'Physical Storage',     // Wingold - confirms physical gold in vault
+  'Transfer',             // Finatrades - issued when gold moves between users
+  'BNSL Lock',            // Finatrades - issued when gold is locked into BNSL plan
+  'Trade Lock',           // Finatrades - issued when FinaBridge reserve is created
+  'Trade Release'         // Finatrades - issued when FinaBridge trade settles
+]);
 export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred']);
 
 export const vaultHoldings = pgTable("vault_holdings", {
@@ -461,6 +468,17 @@ export const certificates = pgTable("certificates", {
   issuer: varchar("issuer", { length: 255 }).notNull(), // "Finatrades" or "Wingold & Metals DMCC"
   vaultLocation: varchar("vault_location", { length: 255 }),
   wingoldStorageRef: varchar("wingold_storage_ref", { length: 100 }),
+  
+  // Transfer-related fields
+  fromUserId: varchar("from_user_id", { length: 255 }).references(() => users.id), // Sender for transfers
+  toUserId: varchar("to_user_id", { length: 255 }).references(() => users.id), // Recipient for transfers
+  relatedCertificateId: varchar("related_certificate_id", { length: 255 }), // Links to parent/related certificate
+  
+  // BNSL-related fields
+  bnslPlanId: varchar("bnsl_plan_id", { length: 255 }), // References bnslPlans.id for BNSL Lock certs
+  
+  // Trade finance (FinaBridge) fields
+  tradeCaseId: varchar("trade_case_id", { length: 255 }), // References tradeCases.id for Trade Lock/Release certs
   
   issuedAt: timestamp("issued_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at"),

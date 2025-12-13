@@ -3,6 +3,8 @@ import { Certificate, Invoice, User } from '@shared/schema';
 
 const FINATRADES_ORANGE = '#f97316';
 const WINGOLD_GOLD = '#D4AF37';
+const BNSL_BLUE = '#3b82f6';
+const TRADE_GREEN = '#10b981';
 
 function formatDate(date: Date | string | null | undefined): string {
   if (!date) return 'N/A';
@@ -41,9 +43,98 @@ function hexToRgb(hex: string): [number, number, number] {
   return [0, 0, 0];
 }
 
+interface CertificateConfig {
+  title: string;
+  subtitle: string;
+  primaryColor: string;
+  issuerName: string;
+  certificationText: string;
+  footerText: string;
+}
+
+function getCertificateConfig(certificate: Certificate): CertificateConfig {
+  switch (certificate.type) {
+    case 'Digital Ownership':
+      return {
+        title: 'DIGITAL OWNERSHIP CERTIFICATE',
+        subtitle: 'Gold Ownership Verification',
+        primaryColor: FINATRADES_ORANGE,
+        issuerName: 'Finatrades',
+        certificationText: 'is the verified digital owner of the following gold holdings:',
+        footerText: 'This certificate verifies digital ownership rights to the specified gold holdings on the Finatrades platform.'
+      };
+    
+    case 'Physical Storage':
+      return {
+        title: 'PHYSICAL STORAGE CERTIFICATE',
+        subtitle: 'Vault Custody Confirmation',
+        primaryColor: WINGOLD_GOLD,
+        issuerName: 'Wingold & Metals DMCC',
+        certificationText: 'has the following gold holdings in secure physical storage:',
+        footerText: 'This certificate confirms physical storage of the specified gold in secure vault facilities managed by Wingold & Metals DMCC.'
+      };
+    
+    case 'Transfer':
+      return {
+        title: 'GOLD TRANSFER CERTIFICATE',
+        subtitle: 'Digital Ownership Transfer',
+        primaryColor: FINATRADES_ORANGE,
+        issuerName: 'Finatrades',
+        certificationText: 'has received the following gold transfer:',
+        footerText: 'This certificate documents the transfer of digital gold ownership between users on the Finatrades platform.'
+      };
+    
+    case 'BNSL Lock':
+      return {
+        title: 'BNSL GOLD LOCK CERTIFICATE',
+        subtitle: 'Buy Now Sell Later - Gold Lockup',
+        primaryColor: BNSL_BLUE,
+        issuerName: 'Finatrades',
+        certificationText: 'has locked the following gold holdings under a BNSL plan:',
+        footerText: 'This certificate confirms that the specified gold is locked under a Buy Now Sell Later agreement. The gold will be released according to the plan terms.'
+      };
+    
+    case 'Trade Lock':
+      return {
+        title: 'TRADE SETTLEMENT LOCK CERTIFICATE',
+        subtitle: 'FinaBridge Trade Reserve',
+        primaryColor: TRADE_GREEN,
+        issuerName: 'Finatrades',
+        certificationText: 'has reserved the following gold as collateral for trade settlement:',
+        footerText: 'This certificate confirms that the specified gold is held as reserve for a trade finance transaction through FinaBridge.'
+      };
+    
+    case 'Trade Release':
+      return {
+        title: 'TRADE SETTLEMENT RELEASE CERTIFICATE',
+        subtitle: 'FinaBridge Trade Completion',
+        primaryColor: TRADE_GREEN,
+        issuerName: 'Finatrades',
+        certificationText: 'has completed settlement and released the following gold holdings:',
+        footerText: 'This certificate confirms the successful settlement and release of gold from a FinaBridge trade finance transaction.'
+      };
+    
+    default:
+      return {
+        title: 'GOLD CERTIFICATE',
+        subtitle: 'Certificate of Holdings',
+        primaryColor: FINATRADES_ORANGE,
+        issuerName: 'Finatrades',
+        certificationText: 'holds the following gold:',
+        footerText: 'This certificate verifies the gold holdings on the Finatrades platform.'
+      };
+  }
+}
+
+export interface TransferParties {
+  fromUser?: User | null;
+  toUser?: User | null;
+}
+
 export function generateCertificatePDF(
   certificate: Certificate, 
-  user: User
+  user: User,
+  transferParties?: TransferParties
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
@@ -60,25 +151,22 @@ export function generateCertificatePDF(
       const pageWidth = doc.page.width;
       const margin = 50;
       
-      const isDigitalOwnership = certificate.type === 'Digital Ownership';
-      const primaryColor = isDigitalOwnership ? FINATRADES_ORANGE : WINGOLD_GOLD;
-      const issuerName = isDigitalOwnership ? 'Finatrades' : 'Wingold & Metals DMCC';
-      const rgb = hexToRgb(primaryColor);
+      const config = getCertificateConfig(certificate);
+      const rgb = hexToRgb(config.primaryColor);
 
-      doc.rect(0, 0, pageWidth, 120).fill(primaryColor);
+      doc.rect(0, 0, pageWidth, 120).fill(config.primaryColor);
 
       doc.fillColor('white')
-         .fontSize(22)
+         .fontSize(20)
          .font('Helvetica-Bold')
-         .text(
-           isDigitalOwnership ? 'DIGITAL OWNERSHIP CERTIFICATE' : 'PHYSICAL STORAGE CERTIFICATE',
-           0, 40,
-           { align: 'center', width: pageWidth }
-         );
+         .text(config.title, 0, 35, { align: 'center', width: pageWidth });
 
-      doc.fontSize(12)
+      doc.fontSize(11)
          .font('Helvetica')
-         .text(issuerName, 0, 75, { align: 'center', width: pageWidth });
+         .text(config.subtitle, 0, 65, { align: 'center', width: pageWidth });
+      
+      doc.fontSize(10)
+         .text(config.issuerName, 0, 85, { align: 'center', width: pageWidth });
 
       doc.fillColor('#666666')
          .fontSize(10)
@@ -86,7 +174,7 @@ export function generateCertificatePDF(
       
       doc.text(`Issue Date: ${formatDate(certificate.issuedAt)}`, pageWidth - margin - 150, 140, { width: 150, align: 'right' });
 
-      doc.strokeColor(primaryColor)
+      doc.strokeColor(config.primaryColor)
          .lineWidth(1)
          .moveTo(margin, 160)
          .lineTo(pageWidth - margin, 160)
@@ -114,13 +202,7 @@ export function generateCertificatePDF(
       yPos += 30;
       doc.fontSize(12)
          .fillColor('#404040')
-         .text(
-           isDigitalOwnership 
-             ? 'is the verified digital owner of the following gold holdings:'
-             : 'has the following gold holdings in secure physical storage:',
-           0, yPos,
-           { align: 'center', width: pageWidth }
-         );
+         .text(config.certificationText, 0, yPos, { align: 'center', width: pageWidth });
 
       yPos += 30;
       const boxWidth = 250;
@@ -128,9 +210,9 @@ export function generateCertificatePDF(
       const boxX = (pageWidth - boxWidth) / 2;
 
       doc.roundedRect(boxX, yPos, boxWidth, boxHeight, 8)
-         .fillAndStroke('#FBF6DC', primaryColor);
+         .fillAndStroke('#FBF6DC', config.primaryColor);
 
-      doc.fillColor(primaryColor)
+      doc.fillColor(config.primaryColor)
          .fontSize(28)
          .font('Helvetica-Bold')
          .text(formatGrams(certificate.goldGrams), boxX, yPos + 20, { width: boxWidth, align: 'center' });
@@ -157,6 +239,15 @@ export function generateCertificatePDF(
         ['Issued By:', certificate.issuer],
       ];
 
+      if (certificate.type === 'Transfer' && transferParties) {
+        if (transferParties.fromUser) {
+          details.push(['From:', `${transferParties.fromUser.firstName} ${transferParties.fromUser.lastName}`]);
+        }
+        if (transferParties.toUser) {
+          details.push(['To:', `${transferParties.toUser.firstName} ${transferParties.toUser.lastName}`]);
+        }
+      }
+
       if (certificate.vaultLocation) {
         details.push(['Storage Location:', certificate.vaultLocation]);
       }
@@ -165,6 +256,15 @@ export function generateCertificatePDF(
       }
       if (certificate.goldPriceUsdPerGram) {
         details.push(['Gold Price (per gram):', formatCurrency(certificate.goldPriceUsdPerGram)]);
+      }
+      if (certificate.bnslPlanId) {
+        details.push(['BNSL Plan ID:', certificate.bnslPlanId]);
+      }
+      if (certificate.tradeCaseId) {
+        details.push(['Trade Case ID:', certificate.tradeCaseId]);
+      }
+      if (certificate.relatedCertificateId) {
+        details.push(['Related Certificate:', certificate.relatedCertificateId]);
       }
 
       const detailsStartX = margin + 80;
@@ -178,7 +278,7 @@ export function generateCertificatePDF(
 
       const footerY = doc.page.height - 80;
 
-      doc.strokeColor(primaryColor)
+      doc.strokeColor(config.primaryColor)
          .lineWidth(0.5)
          .moveTo(margin, footerY)
          .lineTo(pageWidth - margin, footerY)
@@ -186,13 +286,7 @@ export function generateCertificatePDF(
 
       doc.fillColor('#787878')
          .fontSize(9)
-         .text(
-           isDigitalOwnership 
-             ? 'This certificate verifies digital ownership rights to the specified gold holdings on the Finatrades platform.'
-             : 'This certificate confirms physical storage of the specified gold in secure vault facilities managed by Wingold & Metals DMCC.',
-           margin, footerY + 10,
-           { align: 'center', width: pageWidth - 2 * margin }
-         );
+         .text(config.footerText, margin, footerY + 10, { align: 'center', width: pageWidth - 2 * margin });
 
       doc.fontSize(8)
          .text('This document is electronically generated and does not require a physical signature.', margin, footerY + 35, { align: 'center', width: pageWidth - 2 * margin });
@@ -417,6 +511,21 @@ export function generateInvoicePDF(
 
 export function generateInvoiceNumber(): string {
   const prefix = 'INV';
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${prefix}-${timestamp}-${random}`;
+}
+
+export function generateCertificateNumber(type: string): string {
+  const prefixes: Record<string, string> = {
+    'Digital Ownership': 'DOC',
+    'Physical Storage': 'PSC',
+    'Transfer': 'TRC',
+    'BNSL Lock': 'BLC',
+    'Trade Lock': 'TLC',
+    'Trade Release': 'TRR'
+  };
+  const prefix = prefixes[type] || 'CRT';
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `${prefix}-${timestamp}-${random}`;

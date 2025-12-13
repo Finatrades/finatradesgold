@@ -27,7 +27,11 @@ import {
   resendCertificate, 
   resendInvoice, 
   downloadCertificatePDF, 
-  downloadInvoicePDF 
+  downloadInvoicePDF,
+  generateTransferCertificates,
+  generateBNSLLockCertificate,
+  generateTradeLockCertificate,
+  generateTradeReleaseCertificate
 } from "./document-service";
 
 // Middleware to ensure admin access using header-based auth
@@ -2630,6 +2634,18 @@ export async function registerRoutes(
         wingoldStorageRef: `BNSL-${plan.contractId}`
       });
       
+      // Generate BNSL Lock Certificate and send via email
+      const enrollmentPrice = parseFloat(planData.enrollmentPriceUsdPerGram);
+      generateBNSLLockCertificate(plan.id, planData.userId, goldGrams, enrollmentPrice)
+        .then(result => {
+          if (result.error) {
+            console.error(`[Routes] Failed to generate BNSL Lock certificate for plan ${plan.id}:`, result.error);
+          } else {
+            console.log(`[Routes] BNSL Lock certificate generated for plan ${plan.id}`);
+          }
+        })
+        .catch(err => console.error('[Routes] BNSL Lock certificate error:', err));
+      
       // Create audit log
       await storage.createAuditLog({
         entityType: "bnsl",
@@ -3338,6 +3354,20 @@ export async function registerRoutes(
         status: 'Held',
       });
       
+      // Generate Trade Lock Certificate for the importer (non-blocking)
+      const lockedGoldAmount = parseFloat(request.settlementGoldGrams);
+      const tradeValueUsd = parseFloat(request.tradeValueUsd);
+      const estimatedPricePerGram = tradeValueUsd / lockedGoldAmount;
+      generateTradeLockCertificate(request.id, request.importerUserId, lockedGoldAmount, estimatedPricePerGram)
+        .then(result => {
+          if (result.error) {
+            console.error(`[Routes] Failed to generate Trade Lock certificate for request ${request.id}:`, result.error);
+          } else {
+            console.log(`[Routes] Trade Lock certificate generated for request ${request.id}`);
+          }
+        })
+        .catch(err => console.error('[Routes] Trade Lock certificate error:', err));
+      
       // Update proposal status
       await storage.updateTradeProposal(proposal.id, { status: 'Accepted' });
       
@@ -3759,6 +3789,28 @@ export async function registerRoutes(
       
       // Update trade request status
       await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Completed' });
+      
+      // Generate Trade Release Certificates for both importer and exporter (non-blocking)
+      const releasedGoldAmount = parseFloat(hold.lockedGoldGrams);
+      // Get the trade request to calculate price per gram
+      const tradeRequest = await storage.getTradeRequest(hold.tradeRequestId);
+      const tradeValue = tradeRequest ? parseFloat(tradeRequest.tradeValueUsd) : 0;
+      const releasePrice = tradeValue > 0 ? tradeValue / releasedGoldAmount : 0;
+      
+      // Find the lock certificate to link as related
+      const importerCerts = await storage.getUserActiveCertificates(hold.importerUserId);
+      const lockCert = importerCerts.find(c => c.tradeCaseId === hold.tradeRequestId && c.type === 'Trade Lock');
+      
+      // Generate release certificate for exporter (who receives the gold)
+      generateTradeReleaseCertificate(hold.tradeRequestId, hold.exporterUserId, releasedGoldAmount, releasePrice, lockCert?.id)
+        .then(result => {
+          if (result.error) {
+            console.error(`[Routes] Failed to generate Trade Release certificate for exporter:`, result.error);
+          } else {
+            console.log(`[Routes] Trade Release certificate generated for exporter`);
+          }
+        })
+        .catch(err => console.error('[Routes] Trade Release certificate error:', err));
       
       res.json({ message: "Settlement released and gold transferred to exporter" });
     } catch (error) {
@@ -4480,6 +4532,14 @@ export async function registerRoutes(
           return { transfer, certificates: generatedCertificates, senderTx, recipientTx };
         });
         
+        generateTransferCertificates(
+          result.senderTx.id,
+          sender.id,
+          recipient.id,
+          goldAmount,
+          goldPrice
+        ).catch(err => console.error('[Routes] Failed to generate transfer certificates:', err));
+
         res.json({ 
           transfer: result.transfer,
           certificates: result.certificates,
