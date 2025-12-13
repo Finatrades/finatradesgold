@@ -201,7 +201,7 @@ export default function FinaPayDashboard() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">FinaPay – Digital Gold Wallet</h1>
-          <p className="text-gray-500">View your gold balance, valuations and move value across Finatrades.</p>
+          <p className="text-gray-600 mt-1">Your secure wallet for buying, selling, and transferring digital gold. Use the buttons below to manage your balances instantly.</p>
         </div>
 
         {/* Balance Cards with Quick Actions */}
@@ -220,11 +220,12 @@ export default function FinaPayDashboard() {
                    <Badge className="bg-white/20 text-white border-0">{wallet.tier}</Badge>
                 </div>
                 
-                <div className="mb-6">
+                <div className="mb-4">
                    <h2 className="text-4xl font-bold mb-1">{wallet.goldBalanceGrams.toFixed(4)} g</h2>
                    <p className="text-white/80 text-lg font-medium">${wallet.goldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                    <p className="text-white/60 text-sm">AED {wallet.goldValueAed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                 </div>
+                <p className="text-white/70 text-xs mb-3">Your vaulted gold stored securely. Buy more, sell to cash, or send to other users.</p>
 
                 <div className="flex gap-2">
                    <Button 
@@ -269,11 +270,12 @@ export default function FinaPayDashboard() {
                    <Badge className="bg-white/20 text-white border-0">Available</Badge>
                 </div>
                 
-                <div className="mb-6">
+                <div className="mb-4">
                    <h2 className="text-4xl font-bold mb-1">${wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                    <p className="text-white/80 text-lg font-medium">AED {(wallet.usdBalance * 3.67).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                    <p className="text-white/60 text-sm">Ready for transactions</p>
                 </div>
+                <p className="text-white/70 text-xs mb-3">Cash available for purchases. Buy gold, send money, or request funds from others.</p>
 
                 <div className="flex gap-2">
                    <Button 
@@ -329,25 +331,28 @@ export default function FinaPayDashboard() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 mt-3">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
-                onClick={() => setBnslOpen(true)}
-                data-testid="button-lock-bnsl"
-              >
-                <Lock className="w-4 h-4 mr-1" /> Lock for BNSL
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
-                onClick={() => setTradeOpen(true)}
-                data-testid="button-trade-finance"
-              >
-                <RefreshCw className="w-4 h-4 mr-1" /> Trade Finance
-              </Button>
+            <div className="mt-3">
+              <p className="text-gray-400 text-xs mb-2">Advanced Services: Lock gold for future sales or use it for trade settlements</p>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => setBnslOpen(true)}
+                  data-testid="button-lock-bnsl"
+                >
+                  <Lock className="w-4 h-4 mr-1" /> Lock for BNSL
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+                  onClick={() => setTradeOpen(true)}
+                  data-testid="button-trade-finance"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" /> Trade Finance
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
