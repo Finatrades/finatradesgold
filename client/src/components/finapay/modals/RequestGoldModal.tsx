@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Mail, Hash, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Mail, Hash, CheckCircle2, Clock, Paperclip, X, FileText } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
@@ -29,6 +29,8 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   const [referenceNumber, setReferenceNumber] = useState('');
   const [myQrCode, setMyQrCode] = useState('');
   const [myFinatradesId, setMyFinatradesId] = useState('');
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -40,6 +42,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       setStep('create');
       setQrCodeDataUrl('');
       setReferenceNumber('');
+      setInvoiceFile(null);
       
       // Fetch user's QR code for receiving payments
       if (user?.id) {
@@ -47,6 +50,24 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       }
     }
   }, [isOpen, user?.id]);
+
+  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
+        return;
+      }
+      setInvoiceFile(file);
+    }
+  };
+
+  const removeFile = () => {
+    setInvoiceFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const fetchMyQrCode = async () => {
     try {
@@ -161,6 +182,46 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Attach Invoice (Optional)</Label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileAttach}
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  className="hidden"
+                  data-testid="input-invoice-file"
+                />
+                {invoiceFile ? (
+                  <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border border-border">
+                    <FileText className="w-5 h-5 text-purple-500" />
+                    <span className="flex-1 text-sm truncate">{invoiceFile.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={removeFile}
+                      data-testid="button-remove-invoice"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-muted-foreground"
+                    onClick={() => fileInputRef.current?.click()}
+                    data-testid="button-attach-invoice"
+                  >
+                    <Paperclip className="w-4 h-4 mr-2" />
+                    Attach PDF or Image
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Max 5MB. Accepted: PDF, PNG, JPG
+                </p>
+              </div>
+
               <Button 
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold"
                 disabled={numericAmount <= 0 || isLoading}
@@ -179,7 +240,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                 
                 {myQrCode ? (
                   <div className="bg-white p-4 rounded-xl border border-border inline-block mx-auto">
-                    <img src={myQrCode} alt="Your payment QR Code" className="w-48 h-48" />
+                    <img src={myQrCode} alt="Your payment QR Code" className="w-48 h-48" data-testid="img-my-qr-code" />
                   </div>
                 ) : (
                   <div className="w-48 h-48 mx-auto bg-muted rounded-xl flex items-center justify-center">
@@ -187,18 +248,38 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                   </div>
                 )}
 
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Your Finatrades ID</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <code className="font-mono font-bold text-lg text-foreground">{myFinatradesId || user?.finatradesId}</code>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => copyToClipboard(myFinatradesId || user?.finatradesId || '', 'Finatrades ID')}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
+                <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Your Email</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground" data-testid="text-my-email">{user?.email}</span>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6"
+                        onClick={() => copyToClipboard(user?.email || '', 'Email')}
+                        data-testid="button-copy-email"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="border-t border-border pt-3">
+                    <p className="text-xs text-muted-foreground mb-1">Your Finatrades ID</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <Hash className="w-4 h-4 text-muted-foreground" />
+                      <code className="font-mono font-bold text-lg text-foreground" data-testid="text-my-finatrades-id">{myFinatradesId || user?.finatradesId}</code>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => copyToClipboard(myFinatradesId || user?.finatradesId || '', 'Finatrades ID')}
+                        data-testid="button-copy-finatrades-id"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

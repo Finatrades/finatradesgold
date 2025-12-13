@@ -4,12 +4,37 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
+
+const PAYMENT_REASONS = [
+  'Buying Gold / Precious Metals',
+  'Family Maintenance / Support',
+  'Investment in Commodities',
+  'Gift',
+  'Education Expenses',
+  'Medical Expenses',
+  'Salary / Consulting Fee',
+  'Transfer to Own Account (Savings)',
+  'Property Purchase / Real Estate Payment',
+  'Inheritance'
+];
+
+const SOURCE_OF_FUNDS = [
+  'Salary / Employment Income',
+  'Business Income',
+  'Savings',
+  'Investment Returns',
+  'Gift / Inheritance',
+  'Sale of Property',
+  'Loan / Credit',
+  'Other'
+];
 
 interface SendGoldModalProps {
   isOpen: boolean;
@@ -39,6 +64,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
   const [searchError, setSearchError] = useState('');
   const [transferRef, setTransferRef] = useState('');
+  const [paymentReason, setPaymentReason] = useState('');
+  const [sourceOfFunds, setSourceOfFunds] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -52,6 +79,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setFoundUser(null);
       setSearchError('');
       setTransferRef('');
+      setPaymentReason('');
+      setSourceOfFunds('');
     }
   }, [isOpen]);
 
@@ -94,6 +123,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
         amountUsd: numericAmount.toFixed(2),
         channel: activeTab === 'qr_code' ? 'finatrades_id' : activeTab,
         memo: memo || null,
+        paymentReason: paymentReason,
+        sourceOfFunds: sourceOfFunds,
       });
       
       const data = await res.json();
@@ -260,6 +291,38 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                 </div>
 
                 <div className="space-y-2">
+                  <Label>Payment Reason <span className="text-red-500">*</span></Label>
+                  <Select value={paymentReason} onValueChange={setPaymentReason}>
+                    <SelectTrigger className="bg-background border-input" data-testid="select-payment-reason">
+                      <SelectValue placeholder="Select payment reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_REASONS.map((reason) => (
+                        <SelectItem key={reason} value={reason} data-testid={`option-reason-${reason.replace(/\s/g, '-').toLowerCase()}`}>
+                          {reason}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Source of Funds <span className="text-red-500">*</span></Label>
+                  <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
+                    <SelectTrigger className="bg-background border-input" data-testid="select-source-of-funds">
+                      <SelectValue placeholder="Select source of funds" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOURCE_OF_FUNDS.map((source) => (
+                        <SelectItem key={source} value={source} data-testid={`option-source-${source.replace(/\s/g, '-').toLowerCase()}`}>
+                          {source}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label>Note (Optional)</Label>
                   <Textarea 
                     placeholder="What's this for?" 
@@ -271,7 +334,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
                 <Button 
                   className="w-full bg-primary hover:bg-primary/90 text-white font-bold"
-                  disabled={numericAmount <= 0 || numericAmount > walletBalance}
+                  disabled={numericAmount <= 0 || numericAmount > walletBalance || !paymentReason || !sourceOfFunds}
                   onClick={() => setStep('confirm')}
                 >
                   Continue to Review
@@ -302,6 +365,17 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <div>
                 <p className="text-4xl font-bold text-primary">${numericAmount.toFixed(2)}</p>
                 {memo && <p className="text-muted-foreground text-sm mt-2">"{memo}"</p>}
+              </div>
+
+              <div className="border-t border-border pt-3 text-left text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Reason:</span>
+                  <span className="font-medium" data-testid="text-confirm-payment-reason">{paymentReason}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Source of Funds:</span>
+                  <span className="font-medium" data-testid="text-confirm-source-of-funds">{sourceOfFunds}</span>
+                </div>
               </div>
             </div>
 
