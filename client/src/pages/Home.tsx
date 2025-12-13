@@ -324,7 +324,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className={`grid md:grid-cols-2 gap-6 ${accountType === 'personal' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
             {products.map((product, index) => (
               <motion.div
                 key={index}
@@ -371,10 +371,10 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="relative max-w-5xl mx-auto">
+          <div className="relative max-w-6xl mx-auto">
             <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-[#E91E8C] to-[#9333EA] -translate-y-1/2 rounded-full" style={{ top: '40px' }} />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
+            <div className={`grid grid-cols-2 md:grid-cols-3 gap-6 ${accountType === 'personal' ? 'lg:grid-cols-6' : 'lg:grid-cols-7'}`}>
               {workflowSteps.map((step, index) => (
                 <motion.div
                   key={index}
