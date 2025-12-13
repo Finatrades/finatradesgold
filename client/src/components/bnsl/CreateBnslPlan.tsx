@@ -47,12 +47,8 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   
-  // Fallback rates for when no templates are configured
-  const defaultVariants: TemplateVariant[] = [
-    { id: 'default-12', tenorMonths: 12, marginRatePercent: '8.00' },
-    { id: 'default-24', tenorMonths: 24, marginRatePercent: '10.00' },
-    { id: 'default-36', tenorMonths: 36, marginRatePercent: '12.00' }
-  ];
+  // No templates configured state
+  const noTemplatesConfigured = !loadingTemplates && templates.length === 0;
   
   // Fetch templates
   useEffect(() => {
@@ -82,7 +78,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
 
   // Get current template and variant
   const currentTemplate = templates.find(t => t.id === selectedTemplateId);
-  const availableVariants = currentTemplate?.variants || (templates.length === 0 ? defaultVariants : []);
+  const availableVariants = currentTemplate?.variants || [];
   const currentVariant = availableVariants.find(v => v.id === selectedVariantId) || availableVariants[0];
 
   // Derived Values
@@ -208,6 +204,14 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Loading plan options...</span>
+            </div>
+          ) : noTemplatesConfigured ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No Plans Available</h3>
+              <p className="text-muted-foreground max-w-md">
+                BNSL plans are not currently configured. Please contact the administrator to set up plan options.
+              </p>
             </div>
           ) : (
             <>
