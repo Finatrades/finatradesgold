@@ -3289,6 +3289,44 @@ export async function registerRoutes(
     }
   });
   
+  // Get importer's received forwarded proposals
+  app.get("/api/finabridge/importer/forwarded-proposals/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      // Get all trade requests created by this importer
+      const requests = await storage.getUserTradeRequests(userId);
+      
+      // For each request, get forwarded proposals
+      const allForwardedProposals = [];
+      for (const request of requests) {
+        const forwarded = await storage.getForwardedProposals(request.id);
+        for (const fp of forwarded) {
+          // Get the original proposal details
+          const proposal = await storage.getTradeProposal(fp.proposalId);
+          if (proposal) {
+            const exporter = await storage.getUser(proposal.exporterUserId);
+            allForwardedProposals.push({
+              ...proposal,
+              forwardedAt: fp.createdAt,
+              exporter: exporter ? { finatradesId: exporter.finatradesId } : null,
+              tradeRequest: {
+                tradeRefId: request.tradeRefId,
+                goodsName: request.goodsName,
+                tradeValueUsd: request.tradeValueUsd,
+                status: request.status,
+              },
+            });
+          }
+        }
+      }
+      
+      res.json({ proposals: allForwardedProposals });
+    } catch (err) {
+      console.error("Error fetching forwarded proposals:", err);
+      res.status(500).json({ message: "Failed to fetch forwarded proposals" });
+    }
+  });
+  
   // Submit proposal for a trade request
   app.post("/api/finabridge/exporter/proposals", async (req, res) => {
     try {
