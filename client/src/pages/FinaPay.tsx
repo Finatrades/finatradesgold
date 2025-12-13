@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 
 import WalletBalanceCards from '@/components/finapay/WalletBalanceCards';
-import WalletAnalytics from '@/components/finapay/WalletAnalytics';
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import QuickActions from '@/components/finapay/QuickActions';
 
@@ -275,11 +274,6 @@ export default function FinaPay() {
         {/* Quick Actions */}
         <section>
           <QuickActions onAction={handleQuickAction} goldPrice={currentGoldPriceUsdPerGram} />
-        </section>
-
-        {/* Portfolio Analytics */}
-        <section>
-          <WalletAnalytics wallet={wallet} />
         </section>
 
         {/* Transaction History */}
