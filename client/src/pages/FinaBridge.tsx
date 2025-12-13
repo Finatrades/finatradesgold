@@ -467,42 +467,111 @@ export default function FinaBridge() {
           </div>
         </div>
 
+        {/* Professional Wallet Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white border">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Available Gold</p>
-                <p className="text-xl font-bold text-secondary">
-                  {parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g
-                </p>
+          
+          {/* Available Balance - Primary Card */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-6 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-medium text-white/80">Available Balance</span>
+                </div>
               </div>
-              <Wallet className="w-8 h-8 text-muted-foreground/30" />
-            </CardContent>
-          </Card>
-          <Card className="bg-white border">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Locked in Escrow</p>
-                <p className="text-xl font-bold text-amber-600">
-                  {parseFloat(wallet?.lockedGoldGrams || '0').toFixed(3)}g
-                </p>
+              
+              <div className="mb-1">
+                <span className="text-4xl font-bold tracking-tight">
+                  ${(parseFloat(wallet?.availableGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
               </div>
-              <ArrowLeftRight className="w-8 h-8 text-muted-foreground/30" />
-            </CardContent>
-          </Card>
-          <Card className="bg-white border">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Balance</p>
-                <p className="text-xl font-bold">
-                  {(parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')).toFixed(3)}g
-                </p>
+              
+              <div className="text-white/70 text-sm font-medium">
+                {parseFloat(wallet?.availableGoldGrams || '0').toFixed(4)} g Gold
               </div>
-              <Button size="sm" onClick={() => setShowFundDialog(true)} data-testid="button-fund-wallet">
-                Fund Wallet
-              </Button>
-            </CardContent>
-          </Card>
+              
+              <div className="mt-4 pt-4 border-t border-white/20">
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  className="bg-white/20 hover:bg-white/30 text-white border-0"
+                  onClick={() => setShowFundDialog(true)} 
+                  data-testid="button-fund-wallet"
+                >
+                  Fund Wallet
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Locked in Escrow */}
+          <div className="relative overflow-hidden rounded-2xl bg-white border border-border p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <ArrowLeftRight className="w-5 h-5 text-amber-600" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Locked in Escrow</span>
+              </div>
+            </div>
+            
+            <div className="mb-1">
+              <span className="text-3xl font-bold text-amber-600 tracking-tight">
+                ${(parseFloat(wallet?.lockedGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            
+            <div className="text-muted-foreground text-sm font-medium">
+              {parseFloat(wallet?.lockedGoldGrams || '0').toFixed(4)} g Gold
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
+              Gold secured for active trades
+            </div>
+          </div>
+
+          {/* Total Balance */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                    <BarChart3 className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-medium text-white/70">Total Balance</span>
+                </div>
+              </div>
+              
+              <div className="mb-1">
+                <span className="text-3xl font-bold tracking-tight">
+                  ${((parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              <div className="text-white/60 text-sm font-medium">
+                {(parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')).toFixed(4)} g Gold
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-white/20 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">Available</span>
+                  <span className="font-medium text-green-400">${(parseFloat(wallet?.availableGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-white/60">Locked</span>
+                  <span className="font-medium text-amber-400">${(parseFloat(wallet?.lockedGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
         </div>
 
         {role === 'importer' ? (
