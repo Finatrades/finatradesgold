@@ -4525,5 +4525,236 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================================================
+  // ADMIN - FINANCIAL REPORTS
+  // ============================================================================
+
+  // Financial Overview - total revenue, AUM, liabilities, net position
+  app.get("/api/admin/financial/overview", async (req, res) => {
+    try {
+      const GOLD_PRICE_USD = 93.50; // Price per gram in USD
+
+      // Get all wallets to calculate AUM
+      const allUsers = await storage.getAllUsers();
+      const allWallets = await Promise.all(
+        allUsers.map(user => storage.getWallet(user.id))
+      );
+
+      // Calculate total gold and fiat in wallets
+      let totalGoldGrams = 0;
+      let totalFiatUsd = 0;
+      for (const wallet of allWallets) {
+        if (wallet) {
+          totalGoldGrams += parseFloat(wallet.goldGrams || '0');
+          totalFiatUsd += parseFloat(wallet.usdBalance || '0');
+          totalFiatUsd += parseFloat(wallet.eurBalance || '0') * 1.08; // EUR to USD
+        }
+      }
+
+      // Get vault holdings
+      const vaultHoldings = await storage.getAllVaultHoldings();
+      let vaultGoldGrams = 0;
+      for (const holding of vaultHoldings) {
+        // All vault holdings are considered active (no status field)
+        vaultGoldGrams += parseFloat(holding.goldGrams || '0');
+      }
+
+      // Get all BNSL plans
+      const bnslPlans = await storage.getAllBnslPlans();
+      let bnslPrincipalUsd = 0;
+      let bnslInterestUsd = 0;
+      let pendingPayoutsUsd = 0;
+      for (const plan of bnslPlans) {
+        if (plan.status === 'Active' || plan.status === 'Pending Activation') {
+          bnslPrincipalUsd += parseFloat(plan.basePriceComponentUsd || '0');
+          // Estimate interest earned (simplified) using agreed margin
+          const monthsElapsed = Math.floor((Date.now() - new Date(plan.createdAt!).getTime()) / (30 * 24 * 60 * 60 * 1000));
+          const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
+          bnslInterestUsd += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsElapsed;
+        }
+        if (plan.status === 'Active') {
+          pendingPayoutsUsd += parseFloat(plan.totalSaleProceedsUsd || '0');
+        }
+      }
+
+      // Get all transactions to estimate revenue
+      const allTransactions = await storage.getAllTransactions();
+      let totalRevenue = 0;
+      for (const tx of allTransactions) {
+        if (tx.status === 'Completed') {
+          // Estimate 1% fee on each transaction
+          const txValue = parseFloat(tx.amountUsd || '0') || 
+            (parseFloat(tx.amountGold || '0') * parseFloat(tx.goldPriceUsdPerGram || GOLD_PRICE_USD.toString()));
+          totalRevenue += Math.abs(txValue) * 0.01;
+        }
+      }
+
+      // Add BNSL interest to revenue
+      totalRevenue += bnslInterestUsd;
+      
+      // Add storage fees (0.5% annual on vault holdings)
+      const storageFeeRevenue = vaultGoldGrams * GOLD_PRICE_USD * 0.005;
+      totalRevenue += storageFeeRevenue;
+
+      // Calculate totals
+      const goldValueUsd = (totalGoldGrams + vaultGoldGrams) * GOLD_PRICE_USD;
+      const totalAUM = goldValueUsd + totalFiatUsd;
+      
+      // Liabilities = gold owed to users + pending BNSL payouts
+      const goldLiabilityGrams = totalGoldGrams + vaultGoldGrams;
+      const totalLiabilities = (goldLiabilityGrams * GOLD_PRICE_USD) + pendingPayoutsUsd;
+
+      // Expenses estimate (30% of revenue for simplicity)
+      const totalExpenses = totalRevenue * 0.30;
+      const netProfit = totalRevenue - totalExpenses;
+
+      res.json({
+        totalRevenue,
+        totalExpenses,
+        netProfit,
+        totalAUM,
+        goldHoldingsGrams: totalGoldGrams + vaultGoldGrams,
+        goldValueUsd,
+        fiatBalancesUsd: totalFiatUsd,
+        totalLiabilities,
+        goldLiabilityGrams,
+        pendingPayoutsUsd
+      });
+    } catch (error) {
+      console.error("Failed to get financial overview:", error);
+      res.status(400).json({ message: "Failed to get financial overview" });
+    }
+  });
+
+  // Product Metrics - FinaPay, FinaVault, BNSL performance
+  app.get("/api/admin/financial/metrics", async (req, res) => {
+    try {
+      const GOLD_PRICE_USD = 93.50;
+
+      // FinaPay Metrics
+      const allUsers = await storage.getAllUsers();
+      const allWallets = await Promise.all(
+        allUsers.map(user => storage.getWallet(user.id))
+      );
+      const activeWallets = allWallets.filter(w => w && (parseFloat(w.goldGrams || '0') > 0 || parseFloat(w.usdBalance || '0') > 0)).length;
+
+      const allTransactions = await storage.getAllTransactions();
+      let volumeUsd = 0;
+      for (const tx of allTransactions) {
+        const txValue = parseFloat(tx.amountUsd || '0') || 
+          (parseFloat(tx.amountGold || '0') * parseFloat(tx.goldPriceUsdPerGram || GOLD_PRICE_USD.toString()));
+        volumeUsd += Math.abs(txValue);
+      }
+      const feesCollectedUsd = volumeUsd * 0.01; // 1% fee
+
+      // FinaVault Metrics
+      const vaultHoldings = await storage.getAllVaultHoldings();
+      let goldStoredGrams = 0;
+      const vaultUserIds = new Set<string>();
+      for (const holding of vaultHoldings) {
+        goldStoredGrams += parseFloat(holding.goldGrams || '0');
+        vaultUserIds.add(holding.userId);
+      }
+      const storageFeesUsd = goldStoredGrams * GOLD_PRICE_USD * 0.005; // 0.5% annual
+
+      // BNSL Metrics
+      const bnslPlans = await storage.getAllBnslPlans();
+      const activePlans = bnslPlans.filter(p => p.status === 'Active' || p.status === 'Pending Activation');
+      const delinquentPlans = bnslPlans.filter(p => p.status === 'Defaulted').length;
+      
+      let totalPrincipalUsd = 0;
+      let interestEarnedUsd = 0;
+      let expectedPayoutsUsd = 0;
+      
+      for (const plan of activePlans) {
+        totalPrincipalUsd += parseFloat(plan.basePriceComponentUsd || '0');
+        expectedPayoutsUsd += parseFloat(plan.totalSaleProceedsUsd || '0');
+        
+        // Calculate accrued interest using agreed margin
+        const monthsElapsed = Math.floor((Date.now() - new Date(plan.createdAt!).getTime()) / (30 * 24 * 60 * 60 * 1000));
+        const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
+        interestEarnedUsd += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsElapsed;
+      }
+
+      res.json({
+        finapay: {
+          activeWallets,
+          transactionCount: allTransactions.length,
+          volumeUsd,
+          feesCollectedUsd
+        },
+        finavault: {
+          totalHoldings: vaultHoldings.length,
+          goldStoredGrams,
+          storageFeesUsd,
+          activeUsers: vaultUserIds.size
+        },
+        bnsl: {
+          activePlans: activePlans.length,
+          totalPrincipalUsd,
+          interestEarnedUsd,
+          expectedPayoutsUsd,
+          delinquentPlans
+        }
+      });
+    } catch (error) {
+      console.error("Failed to get product metrics:", error);
+      res.status(400).json({ message: "Failed to get product metrics" });
+    }
+  });
+
+  // User Financial Data - wallet balance, holdings, plans per user
+  app.get("/api/admin/financial/users", async (req, res) => {
+    try {
+      const GOLD_PRICE_USD = 93.50;
+      const allUsers = await storage.getAllUsers();
+
+      const userFinancials = await Promise.all(allUsers.map(async (user) => {
+        const wallet = await storage.getWallet(user.id);
+        const transactions = await storage.getUserTransactions(user.id);
+        const bnslPlans = await storage.getUserBnslPlans(user.id);
+        const vaultHoldings = await storage.getUserVaultHoldings(user.id);
+
+        // Calculate wallet balance in USD
+        const usdBalance = parseFloat(wallet?.usdBalance || '0');
+        const eurBalance = parseFloat(wallet?.eurBalance || '0') * 1.08;
+        const goldValue = parseFloat(wallet?.goldGrams || '0') * GOLD_PRICE_USD;
+        const walletBalanceUsd = usdBalance + eurBalance + goldValue;
+
+        // Calculate vault holdings
+        let goldHoldingsGrams = parseFloat(wallet?.goldGrams || '0');
+        for (const holding of vaultHoldings) {
+          goldHoldingsGrams += parseFloat(holding.goldGrams || '0');
+        }
+
+        // Get last activity from transactions
+        const sortedTransactions = transactions.sort((a, b) => 
+          new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+        );
+        const lastActivity = sortedTransactions[0]?.createdAt || user.createdAt;
+
+        return {
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          accountType: user.accountType,
+          walletBalanceUsd,
+          goldHoldingsGrams,
+          bnslPlansCount: bnslPlans.filter(p => p.status === 'Active' || p.status === 'Pending Activation').length,
+          totalTransactions: transactions.length,
+          lastActivity
+        };
+      }));
+
+      // Sort by wallet balance descending
+      userFinancials.sort((a, b) => b.walletBalanceUsd - a.walletBalanceUsd);
+
+      res.json(userFinancials);
+    } catch (error) {
+      console.error("Failed to get user financials:", error);
+      res.status(400).json({ message: "Failed to get user financials" });
+    }
+  });
+
   return httpServer;
 }
