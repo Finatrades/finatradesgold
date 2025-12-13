@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useAccountType } from '@/context/AccountTypeContext';
+import { useLocation } from 'wouter';
 import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFinaPay } from '@/context/FinaPayContext';
@@ -61,10 +63,22 @@ interface FinabridgeWallet {
 
 export default function FinaBridge() {
   const { user } = useAuth();
+  const { accountType } = useAccountType();
+  const [, setLocation] = useLocation();
   const { addNotification } = useNotifications();
   const { toast } = useToast();
   const { getContent } = useCMSPage('finabridge');
   const { currentGoldPriceUsdPerGram } = useFinaPay();
+
+  useEffect(() => {
+    if (accountType !== 'business') {
+      setLocation('/dashboard');
+    }
+  }, [accountType, setLocation]);
+
+  if (accountType !== 'business') {
+    return null;
+  }
   
   const [role, setRole] = useState<'importer' | 'exporter'>('importer');
   const [activeTab, setActiveTab] = useState('requests');

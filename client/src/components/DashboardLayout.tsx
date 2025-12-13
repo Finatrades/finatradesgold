@@ -5,7 +5,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, Briefcase, User as UserIcon, AlertTriangle, ArrowRight, Clock } from 'lucide-react';
+import { Menu, AlertTriangle, ArrowRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -99,39 +99,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             <div className="flex items-center gap-3">
-              
-              <div className="hidden md:flex relative items-center p-1 rounded-full bg-muted border border-border">
-                <motion.div 
-                  className="absolute top-1 bottom-1 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] shadow-sm"
-                  animate={{ 
-                    left: accountType === 'personal' ? 4 : '50%',
-                    width: 'calc(50% - 4px)'
-                  }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-                <button 
-                  onClick={() => setAccountType('personal')}
-                  className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    accountType === 'personal' 
-                      ? 'text-[#0D001E]' 
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  data-testid="dashboard-button-personal"
-                >
-                  <UserIcon className="w-3.5 h-3.5" /> Personal
-                </button>
-                <button 
-                  onClick={() => setAccountType('business')}
-                  className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    accountType === 'business' 
-                      ? 'text-[#0D001E]' 
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  data-testid="dashboard-button-business"
-                >
-                  <Briefcase className="w-3.5 h-3.5" /> Business
-                </button>
-              </div>
 
               <div className="hidden md:block">
                 <LanguageSwitcher />
