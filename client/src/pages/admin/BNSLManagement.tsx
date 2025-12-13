@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Plus, Loader2, RefreshCw, Edit, Trash2, Settings } from 'lucide-react';
+import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Loader2, RefreshCw, Edit, Trash2, Settings, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -381,7 +381,7 @@ function BnslTemplatesManager() {
 }
 
 export default function BNSLManagement() {
-  const { allPlans, auditLogs, currentGoldPrice, updatePlanStatus, addAuditLog, updatePayout, updateEarlyTermination, addPlan, refreshAllPlans, isLoading } = useBnsl();
+  const { allPlans, auditLogs, currentGoldPrice, updatePlanStatus, addAuditLog, updatePayout, updateEarlyTermination, refreshAllPlans } = useBnsl();
   
   useEffect(() => {
     refreshAllPlans();
@@ -392,187 +392,11 @@ export default function BNSLManagement() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   
-  // Create Plan State
-  const [createOpen, setCreateOpen] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [planVariants, setPlanVariants] = useState<{tenorMonths: number; marginRatePercent: string; earlyTerminationFeePercent: string; adminFeePercent: string}[]>([]);
-  const [loadingVariants, setLoadingVariants] = useState(false);
-  const [newPlanData, setNewPlanData] = useState({
-    userId: '',
-    participantName: '',
-    country: 'Switzerland',
-    tenorMonths: '',
-    marginRate: '',
-    goldSoldGrams: '',
-    enrollmentPrice: currentGoldPrice.toString(),
-    earlyTerminationFeePercent: '2.00',
-    adminFeePercent: '0.50'
-  });
-
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
-  
-  // Fetch users and variants when create dialog opens
-  useEffect(() => {
-    if (createOpen) {
-      // Fetch users
-      if (users.length === 0) {
-        setLoadingUsers(true);
-        import('@/lib/queryClient').then(({ apiRequest }) => {
-          apiRequest('GET', '/api/admin/users')
-            .then(res => res.json())
-            .then(data => {
-              setUsers(data.users || []);
-              setLoadingUsers(false);
-            })
-            .catch((err) => {
-              console.error('Failed to fetch users:', err);
-              toast.error('Failed to load users');
-              setLoadingUsers(false);
-            });
-        });
-      }
-      
-      // Fetch plan variants from templates
-      if (planVariants.length === 0) {
-        setLoadingVariants(true);
-        import('@/lib/queryClient').then(({ apiRequest }) => {
-          apiRequest('GET', '/api/admin/bnsl/templates')
-            .then(res => res.json())
-            .then(data => {
-              const templates = data.templates || [];
-              const allVariants: {tenorMonths: number; marginRatePercent: string; earlyTerminationFeePercent: string; adminFeePercent: string}[] = [];
-              templates.forEach((t: any) => {
-                if (t.variants && t.variants.length > 0) {
-                  t.variants.forEach((v: any) => {
-                    allVariants.push({ 
-                      tenorMonths: v.tenorMonths, 
-                      marginRatePercent: v.marginRatePercent,
-                      earlyTerminationFeePercent: t.earlyTerminationFeePercent || '2.00',
-                      adminFeePercent: t.adminFeePercent || '0.50'
-                    });
-                  });
-                }
-              });
-              // Sort by tenor
-              allVariants.sort((a, b) => a.tenorMonths - b.tenorMonths);
-              setPlanVariants(allVariants);
-              // Auto-select first variant
-              if (allVariants.length > 0) {
-                setNewPlanData(prev => ({
-                  ...prev,
-                  tenorMonths: allVariants[0].tenorMonths.toString(),
-                  marginRate: allVariants[0].marginRatePercent,
-                  earlyTerminationFeePercent: allVariants[0].earlyTerminationFeePercent,
-                  adminFeePercent: allVariants[0].adminFeePercent
-                }));
-              }
-              setLoadingVariants(false);
-            })
-            .catch((err) => {
-              console.error('Failed to fetch variants:', err);
-              setLoadingVariants(false);
-            });
-        });
-      }
-    }
-  }, [createOpen, users.length, planVariants.length]);
 
   const handleOpenPlan = (id: string) => {
     setSelectedPlanId(id);
     setDetailOpen(true);
-  };
-  
-  const handleUserSelect = (userId: string) => {
-    const selectedUser = users.find(u => u.id === userId);
-    if (selectedUser) {
-      setNewPlanData(prev => ({
-        ...prev,
-        userId,
-        participantName: `${selectedUser.firstName} ${selectedUser.lastName}`,
-        country: selectedUser.country || 'Switzerland'
-      }));
-    }
-  };
-
-  const handleCreatePlan = async () => {
-    if (!newPlanData.userId || !newPlanData.goldSoldGrams || !newPlanData.enrollmentPrice || !newPlanData.tenorMonths || !newPlanData.marginRate) {
-      toast.error("Please select a user and fill in all fields");
-      return;
-    }
-
-    const tenor = parseInt(newPlanData.tenorMonths) as BnslTenor;
-    const goldGrams = parseFloat(newPlanData.goldSoldGrams);
-    const price = parseFloat(newPlanData.enrollmentPrice);
-    
-    // Use rate from selected variant (dynamic from templates)
-    const rate = parseFloat(newPlanData.marginRate);
-
-    const basePriceUsd = goldGrams * price;
-    const totalMarginUsd = basePriceUsd * (rate / 100) * (tenor / 12);
-    const quarterlyMarginUsd = totalMarginUsd / (tenor / 3);
-    
-    const startDate = new Date();
-    const maturityDate = new Date();
-    maturityDate.setMonth(startDate.getMonth() + tenor);
-
-    const selectedUser = users.find(u => u.id === newPlanData.userId);
-    
-    const planDataForApi: Omit<BnslPlan, 'id' | 'contractId' | 'payouts'> = {
-      participant: {
-        id: newPlanData.userId,
-        name: newPlanData.participantName,
-        country: newPlanData.country,
-        kycStatus: selectedUser?.kycStatus || 'Approved',
-        riskLevel: 'Low'
-      },
-      tenorMonths: tenor,
-      agreedMarginAnnualPercent: rate,
-      goldSoldGrams: goldGrams,
-      enrollmentPriceUsdPerGram: price,
-      basePriceComponentUsd: basePriceUsd,
-      totalMarginComponentUsd: totalMarginUsd,
-      quarterlyMarginUsd: quarterlyMarginUsd,
-      totalSaleProceedsUsd: basePriceUsd + totalMarginUsd,
-      startDate: startDate.toISOString(),
-      maturityDate: maturityDate.toISOString(),
-      status: 'Active',
-      paidMarginUsd: 0,
-      paidMarginGrams: 0,
-      remainingMarginUsd: totalMarginUsd,
-      planRiskLevel: 'Low',
-      earlyTerminationFeePercent: parseFloat(newPlanData.earlyTerminationFeePercent),
-      adminFeePercent: parseFloat(newPlanData.adminFeePercent)
-    };
-
-    const createdPlan = await addPlan(planDataForApi);
-    
-    if (createdPlan) {
-      addAuditLog({
-        id: crypto.randomUUID(),
-        planId: createdPlan.id,
-        actor: 'Admin User',
-        actorRole: 'Admin',
-        actionType: 'PlanCreated',
-        timestamp: new Date().toISOString(),
-        details: `Created new ${tenor}-month plan for ${newPlanData.participantName}`
-      });
-
-      setCreateOpen(false);
-      setNewPlanData({
-        userId: '',
-        participantName: '',
-        country: 'Switzerland',
-        tenorMonths: planVariants.length > 0 ? planVariants[0].tenorMonths.toString() : '',
-        marginRate: planVariants.length > 0 ? planVariants[0].marginRatePercent : '',
-        goldSoldGrams: '',
-        enrollmentPrice: currentGoldPrice.toString(),
-        earlyTerminationFeePercent: planVariants.length > 0 ? planVariants[0].earlyTerminationFeePercent : '2.00',
-        adminFeePercent: planVariants.length > 0 ? planVariants[0].adminFeePercent : '0.50'
-      });
-      
-      await refreshAllPlans();
-    }
   };
 
   // KPIs
@@ -589,9 +413,6 @@ export default function BNSLManagement() {
             <h1 className="text-3xl font-bold text-gray-900">BNSL Management</h1>
             <p className="text-gray-500">Buy Now Sell Later – Admin Panel & Risk Monitoring</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="bg-orange-600 hover:bg-orange-700">
-            <Plus className="w-4 h-4 mr-2" /> Create New Plan
-          </Button>
         </div>
 
         {/* KPIs */}
@@ -753,107 +574,6 @@ export default function BNSLManagement() {
              </TabsContent>
            </div>
         </Tabs>
-
-        {/* Create Plan Dialog */}
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-           <DialogContent>
-             <DialogHeader>
-               <DialogTitle>Create New BNSL Plan</DialogTitle>
-               <DialogDescription>Manually enroll a participant into a new BNSL agreement.</DialogDescription>
-             </DialogHeader>
-             <div className="space-y-4 py-4">
-                <div>
-                   <Label>Select User</Label>
-                   {loadingUsers ? (
-                     <div className="flex items-center gap-2 py-2 text-gray-500">
-                       <Loader2 className="w-4 h-4 animate-spin" />
-                       Loading users...
-                     </div>
-                   ) : (
-                     <Select value={newPlanData.userId} onValueChange={handleUserSelect}>
-                        <SelectTrigger>
-                           <SelectValue placeholder="Select a user..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                           {users.filter(u => u.role !== 'admin').map(user => (
-                             <SelectItem key={user.id} value={user.id}>
-                               {user.firstName} {user.lastName} ({user.email})
-                             </SelectItem>
-                           ))}
-                        </SelectContent>
-                     </Select>
-                   )}
-                </div>
-                {newPlanData.userId && (
-                  <div className="p-3 bg-gray-50 rounded-lg text-sm">
-                    <p><strong>Selected:</strong> {newPlanData.participantName}</p>
-                    <p className="text-gray-500">Country: {newPlanData.country}</p>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                   <div>
-                      <Label>Tenor</Label>
-                      {loadingVariants ? (
-                        <div className="flex items-center gap-2 py-2 text-gray-500">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading options...
-                        </div>
-                      ) : planVariants.length === 0 ? (
-                        <p className="text-sm text-red-500 py-2">No plan variants configured. Add variants in Templates tab.</p>
-                      ) : (
-                        <Select 
-                          value={newPlanData.tenorMonths} 
-                          onValueChange={(v) => {
-                            const variant = planVariants.find(pv => pv.tenorMonths.toString() === v);
-                            setNewPlanData({
-                              ...newPlanData, 
-                              tenorMonths: v,
-                              marginRate: variant?.marginRatePercent || '',
-                              earlyTerminationFeePercent: variant?.earlyTerminationFeePercent || '2.00',
-                              adminFeePercent: variant?.adminFeePercent || '0.50'
-                            });
-                          }}
-                        >
-                           <SelectTrigger>
-                              <SelectValue placeholder="Select tenor..." />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {planVariants.map((variant) => (
-                                <SelectItem key={variant.tenorMonths} value={variant.tenorMonths.toString()}>
-                                  {variant.tenorMonths} Months ({variant.marginRatePercent}%)
-                                </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                      )}
-                   </div>
-                   <div>
-                      <Label>Gold To Lock (g)</Label>
-                      <Input 
-                        type="number"
-                        value={newPlanData.goldSoldGrams} 
-                        onChange={(e) => setNewPlanData({...newPlanData, goldSoldGrams: e.target.value})} 
-                        placeholder="1000"
-                      />
-                   </div>
-                </div>
-                <div>
-                   <Label>Enrollment Price (USD/g)</Label>
-                   <Input 
-                     type="number"
-                     value={newPlanData.enrollmentPrice} 
-                     onChange={(e) => setNewPlanData({...newPlanData, enrollmentPrice: e.target.value})} 
-                   />
-                </div>
-             </div>
-             <DialogFooter>
-                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                <Button className="bg-orange-600 hover:bg-orange-700" onClick={handleCreatePlan} disabled={!newPlanData.userId}>
-                  Create Plan
-                </Button>
-             </DialogFooter>
-           </DialogContent>
-        </Dialog>
 
         {/* Detail Modal */}
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

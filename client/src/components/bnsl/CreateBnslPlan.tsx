@@ -100,8 +100,8 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
     
     const draftPlan: Partial<BnslPlan> = {
       id: 'DRAFT-PREVIEW',
-      tenorMonths: selectedTenor,
-      marginRateAnnualPercent: annualRate,
+      tenorMonths: selectedTenor as BnslTenor,
+      agreedMarginAnnualPercent: annualRate,
       goldSoldGrams: amount,
       enrollmentPriceUsdPerGram: enrollmentPrice,
       basePriceComponentUsd: basePriceComponent,
@@ -133,8 +133,8 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
     }
 
     const planData: Partial<BnslPlan> = {
-      tenorMonths: selectedTenor,
-      marginRateAnnualPercent: annualRate,
+      tenorMonths: selectedTenor as BnslTenor,
+      agreedMarginAnnualPercent: annualRate,
       goldSoldGrams: amount,
       enrollmentPriceUsdPerGram: enrollmentPrice,
       basePriceComponentUsd: basePriceComponent,
