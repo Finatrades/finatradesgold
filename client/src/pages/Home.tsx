@@ -137,7 +137,9 @@ export default function Home() {
                 className="text-2xl md:text-3xl font-semibold text-gray-700 mb-6"
                 data-testid="text-hero-subtitle"
               >
-                Regulated Gold-Backed Financial Infrastructure
+                {accountType === 'business' 
+                  ? 'Regulated Gold-Backed Financial Infrastructure'
+                  : 'Digital Gold, Designed for Everyday People'}
               </h2>
               <p 
                 className="text-lg md:text-xl text-gray-600 mb-4 max-w-xl"
@@ -145,13 +147,15 @@ export default function Home() {
               >
                 {accountType === 'business' 
                   ? 'Designed for corporates, importers, exporters, trading houses, and institutional partners.'
-                  : 'Secure your wealth with gold-backed digital finance. Buy, store, and trade gold with confidence.'}
+                  : 'Save, store, and use real gold value through a secure, modern online account.'}
               </p>
               <p 
                 className="text-base text-gray-500 mb-10 max-w-xl"
                 data-testid="text-hero-partnership"
               >
-                Thanks to a strategic partnership with <span className="font-semibold text-[#7C3AED]">Wingold and Metals DMCC</span>, Finatrades transforms physical gold into settlement-ready financial instruments.
+                {accountType === 'business' 
+                  ? <>Thanks to a strategic partnership with <span className="font-semibold text-[#7C3AED]">Wingold and Metals DMCC</span>, Finatrades transforms physical gold into settlement-ready financial instruments.</>
+                  : <>Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through <span className="font-semibold text-[#7C3AED]">BNSL</span>. Join structured plans — lock gold into structured buy back plans for defined durations.</>}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/login">
