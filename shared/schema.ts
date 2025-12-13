@@ -57,6 +57,8 @@ export const users = pgTable("users", {
   mfaMethod: mfaMethodEnum("mfa_method"),
   mfaSecret: varchar("mfa_secret", { length: 255 }),
   mfaBackupCodes: text("mfa_backup_codes"), // JSON array of hashed backup codes
+  // Profile photo (selfie)
+  profilePhoto: text("profile_photo"), // Base64 encoded image or URL
   // Business fields (for business accounts)
   companyName: varchar("company_name", { length: 255 }),
   registrationNumber: varchar("registration_number", { length: 100 }),
@@ -79,6 +81,7 @@ export const insertUserSchema = createInsertSchema(users)
     country: z.string().nullable().optional(),
     companyName: z.string().nullable().optional(),
     registrationNumber: z.string().nullable().optional(),
+    profilePhoto: z.string().nullable().optional(),
     // MFA fields
     mfaEnabled: z.boolean().optional(),
     mfaMethod: z.enum(['totp', 'email']).nullable().optional(),
