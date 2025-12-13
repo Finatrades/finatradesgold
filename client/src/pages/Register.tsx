@@ -47,6 +47,8 @@ export default function Register() {
     special: false
   });
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     const p = formData.password;
     setPasswordStrength({
@@ -81,20 +83,35 @@ export default function Register() {
   };
 
   const validateDetailsStep = () => {
-    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.firstName.trim()) {
+      errors.firstName = "First name is required";
+    }
+    if (!formData.lastName.trim()) {
+      errors.lastName = "Last name is required";
+    }
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    }
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else if (!isPasswordValid) {
+      errors.password = "Password doesn't meet requirements";
+    }
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = "Please confirm your password";
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+    if (accountType === 'business' && !formData.companyName.trim()) {
+      errors.companyName = "Company name is required";
+    }
+    
+    setFieldErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
       toast.error("Please fill in all required fields");
-      return false;
-    }
-    if (!isPasswordValid) {
-      toast.error("Please ensure your password meets all security requirements");
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return false;
-    }
-    if (accountType === 'business' && !formData.companyName) {
-      toast.error("Company name is required for business accounts");
       return false;
     }
     return true;
@@ -259,19 +276,23 @@ export default function Register() {
                         <Label>First Name *</Label>
                         <Input 
                           value={formData.firstName}
-                          onChange={e => setFormData({...formData, firstName: e.target.value})}
+                          onChange={e => { setFormData({...formData, firstName: e.target.value}); setFieldErrors(prev => ({...prev, firstName: ''})); }}
                           placeholder="John"
+                          className={fieldErrors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""}
                           data-testid="input-first-name"
                         />
+                        {fieldErrors.firstName && <p className="text-red-500 text-xs">{fieldErrors.firstName}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label>Last Name *</Label>
                         <Input 
                           value={formData.lastName}
-                          onChange={e => setFormData({...formData, lastName: e.target.value})}
+                          onChange={e => { setFormData({...formData, lastName: e.target.value}); setFieldErrors(prev => ({...prev, lastName: ''})); }}
                           placeholder="Doe"
+                          className={fieldErrors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""}
                           data-testid="input-last-name"
                         />
+                        {fieldErrors.lastName && <p className="text-red-500 text-xs">{fieldErrors.lastName}</p>}
                       </div>
                     </div>
 
@@ -280,10 +301,12 @@ export default function Register() {
                       <Input 
                         type="email"
                         value={formData.email}
-                        onChange={e => setFormData({...formData, email: e.target.value})}
+                        onChange={e => { setFormData({...formData, email: e.target.value}); setFieldErrors(prev => ({...prev, email: ''})); }}
                         placeholder="john@example.com"
+                        className={fieldErrors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
                         data-testid="input-email"
                       />
+                      {fieldErrors.email && <p className="text-red-500 text-xs">{fieldErrors.email}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -303,10 +326,12 @@ export default function Register() {
                           <Label>Company Name *</Label>
                           <Input 
                             value={formData.companyName}
-                            onChange={e => setFormData({...formData, companyName: e.target.value})}
+                            onChange={e => { setFormData({...formData, companyName: e.target.value}); setFieldErrors(prev => ({...prev, companyName: ''})); }}
                             placeholder="Acme Corporation"
+                            className={fieldErrors.companyName ? "border-red-500 focus-visible:ring-red-500" : ""}
                             data-testid="input-company-name"
                           />
+                          {fieldErrors.companyName && <p className="text-red-500 text-xs">{fieldErrors.companyName}</p>}
                         </div>
                         <div className="space-y-2">
                           <Label>Registration Number</Label>
@@ -327,9 +352,9 @@ export default function Register() {
                           <Input 
                             type={showPassword ? "text" : "password"}
                             value={formData.password}
-                            onChange={e => setFormData({...formData, password: e.target.value})}
+                            onChange={e => { setFormData({...formData, password: e.target.value}); setFieldErrors(prev => ({...prev, password: ''})); }}
                             placeholder="••••••••"
-                            className="pr-10"
+                            className={`pr-10 ${fieldErrors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                             data-testid="input-password"
                           />
                           <button 
@@ -340,16 +365,19 @@ export default function Register() {
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
+                        {fieldErrors.password && <p className="text-red-500 text-xs">{fieldErrors.password}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label>Confirm Password *</Label>
                         <Input 
                           type="password"
                           value={formData.confirmPassword}
-                          onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+                          onChange={e => { setFormData({...formData, confirmPassword: e.target.value}); setFieldErrors(prev => ({...prev, confirmPassword: ''})); }}
                           placeholder="••••••••"
+                          className={fieldErrors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}
                           data-testid="input-confirm-password"
                         />
+                        {fieldErrors.confirmPassword && <p className="text-red-500 text-xs">{fieldErrors.confirmPassword}</p>}
                       </div>
                     </div>
                     
