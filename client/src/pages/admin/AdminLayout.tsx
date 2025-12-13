@@ -11,6 +11,7 @@ import {
   Bell,
   Search,
   ShieldAlert,
+  Shield,
   Package,
   CreditCard,
   Briefcase,
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: <DollarSign className="w-5 h-5" />, label: 'Fee Management', href: '/admin/fees' },
     { icon: <MessageSquare className="w-5 h-5" />, label: 'Support Chat', href: '/admin/chat' },
     { icon: <PanelLeft className="w-5 h-5" />, label: 'CMS', href: '/admin/cms' },
+    { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/admin/security' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/admin/settings' },
   ];
 

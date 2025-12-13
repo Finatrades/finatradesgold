@@ -1392,3 +1392,83 @@ export const platformExpenses = pgTable("platform_expenses", {
 export const insertPlatformExpenseSchema = createInsertSchema(platformExpenses).omit({ id: true, createdAt: true });
 export type InsertPlatformExpense = z.infer<typeof insertPlatformExpenseSchema>;
 export type PlatformExpense = typeof platformExpenses.$inferSelect;
+
+// ============================================
+// SECURITY SETTINGS
+// ============================================
+
+export const securitySettings = pgTable("security_settings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Global Security Features
+  emailOtpEnabled: boolean("email_otp_enabled").notNull().default(false),
+  passkeyEnabled: boolean("passkey_enabled").notNull().default(false),
+  
+  // Email OTP Requirements per Action (when emailOtpEnabled is true)
+  otpOnLogin: boolean("otp_on_login").notNull().default(false),
+  otpOnWithdrawal: boolean("otp_on_withdrawal").notNull().default(true),
+  otpOnTransfer: boolean("otp_on_transfer").notNull().default(true),
+  otpOnBuyGold: boolean("otp_on_buy_gold").notNull().default(false),
+  otpOnSellGold: boolean("otp_on_sell_gold").notNull().default(true),
+  otpOnProfileChange: boolean("otp_on_profile_change").notNull().default(false),
+  otpOnPasswordChange: boolean("otp_on_password_change").notNull().default(true),
+  otpOnBnslCreate: boolean("otp_on_bnsl_create").notNull().default(false),
+  otpOnBnslEarlyTermination: boolean("otp_on_bnsl_early_termination").notNull().default(true),
+  otpOnVaultWithdrawal: boolean("otp_on_vault_withdrawal").notNull().default(true),
+  otpOnTradeBridge: boolean("otp_on_trade_bridge").notNull().default(true),
+  
+  // Passkey Requirements per Action (when passkeyEnabled is true)
+  passkeyOnLogin: boolean("passkey_on_login").notNull().default(true),
+  passkeyOnWithdrawal: boolean("passkey_on_withdrawal").notNull().default(false),
+  passkeyOnTransfer: boolean("passkey_on_transfer").notNull().default(false),
+  passkeyOnHighValueTransaction: boolean("passkey_on_high_value_transaction").notNull().default(false),
+  passkeyHighValueThresholdUsd: decimal("passkey_high_value_threshold_usd", { precision: 10, scale: 2 }).default('1000'),
+  
+  // OTP Configuration
+  otpExpiryMinutes: integer("otp_expiry_minutes").notNull().default(10),
+  otpMaxAttempts: integer("otp_max_attempts").notNull().default(3),
+  otpCooldownMinutes: integer("otp_cooldown_minutes").notNull().default(1),
+  
+  // Audit
+  updatedBy: varchar("updated_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSecuritySettingsSchema = createInsertSchema(securitySettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSecuritySettings = z.infer<typeof insertSecuritySettingsSchema>;
+export type SecuritySettings = typeof securitySettings.$inferSelect;
+
+// OTP Verification Requests - tracks pending OTP verifications
+export const otpVerifications = pgTable("otp_verifications", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(), // 'withdrawal', 'transfer', 'sell_gold', etc.
+  code: varchar("code", { length: 10 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  verified: boolean("verified").notNull().default(false),
+  verifiedAt: timestamp("verified_at"),
+  metadata: json("metadata").$type<Record<string, any>>(), // Store action-specific data
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertOtpVerificationSchema = createInsertSchema(otpVerifications).omit({ id: true, createdAt: true });
+export type InsertOtpVerification = z.infer<typeof insertOtpVerificationSchema>;
+export type OtpVerification = typeof otpVerifications.$inferSelect;
+
+// User Passkeys - stores registered passkeys per user
+export const userPasskeys = pgTable("user_passkeys", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  credentialId: text("credential_id").notNull().unique(),
+  publicKey: text("public_key").notNull(),
+  counter: integer("counter").notNull().default(0),
+  deviceName: varchar("device_name", { length: 255 }),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUserPasskeySchema = createInsertSchema(userPasskeys).omit({ id: true, createdAt: true });
+export type InsertUserPasskey = z.infer<typeof insertUserPasskeySchema>;
+export type UserPasskey = typeof userPasskeys.$inferSelect;

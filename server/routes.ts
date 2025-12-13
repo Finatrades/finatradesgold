@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
 import { db } from "./db";
@@ -14,13 +14,37 @@ import {
   insertPeerTransferSchema, insertPeerRequestSchema,
   insertTradeRequestSchema, insertTradeProposalSchema, insertForwardedProposalSchema,
   insertTradeConfirmationSchema, insertSettlementHoldSchema, insertFinabridgeWalletSchema,
-  User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema
+  User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
+  insertSecuritySettingsSchema
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
 import { sendEmail, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
+
+// Middleware to ensure admin access using header-based auth
+// This middleware validates that the X-Admin-User-Id header contains a valid admin user ID
+async function ensureAdminAsync(req: Request, res: Response, next: NextFunction) {
+  try {
+    const adminUserId = req.headers['x-admin-user-id'] as string;
+    
+    if (!adminUserId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const admin = await storage.getUser(adminUserId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    // Attach the validated admin user to the request
+    (req as any).adminUser = admin;
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: "Authentication failed" });
+  }
+}
 
 // Helper to strip sensitive fields from user object
 function sanitizeUser(user: User): Omit<User, 'password' | 'emailVerificationCode' | 'mfaSecret' | 'mfaBackupCodes'> {
@@ -5141,6 +5165,253 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to get payment methods:", error);
       res.status(400).json({ message: "Failed to get payment methods" });
+    }
+  });
+
+  // ============================================================================
+  // SECURITY SETTINGS & OTP VERIFICATION
+  // ============================================================================
+
+  // Get security settings (admin only with header-based auth)
+  app.get("/api/admin/security-settings", ensureAdminAsync, async (req, res) => {
+    try {
+      const settings = await storage.getOrCreateSecuritySettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Failed to get security settings:", error);
+      res.status(400).json({ message: "Failed to get security settings" });
+    }
+  });
+
+  // Update security settings (admin only with header-based auth)
+  app.patch("/api/admin/security-settings", ensureAdminAsync, async (req, res) => {
+    try {
+      const updates = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      // Validate updates using partial schema
+      const validatedUpdates = insertSecuritySettingsSchema.partial().parse(updates);
+      
+      const settings = await storage.updateSecuritySettings({
+        ...validatedUpdates,
+        updatedBy: adminUser.id
+      });
+      
+      if (!settings) {
+        return res.status(404).json({ message: "Security settings not found" });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "security_settings",
+        entityId: settings.id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Security settings updated: ${Object.keys(validatedUpdates).join(", ")}`,
+      });
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Failed to update security settings:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update security settings" });
+    }
+  });
+
+  // Request OTP for an action
+  app.post("/api/otp/request", async (req, res) => {
+    try {
+      const { userId, action, metadata } = req.body;
+      
+      if (!userId || !action) {
+        return res.status(400).json({ message: "userId and action are required" });
+      }
+      
+      // Get user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get security settings
+      const settings = await storage.getOrCreateSecuritySettings();
+      
+      // Check if email OTP is enabled globally
+      if (!settings.emailOtpEnabled) {
+        return res.json({ otpRequired: false, message: "Email OTP is not enabled" });
+      }
+      
+      // Check if OTP is required for this action
+      const otpActionMap: Record<string, keyof typeof settings> = {
+        'login': 'otpOnLogin',
+        'withdrawal': 'otpOnWithdrawal',
+        'transfer': 'otpOnTransfer',
+        'buy_gold': 'otpOnBuyGold',
+        'sell_gold': 'otpOnSellGold',
+        'profile_change': 'otpOnProfileChange',
+        'password_change': 'otpOnPasswordChange',
+        'bnsl_create': 'otpOnBnslCreate',
+        'bnsl_early_termination': 'otpOnBnslEarlyTermination',
+        'vault_withdrawal': 'otpOnVaultWithdrawal',
+        'trade_bridge': 'otpOnTradeBridge',
+      };
+      
+      const settingKey = otpActionMap[action];
+      if (!settingKey || !settings[settingKey]) {
+        return res.json({ otpRequired: false, message: `OTP not required for ${action}` });
+      }
+      
+      // Check cooldown - get most recent OTP for this user and action
+      const existingOtp = await storage.getPendingOtp(userId, action);
+      if (existingOtp) {
+        const cooldownMs = settings.otpCooldownMinutes * 60 * 1000;
+        const timeSinceCreated = Date.now() - new Date(existingOtp.createdAt).getTime();
+        if (timeSinceCreated < cooldownMs) {
+          const remainingSeconds = Math.ceil((cooldownMs - timeSinceCreated) / 1000);
+          return res.status(429).json({ 
+            message: `Please wait ${remainingSeconds} seconds before requesting a new code` 
+          });
+        }
+      }
+      
+      // Generate OTP code
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + settings.otpExpiryMinutes * 60 * 1000);
+      
+      // Create OTP verification record
+      const otpVerification = await storage.createOtpVerification({
+        userId,
+        action,
+        code,
+        expiresAt,
+        attempts: 0,
+        verified: false,
+        metadata: metadata || null,
+      });
+      
+      // Send OTP email
+      const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.EMAIL_VERIFICATION, {
+        user_name: `${user.firstName} ${user.lastName}`,
+        verification_code: code,
+      });
+      
+      if (!emailResult.success) {
+        return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+      }
+      
+      res.json({ 
+        otpRequired: true,
+        otpId: otpVerification.id,
+        expiresAt: otpVerification.expiresAt,
+        message: `Verification code sent to ${user.email}` 
+      });
+    } catch (error) {
+      console.error("Failed to request OTP:", error);
+      res.status(400).json({ message: "Failed to request OTP" });
+    }
+  });
+
+  // Verify OTP code
+  app.post("/api/otp/verify", async (req, res) => {
+    try {
+      const { otpId, code, userId, action } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ message: "Verification code is required" });
+      }
+      
+      // Get security settings for max attempts
+      const settings = await storage.getOrCreateSecuritySettings();
+      
+      // Get OTP verification - either by ID or by userId+action
+      let otpVerification;
+      if (otpId) {
+        otpVerification = await storage.getOtpVerification(otpId);
+      } else if (userId && action) {
+        otpVerification = await storage.getPendingOtp(userId, action);
+      }
+      
+      if (!otpVerification) {
+        return res.status(404).json({ message: "Verification not found. Please request a new code." });
+      }
+      
+      // Check if already verified
+      if (otpVerification.verified) {
+        return res.status(400).json({ message: "Code already used. Please request a new code." });
+      }
+      
+      // Check expiry
+      if (new Date() > new Date(otpVerification.expiresAt)) {
+        return res.status(400).json({ message: "Code expired. Please request a new code." });
+      }
+      
+      // Check max attempts
+      if (otpVerification.attempts >= settings.otpMaxAttempts) {
+        return res.status(429).json({ message: "Too many failed attempts. Please request a new code." });
+      }
+      
+      // Verify code
+      if (otpVerification.code !== code) {
+        // Increment attempts
+        await storage.updateOtpVerification(otpVerification.id, {
+          attempts: otpVerification.attempts + 1
+        });
+        
+        const remainingAttempts = settings.otpMaxAttempts - otpVerification.attempts - 1;
+        return res.status(400).json({ 
+          message: `Invalid code. ${remainingAttempts} attempts remaining.` 
+        });
+      }
+      
+      // Mark as verified
+      await storage.updateOtpVerification(otpVerification.id, {
+        verified: true,
+        verifiedAt: new Date()
+      });
+      
+      res.json({ 
+        verified: true, 
+        message: "Verification successful",
+        metadata: otpVerification.metadata
+      });
+    } catch (error) {
+      console.error("Failed to verify OTP:", error);
+      res.status(400).json({ message: "Failed to verify OTP" });
+    }
+  });
+
+  // Check if OTP is required for an action (without sending)
+  app.get("/api/otp/check/:action", async (req, res) => {
+    try {
+      const { action } = req.params;
+      
+      const settings = await storage.getOrCreateSecuritySettings();
+      
+      if (!settings.emailOtpEnabled) {
+        return res.json({ otpRequired: false });
+      }
+      
+      const otpActionMap: Record<string, keyof typeof settings> = {
+        'login': 'otpOnLogin',
+        'withdrawal': 'otpOnWithdrawal',
+        'transfer': 'otpOnTransfer',
+        'buy_gold': 'otpOnBuyGold',
+        'sell_gold': 'otpOnSellGold',
+        'profile_change': 'otpOnProfileChange',
+        'password_change': 'otpOnPasswordChange',
+        'bnsl_create': 'otpOnBnslCreate',
+        'bnsl_early_termination': 'otpOnBnslEarlyTermination',
+        'vault_withdrawal': 'otpOnVaultWithdrawal',
+        'trade_bridge': 'otpOnTradeBridge',
+      };
+      
+      const settingKey = otpActionMap[action];
+      const otpRequired = settingKey ? !!settings[settingKey] : false;
+      
+      res.json({ otpRequired });
+    } catch (error) {
+      console.error("Failed to check OTP requirement:", error);
+      res.status(400).json({ message: "Failed to check OTP requirement" });
     }
   });
 

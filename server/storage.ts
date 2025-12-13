@@ -13,6 +13,7 @@ import {
   binanceTransactions,
   brandingSettings,
   employees, rolePermissions,
+  securitySettings, otpVerifications, userPasskeys,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -51,7 +52,10 @@ import {
   type BinanceTransaction, type InsertBinanceTransaction,
   type BrandingSettings, type InsertBrandingSettings,
   type Employee, type InsertEmployee,
-  type RolePermission, type InsertRolePermission
+  type RolePermission, type InsertRolePermission,
+  type SecuritySettings, type InsertSecuritySettings,
+  type OtpVerification, type InsertOtpVerification,
+  type UserPasskey, type InsertUserPasskey
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -374,6 +378,24 @@ export interface IStorage {
   getAllRolePermissions(): Promise<RolePermission[]>;
   createRolePermission(permission: InsertRolePermission): Promise<RolePermission>;
   updateRolePermission(id: string, updates: Partial<RolePermission>): Promise<RolePermission | undefined>;
+  
+  // Security Settings
+  getSecuritySettings(): Promise<SecuritySettings | undefined>;
+  getOrCreateSecuritySettings(): Promise<SecuritySettings>;
+  updateSecuritySettings(updates: Partial<SecuritySettings>): Promise<SecuritySettings | undefined>;
+  
+  // OTP Verifications
+  createOtpVerification(otp: InsertOtpVerification): Promise<OtpVerification>;
+  getOtpVerification(id: string): Promise<OtpVerification | undefined>;
+  getPendingOtp(userId: string, action: string): Promise<OtpVerification | undefined>;
+  updateOtpVerification(id: string, updates: Partial<OtpVerification>): Promise<OtpVerification | undefined>;
+  
+  // User Passkeys
+  createUserPasskey(passkey: InsertUserPasskey): Promise<UserPasskey>;
+  getUserPasskeys(userId: string): Promise<UserPasskey[]>;
+  getPasskeyByCredentialId(credentialId: string): Promise<UserPasskey | undefined>;
+  updateUserPasskey(id: string, updates: Partial<UserPasskey>): Promise<UserPasskey | undefined>;
+  deleteUserPasskey(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1527,6 +1549,90 @@ export class DatabaseStorage implements IStorage {
   async updateRolePermission(id: string, updates: Partial<RolePermission>): Promise<RolePermission | undefined> {
     const [permission] = await db.update(rolePermissions).set({ ...updates, updatedAt: new Date() }).where(eq(rolePermissions.id, id)).returning();
     return permission || undefined;
+  }
+
+  // ============================================
+  // SECURITY SETTINGS
+  // ============================================
+
+  async getSecuritySettings(): Promise<SecuritySettings | undefined> {
+    const [settings] = await db.select().from(securitySettings).limit(1);
+    return settings || undefined;
+  }
+
+  async getOrCreateSecuritySettings(): Promise<SecuritySettings> {
+    let settings = await this.getSecuritySettings();
+    if (!settings) {
+      const [newSettings] = await db.insert(securitySettings).values({}).returning();
+      settings = newSettings;
+    }
+    return settings;
+  }
+
+  async updateSecuritySettings(updates: Partial<SecuritySettings>): Promise<SecuritySettings | undefined> {
+    const existing = await this.getSecuritySettings();
+    if (!existing) return undefined;
+    const [settings] = await db.update(securitySettings).set({ ...updates, updatedAt: new Date() }).where(eq(securitySettings.id, existing.id)).returning();
+    return settings || undefined;
+  }
+
+  // ============================================
+  // OTP VERIFICATIONS
+  // ============================================
+
+  async createOtpVerification(otp: InsertOtpVerification): Promise<OtpVerification> {
+    const [verification] = await db.insert(otpVerifications).values(otp).returning();
+    return verification;
+  }
+
+  async getOtpVerification(id: string): Promise<OtpVerification | undefined> {
+    const [verification] = await db.select().from(otpVerifications).where(eq(otpVerifications.id, id));
+    return verification || undefined;
+  }
+
+  async getPendingOtp(userId: string, action: string): Promise<OtpVerification | undefined> {
+    const [verification] = await db.select().from(otpVerifications)
+      .where(and(
+        eq(otpVerifications.userId, userId),
+        eq(otpVerifications.action, action),
+        eq(otpVerifications.verified, false)
+      ))
+      .orderBy(desc(otpVerifications.createdAt))
+      .limit(1);
+    return verification || undefined;
+  }
+
+  async updateOtpVerification(id: string, updates: Partial<OtpVerification>): Promise<OtpVerification | undefined> {
+    const [verification] = await db.update(otpVerifications).set(updates).where(eq(otpVerifications.id, id)).returning();
+    return verification || undefined;
+  }
+
+  // ============================================
+  // USER PASSKEYS
+  // ============================================
+
+  async createUserPasskey(passkey: InsertUserPasskey): Promise<UserPasskey> {
+    const [newPasskey] = await db.insert(userPasskeys).values(passkey).returning();
+    return newPasskey;
+  }
+
+  async getUserPasskeys(userId: string): Promise<UserPasskey[]> {
+    return await db.select().from(userPasskeys).where(eq(userPasskeys.userId, userId)).orderBy(desc(userPasskeys.createdAt));
+  }
+
+  async getPasskeyByCredentialId(credentialId: string): Promise<UserPasskey | undefined> {
+    const [passkey] = await db.select().from(userPasskeys).where(eq(userPasskeys.credentialId, credentialId));
+    return passkey || undefined;
+  }
+
+  async updateUserPasskey(id: string, updates: Partial<UserPasskey>): Promise<UserPasskey | undefined> {
+    const [passkey] = await db.update(userPasskeys).set(updates).where(eq(userPasskeys.id, id)).returning();
+    return passkey || undefined;
+  }
+
+  async deleteUserPasskey(id: string): Promise<boolean> {
+    const result = await db.delete(userPasskeys).where(eq(userPasskeys.id, id)).returning();
+    return result.length > 0;
   }
 }
 
