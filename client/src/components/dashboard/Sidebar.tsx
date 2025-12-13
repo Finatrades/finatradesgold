@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -11,31 +11,81 @@ import {
   User, 
   Shield, 
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  ArrowLeftRight,
+  Receipt
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
+
+interface MenuItem {
+  icon: React.ReactNode;
+  label: string;
+  href: string;
+}
+
+interface MenuGroup {
+  title: string;
+  items: MenuItem[];
+  defaultOpen?: boolean;
+}
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) {
   const [location] = useLocation();
   const { logout, user } = useAuth();
   const { accountType } = useAccountType();
 
-  const menuItems = [
-    { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
-    { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay Wallet', href: '/finapay' },
-    { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
-    { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
-    ...(accountType === 'business' ? [{ icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' }] : []),
-    { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
-    { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/profile' },
-    { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    'Overview': true,
+    'Money Movement': true,
+    'Gold Services': true,
+    'Account': false
+  });
+
+  const toggleGroup = (title: string) => {
+    setExpandedGroups(prev => ({ ...prev, [title]: !prev[title] }));
+  };
+
+  const menuGroups: MenuGroup[] = [
+    {
+      title: 'Overview',
+      defaultOpen: true,
+      items: [
+        { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
+      ]
+    },
+    {
+      title: 'Money Movement',
+      defaultOpen: true,
+      items: [
+        { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay', href: '/finapay' },
+        { icon: <Receipt className="w-5 h-5" />, label: 'Transactions', href: '/finapay/transactions' },
+      ]
+    },
+    {
+      title: 'Gold Services',
+      defaultOpen: true,
+      items: [
+        { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
+        { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
+        ...(accountType === 'business' ? [{ icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' }] : []),
+      ]
+    },
+    {
+      title: 'Account',
+      defaultOpen: false,
+      items: [
+        { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
+        { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/profile' },
+        { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
+      ]
+    }
   ];
 
-  // Only show "Complete Verification" link for users who haven't started KYC
   if (user?.kycStatus === 'Not Started') {
-    menuItems.splice(1, 0, { 
+    menuGroups[0].items.push({ 
       icon: <ShieldCheck className="w-5 h-5" />, 
       label: 'Complete Verification', 
       href: '/kyc' 
@@ -71,30 +121,59 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
             </Link>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
-            {menuItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <div 
-                  className={`relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer group ${
-                    isActive(item.href) 
-                      ? 'bg-white/15 text-[#D4AF37]' 
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
-                  onClick={() => setIsOpen(false)}
-                  data-testid={`sidebar-link-${item.href.replace('/', '')}`}
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2 custom-scrollbar">
+            {menuGroups.map((group) => (
+              <div key={group.title} className="space-y-1">
+                <button
+                  onClick={() => toggleGroup(group.title)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors"
+                  data-testid={`sidebar-group-${group.title.toLowerCase().replace(' ', '-')}`}
                 >
-                  <div className={`${isActive(item.href) ? 'text-[#D4AF37]' : 'text-white/60 group-hover:text-white'}`}>
-                    {item.icon}
-                  </div>
-                  <span className="font-medium text-sm">{item.label}</span>
-                  {isActive(item.href) && (
-                    <motion.div 
-                      layoutId="sidebar-active"
-                      className="absolute left-0 w-1 h-8 bg-gradient-to-b from-[#D4AF37] to-[#F4E4BC] rounded-r-full"
-                    />
+                  <span>{group.title}</span>
+                  <ChevronDown 
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      expandedGroups[group.title] ? 'rotate-180' : ''
+                    }`} 
+                  />
+                </button>
+                
+                <AnimatePresence initial={false}>
+                  {expandedGroups[group.title] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      {group.items.map((item) => (
+                        <Link key={item.href} href={item.href}>
+                          <div 
+                            className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all cursor-pointer group ${
+                              isActive(item.href) 
+                                ? 'bg-white/15 text-[#D4AF37]' 
+                                : 'text-white/70 hover:text-white hover:bg-white/10'
+                            }`}
+                            onClick={() => setIsOpen(false)}
+                            data-testid={`sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
+                          >
+                            <div className={`${isActive(item.href) ? 'text-[#D4AF37]' : 'text-white/60 group-hover:text-white'}`}>
+                              {item.icon}
+                            </div>
+                            <span className="font-medium text-sm">{item.label}</span>
+                            {isActive(item.href) && (
+                              <motion.div 
+                                layoutId="sidebar-active"
+                                className="absolute left-0 w-1 h-6 bg-gradient-to-b from-[#D4AF37] to-[#F4E4BC] rounded-r-full"
+                              />
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </motion.div>
                   )}
-                </div>
-              </Link>
+                </AnimatePresence>
+              </div>
             ))}
           </div>
 

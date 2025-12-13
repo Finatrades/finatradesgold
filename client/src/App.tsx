@@ -54,6 +54,7 @@ import FeeManagement from "@/pages/admin/FeeManagement";
 import BNSLExplore from "@/pages/BNSLExplore";
 
 import FinaPayDashboard from "@/pages/FinaPayDashboard";
+import FinaPayTransactions from "@/pages/FinaPayTransactions";
 import { FinaPayProvider } from "@/context/FinaPayContext";
 
 import AdminChat from "@/pages/admin/AdminChat";
@@ -71,6 +72,7 @@ function Router() {
       
       {/* User Dashboard Routes */}
       <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/finapay/transactions" component={FinaPayTransactions} />
       <ProtectedRoute path="/finapay" component={FinaPayDashboard} />
       <ProtectedRoute path="/finavault" component={FinaVault} />
       <ProtectedRoute path="/bnsl" component={BNSL} />

@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { TrendingUp, ArrowUpRight, ArrowDownLeft, Wallet, ShieldCheck, Lock, CreditCard, RefreshCw, Send, Download, PlusCircle } from 'lucide-react';
+import { TrendingUp, ArrowUpRight, ArrowDownLeft, Wallet, ShieldCheck, Lock, CreditCard, RefreshCw, Send, Download, PlusCircle, ChevronRight } from 'lucide-react';
+import { Link } from 'wouter';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 
@@ -344,8 +345,13 @@ export default function FinaPayDashboard() {
            {/* Right Column: Transactions */}
            <div className="lg:col-span-1">
               <Card className="h-full">
-                 <CardHeader>
+                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Recent Transactions</CardTitle>
+                    <Link href="/finapay/transactions">
+                      <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-700" data-testid="button-view-all-transactions">
+                        View All <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </Link>
                  </CardHeader>
                  <CardContent>
                     <div className="space-y-4">
