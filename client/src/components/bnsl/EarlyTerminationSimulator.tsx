@@ -28,9 +28,9 @@ export default function EarlyTerminationSimulator({
   const [simulationPrice, setSimulationPrice] = useState(currentGoldPrice);
   const [confirmed, setConfirmed] = useState(false);
 
-  // Constants
-  const ADMIN_FEE_PERCENT = 0.01; // 1%
-  const PENALTY_PERCENT = 0.05;   // 5%
+  // Use dynamic fee percentages from plan (captured from template at enrollment)
+  const adminFeePercent = (plan.adminFeePercent || 0.50) / 100;
+  const earlyTerminationFeePercent = (plan.earlyTerminationFeePercent || 2.00) / 100;
 
   // Calculations
   const totalSaleProceeds = plan.basePriceComponentUsd + plan.totalMarginComponentUsd;
@@ -44,8 +44,8 @@ export default function EarlyTerminationSimulator({
     : plan.basePriceComponentUsd;
 
   // Step 2: Deductions
-  const adminFee = totalSaleProceeds * ADMIN_FEE_PERCENT;
-  const earlyPenalty = totalSaleProceeds * PENALTY_PERCENT;
+  const adminFee = totalSaleProceeds * adminFeePercent;
+  const earlyPenalty = totalSaleProceeds * earlyTerminationFeePercent;
   const reimburseDisbursements = plan.paidMarginUsd || 0;
   
   const totalDeductions = adminFee + earlyPenalty + reimburseDisbursements;
@@ -98,12 +98,12 @@ export default function EarlyTerminationSimulator({
             </div>
 
             <div className="flex justify-between text-sm text-red-500">
-              <span>Admin Fee (1% of Proceeds)</span>
+              <span>Admin Fee ({(adminFeePercent * 100).toFixed(2)}% of Proceeds)</span>
               <span>-${adminFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
             </div>
             
             <div className="flex justify-between text-sm text-red-500">
-              <span>Early Termination Penalty (5%)</span>
+              <span>Early Termination Penalty ({(earlyTerminationFeePercent * 100).toFixed(2)}%)</span>
               <span>-${earlyPenalty.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
             </div>
 

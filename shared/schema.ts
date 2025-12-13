@@ -692,6 +692,10 @@ export const bnslPlans = pgTable("bnsl_plans", {
   planRiskLevel: riskLevelEnum("plan_risk_level").notNull().default('Low'),
   notes: text("notes"),
   
+  // Fee percentages (captured from template at enrollment)
+  earlyTerminationFeePercent: decimal("early_termination_fee_percent", { precision: 5, scale: 2 }).notNull().default('2.00'),
+  adminFeePercent: decimal("admin_fee_percent", { precision: 5, scale: 2 }).notNull().default('0.50'),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

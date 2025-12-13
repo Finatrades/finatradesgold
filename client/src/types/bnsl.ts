@@ -93,6 +93,10 @@ export type BnslPlan = {
   // risk:
   planRiskLevel: RiskLevel;
   notes?: string;
+  
+  // Fee percentages (from template at enrollment)
+  earlyTerminationFeePercent?: number;
+  adminFeePercent?: number;
 };
 
 export type AuditActionType =

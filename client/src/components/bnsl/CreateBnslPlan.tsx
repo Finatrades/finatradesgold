@@ -24,6 +24,8 @@ interface PlanTemplate {
   description?: string;
   minGoldGrams: string;
   maxGoldGrams: string;
+  earlyTerminationFeePercent: string;
+  adminFeePercent: string;
   variants: TemplateVariant[];
 }
 
@@ -139,7 +141,9 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
       totalMarginComponentUsd: totalMarginComponent,
       quarterlyMarginUsd: quarterlyMargin,
       startDate: new Date().toISOString(),
-      // Maturity date calc would happen in parent or here
+      // Fee percentages from template (captured at enrollment)
+      earlyTerminationFeePercent: currentTemplate ? parseFloat(currentTemplate.earlyTerminationFeePercent) : 2.00,
+      adminFeePercent: currentTemplate ? parseFloat(currentTemplate.adminFeePercent) : 0.50,
     };
 
     // Auto-generate and "store" PDF (in this mock, we just download it for the user as confirmation)
