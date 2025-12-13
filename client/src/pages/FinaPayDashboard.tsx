@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useFinaPay } from '@/context/FinaPayContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wallet, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, PlusCircle, RefreshCw, AlertCircle } from 'lucide-react';
+import { Wallet, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, PlusCircle, RefreshCw, AlertCircle, QrCode, Copy, Download } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
+import QRCode from 'qrcode';
 
 export default function FinaPayDashboard() {
   const { wallet: rawWallet, transactions, currentGoldPriceUsdPerGram, createTransaction, refreshWallet, loading } = useFinaPay();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
 
   const goldGrams = rawWallet ? parseFloat(rawWallet.goldGrams as string) || 0 : 0;
@@ -24,12 +27,48 @@ export default function FinaPayDashboard() {
   const [sendOpen, setSendOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   const [buyAmountUsd, setBuyAmountUsd] = useState('');
   const [sellGrams, setSellGrams] = useState('');
   const [sendGrams, setSendGrams] = useState('');
   const [recipient, setRecipient] = useState('');
   const [requestGrams, setRequestGrams] = useState('');
+
+  useEffect(() => {
+    if (qrOpen && user) {
+      const qrData = JSON.stringify({
+        platform: 'Finatrades',
+        type: 'wallet',
+        email: user.email,
+        finatradesId: user.finatradesId || user.id,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+      });
+      QRCode.toDataURL(qrData, {
+        width: 280,
+        margin: 2,
+        color: { dark: '#000000', light: '#ffffff' },
+      })
+        .then(setQrDataUrl)
+        .catch((err) => console.error('QR generation error:', err));
+    }
+  }, [qrOpen, user]);
+
+  const handleCopyWalletId = () => {
+    const walletId = user?.finatradesId || user?.email || '';
+    navigator.clipboard.writeText(walletId);
+    toast.success('Wallet ID copied to clipboard');
+  };
+
+  const handleDownloadQr = () => {
+    if (!qrDataUrl) return;
+    const link = document.createElement('a');
+    link.download = `finapay-qr-${user?.finatradesId || 'wallet'}.png`;
+    link.href = qrDataUrl;
+    link.click();
+    toast.success('QR code downloaded');
+  };
 
   const handleBuyGold = () => {
     const usd = parseFloat(buyAmountUsd);
@@ -177,7 +216,7 @@ export default function FinaPayDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <button
             onClick={() => setBuyOpen(true)}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
@@ -220,6 +259,17 @@ export default function FinaPayDashboard() {
               <ArrowDownLeft className="w-5 h-5 text-purple-600" />
             </div>
             <span className="text-sm font-medium">Request</span>
+          </button>
+
+          <button
+            onClick={() => setQrOpen(true)}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-qrcode"
+          >
+            <div className="p-3 bg-amber-100 rounded-full">
+              <QrCode className="w-5 h-5 text-amber-600" />
+            </div>
+            <span className="text-sm font-medium">QR Code</span>
           </button>
         </div>
 
@@ -418,6 +468,66 @@ export default function FinaPayDashboard() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDepositOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-center">Your Wallet QR Code</DialogTitle>
+              <DialogDescription className="text-center">
+                Share this QR code to receive gold payments
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col items-center py-6">
+              {qrDataUrl ? (
+                <div className="p-4 bg-white rounded-xl border border-border shadow-sm">
+                  <img 
+                    src={qrDataUrl} 
+                    alt="Wallet QR Code" 
+                    className="w-64 h-64"
+                    data-testid="img-qrcode"
+                  />
+                </div>
+              ) : (
+                <div className="w-64 h-64 bg-muted rounded-xl flex items-center justify-center">
+                  <QrCode className="w-16 h-16 text-muted-foreground animate-pulse" />
+                </div>
+              )}
+              
+              <div className="mt-6 w-full space-y-3">
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Wallet ID</p>
+                  <p className="font-mono text-sm font-medium truncate" data-testid="text-wallet-id">
+                    {user?.finatradesId || user?.email || 'Loading...'}
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={handleCopyWalletId}
+                    data-testid="button-copy-wallet-id"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy ID
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={handleDownloadQr}
+                    data-testid="button-download-qr"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" className="w-full" onClick={() => setQrOpen(false)}>Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
