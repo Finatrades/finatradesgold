@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, DollarSign, Globe, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2 } from 'lucide-react';
+import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -185,63 +185,117 @@ export default function FinaVault() {
           </div>
         </div>
         
-        {/* KPI Cards Strip */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-           {/* Card 1: Total Gold - Custom Style */}
-           <div className="p-6 rounded-2xl bg-secondary/10 border border-secondary/20 text-foreground relative overflow-hidden group">
-              <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Total Gold Value</span>
-                 <div className="p-2 bg-secondary/20 rounded-lg text-secondary">
-                    <Database className="w-4 h-4" />
-                 </div>
-              </div>
-              <div className="text-3xl font-bold mb-1 text-secondary">${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="text-sm opacity-50 font-medium">{totalVaultGold.toFixed(3)} g • {(totalVaultGold / 31.1035).toFixed(2)} oz</div>
-           </div>
-
-           {/* Card 2: Locked Gold */}
-           <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
-              <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Locked Value</span>
-                 <div className="p-2 bg-amber-400/20 rounded-lg text-amber-500">
-                    <TrendingUp className="w-4 h-4" />
-                 </div>
-              </div>
-              <div className="text-3xl font-bold mb-1">${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="text-sm opacity-50 font-medium space-y-0.5">
-                <div>0.00 g in BNSL</div>
-                {finabridgeLockedGrams > 0 && (
-                  <div className="flex items-center gap-1 text-amber-600">
-                    <Briefcase className="w-3 h-3" />
-                    {finabridgeLockedGrams.toFixed(3)} g in FinaBridge
+        {/* Professional Wallet Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          {/* Total Vault Holdings - Primary Card */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-6 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <Database className="w-5 h-5" />
                   </div>
-                )}
+                  <span className="text-sm font-medium text-white/80">Total Vault Holdings</span>
+                </div>
               </div>
-           </div>
+              
+              <div className="mb-1">
+                <span className="text-4xl font-bold tracking-tight">
+                  ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              <div className="text-white/70 text-sm font-medium">
+                {totalVaultGold.toFixed(4)} g Gold
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between text-sm">
+                <div>
+                  <span className="text-white/60">Troy Ounces</span>
+                  <p className="font-semibold">{(totalVaultGold / 31.1035).toFixed(4)} oz</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-white/60">Price/g</span>
+                  <p className="font-semibold">${goldPricePerGram.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-           {/* Card 3: Value USD */}
-           <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
-              <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Available Value (USD)</span>
-                 <div className="p-2 bg-green-500/20 rounded-lg text-green-600">
-                    <DollarSign className="w-4 h-4" />
-                 </div>
+          {/* Locked Assets */}
+          <div className="relative overflow-hidden rounded-2xl bg-white border border-border p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Briefcase className="w-5 h-5 text-amber-600" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Locked Assets</span>
               </div>
-              <div className="text-3xl font-bold text-secondary mb-1">${((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="text-sm opacity-50 font-medium">@ ${goldPricePerGram}/g</div>
-           </div>
+            </div>
+            
+            <div className="mb-1">
+              <span className="text-3xl font-bold text-amber-600 tracking-tight">
+                ${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            
+            <div className="text-muted-foreground text-sm font-medium">
+              {finabridgeLockedGrams.toFixed(4)} g Gold
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-border space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">BNSL Locked</span>
+                <span className="font-medium">$0.00</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Trade Finance</span>
+                <span className="font-medium">${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
 
-           {/* Card 4: Value AED */}
-           <div className="p-6 rounded-2xl bg-white shadow-sm border border-border text-foreground relative overflow-hidden">
-              <div className="flex justify-between items-start mb-2">
-                 <span className="text-sm font-medium opacity-60">Available Value (AED)</span>
-                 <div className="p-2 bg-blue-500/20 rounded-lg text-blue-600">
-                    <Globe className="w-4 h-4" />
-                 </div>
+          {/* Available Balance */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-medium text-white/70">Available Balance</span>
+                </div>
               </div>
-              <div className="text-3xl font-bold text-foreground mb-1">{((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram * 3.67).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="text-sm opacity-50 font-medium">@ {(goldPricePerGram * 3.67).toFixed(2)}/g</div>
-           </div>
+              
+              <div className="mb-1">
+                <span className="text-3xl font-bold tracking-tight">
+                  ${((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              <div className="text-white/60 text-sm font-medium">
+                {(totalVaultGold - finabridgeLockedGrams).toFixed(4)} g Gold
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-white/20 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">In AED</span>
+                  <span className="font-medium">{((totalVaultGold - finabridgeLockedGrams) * goldPricePerGram * 3.67).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED</span>
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-white/60">Rate</span>
+                  <span className="font-medium text-green-400">1 USD = 3.67 AED</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
         </div>
 
         {/* Main Content */}

@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet as WalletType } from '@/types/finapay';
-import { Wallet, DollarSign, Lock, Briefcase, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Wallet, TrendingUp, Lock, ArrowUpRight } from 'lucide-react';
 
 interface WalletBalanceCardsProps {
   wallet: WalletType;
@@ -9,99 +8,124 @@ interface WalletBalanceCardsProps {
 
 export default function WalletBalanceCards({ wallet }: WalletBalanceCardsProps) {
   const goldValueUsd = wallet.goldBalanceGrams * wallet.goldPriceUsdPerGram;
-  
-  // Total Available (Liquid) = USD Balance + Liquid Gold
   const totalAvailableUsd = wallet.usdBalance + goldValueUsd;
-  
-  // Total Locked = BNSL + FinaBridge
   const totalLockedUsd = wallet.bnslLockedUsd + wallet.finaBridgeLockedUsd;
   const totalLockedGrams = totalLockedUsd / wallet.goldPriceUsdPerGram;
-
-  // Grand Total
   const grandTotalUsd = totalAvailableUsd + totalLockedUsd;
   const grandTotalGrams = grandTotalUsd / wallet.goldPriceUsdPerGram;
 
   return (
-    <Card className="bg-white shadow-sm border border-border overflow-hidden relative">
-      <div className="absolute top-0 right-0 p-4 opacity-5">
-        <Wallet className="w-32 h-32 text-primary" />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      {/* Available Balance - Primary Card */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-6 text-white shadow-lg">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-white/80">Available Balance</span>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-white/60" />
+          </div>
+          
+          <div className="mb-1">
+            <span className="text-4xl font-bold tracking-tight">
+              ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          
+          <div className="text-white/70 text-sm font-medium">
+            {wallet.goldBalanceGrams.toFixed(4)} g Gold
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between text-sm">
+            <div>
+              <span className="text-white/60">Cash</span>
+              <p className="font-semibold">${wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            </div>
+            <div className="text-right">
+              <span className="text-white/60">Gold Value</span>
+              <p className="font-semibold">${goldValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Locked Assets */}
+      <div className="relative overflow-hidden rounded-2xl bg-white border border-border p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Lock className="w-5 h-5 text-amber-600" />
+            </div>
+            <span className="text-sm font-medium text-muted-foreground">Locked Assets</span>
+          </div>
+        </div>
+        
+        <div className="mb-1">
+          <span className="text-3xl font-bold text-amber-600 tracking-tight">
+            ${totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        
+        <div className="text-muted-foreground text-sm font-medium">
+          {totalLockedGrams.toFixed(4)} g Gold
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-border space-y-2 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">BNSL Locked</span>
+            <span className="font-medium">${wallet.bnslLockedUsd.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Trade Finance</span>
+            <span className="font-medium">${wallet.finaBridgeLockedUsd.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Total Net Worth */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-white/70">Total Net Worth</span>
+            </div>
+          </div>
+          
+          <div className="mb-1">
+            <span className="text-3xl font-bold tracking-tight">
+              ${grandTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          
+          <div className="text-white/60 text-sm font-medium">
+            {grandTotalGrams.toFixed(4)} g Gold
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-white/20 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-white/60">Available</span>
+              <span className="font-medium text-green-400">${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-white/60">Locked</span>
+              <span className="font-medium text-amber-400">${totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+        </div>
       </div>
       
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Wallet className="w-5 h-5" />
-            </div>
-            FinaPay Wallet
-          </CardTitle>
-        </div>
-      </CardHeader>
-      
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Available Balance */}
-          <div className="bg-muted p-4 rounded-xl border border-border">
-            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Available Balance</p>
-            <div className="text-2xl font-bold text-foreground">
-              ${totalAvailableUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-            </div>
-            <div className="flex flex-col gap-1 mt-1">
-              <p className="text-sm text-muted-foreground">
-                <span className="text-secondary font-semibold">{wallet.goldBalanceGrams.toFixed(3)} g</span> Gold
-              </p>
-              <p className="text-sm text-muted-foreground">
-                <span className="text-foreground font-semibold">${wallet.usdBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> USD
-              </p>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-2">
-              Funds available for trading, spending, or transfer.
-            </p>
-          </div>
-
-          {/* Locked Funds */}
-          <div className="bg-muted p-4 rounded-xl border border-border">
-            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
-              Locked Assets
-            </p>
-            <div className="text-2xl font-bold text-amber-500">
-              ${totalLockedUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-            </div>
-             <p className="text-xs text-amber-500/60 mb-2">
-                ≈ {totalLockedGrams.toFixed(3)} g Gold
-             </p>
-            <div className="flex flex-col gap-1 mt-1">
-               <div className="flex justify-between items-center text-sm text-amber-500/80">
-                 <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> BNSL:</span>
-                 <span>${wallet.bnslLockedUsd.toLocaleString()} <span className="text-xs opacity-70">({(wallet.bnslLockedUsd / wallet.goldPriceUsdPerGram).toFixed(2)} g)</span></span>
-               </div>
-               <div className="flex justify-between items-center text-sm text-amber-500/80">
-                 <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> Trade:</span>
-                 <span>${wallet.finaBridgeLockedUsd.toLocaleString()} <span className="text-xs opacity-70">({(wallet.finaBridgeLockedUsd / wallet.goldPriceUsdPerGram).toFixed(2)} g)</span></span>
-               </div>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-2">
-              Capital currently deployed in active financial products.
-            </p>
-          </div>
-
-          {/* Total Value */}
-          <div className="bg-muted p-4 rounded-xl border border-border">
-             <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Total Net Worth</p>
-             <div className="text-2xl font-bold text-secondary">
-               ${grandTotalUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-             </div>
-             <p className="text-sm text-muted-foreground mt-1">
-               <span className="text-secondary font-semibold">{grandTotalGrams.toFixed(3)} g</span> Total Gold Value
-             </p>
-             <p className="text-[10px] text-muted-foreground mt-2">
-               Combined value of all available and locked assets across the platform.
-             </p>
-          </div>
-
-        </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
