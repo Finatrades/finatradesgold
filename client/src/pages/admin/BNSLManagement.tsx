@@ -396,36 +396,78 @@ export default function BNSLManagement() {
   const [createOpen, setCreateOpen] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [planVariants, setPlanVariants] = useState<{tenorMonths: number; marginRatePercent: string}[]>([]);
+  const [loadingVariants, setLoadingVariants] = useState(false);
   const [newPlanData, setNewPlanData] = useState({
     userId: '',
     participantName: '',
     country: 'Switzerland',
-    tenorMonths: '12',
+    tenorMonths: '',
+    marginRate: '',
     goldSoldGrams: '',
     enrollmentPrice: currentGoldPrice.toString()
   });
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
   
-  // Fetch users when create dialog opens
+  // Fetch users and variants when create dialog opens
   useEffect(() => {
-    if (createOpen && users.length === 0) {
-      setLoadingUsers(true);
-      import('@/lib/queryClient').then(({ apiRequest }) => {
-        apiRequest('GET', '/api/admin/users')
-          .then(res => res.json())
-          .then(data => {
-            setUsers(data.users || []);
-            setLoadingUsers(false);
-          })
-          .catch((err) => {
-            console.error('Failed to fetch users:', err);
-            toast.error('Failed to load users');
-            setLoadingUsers(false);
-          });
-      });
+    if (createOpen) {
+      // Fetch users
+      if (users.length === 0) {
+        setLoadingUsers(true);
+        import('@/lib/queryClient').then(({ apiRequest }) => {
+          apiRequest('GET', '/api/admin/users')
+            .then(res => res.json())
+            .then(data => {
+              setUsers(data.users || []);
+              setLoadingUsers(false);
+            })
+            .catch((err) => {
+              console.error('Failed to fetch users:', err);
+              toast.error('Failed to load users');
+              setLoadingUsers(false);
+            });
+        });
+      }
+      
+      // Fetch plan variants from templates
+      if (planVariants.length === 0) {
+        setLoadingVariants(true);
+        import('@/lib/queryClient').then(({ apiRequest }) => {
+          apiRequest('GET', '/api/admin/bnsl/templates')
+            .then(res => res.json())
+            .then(data => {
+              const templates = data.templates || [];
+              const allVariants: {tenorMonths: number; marginRatePercent: string}[] = [];
+              templates.forEach((t: any) => {
+                if (t.variants && t.variants.length > 0) {
+                  t.variants.forEach((v: any) => {
+                    allVariants.push({ tenorMonths: v.tenorMonths, marginRatePercent: v.marginRatePercent });
+                  });
+                }
+              });
+              // Sort by tenor
+              allVariants.sort((a, b) => a.tenorMonths - b.tenorMonths);
+              setPlanVariants(allVariants);
+              // Auto-select first variant
+              if (allVariants.length > 0) {
+                setNewPlanData(prev => ({
+                  ...prev,
+                  tenorMonths: allVariants[0].tenorMonths.toString(),
+                  marginRate: allVariants[0].marginRatePercent
+                }));
+              }
+              setLoadingVariants(false);
+            })
+            .catch((err) => {
+              console.error('Failed to fetch variants:', err);
+              setLoadingVariants(false);
+            });
+        });
+      }
     }
-  }, [createOpen, users.length]);
+  }, [createOpen, users.length, planVariants.length]);
 
   const handleOpenPlan = (id: string) => {
     setSelectedPlanId(id);
@@ -445,7 +487,7 @@ export default function BNSLManagement() {
   };
 
   const handleCreatePlan = async () => {
-    if (!newPlanData.userId || !newPlanData.goldSoldGrams || !newPlanData.enrollmentPrice) {
+    if (!newPlanData.userId || !newPlanData.goldSoldGrams || !newPlanData.enrollmentPrice || !newPlanData.tenorMonths || !newPlanData.marginRate) {
       toast.error("Please select a user and fill in all fields");
       return;
     }
@@ -454,10 +496,8 @@ export default function BNSLManagement() {
     const goldGrams = parseFloat(newPlanData.goldSoldGrams);
     const price = parseFloat(newPlanData.enrollmentPrice);
     
-    // Rates from prompt: 12m=8%, 24m=10%, 36m=12%
-    let rate = 8;
-    if (tenor === 24) rate = 10;
-    if (tenor === 36) rate = 12;
+    // Use rate from selected variant (dynamic from templates)
+    const rate = parseFloat(newPlanData.marginRate);
 
     const basePriceUsd = goldGrams * price;
     const totalMarginUsd = basePriceUsd * (rate / 100) * (tenor / 12);
@@ -512,7 +552,8 @@ export default function BNSLManagement() {
         userId: '',
         participantName: '',
         country: 'Switzerland',
-        tenorMonths: '12',
+        tenorMonths: planVariants.length > 0 ? planVariants[0].tenorMonths.toString() : '',
+        marginRate: planVariants.length > 0 ? planVariants[0].marginRatePercent : '',
         goldSoldGrams: '',
         enrollmentPrice: currentGoldPrice.toString()
       });
@@ -739,16 +780,37 @@ export default function BNSLManagement() {
                 <div className="grid grid-cols-2 gap-4">
                    <div>
                       <Label>Tenor</Label>
-                      <Select value={newPlanData.tenorMonths} onValueChange={(v) => setNewPlanData({...newPlanData, tenorMonths: v})}>
-                         <SelectTrigger>
-                            <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="12">12 Months (8%)</SelectItem>
-                            <SelectItem value="24">24 Months (10%)</SelectItem>
-                            <SelectItem value="36">36 Months (12%)</SelectItem>
-                         </SelectContent>
-                      </Select>
+                      {loadingVariants ? (
+                        <div className="flex items-center gap-2 py-2 text-gray-500">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading options...
+                        </div>
+                      ) : planVariants.length === 0 ? (
+                        <p className="text-sm text-red-500 py-2">No plan variants configured. Add variants in Templates tab.</p>
+                      ) : (
+                        <Select 
+                          value={newPlanData.tenorMonths} 
+                          onValueChange={(v) => {
+                            const variant = planVariants.find(pv => pv.tenorMonths.toString() === v);
+                            setNewPlanData({
+                              ...newPlanData, 
+                              tenorMonths: v,
+                              marginRate: variant?.marginRatePercent || ''
+                            });
+                          }}
+                        >
+                           <SelectTrigger>
+                              <SelectValue placeholder="Select tenor..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                              {planVariants.map((variant) => (
+                                <SelectItem key={variant.tenorMonths} value={variant.tenorMonths.toString()}>
+                                  {variant.tenorMonths} Months ({variant.marginRatePercent}%)
+                                </SelectItem>
+                              ))}
+                           </SelectContent>
+                        </Select>
+                      )}
                    </div>
                    <div>
                       <Label>Gold To Lock (g)</Label>
