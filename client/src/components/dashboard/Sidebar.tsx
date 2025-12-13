@@ -20,7 +20,8 @@ import {
   Compass,
   FileText,
   Briefcase,
-  Send
+  Send,
+  Home
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -62,6 +63,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       defaultOpen: true,
       items: [
         { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
+        { icon: <Home className="w-5 h-5" />, label: 'Home Page', href: '/' },
       ]
     },
     {
