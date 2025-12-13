@@ -14,7 +14,13 @@ import {
   ShieldCheck,
   ChevronDown,
   ArrowLeftRight,
-  Receipt
+  Receipt,
+  Coins,
+  History,
+  Compass,
+  FileText,
+  Briefcase,
+  Send
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -40,7 +46,9 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'Overview': true,
     'Money Movement': true,
-    'Gold Services': true,
+    'FinaVault': true,
+    'BNSL': true,
+    'FinaBridge': true,
     'Account': false
   });
 
@@ -65,14 +73,30 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       ]
     },
     {
-      title: 'Gold Services',
+      title: 'FinaVault',
       defaultOpen: true,
       items: [
-        { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
-        { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL Plans', href: '/bnsl' },
-        ...(accountType === 'business' ? [{ icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' }] : []),
+        { icon: <Database className="w-5 h-5" />, label: 'My Holdings', href: '/finavault' },
+        { icon: <History className="w-5 h-5" />, label: 'Vault History', href: '/finavault/history' },
       ]
     },
+    {
+      title: 'BNSL',
+      defaultOpen: true,
+      items: [
+        { icon: <TrendingUp className="w-5 h-5" />, label: 'My Plans', href: '/bnsl' },
+        { icon: <Compass className="w-5 h-5" />, label: 'Explore Plans', href: '/bnsl/explore' },
+      ]
+    },
+    ...(accountType === 'business' ? [{
+      title: 'FinaBridge',
+      defaultOpen: true,
+      items: [
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Overview', href: '/finabridge' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Trade Requests', href: '/finabridge/requests' },
+        { icon: <Send className="w-5 h-5" />, label: 'Proposals', href: '/finabridge/proposals' },
+      ]
+    }] : []),
     {
       title: 'Account',
       defaultOpen: false,
