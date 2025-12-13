@@ -54,7 +54,6 @@ import FeeManagement from "@/pages/admin/FeeManagement";
 import FinancialReports from "@/pages/admin/FinancialReports";
 import BNSLExplore from "@/pages/BNSLExplore";
 
-import FinaPayDashboard from "@/pages/FinaPayDashboard";
 import FinaPayTransactions from "@/pages/FinaPayTransactions";
 import { FinaPayProvider } from "@/context/FinaPayContext";
 
