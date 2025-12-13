@@ -396,7 +396,7 @@ export default function BNSLManagement() {
   const [createOpen, setCreateOpen] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [planVariants, setPlanVariants] = useState<{tenorMonths: number; marginRatePercent: string}[]>([]);
+  const [planVariants, setPlanVariants] = useState<{tenorMonths: number; marginRatePercent: string; earlyTerminationFeePercent: string; adminFeePercent: string}[]>([]);
   const [loadingVariants, setLoadingVariants] = useState(false);
   const [newPlanData, setNewPlanData] = useState({
     userId: '',
@@ -405,7 +405,9 @@ export default function BNSLManagement() {
     tenorMonths: '',
     marginRate: '',
     goldSoldGrams: '',
-    enrollmentPrice: currentGoldPrice.toString()
+    enrollmentPrice: currentGoldPrice.toString(),
+    earlyTerminationFeePercent: '2.00',
+    adminFeePercent: '0.50'
   });
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
@@ -439,11 +441,16 @@ export default function BNSLManagement() {
             .then(res => res.json())
             .then(data => {
               const templates = data.templates || [];
-              const allVariants: {tenorMonths: number; marginRatePercent: string}[] = [];
+              const allVariants: {tenorMonths: number; marginRatePercent: string; earlyTerminationFeePercent: string; adminFeePercent: string}[] = [];
               templates.forEach((t: any) => {
                 if (t.variants && t.variants.length > 0) {
                   t.variants.forEach((v: any) => {
-                    allVariants.push({ tenorMonths: v.tenorMonths, marginRatePercent: v.marginRatePercent });
+                    allVariants.push({ 
+                      tenorMonths: v.tenorMonths, 
+                      marginRatePercent: v.marginRatePercent,
+                      earlyTerminationFeePercent: t.earlyTerminationFeePercent || '2.00',
+                      adminFeePercent: t.adminFeePercent || '0.50'
+                    });
                   });
                 }
               });
@@ -455,7 +462,9 @@ export default function BNSLManagement() {
                 setNewPlanData(prev => ({
                   ...prev,
                   tenorMonths: allVariants[0].tenorMonths.toString(),
-                  marginRate: allVariants[0].marginRatePercent
+                  marginRate: allVariants[0].marginRatePercent,
+                  earlyTerminationFeePercent: allVariants[0].earlyTerminationFeePercent,
+                  adminFeePercent: allVariants[0].adminFeePercent
                 }));
               }
               setLoadingVariants(false);
@@ -531,7 +540,9 @@ export default function BNSLManagement() {
       paidMarginUsd: 0,
       paidMarginGrams: 0,
       remainingMarginUsd: totalMarginUsd,
-      planRiskLevel: 'Low'
+      planRiskLevel: 'Low',
+      earlyTerminationFeePercent: parseFloat(newPlanData.earlyTerminationFeePercent),
+      adminFeePercent: parseFloat(newPlanData.adminFeePercent)
     };
 
     const createdPlan = await addPlan(planDataForApi);
@@ -555,7 +566,9 @@ export default function BNSLManagement() {
         tenorMonths: planVariants.length > 0 ? planVariants[0].tenorMonths.toString() : '',
         marginRate: planVariants.length > 0 ? planVariants[0].marginRatePercent : '',
         goldSoldGrams: '',
-        enrollmentPrice: currentGoldPrice.toString()
+        enrollmentPrice: currentGoldPrice.toString(),
+        earlyTerminationFeePercent: planVariants.length > 0 ? planVariants[0].earlyTerminationFeePercent : '2.00',
+        adminFeePercent: planVariants.length > 0 ? planVariants[0].adminFeePercent : '0.50'
       });
       
       await refreshAllPlans();
@@ -795,7 +808,9 @@ export default function BNSLManagement() {
                             setNewPlanData({
                               ...newPlanData, 
                               tenorMonths: v,
-                              marginRate: variant?.marginRatePercent || ''
+                              marginRate: variant?.marginRatePercent || '',
+                              earlyTerminationFeePercent: variant?.earlyTerminationFeePercent || '2.00',
+                              adminFeePercent: variant?.adminFeePercent || '0.50'
                             });
                           }}
                         >
