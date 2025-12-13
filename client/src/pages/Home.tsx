@@ -357,40 +357,77 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how-it-works" className="py-24 bg-gradient-to-b from-purple-50/50 to-white" data-testid="section-how-it-works">
+      <section id="how-it-works" className="py-24 bg-gradient-to-b from-purple-50/50 to-white overflow-hidden" data-testid="section-how-it-works">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
-              ENTERPRISE WORKFLOW
+              {accountType === 'personal' ? 'YOUR JOURNEY' : 'ENTERPRISE WORKFLOW'}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               How It Works
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              A streamlined process designed for enterprise compliance and efficiency
+              {accountType === 'personal' 
+                ? 'A simple journey from registration to gold-backed wealth management'
+                : 'A streamlined process designed for enterprise compliance and efficiency'}
             </p>
           </div>
 
-          <div className="relative max-w-6xl mx-auto">
-            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-[#E91E8C] to-[#9333EA] -translate-y-1/2 rounded-full" style={{ top: '40px' }} />
-            
-            <div className={`grid grid-cols-2 md:grid-cols-3 gap-6 ${accountType === 'personal' ? 'lg:grid-cols-6' : 'lg:grid-cols-7'}`}>
-              {workflowSteps.map((step, index) => (
+          <div className="relative max-w-5xl mx-auto">
+            {workflowSteps.map((step, index) => {
+              const isEven = index % 2 === 0;
+              const isLast = index === workflowSteps.length - 1;
+              
+              return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="text-center relative"
+                  initial={{ opacity: 0, x: isEven ? -50 : 50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.5, delay: index * 0.15 }}
+                  className={`flex items-start gap-6 mb-8 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
                 >
-                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#E91E8C] to-[#9333EA] flex items-center justify-center mb-4 relative z-10 shadow-lg">
-                    <div className="text-white font-bold text-xl">{step.number}</div>
+                  <div className={`flex-1 ${isEven ? 'text-right' : 'text-left'}`}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.15 + 0.2 }}
+                      className={`inline-block bg-white rounded-2xl p-6 shadow-lg border border-gray-100 max-w-md ${isEven ? 'ml-auto' : 'mr-auto'}`}
+                    >
+                      <h4 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h4>
+                      <p className="text-gray-600 text-sm">{step.description}</p>
+                    </motion.div>
                   </div>
-                  <h4 className="text-sm font-semibold text-gray-900">{step.title}</h4>
+                  
+                  <div className="relative flex flex-col items-center">
+                    <motion.div 
+                      className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E91E8C] to-[#9333EA] flex items-center justify-center shadow-lg z-10"
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ type: "spring", delay: index * 0.15, duration: 0.5 }}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <span className="text-white font-bold text-xl">{step.number}</span>
+                    </motion.div>
+                    
+                    {!isLast && (
+                      <motion.div 
+                        className="w-1 h-24 bg-gradient-to-b from-[#E91E8C] to-[#9333EA] mt-2"
+                        initial={{ scaleY: 0 }}
+                        whileInView={{ scaleY: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: index * 0.15 + 0.3, duration: 0.4 }}
+                        style={{ originY: 0 }}
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1" />
                 </motion.div>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
           <div className="text-center mt-12">
@@ -400,7 +437,7 @@ export default function Home() {
                 className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white rounded-full px-8"
                 data-testid="button-explore-business"
               >
-                Explore Business Platform
+                {accountType === 'personal' ? 'Start Your Journey' : 'Explore Business Platform'}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
