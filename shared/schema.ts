@@ -93,6 +93,123 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 // ============================================
+// EMPLOYEES & ROLE-BASED ACCESS
+// ============================================
+
+export const employeeRoleEnum = pgEnum('employee_role', [
+  'super_admin', 'admin', 'manager', 'support', 'finance', 'compliance'
+]);
+
+export const employeeStatusEnum = pgEnum('employee_status', ['active', 'inactive', 'suspended']);
+
+export const employees = pgTable("employees", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  employeeId: varchar("employee_id", { length: 20 }).notNull().unique(),
+  role: employeeRoleEnum("role").notNull().default('support'),
+  department: varchar("department", { length: 100 }),
+  jobTitle: varchar("job_title", { length: 255 }),
+  status: employeeStatusEnum("status").notNull().default('active'),
+  permissions: json("permissions").$type<string[]>(),
+  hiredAt: timestamp("hired_at").notNull().defaultNow(),
+  lastActiveAt: timestamp("last_active_at"),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    permissions: z.array(z.string()).nullable().optional(),
+    department: z.string().nullable().optional(),
+    jobTitle: z.string().nullable().optional(),
+    lastActiveAt: z.date().nullable().optional(),
+    createdBy: z.string().nullable().optional(),
+    hiredAt: z.date().optional(),
+  });
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type Employee = typeof employees.$inferSelect;
+
+// Role Permissions - Default permissions for each role
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  role: employeeRoleEnum("role").notNull().unique(),
+  permissions: json("permissions").$type<string[]>().notNull(),
+  updatedBy: varchar("updated_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    permissions: z.array(z.string()),
+    updatedBy: z.string().nullable().optional(),
+  });
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+
+// Available permissions list
+export const AVAILABLE_PERMISSIONS = [
+  'manage_users',
+  'view_users',
+  'manage_employees',
+  'manage_kyc',
+  'view_kyc',
+  'manage_transactions',
+  'view_transactions',
+  'manage_withdrawals',
+  'manage_deposits',
+  'manage_vault',
+  'view_vault',
+  'manage_bnsl',
+  'view_bnsl',
+  'manage_finabridge',
+  'view_finabridge',
+  'manage_support',
+  'view_support',
+  'manage_cms',
+  'view_cms',
+  'manage_settings',
+  'view_reports',
+  'generate_reports',
+  'manage_fees',
+] as const;
+
+export type Permission = typeof AVAILABLE_PERMISSIONS[number];
+
+// Default permissions by role
+export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
+  super_admin: [...AVAILABLE_PERMISSIONS],
+  admin: [
+    'manage_users', 'view_users', 'manage_kyc', 'view_kyc',
+    'manage_transactions', 'view_transactions', 'manage_withdrawals', 'manage_deposits',
+    'manage_vault', 'view_vault', 'manage_bnsl', 'view_bnsl',
+    'manage_finabridge', 'view_finabridge', 'manage_support', 'view_support',
+    'view_reports', 'manage_fees'
+  ],
+  manager: [
+    'view_users', 'manage_kyc', 'view_kyc',
+    'view_transactions', 'manage_vault', 'view_vault',
+    'view_bnsl', 'view_finabridge', 'view_support', 'view_reports'
+  ],
+  support: [
+    'view_users', 'view_kyc', 'view_transactions',
+    'manage_support', 'view_support'
+  ],
+  finance: [
+    'view_transactions', 'manage_transactions',
+    'manage_withdrawals', 'manage_deposits',
+    'view_reports', 'generate_reports', 'manage_fees'
+  ],
+  compliance: [
+    'view_users', 'manage_kyc', 'view_kyc',
+    'view_transactions', 'view_reports', 'generate_reports'
+  ],
+};
+
+// ============================================
 // KYC
 // ============================================
 

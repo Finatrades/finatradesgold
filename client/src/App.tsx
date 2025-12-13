@@ -59,6 +59,7 @@ import { FinaPayProvider } from "@/context/FinaPayContext";
 
 import AdminChat from "@/pages/admin/AdminChat";
 import CMSManagement from "@/pages/admin/CMSManagement";
+import EmployeeManagement from "@/pages/admin/EmployeeManagement";
 import PaymentGatewayManagement from "@/pages/admin/PaymentGatewayManagement";
 
 function Router() {
@@ -93,6 +94,7 @@ function Router() {
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/chat" component={AdminChat} />
       <Route path="/admin/cms" component={CMSManagement} />
+      <Route path="/admin/employees" component={EmployeeManagement} />
       <Route path="/admin/payment-gateways" component={PaymentGatewayManagement} />
       
       {/* Renamed/Consolidated Modules */}

@@ -12,6 +12,7 @@ import {
   vaultDepositRequests, vaultWithdrawalRequests,
   binanceTransactions,
   brandingSettings,
+  employees, rolePermissions,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -48,7 +49,9 @@ import {
   type VaultDepositRequest, type InsertVaultDepositRequest,
   type VaultWithdrawalRequest, type InsertVaultWithdrawalRequest,
   type BinanceTransaction, type InsertBinanceTransaction,
-  type BrandingSettings, type InsertBrandingSettings
+  type BrandingSettings, type InsertBrandingSettings,
+  type Employee, type InsertEmployee,
+  type RolePermission, type InsertRolePermission
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -355,6 +358,22 @@ export interface IStorage {
   getBrandingSettings(): Promise<BrandingSettings | undefined>;
   getOrCreateBrandingSettings(): Promise<BrandingSettings>;
   updateBrandingSettings(updates: Partial<BrandingSettings>): Promise<BrandingSettings | undefined>;
+  
+  // Employees
+  getEmployee(id: string): Promise<Employee | undefined>;
+  getEmployeeByUserId(userId: string): Promise<Employee | undefined>;
+  getEmployeeByEmployeeId(employeeId: string): Promise<Employee | undefined>;
+  getAllEmployees(): Promise<Employee[]>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: string, updates: Partial<Employee>): Promise<Employee | undefined>;
+  deleteEmployee(id: string): Promise<boolean>;
+  generateEmployeeId(): Promise<string>;
+  
+  // Role Permissions
+  getRolePermission(role: string): Promise<RolePermission | undefined>;
+  getAllRolePermissions(): Promise<RolePermission[]>;
+  createRolePermission(permission: InsertRolePermission): Promise<RolePermission>;
+  updateRolePermission(id: string, updates: Partial<RolePermission>): Promise<RolePermission | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1441,6 +1460,73 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getOrCreateBrandingSettings();
     const [settings] = await db.update(brandingSettings).set({ ...updates, updatedAt: new Date() }).where(eq(brandingSettings.id, existing.id)).returning();
     return settings || undefined;
+  }
+
+  // ============================================
+  // EMPLOYEES
+  // ============================================
+
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+    return employee || undefined;
+  }
+
+  async getEmployeeByUserId(userId: string): Promise<Employee | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.userId, userId));
+    return employee || undefined;
+  }
+
+  async getEmployeeByEmployeeId(employeeId: string): Promise<Employee | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.employeeId, employeeId));
+    return employee || undefined;
+  }
+
+  async getAllEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees).orderBy(desc(employees.createdAt));
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const [newEmployee] = await db.insert(employees).values(employee).returning();
+    return newEmployee;
+  }
+
+  async updateEmployee(id: string, updates: Partial<Employee>): Promise<Employee | undefined> {
+    const [employee] = await db.update(employees).set({ ...updates, updatedAt: new Date() }).where(eq(employees.id, id)).returning();
+    return employee || undefined;
+  }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    const result = await db.delete(employees).where(eq(employees.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async generateEmployeeId(): Promise<string> {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 4).toUpperCase();
+    return `EMP-${timestamp}${random}`;
+  }
+
+  // ============================================
+  // ROLE PERMISSIONS
+  // ============================================
+
+  async getRolePermission(role: string): Promise<RolePermission | undefined> {
+    const [permission] = await db.select().from(rolePermissions).where(sql`${rolePermissions.role} = ${role}`);
+    return permission || undefined;
+  }
+
+  async getAllRolePermissions(): Promise<RolePermission[]> {
+    return await db.select().from(rolePermissions).orderBy(rolePermissions.role);
+  }
+
+  async createRolePermission(permission: InsertRolePermission): Promise<RolePermission> {
+    const [newPermission] = await db.insert(rolePermissions).values(permission).returning();
+    return newPermission;
+  }
+
+  async updateRolePermission(id: string, updates: Partial<RolePermission>): Promise<RolePermission | undefined> {
+    const [permission] = await db.update(rolePermissions).set({ ...updates, updatedAt: new Date() }).where(eq(rolePermissions.id, id)).returning();
+    return permission || undefined;
   }
 }
 

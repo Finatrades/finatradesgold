@@ -779,6 +779,260 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // ADMIN - EMPLOYEE MANAGEMENT
+  // ============================================================================
+  
+  // Get all employees
+  app.get("/api/admin/employees", async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      
+      // Enrich with user details
+      const enrichedEmployees = await Promise.all(
+        employees.map(async (emp) => {
+          const user = emp.userId ? await storage.getUser(emp.userId) : null;
+          return {
+            ...emp,
+            user: user ? {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              profilePhoto: user.profilePhoto
+            } : null
+          };
+        })
+      );
+      
+      res.json({ employees: enrichedEmployees });
+    } catch (error) {
+      console.error("Failed to get employees:", error);
+      res.status(400).json({ message: "Failed to get employees" });
+    }
+  });
+  
+  // Get single employee
+  app.get("/api/admin/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const user = employee.userId ? await storage.getUser(employee.userId) : null;
+      
+      res.json({ 
+        employee: {
+          ...employee,
+          user: user ? {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profilePhoto: user.profilePhoto
+          } : null
+        }
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get employee" });
+    }
+  });
+  
+  // Create new employee
+  app.post("/api/admin/employees", async (req, res) => {
+    try {
+      const { userId, role, department, jobTitle, permissions, createdBy } = req.body;
+      
+      // Check if user is already an employee
+      if (userId) {
+        const existingEmployee = await storage.getEmployeeByUserId(userId);
+        if (existingEmployee) {
+          return res.status(400).json({ message: "User is already an employee" });
+        }
+        
+        // Update user role to admin
+        await storage.updateUser(userId, { role: 'admin' });
+      }
+      
+      // Generate employee ID
+      const employeeId = await storage.generateEmployeeId();
+      
+      const employee = await storage.createEmployee({
+        userId,
+        employeeId,
+        role: role || 'support',
+        department,
+        jobTitle,
+        permissions: permissions || [],
+        status: 'active',
+        createdBy
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "employee",
+        entityId: employee.id,
+        actionType: "create",
+        actor: createdBy || "admin",
+        actorRole: "admin",
+        details: `Employee ${employeeId} created with role ${role}`,
+      });
+      
+      res.json({ employee });
+    } catch (error) {
+      console.error("Failed to create employee:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create employee" });
+    }
+  });
+  
+  // Update employee
+  app.patch("/api/admin/employees/:id", async (req, res) => {
+    try {
+      const { role, department, jobTitle, status, permissions, updatedBy } = req.body;
+      
+      const existingEmployee = await storage.getEmployee(req.params.id);
+      if (!existingEmployee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const updates: any = {};
+      if (role !== undefined) updates.role = role;
+      if (department !== undefined) updates.department = department;
+      if (jobTitle !== undefined) updates.jobTitle = jobTitle;
+      if (status !== undefined) updates.status = status;
+      if (permissions !== undefined) updates.permissions = permissions;
+      
+      const employee = await storage.updateEmployee(req.params.id, updates);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "employee",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: updatedBy || "admin",
+        actorRole: "admin",
+        details: `Employee ${existingEmployee.employeeId} updated`,
+      });
+      
+      res.json({ employee });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update employee" });
+    }
+  });
+  
+  // Deactivate employee (soft delete)
+  app.post("/api/admin/employees/:id/deactivate", async (req, res) => {
+    try {
+      const { adminId, reason } = req.body;
+      
+      const existingEmployee = await storage.getEmployee(req.params.id);
+      if (!existingEmployee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const employee = await storage.updateEmployee(req.params.id, { status: 'inactive' });
+      
+      // If employee has a user account, update their role back to user
+      if (existingEmployee.userId) {
+        await storage.updateUser(existingEmployee.userId, { role: 'user' });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "employee",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `Employee ${existingEmployee.employeeId} deactivated. Reason: ${reason || 'Not specified'}`,
+      });
+      
+      res.json({ message: "Employee deactivated", employee });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to deactivate employee" });
+    }
+  });
+  
+  // Reactivate employee
+  app.post("/api/admin/employees/:id/activate", async (req, res) => {
+    try {
+      const { adminId } = req.body;
+      
+      const existingEmployee = await storage.getEmployee(req.params.id);
+      if (!existingEmployee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const employee = await storage.updateEmployee(req.params.id, { status: 'active' });
+      
+      // If employee has a user account, update their role to admin
+      if (existingEmployee.userId) {
+        await storage.updateUser(existingEmployee.userId, { role: 'admin' });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "employee",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `Employee ${existingEmployee.employeeId} activated`,
+      });
+      
+      res.json({ message: "Employee activated", employee });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to activate employee" });
+    }
+  });
+  
+  // Get role permissions
+  app.get("/api/admin/role-permissions", async (req, res) => {
+    try {
+      const permissions = await storage.getAllRolePermissions();
+      res.json({ permissions });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get role permissions" });
+    }
+  });
+  
+  // Update role permissions
+  app.patch("/api/admin/role-permissions/:role", async (req, res) => {
+    try {
+      const { permissions, updatedBy } = req.body;
+      const role = req.params.role;
+      
+      // Check if role permission exists
+      let rolePermission = await storage.getRolePermission(role);
+      
+      if (rolePermission) {
+        rolePermission = await storage.updateRolePermission(rolePermission.id, { permissions, updatedBy });
+      } else {
+        rolePermission = await storage.createRolePermission({
+          role: role as any,
+          permissions,
+          updatedBy
+        });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "role_permission",
+        entityId: rolePermission?.id || role,
+        actionType: "update",
+        actor: updatedBy || "admin",
+        actorRole: "admin",
+        details: `Role ${role} permissions updated`,
+      });
+      
+      res.json({ permission: rolePermission });
+    } catch (error) {
+      console.error("Failed to update role permissions:", error);
+      res.status(400).json({ message: "Failed to update role permissions" });
+    }
+  });
+  
+  // ============================================================================
   // KYC MANAGEMENT
   // ============================================================================
   
