@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Ban, Trash, Eye, CheckCircle, Mail, Shield, UserCheck, UserX, RefreshCw, Search, Users } from 'lucide-react';
+import { MoreHorizontal, Ban, Trash, Eye, CheckCircle, Mail, Shield, UserCheck, UserX, RefreshCw, Search, Users, Building, User } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ interface User {
   phoneNumber?: string;
   companyName?: string;
   registrationNumber?: string;
+  profilePhoto?: string;
   role: 'user' | 'admin';
   accountType: 'personal' | 'business';
   kycStatus: string;
@@ -102,7 +103,9 @@ export default function UserManagement() {
     total: users.length,
     verified: users.filter(u => u.isEmailVerified).length,
     pending: users.filter(u => !u.isEmailVerified).length,
-    admins: users.filter(u => u.role === 'admin').length
+    admins: users.filter(u => u.role === 'admin').length,
+    personal: users.filter(u => u.accountType === 'personal').length,
+    corporate: users.filter(u => u.accountType === 'business').length
   };
 
   return (
@@ -118,55 +121,81 @@ export default function UserManagement() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Total Users</p>
-                  <p className="text-2xl font-bold" data-testid="text-total-users">{stats.total}</p>
+                  <p className="text-xs text-gray-500">Total</p>
+                  <p className="text-xl font-bold" data-testid="text-total-users">{stats.total}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <Mail className="w-6 h-6 text-green-600" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <User className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Email Verified</p>
-                  <p className="text-2xl font-bold" data-testid="text-verified-users">{stats.verified}</p>
+                  <p className="text-xs text-gray-500">Personal</p>
+                  <p className="text-xl font-bold" data-testid="text-personal-users">{stats.personal}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-yellow-100 rounded-lg">
-                  <UserX className="w-6 h-6 text-yellow-600" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <Building className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Pending Verification</p>
-                  <p className="text-2xl font-bold" data-testid="text-pending-users">{stats.pending}</p>
+                  <p className="text-xs text-gray-500">Corporate</p>
+                  <p className="text-xl font-bold" data-testid="text-corporate-users">{stats.corporate}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <Shield className="w-6 h-6 text-purple-600" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <Mail className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Admin Users</p>
-                  <p className="text-2xl font-bold" data-testid="text-admin-users">{stats.admins}</p>
+                  <p className="text-xs text-gray-500">Verified</p>
+                  <p className="text-xl font-bold" data-testid="text-verified-users">{stats.verified}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <UserX className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Pending</p>
+                  <p className="text-xl font-bold" data-testid="text-pending-users">{stats.pending}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Admins</p>
+                  <p className="text-xl font-bold" data-testid="text-admin-users">{stats.admins}</p>
                 </div>
               </div>
             </CardContent>
@@ -220,8 +249,21 @@ export default function UserManagement() {
                     ) : (
                       filteredUsers.map((user) => (
                         <tr key={user.id} className="bg-white border-b hover:bg-gray-50" data-testid={`row-user-${user.id}`}>
-                          <td className="px-6 py-4 font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              {user.profilePhoto ? (
+                                <img 
+                                  src={user.profilePhoto} 
+                                  alt={`${user.firstName} ${user.lastName}`}
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold">
+                                  {user.firstName[0]}{user.lastName[0]}
+                                </div>
+                              )}
+                              <span className="font-medium text-gray-900">{user.firstName} {user.lastName}</span>
+                            </div>
                           </td>
                           <td className="px-6 py-4">{user.email}</td>
                           <td className="px-6 py-4 text-gray-500">{user.phoneNumber || '-'}</td>
@@ -249,9 +291,17 @@ export default function UserManagement() {
                           </td>
                           <td className="px-6 py-4">
                             <div>
-                              <span className="capitalize">{user.accountType}</span>
+                              {user.accountType === 'business' ? (
+                                <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700">
+                                  <Building className="w-3 h-3 mr-1" /> Corporate
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700">
+                                  <User className="w-3 h-3 mr-1" /> Personal
+                                </Badge>
+                              )}
                               {user.accountType === 'business' && user.companyName && (
-                                <div className="text-xs text-gray-500 mt-0.5">{user.companyName}</div>
+                                <div className="text-xs text-gray-500 mt-1">{user.companyName}</div>
                               )}
                             </div>
                           </td>
