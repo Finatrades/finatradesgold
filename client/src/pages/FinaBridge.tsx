@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { useFinaPay } from '@/context/FinaPayContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
@@ -60,6 +61,7 @@ export default function FinaBridge() {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
   const { toast } = useToast();
+  const { currentGoldPriceUsdPerGram } = useFinaPay();
   
   const [role, setRole] = useState<'importer' | 'exporter'>('importer');
   const [activeTab, setActiveTab] = useState('requests');
@@ -544,11 +546,25 @@ export default function FinaBridge() {
                         <input
                           type="number"
                           value={requestForm.tradeValueUsd}
-                          onChange={(e) => setRequestForm({ ...requestForm, tradeValueUsd: e.target.value })}
+                          onChange={(e) => {
+                            const usdValue = e.target.value;
+                            const goldGrams = usdValue && currentGoldPriceUsdPerGram > 0
+                              ? (parseFloat(usdValue) / currentGoldPriceUsdPerGram).toFixed(3)
+                              : '';
+                            setRequestForm({ 
+                              ...requestForm, 
+                              tradeValueUsd: usdValue,
+                              settlementGoldGrams: goldGrams
+                            });
+                            setInsufficientFundsError(null);
+                          }}
                           className="w-full p-3 border rounded-lg"
                           placeholder="0.00"
                           data-testid="input-trade-value"
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Current gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/gram
+                        </p>
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Settlement Gold (grams) *</label>
