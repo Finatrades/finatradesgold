@@ -211,20 +211,20 @@ export default function KYCReview() {
             {submissions.length === 0 ? (
               <p className="text-center text-gray-500 py-4">No KYC submissions yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                  <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left">Applicant</th>
-                      <th className="px-4 py-3 text-left">Account Type</th>
-                      <th className="px-4 py-3 text-left">Status</th>
-                      <th className="px-4 py-3 text-left">Submitted</th>
-                      <th className="px-4 py-3 text-right">Actions</th>
+                      <th className="px-4 py-4 text-left font-semibold tracking-wide">Applicant</th>
+                      <th className="px-4 py-4 text-left font-semibold tracking-wide">Account Type</th>
+                      <th className="px-4 py-4 text-left font-semibold tracking-wide">Status</th>
+                      <th className="px-4 py-4 text-left font-semibold tracking-wide">Submitted</th>
+                      <th className="px-4 py-4 text-right font-semibold tracking-wide">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {submissions.map((app: any) => (
-                      <tr key={app.id} className="border-b hover:bg-gray-50">
+                  <tbody className="divide-y divide-gray-100">
+                    {submissions.map((app: any, index: number) => (
+                      <tr key={app.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150`}>
                         <td className="px-4 py-3 font-medium">{app.fullName || 'Not provided'}</td>
                         <td className="px-4 py-3 capitalize">{app.accountType}</td>
                         <td className="px-4 py-3">{getStatusBadge(app.status)}</td>

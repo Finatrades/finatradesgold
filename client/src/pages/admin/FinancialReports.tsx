@@ -419,20 +419,20 @@ function FinaPaySection({ metrics, isLoading, userFinancials }: { metrics?: Prod
           <CardDescription>Users with highest wallet balances</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
             <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">User</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Account Type</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-600">Wallet Balance</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-600">Transactions</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Last Activity</th>
+              <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <tr>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">User</th>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">Account Type</th>
+                  <th className="text-right py-4 px-4 font-semibold tracking-wide">Wallet Balance</th>
+                  <th className="text-right py-4 px-4 font-semibold tracking-wide">Transactions</th>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">Last Activity</th>
                 </tr>
               </thead>
-              <tbody>
-                {userFinancials?.slice(0, 10).map((user) => (
-                  <tr key={user.id} className="border-b hover:bg-gray-50" data-testid={`row-user-${user.id}`}>
+              <tbody className="divide-y divide-gray-100">
+                {userFinancials?.slice(0, 10).map((user, index) => (
+                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150`} data-testid={`row-user-${user.id}`}>
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium">{user.name}</p>
@@ -504,20 +504,20 @@ function FinaVaultSection({ metrics, isLoading, userFinancials }: { metrics?: Pr
           <CardDescription>Gold stored per user in the vault</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
             <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">User</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Account Type</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-600">Gold Holdings</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-600">Est. Value</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-600">Storage Fee (Annual)</th>
+              <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <tr>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">User</th>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">Account Type</th>
+                  <th className="text-right py-4 px-4 font-semibold tracking-wide">Gold Holdings</th>
+                  <th className="text-right py-4 px-4 font-semibold tracking-wide">Est. Value</th>
+                  <th className="text-right py-4 px-4 font-semibold tracking-wide">Storage Fee (Annual)</th>
                 </tr>
               </thead>
-              <tbody>
-                {userFinancials?.filter(u => u.goldHoldingsGrams > 0).slice(0, 10).map((user) => (
-                  <tr key={user.id} className="border-b hover:bg-gray-50">
+              <tbody className="divide-y divide-gray-100">
+                {userFinancials?.filter(u => u.goldHoldingsGrams > 0).slice(0, 10).map((user, index) => (
+                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150`}>
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium">{user.name}</p>

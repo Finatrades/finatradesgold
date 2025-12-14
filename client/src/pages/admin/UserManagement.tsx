@@ -224,31 +224,38 @@ export default function UserManagement() {
                 <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                  <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-6 py-3">Name</th>
-                      <th className="px-6 py-3">Email</th>
-                      <th className="px-6 py-3">Phone</th>
-                      <th className="px-6 py-3">Email Status</th>
-                      <th className="px-6 py-3">Role</th>
-                      <th className="px-6 py-3">Account Type</th>
-                      <th className="px-6 py-3">KYC Status</th>
-                      <th className="px-6 py-3">Joined</th>
-                      <th className="px-6 py-3 text-right">Actions</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Name</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Email</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Phone</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Email Status</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Role</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Account Type</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">KYC Status</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Joined</th>
+                      <th className="px-6 py-4 font-semibold tracking-wide text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                          No users found
+                        <td colSpan={9} className="px-6 py-12 text-center text-gray-500 bg-gray-50/50">
+                          <div className="flex flex-col items-center gap-2">
+                            <Users className="w-8 h-8 text-gray-300" />
+                            <span>No users found</span>
+                          </div>
                         </td>
                       </tr>
                     ) : (
-                      filteredUsers.map((user) => (
-                        <tr key={user.id} className="bg-white border-b hover:bg-gray-50" data-testid={`row-user-${user.id}`}>
+                      filteredUsers.map((user, index) => (
+                        <tr 
+                          key={user.id} 
+                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150 group`} 
+                          data-testid={`row-user-${user.id}`}
+                        >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               {user.profilePhoto ? (

@@ -261,23 +261,27 @@ export default function Transactions() {
             ) : filteredTransactions.length === 0 ? (
               <div className="text-center py-12 text-gray-500">No transactions found</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                  <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-4 py-3">Transaction ID</th>
-                      <th className="px-4 py-3">Finatrades ID</th>
-                      <th className="px-4 py-3">User</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Amount</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Actions</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">Transaction ID</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">Finatrades ID</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">User</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">Type</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">Amount</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">Status</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">Date</th>
+                      <th className="px-4 py-4 font-semibold tracking-wide">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredTransactions.map((tx) => (
-                      <tr key={tx.id} className="bg-white border-b hover:bg-gray-50" data-testid={`row-transaction-${tx.id}`}>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredTransactions.map((tx, index) => (
+                      <tr 
+                        key={tx.id} 
+                        className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150 group`} 
+                        data-testid={`row-transaction-${tx.id}`}
+                      >
                         <td className="px-4 py-4 font-mono text-xs text-gray-500">TX-{tx.id.slice(0, 8).toUpperCase()}</td>
                         <td className="px-4 py-4">
                           <span className="font-mono text-sm font-medium text-orange-600">{tx.finatradesId || `FT-${tx.userId.slice(0, 8).toUpperCase()}`}</span>
