@@ -7,9 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
+import AdminLayout from './AdminLayout';
 
 interface PaymentGatewaySettings {
   stripeEnabled: boolean;
@@ -145,13 +146,16 @@ export default function PaymentGatewayManagement() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
+    <AdminLayout>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -641,5 +645,6 @@ export default function PaymentGatewayManagement() {
         </CardContent>
       </Card>
     </div>
+    </AdminLayout>
   );
 }
