@@ -62,8 +62,8 @@ export default function Navbar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={`fixed top-0 w-full z-50 transition-all duration-500 ${
         scrolled 
-          ? 'bg-[#0D001E]/98 backdrop-blur-xl shadow-2xl shadow-purple-900/20 border-b border-[#E91E8C]/10' 
-          : 'bg-gradient-to-b from-[#0D001E] to-[#0D001E]/95'
+          ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-orange-100/50 border-b border-orange-100' 
+          : 'bg-white/90 backdrop-blur-md'
       }`} 
       data-testid="navbar"
     >
@@ -94,8 +94,8 @@ export default function Navbar() {
                 }}
                 className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-300 rounded-lg group ${
                   isActive(link.href) || (link.href === '/' && location === '/')
-                    ? 'text-white'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'text-orange-600'
+                    : 'text-gray-600 hover:text-orange-600'
                 }`}
                 data-testid={`link-nav-${link.id}`}
               >
@@ -103,11 +103,11 @@ export default function Navbar() {
                 {(isActive(link.href) || (link.href === '/' && location === '/')) && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-r from-[#E91E8C]/20 to-[#9333EA]/20 rounded-lg border border-[#E91E8C]/30"
+                    className="absolute inset-0 bg-orange-50 rounded-lg border border-orange-200"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-[#E91E8C] to-[#9333EA] group-hover:w-full transition-all duration-300 rounded-full" />
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 group-hover:w-full transition-all duration-300 rounded-full" />
               </motion.button>
             ))}
           </div>
@@ -120,14 +120,14 @@ export default function Navbar() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
-                className="hidden md:flex items-center p-1 rounded-full bg-[#1a0a2e]/80 backdrop-blur-sm border border-[#E91E8C]/20"
+                className="hidden md:flex items-center p-1 rounded-full bg-gray-100 border border-gray-200"
               >
                 <button
                   onClick={() => setAccountType('personal')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
                     accountType === 'personal' 
-                      ? 'bg-white text-[#0D001E] shadow-lg'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-white text-gray-900 shadow-md'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                   data-testid="button-account-personal"
                 >
@@ -138,8 +138,8 @@ export default function Navbar() {
                   onClick={() => setAccountType('business')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
                     accountType === 'business' 
-                      ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white shadow-lg shadow-[#E91E8C]/30'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                   data-testid="button-account-business"
                 >
@@ -154,33 +154,33 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 hover:bg-transparent" data-testid="button-user-menu">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Avatar className="h-11 w-11 border-2 border-[#E91E8C]/40 shadow-lg shadow-[#E91E8C]/20">
+                      <Avatar className="h-11 w-11 border-2 border-orange-200 shadow-lg shadow-orange-100">
                         <AvatarImage src="" alt={user.firstName} />
-                        <AvatarFallback className="bg-gradient-to-br from-[#E91E8C] to-[#9333EA] text-white font-bold text-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold text-sm">
                           {user.firstName[0]}{user.lastName[0]}
                         </AvatarFallback>
                       </Avatar>
                     </motion.div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-[#1a0a2e] border-[#E91E8C]/20 text-white" align="end" forceMount>
+                <DropdownMenuContent className="w-56 bg-white border-gray-200" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium text-white">{user.firstName} {user.lastName}</p>
-                      <p className="text-xs text-gray-400">{user.email}</p>
+                      <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-[#E91E8C]/20" />
-                  <DropdownMenuItem onClick={() => window.location.href = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="hover:bg-[#E91E8C]/10 cursor-pointer" data-testid="menu-item-dashboard">
-                    <LayoutDashboard className="mr-2 h-4 w-4 text-[#E91E8C]" />
+                  <DropdownMenuSeparator className="bg-gray-100" />
+                  <DropdownMenuItem onClick={() => window.location.href = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="hover:bg-orange-50 cursor-pointer" data-testid="menu-item-dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4 text-orange-500" />
                     <span>{user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="hover:bg-[#E91E8C]/10 cursor-pointer" data-testid="menu-item-profile">
-                    <User className="mr-2 h-4 w-4 text-[#E91E8C]" />
+                  <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="hover:bg-orange-50 cursor-pointer" data-testid="menu-item-profile">
+                    <User className="mr-2 h-4 w-4 text-orange-500" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-[#E91E8C]/20" />
-                  <DropdownMenuItem onClick={logout} className="hover:bg-red-500/10 cursor-pointer text-red-400" data-testid="menu-item-logout">
+                  <DropdownMenuSeparator className="bg-gray-100" />
+                  <DropdownMenuItem onClick={logout} className="hover:bg-red-50 cursor-pointer text-red-600" data-testid="menu-item-logout">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -196,7 +196,7 @@ export default function Navbar() {
                 <Link href="/login">
                   <Button 
                     variant="ghost" 
-                    className="rounded-full text-white hover:bg-white/10 hover:text-white px-5 font-medium"
+                    className="rounded-full text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-5 font-medium"
                     data-testid="button-login"
                   >
                     Sign In
@@ -205,7 +205,7 @@ export default function Navbar() {
                 <Link href="/register">
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button 
-                      className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:shadow-lg hover:shadow-[#E91E8C]/30 text-white rounded-full px-6 font-semibold transition-all duration-300"
+                      className="bg-gradient-to-r from-orange-500 to-amber-500 hover:shadow-lg hover:shadow-orange-200 text-white rounded-full px-6 font-semibold transition-all duration-300"
                       data-testid="button-register"
                     >
                       Get Started
@@ -219,7 +219,7 @@ export default function Navbar() {
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="lg:hidden p-2.5 rounded-xl text-white bg-[#1a0a2e] border border-[#E91E8C]/20 hover:border-[#E91E8C]/40 transition-colors"
+              className="lg:hidden p-2.5 rounded-xl text-gray-700 bg-gray-100 border border-gray-200 hover:border-orange-300 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
@@ -236,7 +236,7 @@ export default function Navbar() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="lg:hidden overflow-hidden bg-[#0D001E] border-t border-[#E91E8C]/10"
+            className="lg:hidden overflow-hidden bg-white border-t border-gray-100"
           >
             <div className="container mx-auto px-6 py-6 space-y-3">
               {navLinks.map((link, index) => (
@@ -253,8 +253,8 @@ export default function Navbar() {
                   }}
                   className={`w-full text-left px-5 py-4 rounded-xl text-sm font-medium flex items-center justify-between transition-all ${
                     isActive(link.href)
-                      ? 'bg-gradient-to-r from-[#E91E8C]/20 to-[#9333EA]/20 text-white border border-[#E91E8C]/30'
-                      : 'text-gray-400 hover:bg-[#1a0a2e] hover:text-white'
+                      ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                   data-testid={`mobile-link-${link.id}`}
                 >
@@ -270,13 +270,13 @@ export default function Navbar() {
                   transition={{ delay: 0.3 }}
                   className="pt-4 space-y-4"
                 >
-                  <div className="flex items-center p-1.5 rounded-full bg-[#1a0a2e] border border-[#E91E8C]/20">
+                  <div className="flex items-center p-1.5 rounded-full bg-gray-100 border border-gray-200">
                     <button
                       onClick={() => setAccountType('personal')}
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
                         accountType === 'personal' 
-                          ? 'bg-white text-[#0D001E]'
-                          : 'text-gray-400'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500'
                       }`}
                     >
                       <User className="w-4 h-4" />
@@ -286,8 +286,8 @@ export default function Navbar() {
                       onClick={() => setAccountType('business')}
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
                         accountType === 'business' 
-                          ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white'
-                          : 'text-gray-400'
+                          ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
+                          : 'text-gray-500'
                       }`}
                     >
                       <Building2 className="w-4 h-4" />
@@ -298,7 +298,7 @@ export default function Navbar() {
                     <Link href="/login" className="flex-1">
                       <Button 
                         variant="outline" 
-                        className="w-full rounded-full border-[#E91E8C]/30 text-white bg-transparent hover:bg-[#1a0a2e] py-5"
+                        className="w-full rounded-full border-gray-300 text-gray-700 bg-white hover:bg-gray-50 py-5"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Sign In
@@ -306,7 +306,7 @@ export default function Navbar() {
                     </Link>
                     <Link href="/register" className="flex-1">
                       <Button 
-                        className="w-full bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white rounded-full py-5 font-semibold"
+                        className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full py-5 font-semibold"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Get Started
