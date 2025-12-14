@@ -1470,12 +1470,17 @@ export const paymentGatewaySettings = pgTable("payment_gateway_settings", {
   
   // Bank Transfer / Wire Configuration
   bankTransferEnabled: boolean("bank_transfer_enabled").notNull().default(false),
-  bankName: varchar("bank_name", { length: 255 }),
-  bankAccountName: varchar("bank_account_name", { length: 255 }),
-  bankAccountNumber: varchar("bank_account_number", { length: 100 }),
-  bankRoutingNumber: varchar("bank_routing_number", { length: 100 }),
-  bankSwiftCode: varchar("bank_swift_code", { length: 50 }),
-  bankIban: varchar("bank_iban", { length: 100 }),
+  bankAccounts: json("bank_accounts").$type<{
+    id: string;
+    bankName: string;
+    accountHolderName: string;
+    accountNumber: string;
+    routingNumber: string;
+    swiftCode: string;
+    iban: string;
+    currency: string;
+    isActive: boolean;
+  }[]>().default([]),
   bankInstructions: text("bank_instructions"),
   
   // Crypto Payment (Binance Pay) - already exists separately

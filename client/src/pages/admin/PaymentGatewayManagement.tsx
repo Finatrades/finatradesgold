@@ -12,6 +12,29 @@ import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 
+interface BankAccount {
+  id: string;
+  bankName: string;
+  accountHolderName: string;
+  accountNumber: string;
+  routingNumber: string;
+  swiftCode: string;
+  iban: string;
+  currency: string;
+  isActive: boolean;
+}
+
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'AED', name: 'UAE Dirham' },
+  { code: 'CHF', name: 'Swiss Franc' },
+  { code: 'SAR', name: 'Saudi Riyal' },
+  { code: 'SGD', name: 'Singapore Dollar' },
+  { code: 'HKD', name: 'Hong Kong Dollar' },
+];
+
 interface PaymentGatewaySettings {
   stripeEnabled: boolean;
   stripePublishableKey: string;
@@ -26,12 +49,7 @@ interface PaymentGatewaySettings {
   paypalFeePercent: string;
   paypalFixedFee: string;
   bankTransferEnabled: boolean;
-  bankName: string;
-  bankAccountName: string;
-  bankAccountNumber: string;
-  bankRoutingNumber: string;
-  bankSwiftCode: string;
-  bankIban: string;
+  bankAccounts: BankAccount[];
   bankInstructions: string;
   binancePayEnabled: boolean;
   ngeniusEnabled: boolean;
@@ -59,12 +77,7 @@ export default function PaymentGatewayManagement() {
     paypalFeePercent: '2.9',
     paypalFixedFee: '0.30',
     bankTransferEnabled: false,
-    bankName: '',
-    bankAccountName: '',
-    bankAccountNumber: '',
-    bankRoutingNumber: '',
-    bankSwiftCode: '',
-    bankIban: '',
+    bankAccounts: [],
     bankInstructions: '',
     binancePayEnabled: false,
     ngeniusEnabled: false,
@@ -103,12 +116,7 @@ export default function PaymentGatewayManagement() {
           paypalFeePercent: data.paypalFeePercent || '2.9',
           paypalFixedFee: data.paypalFixedFee || '0.30',
           bankTransferEnabled: data.bankTransferEnabled || false,
-          bankName: data.bankName || '',
-          bankAccountName: data.bankAccountName || '',
-          bankAccountNumber: data.bankAccountNumber || '',
-          bankRoutingNumber: data.bankRoutingNumber || '',
-          bankSwiftCode: data.bankSwiftCode || '',
-          bankIban: data.bankIban || '',
+          bankAccounts: data.bankAccounts || [],
           bankInstructions: data.bankInstructions || '',
           binancePayEnabled: data.binancePayEnabled || false,
           ngeniusEnabled: data.ngeniusEnabled || false,
@@ -144,6 +152,40 @@ export default function PaymentGatewayManagement() {
     setShowSecrets(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const addBankAccount = () => {
+    const newAccount: BankAccount = {
+      id: `bank_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      bankName: '',
+      accountHolderName: '',
+      accountNumber: '',
+      routingNumber: '',
+      swiftCode: '',
+      iban: '',
+      currency: 'USD',
+      isActive: true,
+    };
+    setSettings(prev => ({
+      ...prev,
+      bankAccounts: [...prev.bankAccounts, newAccount],
+    }));
+  };
+
+  const updateBankAccount = (id: string, field: keyof BankAccount, value: string | boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      bankAccounts: prev.bankAccounts.map(account =>
+        account.id === id ? { ...account, [field]: value } : account
+      ),
+    }));
+  };
+
+  const removeBankAccount = (id: string) => {
+    setSettings(prev => ({
+      ...prev,
+      bankAccounts: prev.bankAccounts.filter(account => account.id !== id),
+    }));
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -156,7 +198,7 @@ export default function PaymentGatewayManagement() {
 
   return (
     <AdminLayout>
-    <div className="space-y-6">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Payment Gateway Management</h1>
@@ -407,7 +449,7 @@ export default function PaymentGatewayManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Bank Transfer Configuration</CardTitle>
-                  <CardDescription>Accept bank wire transfers</CardDescription>
+                  <CardDescription>Accept bank wire transfers in multiple currencies</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label>Enable Bank Transfer</Label>
@@ -419,67 +461,137 @@ export default function PaymentGatewayManagement() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Bank Name</Label>
-                  <Input
-                    placeholder="Bank Name"
-                    value={settings.bankName}
-                    onChange={(e) => setSettings(prev => ({ ...prev, bankName: e.target.value }))}
-                    data-testid="input-bank-name"
-                  />
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">Bank Accounts</h3>
+                  <p className="text-sm text-muted-foreground">Add bank accounts for different currencies</p>
                 </div>
-                <div className="space-y-2">
-                  <Label>Account Holder Name</Label>
-                  <Input
-                    placeholder="Account Holder Name"
-                    value={settings.bankAccountName}
-                    onChange={(e) => setSettings(prev => ({ ...prev, bankAccountName: e.target.value }))}
-                    data-testid="input-bank-account-name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Account Number</Label>
-                  <Input
-                    placeholder="Account Number"
-                    value={settings.bankAccountNumber}
-                    onChange={(e) => setSettings(prev => ({ ...prev, bankAccountNumber: e.target.value }))}
-                    data-testid="input-bank-account-number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Routing Number</Label>
-                  <Input
-                    placeholder="Routing Number"
-                    value={settings.bankRoutingNumber}
-                    onChange={(e) => setSettings(prev => ({ ...prev, bankRoutingNumber: e.target.value }))}
-                    data-testid="input-bank-routing-number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SWIFT/BIC Code</Label>
-                  <Input
-                    placeholder="SWIFT Code"
-                    value={settings.bankSwiftCode}
-                    onChange={(e) => setSettings(prev => ({ ...prev, bankSwiftCode: e.target.value }))}
-                    data-testid="input-bank-swift"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>IBAN</Label>
-                  <Input
-                    placeholder="IBAN"
-                    value={settings.bankIban}
-                    onChange={(e) => setSettings(prev => ({ ...prev, bankIban: e.target.value }))}
-                    data-testid="input-bank-iban"
-                  />
-                </div>
+                <Button onClick={addBankAccount} variant="outline" data-testid="button-add-bank-account">
+                  <Plus className="w-4 h-4 mr-2" /> Add Bank Account
+                </Button>
               </div>
-              <div className="space-y-2">
+
+              {settings.bankAccounts.length === 0 ? (
+                <div className="border border-dashed rounded-lg p-8 text-center">
+                  <Landmark className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No bank accounts configured</p>
+                  <p className="text-sm text-muted-foreground mb-4">Add a bank account to accept wire transfers</p>
+                  <Button onClick={addBankAccount} variant="outline" data-testid="button-add-first-bank">
+                    <Plus className="w-4 h-4 mr-2" /> Add Bank Account
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {settings.bankAccounts.map((account, index) => (
+                    <Card key={account.id} className={`${account.isActive ? 'border-green-200' : 'border-gray-200 opacity-60'}`}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={account.isActive}
+                                onCheckedChange={(checked) => updateBankAccount(account.id, 'isActive', checked)}
+                                data-testid={`switch-bank-active-${index}`}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {account.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                            <Select
+                              value={account.currency}
+                              onValueChange={(value) => updateBankAccount(account.id, 'currency', value)}
+                            >
+                              <SelectTrigger className="w-[180px]" data-testid={`select-bank-currency-${index}`}>
+                                <SelectValue placeholder="Select currency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SUPPORTED_CURRENCIES.map((currency) => (
+                                  <SelectItem key={currency.code} value={currency.code}>
+                                    {currency.code} - {currency.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => removeBankAccount(account.id)}
+                            data-testid={`button-remove-bank-${index}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Bank Name</Label>
+                            <Input
+                              placeholder="Bank Name"
+                              value={account.bankName}
+                              onChange={(e) => updateBankAccount(account.id, 'bankName', e.target.value)}
+                              data-testid={`input-bank-name-${index}`}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Account Holder Name</Label>
+                            <Input
+                              placeholder="Account Holder Name"
+                              value={account.accountHolderName}
+                              onChange={(e) => updateBankAccount(account.id, 'accountHolderName', e.target.value)}
+                              data-testid={`input-bank-holder-${index}`}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Account Number</Label>
+                            <Input
+                              placeholder="Account Number"
+                              value={account.accountNumber}
+                              onChange={(e) => updateBankAccount(account.id, 'accountNumber', e.target.value)}
+                              data-testid={`input-bank-number-${index}`}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Routing Number</Label>
+                            <Input
+                              placeholder="Routing Number"
+                              value={account.routingNumber}
+                              onChange={(e) => updateBankAccount(account.id, 'routingNumber', e.target.value)}
+                              data-testid={`input-bank-routing-${index}`}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>SWIFT/BIC Code</Label>
+                            <Input
+                              placeholder="SWIFT Code"
+                              value={account.swiftCode}
+                              onChange={(e) => updateBankAccount(account.id, 'swiftCode', e.target.value)}
+                              data-testid={`input-bank-swift-${index}`}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>IBAN</Label>
+                            <Input
+                              placeholder="IBAN"
+                              value={account.iban}
+                              onChange={(e) => updateBankAccount(account.id, 'iban', e.target.value)}
+                              data-testid={`input-bank-iban-${index}`}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-2 pt-4 border-t">
                 <Label>Transfer Instructions</Label>
                 <Textarea
-                  placeholder="Additional instructions for bank transfers..."
+                  placeholder="Additional instructions for bank transfers (shown to all users)..."
                   value={settings.bankInstructions}
                   onChange={(e) => setSettings(prev => ({ ...prev, bankInstructions: e.target.value }))}
                   className="min-h-[100px]"
@@ -644,7 +756,7 @@ export default function PaymentGatewayManagement() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
     </AdminLayout>
   );
 }
