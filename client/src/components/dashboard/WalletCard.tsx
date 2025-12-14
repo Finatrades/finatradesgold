@@ -45,7 +45,7 @@ export default function WalletCard({ goldGrams = 0, usdBalance = 0, goldPrice = 
          </div>
 
          <div className="flex gap-3">
-           <Link href="/finapay" className="flex-1">
+           <Link href="/finapay?action=deposit" className="flex-1">
              <Button className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/10" data-testid="button-add-funds">
                <Plus className="w-4 h-4 mr-2" /> Add Funds
              </Button>

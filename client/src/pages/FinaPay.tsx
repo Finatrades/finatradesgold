@@ -132,6 +132,17 @@ export default function FinaPay() {
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
+  // Auto-open deposit modal when coming from dashboard with action=deposit
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const action = params.get('action');
+    if (action === 'deposit') {
+      setActiveModal('deposit');
+      // Clear the query param from URL
+      window.history.replaceState({}, '', '/finapay');
+    }
+  }, [searchString]);
+
   const handleBuyConfirm = async (grams: number, cost: number) => {
     if (usdBalance < cost) {
       toast({ title: "Insufficient Funds", description: "You don't have enough USD balance.", variant: "destructive" });
