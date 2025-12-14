@@ -1188,10 +1188,10 @@ export function generateAdminManualPDF(): Promise<Buffer> {
 
       const addFooter = () => {
         const range = doc.bufferedPageRange();
-        for (let i = 0; i < range.count; i++) {
+        for (let i = range.start; i < range.start + range.count; i++) {
           doc.switchToPage(i);
           doc.fillColor('#9ca3af').fontSize(9).font('Helvetica')
-             .text(`Finatrades Admin Manual | Page ${i + 1} of ${range.count}`, 50, doc.page.height - 40, { align: 'center', width: pageWidth });
+             .text(`Finatrades Admin Manual | Page ${i + 1} of ${range.start + range.count}`, 50, doc.page.height - 40, { align: 'center', width: pageWidth });
         }
       };
 
