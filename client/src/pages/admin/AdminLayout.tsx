@@ -8,7 +8,6 @@ import {
   Settings, 
   LogOut, 
   Menu,
-  Bell,
   Search,
   ShieldAlert,
   Shield,
@@ -29,6 +28,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import FloatingAgentChat from '@/components/FloatingAgentChat';
+import NotificationCenter from '@/components/dashboard/NotificationCenter';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -177,10 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="relative p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            </button>
+            <NotificationCenter />
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
