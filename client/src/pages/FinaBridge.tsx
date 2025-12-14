@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import FinaBridgeDisclaimerModal from '@/components/finabridge/FinaBridgeDisclaimerModal';
 
 interface TradeRequest {
   id: string;
@@ -83,6 +84,16 @@ export default function FinaBridge() {
   const [role, setRole] = useState<'importer' | 'exporter'>('importer');
   const [activeTab, setActiveTab] = useState('requests');
   const [loading, setLoading] = useState(true);
+  
+  // Disclaimer modal state - check sessionStorage for acceptance
+  const [showDisclaimer, setShowDisclaimer] = useState(() => {
+    return sessionStorage.getItem('finabridge_disclaimer_accepted') !== 'true';
+  });
+
+  const handleDisclaimerAccept = () => {
+    sessionStorage.setItem('finabridge_disclaimer_accepted', 'true');
+    setShowDisclaimer(false);
+  };
   
   const [myRequests, setMyRequests] = useState<TradeRequest[]>([]);
   const [openRequests, setOpenRequests] = useState<TradeRequest[]>([]);
@@ -442,6 +453,12 @@ export default function FinaBridge() {
 
   return (
     <DashboardLayout>
+      {/* Disclaimer Modal */}
+      <FinaBridgeDisclaimerModal 
+        open={showDisclaimer} 
+        onAccept={handleDisclaimerAccept} 
+      />
+      
       <div className="max-w-6xl mx-auto space-y-8 pb-12">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
