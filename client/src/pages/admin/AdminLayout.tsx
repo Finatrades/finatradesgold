@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import FloatingAgentChat from '@/components/FloatingAgentChat';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -197,8 +196,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
-        
-        <FloatingAgentChat />
       </div>
     </div>
   );
