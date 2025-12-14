@@ -208,17 +208,14 @@ export default function Register() {
 
   const handleNextToSelfie = () => {
     if (validateDetailsStep()) {
-      setStep('selfie');
+      // Skip selfie step - go directly to verification/terms
+      setStep('verification');
     }
   };
 
   const handleSubmit = async () => {
     if (!formData.agreedToTerms) {
       toast.error("Please agree to the Terms and Conditions");
-      return;
-    }
-    if (!profilePhoto) {
-      toast.error("Please capture a selfie for identity verification");
       return;
     }
 

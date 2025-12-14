@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAccountType } from '@/context/AccountTypeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -15,12 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Building2, LogOut, LayoutDashboard, Menu, X, ChevronRight } from 'lucide-react';
+import { LogOut, LayoutDashboard, Menu, X, ChevronRight } from 'lucide-react';
 import FinatradesLogo from '@/components/FinatradesLogo';
 
 export default function Navbar() {
   const { t, language } = useLanguage();
-  const { accountType, setAccountType } = useAccountType();
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
@@ -112,42 +110,10 @@ export default function Navbar() {
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
-            <LanguageSwitcher />
-
-            {!user && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 }}
-                className="hidden md:flex items-center p-1 rounded-full bg-gray-100 border border-gray-200"
-              >
-                <button
-                  onClick={() => setAccountType('personal')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
-                    accountType === 'personal' 
-                      ? 'bg-white text-gray-900 shadow-md'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  data-testid="button-account-personal"
-                >
-                  <User className="w-3.5 h-3.5" />
-                  Personal
-                </button>
-                <button
-                  onClick={() => setAccountType('business')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
-                    accountType === 'business' 
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  data-testid="button-account-business"
-                >
-                  <Building2 className="w-3.5 h-3.5" />
-                  Business
-                </button>
-              </motion.div>
-            )}
+          <div className="flex items-center gap-3">
+            <div className="hidden md:block">
+              <LanguageSwitcher />
+            </div>
 
             {user ? (
               <DropdownMenu>
@@ -268,33 +234,9 @@ export default function Navbar() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="pt-4 space-y-4"
+                  className="pt-4 border-t border-gray-100"
                 >
-                  <div className="flex items-center p-1.5 rounded-full bg-gray-100 border border-gray-200">
-                    <button
-                      onClick={() => setAccountType('personal')}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                        accountType === 'personal' 
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500'
-                      }`}
-                    >
-                      <User className="w-4 h-4" />
-                      Personal
-                    </button>
-                    <button
-                      onClick={() => setAccountType('business')}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                        accountType === 'business' 
-                          ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
-                          : 'text-gray-500'
-                      }`}
-                    >
-                      <Building2 className="w-4 h-4" />
-                      Business
-                    </button>
-                  </div>
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex gap-3">
                     <Link href="/login" className="flex-1">
                       <Button 
                         variant="outline" 
