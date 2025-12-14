@@ -78,35 +78,24 @@ export default function Navbar() {
             </motion.div>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link, index) => (
-              <motion.button
+          <div className="hidden lg:flex items-center gap-2">
+            {navLinks.map((link) => (
+              <button
                 key={link.id}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
                 onClick={() => {
                   if (!scrollToSection(link.href)) {
                     window.location.href = link.href;
                   }
                 }}
-                className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-300 rounded-lg group ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
                   isActive(link.href) || (link.href === '/' && location === '/')
-                    ? 'text-orange-600'
-                    : 'text-gray-600 hover:text-orange-600'
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50/50'
                 }`}
                 data-testid={`link-nav-${link.id}`}
               >
                 {link.label}
-                {(isActive(link.href) || (link.href === '/' && location === '/')) && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-orange-50 rounded-lg border border-orange-200"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 group-hover:w-full transition-all duration-300 rounded-full" />
-              </motion.button>
+              </button>
             ))}
           </div>
 
