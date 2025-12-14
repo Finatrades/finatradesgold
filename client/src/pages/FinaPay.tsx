@@ -305,7 +305,7 @@ export default function FinaPay() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
-            onClick={() => setActiveModal('buy')}
+            onClick={() => setActiveModal('deposit')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
             data-testid="button-add-funds"
           >
