@@ -40,19 +40,6 @@ interface UserInfo {
   lastName: string;
 }
 
-interface PlatformBankAccount {
-  id: string;
-  bankName: string;
-  accountName: string;
-  accountNumber: string;
-  routingNumber: string | null;
-  swiftCode: string | null;
-  iban: string | null;
-  currency: string;
-  country: string;
-  status: 'Active' | 'Inactive';
-  createdAt: string;
-}
 
 interface DepositRequest {
   id: string;
@@ -118,7 +105,6 @@ export default function FinaPayManagement() {
   const { user: currentUser } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [users, setUsers] = useState<Record<string, UserInfo>>({});
-  const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [peerTransfers, setPeerTransfers] = useState<PeerTransfer[]>([]);
@@ -130,19 +116,6 @@ export default function FinaPayManagement() {
   const [rejectReason, setRejectReason] = useState('');
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   
-  const [bankAccountDialogOpen, setBankAccountDialogOpen] = useState(false);
-  const [editingBankAccount, setEditingBankAccount] = useState<PlatformBankAccount | null>(null);
-  const [bankAccountForm, setBankAccountForm] = useState({
-    bankName: '',
-    accountName: '',
-    accountNumber: '',
-    routingNumber: '',
-    swiftCode: '',
-    iban: '',
-    currency: 'USD',
-    country: '',
-    status: 'Active' as 'Active' | 'Inactive'
-  });
   
   const [depositDialogOpen, setDepositDialogOpen] = useState(false);
   const [selectedDeposit, setSelectedDeposit] = useState<DepositRequest | null>(null);
@@ -155,10 +128,9 @@ export default function FinaPayManagement() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [txResponse, usersResponse, bankAccountsRes, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes] = await Promise.all([
+      const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes] = await Promise.all([
         fetch('/api/admin/transactions'),
         fetch('/api/admin/users'),
-        fetch('/api/admin/bank-accounts'),
         fetch('/api/admin/deposit-requests'),
         fetch('/api/admin/withdrawal-requests'),
         fetch('/api/admin/finapay/peer-transfers'),
@@ -167,14 +139,12 @@ export default function FinaPayManagement() {
       
       const txData = await txResponse.json();
       const usersData = await usersResponse.json();
-      const bankData = await bankAccountsRes.json();
       const depositData = await depositsRes.json();
       const withdrawalData = await withdrawalsRes.json();
       const peerTransfersData = await peerTransfersRes.json();
       const peerRequestsData = await peerRequestsRes.json();
       
       setTransactions(txData.transactions || []);
-      setBankAccounts(bankData.accounts || []);
       setDepositRequests(depositData.requests || []);
       setWithdrawalRequests(withdrawalData.requests || []);
       setPeerTransfers(peerTransfersData.transfers || []);
@@ -245,63 +215,6 @@ export default function FinaPayManagement() {
     return users[userId]?.email || '';
   };
 
-  const openBankAccountDialog = (account?: PlatformBankAccount) => {
-    if (account) {
-      setEditingBankAccount(account);
-      setBankAccountForm({
-        bankName: account.bankName,
-        accountName: account.accountName,
-        accountNumber: account.accountNumber,
-        routingNumber: account.routingNumber || '',
-        swiftCode: account.swiftCode || '',
-        iban: account.iban || '',
-        currency: account.currency,
-        country: account.country,
-        status: account.status
-      });
-    } else {
-      setEditingBankAccount(null);
-      setBankAccountForm({
-        bankName: '',
-        accountName: '',
-        accountNumber: '',
-        routingNumber: '',
-        swiftCode: '',
-        iban: '',
-        currency: 'USD',
-        country: '',
-        status: 'Active'
-      });
-    }
-    setBankAccountDialogOpen(true);
-  };
-
-  const handleSaveBankAccount = async () => {
-    try {
-      if (editingBankAccount) {
-        await apiRequest('PATCH', `/api/admin/bank-accounts/${editingBankAccount.id}`, bankAccountForm);
-        toast.success("Bank account updated");
-      } else {
-        await apiRequest('POST', '/api/admin/bank-accounts', bankAccountForm);
-        toast.success("Bank account created");
-      }
-      setBankAccountDialogOpen(false);
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to save bank account");
-    }
-  };
-
-  const handleDeleteBankAccount = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this bank account?')) return;
-    try {
-      await apiRequest('DELETE', `/api/admin/bank-accounts/${id}`);
-      toast.success("Bank account deleted");
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to delete bank account");
-    }
-  };
 
   const openDepositDialog = (deposit: DepositRequest) => {
     setSelectedDeposit(deposit);
@@ -350,8 +263,6 @@ export default function FinaPayManagement() {
   const pendingDeposits = depositRequests.filter(d => d.status === 'Pending');
   const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'Pending' || w.status === 'Processing');
   const pendingTxs = transactions.filter(t => t.status === 'Pending');
-
-  const getBankAccountById = (id: string) => bankAccounts.find(a => a.id === id);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -444,20 +355,7 @@ export default function FinaPayManagement() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="bg-purple-50 border-purple-100">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 text-purple-700 rounded-lg">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-purple-900">Bank Accounts</p>
-                  <h3 className="text-xl font-bold text-purple-700">{bankAccounts.filter(a => a.status === 'Active').length}</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-green-50 border-green-100">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -512,12 +410,8 @@ export default function FinaPayManagement() {
           </Card>
         </div>
 
-        <Tabs defaultValue="bank-accounts" className="w-full">
+        <Tabs defaultValue="deposits" className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-            <TabsTrigger value="bank-accounts" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
-              <Building2 className="w-4 h-4 mr-2" />
-              Bank Accounts ({bankAccounts.length})
-            </TabsTrigger>
             <TabsTrigger value="deposits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
               <ArrowDownLeft className="w-4 h-4 mr-2" />
               Deposits ({depositRequests.length})
@@ -541,60 +435,6 @@ export default function FinaPayManagement() {
           </TabsList>
 
           <div className="mt-6">
-            <TabsContent value="bank-accounts">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Platform Bank Accounts</h2>
-                <Button onClick={() => openBankAccountDialog()} data-testid="button-add-bank-account">
-                  <Plus className="w-4 h-4 mr-2" /> Add Bank Account
-                </Button>
-              </div>
-              
-              {bankAccounts.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No bank accounts configured</p>
-                    <p className="text-sm">Add bank accounts for users to deposit funds</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-4">
-                  {bankAccounts.map(account => (
-                    <Card key={account.id} className={account.status === 'Inactive' ? 'opacity-60' : ''} data-testid={`card-bank-${account.id}`}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-100 text-purple-700 rounded-lg">
-                              <Building2 className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-gray-900">{account.bankName}</h3>
-                                <Badge variant={account.status === 'Active' ? 'default' : 'secondary'}>{account.status}</Badge>
-                              </div>
-                              <p className="text-sm text-gray-600">{account.accountName}</p>
-                              <p className="text-xs text-gray-400">
-                                {account.accountNumber} {account.swiftCode && `| SWIFT: ${account.swiftCode}`} {account.iban && `| IBAN: ${account.iban}`}
-                              </p>
-                              <p className="text-xs text-gray-400">{account.country} | {account.currency}</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => openBankAccountDialog(account)} data-testid={`button-edit-bank-${account.id}`}>
-                              <Edit2 className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => handleDeleteBankAccount(account.id)} data-testid={`button-delete-bank-${account.id}`}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
             <TabsContent value="deposits">
               <h2 className="text-lg font-semibold mb-4">Deposit Requests</h2>
               {depositRequests.length === 0 ? (
@@ -606,9 +446,7 @@ export default function FinaPayManagement() {
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {depositRequests.map(deposit => {
-                    const bankAccount = getBankAccountById(deposit.bankAccountId);
-                    return (
+                  {depositRequests.map(deposit => (
                       <Card key={deposit.id} data-testid={`card-deposit-${deposit.id}`}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
@@ -623,7 +461,6 @@ export default function FinaPayManagement() {
                                 </div>
                                 <p className="text-sm text-gray-600">{getUserName(deposit.userId)} ({getUserEmail(deposit.userId)})</p>
                                 <p className="text-xs text-gray-400">Ref: {deposit.referenceNumber}</p>
-                                <p className="text-xs text-gray-400">To: {bankAccount?.bankName} - {bankAccount?.accountNumber}</p>
                                 {deposit.senderBankName && (
                                   <p className="text-xs text-gray-400">From: {deposit.senderBankName} ({deposit.senderAccountName})</p>
                                 )}
@@ -650,8 +487,7 @@ export default function FinaPayManagement() {
                           </div>
                         </CardContent>
                       </Card>
-                    );
-                  })}
+                  ))}
                 </div>
               )}
             </TabsContent>
