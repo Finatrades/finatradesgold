@@ -85,9 +85,8 @@ export class NgeniusService {
       return this.accessToken;
     }
 
-    // Check if apiKey is already base64 encoded (contains no colons and looks like base64)
-    // NGenius expects "client_id:client_secret" to be base64 encoded
-    // If admin entered pre-encoded credentials, use them directly
+    // NGenius expects the API key to be used directly as Basic auth
+    // The API key from portal is already base64 encoded
     let authHeader: string;
     if (this.config.apiKey.includes(':')) {
       // Raw credentials in format "client_id:client_secret" - encode them
@@ -97,13 +96,15 @@ export class NgeniusService {
       authHeader = `Basic ${this.config.apiKey}`;
     }
 
-    const response = await fetch(`${this.getIdentityUrl()}/auth/realms/ni/protocol/openid-connect/token`, {
+    // Use NGenius v1 identity endpoint
+    const response = await fetch(`${this.getIdentityUrl()}/auth/access-token`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/vnd.ni-identity.v1+json',
+        'Accept': 'application/vnd.ni-identity.v1+json',
         'Authorization': authHeader,
       },
-      body: 'grant_type=client_credentials',
+      body: JSON.stringify({}),
     });
 
     if (!response.ok) {
@@ -113,7 +114,8 @@ export class NgeniusService {
 
     const data = await response.json() as { access_token: string; expires_in: number };
     this.accessToken = data.access_token;
-    this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000;
+    // Token expires in ~5 minutes, refresh 30 seconds early
+    this.tokenExpiry = Date.now() + (data.expires_in ? data.expires_in * 1000 : 270000) - 30000;
 
     return this.accessToken;
   }
