@@ -25,6 +25,8 @@ interface SecuritySettingsData {
   otpOnBnslEarlyTermination: boolean;
   otpOnVaultWithdrawal: boolean;
   otpOnTradeBridge: boolean;
+  otpOnPeerRequest: boolean;
+  otpOnAccountDeletion: boolean;
   passkeyOnLogin: boolean;
   passkeyOnWithdrawal: boolean;
   passkeyOnTransfer: boolean;
@@ -247,6 +249,22 @@ export default function SecuritySettings() {
                             checked={settings.otpOnTradeBridge}
                             onCheckedChange={(checked) => updateSetting('otpOnTradeBridge', checked)}
                             data-testid="switch-otp-trade-bridge"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Peer Requests</Label>
+                          <Switch
+                            checked={settings.otpOnPeerRequest}
+                            onCheckedChange={(checked) => updateSetting('otpOnPeerRequest', checked)}
+                            data-testid="switch-otp-peer-request"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Account Deletion</Label>
+                          <Switch
+                            checked={settings.otpOnAccountDeletion}
+                            onCheckedChange={(checked) => updateSetting('otpOnAccountDeletion', checked)}
+                            data-testid="switch-otp-account-deletion"
                           />
                         </div>
                       </div>

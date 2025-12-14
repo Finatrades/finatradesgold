@@ -1624,6 +1624,8 @@ export const securitySettings = pgTable("security_settings", {
   otpOnBnslEarlyTermination: boolean("otp_on_bnsl_early_termination").notNull().default(true),
   otpOnVaultWithdrawal: boolean("otp_on_vault_withdrawal").notNull().default(true),
   otpOnTradeBridge: boolean("otp_on_trade_bridge").notNull().default(true),
+  otpOnPeerRequest: boolean("otp_on_peer_request").notNull().default(true),
+  otpOnAccountDeletion: boolean("otp_on_account_deletion").notNull().default(true),
   
   // Admin Approval OTP Requirements
   adminOtpEnabled: boolean("admin_otp_enabled").notNull().default(true),
