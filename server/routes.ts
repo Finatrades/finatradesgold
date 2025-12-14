@@ -5408,12 +5408,16 @@ export async function registerRoutes(
   // Create NGenius card deposit order
   app.post("/api/ngenius/create-order", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Unauthorized" });
+      const { userId, amount, currency = 'USD', returnUrl, cancelUrl } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized - userId required" });
       }
 
-      const user = req.user as User;
-      const { amount, currency = 'USD', returnUrl, cancelUrl } = req.body;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
 
       if (!amount || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });

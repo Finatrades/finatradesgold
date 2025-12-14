@@ -161,6 +161,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       const cancelUrl = `${window.location.origin}/finapay?deposit_cancelled=1`;
       
       const res = await apiRequest('POST', '/api/ngenius/create-order', {
+        userId: user.id,
         amount: amountNum,
         currency: 'USD',
         returnUrl,
