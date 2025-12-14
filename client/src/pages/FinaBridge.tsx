@@ -177,7 +177,7 @@ export default function FinaBridge() {
     setLoading(true);
     try {
       const [openRes, proposalsRes, walletRes] = await Promise.all([
-        apiRequest('GET', '/api/finabridge/exporter/open-requests'),
+        apiRequest('GET', `/api/finabridge/exporter/open-requests/${user.id}`),
         apiRequest('GET', `/api/finabridge/exporter/proposals/${user.id}`),
         apiRequest('GET', `/api/finabridge/wallet/${user.id}`),
       ]);
