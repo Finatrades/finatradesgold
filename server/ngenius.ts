@@ -74,12 +74,6 @@ export class NgeniusService {
       : 'https://api-gateway.sandbox.ngenius-payments.com';
   }
 
-  private getIdentityUrl(): string {
-    return this.config.mode === 'live'
-      ? 'https://identity.ngenius-payments.com'
-      : 'https://identity.sandbox.ngenius-payments.com';
-  }
-
   private async getAccessToken(): Promise<string> {
     if (this.accessToken && Date.now() < this.tokenExpiry) {
       return this.accessToken;
@@ -96,14 +90,14 @@ export class NgeniusService {
       authHeader = `Basic ${this.config.apiKey}`;
     }
 
-    // Use NGenius OpenID Connect token endpoint with form-urlencoded body
-    const response = await fetch(`${this.getIdentityUrl()}/auth/realms/ni/protocol/openid-connect/token`, {
+    // Use NGenius token endpoint: https://api-gateway.ngenius-payments.com/identity/auth/access-token
+    const response = await fetch(`${this.getBaseUrl()}/identity/auth/access-token`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/vnd.ni-identity.v1+json',
+        'Accept': 'application/vnd.ni-identity.v1+json',
         'Authorization': authHeader,
       },
-      body: 'grant_type=client_credentials',
     });
 
     if (!response.ok) {
