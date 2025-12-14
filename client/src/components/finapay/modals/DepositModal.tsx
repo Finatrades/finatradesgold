@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
-import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet } from 'lucide-react';
+import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -39,6 +39,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [amount, setAmount] = useState('');
   const [senderBankName, setSenderBankName] = useState('');
   const [senderAccountName, setSenderAccountName] = useState('');
+  const [proofOfPayment, setProofOfPayment] = useState<string | null>(null);
+  const [proofFileName, setProofFileName] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [ngeniusEnabled, setNgeniusEnabled] = useState(false);
@@ -59,7 +62,41 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setAmount('');
     setSenderBankName('');
     setSenderAccountName('');
+    setProofOfPayment(null);
+    setProofFileName('');
     setReferenceNumber('');
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      toast.error("Please upload an image or PDF file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setProofFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setProofOfPayment(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeProof = () => {
+    setProofOfPayment(null);
+    setProofFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const checkNgeniusStatus = async () => {
@@ -118,14 +155,26 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       return;
     }
 
+    if (!proofOfPayment) {
+      toast.error("Please upload proof of payment");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await apiRequest('POST', '/api/deposit-requests', {
         userId: user.id,
         bankAccountId: selectedAccount.id,
         amountUsd: parseFloat(amount).toString(),
+        targetBankName: selectedAccount.bankName,
+        targetAccountName: selectedAccount.accountName,
+        targetAccountNumber: selectedAccount.accountNumber,
+        targetSwiftCode: selectedAccount.swiftCode || null,
+        targetIban: selectedAccount.iban || null,
+        targetCurrency: selectedAccount.currency,
         senderBankName: senderBankName || null,
         senderAccountName: senderAccountName || null,
+        proofOfPayment: proofOfPayment,
       });
       const data = await res.json();
       
@@ -392,6 +441,55 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     data-testid="input-sender-account"
                   />
                 </div>
+              </div>
+
+              <div>
+                <Label className="text-sm">Proof of Payment / Receipt *</Label>
+                <p className="text-xs text-muted-foreground mb-2">Upload a screenshot or photo of your bank transfer confirmation</p>
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  data-testid="input-proof-file"
+                />
+                
+                {!proofOfPayment ? (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-border rounded-lg p-6 hover:border-primary/50 hover:bg-muted/30 transition-colors text-center"
+                    data-testid="button-upload-proof"
+                  >
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground">Click to upload receipt</p>
+                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG, or PDF (max 5MB)</p>
+                  </button>
+                ) : (
+                  <div className="border border-border rounded-lg p-4 bg-green-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                          <Image className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{proofFileName}</p>
+                          <p className="text-xs text-green-600">Uploaded successfully</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={removeProof}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        data-testid="button-remove-proof"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
