@@ -101,6 +101,7 @@ function Router() {
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/kyc" component={KYCReview} />
       <Route path="/admin/users" component={UserManagement} />
       <Route path="/admin/users/:id" component={UserDetails} />
