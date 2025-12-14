@@ -5364,6 +5364,39 @@ export async function registerRoutes(
                 });
 
                 newStatus = 'Completed';
+
+                // Send email notification for crypto purchase
+                const user = await storage.getUser(transaction.userId);
+                if (user && user.email) {
+                  await sendEmailDirect(
+                    user.email,
+                    `Crypto Payment Confirmed - ${transaction.goldGrams}g Gold`,
+                    `
+                      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+                          <h1 style="color: white; margin: 0;">Payment Confirmed!</h1>
+                        </div>
+                        <div style="padding: 30px; background: #ffffff;">
+                          <p>Hello ${user.firstName},</p>
+                          <p>Your crypto payment has been confirmed and processed successfully!</p>
+                          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <table style="width: 100%;">
+                              <tr><td>Gold Amount:</td><td style="text-align: right; font-weight: bold;">${transaction.goldGrams}g</td></tr>
+                              <tr><td>Amount Paid:</td><td style="text-align: right; font-weight: bold;">$${transaction.orderAmountUsd}</td></tr>
+                              <tr><td>Payment Method:</td><td style="text-align: right;">Crypto (Binance Pay)</td></tr>
+                              <tr><td>Reference:</td><td style="text-align: right;">${merchantTradeNo}</td></tr>
+                            </table>
+                          </div>
+                          <p>The gold has been added to your FinaPay wallet.</p>
+                        </div>
+                        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+                          <p>Finatrades - Gold-Backed Digital Finance</p>
+                        </div>
+                      </div>
+                    `
+                  );
+                  console.log(`[Email] Crypto payment confirmation sent to ${user.email}`);
+                }
               }
             }
           } else if (data.orderStatus === 'EXPIRED') {
