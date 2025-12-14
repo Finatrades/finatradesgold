@@ -85,11 +85,23 @@ export class NgeniusService {
       return this.accessToken;
     }
 
+    // Check if apiKey is already base64 encoded (contains no colons and looks like base64)
+    // NGenius expects "client_id:client_secret" to be base64 encoded
+    // If admin entered pre-encoded credentials, use them directly
+    let authHeader: string;
+    if (this.config.apiKey.includes(':')) {
+      // Raw credentials in format "client_id:client_secret" - encode them
+      authHeader = `Basic ${Buffer.from(this.config.apiKey).toString('base64')}`;
+    } else {
+      // Already base64 encoded - use directly
+      authHeader = `Basic ${this.config.apiKey}`;
+    }
+
     const response = await fetch(`${this.getIdentityUrl()}/auth/realms/ni/protocol/openid-connect/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${Buffer.from(`${this.config.apiKey}:`).toString('base64')}`,
+        'Authorization': authHeader,
       },
       body: 'grant_type=client_credentials',
     });
