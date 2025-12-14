@@ -1,10 +1,85 @@
 import PDFDocument from 'pdfkit';
-import { Certificate, Invoice, User } from '@shared/schema';
+import { Certificate, Invoice, User, Template } from '@shared/schema';
 
 const FINATRADES_ORANGE = '#f97316';
 const WINGOLD_GOLD = '#D4AF37';
 const BNSL_BLUE = '#3b82f6';
 const TRADE_GREEN = '#10b981';
+
+// Template config extracted from CMS templates
+export interface CMSTemplateConfig {
+  title?: string;
+  subtitle?: string;
+  primaryColor?: string;
+  issuerName?: string;
+  certificationText?: string;
+  footerText?: string;
+  // Invoice-specific
+  invoiceTitle?: string;
+  invoiceSubtitle?: string;
+  invoiceFooterLine1?: string;
+  invoiceFooterLine2?: string;
+  productDescription?: string;
+}
+
+// Parse CMS template body to extract configuration
+// Template body can contain JSON config or use variable markers like {{title}}
+function parseTemplateConfig(template: Template): CMSTemplateConfig {
+  const config: CMSTemplateConfig = {};
+  
+  try {
+    // Try to parse as JSON first
+    const parsed = JSON.parse(template.body);
+    if (typeof parsed === 'object' && parsed !== null) {
+      return parsed as CMSTemplateConfig;
+    }
+  } catch {
+    // Not JSON, try to extract from preview data or variables
+  }
+  
+  // Check previewData for configuration
+  if (template.previewData && typeof template.previewData === 'object') {
+    const previewData = template.previewData as Record<string, unknown>;
+    if (previewData.title) config.title = String(previewData.title);
+    if (previewData.subtitle) config.subtitle = String(previewData.subtitle);
+    if (previewData.primaryColor) config.primaryColor = String(previewData.primaryColor);
+    if (previewData.issuerName) config.issuerName = String(previewData.issuerName);
+    if (previewData.certificationText) config.certificationText = String(previewData.certificationText);
+    if (previewData.footerText) config.footerText = String(previewData.footerText);
+    if (previewData.invoiceTitle) config.invoiceTitle = String(previewData.invoiceTitle);
+    if (previewData.invoiceSubtitle) config.invoiceSubtitle = String(previewData.invoiceSubtitle);
+    if (previewData.invoiceFooterLine1) config.invoiceFooterLine1 = String(previewData.invoiceFooterLine1);
+    if (previewData.invoiceFooterLine2) config.invoiceFooterLine2 = String(previewData.invoiceFooterLine2);
+    if (previewData.productDescription) config.productDescription = String(previewData.productDescription);
+  }
+  
+  return config;
+}
+
+// Get certificate template slug based on certificate type
+function getCertificateTemplateSlug(type: string): string {
+  const slugMap: Record<string, string> = {
+    'Digital Ownership': 'certificate_digital_ownership',
+    'Physical Storage': 'certificate_physical_storage',
+    'Transfer': 'certificate_transfer',
+    'BNSL Lock': 'certificate_bnsl_lock',
+    'Trade Lock': 'certificate_trade_lock',
+    'Trade Release': 'certificate_trade_release'
+  };
+  return slugMap[type] || 'certificate_default';
+}
+
+// Merge CMS config with defaults (CMS overrides defaults)
+function mergeCertificateConfig(defaults: CertificateConfig, cmsConfig: CMSTemplateConfig): CertificateConfig {
+  return {
+    title: cmsConfig.title || defaults.title,
+    subtitle: cmsConfig.subtitle || defaults.subtitle,
+    primaryColor: cmsConfig.primaryColor || defaults.primaryColor,
+    issuerName: cmsConfig.issuerName || defaults.issuerName,
+    certificationText: cmsConfig.certificationText || defaults.certificationText,
+    footerText: cmsConfig.footerText || defaults.footerText
+  };
+}
 
 function formatDate(date: Date | string | null | undefined): string {
   if (!date) return 'N/A';
@@ -131,10 +206,15 @@ export interface TransferParties {
   toUser?: User | null;
 }
 
+export interface PDFGenerationOptions {
+  cmsTemplate?: Template | null;
+}
+
 export function generateCertificatePDF(
   certificate: Certificate, 
   user: User,
-  transferParties?: TransferParties
+  transferParties?: TransferParties,
+  options?: PDFGenerationOptions
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
@@ -151,7 +231,12 @@ export function generateCertificatePDF(
       const pageWidth = doc.page.width;
       const margin = 50;
       
-      const config = getCertificateConfig(certificate);
+      // Get default config, then merge with CMS template if available
+      let config = getCertificateConfig(certificate);
+      if (options?.cmsTemplate) {
+        const cmsConfig = parseTemplateConfig(options.cmsTemplate);
+        config = mergeCertificateConfig(config, cmsConfig);
+      }
       const rgb = hexToRgb(config.primaryColor);
 
       doc.rect(0, 0, pageWidth, 120).fill(config.primaryColor);
@@ -301,7 +386,8 @@ export function generateCertificatePDF(
 
 export function generateInvoicePDF(
   invoice: Invoice,
-  user: User
+  user: User,
+  options?: PDFGenerationOptions
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
@@ -319,20 +405,32 @@ export function generateInvoicePDF(
       const margin = 50;
       const rgb = hexToRgb(FINATRADES_ORANGE);
 
+      // Parse CMS template config if available
+      let cmsConfig: CMSTemplateConfig = {};
+      if (options?.cmsTemplate) {
+        cmsConfig = parseTemplateConfig(options.cmsTemplate);
+      }
+
       const customerName = invoice.customerName || `${user.firstName} ${user.lastName}`;
       const customerEmail = invoice.customerEmail || user.email;
-      const issuerName = invoice.issuer || 'Wingold and Metals DMCC';
+      const issuerName = cmsConfig.issuerName || invoice.issuer || 'Wingold and Metals DMCC';
+      
+      // Apply CMS customizations with defaults
+      const invoiceTitle = cmsConfig.invoiceTitle || 'INVOICE';
+      const invoiceSubtitle = cmsConfig.invoiceSubtitle || 'Gold Purchase Invoice';
+      const productDescription = cmsConfig.productDescription || '24K Fine Gold (999.9 Purity)';
+      const primaryColor = cmsConfig.primaryColor || FINATRADES_ORANGE;
 
-      doc.rect(0, 0, pageWidth, 100).fill(FINATRADES_ORANGE);
+      doc.rect(0, 0, pageWidth, 100).fill(primaryColor);
 
       doc.fillColor('white')
          .fontSize(22)
          .font('Helvetica-Bold')
-         .text('INVOICE', 0, 35, { align: 'center', width: pageWidth });
+         .text(invoiceTitle, 0, 35, { align: 'center', width: pageWidth });
 
       doc.fontSize(10)
          .font('Helvetica')
-         .text('Gold Purchase Invoice', 0, 65, { align: 'center', width: pageWidth });
+         .text(invoiceSubtitle, 0, 65, { align: 'center', width: pageWidth });
 
       let yPos = 120;
 
@@ -344,7 +442,7 @@ export function generateInvoicePDF(
       doc.text(`Date: ${formatDate(invoice.issuedAt)}`, pageWidth - margin - 150, yPos, { width: 150, align: 'right' });
 
       yPos += 15;
-      doc.strokeColor(FINATRADES_ORANGE)
+      doc.strokeColor(primaryColor)
          .lineWidth(0.5)
          .moveTo(margin, yPos)
          .lineTo(pageWidth - margin, yPos)
@@ -353,7 +451,7 @@ export function generateInvoicePDF(
       yPos += 25;
       const colWidth = (pageWidth - 2 * margin - 40) / 2;
 
-      doc.fillColor(FINATRADES_ORANGE)
+      doc.fillColor(primaryColor)
          .fontSize(10)
          .font('Helvetica-Bold')
          .text('FROM:', margin, yPos);
@@ -384,7 +482,7 @@ export function generateInvoicePDF(
       }
 
       let toYPos = 160;
-      doc.fillColor(FINATRADES_ORANGE)
+      doc.fillColor(primaryColor)
          .fontSize(10)
          .font('Helvetica-Bold')
          .text('BILL TO:', margin + colWidth + 40, toYPos);
@@ -426,7 +524,7 @@ export function generateInvoicePDF(
       yPos += 35;
       doc.fillColor('#282828')
          .font('Helvetica')
-         .text('24K Fine Gold (999.9 Purity)', margin + 10, yPos);
+         .text(productDescription, margin + 10, yPos);
       doc.text(formatGrams(invoice.goldGrams), margin + 210, yPos);
       doc.text(formatCurrency(invoice.goldPriceUsdPerGram) + '/g', margin + 280, yPos);
       doc.text(formatCurrency(invoice.subtotalUsd), pageWidth - margin - 80, yPos);
@@ -453,14 +551,14 @@ export function generateInvoicePDF(
       }
 
       yPos += 15;
-      doc.strokeColor(FINATRADES_ORANGE)
+      doc.strokeColor(primaryColor)
          .lineWidth(0.5)
          .moveTo(totalsX - 20, yPos)
          .lineTo(pageWidth - margin, yPos)
          .stroke();
 
       yPos += 15;
-      doc.fillColor(FINATRADES_ORANGE)
+      doc.fillColor(primaryColor)
          .font('Helvetica-Bold')
          .fontSize(12)
          .text('Total:', totalsX, yPos);
@@ -495,10 +593,14 @@ export function generateInvoicePDF(
          .lineTo(pageWidth - margin, footerY)
          .stroke();
 
+      // Apply CMS footer text or use defaults
+      const footerLine1 = cmsConfig.invoiceFooterLine1 || 'This invoice is issued for the purchase of gold through the Finatrades platform.';
+      const footerLine2 = cmsConfig.invoiceFooterLine2 || 'For questions, please contact support@finatrades.com';
+
       doc.fillColor('#787878')
          .fontSize(8)
-         .text('This invoice is issued for the purchase of gold through the Finatrades platform.', margin, footerY + 10, { align: 'center', width: pageWidth - 2 * margin });
-      doc.text('For questions, please contact support@finatrades.com', margin, footerY + 22, { align: 'center', width: pageWidth - 2 * margin });
+         .text(footerLine1, margin, footerY + 10, { align: 'center', width: pageWidth - 2 * margin });
+      doc.text(footerLine2, margin, footerY + 22, { align: 'center', width: pageWidth - 2 * margin });
       doc.text('This document is electronically generated and does not require a physical signature.', margin, footerY + 34, { align: 'center', width: pageWidth - 2 * margin });
       doc.text(`Generated: ${new Date().toISOString()}`, margin, footerY + 46, { align: 'center', width: pageWidth - 2 * margin });
 
@@ -530,3 +632,9 @@ export function generateCertificateNumber(type: string): string {
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
 }
+
+// Export helper function for routes to get template slug
+export { getCertificateTemplateSlug };
+
+// Invoice template slug constant
+export const INVOICE_TEMPLATE_SLUG = 'invoice_gold_purchase';
