@@ -3,10 +3,10 @@ import { db } from './db';
 import { templates } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
 const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_PASS = process.env.SMTP_PASS || process.env.SMTP_KEY;
 const SMTP_FROM = process.env.SMTP_FROM || 'noreply@finatrades.com';
 
 const transporter = nodemailer.createTransport({
@@ -18,6 +18,8 @@ const transporter = nodemailer.createTransport({
     pass: SMTP_PASS,
   } : undefined,
 });
+
+console.log(`[Email] Configured with host: ${SMTP_HOST}, port: ${SMTP_PORT}, user: ${SMTP_USER ? 'set' : 'not set'}`);
 
 export interface EmailData {
   [key: string]: string | number | undefined;
