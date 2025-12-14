@@ -3196,6 +3196,37 @@ export async function registerRoutes(
             approvedAt: new Date(),
             updatedAt: new Date(),
           });
+          
+          // Send email notification for deposit confirmation
+          const depositUser = await storage.getUser(request.userId);
+          if (depositUser && depositUser.email) {
+            sendEmailDirect(
+              depositUser.email,
+              `Deposit Confirmed - $${parseFloat(request.amountUsd.toString()).toFixed(2)}`,
+              `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+                  <h1 style="color: white; margin: 0;">Deposit Confirmed!</h1>
+                </div>
+                <div style="padding: 30px; background: #ffffff;">
+                  <p>Hello ${depositUser.firstName},</p>
+                  <p>Your bank deposit has been confirmed and credited to your FinaPay wallet.</p>
+                  <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                    <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${parseFloat(request.amountUsd.toString()).toFixed(2)}</p>
+                    <p style="color: #6b7280; margin: 5px 0;">Reference: ${request.referenceNumber}</p>
+                  </div>
+                  <p>Your new balance is now available for trading gold or sending to others.</p>
+                  <p style="text-align: center; margin-top: 30px;">
+                    <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
+                  </p>
+                </div>
+                <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+                  <p>Finatrades - Gold-Backed Digital Finance</p>
+                </div>
+              </div>
+              `
+            ).catch(err => console.error('[Email] Failed to send deposit confirmation:', err));
+          }
         }
       }
       
@@ -3294,6 +3325,41 @@ export async function registerRoutes(
           approvedAt: new Date(),
           updatedAt: new Date(),
         });
+        
+        // Send email notification for withdrawal completion
+        const withdrawalUser = await storage.getUser(request.userId);
+        if (withdrawalUser && withdrawalUser.email) {
+          sendEmailDirect(
+            withdrawalUser.email,
+            `Withdrawal Completed - $${parseFloat(request.amountUsd.toString()).toFixed(2)}`,
+            `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Withdrawal Completed!</h1>
+              </div>
+              <div style="padding: 30px; background: #ffffff;">
+                <p>Hello ${withdrawalUser.firstName},</p>
+                <p>Your withdrawal request has been processed and the funds have been sent to your bank account.</p>
+                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right; font-weight: bold; color: #f97316;">$${parseFloat(request.amountUsd.toString()).toFixed(2)}</td></tr>
+                    <tr><td style="padding: 8px 0;">Reference:</td><td style="text-align: right;">${request.referenceNumber}</td></tr>
+                    <tr><td style="padding: 8px 0;">Bank:</td><td style="text-align: right;">${request.bankName || 'N/A'}</td></tr>
+                    <tr><td style="padding: 8px 0;">Account:</td><td style="text-align: right;">****${(request.accountNumber || '').slice(-4)}</td></tr>
+                  </table>
+                </div>
+                <p>Please allow 1-3 business days for the funds to appear in your bank account.</p>
+                <p style="text-align: center; margin-top: 30px;">
+                  <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Transaction History</a>
+                </p>
+              </div>
+              <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+                <p>Finatrades - Gold-Backed Digital Finance</p>
+              </div>
+            </div>
+            `
+          ).catch(err => console.error('[Email] Failed to send withdrawal completion:', err));
+        }
       }
       
       // If rejecting from Pending or Processing, refund the held amount back to wallet
@@ -4799,6 +4865,38 @@ export async function registerRoutes(
           goldPrice
         ).catch(err => console.error('[Routes] Failed to generate transfer certificates:', err));
 
+        // Send email notification to recipient for gold transfer
+        if (recipient.email) {
+          sendEmailDirect(
+            recipient.email,
+            `You received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
+            `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Gold Received!</h1>
+              </div>
+              <div style="padding: 30px; background: #ffffff;">
+                <p>Hello ${recipient.firstName},</p>
+                <p>Great news! You've received a gold transfer via FinaPay.</p>
+                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                  <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+${goldAmount.toFixed(4)}g Gold</p>
+                  <p style="color: #6b7280; margin: 5px 0;">from ${sender.firstName} ${sender.lastName}</p>
+                  <p style="color: #6b7280; font-size: 14px;">≈ $${(goldAmount * goldPrice).toFixed(2)}</p>
+                  ${memo ? `<p style="color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
+                </div>
+                <p>The gold has been added to your vault holdings and is securely stored.</p>
+                <p style="text-align: center; margin-top: 30px;">
+                  <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Holdings</a>
+                </p>
+              </div>
+              <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+                <p>Finatrades - Gold-Backed Digital Finance</p>
+              </div>
+            </div>
+            `
+          ).catch(err => console.error('[Email] Failed to send gold transfer notification:', err));
+        }
+
         res.json({ 
           transfer: result.transfer,
           certificates: result.certificates,
@@ -4865,6 +4963,37 @@ export async function registerRoutes(
           senderTransactionId: senderTx.id,
           recipientTransactionId: recipientTx.id,
         });
+        
+        // Send email notification to recipient for USD transfer
+        if (recipient.email) {
+          sendEmailDirect(
+            recipient.email,
+            `You received $${amount.toFixed(2)} from ${sender.firstName} ${sender.lastName}`,
+            `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Money Received!</h1>
+              </div>
+              <div style="padding: 30px; background: #ffffff;">
+                <p>Hello ${recipient.firstName},</p>
+                <p>Great news! You've received a transfer via FinaPay.</p>
+                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                  <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${amount.toFixed(2)}</p>
+                  <p style="color: #6b7280; margin: 5px 0;">from ${sender.firstName} ${sender.lastName}</p>
+                  ${memo ? `<p style="color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
+                </div>
+                <p>The funds have been added to your FinaPay wallet and are ready to use.</p>
+                <p style="text-align: center; margin-top: 30px;">
+                  <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
+                </p>
+              </div>
+              <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+                <p>Finatrades - Gold-Backed Digital Finance</p>
+              </div>
+            </div>
+            `
+          ).catch(err => console.error('[Email] Failed to send transfer notification:', err));
+        }
         
         res.json({ 
           transfer, 
