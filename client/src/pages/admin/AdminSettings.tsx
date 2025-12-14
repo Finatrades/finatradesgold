@@ -39,6 +39,7 @@ export default function AdminSettings() {
   const handleDownloadAdminManual = async () => {
     try {
       const response = await fetch('/api/documents/admin-manual', {
+        credentials: 'include',
         headers: { 'X-Admin-User-Id': user?.id || '' }
       });
       if (!response.ok) {
