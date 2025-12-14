@@ -11,6 +11,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
+import { useAuth } from '@/context/AuthContext';
+import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
+import { useAdminOtp } from '@/hooks/useAdminOtp';
 
 interface Transaction {
   id: string;
@@ -30,10 +33,12 @@ interface Transaction {
 }
 
 export default function Transactions() {
+  const { user: adminUser } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const { isOtpModalOpen, pendingAction, requestOtp, handleVerified, closeOtpModal } = useAdminOtp();
 
   const { data, isLoading, refetch } = useQuery<{ transactions: Transaction[] }>({
     queryKey: ['/api/admin/transactions'],
@@ -76,6 +81,38 @@ export default function Transactions() {
       toast.error('Failed to reject transaction');
     },
   });
+
+  const handleApproveWithOtp = async (txId: string, txType: string) => {
+    if (!adminUser?.id) return;
+    const actionType = txType === 'Deposit' ? 'deposit_approval' : 'withdrawal_approval';
+    const otpRequired = await checkOtpRequired(actionType as any, adminUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: actionType as any,
+        targetId: txId,
+        targetType: 'transaction',
+        onComplete: () => approveMutation.mutate(txId),
+      });
+    } else {
+      approveMutation.mutate(txId);
+    }
+  };
+
+  const handleRejectWithOtp = async (txId: string, txType: string) => {
+    if (!adminUser?.id) return;
+    const actionType = txType === 'Deposit' ? 'deposit_rejection' : 'withdrawal_rejection';
+    const otpRequired = await checkOtpRequired(actionType as any, adminUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: actionType as any,
+        targetId: txId,
+        targetType: 'transaction',
+        onComplete: () => rejectMutation.mutate(txId),
+      });
+    } else {
+      rejectMutation.mutate(txId);
+    }
+  };
 
   const transactions = data?.transactions || [];
   const pendingCount = transactions.filter(tx => tx.status === 'Pending').length;
@@ -303,7 +340,7 @@ export default function Transactions() {
                                 size="sm" 
                                 variant="outline" 
                                 className="text-green-600 hover:bg-green-50"
-                                onClick={() => approveMutation.mutate(tx.id)}
+                                onClick={() => handleApproveWithOtp(tx.id, tx.type)}
                                 disabled={approveMutation.isPending}
                                 data-testid={`button-approve-${tx.id}`}
                               >
@@ -313,7 +350,7 @@ export default function Transactions() {
                                 size="sm" 
                                 variant="outline" 
                                 className="text-red-600 hover:bg-red-50"
-                                onClick={() => rejectMutation.mutate(tx.id)}
+                                onClick={() => handleRejectWithOtp(tx.id, tx.type)}
                                 disabled={rejectMutation.isPending}
                                 data-testid={`button-reject-${tx.id}`}
                               >
@@ -330,6 +367,20 @@ export default function Transactions() {
             )}
           </CardContent>
         </Card>
+
+        {/* Admin OTP Verification Modal */}
+        {pendingAction && adminUser?.id && (
+          <AdminOtpModal
+            isOpen={isOtpModalOpen}
+            onClose={closeOtpModal}
+            onVerified={handleVerified}
+            actionType={pendingAction.actionType}
+            targetId={pendingAction.targetId}
+            targetType={pendingAction.targetType}
+            actionData={pendingAction.actionData}
+            adminUserId={adminUser.id}
+          />
+        )}
       </div>
     </AdminLayout>
   );

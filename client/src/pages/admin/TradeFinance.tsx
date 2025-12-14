@@ -9,28 +9,63 @@ import { Progress } from '@/components/ui/progress';
 import { useTradeFinance } from '@/context/TradeFinanceContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { TradeCase } from '@/types/finabridge';
+import { useAuth } from '@/context/AuthContext';
+import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
+import { useAdminOtp } from '@/hooks/useAdminOtp';
 
 export default function TradeFinance() {
+  const { user: adminUser } = useAuth();
   const { cases, updateCaseStatus } = useTradeFinance();
   const [selectedCase, setSelectedCase] = useState<TradeCase | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const { isOtpModalOpen, pendingAction, requestOtp, handleVerified, closeOtpModal } = useAdminOtp();
 
   const handleViewCase = (tradeCase: TradeCase) => {
     setSelectedCase(tradeCase);
     setIsDetailOpen(true);
   };
 
-  const handleApprove = () => {
+  const performApproval = () => {
     if (selectedCase) {
       updateCaseStatus(selectedCase.id, 'Approved – Ready to Release');
       setIsDetailOpen(false);
     }
   };
 
-  const handleReject = () => {
+  const performRejection = () => {
     if (selectedCase) {
       updateCaseStatus(selectedCase.id, 'Rejected');
       setIsDetailOpen(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!selectedCase || !adminUser?.id) return;
+    const otpRequired = await checkOtpRequired('trade_case_approval', adminUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: 'trade_case_approval',
+        targetId: selectedCase.id,
+        targetType: 'trade_case',
+        onComplete: performApproval,
+      });
+    } else {
+      performApproval();
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedCase || !adminUser?.id) return;
+    const otpRequired = await checkOtpRequired('trade_case_rejection', adminUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: 'trade_case_rejection',
+        targetId: selectedCase.id,
+        targetType: 'trade_case',
+        onComplete: performRejection,
+      });
+    } else {
+      performRejection();
     }
   };
 
@@ -223,6 +258,20 @@ export default function TradeFinance() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Admin OTP Verification Modal */}
+        {pendingAction && adminUser?.id && (
+          <AdminOtpModal
+            isOpen={isOtpModalOpen}
+            onClose={closeOtpModal}
+            onVerified={handleVerified}
+            actionType={pendingAction.actionType}
+            targetId={pendingAction.targetId}
+            targetType={pendingAction.targetType}
+            actionData={pendingAction.actionData}
+            adminUserId={adminUser.id}
+          />
+        )}
       </div>
     </AdminLayout>
   );

@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
+import { useAdminOtp } from '@/hooks/useAdminOtp';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +42,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { isOtpModalOpen, pendingAction, requestOtp, handleVerified, closeOtpModal } = useAdminOtp();
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -70,7 +73,7 @@ export default function UserManagement() {
     }
   };
 
-  const handleSuspendUser = async (userId: string) => {
+  const performSuspendUser = async (userId: string) => {
     try {
       await apiRequest('POST', `/api/admin/users/${userId}/suspend`, {
         adminId: currentUser?.id,
@@ -83,7 +86,7 @@ export default function UserManagement() {
     }
   };
 
-  const handleActivateUser = async (userId: string) => {
+  const performActivateUser = async (userId: string) => {
     try {
       await apiRequest('POST', `/api/admin/users/${userId}/activate`, {
         adminId: currentUser?.id
@@ -92,6 +95,36 @@ export default function UserManagement() {
       fetchUsers();
     } catch (error) {
       toast.error("Failed to activate user");
+    }
+  };
+
+  const handleSuspendUser = async (userId: string) => {
+    if (!currentUser?.id) return;
+    const otpRequired = await checkOtpRequired('user_suspension', currentUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: 'user_suspension',
+        targetId: userId,
+        targetType: 'user',
+        onComplete: () => performSuspendUser(userId),
+      });
+    } else {
+      performSuspendUser(userId);
+    }
+  };
+
+  const handleActivateUser = async (userId: string) => {
+    if (!currentUser?.id) return;
+    const otpRequired = await checkOtpRequired('user_activation', currentUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: 'user_activation',
+        targetId: userId,
+        targetType: 'user',
+        onComplete: () => performActivateUser(userId),
+      });
+    } else {
+      performActivateUser(userId);
     }
   };
 
@@ -390,6 +423,20 @@ export default function UserManagement() {
             )}
           </CardContent>
         </Card>
+
+        {/* Admin OTP Verification Modal */}
+        {pendingAction && currentUser?.id && (
+          <AdminOtpModal
+            isOpen={isOtpModalOpen}
+            onClose={closeOtpModal}
+            onVerified={handleVerified}
+            actionType={pendingAction.actionType}
+            targetId={pendingAction.targetId}
+            targetType={pendingAction.targetType}
+            actionData={pendingAction.actionData}
+            adminUserId={currentUser.id}
+          />
+        )}
       </div>
     </AdminLayout>
   );

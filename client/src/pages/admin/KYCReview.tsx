@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
+import { useAdminOtp } from '@/hooks/useAdminOtp';
 
 export default function KYCReview() {
   const { user: adminUser } = useAuth();
@@ -17,6 +19,7 @@ export default function KYCReview() {
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const { isOtpModalOpen, pendingAction, requestOtp, handleVerified, closeOtpModal } = useAdminOtp();
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-kyc-submissions'],
@@ -83,15 +86,44 @@ export default function KYCReview() {
     },
   });
 
-  const handleApprove = () => {
-    if (selectedApplication) {
-      approveMutation.mutate(selectedApplication.id);
+  const performApproval = (submissionId: string) => {
+    approveMutation.mutate(submissionId);
+  };
+
+  const performRejection = (submissionId: string, reason: string) => {
+    rejectMutation.mutate({ submissionId, reason });
+  };
+
+  const handleApprove = async () => {
+    if (!selectedApplication || !adminUser?.id) return;
+    
+    const otpRequired = await checkOtpRequired('kyc_approval', adminUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: 'kyc_approval',
+        targetId: selectedApplication.id,
+        targetType: 'kyc_submission',
+        onComplete: () => performApproval(selectedApplication.id),
+      });
+    } else {
+      performApproval(selectedApplication.id);
     }
   };
 
-  const handleReject = () => {
-    if (selectedApplication && rejectionReason.trim()) {
-      rejectMutation.mutate({ submissionId: selectedApplication.id, reason: rejectionReason });
+  const handleReject = async () => {
+    if (!selectedApplication || !rejectionReason.trim() || !adminUser?.id) return;
+    
+    const otpRequired = await checkOtpRequired('kyc_rejection', adminUser.id);
+    if (otpRequired) {
+      requestOtp({
+        actionType: 'kyc_rejection',
+        targetId: selectedApplication.id,
+        targetType: 'kyc_submission',
+        actionData: { reason: rejectionReason },
+        onComplete: () => performRejection(selectedApplication.id, rejectionReason),
+      });
+    } else {
+      performRejection(selectedApplication.id, rejectionReason);
     }
   };
 
@@ -386,6 +418,20 @@ export default function KYCReview() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Admin OTP Verification Modal */}
+        {pendingAction && adminUser?.id && (
+          <AdminOtpModal
+            isOpen={isOtpModalOpen}
+            onClose={closeOtpModal}
+            onVerified={handleVerified}
+            actionType={pendingAction.actionType}
+            targetId={pendingAction.targetId}
+            targetType={pendingAction.targetType}
+            actionData={pendingAction.actionData}
+            adminUserId={adminUser.id}
+          />
+        )}
       </div>
     </AdminLayout>
   );
