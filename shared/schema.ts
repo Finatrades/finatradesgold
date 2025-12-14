@@ -1106,7 +1106,7 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 
 export const contentBlockTypeEnum = pgEnum('content_block_type', ['text', 'rich_text', 'image', 'json', 'html']);
 export const contentStatusEnum = pgEnum('content_status', ['draft', 'published']);
-export const templateTypeEnum = pgEnum('template_type', ['email', 'certificate', 'notification', 'page_section']);
+export const templateTypeEnum = pgEnum('template_type', ['email', 'certificate', 'notification', 'page_section', 'invoice', 'financial_report']);
 
 // Content Pages - Groups content by page/module
 export const contentPages = pgTable("content_pages", {

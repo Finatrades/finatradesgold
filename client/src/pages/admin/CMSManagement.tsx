@@ -258,6 +258,8 @@ export default function CMSManagement() {
       case 'certificate': return <Award className="w-4 h-4" />;
       case 'notification': return <Bell className="w-4 h-4" />;
       case 'page_section': return <Layout className="w-4 h-4" />;
+      case 'invoice': return <FileText className="w-4 h-4" />;
+      case 'financial_report': return <BarChart3 className="w-4 h-4" />;
       default: return <FileText className="w-4 h-4" />;
     }
   };
@@ -941,7 +943,7 @@ function TemplateDialog({
 }) {
   const [name, setName] = useState(template?.name || '');
   const [slug, setSlug] = useState(template?.slug || '');
-  const [type, setType] = useState<'email' | 'certificate' | 'notification' | 'page_section'>(template?.type || 'email');
+  const [type, setType] = useState<'email' | 'certificate' | 'notification' | 'page_section' | 'invoice' | 'financial_report'>(template?.type || 'email');
   const [subject, setSubject] = useState(template?.subject || '');
   const [body, setBody] = useState(template?.body || '');
   const [variablesText, setVariablesText] = useState(
@@ -1034,6 +1036,10 @@ function TemplateDialog({
         return 'bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200';
       case 'notification':
         return 'bg-blue-50 border-l-4 border-blue-500';
+      case 'invoice':
+        return 'bg-white border-2 border-gray-300';
+      case 'financial_report':
+        return 'bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-slate-200';
       default:
         return 'bg-white';
     }
@@ -1087,6 +1093,8 @@ function TemplateDialog({
                       <SelectItem value="certificate">Certificate</SelectItem>
                       <SelectItem value="notification">Notification</SelectItem>
                       <SelectItem value="page_section">Page Section</SelectItem>
+                      <SelectItem value="invoice">Invoice</SelectItem>
+                      <SelectItem value="financial_report">Financial Report</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1230,6 +1238,18 @@ function TemplateDialog({
                   <div className="flex items-center gap-2 mb-2">
                     <Bell className="w-4 h-4 text-blue-600" />
                     <span className="text-sm font-medium text-blue-600">Notification</span>
+                  </div>
+                )}
+                {type === 'invoice' && (
+                  <div className="text-center mb-4 pb-2 border-b-2 border-orange-500">
+                    <FileText className="w-10 h-10 mx-auto text-orange-600" />
+                    <div className="text-lg font-bold text-gray-800 mt-2">INVOICE</div>
+                  </div>
+                )}
+                {type === 'financial_report' && (
+                  <div className="text-center mb-4 pb-2 border-b-2 border-slate-400">
+                    <BarChart3 className="w-10 h-10 mx-auto text-slate-600" />
+                    <div className="text-lg font-bold text-gray-800 mt-2">FINANCIAL REPORT</div>
                   </div>
                 )}
                 <div className="whitespace-pre-wrap text-sm">
