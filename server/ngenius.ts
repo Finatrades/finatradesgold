@@ -96,15 +96,15 @@ export class NgeniusService {
       authHeader = `Basic ${this.config.apiKey}`;
     }
 
-    // Use NGenius v1 identity endpoint
-    const response = await fetch(`${this.getIdentityUrl()}/auth/access-token`, {
+    // Use NGenius OpenID Connect token endpoint
+    const response = await fetch(`${this.getIdentityUrl()}/auth/realms/ni/protocol/openid-connect/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/vnd.ni-identity.v1+json',
         'Accept': 'application/vnd.ni-identity.v1+json',
         'Authorization': authHeader,
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ grant_type: 'client_credentials' }),
     });
 
     if (!response.ok) {
