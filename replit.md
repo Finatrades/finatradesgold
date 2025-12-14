@@ -108,3 +108,41 @@ Preferred communication style: Simple, everyday language.
   4. Webhook at POST /api/binance-pay/webhook receives payment confirmation
   5. On success, wallet is credited with purchased gold
 - **Note**: Requires Binance Pay Merchant credentials (not trading API keys)
+
+### Mobile App (Capacitor)
+
+The app is configured for iOS and Android mobile builds using Capacitor.
+
+#### Configuration
+- **Config File**: `capacitor.config.ts`
+- **App ID**: `com.finatrades.app`
+- **App Name**: Finatrades
+- **Web Directory**: `dist/public` (Vite build output)
+
+#### Installed Plugins
+- `@capacitor/camera` - KYC document photo capture
+- `@capacitor/push-notifications` - Push alerts for transactions
+- `@capacitor/haptics` - Touch feedback
+- `@capacitor/status-bar` - Mobile status bar styling
+- `@capacitor/splash-screen` - App launch branding
+- `@capacitor/filesystem` - Local file access
+- `@capacitor/preferences` - Local key-value storage
+
+#### Build Commands
+```bash
+# Build web app and sync to native projects
+npm run build && npx cap sync
+
+# Add platforms (requires Xcode/Android Studio)
+npx cap add ios
+npx cap add android
+
+# Open in IDE
+npx cap open ios      # Opens Xcode
+npx cap open android  # Opens Android Studio
+```
+
+#### Development Notes
+- Native platforms (ios/android folders) must be added on a machine with Xcode/Android Studio
+- After web changes: run `npx cap sync` to update native projects
+- Status bar and splash screen configured with orange theme (#f97316)
