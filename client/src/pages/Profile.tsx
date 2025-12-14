@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'wouter';
 
@@ -138,6 +138,23 @@ export default function Profile() {
                     <p className="text-xs text-muted-foreground">Dec 2024</p>
                   </div>
                 </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 border-border" data-testid="card-user-manual">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-100 text-orange-700">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">User Manual</p>
+                  <p className="text-xs text-muted-foreground">Download PDF guide</p>
+                </div>
+                <a href="/api/documents/user-manual" download="Finatrades-User-Manual.pdf">
+                  <Button size="sm" variant="outline" data-testid="button-download-manual">
+                    <Download className="w-4 h-4 mr-1" /> Download
+                  </Button>
+                </a>
               </div>
             </Card>
           </div>
