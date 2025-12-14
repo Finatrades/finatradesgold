@@ -180,7 +180,19 @@ export default function VerifyEmail() {
                 </Button>
               </div>
 
-              <div className="pt-4 border-t border-border">
+              <div className="pt-4 border-t border-border space-y-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    sessionStorage.removeItem('verificationEmail');
+                    toast.info("You can verify your email later from your profile settings.");
+                    setLocation('/login');
+                  }}
+                  className="w-full"
+                  data-testid="button-skip"
+                >
+                  Skip for now - Go to Login
+                </Button>
                 <Button
                   variant="ghost"
                   onClick={() => {
