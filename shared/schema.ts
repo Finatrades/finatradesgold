@@ -1606,6 +1606,15 @@ export const securitySettings = pgTable("security_settings", {
   otpOnVaultWithdrawal: boolean("otp_on_vault_withdrawal").notNull().default(true),
   otpOnTradeBridge: boolean("otp_on_trade_bridge").notNull().default(true),
   
+  // Admin Approval OTP Requirements
+  adminOtpEnabled: boolean("admin_otp_enabled").notNull().default(true),
+  adminOtpOnKycApproval: boolean("admin_otp_on_kyc_approval").notNull().default(true),
+  adminOtpOnDepositApproval: boolean("admin_otp_on_deposit_approval").notNull().default(true),
+  adminOtpOnWithdrawalApproval: boolean("admin_otp_on_withdrawal_approval").notNull().default(true),
+  adminOtpOnBnslApproval: boolean("admin_otp_on_bnsl_approval").notNull().default(true),
+  adminOtpOnTradeCaseApproval: boolean("admin_otp_on_trade_case_approval").notNull().default(true),
+  adminOtpOnUserSuspension: boolean("admin_otp_on_user_suspension").notNull().default(true),
+  
   // Passkey Requirements per Action (when passkeyEnabled is true)
   passkeyOnLogin: boolean("passkey_on_login").notNull().default(true),
   passkeyOnWithdrawal: boolean("passkey_on_withdrawal").notNull().default(false),
@@ -1661,3 +1670,35 @@ export const userPasskeys = pgTable("user_passkeys", {
 export const insertUserPasskeySchema = createInsertSchema(userPasskeys).omit({ id: true, createdAt: true });
 export type InsertUserPasskey = z.infer<typeof insertUserPasskeySchema>;
 export type UserPasskey = typeof userPasskeys.$inferSelect;
+
+// ============================================
+// ADMIN ACTION OTP VERIFICATIONS
+// ============================================
+
+export const adminActionTypeEnum = pgEnum('admin_action_type', [
+  'kyc_approval', 'kyc_rejection', 
+  'deposit_approval', 'deposit_rejection',
+  'withdrawal_approval', 'withdrawal_rejection',
+  'bnsl_approval', 'bnsl_rejection',
+  'trade_case_approval', 'trade_case_rejection',
+  'user_suspension', 'user_activation'
+]);
+
+export const adminActionOtps = pgTable("admin_action_otps", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id", { length: 255 }).notNull().references(() => users.id),
+  actionType: adminActionTypeEnum("action_type").notNull(),
+  targetId: varchar("target_id", { length: 255 }).notNull(), // ID of the entity being acted upon
+  targetType: varchar("target_type", { length: 100 }).notNull(), // 'user', 'kyc_submission', 'deposit_request', etc.
+  code: varchar("code", { length: 10 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  verified: boolean("verified").notNull().default(false),
+  verifiedAt: timestamp("verified_at"),
+  actionData: json("action_data").$type<Record<string, any>>(), // Store action-specific data like reason
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAdminActionOtpSchema = createInsertSchema(adminActionOtps).omit({ id: true, createdAt: true });
+export type InsertAdminActionOtp = z.infer<typeof insertAdminActionOtpSchema>;
+export type AdminActionOtp = typeof adminActionOtps.$inferSelect;

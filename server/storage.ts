@@ -16,7 +16,7 @@ import {
   brandingSettings,
   employees, rolePermissions,
   securitySettings, otpVerifications, userPasskeys,
-  invoices, certificateDeliveries,
+  invoices, certificateDeliveries, adminActionOtps,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -63,7 +63,8 @@ import {
   type OtpVerification, type InsertOtpVerification,
   type UserPasskey, type InsertUserPasskey,
   type Invoice, type InsertInvoice,
-  type CertificateDelivery, type InsertCertificateDelivery
+  type CertificateDelivery, type InsertCertificateDelivery,
+  type AdminActionOtp, type InsertAdminActionOtp
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -1859,6 +1860,45 @@ export class DatabaseStorage implements IStorage {
   async updateCertificateDelivery(id: string, updates: Partial<CertificateDelivery>): Promise<CertificateDelivery | undefined> {
     const [delivery] = await db.update(certificateDeliveries).set(updates).where(eq(certificateDeliveries.id, id)).returning();
     return delivery || undefined;
+  }
+
+  // ============================================
+  // ADMIN ACTION OTP VERIFICATIONS
+  // ============================================
+
+  async createAdminActionOtp(otp: InsertAdminActionOtp): Promise<AdminActionOtp> {
+    const [verification] = await db.insert(adminActionOtps).values(otp).returning();
+    return verification;
+  }
+
+  async getAdminActionOtp(id: string): Promise<AdminActionOtp | undefined> {
+    const [verification] = await db.select().from(adminActionOtps).where(eq(adminActionOtps.id, id));
+    return verification || undefined;
+  }
+
+  async getPendingAdminActionOtp(adminId: string, actionType: string, targetId: string): Promise<AdminActionOtp | undefined> {
+    const [verification] = await db.select().from(adminActionOtps)
+      .where(and(
+        eq(adminActionOtps.adminId, adminId),
+        sql`${adminActionOtps.actionType} = ${actionType}`,
+        eq(adminActionOtps.targetId, targetId),
+        eq(adminActionOtps.verified, false)
+      ))
+      .orderBy(desc(adminActionOtps.createdAt))
+      .limit(1);
+    return verification || undefined;
+  }
+
+  async updateAdminActionOtp(id: string, updates: Partial<AdminActionOtp>): Promise<AdminActionOtp | undefined> {
+    const [verification] = await db.update(adminActionOtps).set(updates).where(eq(adminActionOtps.id, id)).returning();
+    return verification || undefined;
+  }
+
+  async cleanupExpiredAdminOtps(): Promise<number> {
+    const result = await db.delete(adminActionOtps)
+      .where(sql`${adminActionOtps.expiresAt} < NOW() AND ${adminActionOtps.verified} = false`)
+      .returning();
+    return result.length;
   }
 }
 
