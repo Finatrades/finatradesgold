@@ -63,6 +63,8 @@ export const users = pgTable("users", {
   // Business fields (for business accounts)
   companyName: varchar("company_name", { length: 255 }),
   registrationNumber: varchar("registration_number", { length: 100 }),
+  // FinaBridge disclaimer acceptance
+  finabridgeDisclaimerAcceptedAt: timestamp("finabridge_disclaimer_accepted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -84,6 +86,7 @@ export const insertUserSchema = createInsertSchema(users)
     companyName: z.string().nullable().optional(),
     registrationNumber: z.string().nullable().optional(),
     profilePhoto: z.string().nullable().optional(),
+    finabridgeDisclaimerAcceptedAt: z.date().nullable().optional(),
     // MFA fields
     mfaEnabled: z.boolean().optional(),
     mfaMethod: z.enum(['totp', 'email']).nullable().optional(),
