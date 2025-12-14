@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, ShieldCheck, Eye, EyeOff, Camera, ArrowRight, ArrowLeft, X, Upload } from 'lucide-react';
+import { CheckCircle2, Building, User, ShieldCheck, Eye, EyeOff, Camera, ArrowRight, ArrowLeft, X, Upload, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
@@ -38,6 +38,96 @@ export default function Register() {
 
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Camera states
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+
+  // Start camera when entering selfie step
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    setIsCameraReady(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+          setIsCameraReady(true);
+        };
+      }
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      setCameraError(err.name === 'NotAllowedError' 
+        ? 'Camera access denied. Please allow camera access to continue.'
+        : 'Unable to access camera. Please check your device settings.');
+    }
+  }, []);
+
+  // Stop camera when leaving selfie step or component unmounts
+  const stopCamera = useCallback(() => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+      setIsCameraReady(false);
+    }
+  }, [cameraStream]);
+
+  // Capture photo from video stream
+  const capturePhoto = useCallback(() => {
+    if (videoRef.current && canvasRef.current && isCameraReady) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Mirror the image for selfie
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setProfilePhoto(dataUrl);
+        stopCamera();
+        toast.success('Photo captured successfully!');
+      }
+    }
+  }, [isCameraReady, stopCamera]);
+
+  // Handle step changes for camera
+  useEffect(() => {
+    if (step === 'selfie' && !profilePhoto) {
+      startCamera();
+    } else if (step !== 'selfie') {
+      stopCamera();
+    }
+    return () => {
+      if (step === 'selfie') {
+        stopCamera();
+      }
+    };
+  }, [step, profilePhoto]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
+  const retakePhoto = useCallback(() => {
+    setProfilePhoto(null);
+    startCamera();
+  }, [startCamera]);
 
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
@@ -128,7 +218,7 @@ export default function Register() {
       return;
     }
     if (!profilePhoto) {
-      toast.error("Please take a selfie for identity verification");
+      toast.error("Please capture a selfie for identity verification");
       return;
     }
 
@@ -403,42 +493,70 @@ export default function Register() {
                 exit={{ opacity: 0, x: -50 }}
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <Button variant="ghost" size="icon" onClick={() => setStep('details')}>
+                  <Button variant="ghost" size="icon" onClick={() => { stopCamera(); setStep('details'); }}>
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
                   <div>
                     <h1 className="text-2xl font-bold text-foreground">Photo Verification</h1>
-                    <p className="text-sm text-muted-foreground">Step 2 of 2: Upload a selfie for identity verification</p>
+                    <p className="text-sm text-muted-foreground">Step 2 of 2: Take a selfie for identity verification</p>
                   </div>
                 </div>
 
                 <Card className="p-6 bg-white border-border shadow-md">
                   <div className="space-y-6">
                     <div className="text-center">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        data-testid="input-photo-upload"
-                      />
+                      {/* Hidden canvas for capturing photo */}
+                      <canvas ref={canvasRef} className="hidden" />
                       
+                      {/* Camera view - show when no photo captured yet */}
                       {!profilePhoto && (
                         <div className="space-y-4">
-                          <div 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="w-48 h-48 mx-auto bg-muted rounded-full flex items-center justify-center border-2 border-dashed border-muted-foreground/30 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
-                          >
-                            <Upload className="w-16 h-16 text-muted-foreground/50" />
-                          </div>
-                          <p className="text-muted-foreground">Upload a clear selfie photo for identity verification</p>
-                          <Button onClick={() => fileInputRef.current?.click()} className="bg-primary" data-testid="button-upload-photo">
-                            <Upload className="w-4 h-4 mr-2" /> Upload Photo
-                          </Button>
+                          {cameraError ? (
+                            <div className="space-y-4">
+                              <div className="w-48 h-48 mx-auto bg-muted rounded-full flex items-center justify-center border-2 border-dashed border-red-300">
+                                <Camera className="w-16 h-16 text-red-400" />
+                              </div>
+                              <p className="text-red-500 text-sm">{cameraError}</p>
+                              <Button onClick={startCamera} className="bg-primary" data-testid="button-retry-camera">
+                                <RefreshCw className="w-4 h-4 mr-2" /> Try Again
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="relative w-64 h-64 mx-auto overflow-hidden rounded-full border-4 border-primary">
+                                <video
+                                  ref={videoRef}
+                                  autoPlay
+                                  playsInline
+                                  muted
+                                  className="w-full h-full object-cover"
+                                  style={{ transform: 'scaleX(-1)' }}
+                                  data-testid="video-camera"
+                                />
+                                {!isCameraReady && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                                    <div className="text-center">
+                                      <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
+                                      <p className="text-sm text-muted-foreground">Starting camera...</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-muted-foreground">Position your face in the circle and take a selfie</p>
+                              <Button 
+                                onClick={capturePhoto} 
+                                disabled={!isCameraReady}
+                                className="bg-primary h-12 px-8"
+                                data-testid="button-capture-photo"
+                              >
+                                <Camera className="w-5 h-5 mr-2" /> Capture Photo
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
 
+                      {/* Captured photo view */}
                       {profilePhoto && (
                         <div className="space-y-4">
                           <div className="relative w-48 h-48 mx-auto">
@@ -451,13 +569,13 @@ export default function Register() {
                               <CheckCircle2 className="w-6 h-6 text-white" />
                             </div>
                           </div>
-                          <p className="text-green-600 font-medium">Photo uploaded successfully!</p>
+                          <p className="text-green-600 font-medium">Photo captured successfully!</p>
                           <Button 
                             variant="outline" 
-                            onClick={() => { setProfilePhoto(null); fileInputRef.current?.click(); }}
-                            data-testid="button-change-photo"
+                            onClick={retakePhoto}
+                            data-testid="button-retake-photo"
                           >
-                            <Upload className="w-4 h-4 mr-2" /> Change Photo
+                            <RefreshCw className="w-4 h-4 mr-2" /> Retake Photo
                           </Button>
                         </div>
                       )}
