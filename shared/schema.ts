@@ -391,19 +391,27 @@ export const depositRequests = pgTable("deposit_requests", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  bankAccountId: varchar("bank_account_id", { length: 255 }).notNull().references(() => platformBankAccounts.id),
+  bankAccountId: varchar("bank_account_id", { length: 255 }), // Optional - no FK constraint to allow JSON-stored bank accounts
+  // Snapshot of target bank account details (for audit trail)
+  targetBankName: varchar("target_bank_name", { length: 255 }),
+  targetAccountName: varchar("target_account_name", { length: 255 }),
+  targetAccountNumber: varchar("target_account_number", { length: 255 }),
+  targetSwiftCode: varchar("target_swift_code", { length: 100 }),
+  targetIban: varchar("target_iban", { length: 100 }),
+  targetCurrency: varchar("target_currency", { length: 10 }),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
   paymentMethod: varchar("payment_method", { length: 100 }).notNull().default('Bank Transfer'),
   senderBankName: varchar("sender_bank_name", { length: 255 }), // User's sending bank
   senderAccountName: varchar("sender_account_name", { length: 255 }), // Name on user's bank account
   transactionReference: varchar("transaction_reference", { length: 255 }), // User's bank transfer reference
-  proofOfPayment: text("proof_of_payment"), // URL to uploaded receipt
+  proofOfPayment: text("proof_of_payment"), // Base64 or URL to uploaded receipt image
   notes: text("notes"),
   status: depositRequestStatusEnum("status").notNull().default('Pending'),
   processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
   processedAt: timestamp("processed_at"),
   rejectionReason: text("rejection_reason"),
+  adminNotes: text("admin_notes"), // Admin notes for processing
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
