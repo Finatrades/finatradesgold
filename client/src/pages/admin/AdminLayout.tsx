@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isActive = (path: string) => location === path;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-orange-50/30 flex">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-gray-50 to-orange-50/30 flex">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
@@ -154,7 +154,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
         {/* Header */}
         <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 flex items-center justify-between px-6 sticky top-0 z-40">
           <button 
@@ -193,7 +193,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-6 lg:p-8 overflow-y-auto w-full">
           {children}
         </main>
       </div>
