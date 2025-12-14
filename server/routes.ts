@@ -5433,6 +5433,7 @@ export async function registerRoutes(
       const ngeniusService = NgeniusService.getInstance({
         apiKey: settings.ngeniusApiKey,
         outletRef: settings.ngeniusOutletRef,
+        realmName: settings.ngeniusRealmName || undefined,
         mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
       });
 
@@ -5513,6 +5514,7 @@ export async function registerRoutes(
           const ngeniusService = NgeniusService.getInstance({
             apiKey: settings.ngeniusApiKey,
             outletRef: settings.ngeniusOutletRef,
+            realmName: settings.ngeniusRealmName || undefined,
             mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
           });
 
@@ -5586,6 +5588,7 @@ export async function registerRoutes(
       const ngeniusService = NgeniusService.getInstance({
         apiKey: settings.ngeniusApiKey,
         outletRef: settings.ngeniusOutletRef,
+        realmName: settings.ngeniusRealmName || undefined,
         mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
       });
 

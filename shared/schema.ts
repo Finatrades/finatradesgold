@@ -1493,6 +1493,7 @@ export const paymentGatewaySettings = pgTable("payment_gateway_settings", {
   ngeniusEnabled: boolean("ngenius_enabled").notNull().default(false),
   ngeniusApiKey: text("ngenius_api_key"),
   ngeniusOutletRef: varchar("ngenius_outlet_ref", { length: 100 }),
+  ngeniusRealmName: varchar("ngenius_realm_name", { length: 100 }), // Tenant realm name for authentication
   ngeniusMode: varchar("ngenius_mode", { length: 20 }).default('sandbox'), // 'sandbox' or 'live'
   ngeniusFeePercent: decimal("ngenius_fee_percent", { precision: 5, scale: 2 }).default('2.5'),
   ngeniusFixedFee: decimal("ngenius_fixed_fee", { precision: 10, scale: 2 }).default('0.30'),

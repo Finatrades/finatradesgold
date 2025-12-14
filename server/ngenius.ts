@@ -3,6 +3,7 @@ import crypto from 'crypto';
 interface NgeniusConfig {
   apiKey: string;
   outletRef: string;
+  realmName?: string;
   mode: 'sandbox' | 'live';
 }
 
@@ -91,6 +92,11 @@ export class NgeniusService {
     }
 
     // Use NGenius token endpoint: https://api-gateway.ngenius-payments.com/identity/auth/access-token
+    // Include realmName in body if provided (required by NGenius)
+    const requestBody = this.config.realmName 
+      ? JSON.stringify({ realmName: this.config.realmName })
+      : undefined;
+
     const response = await fetch(`${this.getBaseUrl()}/identity/auth/access-token`, {
       method: 'POST',
       headers: {
@@ -98,6 +104,7 @@ export class NgeniusService {
         'Accept': 'application/vnd.ni-identity.v1+json',
         'Authorization': authHeader,
       },
+      ...(requestBody && { body: requestBody }),
     });
 
     if (!response.ok) {
