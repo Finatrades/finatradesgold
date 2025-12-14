@@ -1,7 +1,7 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, LineChart, Globe, Coins, Loader2 } from 'lucide-react';
+import { Database, DollarSign, TrendingUp, LineChart, Globe, Coins, Loader2, Copy, Check } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
 import KpiCard from '@/components/dashboard/KpiCard';
@@ -28,6 +28,15 @@ function formatGrams(grams: number): string {
 export default function Dashboard() {
   const { user } = useAuth();
   const { totals, wallet, transactions, goldPrice, isLoading } = useDashboardData();
+  const [copied, setCopied] = React.useState(false);
+
+  const copyFinatradesId = () => {
+    if (user?.finatradesId) {
+      navigator.clipboard.writeText(user.finatradesId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (!user) return null;
 
@@ -36,9 +45,31 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* 1. Header Section */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>
-          <p className="text-muted-foreground">Welcome back to your financial command center.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>
+            <p className="text-muted-foreground">Welcome back to your financial command center.</p>
+          </div>
+          {user.finatradesId && (
+            <div className="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800 rounded-lg px-4 py-2 shadow-sm">
+              <span className="text-sm text-muted-foreground">Your ID:</span>
+              <span className="font-mono font-bold text-orange-600 dark:text-orange-400" data-testid="text-user-finatrades-id">
+                {user.finatradesId}
+              </span>
+              <button
+                onClick={copyFinatradesId}
+                className="p-1 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded transition-colors"
+                title="Copy Finatrades ID"
+                data-testid="button-copy-finatrades-id"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 1.5 Quick Actions Horizontal */}

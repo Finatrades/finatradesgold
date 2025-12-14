@@ -20,6 +20,7 @@ import {
 
 interface User {
   id: string;
+  finatradesId?: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -96,7 +97,8 @@ export default function UserManagement() {
 
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+    `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.finatradesId && user.finatradesId.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const stats = {
@@ -228,6 +230,7 @@ export default function UserManagement() {
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
+                      <th className="px-6 py-4 font-semibold tracking-wide">Finatrades ID</th>
                       <th className="px-6 py-4 font-semibold tracking-wide">Name</th>
                       <th className="px-6 py-4 font-semibold tracking-wide">Email</th>
                       <th className="px-6 py-4 font-semibold tracking-wide">Phone</th>
@@ -242,7 +245,7 @@ export default function UserManagement() {
                   <tbody className="divide-y divide-gray-100">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-6 py-12 text-center text-gray-500 bg-gray-50/50">
+                        <td colSpan={10} className="px-6 py-12 text-center text-gray-500 bg-gray-50/50">
                           <div className="flex flex-col items-center gap-2">
                             <Users className="w-8 h-8 text-gray-300" />
                             <span>No users found</span>
@@ -256,6 +259,11 @@ export default function UserManagement() {
                           className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150 group`} 
                           data-testid={`row-user-${user.id}`}
                         >
+                          <td className="px-6 py-4">
+                            <span className="font-mono text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded" data-testid={`text-finatrades-id-${user.id}`}>
+                              {user.finatradesId || '-'}
+                            </span>
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               {user.profilePhoto ? (
