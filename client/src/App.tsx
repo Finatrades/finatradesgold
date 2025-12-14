@@ -120,6 +120,7 @@ function Router() {
       <Route path="/admin/cards" component={CardManagement} />
       <Route path="/admin/finance" component={TradeFinance} />
       <Route path="/admin/reports" component={FinancialReports} />
+      <Route path="/admin/financial-reports" component={FinancialReports} />
 
       <Route component={NotFound} />
     </Switch>
