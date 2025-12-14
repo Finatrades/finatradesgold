@@ -3401,6 +3401,33 @@ export async function registerRoutes(
     return result;
   }
   
+  // Record FinaBridge disclaimer acceptance
+  app.post("/api/finabridge/accept-disclaimer/:userId", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const updatedUser = await storage.updateUser(req.params.userId, {
+        finabridgeDisclaimerAcceptedAt: new Date(),
+      });
+      
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: req.params.userId,
+        actionType: "update",
+        actor: req.params.userId,
+        actorRole: "user",
+        details: "FinaBridge disclaimer accepted",
+      });
+      
+      res.json({ success: true, acceptedAt: updatedUser?.finabridgeDisclaimerAcceptedAt });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to record disclaimer acceptance" });
+    }
+  });
+  
   // IMPORTER ENDPOINTS
   
   // Get importer's trade requests

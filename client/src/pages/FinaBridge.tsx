@@ -85,14 +85,23 @@ export default function FinaBridge() {
   const [activeTab, setActiveTab] = useState('requests');
   const [loading, setLoading] = useState(true);
   
-  // Disclaimer modal state - check sessionStorage for acceptance
+  // Disclaimer modal state - check if user has accepted in database
   const [showDisclaimer, setShowDisclaimer] = useState(() => {
-    return sessionStorage.getItem('finabridge_disclaimer_accepted') !== 'true';
+    // Show disclaimer if user hasn't accepted yet (check user object)
+    return !user?.finabridgeDisclaimerAcceptedAt;
   });
 
-  const handleDisclaimerAccept = () => {
-    sessionStorage.setItem('finabridge_disclaimer_accepted', 'true');
-    setShowDisclaimer(false);
+  const handleDisclaimerAccept = async () => {
+    if (!user) return;
+    try {
+      const response = await apiRequest('POST', `/api/finabridge/accept-disclaimer/${user.id}`);
+      if (response.ok) {
+        setShowDisclaimer(false);
+        toast({ title: 'Disclaimer Accepted', description: 'You can now use FinaBridge Trade Finance.' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to record disclaimer acceptance', variant: 'destructive' });
+    }
   };
   
   const [myRequests, setMyRequests] = useState<TradeRequest[]>([]);
