@@ -1098,3 +1098,995 @@ export function generateUserManualPDF(): Promise<Buffer> {
     }
   });
 }
+
+// ============================================
+// ADMIN PANEL MANUAL PDF GENERATOR
+// ============================================
+
+export function generateAdminManualPDF(): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const chunks: Buffer[] = [];
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: 'Finatrades Admin Panel Manual',
+          Author: 'Finatrades',
+          Subject: 'Administrator Guide',
+          Keywords: 'admin, management, finatrades, gold, platform'
+        }
+      });
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const pageWidth = doc.page.width - 100;
+      let pageNumber = 0;
+
+      // Helper functions
+      const addHeader = (text: string, isChapterTitle = false) => {
+        if (isChapterTitle) {
+          doc.fillColor(FINATRADES_ORANGE).fontSize(22).font('Helvetica-Bold').text(text, { align: 'left' });
+          doc.moveDown(0.3);
+          doc.strokeColor(FINATRADES_ORANGE).lineWidth(2)
+             .moveTo(50, doc.y).lineTo(pageWidth + 50, doc.y).stroke();
+          doc.moveDown(1);
+        } else {
+          doc.fillColor('#1f2937').fontSize(16).font('Helvetica-Bold').text(text);
+          doc.moveDown(0.5);
+        }
+      };
+
+      const addSubheader = (text: string) => {
+        doc.fillColor('#374151').fontSize(13).font('Helvetica-Bold').text(text);
+        doc.moveDown(0.3);
+      };
+
+      const addParagraph = (text: string) => {
+        doc.fillColor('#4b5563').fontSize(11).font('Helvetica').text(text, { align: 'justify', lineGap: 2 });
+        doc.moveDown(0.6);
+      };
+
+      const addBulletPoint = (text: string, indent = 0) => {
+        const x = 60 + indent;
+        doc.fillColor(FINATRADES_ORANGE).fontSize(11).text('•', x - 10, doc.y, { continued: true });
+        doc.fillColor('#4b5563').font('Helvetica').text(' ' + text, { lineGap: 2 });
+        doc.moveDown(0.2);
+      };
+
+      const addNumberedStep = (number: number, text: string) => {
+        doc.fillColor(FINATRADES_ORANGE).fontSize(11).font('Helvetica-Bold')
+           .text(`${number}.`, 60, doc.y, { continued: true, width: 20 });
+        doc.fillColor('#4b5563').font('Helvetica').text(' ' + text, { lineGap: 2 });
+        doc.moveDown(0.3);
+      };
+
+      const addTip = (text: string) => {
+        const tipY = doc.y;
+        doc.roundedRect(50, tipY, pageWidth, 40, 5).fillColor('#fef3c7').fill();
+        doc.fillColor('#92400e').fontSize(10).font('Helvetica-Bold')
+           .text('TIP:', 60, tipY + 10, { continued: true });
+        doc.font('Helvetica').text(' ' + text, { width: pageWidth - 30 });
+        doc.y = tipY + 50;
+      };
+
+      const addWarning = (text: string) => {
+        const warnY = doc.y;
+        doc.roundedRect(50, warnY, pageWidth, 45, 5).fillColor('#fee2e2').fill();
+        doc.fillColor('#991b1b').fontSize(10).font('Helvetica-Bold')
+           .text('IMPORTANT:', 60, warnY + 10, { continued: true });
+        doc.font('Helvetica').text(' ' + text, { width: pageWidth - 40 });
+        doc.y = warnY + 55;
+      };
+
+      const addPageBreak = () => {
+        doc.addPage();
+        pageNumber++;
+      };
+
+      const addFooter = () => {
+        const range = doc.bufferedPageRange();
+        for (let i = 0; i < range.count; i++) {
+          doc.switchToPage(i);
+          doc.fillColor('#9ca3af').fontSize(9).font('Helvetica')
+             .text(`Finatrades Admin Manual | Page ${i + 1} of ${range.count}`, 50, doc.page.height - 40, { align: 'center', width: pageWidth });
+        }
+      };
+
+      // ============================================
+      // COVER PAGE
+      // ============================================
+      doc.rect(0, 0, doc.page.width, doc.page.height).fillColor('#1f2937').fill();
+      
+      doc.fillColor('#ffffff').fontSize(40).font('Helvetica-Bold')
+         .text('FINATRADES', 50, 180, { align: 'center' });
+      doc.fillColor(FINATRADES_ORANGE).fontSize(28)
+         .text('Administrator Manual', { align: 'center' });
+      doc.moveDown(2);
+      doc.fillColor('#d1d5db').fontSize(14).font('Helvetica')
+         .text('Complete Guide for Platform Administrators', { align: 'center' });
+      doc.moveDown(1);
+      doc.fontSize(12).text('Version 1.0 | ' + new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), { align: 'center' });
+
+      doc.fillColor('#9ca3af').fontSize(10)
+         .text('This manual provides step-by-step instructions for managing the Finatrades platform.', 50, doc.page.height - 120, { align: 'center', width: pageWidth });
+      doc.text('Written for administrators with any level of technical experience.', { align: 'center', width: pageWidth });
+
+      // ============================================
+      // TABLE OF CONTENTS
+      // ============================================
+      addPageBreak();
+      doc.fillColor('#1f2937').fontSize(24).font('Helvetica-Bold').text('Table of Contents', 50, 60);
+      doc.moveDown(1.5);
+
+      const tocItems = [
+        { num: '1', title: 'Getting Started', page: '3' },
+        { num: '2', title: 'Dashboard Overview', page: '4' },
+        { num: '3', title: 'User Management', page: '6' },
+        { num: '4', title: 'KYC Review Process', page: '9' },
+        { num: '5', title: 'Transaction Monitoring', page: '12' },
+        { num: '6', title: 'FinaVault Management', page: '14' },
+        { num: '7', title: 'FinaPay Operations', page: '16' },
+        { num: '8', title: 'BNSL Management', page: '18' },
+        { num: '9', title: 'FinaBridge Trade Finance', page: '20' },
+        { num: '10', title: 'Fee Management', page: '23' },
+        { num: '11', title: 'Document Management', page: '25' },
+        { num: '12', title: 'CMS & Content', page: '27' },
+        { num: '13', title: 'Employee Management', page: '29' },
+        { num: '14', title: 'Payment Gateway Settings', page: '31' },
+        { num: '15', title: 'Security Settings', page: '33' },
+        { num: '16', title: 'Reports & Analytics', page: '35' },
+        { num: '17', title: 'Admin Chat & Support', page: '37' },
+        { num: '18', title: 'Troubleshooting Guide', page: '39' }
+      ];
+
+      tocItems.forEach(item => {
+        const startX = 50;
+        const endX = pageWidth + 30;
+        doc.fillColor(FINATRADES_ORANGE).fontSize(11).font('Helvetica-Bold')
+           .text(item.num + '.', startX, doc.y, { continued: true, width: 25 });
+        doc.fillColor('#374151').font('Helvetica').text(' ' + item.title, { continued: true });
+        doc.fillColor('#9ca3af').text(' ' + '.'.repeat(80), { continued: true, width: 300 });
+        doc.fillColor('#374151').text(item.page);
+        doc.moveDown(0.4);
+      });
+
+      // ============================================
+      // CHAPTER 1: GETTING STARTED
+      // ============================================
+      addPageBreak();
+      addHeader('1. Getting Started', true);
+
+      addSubheader('1.1 What is the Admin Panel?');
+      addParagraph('The Admin Panel is your control center for managing the entire Finatrades platform. From here, you can manage users, review KYC applications, monitor transactions, configure fees, and much more.');
+
+      addSubheader('1.2 Accessing the Admin Panel');
+      addParagraph('To access the admin panel:');
+      addNumberedStep(1, 'Go to the Finatrades website and log in with your admin credentials');
+      addNumberedStep(2, 'Click on your profile icon in the top right corner');
+      addNumberedStep(3, 'Select "Admin Panel" from the dropdown menu');
+      addNumberedStep(4, 'You will be taken to the Admin Dashboard');
+
+      addTip('Bookmark the admin panel URL for quick access: /admin');
+
+      addSubheader('1.3 Admin Roles and Permissions');
+      addParagraph('There are different levels of admin access:');
+      addBulletPoint('Super Admin: Full access to all features including system settings');
+      addBulletPoint('Admin: Can manage users, KYC, transactions, and day-to-day operations');
+      addBulletPoint('Support Staff: Can view user information and handle support requests');
+
+      addWarning('Never share your admin login credentials. If you suspect unauthorized access, change your password immediately and notify the security team.');
+
+      addSubheader('1.4 Navigation Overview');
+      addParagraph('The admin panel has a sidebar menu on the left with the following sections:');
+      addBulletPoint('Dashboard - Overview of platform statistics');
+      addBulletPoint('Users - Manage user accounts and profiles');
+      addBulletPoint('KYC Review - Review identity verification requests');
+      addBulletPoint('Transactions - Monitor all platform transactions');
+      addBulletPoint('FinaVault - Manage vault storage and certificates');
+      addBulletPoint('FinaPay - Payment operations and wallet management');
+      addBulletPoint('BNSL - Buy Now Sell Later plan management');
+      addBulletPoint('FinaBridge - Trade finance case management');
+      addBulletPoint('Settings - Platform configuration and preferences');
+
+      // ============================================
+      // CHAPTER 2: DASHBOARD OVERVIEW
+      // ============================================
+      addPageBreak();
+      addHeader('2. Dashboard Overview', true);
+
+      addSubheader('2.1 Understanding the Dashboard');
+      addParagraph('The dashboard is the first screen you see when logging into the admin panel. It provides a quick snapshot of platform health and key metrics.');
+
+      addSubheader('2.2 Key Statistics Cards');
+      addParagraph('At the top of the dashboard, you will see four main statistics:');
+
+      addBulletPoint('Total Users: The total number of registered accounts on the platform');
+      addBulletPoint('Total Volume: The all-time transaction volume in USD');
+      addBulletPoint('Pending KYC: Number of KYC applications waiting for your review');
+      addBulletPoint('Revenue: Platform earnings from fees and transactions');
+
+      addSubheader('2.3 Pending KYC Requests Panel');
+      addParagraph('This panel shows the most recent KYC applications that need review:');
+      addBulletPoint('Each row shows the applicant name, account type, and time submitted');
+      addBulletPoint('Click "Review" to open the full application details');
+      addBulletPoint('Click "View All" to go to the complete KYC review page');
+
+      addTip('Check the pending KYC queue at least twice daily to ensure timely user verification.');
+
+      addSubheader('2.4 System Status Panel');
+      addParagraph('The system status panel shows the health of key platform services:');
+      addBulletPoint('FinaVault Storage: Status of the vault storage system');
+      addBulletPoint('Payment Gateway: Status of payment processing');
+      addBulletPoint('KYC Verification API: Status of the identity verification service');
+
+      addParagraph('Status indicators:');
+      addBulletPoint('Green (Operational): Service is working normally', 10);
+      addBulletPoint('Yellow (Degraded): Service has minor issues', 10);
+      addBulletPoint('Red (Down): Service is unavailable - escalate immediately', 10);
+
+      addSubheader('2.5 Dashboard Actions');
+      addParagraph('From the dashboard, you can quickly:');
+      addBulletPoint('Jump to any pending KYC application for review');
+      addBulletPoint('See live data updates (refreshed every 30 seconds)');
+      addBulletPoint('Navigate to detailed management sections');
+
+      // ============================================
+      // CHAPTER 3: USER MANAGEMENT
+      // ============================================
+      addPageBreak();
+      addHeader('3. User Management', true);
+
+      addSubheader('3.1 Accessing User Management');
+      addParagraph('Click "Users" in the left sidebar to access the user management page. This is where you manage all platform users.');
+
+      addSubheader('3.2 User Statistics');
+      addParagraph('At the top of the page, you will see user breakdown:');
+      addBulletPoint('Total: All registered users');
+      addBulletPoint('Personal: Individual account holders');
+      addBulletPoint('Corporate: Business/company accounts');
+      addBulletPoint('Verified: Users with verified email addresses');
+      addBulletPoint('Admins: Users with administrative privileges');
+
+      addSubheader('3.3 Searching for Users');
+      addParagraph('Use the search bar to find specific users by:');
+      addBulletPoint('Email address');
+      addBulletPoint('Name (first or last name)');
+      addBulletPoint('Finatrades ID (unique user identifier)');
+
+      addSubheader('3.4 User List');
+      addParagraph('The user table shows:');
+      addBulletPoint('User avatar and name');
+      addBulletPoint('Finatrades ID');
+      addBulletPoint('Email address and verification status');
+      addBulletPoint('Account type (Personal/Business)');
+      addBulletPoint('KYC status badge');
+      addBulletPoint('Join date');
+      addBulletPoint('Actions menu (three dots button)');
+
+      addPageBreak();
+      addSubheader('3.5 User Actions');
+      addParagraph('Click the three-dot menu next to any user to access these actions:');
+
+      addBulletPoint('View Details: Opens the full user profile with all information');
+      addBulletPoint('Verify Email: Manually verify the user\'s email address');
+      addBulletPoint('Suspend User: Temporarily block the user from accessing the platform');
+      addBulletPoint('Activate User: Re-enable a suspended user account');
+
+      addSubheader('3.6 Viewing User Details');
+      addParagraph('The user details page shows comprehensive information:');
+
+      addBulletPoint('Personal Information: Name, email, phone, address');
+      addBulletPoint('Account Status: Verification status, account type, role');
+      addBulletPoint('Wallet Information: Gold balance, cash balance, wallet ID');
+      addBulletPoint('Transaction History: Recent transactions for this user');
+      addBulletPoint('KYC Documents: Submitted identity documents');
+      addBulletPoint('Audit Log: History of all actions on this account');
+
+      addWarning('Suspending a user will immediately log them out and prevent all platform access. Only suspend users for valid security or compliance reasons.');
+
+      addSubheader('3.7 Manual Email Verification');
+      addParagraph('Sometimes users cannot receive verification emails. To manually verify:');
+      addNumberedStep(1, 'Find the user in the user list');
+      addNumberedStep(2, 'Click the three-dot menu');
+      addNumberedStep(3, 'Select "Verify Email"');
+      addNumberedStep(4, 'Confirm the action');
+      addNumberedStep(5, 'The user\'s email is now verified');
+
+      addTip('Before manually verifying email, confirm the user\'s identity through other means (phone call, support ticket, etc.).');
+
+      // ============================================
+      // CHAPTER 4: KYC REVIEW PROCESS
+      // ============================================
+      addPageBreak();
+      addHeader('4. KYC Review Process', true);
+
+      addSubheader('4.1 What is KYC?');
+      addParagraph('KYC (Know Your Customer) is the process of verifying the identity of users. This is required by regulations to prevent fraud, money laundering, and other financial crimes. All users must complete KYC to fully use the platform.');
+
+      addSubheader('4.2 Accessing KYC Review');
+      addParagraph('Click "KYC" in the sidebar to access the KYC review page. You will see:');
+      addBulletPoint('Summary statistics (Pending, Approved, Rejected counts)');
+      addBulletPoint('List of pending applications requiring your review');
+      addBulletPoint('Tabs to filter by status');
+
+      addSubheader('4.3 KYC Application Details');
+      addParagraph('When you click on an application, you will see:');
+      addBulletPoint('Personal Information: Name, date of birth, nationality');
+      addBulletPoint('Address Information: Residential address details');
+      addBulletPoint('Identity Documents: Uploaded ID photos');
+      addBulletPoint('Document Type: Passport, ID Card, or Driver\'s License');
+      addBulletPoint('Submission Date: When the user submitted the application');
+
+      addSubheader('4.4 Reviewing Documents');
+      addParagraph('Check the following when reviewing identity documents:');
+      addNumberedStep(1, 'Document is clear and readable');
+      addNumberedStep(2, 'Name matches the account name');
+      addNumberedStep(3, 'Document is not expired');
+      addNumberedStep(4, 'Photo matches the document (if selfie provided)');
+      addNumberedStep(5, 'No signs of tampering or editing');
+      addNumberedStep(6, 'Document type matches what was selected');
+
+      addPageBreak();
+      addSubheader('4.5 Approving an Application');
+      addParagraph('If all documents are valid and information matches:');
+      addNumberedStep(1, 'Review all submitted documents carefully');
+      addNumberedStep(2, 'Click the green "Approve" button');
+      addNumberedStep(3, 'Confirm the approval');
+      addNumberedStep(4, 'The user is notified and gains full platform access');
+
+      addSubheader('4.6 Rejecting an Application');
+      addParagraph('If there are issues with the application:');
+      addNumberedStep(1, 'Click the red "Reject" button');
+      addNumberedStep(2, 'Enter a clear rejection reason (this is shown to the user)');
+      addNumberedStep(3, 'Common reasons: "Document expired", "Image not readable", "Information mismatch"');
+      addNumberedStep(4, 'Click "Confirm Rejection"');
+      addNumberedStep(5, 'The user is notified and can resubmit');
+
+      addWarning('Always provide a clear rejection reason so the user understands what needs to be corrected. Vague rejections create support burden.');
+
+      addSubheader('4.7 KYC Status Meanings');
+      addBulletPoint('Not Started: User has not begun KYC process');
+      addBulletPoint('In Progress: User has submitted and is awaiting review');
+      addBulletPoint('Approved: Identity verified, full platform access granted');
+      addBulletPoint('Rejected: Application denied, user can resubmit');
+
+      addTip('Process KYC applications in the order they were received (oldest first) to be fair to all users.');
+
+      // ============================================
+      // CHAPTER 5: TRANSACTION MONITORING
+      // ============================================
+      addPageBreak();
+      addHeader('5. Transaction Monitoring', true);
+
+      addSubheader('5.1 Accessing Transactions');
+      addParagraph('Click "Transactions" in the sidebar to view all platform transactions. This page shows real-time transaction activity across the platform.');
+
+      addSubheader('5.2 Transaction Types');
+      addParagraph('The platform has several transaction types:');
+      addBulletPoint('Buy: User purchased gold');
+      addBulletPoint('Sell: User sold gold for cash');
+      addBulletPoint('Transfer: Gold transferred between users');
+      addBulletPoint('Deposit: User added funds to their wallet');
+      addBulletPoint('Withdrawal: User withdrew funds from their wallet');
+      addBulletPoint('BNSL Payout: Scheduled payout from a BNSL plan');
+      addBulletPoint('Trade Lock: Gold locked for trade finance');
+      addBulletPoint('Trade Release: Gold released after trade completion');
+
+      addSubheader('5.3 Transaction List');
+      addParagraph('Each transaction row shows:');
+      addBulletPoint('Transaction ID: Unique identifier');
+      addBulletPoint('User: The account holder');
+      addBulletPoint('Type: The transaction category');
+      addBulletPoint('Amount: Value in grams or USD');
+      addBulletPoint('Status: Pending, Completed, Failed, or Cancelled');
+      addBulletPoint('Date/Time: When the transaction occurred');
+
+      addSubheader('5.4 Filtering Transactions');
+      addParagraph('Use filters to narrow down the transaction list:');
+      addBulletPoint('Date range: View transactions from specific periods');
+      addBulletPoint('Transaction type: Filter by buy, sell, transfer, etc.');
+      addBulletPoint('Status: Show only pending, completed, or failed');
+      addBulletPoint('User search: Find transactions for a specific user');
+
+      addSubheader('5.5 Transaction Details');
+      addParagraph('Click on any transaction to see full details including:');
+      addBulletPoint('Complete transaction metadata');
+      addBulletPoint('Associated wallet balances before and after');
+      addBulletPoint('Related certificates or documents');
+      addBulletPoint('Transaction fee breakdown');
+
+      addWarning('If you notice suspicious transaction patterns (many small transactions, unusual timing, unknown recipients), report to the compliance team immediately.');
+
+      // ============================================
+      // CHAPTER 6: FINAVAULT MANAGEMENT
+      // ============================================
+      addPageBreak();
+      addHeader('6. FinaVault Management', true);
+
+      addSubheader('6.1 What is FinaVault?');
+      addParagraph('FinaVault is the secure gold storage service. Users can store their gold in allocated vaults and receive ownership certificates. Administrators manage vault operations and certificates.');
+
+      addSubheader('6.2 Vault Overview');
+      addParagraph('The FinaVault management page shows:');
+      addBulletPoint('Total gold held in vaults');
+      addBulletPoint('Number of active vault holdings');
+      addBulletPoint('Recent vault activity');
+      addBulletPoint('Certificate management');
+
+      addSubheader('6.3 Vault Holdings');
+      addParagraph('View all vault holdings with details:');
+      addBulletPoint('Holding ID and certificate number');
+      addBulletPoint('Owner information');
+      addBulletPoint('Gold amount and purity');
+      addBulletPoint('Storage location');
+      addBulletPoint('Status (Active, Locked, Released)');
+
+      addSubheader('6.4 Certificate Management');
+      addParagraph('Each vault holding has an associated certificate. You can:');
+      addBulletPoint('View certificate details');
+      addBulletPoint('Download certificate PDF');
+      addBulletPoint('Verify certificate authenticity');
+      addBulletPoint('Reissue certificates if needed');
+
+      addSubheader('6.5 Vault Operations');
+      addParagraph('Common vault operations you may perform:');
+      addBulletPoint('Approve physical withdrawal requests');
+      addBulletPoint('Process vault-to-vault transfers');
+      addBulletPoint('Update storage location information');
+      addBulletPoint('Generate audit reports');
+
+      addTip('Run weekly vault reconciliation reports to ensure physical gold matches digital records.');
+
+      // ============================================
+      // CHAPTER 7: FINAPAY OPERATIONS
+      // ============================================
+      addPageBreak();
+      addHeader('7. FinaPay Operations', true);
+
+      addSubheader('7.1 What is FinaPay?');
+      addParagraph('FinaPay is the digital wallet system for gold transactions. Users can buy, sell, and transfer gold through their FinaPay wallet. Administrators manage wallet operations and payments.');
+
+      addSubheader('7.2 Payment Operations');
+      addParagraph('The FinaPay Operations page allows you to:');
+      addBulletPoint('View all wallet balances');
+      addBulletPoint('Process pending deposits and withdrawals');
+      addBulletPoint('Review failed transactions');
+      addBulletPoint('Handle refund requests');
+
+      addSubheader('7.3 Deposit Processing');
+      addParagraph('When users deposit funds:');
+      addNumberedStep(1, 'Check the deposit request details');
+      addNumberedStep(2, 'Verify payment receipt (bank transfer, card payment, crypto)');
+      addNumberedStep(3, 'Approve the deposit to credit user\'s wallet');
+      addNumberedStep(4, 'Or reject with reason if payment not confirmed');
+
+      addSubheader('7.4 Withdrawal Processing');
+      addParagraph('When users request withdrawals:');
+      addNumberedStep(1, 'Verify user has sufficient balance');
+      addNumberedStep(2, 'Check withdrawal destination (bank account, crypto wallet)');
+      addNumberedStep(3, 'Process the payment through appropriate channel');
+      addNumberedStep(4, 'Mark as completed once funds are sent');
+
+      addWarning('Always verify large withdrawals (over $10,000) through additional verification steps as per compliance procedures.');
+
+      addSubheader('7.5 Wallet Adjustments');
+      addParagraph('In special cases, you may need to manually adjust wallets:');
+      addBulletPoint('Corrections for processing errors');
+      addBulletPoint('Promotional credits');
+      addBulletPoint('Refunds for failed transactions');
+
+      addParagraph('All manual adjustments are logged in the audit trail with the admin who made them.');
+
+      // ============================================
+      // CHAPTER 8: BNSL MANAGEMENT
+      // ============================================
+      addPageBreak();
+      addHeader('8. BNSL Management', true);
+
+      addSubheader('8.1 What is BNSL?');
+      addParagraph('BNSL (Buy Now Sell Later) is a savings product where users lock their gold at a fixed price and receive scheduled payouts over a term period. Administrators manage plan approvals and payouts.');
+
+      addSubheader('8.2 BNSL Overview Dashboard');
+      addParagraph('The BNSL management page shows:');
+      addBulletPoint('Total active BNSL plans');
+      addBulletPoint('Total gold locked in BNSL');
+      addBulletPoint('Upcoming payouts this week');
+      addBulletPoint('Plans awaiting approval');
+
+      addSubheader('8.3 Plan Statuses');
+      addBulletPoint('Pending: User created plan, awaiting approval');
+      addBulletPoint('Active: Plan approved and running');
+      addBulletPoint('Completed: All payouts made, term finished');
+      addBulletPoint('Terminated: Plan ended early by user or admin');
+
+      addSubheader('8.4 Approving BNSL Plans');
+      addParagraph('To approve a new BNSL plan:');
+      addNumberedStep(1, 'Review the plan details (term, gold amount, payout schedule)');
+      addNumberedStep(2, 'Verify user has sufficient gold in wallet');
+      addNumberedStep(3, 'Click "Approve" to activate the plan');
+      addNumberedStep(4, 'Gold is locked and payout schedule begins');
+
+      addSubheader('8.5 Managing Payouts');
+      addParagraph('BNSL payouts are processed automatically, but you can:');
+      addBulletPoint('View all scheduled payouts');
+      addBulletPoint('See payout history for each plan');
+      addBulletPoint('Manually trigger missed payouts');
+      addBulletPoint('Pause payouts if there are issues');
+
+      addSubheader('8.6 Early Termination');
+      addParagraph('If a user requests early termination:');
+      addNumberedStep(1, 'Review the termination request');
+      addNumberedStep(2, 'Check applicable penalties per terms');
+      addNumberedStep(3, 'Approve or reject the request');
+      addNumberedStep(4, 'If approved, gold is released to user\'s wallet');
+
+      // ============================================
+      // CHAPTER 9: FINABRIDGE TRADE FINANCE
+      // ============================================
+      addPageBreak();
+      addHeader('9. FinaBridge Trade Finance', true);
+
+      addSubheader('9.1 What is FinaBridge?');
+      addParagraph('FinaBridge provides gold-backed trade finance for importers and exporters. Business users can use their gold as collateral for trade transactions. Administrators review and manage trade cases.');
+
+      addSubheader('9.2 Trade Case Overview');
+      addParagraph('The FinaBridge management page shows:');
+      addBulletPoint('Active trade cases');
+      addBulletPoint('Pending cases awaiting review');
+      addBulletPoint('Settlement queue');
+      addBulletPoint('Total trade volume');
+
+      addSubheader('9.3 Trade Case Statuses');
+      addBulletPoint('Draft: User started case but not submitted');
+      addBulletPoint('Submitted: Waiting for initial review');
+      addBulletPoint('Under Review: Documents being verified');
+      addBulletPoint('Approved: Ready for gold lock and activation');
+      addBulletPoint('Active: Trade in progress, gold locked');
+      addBulletPoint('Pending Settlement: Trade complete, awaiting settlement');
+      addBulletPoint('Settled: All complete, gold released');
+      addBulletPoint('Rejected: Case denied');
+
+      addSubheader('9.4 Reviewing Trade Cases');
+      addParagraph('When reviewing a trade case, check:');
+      addNumberedStep(1, 'Business verification - is the company legitimate?');
+      addNumberedStep(2, 'Trade details - are the values reasonable?');
+      addNumberedStep(3, 'Documents - are all required documents uploaded?');
+      addNumberedStep(4, 'Collateral - does user have sufficient gold?');
+
+      addPageBreak();
+      addSubheader('9.5 Document Verification');
+      addParagraph('Verify these documents for trade cases:');
+      addBulletPoint('Commercial Invoice - matches trade details');
+      addBulletPoint('Bill of Lading - shipping documentation');
+      addBulletPoint('Certificate of Origin - source country verification');
+      addBulletPoint('Packing List - item details match invoice');
+      addBulletPoint('Insurance Certificate - coverage is adequate');
+      addBulletPoint('Letter of Credit - if applicable, verify with bank');
+
+      addSubheader('9.6 Approving Trade Cases');
+      addParagraph('To approve a trade case:');
+      addNumberedStep(1, 'Complete document verification');
+      addNumberedStep(2, 'Verify gold collateral is available');
+      addNumberedStep(3, 'Click "Approve" to change status');
+      addNumberedStep(4, 'User can then activate and lock gold');
+
+      addSubheader('9.7 Settlement Process');
+      addParagraph('When a trade is complete:');
+      addNumberedStep(1, 'User submits settlement request with proof');
+      addNumberedStep(2, 'Verify trade was completed successfully');
+      addNumberedStep(3, 'Process the settlement');
+      addNumberedStep(4, 'Gold collateral is released to user');
+
+      addWarning('Trade finance involves significant amounts. Always follow the four-eyes principle - have a second admin verify before approving large trade cases.');
+
+      // ============================================
+      // CHAPTER 10: FEE MANAGEMENT
+      // ============================================
+      addPageBreak();
+      addHeader('10. Fee Management', true);
+
+      addSubheader('10.1 Accessing Fee Settings');
+      addParagraph('Click "Fees" in the sidebar to manage platform fees. This is where you configure all transaction and service fees.');
+
+      addSubheader('10.2 Fee Types');
+      addParagraph('The platform has several fee categories:');
+      addBulletPoint('Trading Fees: Applied to buy and sell transactions');
+      addBulletPoint('Transfer Fees: For gold transfers between users');
+      addBulletPoint('Withdrawal Fees: For cash withdrawals');
+      addBulletPoint('Storage Fees: Monthly vault storage charges');
+      addBulletPoint('BNSL Fees: Fees for BNSL plan services');
+      addBulletPoint('Trade Finance Fees: FinaBridge service charges');
+
+      addSubheader('10.3 Viewing Current Fees');
+      addParagraph('The fee table shows:');
+      addBulletPoint('Fee name and type');
+      addBulletPoint('Current percentage or fixed amount');
+      addBulletPoint('Minimum and maximum limits');
+      addBulletPoint('When the fee was last updated');
+      addBulletPoint('Who updated it');
+
+      addSubheader('10.4 Updating Fees');
+      addParagraph('To change a fee:');
+      addNumberedStep(1, 'Click "Edit" next to the fee');
+      addNumberedStep(2, 'Enter the new fee value');
+      addNumberedStep(3, 'Set effective date (can be immediate or future)');
+      addNumberedStep(4, 'Add a reason for the change');
+      addNumberedStep(5, 'Click "Save" to apply');
+
+      addWarning('Fee changes affect all users immediately (or from effective date). Communicate significant fee changes to users in advance.');
+
+      addSubheader('10.5 Fee Audit Trail');
+      addParagraph('All fee changes are logged. You can view the history to see:');
+      addBulletPoint('Previous fee values');
+      addBulletPoint('When changes were made');
+      addBulletPoint('Which admin made the change');
+      addBulletPoint('Reason provided for the change');
+
+      // ============================================
+      // CHAPTER 11: DOCUMENT MANAGEMENT
+      // ============================================
+      addPageBreak();
+      addHeader('11. Document Management', true);
+
+      addSubheader('11.1 Document Types');
+      addParagraph('The platform generates and stores various documents:');
+      addBulletPoint('Certificates: Ownership, storage, transfer certificates');
+      addBulletPoint('Invoices: Transaction invoices for purchases');
+      addBulletPoint('Statements: Account statements');
+      addBulletPoint('Reports: System and compliance reports');
+      addBulletPoint('User Documents: KYC uploads and trade documents');
+
+      addSubheader('11.2 Certificate Management');
+      addParagraph('View and manage all certificates:');
+      addBulletPoint('Search certificates by number or user');
+      addBulletPoint('Verify certificate authenticity');
+      addBulletPoint('Download certificate PDFs');
+      addBulletPoint('Reissue certificates if needed');
+
+      addSubheader('11.3 Invoice Management');
+      addParagraph('Manage transaction invoices:');
+      addBulletPoint('View all generated invoices');
+      addBulletPoint('Search by invoice number or user');
+      addBulletPoint('Download invoice PDFs');
+      addBulletPoint('Resend invoices to users');
+
+      addSubheader('11.4 Document Templates');
+      addParagraph('Configure document templates through the CMS (see Chapter 12). Templates control:');
+      addBulletPoint('Certificate appearance and text');
+      addBulletPoint('Invoice format and details');
+      addBulletPoint('Company branding elements');
+      addBulletPoint('Legal disclaimers and footers');
+
+      addTip('Regularly verify that document templates comply with current regulations and company policies.');
+
+      // ============================================
+      // CHAPTER 12: CMS & CONTENT
+      // ============================================
+      addPageBreak();
+      addHeader('12. CMS & Content Management', true);
+
+      addSubheader('12.1 What is the CMS?');
+      addParagraph('The Content Management System (CMS) allows you to edit website content, email templates, and document templates without developer involvement.');
+
+      addSubheader('12.2 Content Types');
+      addParagraph('The CMS manages:');
+      addBulletPoint('Website Pages: Home page, about, FAQ, terms, privacy');
+      addBulletPoint('Email Templates: Verification, notifications, alerts');
+      addBulletPoint('Document Templates: Certificates, invoices, statements');
+      addBulletPoint('System Messages: Error messages, confirmations');
+
+      addSubheader('12.3 Editing Content');
+      addParagraph('To edit content:');
+      addNumberedStep(1, 'Select the content category');
+      addNumberedStep(2, 'Find the specific template or page');
+      addNumberedStep(3, 'Click "Edit" to open the editor');
+      addNumberedStep(4, 'Make your changes');
+      addNumberedStep(5, 'Preview the changes');
+      addNumberedStep(6, 'Click "Publish" to make live');
+
+      addSubheader('12.4 Template Variables');
+      addParagraph('Templates can include dynamic variables:');
+      addBulletPoint('{{user_name}}: Replaced with actual user name');
+      addBulletPoint('{{amount}}: Transaction or balance amount');
+      addBulletPoint('{{date}}: Current or transaction date');
+      addBulletPoint('{{certificate_number}}: Certificate identifier');
+
+      addSubheader('12.5 Version History');
+      addParagraph('The CMS keeps history of all changes:');
+      addBulletPoint('View previous versions of any content');
+      addBulletPoint('Compare versions to see what changed');
+      addBulletPoint('Restore previous versions if needed');
+      addBulletPoint('See who made each change and when');
+
+      addWarning('Always preview content before publishing. Broken templates can affect user experience and system emails.');
+
+      // ============================================
+      // CHAPTER 13: EMPLOYEE MANAGEMENT
+      // ============================================
+      addPageBreak();
+      addHeader('13. Employee Management', true);
+
+      addSubheader('13.1 Managing Admin Users');
+      addParagraph('The Employee Management section allows you to manage other administrators and staff with platform access.');
+
+      addSubheader('13.2 Employee List');
+      addParagraph('View all employees with their:');
+      addBulletPoint('Name and email');
+      addBulletPoint('Role (Super Admin, Admin, Support)');
+      addBulletPoint('Status (Active, Inactive)');
+      addBulletPoint('Last login time');
+      addBulletPoint('Date added');
+
+      addSubheader('13.3 Adding New Employees');
+      addParagraph('To add a new admin user:');
+      addNumberedStep(1, 'Click "Add Employee"');
+      addNumberedStep(2, 'Enter their email address');
+      addNumberedStep(3, 'Set their name');
+      addNumberedStep(4, 'Select their role');
+      addNumberedStep(5, 'Click "Create"');
+      addNumberedStep(6, 'They will receive an email to set their password');
+
+      addSubheader('13.4 Managing Permissions');
+      addParagraph('Each role has different permissions:');
+      addBulletPoint('Super Admin: Full access to everything');
+      addBulletPoint('Admin: All operations except security settings');
+      addBulletPoint('Support: View-only plus chat support access');
+
+      addSubheader('13.5 Deactivating Employees');
+      addParagraph('When an employee leaves:');
+      addNumberedStep(1, 'Find them in the employee list');
+      addNumberedStep(2, 'Click "Deactivate"');
+      addNumberedStep(3, 'Their access is immediately revoked');
+      addNumberedStep(4, 'Their actions remain in audit logs');
+
+      addWarning('Always deactivate departing employees promptly. Delayed deactivation is a security risk.');
+
+      // ============================================
+      // CHAPTER 14: PAYMENT GATEWAY SETTINGS
+      // ============================================
+      addPageBreak();
+      addHeader('14. Payment Gateway Settings', true);
+
+      addSubheader('14.1 Available Payment Methods');
+      addParagraph('The platform supports multiple payment methods:');
+      addBulletPoint('Bank Transfer: Traditional wire transfers');
+      addBulletPoint('Card Payments: Credit and debit cards');
+      addBulletPoint('Cryptocurrency: Bitcoin, USDT, and other crypto via Binance Pay');
+
+      addSubheader('14.2 Payment Gateway Configuration');
+      addParagraph('Each payment gateway needs configuration:');
+      addBulletPoint('API Keys: Authentication credentials');
+      addBulletPoint('Webhook URLs: For payment notifications');
+      addBulletPoint('Merchant IDs: Provider identifiers');
+      addBulletPoint('Test/Live Mode: Switch between test and production');
+
+      addSubheader('14.3 Binance Pay Setup');
+      addParagraph('To configure Binance Pay:');
+      addNumberedStep(1, 'Get your Merchant ID from Binance Merchant Portal');
+      addNumberedStep(2, 'Generate API Key and Secret Key');
+      addNumberedStep(3, 'Enter credentials in the payment settings');
+      addNumberedStep(4, 'Configure webhook URL for payment callbacks');
+      addNumberedStep(5, 'Test with a small transaction');
+
+      addSubheader('14.4 Testing Payments');
+      addParagraph('Before going live:');
+      addBulletPoint('Use test mode credentials');
+      addBulletPoint('Process test transactions');
+      addBulletPoint('Verify webhooks are working');
+      addBulletPoint('Check that wallets are credited correctly');
+
+      addWarning('Never share payment gateway API keys. Compromised keys can lead to financial losses.');
+
+      // ============================================
+      // CHAPTER 15: SECURITY SETTINGS
+      // ============================================
+      addPageBreak();
+      addHeader('15. Security Settings', true);
+
+      addSubheader('15.1 Access Security Settings');
+      addParagraph('Only Super Admins can access security settings. This section controls platform-wide security configurations.');
+
+      addSubheader('15.2 Two-Factor Authentication');
+      addParagraph('Manage 2FA settings for the platform:');
+      addBulletPoint('Require 2FA for all admin users');
+      addBulletPoint('Set 2FA requirements for users based on activity');
+      addBulletPoint('Configure backup code generation');
+      addBulletPoint('View 2FA adoption statistics');
+
+      addSubheader('15.3 Session Settings');
+      addParagraph('Configure user session behavior:');
+      addBulletPoint('Session timeout duration');
+      addBulletPoint('Maximum concurrent sessions');
+      addBulletPoint('IP-based session restrictions');
+      addBulletPoint('Force logout after password change');
+
+      addSubheader('15.4 Password Policy');
+      addParagraph('Set password requirements:');
+      addBulletPoint('Minimum password length');
+      addBulletPoint('Required character types (uppercase, numbers, symbols)');
+      addBulletPoint('Password expiry period');
+      addBulletPoint('Password reuse restrictions');
+
+      addSubheader('15.5 Security Audit Log');
+      addParagraph('The security log tracks:');
+      addBulletPoint('All admin login attempts');
+      addBulletPoint('Security setting changes');
+      addBulletPoint('Failed login attempts');
+      addBulletPoint('Suspicious activity alerts');
+
+      addTip('Review the security audit log weekly to identify potential security threats early.');
+
+      // ============================================
+      // CHAPTER 16: REPORTS & ANALYTICS
+      // ============================================
+      addPageBreak();
+      addHeader('16. Reports & Analytics', true);
+
+      addSubheader('16.1 Available Reports');
+      addParagraph('The reports section offers various analytics:');
+      addBulletPoint('Transaction Reports: Volume, fees, types breakdown');
+      addBulletPoint('User Reports: Registration trends, KYC statistics');
+      addBulletPoint('Financial Reports: Revenue, fees collected');
+      addBulletPoint('Vault Reports: Gold holdings, storage utilization');
+      addBulletPoint('Compliance Reports: AML monitoring, suspicious activity');
+
+      addSubheader('16.2 Generating Reports');
+      addParagraph('To generate a report:');
+      addNumberedStep(1, 'Select the report type');
+      addNumberedStep(2, 'Choose the date range');
+      addNumberedStep(3, 'Apply any filters (user type, transaction type, etc.)');
+      addNumberedStep(4, 'Click "Generate Report"');
+      addNumberedStep(5, 'Download as PDF or Excel');
+
+      addSubheader('16.3 Scheduled Reports');
+      addParagraph('Set up automatic report generation:');
+      addBulletPoint('Daily transaction summaries');
+      addBulletPoint('Weekly KYC status reports');
+      addBulletPoint('Monthly financial reports');
+      addBulletPoint('Reports delivered to email');
+
+      addSubheader('16.4 Dashboard Analytics');
+      addParagraph('The analytics dashboard shows:');
+      addBulletPoint('Real-time transaction charts');
+      addBulletPoint('User growth over time');
+      addBulletPoint('Gold price trends');
+      addBulletPoint('Platform health metrics');
+
+      // ============================================
+      // CHAPTER 17: ADMIN CHAT & SUPPORT
+      // ============================================
+      addPageBreak();
+      addHeader('17. Admin Chat & Support', true);
+
+      addSubheader('17.1 Live Chat System');
+      addParagraph('The admin chat allows real-time communication with users who need support. Users can initiate chats from their dashboard.');
+
+      addSubheader('17.2 Chat Interface');
+      addParagraph('The chat interface shows:');
+      addBulletPoint('Active chat sessions on the left');
+      addBulletPoint('Chat messages in the center');
+      addBulletPoint('User information on the right');
+      addBulletPoint('New message notifications');
+
+      addSubheader('17.3 Managing Chats');
+      addParagraph('For each chat session, you can:');
+      addBulletPoint('View the user\'s account information');
+      addBulletPoint('See their recent transactions');
+      addBulletPoint('Access their KYC status');
+      addBulletPoint('Review their support history');
+
+      addSubheader('17.4 Chat Best Practices');
+      addBulletPoint('Respond promptly - aim for under 2 minutes');
+      addBulletPoint('Be professional and helpful');
+      addBulletPoint('Never share admin-only information');
+      addBulletPoint('Escalate complex issues appropriately');
+      addBulletPoint('Close chats properly when resolved');
+
+      addSubheader('17.5 Support Tickets');
+      addParagraph('For issues requiring follow-up:');
+      addNumberedStep(1, 'Create a support ticket from the chat');
+      addNumberedStep(2, 'Assign to the appropriate team');
+      addNumberedStep(3, 'Track resolution progress');
+      addNumberedStep(4, 'Notify user when resolved');
+
+      addTip('Use canned responses for common questions to speed up support while maintaining quality.');
+
+      // ============================================
+      // CHAPTER 18: TROUBLESHOOTING
+      // ============================================
+      addPageBreak();
+      addHeader('18. Troubleshooting Guide', true);
+
+      addSubheader('18.1 Common Issues');
+
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('User cannot log in');
+      doc.fillColor('#4b5563').fontSize(11).font('Helvetica')
+         .text('Possible causes: Wrong password, account suspended, email not verified.');
+      doc.moveDown(0.2);
+      addBulletPoint('Check if user exists in User Management', 10);
+      addBulletPoint('Verify email verification status', 10);
+      addBulletPoint('Check if account is suspended', 10);
+      addBulletPoint('Have user reset password if needed', 10);
+      doc.moveDown(0.5);
+
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('Transaction stuck as pending');
+      doc.fillColor('#4b5563').fontSize(11).font('Helvetica')
+         .text('Possible causes: Payment not confirmed, system error.');
+      doc.moveDown(0.2);
+      addBulletPoint('Check payment gateway for confirmation', 10);
+      addBulletPoint('Verify user\'s payment proof', 10);
+      addBulletPoint('Contact tech support if system issue', 10);
+      doc.moveDown(0.5);
+
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('KYC documents not loading');
+      doc.fillColor('#4b5563').fontSize(11).font('Helvetica')
+         .text('Possible causes: Upload failed, storage issue.');
+      doc.moveDown(0.2);
+      addBulletPoint('Ask user to re-upload documents', 10);
+      addBulletPoint('Check storage service status', 10);
+      addBulletPoint('Try a different browser', 10);
+      doc.moveDown(0.5);
+
+      addPageBreak();
+      addSubheader('18.2 When to Escalate');
+      addParagraph('Escalate to technical support when:');
+      addBulletPoint('System-wide issues affecting multiple users');
+      addBulletPoint('Payment gateway errors');
+      addBulletPoint('Security incidents');
+      addBulletPoint('Data discrepancies');
+
+      addSubheader('18.3 Emergency Contacts');
+      addParagraph('For urgent issues:');
+      addBulletPoint('Technical Support: tech-support@finatrades.com');
+      addBulletPoint('Security Team: security@finatrades.com');
+      addBulletPoint('Compliance: compliance@finatrades.com');
+
+      addSubheader('18.4 System Health Checks');
+      addParagraph('Regularly verify:');
+      addBulletPoint('All system status indicators are green');
+      addBulletPoint('No unusual error rates in logs');
+      addBulletPoint('Payment webhooks are being received');
+      addBulletPoint('Scheduled tasks are running');
+
+      // Final page - Quick Reference
+      addPageBreak();
+      addHeader('Quick Reference Card', true);
+
+      addSubheader('Daily Tasks');
+      addBulletPoint('Check pending KYC applications');
+      addBulletPoint('Review pending transactions');
+      addBulletPoint('Respond to support chats');
+      addBulletPoint('Monitor dashboard statistics');
+
+      addSubheader('Weekly Tasks');
+      addBulletPoint('Run reconciliation reports');
+      addBulletPoint('Review security audit logs');
+      addBulletPoint('Check system status trends');
+      addBulletPoint('Team sync on pending issues');
+
+      addSubheader('Monthly Tasks');
+      addBulletPoint('Generate financial reports');
+      addBulletPoint('Review fee structures');
+      addBulletPoint('Update CMS content if needed');
+      addBulletPoint('Compliance documentation review');
+
+      addSubheader('Keyboard Shortcuts');
+      addBulletPoint('Ctrl + / : Open search');
+      addBulletPoint('Escape : Close dialogs');
+      addBulletPoint('R : Refresh current page');
+
+      // Add page numbers
+      addFooter();
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

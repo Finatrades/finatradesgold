@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, RefreshCw, DollarSign, Percent, Globe, Shield, Landmark, Plus } from 'lucide-react';
+import { Save, RefreshCw, DollarSign, Percent, Globe, Shield, Landmark, Plus, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePlatform } from '@/context/PlatformContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminSettings() {
   const { settings, updateSettings, updateBankAccount, addBankAccount } = usePlatform();
+  const { user } = useAuth();
 
   const handleSave = () => {
     toast.success("Settings Saved", {
@@ -32,6 +34,29 @@ export default function AdminSettings() {
     toast.success("New bank account added", {
       description: "A new bank account template has been added. Please configure the details."
     });
+  };
+
+  const handleDownloadAdminManual = async () => {
+    try {
+      const response = await fetch('/api/documents/admin-manual', {
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to download manual');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Finatrades-Admin-Manual.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Admin Manual downloaded');
+    } catch (error) {
+      toast.error('Failed to download admin manual');
+    }
   };
 
   return (
@@ -286,6 +311,27 @@ export default function AdminSettings() {
                      <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 w-full">
                        <RefreshCw className="w-4 h-4 mr-2" /> Restart System Services
                      </Button>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-100">
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-orange-100 text-orange-700">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Admin Panel Manual</p>
+                          <p className="text-sm text-gray-500">Comprehensive guide for platform administrators</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        data-testid="button-download-admin-manual"
+                        onClick={handleDownloadAdminManual}
+                      >
+                        <Download className="w-4 h-4 mr-2" /> Download PDF
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
