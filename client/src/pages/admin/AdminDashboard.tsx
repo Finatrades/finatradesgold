@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, AlertCircle } from 'lucide-react';
+import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, AlertCircle, TrendingUp, Wallet, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -68,47 +68,49 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900" data-testid="text-admin-title">Dashboard Overview</h1>
-          <p className="text-gray-500">Welcome back, here's what's happening today.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent" data-testid="text-admin-title">Dashboard Overview</h1>
+            <p className="text-gray-500 mt-1">Welcome back! Here's what's happening with your platform today.</p>
+          </div>
+          <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span>Live data</span>
+          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatsCard 
+          <GlassStatsCard 
             title="Total Users" 
             value={isLoading ? '...' : stats?.totalUsers?.toLocaleString() || '0'}
-            change="" 
-            trend="up" 
-            icon={<Users className="w-5 h-5 text-blue-600" />} 
-            bg="bg-blue-50"
+            subtitle="Registered accounts"
+            icon={<Users className="w-6 h-6" />} 
+            gradient="from-blue-500 to-indigo-600"
             loading={isLoading}
           />
-          <StatsCard 
+          <GlassStatsCard 
             title="Total Volume" 
             value={isLoading ? '...' : formatCurrency(stats?.totalVolume || 0)}
-            change="" 
-            trend="up" 
-            icon={<Activity className="w-5 h-5 text-purple-600" />} 
-            bg="bg-purple-50"
+            subtitle="All-time transactions"
+            icon={<BarChart3 className="w-6 h-6" />} 
+            gradient="from-purple-500 to-pink-600"
             loading={isLoading}
           />
-          <StatsCard 
+          <GlassStatsCard 
             title="Pending KYC" 
             value={isLoading ? '...' : stats?.pendingKycCount?.toString() || '0'}
-            change="" 
-            trend="down" 
-            icon={<ShieldCheck className="w-5 h-5 text-orange-600" />} 
-            bg="bg-orange-50"
+            subtitle="Awaiting review"
+            icon={<ShieldCheck className="w-6 h-6" />} 
+            gradient="from-orange-500 to-red-500"
             loading={isLoading}
           />
-          <StatsCard 
+          <GlassStatsCard 
             title="Revenue" 
             value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
-            change="" 
-            trend="up" 
-            icon={<DollarSign className="w-5 h-5 text-green-600" />} 
-            bg="bg-green-50"
+            subtitle="Platform earnings"
+            icon={<TrendingUp className="w-6 h-6" />} 
+            gradient="from-emerald-500 to-teal-600"
             loading={isLoading}
           />
         </div>
@@ -188,22 +190,39 @@ export default function AdminDashboard() {
   );
 }
 
-function StatsCard({ title, value, change, trend, icon, bg, loading }: any) {
+function GlassStatsCard({ title, value, subtitle, icon, gradient, loading }: { 
+  title: string; 
+  value: string; 
+  subtitle: string; 
+  icon: React.ReactNode; 
+  gradient: string; 
+  loading: boolean;
+}) {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className={`p-3 rounded-xl ${bg}`}>
-            {icon}
+    <div className="relative group">
+      <div className={`absolute inset-0 bg-gradient-to-r ${gradient} rounded-2xl blur-xl opacity-25 group-hover:opacity-40 transition-opacity duration-500`} />
+      <Card className="relative overflow-hidden border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+              <h3 className="text-3xl font-bold text-gray-900 tracking-tight" data-testid={`text-stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                  </div>
+                ) : value}
+              </h3>
+              <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+            </div>
+            <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
+              {icon}
+            </div>
           </div>
-          {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
-        </div>
-        <div>
-          <p className="text-sm text-gray-500 mb-1">{title}</p>
-          <h3 className="text-2xl font-bold text-gray-900" data-testid={`text-stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>{value}</h3>
-        </div>
-      </CardContent>
-    </Card>
+          <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${gradient}`} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
