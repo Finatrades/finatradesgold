@@ -45,6 +45,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name", { length: 255 }).notNull(),
   lastName: varchar("last_name", { length: 255 }).notNull(),
   phoneNumber: varchar("phone_number", { length: 50 }),
+  address: text("address"),
   country: varchar("country", { length: 100 }),
   accountType: accountTypeEnum("account_type").notNull().default('personal'),
   role: userRoleEnum("role").notNull().default('user'),
@@ -78,6 +79,7 @@ export const insertUserSchema = createInsertSchema(users)
     emailVerificationCode: z.string().nullable().optional(),
     emailVerificationExpiry: z.date().nullable().optional(),
     phoneNumber: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
     country: z.string().nullable().optional(),
     companyName: z.string().nullable().optional(),
     registrationNumber: z.string().nullable().optional(),
@@ -91,6 +93,23 @@ export const insertUserSchema = createInsertSchema(users)
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// ============================================
+// PASSWORD RESET TOKENS
+// ============================================
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 
 // ============================================
 // EMPLOYEES & ROLE-BASED ACCESS
@@ -1702,3 +1721,28 @@ export const adminActionOtps = pgTable("admin_action_otps", {
 export const insertAdminActionOtpSchema = createInsertSchema(adminActionOtps).omit({ id: true, createdAt: true });
 export type InsertAdminActionOtp = z.infer<typeof insertAdminActionOtpSchema>;
 export type AdminActionOtp = typeof adminActionOtps.$inferSelect;
+
+// ============================================
+// REFERRALS
+// ============================================
+
+export const referralStatusEnum = pgEnum('referral_status', ['Pending', 'Active', 'Completed', 'Expired', 'Cancelled']);
+
+export const referrals = pgTable("referrals", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referrerId: varchar("referrer_id", { length: 255 }).notNull().references(() => users.id),
+  referredId: varchar("referred_id", { length: 255 }).references(() => users.id),
+  referralCode: varchar("referral_code", { length: 50 }).notNull().unique(),
+  referredEmail: varchar("referred_email", { length: 255 }),
+  status: referralStatusEnum("status").notNull().default('Pending'),
+  rewardAmount: decimal("reward_amount", { precision: 18, scale: 2 }).default('0'),
+  rewardCurrency: varchar("reward_currency", { length: 10 }).default('USD'),
+  rewardPaidAt: timestamp("reward_paid_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
+export type Referral = typeof referrals.$inferSelect;

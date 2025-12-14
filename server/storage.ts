@@ -64,7 +64,11 @@ import {
   type UserPasskey, type InsertUserPasskey,
   type Invoice, type InsertInvoice,
   type CertificateDelivery, type InsertCertificateDelivery,
-  type AdminActionOtp, type InsertAdminActionOtp
+  type AdminActionOtp, type InsertAdminActionOtp,
+  passwordResetTokens,
+  type PasswordResetToken, type InsertPasswordResetToken,
+  referrals,
+  type Referral, type InsertReferral
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -180,6 +184,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   
   // KYC
   getKycSubmission(userId: string): Promise<KycSubmission | undefined>;
@@ -449,6 +454,22 @@ export interface IStorage {
   getAllCertificateDeliveries(): Promise<CertificateDelivery[]>;
   createCertificateDelivery(delivery: InsertCertificateDelivery): Promise<CertificateDelivery>;
   updateCertificateDelivery(id: string, updates: Partial<CertificateDelivery>): Promise<CertificateDelivery | undefined>;
+  
+  // Password Reset Tokens
+  createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  markPasswordResetTokenUsed(id: string): Promise<void>;
+  
+  // Referrals
+  getReferral(id: string): Promise<Referral | undefined>;
+  getReferralByCode(code: string): Promise<Referral | undefined>;
+  getUserReferrals(referrerId: string): Promise<Referral[]>;
+  getAllReferrals(): Promise<Referral[]>;
+  createReferral(referral: InsertReferral): Promise<Referral>;
+  updateReferral(id: string, updates: Partial<Referral>): Promise<Referral | undefined>;
+  
+  // Audit Logs (extended)
+  getAllAuditLogs(): Promise<AuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -475,6 +496,11 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
     const [user] = await db.update(users).set({ ...updates, updatedAt: new Date() }).where(eq(users.id, id)).returning();
     return user || undefined;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id)).returning();
+    return result.length > 0;
   }
 
   // KYC
@@ -1899,6 +1925,64 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${adminActionOtps.expiresAt} < NOW() AND ${adminActionOtps.verified} = false`)
       .returning();
     return result.length;
+  }
+
+  // ============================================
+  // PASSWORD RESET TOKENS
+  // ============================================
+
+  async createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const [resetToken] = await db.insert(passwordResetTokens).values(token).returning();
+    return resetToken;
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const [resetToken] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+    return resetToken || undefined;
+  }
+
+  async markPasswordResetTokenUsed(id: string): Promise<void> {
+    await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, id));
+  }
+
+  // ============================================
+  // REFERRALS
+  // ============================================
+
+  async getReferral(id: string): Promise<Referral | undefined> {
+    const [referral] = await db.select().from(referrals).where(eq(referrals.id, id));
+    return referral || undefined;
+  }
+
+  async getReferralByCode(code: string): Promise<Referral | undefined> {
+    const [referral] = await db.select().from(referrals).where(eq(referrals.referralCode, code));
+    return referral || undefined;
+  }
+
+  async getUserReferrals(referrerId: string): Promise<Referral[]> {
+    return await db.select().from(referrals).where(eq(referrals.referrerId, referrerId)).orderBy(desc(referrals.createdAt));
+  }
+
+  async getAllReferrals(): Promise<Referral[]> {
+    return await db.select().from(referrals).orderBy(desc(referrals.createdAt));
+  }
+
+  async createReferral(referral: InsertReferral): Promise<Referral> {
+    const [newReferral] = await db.insert(referrals).values(referral).returning();
+    return newReferral;
+  }
+
+  async updateReferral(id: string, updates: Partial<Referral>): Promise<Referral | undefined> {
+    const [referral] = await db.update(referrals).set(updates).where(eq(referrals.id, id)).returning();
+    return referral || undefined;
+  }
+
+  // ============================================
+  // AUDIT LOGS (extended)
+  // ============================================
+
+  async getAllAuditLogs(): Promise<AuditLog[]> {
+    return await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt));
   }
 }
 

@@ -326,6 +326,177 @@ export async function registerRoutes(
     }
   });
   
+  // Delete user account
+  app.delete("/api/users/:userId", async (req, res) => {
+    try {
+      const { password } = req.body;
+      const userId = req.params.userId;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify password before deletion
+      let isValidPassword = false;
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await bcrypt.compare(password, user.password);
+      } else {
+        isValidPassword = user.password === password;
+      }
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+      
+      // Create audit log before deletion
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: userId,
+        actionType: "delete",
+        actor: userId,
+        actorRole: "user",
+        details: `User ${user.email} deleted their account`,
+      });
+      
+      // Delete the user
+      const deleted = await storage.deleteUser(userId);
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete account" });
+      }
+      
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+  
+  // ============================================================================
+  // PASSWORD RESET
+  // ============================================================================
+  
+  // Request password reset
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      
+      // Always return success to prevent email enumeration attacks
+      if (!user) {
+        return res.json({ message: "If an account with that email exists, we've sent password reset instructions." });
+      }
+      
+      // Generate a secure token
+      const token = Math.random().toString(36).substring(2) + Date.now().toString(36) + Math.random().toString(36).substring(2);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+      
+      // Store the token
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token,
+        expiresAt,
+        used: false,
+      });
+      
+      // Send reset email
+      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`;
+      
+      try {
+        await sendEmailDirect(
+          user.email,
+          "Reset Your Password - Finatrades",
+          `
+            <h2>Password Reset Request</h2>
+            <p>Hello ${user.firstName},</p>
+            <p>We received a request to reset your password. Click the link below to set a new password:</p>
+            <p><a href="${resetUrl}" style="background: linear-gradient(to right, #f97316, #ea580c); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Reset Password</a></p>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+            <br/>
+            <p>Best regards,<br/>The Finatrades Team</p>
+          `
+        );
+      } catch (emailError) {
+        console.log("Email sending not configured - reset URL:", resetUrl);
+      }
+      
+      // Log the audit
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        actionType: "update",
+        actor: user.id,
+        actorRole: "user",
+        details: "Password reset requested",
+      });
+      
+      res.json({ message: "If an account with that email exists, we've sent password reset instructions." });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+  
+  // Reset password with token
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+      
+      // Find the token
+      const resetToken = await storage.getPasswordResetToken(token);
+      
+      if (!resetToken) {
+        return res.status(400).json({ message: "Invalid or expired reset link" });
+      }
+      
+      if (resetToken.used) {
+        return res.status(400).json({ message: "This reset link has already been used" });
+      }
+      
+      if (new Date() > resetToken.expiresAt) {
+        return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Update the user's password
+      await storage.updateUser(resetToken.userId, { password: hashedPassword });
+      
+      // Mark token as used
+      await storage.markPasswordResetTokenUsed(resetToken.id);
+      
+      // Log the audit
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: resetToken.userId,
+        actionType: "update",
+        actor: resetToken.userId,
+        actorRole: "user",
+        details: "Password reset completed",
+      });
+      
+      res.json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+  
   // ============================================================================
   // MFA (Multi-Factor Authentication)
   // ============================================================================
@@ -6536,6 +6707,94 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to resend admin action OTP:", error);
       res.status(500).json({ message: "Failed to resend verification code" });
+    }
+  });
+
+  // ============================================
+  // REFERRALS
+  // ============================================
+
+  // Get all referrals (Admin)
+  app.get("/api/admin/referrals", async (req, res) => {
+    try {
+      const referrals = await storage.getAllReferrals();
+      res.json({ referrals });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get referrals" });
+    }
+  });
+
+  // Get single referral
+  app.get("/api/admin/referrals/:id", async (req, res) => {
+    try {
+      const referral = await storage.getReferral(req.params.id);
+      if (!referral) {
+        return res.status(404).json({ message: "Referral not found" });
+      }
+      res.json({ referral });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get referral" });
+    }
+  });
+
+  // Update referral (Admin)
+  app.patch("/api/admin/referrals/:id", async (req, res) => {
+    try {
+      const referral = await storage.updateReferral(req.params.id, req.body);
+      if (!referral) {
+        return res.status(404).json({ message: "Referral not found" });
+      }
+      res.json({ referral });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update referral" });
+    }
+  });
+
+  // Get user's referrals
+  app.get("/api/referrals/:userId", async (req, res) => {
+    try {
+      const referrals = await storage.getUserReferrals(req.params.userId);
+      res.json({ referrals });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get referrals" });
+    }
+  });
+
+  // Create referral code for user
+  app.post("/api/referrals", async (req, res) => {
+    try {
+      const { referrerId } = req.body;
+      const user = await storage.getUser(referrerId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Generate unique referral code
+      const code = `REF-${user.firstName?.substring(0, 3).toUpperCase() || 'FIN'}${Date.now().toString(36).toUpperCase().slice(-4)}`;
+      
+      const referral = await storage.createReferral({
+        referrerId,
+        referralCode: code,
+        status: 'Active',
+      });
+      
+      res.json({ referral });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create referral" });
+    }
+  });
+
+  // ============================================
+  // AUDIT LOGS
+  // ============================================
+
+  // Get all audit logs (Admin)
+  app.get("/api/admin/audit-logs", async (req, res) => {
+    try {
+      const logs = await storage.getAllAuditLogs();
+      res.json({ logs });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get audit logs" });
     }
   });
 

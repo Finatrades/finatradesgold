@@ -14,6 +14,8 @@ import FinaBridge from "@/pages/FinaBridge";
 import Register from "@/pages/Register"; // Renamed component export, file still named Onboarding.tsx for now
 import KYC from "@/pages/KYC";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
 import FinaCard from "@/pages/FinaCard";
 import Dashboard from "@/pages/Dashboard";
@@ -67,6 +69,8 @@ import EmployeeManagement from "@/pages/admin/EmployeeManagement";
 import PaymentGatewayManagement from "@/pages/admin/PaymentGatewayManagement";
 import SecuritySettings from "@/pages/admin/SecuritySettings";
 import DocumentsManagement from "@/pages/admin/DocumentsManagement";
+import ReferralManagement from "@/pages/admin/ReferralManagement";
+import AuditLogs from "@/pages/admin/AuditLogs";
 
 function Router() {
   return (
@@ -76,6 +80,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/kyc" component={KYC} />
       
       {/* User Dashboard Routes */}
@@ -121,6 +127,8 @@ function Router() {
       <Route path="/admin/finance" component={TradeFinance} />
       <Route path="/admin/reports" component={FinancialReports} />
       <Route path="/admin/financial-reports" component={FinancialReports} />
+      <Route path="/admin/referrals" component={ReferralManagement} />
+      <Route path="/admin/audit-logs" component={AuditLogs} />
 
       <Route component={NotFound} />
     </Switch>

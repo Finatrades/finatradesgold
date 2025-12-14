@@ -9,46 +9,96 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText, Loader2, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function Profile() {
-  const { user, login } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const { accountType } = useAccountType();
+  const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
-    phone: '+41 79 123 45 67', // Mock phone
-    address: 'Bahnhofstrasse 12, 8001 Zurich', // Mock address
+    phoneNumber: user?.phoneNumber || '',
+    address: user?.address || '',
     companyName: user?.companyName || ''
   });
 
   if (!user) return null;
 
-  const handleSave = () => {
-    setIsEditing(false);
-    
-    // Update local user state
-    login({
-      ...user,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      companyName: formData.companyName
-    });
-
-    toast.success("Profile Updated", {
-      description: "Your personal information has been saved successfully."
-    });
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest('PATCH', `/api/users/${user.id}`, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        companyName: formData.companyName
+      });
+      
+      await refreshUser();
+      setIsEditing(false);
+      
+      toast.success("Profile Updated", {
+        description: "Your personal information has been saved successfully."
+      });
+    } catch (error) {
+      toast.error("Failed to save", {
+        description: error instanceof Error ? error.message : "Could not update profile"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getInitials = () => {
     return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`;
   };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error("Password required", {
+        description: "Please enter your password to confirm deletion"
+      });
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      await apiRequest('DELETE', `/api/users/${user.id}`, {
+        password: deletePassword
+      });
+      
+      toast.success("Account deleted", {
+        description: "Your account has been permanently deleted."
+      });
+      
+      logout();
+      setLocation('/');
+    } catch (error) {
+      toast.error("Failed to delete account", {
+        description: error instanceof Error ? error.message : "Could not delete your account"
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeletePassword('');
+    }
+  };
+
+  const isKycApproved = user.kycStatus === 'Approved';
+  const isKycInProgress = user.kycStatus === 'In Progress';
+  const isKycNotStarted = user.kycStatus === 'Not Started';
 
   return (
     <DashboardLayout>
@@ -61,14 +111,14 @@ export default function Profile() {
             <p className="text-muted-foreground">Manage your account settings and preferences.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={user.kycStatus === 'verified' ? 'default' : 'destructive'} className="text-sm px-3 py-1">
-              {user.kycStatus === 'verified' ? (
+            <Badge variant={isKycApproved ? 'default' : 'destructive'} className="text-sm px-3 py-1">
+              {isKycApproved ? (
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Verified</span>
               ) : (
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Unverified</span>
               )}
             </Badge>
-            {user.kycStatus === 'pending' && (
+            {(isKycInProgress || isKycNotStarted) && (
               <Link href="/kyc">
                  <Button size="sm" variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
                     Complete Verification <ArrowRight className="w-3 h-3 ml-1" />
@@ -115,12 +165,12 @@ export default function Profile() {
             <Card className="p-4 border-border">
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className={`p-2 rounded-lg ${user.kycStatus === 'verified' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className={`p-2 rounded-lg ${isKycApproved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-medium">{user.kycStatus === 'verified' ? 'Identity Verified' : 'Identity Unverified'}</p>
-                    {user.kycStatus === 'verified' ? (
+                    <p className="font-medium">{isKycApproved ? 'Identity Verified' : 'Identity Unverified'}</p>
+                    {isKycApproved ? (
                        <p className="text-xs text-muted-foreground">Level 2 Access</p>
                     ) : (
                        <Link href="/kyc">
@@ -176,14 +226,15 @@ export default function Profile() {
                       <CardDescription>Manage your personal details and contact info.</CardDescription>
                     </div>
                     {!isEditing ? (
-                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} data-testid="button-edit-profile">
                         <Edit className="w-4 h-4 mr-2" /> Edit
                       </Button>
                     ) : (
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                        <Button size="sm" onClick={handleSave}>
-                          <Save className="w-4 h-4 mr-2" /> Save
+                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={isSaving} data-testid="button-cancel-edit">Cancel</Button>
+                        <Button size="sm" onClick={handleSave} disabled={isSaving} data-testid="button-save-profile">
+                          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                          Save
                         </Button>
                       </div>
                     )}
@@ -198,7 +249,8 @@ export default function Profile() {
                             value={formData.firstName}
                             onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                             disabled={!isEditing}
-                            className="pl-10" 
+                            className="pl-10"
+                            data-testid="input-first-name"
                           />
                         </div>
                       </div>
@@ -208,6 +260,7 @@ export default function Profile() {
                           value={formData.lastName}
                           onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                           disabled={!isEditing}
+                          data-testid="input-last-name"
                         />
                       </div>
                     </div>
@@ -220,7 +273,8 @@ export default function Profile() {
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
                           disabled={!isEditing}
-                          className="pl-10" 
+                          className="pl-10"
+                          data-testid="input-email"
                         />
                       </div>
                     </div>
@@ -230,10 +284,12 @@ export default function Profile() {
                       <div className="relative">
                         <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                         <Input 
-                          value={formData.phone}
-                          onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
                           disabled={!isEditing}
-                          className="pl-10" 
+                          className="pl-10"
+                          placeholder="Enter phone number"
+                          data-testid="input-phone"
                         />
                       </div>
                     </div>
@@ -246,7 +302,9 @@ export default function Profile() {
                           value={formData.address}
                           onChange={(e) => setFormData({...formData, address: e.target.value})}
                           disabled={!isEditing}
-                          className="pl-10" 
+                          className="pl-10"
+                          placeholder="Enter address"
+                          data-testid="input-address"
                         />
                       </div>
                     </div>
@@ -260,7 +318,8 @@ export default function Profile() {
                             value={formData.companyName}
                             onChange={(e) => setFormData({...formData, companyName: e.target.value})}
                             disabled={!isEditing}
-                            className="pl-10" 
+                            className="pl-10"
+                            data-testid="input-company-name"
                           />
                         </div>
                       </div>
@@ -306,6 +365,66 @@ export default function Profile() {
                   <CardFooter>
                     <Button>Update Password</Button>
                   </CardFooter>
+                </Card>
+
+                {/* Danger Zone */}
+                <Card className="border-red-200 mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-red-600 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      Danger Zone
+                    </CardTitle>
+                    <CardDescription>Irreversible actions for your account.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
+                      <div>
+                        <p className="font-medium text-red-700">Delete Account</p>
+                        <p className="text-sm text-red-600">Permanently delete your account and all data. This cannot be undone.</p>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm" data-testid="button-delete-account">
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete Account
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                              <AlertTriangle className="w-5 h-5" />
+                              Delete Your Account?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. All your data, transactions, and wallet balances will be permanently deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <div className="space-y-2 py-4">
+                            <Label htmlFor="delete-password">Enter your password to confirm:</Label>
+                            <Input
+                              id="delete-password"
+                              type="password"
+                              value={deletePassword}
+                              onChange={(e) => setDeletePassword(e.target.value)}
+                              placeholder="Your password"
+                              data-testid="input-delete-password"
+                            />
+                          </div>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeletePassword('')}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleDeleteAccount}
+                              disabled={isDeleting || !deletePassword}
+                              className="bg-red-600 hover:bg-red-700"
+                              data-testid="button-confirm-delete"
+                            >
+                              {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                              Delete Permanently
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
                 </Card>
               </TabsContent>
 

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CheckCircle2, XCircle, FileText, User, Building, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from 'sonner';
@@ -19,6 +20,9 @@ export default function KYCReview() {
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showBulkRejectDialog, setShowBulkRejectDialog] = useState(false);
+  const [bulkRejectionReason, setBulkRejectionReason] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isOtpModalOpen, pendingAction, requestOtp, handleVerified, closeOtpModal } = useAdminOtp();
 
   const { data, isLoading, refetch } = useQuery({
@@ -92,6 +96,95 @@ export default function KYCReview() {
 
   const performRejection = (submissionId: string, reason: string) => {
     rejectMutation.mutate({ submissionId, reason });
+  };
+
+  const bulkApproveMutation = useMutation({
+    mutationFn: async (submissionIds: string[]) => {
+      const results = await Promise.all(
+        submissionIds.map(async (id) => {
+          const res = await fetch(`/api/kyc/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              status: 'Approved',
+              reviewedBy: adminUser?.id,
+              reviewedAt: new Date().toISOString(),
+            }),
+          });
+          return { id, success: res.ok };
+        })
+      );
+      return results;
+    },
+    onSuccess: (results) => {
+      const successCount = results.filter(r => r.success).length;
+      toast.success(`Bulk Approved`, { description: `${successCount} KYC applications approved.` });
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['admin-kyc-submissions'] });
+    },
+    onError: () => {
+      toast.error('Failed to bulk approve KYC applications');
+    },
+  });
+
+  const bulkRejectMutation = useMutation({
+    mutationFn: async ({ submissionIds, reason }: { submissionIds: string[]; reason: string }) => {
+      const results = await Promise.all(
+        submissionIds.map(async (id) => {
+          const res = await fetch(`/api/kyc/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              status: 'Rejected',
+              rejectionReason: reason,
+              reviewedBy: adminUser?.id,
+              reviewedAt: new Date().toISOString(),
+            }),
+          });
+          return { id, success: res.ok };
+        })
+      );
+      return results;
+    },
+    onSuccess: (results) => {
+      const successCount = results.filter(r => r.success).length;
+      toast.error(`Bulk Rejected`, { description: `${successCount} KYC applications rejected.` });
+      setSelectedIds(new Set());
+      setShowBulkRejectDialog(false);
+      setBulkRejectionReason('');
+      queryClient.invalidateQueries({ queryKey: ['admin-kyc-submissions'] });
+    },
+    onError: () => {
+      toast.error('Failed to bulk reject KYC applications');
+    },
+  });
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === pendingSubmissions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingSubmissions.map((s: any) => s.id)));
+    }
+  };
+
+  const handleBulkApprove = () => {
+    if (selectedIds.size === 0) return;
+    bulkApproveMutation.mutate(Array.from(selectedIds));
+  };
+
+  const handleBulkReject = () => {
+    if (selectedIds.size === 0 || !bulkRejectionReason.trim()) return;
+    bulkRejectMutation.mutate({ submissionIds: Array.from(selectedIds), reason: bulkRejectionReason });
   };
 
   const handleApprove = async () => {
@@ -190,8 +283,36 @@ export default function KYCReview() {
 
         {/* Pending Applications */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Pending Applications ({pendingSubmissions.length})</CardTitle>
+            {pendingSubmissions.length > 0 && (
+              <div className="flex items-center gap-2">
+                {selectedIds.size > 0 && (
+                  <span className="text-sm text-gray-500 mr-2">{selectedIds.size} selected</span>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleBulkApprove}
+                  disabled={selectedIds.size === 0 || bulkApproveMutation.isPending}
+                  className="text-green-600 hover:bg-green-50"
+                  data-testid="button-bulk-approve"
+                >
+                  {bulkApproveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                  Bulk Approve
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => selectedIds.size > 0 && setShowBulkRejectDialog(true)}
+                  disabled={selectedIds.size === 0}
+                  className="text-red-600 hover:bg-red-50"
+                  data-testid="button-bulk-reject"
+                >
+                  <XCircle className="w-4 h-4 mr-2" /> Bulk Reject
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -205,9 +326,22 @@ export default function KYCReview() {
               </div>
             ) : (
               <div className="space-y-4">
+                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+                  <Checkbox 
+                    checked={selectedIds.size === pendingSubmissions.length && pendingSubmissions.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                    data-testid="checkbox-select-all"
+                  />
+                  <span className="text-sm text-gray-600">Select All</span>
+                </div>
                 {pendingSubmissions.map((app: any) => (
                   <div key={app.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" data-testid={`kyc-submission-${app.id}`}>
                     <div className="flex items-center gap-4">
+                      <Checkbox 
+                        checked={selectedIds.has(app.id)}
+                        onCheckedChange={() => toggleSelection(app.id)}
+                        data-testid={`checkbox-kyc-${app.id}`}
+                      />
                       <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
                         {app.accountType === 'business' ? <Building className="w-6 h-6" /> : <User className="w-6 h-6" />}
                       </div>
@@ -414,6 +548,39 @@ export default function KYCReview() {
               >
                 {rejectMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
                 Reject Application
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Reject Dialog */}
+        <Dialog open={showBulkRejectDialog} onOpenChange={setShowBulkRejectDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Bulk Reject KYC Applications</DialogTitle>
+              <DialogDescription>
+                You are about to reject {selectedIds.size} KYC application(s). Please provide a reason.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Textarea 
+                placeholder="Enter rejection reason for all selected applications..."
+                value={bulkRejectionReason}
+                onChange={(e) => setBulkRejectionReason(e.target.value)}
+                className="min-h-[100px]"
+                data-testid="input-bulk-rejection-reason"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowBulkRejectDialog(false)}>Cancel</Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleBulkReject}
+                disabled={!bulkRejectionReason.trim() || bulkRejectMutation.isPending}
+                data-testid="button-confirm-bulk-reject"
+              >
+                {bulkRejectMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Reject {selectedIds.size} Application(s)
               </Button>
             </DialogFooter>
           </DialogContent>

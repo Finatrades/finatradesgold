@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, RefreshCw, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Search, RefreshCw, Download, FileText, FileSpreadsheet, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -38,6 +39,7 @@ export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isOtpModalOpen, pendingAction, requestOtp, handleVerified, closeOtpModal } = useAdminOtp();
 
   const { data, isLoading, refetch } = useQuery<{ transactions: Transaction[] }>({
@@ -114,7 +116,86 @@ export default function Transactions() {
     }
   };
 
+  const bulkApproveMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          const res = await fetch(`/api/admin/transactions/${id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+          });
+          return { id, success: res.ok };
+        })
+      );
+      return results;
+    },
+    onSuccess: (results) => {
+      const successCount = results.filter(r => r.success).length;
+      toast.success(`Bulk Approved`, { description: `${successCount} transaction(s) approved.` });
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
+    },
+    onError: () => {
+      toast.error('Failed to bulk approve transactions');
+    },
+  });
+
+  const bulkRejectMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          const res = await fetch(`/api/admin/transactions/${id}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: 'Bulk rejected by admin' }),
+          });
+          return { id, success: res.ok };
+        })
+      );
+      return results;
+    },
+    onSuccess: (results) => {
+      const successCount = results.filter(r => r.success).length;
+      toast.error(`Bulk Rejected`, { description: `${successCount} transaction(s) rejected.` });
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
+    },
+    onError: () => {
+      toast.error('Failed to bulk reject transactions');
+    },
+  });
+
   const transactions = data?.transactions || [];
+  const pendingTransactions = transactions.filter(tx => tx.status === 'Pending');
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAllPending = () => {
+    if (selectedIds.size === pendingTransactions.length && pendingTransactions.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingTransactions.map(tx => tx.id)));
+    }
+  };
+
+  const handleBulkApprove = () => {
+    if (selectedIds.size === 0) return;
+    bulkApproveMutation.mutate(Array.from(selectedIds));
+  };
+
+  const handleBulkReject = () => {
+    if (selectedIds.size === 0) return;
+    bulkRejectMutation.mutate(Array.from(selectedIds));
+  };
   const pendingCount = transactions.filter(tx => tx.status === 'Pending').length;
 
   const filteredTransactions = transactions.filter((tx) => {
@@ -237,13 +318,40 @@ export default function Transactions() {
                 <p className="text-yellow-700 text-sm">{pendingCount} transaction(s) awaiting your approval</p>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              className="border-yellow-500 text-yellow-700 hover:bg-yellow-100"
-              onClick={() => setStatusFilter('Pending')}
-            >
-              View Pending
-            </Button>
+            <div className="flex items-center gap-2">
+              {selectedIds.size > 0 && (
+                <span className="text-sm text-yellow-700 mr-2">{selectedIds.size} selected</span>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleBulkApprove}
+                disabled={selectedIds.size === 0 || bulkApproveMutation.isPending}
+                className="text-green-600 border-green-300 hover:bg-green-50"
+                data-testid="button-bulk-approve-tx"
+              >
+                {bulkApproveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                Bulk Approve
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleBulkReject}
+                disabled={selectedIds.size === 0 || bulkRejectMutation.isPending}
+                className="text-red-600 border-red-300 hover:bg-red-50"
+                data-testid="button-bulk-reject-tx"
+              >
+                {bulkRejectMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+                Bulk Reject
+              </Button>
+              <Button 
+                variant="outline" 
+                className="border-yellow-500 text-yellow-700 hover:bg-yellow-100"
+                onClick={() => setStatusFilter('Pending')}
+              >
+                View Pending
+              </Button>
+            </div>
           </div>
         )}
 
@@ -302,6 +410,14 @@ export default function Transactions() {
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
+                      <th className="px-4 py-4 font-semibold tracking-wide w-12">
+                        <Checkbox 
+                          checked={selectedIds.size === pendingTransactions.length && pendingTransactions.length > 0}
+                          onCheckedChange={toggleSelectAllPending}
+                          disabled={pendingTransactions.length === 0}
+                          data-testid="checkbox-select-all-tx"
+                        />
+                      </th>
                       <th className="px-4 py-4 font-semibold tracking-wide">Transaction ID</th>
                       <th className="px-4 py-4 font-semibold tracking-wide">Finatrades ID</th>
                       <th className="px-4 py-4 font-semibold tracking-wide">User</th>
@@ -319,6 +435,17 @@ export default function Transactions() {
                         className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150 group`} 
                         data-testid={`row-transaction-${tx.id}`}
                       >
+                        <td className="px-4 py-4">
+                          {tx.status === 'Pending' ? (
+                            <Checkbox 
+                              checked={selectedIds.has(tx.id)}
+                              onCheckedChange={() => toggleSelection(tx.id)}
+                              data-testid={`checkbox-tx-${tx.id}`}
+                            />
+                          ) : (
+                            <div className="w-4" />
+                          )}
+                        </td>
                         <td className="px-4 py-4 font-mono text-xs text-gray-500">TX-{tx.id.slice(0, 8).toUpperCase()}</td>
                         <td className="px-4 py-4">
                           <span className="font-mono text-sm font-medium text-orange-600">{tx.finatradesId || `FT-${tx.userId.slice(0, 8).toUpperCase()}`}</span>
