@@ -3047,7 +3047,41 @@ export async function registerRoutes(
   // Get active bank accounts (User - for deposit form)
   app.get("/api/bank-accounts/active", async (req, res) => {
     try {
-      const accounts = await storage.getActivePlatformBankAccounts();
+      // First try to get from platform_bank_accounts table
+      let accounts = await storage.getActivePlatformBankAccounts();
+      
+      // If empty, fallback to bank_accounts JSON in payment_gateway_settings
+      if (accounts.length === 0) {
+        const settings = await storage.getPaymentGatewaySettings();
+        if (settings?.bankAccounts) {
+          try {
+            const jsonAccounts = typeof settings.bankAccounts === 'string' 
+              ? JSON.parse(settings.bankAccounts) 
+              : settings.bankAccounts;
+            
+            if (Array.isArray(jsonAccounts)) {
+              const mappedAccounts = jsonAccounts
+                .filter((acc: any) => acc.isActive !== false)
+                .map((acc: any) => ({
+                  id: acc.id,
+                  bankName: acc.bankName || '',
+                  accountName: acc.accountHolderName || acc.accountName || '',
+                  accountNumber: acc.accountNumber || '',
+                  routingNumber: acc.routingNumber || null,
+                  swiftCode: acc.swiftCode || null,
+                  iban: acc.iban || null,
+                  currency: acc.currency || 'USD',
+                  country: acc.country || 'UAE',
+                  status: 'Active' as const,
+                }));
+              return res.json({ accounts: mappedAccounts });
+            }
+          } catch (e) {
+            console.error('Failed to parse bank_accounts JSON:', e);
+          }
+        }
+      }
+      
       res.json({ accounts });
     } catch (error) {
       res.status(400).json({ message: "Failed to get bank accounts" });
