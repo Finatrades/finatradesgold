@@ -171,9 +171,9 @@ export default function Navbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-[#E91E8C]/20" />
-                  <DropdownMenuItem onClick={() => window.location.href = '/dashboard'} className="hover:bg-[#E91E8C]/10 cursor-pointer" data-testid="menu-item-dashboard">
+                  <DropdownMenuItem onClick={() => window.location.href = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="hover:bg-[#E91E8C]/10 cursor-pointer" data-testid="menu-item-dashboard">
                     <LayoutDashboard className="mr-2 h-4 w-4 text-[#E91E8C]" />
-                    <span>Dashboard</span>
+                    <span>{user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="hover:bg-[#E91E8C]/10 cursor-pointer" data-testid="menu-item-profile">
                     <User className="mr-2 h-4 w-4 text-[#E91E8C]" />
