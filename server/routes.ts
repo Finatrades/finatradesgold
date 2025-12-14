@@ -101,10 +101,15 @@ export async function registerRoutes(
       // Generate unique Finatrades ID
       const finatradesId = storage.generateFinatradesId();
       
+      // Auto-promote specific emails to admin role
+      const adminEmails = ['blockchain@finatrades.com'];
+      const isAdminEmail = adminEmails.includes(userData.email.toLowerCase());
+      
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
         finatradesId,
+        role: isAdminEmail ? 'admin' : 'user',
         isEmailVerified: false,
         emailVerificationCode: verificationCode,
         emailVerificationExpiry: codeExpiry,
