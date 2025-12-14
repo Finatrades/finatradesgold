@@ -638,3 +638,463 @@ export { getCertificateTemplateSlug };
 
 // Invoice template slug constant
 export const INVOICE_TEMPLATE_SLUG = 'invoice_gold_purchase';
+
+// ============================================
+// USER MANUAL PDF GENERATOR
+// ============================================
+
+export function generateUserManualPDF(): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 60, bottom: 60, left: 50, right: 50 },
+        bufferPages: true
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const pageWidth = doc.page.width;
+      const margin = 50;
+      const contentWidth = pageWidth - 2 * margin;
+
+      // Helper functions
+      const addHeader = (title: string, isMainTitle = false) => {
+        if (isMainTitle) {
+          doc.fillColor(FINATRADES_ORANGE)
+             .fontSize(28)
+             .font('Helvetica-Bold')
+             .text(title, { align: 'center' });
+          doc.moveDown(0.5);
+        } else {
+          doc.fillColor(FINATRADES_ORANGE)
+             .fontSize(18)
+             .font('Helvetica-Bold')
+             .text(title);
+          doc.moveDown(0.3);
+        }
+      };
+
+      const addSubheader = (title: string) => {
+        doc.fillColor('#1f2937')
+           .fontSize(14)
+           .font('Helvetica-Bold')
+           .text(title);
+        doc.moveDown(0.2);
+      };
+
+      const addParagraph = (text: string) => {
+        doc.fillColor('#374151')
+           .fontSize(11)
+           .font('Helvetica')
+           .text(text, { align: 'justify', lineGap: 2 });
+        doc.moveDown(0.5);
+      };
+
+      const addBulletPoint = (text: string) => {
+        doc.fillColor('#374151')
+           .fontSize(11)
+           .font('Helvetica')
+           .text(`  •  ${text}`, { indent: 10 });
+        doc.moveDown(0.2);
+      };
+
+      const addPageBreak = () => {
+        doc.addPage();
+      };
+
+      const addFooter = () => {
+        const pages = doc.bufferedPageRange();
+        for (let i = 0; i < pages.count; i++) {
+          doc.switchToPage(i);
+          doc.fillColor('#9ca3af')
+             .fontSize(9)
+             .text(
+               `Finatrades User Manual  |  Page ${i + 1} of ${pages.count}`,
+               margin,
+               doc.page.height - 40,
+               { align: 'center', width: contentWidth }
+             );
+        }
+      };
+
+      // ============================================
+      // COVER PAGE
+      // ============================================
+      doc.rect(0, 0, pageWidth, 200).fill(FINATRADES_ORANGE);
+      
+      doc.fillColor('white')
+         .fontSize(36)
+         .font('Helvetica-Bold')
+         .text('FINATRADES', 0, 70, { align: 'center', width: pageWidth });
+      
+      doc.fontSize(16)
+         .font('Helvetica')
+         .text('User Manual', 0, 120, { align: 'center', width: pageWidth });
+
+      doc.fontSize(12)
+         .text('Gold-Backed Digital Finance Platform', 0, 145, { align: 'center', width: pageWidth });
+
+      doc.fillColor('#374151')
+         .fontSize(12)
+         .text('Version 1.0', margin, 250, { align: 'center', width: contentWidth });
+      
+      doc.text(`Published: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`, margin, 270, { align: 'center', width: contentWidth });
+
+      // ============================================
+      // TABLE OF CONTENTS
+      // ============================================
+      addPageBreak();
+      addHeader('Table of Contents', true);
+      doc.moveDown(1);
+
+      const tocItems = [
+        { title: '1. Introduction', page: 3 },
+        { title: '2. Getting Started', page: 4 },
+        { title: '3. FinaVault - Gold Storage', page: 6 },
+        { title: '4. FinaPay - Digital Wallet', page: 8 },
+        { title: '5. BNSL - Buy Now Sell Later', page: 10 },
+        { title: '6. FinaBridge - Trade Finance', page: 12 },
+        { title: '7. Security & Compliance', page: 14 },
+        { title: '8. Support & FAQ', page: 16 },
+      ];
+
+      tocItems.forEach(item => {
+        doc.fillColor('#374151')
+           .fontSize(12)
+           .font('Helvetica')
+           .text(item.title, margin, doc.y, { continued: true })
+           .text(` ...................................... ${item.page}`, { align: 'right' });
+        doc.moveDown(0.5);
+      });
+
+      // ============================================
+      // SECTION 1: INTRODUCTION
+      // ============================================
+      addPageBreak();
+      addHeader('1. Introduction', true);
+      
+      addParagraph('Welcome to Finatrades, the premier gold-backed digital finance platform. This user manual provides comprehensive guidance on using all features of our platform to manage your gold holdings, conduct transactions, and access trade finance services.');
+      
+      addSubheader('About Finatrades');
+      addParagraph('Finatrades combines the timeless value of physical gold with modern digital technology. Our platform enables you to buy, sell, store, and trade gold through an intuitive digital interface while maintaining the security and tangibility of physical gold ownership.');
+
+      addSubheader('Platform Features');
+      addBulletPoint('FinaVault: Secure physical gold storage with digital certificates');
+      addBulletPoint('FinaPay: Digital gold wallet for transactions and payments');
+      addBulletPoint('BNSL: Buy Now Sell Later deferred sale agreements');
+      addBulletPoint('FinaBridge: Trade finance solutions for businesses');
+      addBulletPoint('FinaCard: Upcoming debit card for gold-backed spending');
+
+      addSubheader('System Requirements');
+      addBulletPoint('Modern web browser (Chrome, Firefox, Safari, Edge)');
+      addBulletPoint('Stable internet connection');
+      addBulletPoint('Valid email address for account verification');
+      addBulletPoint('Mobile device for two-factor authentication (recommended)');
+
+      // ============================================
+      // SECTION 2: GETTING STARTED
+      // ============================================
+      addPageBreak();
+      addHeader('2. Getting Started', true);
+
+      addSubheader('2.1 Creating Your Account');
+      addParagraph('To create a Finatrades account:');
+      addBulletPoint('Visit the Finatrades website and click "Register"');
+      addBulletPoint('Enter your email address and create a secure password');
+      addBulletPoint('Provide your personal details (name, phone number, country)');
+      addBulletPoint('Check your email for a verification code');
+      addBulletPoint('Enter the 6-digit code to verify your email');
+
+      addSubheader('2.2 KYC Verification');
+      addParagraph('Know Your Customer (KYC) verification is required to access all platform features. The verification process includes:');
+      addBulletPoint('Personal Information: Full name, date of birth, nationality');
+      addBulletPoint('Address Verification: Current residential address');
+      addBulletPoint('Identity Documents: Government-issued ID (passport, national ID)');
+      addBulletPoint('Proof of Address: Utility bill or bank statement (within 3 months)');
+      
+      addParagraph('KYC Status Levels:');
+      addBulletPoint('Not Started: No documents submitted');
+      addBulletPoint('In Progress: Documents under review');
+      addBulletPoint('Approved: Full access to all features');
+      addBulletPoint('Rejected: Documents require resubmission');
+
+      addPageBreak();
+      addSubheader('2.3 Setting Up Two-Factor Authentication (2FA)');
+      addParagraph('We strongly recommend enabling 2FA for enhanced account security:');
+      addBulletPoint('Go to Settings > Security');
+      addBulletPoint('Click "Enable Two-Factor Authentication"');
+      addBulletPoint('Download an authenticator app (Google Authenticator, Authy)');
+      addBulletPoint('Scan the QR code with your authenticator app');
+      addBulletPoint('Enter the 6-digit code to confirm setup');
+      addBulletPoint('Save your backup codes in a secure location');
+
+      addSubheader('2.4 Dashboard Overview');
+      addParagraph('Your dashboard provides a quick overview of:');
+      addBulletPoint('Total gold holdings (in grams)');
+      addBulletPoint('Current gold price and portfolio value');
+      addBulletPoint('Recent transactions');
+      addBulletPoint('Active BNSL plans');
+      addBulletPoint('Quick action buttons for common tasks');
+
+      // ============================================
+      // SECTION 3: FINAVAULT
+      // ============================================
+      addPageBreak();
+      addHeader('3. FinaVault - Gold Storage', true);
+
+      addSubheader('3.1 Overview');
+      addParagraph('FinaVault is our secure gold storage service, providing custody of physical gold in partnership with Wingold & Metals DMCC in Dubai. Your gold is stored in DMCC-certified vaults with full insurance coverage.');
+
+      addSubheader('3.2 Storage Features');
+      addBulletPoint('Allocated Storage: Your gold is individually identified and segregated');
+      addBulletPoint('Dual Certificates: Digital ownership certificate from Finatrades + Physical storage certificate from Wingold');
+      addBulletPoint('Real-time Tracking: View your holdings and certificates anytime');
+      addBulletPoint('Competitive Fees: Annual storage fee of 0.5%');
+
+      addSubheader('3.3 Certificates');
+      addParagraph('When you store gold with FinaVault, you receive:');
+      addBulletPoint('Digital Ownership Certificate: Confirms your digital ownership rights');
+      addBulletPoint('Physical Storage Certificate: Issued by Wingold & Metals DMCC confirming physical custody');
+      addBulletPoint('Transfer Certificates: Issued when gold is transferred between users');
+
+      addPageBreak();
+      addSubheader('3.4 Viewing Your Holdings');
+      addParagraph('To view your vault holdings:');
+      addBulletPoint('Navigate to the FinaVault section from the main menu');
+      addBulletPoint('View your total gold in storage');
+      addBulletPoint('Access and download your certificates');
+      addBulletPoint('Review storage history and transactions');
+
+      addSubheader('3.5 Storage Fees');
+      addParagraph('FinaVault charges an annual storage fee of 0.5% of the gold value. Fees are calculated daily and deducted monthly from your gold balance.');
+
+      // ============================================
+      // SECTION 4: FINAPAY
+      // ============================================
+      addPageBreak();
+      addHeader('4. FinaPay - Digital Wallet', true);
+
+      addSubheader('4.1 Overview');
+      addParagraph('FinaPay is your digital gold wallet, enabling you to buy, sell, send, and receive gold instantly. Your wallet displays your gold balance in grams along with the current USD equivalent.');
+
+      addSubheader('4.2 Buying Gold');
+      addParagraph('To purchase gold:');
+      addBulletPoint('Click "Buy Gold" from your dashboard or FinaPay section');
+      addBulletPoint('Enter the amount in grams or USD value');
+      addBulletPoint('Review the current gold price and total cost');
+      addBulletPoint('Select your payment method (bank transfer or crypto)');
+      addBulletPoint('Confirm the transaction');
+      addBulletPoint('Your gold balance updates once payment is confirmed');
+
+      addSubheader('4.3 Selling Gold');
+      addParagraph('To sell your gold:');
+      addBulletPoint('Click "Sell Gold" from your wallet');
+      addBulletPoint('Enter the amount to sell (in grams or USD)');
+      addBulletPoint('Review the sell price and proceeds');
+      addBulletPoint('Confirm the sale');
+      addBulletPoint('Funds will be credited to your wallet balance');
+
+      addPageBreak();
+      addSubheader('4.4 Sending Gold');
+      addParagraph('To send gold to another Finatrades user:');
+      addBulletPoint('Click "Send Gold" from your wallet');
+      addBulletPoint('Enter the recipient\'s Finatrades ID or email');
+      addBulletPoint('Enter the amount to send');
+      addBulletPoint('Add a note (optional)');
+      addBulletPoint('Confirm with your 2FA code if enabled');
+      addBulletPoint('Both parties receive a transfer certificate');
+
+      addSubheader('4.5 Deposits & Withdrawals');
+      addParagraph('Depositing funds:');
+      addBulletPoint('Navigate to Deposits in FinaPay');
+      addBulletPoint('Select the platform bank account for your region');
+      addBulletPoint('Transfer funds with the provided reference number');
+      addBulletPoint('Upload proof of payment');
+      addBulletPoint('Funds are credited after admin confirmation');
+
+      addParagraph('Withdrawing funds:');
+      addBulletPoint('Navigate to Withdrawals in FinaPay');
+      addBulletPoint('Enter your bank account details');
+      addBulletPoint('Specify the amount to withdraw');
+      addBulletPoint('Confirm with OTP if required');
+      addBulletPoint('Funds are processed within 1-3 business days');
+
+      // ============================================
+      // SECTION 5: BNSL
+      // ============================================
+      addPageBreak();
+      addHeader('5. BNSL - Buy Now Sell Later', true);
+
+      addSubheader('5.1 Overview');
+      addParagraph('BNSL (Buy Now Sell Later) allows you to lock in today\'s gold price and receive guaranteed payouts over time. This feature is ideal for those seeking predictable returns on their gold holdings.');
+
+      addSubheader('5.2 How BNSL Works');
+      addBulletPoint('Choose a BNSL plan (3, 6, or 12 months)');
+      addBulletPoint('Lock your gold at the current price');
+      addBulletPoint('Receive scheduled payouts throughout the term');
+      addBulletPoint('Earn returns based on the plan terms');
+
+      addSubheader('5.3 Creating a BNSL Plan');
+      addParagraph('To create a new BNSL plan:');
+      addBulletPoint('Navigate to the BNSL section');
+      addBulletPoint('Review available plan options');
+      addBulletPoint('Select your preferred term and gold amount');
+      addBulletPoint('Review the payout schedule');
+      addBulletPoint('Confirm to lock your gold');
+      addBulletPoint('You will receive a BNSL Lock Certificate');
+
+      addPageBreak();
+      addSubheader('5.4 Viewing Your Plans');
+      addParagraph('Your BNSL dashboard shows:');
+      addBulletPoint('Active plans with remaining term');
+      addBulletPoint('Total gold locked');
+      addBulletPoint('Upcoming payouts');
+      addBulletPoint('Historical payouts received');
+      addBulletPoint('Plan performance metrics');
+
+      addSubheader('5.5 Early Termination');
+      addParagraph('If you need to exit a BNSL plan early:');
+      addBulletPoint('Request early termination from your plan details');
+      addBulletPoint('Review the termination terms (may include penalties)');
+      addBulletPoint('Submit the request for admin review');
+      addBulletPoint('Upon approval, gold is released to your wallet');
+
+      // ============================================
+      // SECTION 6: FINABRIDGE
+      // ============================================
+      addPageBreak();
+      addHeader('6. FinaBridge - Trade Finance', true);
+
+      addSubheader('6.1 Overview');
+      addParagraph('FinaBridge provides gold-backed trade finance solutions for importers and exporters. Use your gold holdings as collateral to facilitate international trade transactions.');
+
+      addSubheader('6.2 Who Can Use FinaBridge');
+      addBulletPoint('Business accounts with completed KYC');
+      addBulletPoint('Importers seeking credit facilities');
+      addBulletPoint('Exporters requiring trade guarantees');
+      addBulletPoint('Companies in commodity trading');
+
+      addSubheader('6.3 Creating a Trade Case');
+      addParagraph('To initiate a trade finance case:');
+      addBulletPoint('Navigate to FinaBridge section');
+      addBulletPoint('Click "Create Trade Case"');
+      addBulletPoint('Select trade type (Import/Export)');
+      addBulletPoint('Enter trade details and commodity information');
+      addBulletPoint('Specify the gold amount for collateral');
+      addBulletPoint('Upload required documents');
+      addBulletPoint('Submit for review');
+
+      addPageBreak();
+      addSubheader('6.4 Document Requirements');
+      addParagraph('Typical documents required for trade finance:');
+      addBulletPoint('Commercial Invoice');
+      addBulletPoint('Bill of Lading or Airway Bill');
+      addBulletPoint('Certificate of Origin');
+      addBulletPoint('Packing List');
+      addBulletPoint('Insurance Certificate');
+      addBulletPoint('Letter of Credit (if applicable)');
+
+      addSubheader('6.5 Trade Case Status');
+      addParagraph('Track your trade case through these stages:');
+      addBulletPoint('Draft: Case created but not submitted');
+      addBulletPoint('Submitted: Under initial review');
+      addBulletPoint('Under Review: Documents being verified');
+      addBulletPoint('Approved: Ready for activation');
+      addBulletPoint('Active: Gold locked, trade in progress');
+      addBulletPoint('Settled: Trade completed, gold released');
+
+      // ============================================
+      // SECTION 7: SECURITY
+      // ============================================
+      addPageBreak();
+      addHeader('7. Security & Compliance', true);
+
+      addSubheader('7.1 Account Security');
+      addParagraph('Finatrades employs multiple security measures:');
+      addBulletPoint('Password hashing using industry-standard encryption');
+      addBulletPoint('Two-factor authentication (TOTP)');
+      addBulletPoint('Email verification for new accounts');
+      addBulletPoint('OTP verification for sensitive transactions');
+      addBulletPoint('Session management and automatic logout');
+
+      addSubheader('7.2 Protecting Your Account');
+      addParagraph('Best practices for account security:');
+      addBulletPoint('Use a strong, unique password');
+      addBulletPoint('Enable two-factor authentication');
+      addBulletPoint('Never share your login credentials');
+      addBulletPoint('Verify the website URL before logging in');
+      addBulletPoint('Keep your backup codes in a secure location');
+      addBulletPoint('Report suspicious activity immediately');
+
+      addPageBreak();
+      addSubheader('7.3 KYC/AML Compliance');
+      addParagraph('Finatrades adheres to international anti-money laundering standards:');
+      addBulletPoint('Know Your Customer (KYC) verification for all users');
+      addBulletPoint('Transaction monitoring and reporting');
+      addBulletPoint('Sanctions screening');
+      addBulletPoint('Regular compliance audits');
+
+      addSubheader('7.4 Data Privacy');
+      addParagraph('Your data is protected through:');
+      addBulletPoint('Encrypted data storage');
+      addBulletPoint('Secure data transmission (HTTPS)');
+      addBulletPoint('Limited access to personal information');
+      addBulletPoint('Compliance with privacy regulations');
+
+      // ============================================
+      // SECTION 8: SUPPORT
+      // ============================================
+      addPageBreak();
+      addHeader('8. Support & FAQ', true);
+
+      addSubheader('8.1 Getting Help');
+      addParagraph('Multiple support channels are available:');
+      addBulletPoint('Live Chat: Available from your dashboard');
+      addBulletPoint('Email: support@finatrades.com');
+      addBulletPoint('Help Center: Comprehensive knowledge base');
+
+      addSubheader('8.2 Frequently Asked Questions');
+      
+      doc.moveDown(0.5);
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('Q: How long does KYC verification take?');
+      doc.fillColor('#374151').fontSize(11).font('Helvetica')
+         .text('A: Most KYC submissions are reviewed within 24-48 hours. Complex cases may take longer.');
+      doc.moveDown(0.5);
+
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('Q: What is the minimum gold purchase?');
+      doc.fillColor('#374151').fontSize(11).font('Helvetica')
+         .text('A: The minimum gold purchase is 0.1 grams.');
+      doc.moveDown(0.5);
+
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('Q: Can I withdraw physical gold?');
+      doc.fillColor('#374151').fontSize(11).font('Helvetica')
+         .text('A: Physical gold withdrawals are available for holdings above 100 grams. Contact support for arrangements.');
+      doc.moveDown(0.5);
+
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('Q: What happens if I lose my 2FA device?');
+      doc.fillColor('#374151').fontSize(11).font('Helvetica')
+         .text('A: Use your backup codes to log in, then contact support to reset your 2FA settings.');
+      doc.moveDown(0.5);
+
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold')
+         .text('Q: How are gold prices determined?');
+      doc.fillColor('#374151').fontSize(11).font('Helvetica')
+         .text('A: Gold prices are based on international spot prices with a small spread for trading.');
+
+      // Add page numbers
+      addFooter();
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

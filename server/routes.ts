@@ -33,6 +33,7 @@ import {
   generateTradeLockCertificate,
   generateTradeReleaseCertificate
 } from "./document-service";
+import { generateUserManualPDF } from "./pdf-generator";
 
 // Middleware to ensure admin access using header-based auth
 // This middleware validates that the X-Admin-User-Id header contains a valid admin user ID
@@ -6201,6 +6202,19 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to get user invoices:", error);
       res.status(400).json({ message: "Failed to get invoices" });
+    }
+  });
+
+  // User Manual PDF download
+  app.get("/api/documents/user-manual", async (req, res) => {
+    try {
+      const pdfBuffer = await generateUserManualPDF();
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="Finatrades-User-Manual.pdf"');
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating user manual:', error);
+      res.status(500).json({ message: "Failed to generate user manual" });
     }
   });
 
