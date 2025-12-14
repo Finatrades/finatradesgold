@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="space-y-3 pt-2">
               <Link href="/kyc">
-                <Button className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] hover:opacity-90 text-[#0D001E] shadow-lg shadow-[#D4AF37]/20 transition-all hover:scale-[1.02]" data-testid="button-verify-kyc">
+                <Button className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] hover:opacity-90 text-slate-900 shadow-lg shadow-[#D4AF37]/20 transition-all hover:scale-[1.02]" data-testid="button-verify-kyc">
                   Verify Identity Now <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
@@ -115,7 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 <Avatar className="h-10 w-10 border-2 border-[#D4AF37]/30 ring-2 ring-[#D4AF37]/10">
                   <AvatarImage src="" alt={user.firstName} />
-                  <AvatarFallback className="bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] text-[#0D001E] font-bold">
+                  <AvatarFallback className="bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] text-slate-900 font-bold">
                     {user.firstName[0]}{user.lastName[0]}
                   </AvatarFallback>
                 </Avatar>

@@ -139,7 +139,7 @@ export default function BNSLFAQ() {
     <section className="py-24 bg-gradient-to-b from-white via-gray-50/50 to-white relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
+        <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-orange-100/30 blur-3xl" />
         <div className="absolute bottom-40 left-10 w-80 h-80 rounded-full bg-amber-100/20 blur-3xl" />
       </div>
 
@@ -155,15 +155,15 @@ export default function BNSLFAQ() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/50 mb-6"
           >
-            <HelpCircle className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-medium text-purple-800">Got Questions?</span>
+            <HelpCircle className="w-4 h-4 text-orange-600" />
+            <span className="text-sm font-medium text-orange-800">Got Questions?</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Frequently Asked{' '}
-            <span className="bg-gradient-to-r from-purple-500 to-violet-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               Questions
             </span>
           </h2>
@@ -186,7 +186,7 @@ export default function BNSLFAQ() {
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 rounded-xl bg-white border border-gray-200 focus:border-purple-300 focus:ring-4 focus:ring-purple-100 outline-none transition-all text-gray-900"
+              className="w-full pl-12 pr-4 py-4 rounded-xl bg-white border border-gray-200 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-900"
               data-testid="input-faq-search"
             />
           </div>
@@ -211,7 +211,7 @@ export default function BNSLFAQ() {
                 onClick={() => setActiveCategory(category.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-purple-600 text-white shadow-md'
+                    ? 'bg-orange-600 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                 }`}
                 data-testid={`button-category-${category.id}`}
@@ -290,8 +290,8 @@ export default function BNSLFAQ() {
           viewport={{ once: true }}
           className="mt-16 text-center"
         >
-          <div className="inline-flex flex-col items-center gap-4 p-8 rounded-2xl bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-100">
-            <MessageCircle className="w-10 h-10 text-purple-600" />
+          <div className="inline-flex flex-col items-center gap-4 p-8 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100">
+            <MessageCircle className="w-10 h-10 text-orange-600" />
             <div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Still have questions?</h3>
               <p className="text-gray-600 mb-4">Our team is here to help you 24/7</p>
@@ -300,7 +300,7 @@ export default function BNSLFAQ() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setLocation('/contact')}
-              className="px-6 py-3 rounded-xl bg-purple-600 text-white font-semibold shadow-lg shadow-purple-200/50 inline-flex items-center gap-2"
+              className="px-6 py-3 rounded-xl bg-orange-600 text-white font-semibold shadow-lg shadow-orange-200/50 inline-flex items-center gap-2"
               data-testid="button-contact-support"
             >
               <MessageCircle className="w-4 h-4" />

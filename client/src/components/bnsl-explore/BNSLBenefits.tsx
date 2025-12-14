@@ -69,8 +69,8 @@ const benefits: Benefit[] = [
       'Plan upgrade options',
       'Partial withdrawal support',
     ],
-    gradient: 'from-purple-500 to-violet-600',
-    color: 'purple',
+    gradient: 'from-orange-500 to-amber-600',
+    color: 'orange',
   },
   {
     id: 'liquidity',
@@ -133,7 +133,7 @@ export default function BNSLBenefits() {
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-40 -left-20 w-96 h-96 rounded-full bg-blue-100/30 blur-3xl" />
-        <div className="absolute bottom-20 right-0 w-80 h-80 rounded-full bg-purple-100/30 blur-3xl" />
+        <div className="absolute bottom-20 right-0 w-80 h-80 rounded-full bg-orange-100/30 blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">

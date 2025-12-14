@@ -125,7 +125,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       <DialogContent className="bg-white border-border text-foreground sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <ArrowDownLeft className="w-5 h-5 text-purple-500" />
+            <ArrowDownLeft className="w-5 h-5 text-orange-500" />
             <span>Request Funds</span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -194,7 +194,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                 />
                 {invoiceFile ? (
                   <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border border-border">
-                    <FileText className="w-5 h-5 text-purple-500" />
+                    <FileText className="w-5 h-5 text-orange-500" />
                     <span className="flex-1 text-sm truncate">{invoiceFile.name}</span>
                     <Button
                       variant="ghost"
@@ -223,7 +223,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
               </div>
 
               <Button 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold"
                 disabled={numericAmount <= 0 || isLoading}
                 onClick={handleCreateRequest}
               >
@@ -294,8 +294,8 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
         {step === 'success' && (
           <div className="space-y-6 py-4 text-center">
             <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-purple-500" />
+              <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-orange-500" />
               </div>
             </div>
             
@@ -337,7 +337,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
               <Button variant="outline" className="flex-1" onClick={() => setStep('create')}>
                 New Request
               </Button>
-              <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white" onClick={handleClose}>
+              <Button className="flex-1 bg-orange-600 hover:bg-orange-700 text-white" onClick={handleClose}>
                 Done
               </Button>
             </div>

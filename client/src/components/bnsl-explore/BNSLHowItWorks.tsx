@@ -59,8 +59,8 @@ const steps: Step[] = [
       'Change plan before maturity',
     ],
     highlight: 'Plans starting from 3 months',
-    color: 'purple',
-    gradient: 'from-purple-500 to-indigo-500',
+    color: 'orange',
+    gradient: 'from-orange-500 to-amber-500',
   },
   {
     id: 3,
@@ -150,7 +150,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
         <motion.div
           animate={{ rotate: -360 }}
           transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-purple-200/30"
+          className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-orange-200/30"
         />
       </div>
 

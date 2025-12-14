@@ -124,18 +124,18 @@ export default function Home() {
 
   return (
     <Layout>
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-b from-white via-purple-50/30 to-white" data-testid="section-hero">
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-b from-white via-orange-50/30 to-white" data-testid="section-hero">
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-40 left-20 w-96 h-96 bg-purple-300 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-pink-300 rounded-full blur-3xl" />
+          <div className="absolute top-40 left-20 w-96 h-96 bg-orange-300 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-amber-300 rounded-full blur-3xl" />
         </div>
         
         <div className="relative z-10 container mx-auto px-6 py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E91E8C]/10 to-[#9333EA]/10 border border-[#E91E8C]/20 rounded-full px-4 py-2 mb-6">
-                <CheckCircle2 className="w-4 h-4 text-[#E91E8C]" />
-                <span className="text-sm font-medium text-[#7C3AED]">Swiss-Regulated Platform</span>
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#f97316]/10 to-[#ea580c]/10 border border-[#f97316]/20 rounded-full px-4 py-2 mb-6">
+                <CheckCircle2 className="w-4 h-4 text-[#f97316]" />
+                <span className="text-sm font-medium text-[#ea580c]">Swiss-Regulated Platform</span>
               </div>
 
               <h1 
@@ -165,8 +165,8 @@ export default function Home() {
                 data-testid="text-hero-partnership"
               >
                 {accountType === 'business' 
-                  ? <>Thanks to a strategic partnership with <span className="font-semibold text-[#7C3AED]">Wingold and Metals DMCC</span>, Finatrades transforms physical gold into settlement-ready financial instruments.</>
-                  : <>Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through <span className="font-semibold text-[#7C3AED]">BNSL</span>. Join structured plans — lock gold into structured buy back plans for defined durations.</>}
+                  ? <>Thanks to a strategic partnership with <span className="font-semibold text-[#ea580c]">Wingold and Metals DMCC</span>, Finatrades transforms physical gold into settlement-ready financial instruments.</>
+                  : <>Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through <span className="font-semibold text-[#ea580c]">BNSL</span>. Join structured plans — lock gold into structured buy back plans for defined durations.</>}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/login">
@@ -182,7 +182,7 @@ export default function Home() {
                 <Link href="/register">
                   <Button 
                     size="lg" 
-                    className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white px-8 rounded-full"
+                    className="bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white px-8 rounded-full"
                     data-testid="button-get-started"
                   >
                     Get Started
@@ -200,7 +200,7 @@ export default function Home() {
                 className="relative perspective-1000"
               >
                 <div className="relative w-full max-w-md mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#E91E8C]/30 to-[#9333EA]/30 rounded-3xl blur-3xl animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#f97316]/30 to-[#ea580c]/30 rounded-3xl blur-3xl animate-pulse" />
                   
                   <motion.div
                     animate={{ 
@@ -215,16 +215,16 @@ export default function Home() {
                     className="relative"
                     style={{ transformStyle: 'preserve-3d' }}
                   >
-                    <div className="relative aspect-[1.586/1] bg-gradient-to-br from-[#1a0a2e] via-[#2d1a4a] to-[#0D001E] rounded-2xl p-6 shadow-2xl overflow-hidden border border-[#E91E8C]/20">
+                    <div className="relative aspect-[1.586/1] bg-gradient-to-br from-[#1e293b] via-[#334155] to-[#0f172a] rounded-2xl p-6 shadow-2xl overflow-hidden border border-[#f97316]/20">
                       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9IiNFOTFFOEMiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9nPjwvc3ZnPg==')] opacity-50" />
                       
                       <motion.div 
-                        className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-[#E91E8C]/20 to-transparent rounded-full blur-2xl"
+                        className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-[#f97316]/20 to-transparent rounded-full blur-2xl"
                         animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
                         transition={{ duration: 4, repeat: Infinity }}
                       />
                       <motion.div 
-                        className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-[#9333EA]/20 to-transparent rounded-full blur-2xl"
+                        className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-[#ea580c]/20 to-transparent rounded-full blur-2xl"
                         animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.3, 0.5] }}
                         transition={{ duration: 4, repeat: Infinity }}
                       />
@@ -284,7 +284,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8 }}
-                    className="mt-6 bg-[#1a0a2e]/80 backdrop-blur-sm rounded-2xl p-4 border border-[#E91E8C]/10"
+                    className="mt-6 bg-[#1e293b]/80 backdrop-blur-sm rounded-2xl p-4 border border-[#f97316]/10"
                   >
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
@@ -311,7 +311,7 @@ export default function Home() {
       <section id="products" className="py-24 bg-white" data-testid="section-products">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+            <span className="inline-block text-[#f97316] text-sm font-semibold tracking-wider uppercase mb-4">
               {accountType === 'business' ? 'BUSINESS ECOSYSTEM' : 'OUR PRODUCTS'}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -338,13 +338,13 @@ export default function Home() {
                   data-testid={`card-product-${index}`}
                 >
                   <CardContent className="p-6">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E91E8C]/10 to-[#9333EA]/10 flex items-center justify-center mb-6 group-hover:from-[#E91E8C]/20 group-hover:to-[#9333EA]/20 transition-colors">
-                      <div className="text-[#E91E8C]">{product.icon}</div>
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#f97316]/10 to-[#ea580c]/10 flex items-center justify-center mb-6 group-hover:from-[#f97316]/20 group-hover:to-[#ea580c]/20 transition-colors">
+                      <div className="text-[#f97316]">{product.icon}</div>
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.title}</h3>
                     <p className="text-gray-500 text-sm mb-4">{product.description}</p>
                     <Link href={product.link}>
-                      <Button variant="ghost" className="p-0 h-auto text-[#E91E8C] hover:text-[#9333EA] font-medium group/btn">
+                      <Button variant="ghost" className="p-0 h-auto text-[#f97316] hover:text-[#ea580c] font-medium group/btn">
                         {product.cta}
                         <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
                       </Button>
@@ -357,10 +357,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how-it-works" className="py-24 bg-gradient-to-b from-purple-50/50 to-white overflow-hidden" data-testid="section-how-it-works">
+      <section id="how-it-works" className="py-24 bg-gradient-to-b from-orange-50/50 to-white overflow-hidden" data-testid="section-how-it-works">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+            <span className="inline-block text-[#f97316] text-sm font-semibold tracking-wider uppercase mb-4">
               {accountType === 'personal' ? 'YOUR JOURNEY' : 'ENTERPRISE WORKFLOW'}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -402,7 +402,7 @@ export default function Home() {
                   
                   <div className="relative flex flex-col items-center">
                     <motion.div 
-                      className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E91E8C] to-[#9333EA] flex items-center justify-center shadow-lg z-10"
+                      className="w-16 h-16 rounded-full bg-gradient-to-br from-[#f97316] to-[#ea580c] flex items-center justify-center shadow-lg z-10"
                       initial={{ scale: 0 }}
                       whileInView={{ scale: 1 }}
                       viewport={{ once: true }}
@@ -414,7 +414,7 @@ export default function Home() {
                     
                     {!isLast && (
                       <motion.div 
-                        className="w-1 h-24 bg-gradient-to-b from-[#E91E8C] to-[#9333EA] mt-2"
+                        className="w-1 h-24 bg-gradient-to-b from-[#f97316] to-[#ea580c] mt-2"
                         initial={{ scaleY: 0 }}
                         whileInView={{ scaleY: 1 }}
                         viewport={{ once: true }}
@@ -434,7 +434,7 @@ export default function Home() {
             <Link href="/register">
               <Button 
                 size="lg"
-                className="bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white rounded-full px-8"
+                className="bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white rounded-full px-8"
                 data-testid="button-explore-business"
               >
                 {accountType === 'personal' ? 'Start Your Journey' : 'Explore Business Platform'}
@@ -448,7 +448,7 @@ export default function Home() {
       <section className="py-24 bg-white" data-testid="section-bnsl">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+            <span className="inline-block text-[#f97316] text-sm font-semibold tracking-wider uppercase mb-4">
               STRUCTURED BNSL PLANS
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -470,26 +470,26 @@ export default function Home() {
               >
                 <Card 
                   className={`h-full border-2 transition-all duration-300 hover:shadow-xl ${
-                    index === 1 ? 'border-[#E91E8C] shadow-lg scale-105' : 'border-gray-200'
+                    index === 1 ? 'border-[#f97316] shadow-lg scale-105' : 'border-gray-200'
                   }`}
                   data-testid={`card-bnsl-${plan.duration}`}
                 >
                   <CardContent className="p-8 text-center">
                     {index === 1 && (
-                      <div className="inline-block bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                      <div className="inline-block bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
                         MOST POPULAR
                       </div>
                     )}
                     <div className="text-4xl font-bold text-gray-900 mb-2">{plan.duration}</div>
                     <div className="text-gray-500 text-sm mb-6">Months</div>
-                    <div className="text-3xl font-bold text-[#E91E8C] mb-2">{plan.returns}</div>
+                    <div className="text-3xl font-bold text-[#f97316] mb-2">{plan.returns}</div>
                     <div className="text-gray-500 text-sm mb-6">Expected Returns</div>
                     <div className="text-sm text-gray-600 mb-6">Min. Investment: {plan.minInvestment}</div>
                     <Link href="/bnsl">
                       <Button 
                         className={`w-full rounded-full ${
                           index === 1 
-                            ? 'bg-gradient-to-r from-[#E91E8C] to-[#9333EA] text-white' 
+                            ? 'bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white' 
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -504,10 +504,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="about" className="py-24 bg-gradient-to-b from-purple-50/50 to-white" data-testid="section-about">
+      <section id="about" className="py-24 bg-gradient-to-b from-orange-50/50 to-white" data-testid="section-about">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+            <span className="inline-block text-[#f97316] text-sm font-semibold tracking-wider uppercase mb-4">
               WHY CHOOSE US
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -529,8 +529,8 @@ export default function Home() {
                 className="text-center p-6"
                 data-testid={`advantage-${index}`}
               >
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E91E8C]/10 to-[#9333EA]/10 flex items-center justify-center mx-auto mb-4">
-                  <div className="text-[#E91E8C]">{advantage.icon}</div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#f97316]/10 to-[#ea580c]/10 flex items-center justify-center mx-auto mb-4">
+                  <div className="text-[#f97316]">{advantage.icon}</div>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {advantage.title}
@@ -548,7 +548,7 @@ export default function Home() {
         <div className="container mx-auto px-6">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-12">
-              <span className="inline-block text-[#E91E8C] text-sm font-semibold tracking-wider uppercase mb-4">
+              <span className="inline-block text-[#f97316] text-sm font-semibold tracking-wider uppercase mb-4">
                 CONTACT US
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -601,7 +601,7 @@ export default function Home() {
                       <select 
                         value={formData.accountType}
                         onChange={(e) => setFormData({...formData, accountType: e.target.value})}
-                        className="w-full h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#E91E8C]"
+                        className="w-full h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]"
                         data-testid="select-contact-account-type"
                       >
                         <option value="personal">Personal</option>
@@ -623,7 +623,7 @@ export default function Home() {
                   <Button 
                     type="submit"
                     size="lg"
-                    className="w-full bg-gradient-to-r from-[#E91E8C] to-[#9333EA] hover:opacity-90 text-white rounded-full"
+                    className="w-full bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white rounded-full"
                     data-testid="button-contact-submit"
                   >
                     Send Message
@@ -636,7 +636,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-r from-[#E91E8C] to-[#9333EA]" data-testid="section-cta">
+      <section className="py-20 bg-gradient-to-r from-[#f97316] to-[#ea580c]" data-testid="section-cta">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Start Your Gold Journey?
@@ -647,7 +647,7 @@ export default function Home() {
           <Link href="/register">
             <Button 
               size="lg" 
-              className="bg-white text-[#E91E8C] hover:bg-gray-100 px-10 py-6 text-lg font-semibold rounded-full"
+              className="bg-white text-[#f97316] hover:bg-gray-100 px-10 py-6 text-lg font-semibold rounded-full"
               data-testid="button-cta-register"
             >
               Create Your Account

@@ -424,13 +424,13 @@ export default function FinaBridge() {
       case 'Draft': return 'bg-gray-100 text-gray-700';
       case 'Open': return 'bg-blue-100 text-blue-700';
       case 'Proposal Review': return 'bg-amber-100 text-amber-700';
-      case 'Awaiting Importer': return 'bg-purple-100 text-purple-700';
+      case 'Awaiting Importer': return 'bg-indigo-100 text-indigo-700';
       case 'Active Trade': return 'bg-green-100 text-green-700';
       case 'Completed': return 'bg-emerald-100 text-emerald-700';
       case 'Cancelled': return 'bg-red-100 text-red-700';
       case 'Submitted': return 'bg-blue-100 text-blue-700';
       case 'Shortlisted': return 'bg-amber-100 text-amber-700';
-      case 'Forwarded': return 'bg-purple-100 text-purple-700';
+      case 'Forwarded': return 'bg-indigo-100 text-indigo-700';
       case 'Accepted': return 'bg-green-100 text-green-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
       case 'Declined': return 'bg-gray-100 text-gray-700';
@@ -1021,8 +1021,8 @@ export default function FinaBridge() {
                       </div>
                     </div>
 
-                    <div className="p-4 border rounded-lg bg-purple-50/50 border-purple-200">
-                      <h4 className="font-medium mb-4 flex items-center gap-2 text-purple-800">
+                    <div className="p-4 border rounded-lg bg-indigo-50/50 border-indigo-200">
+                      <h4 className="font-medium mb-4 flex items-center gap-2 text-indigo-800">
                         <Truck className="w-4 h-4" />
                         Shipping & Logistics
                       </h4>

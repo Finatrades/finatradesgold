@@ -54,7 +54,7 @@ export default function BNSLHeroVault() {
             opacity: [0.4, 0.6, 0.4],
           }}
           transition={{ duration: 10, repeat: Infinity }}
-          className="absolute bottom-20 right-20 w-[500px] h-[500px] rounded-full bg-gradient-to-r from-purple-200/30 to-pink-200/30 blur-3xl"
+          className="absolute bottom-20 right-20 w-[500px] h-[500px] rounded-full bg-gradient-to-r from-orange-200/30 to-amber-200/30 blur-3xl"
         />
 
         {/* Floating Gold Coins */}

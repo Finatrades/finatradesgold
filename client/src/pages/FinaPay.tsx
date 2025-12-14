@@ -342,8 +342,8 @@ export default function FinaPay() {
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
             data-testid="button-request-funds"
           >
-            <div className="p-3 bg-purple-100 rounded-full">
-              <ArrowDownLeft className="w-5 h-5 text-purple-600" />
+            <div className="p-3 bg-amber-100 rounded-full">
+              <ArrowDownLeft className="w-5 h-5 text-amber-600" />
             </div>
             <span className="text-sm font-medium">Request Funds</span>
           </button>

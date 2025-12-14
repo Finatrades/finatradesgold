@@ -34,7 +34,7 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
       id: 'request', 
       label: 'Request', 
       icon: <ArrowDownLeft className="w-5 h-5" />, 
-      gradient: 'from-purple-500 to-violet-600',
+      gradient: 'from-orange-500 to-amber-600',
       description: 'Request payment'
     },
   ];

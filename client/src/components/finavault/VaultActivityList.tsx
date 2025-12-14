@@ -119,7 +119,7 @@ export default function VaultActivityList() {
       case 'Buy': return 'bg-green-100 text-green-700';
       case 'Sell': return 'bg-red-100 text-red-700';
       case 'Send': return 'bg-orange-100 text-orange-700';
-      case 'Receive': return 'bg-purple-100 text-purple-700';
+      case 'Receive': return 'bg-orange-100 text-orange-700';
       case 'Deposit': return 'bg-emerald-100 text-emerald-700';
       case 'Withdrawal': return 'bg-amber-100 text-amber-700';
       default: return 'bg-gray-100 text-gray-700';

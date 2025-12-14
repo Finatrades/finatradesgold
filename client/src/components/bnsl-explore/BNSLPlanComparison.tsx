@@ -83,7 +83,7 @@ const plans: Plan[] = [
     totalBonus: '18.0%',
     minInvestment: '$1,000',
     icon: Crown,
-    gradient: 'from-purple-500 to-violet-600',
+    gradient: 'from-orange-500 to-amber-600',
     popular: true,
     features: [
       'Premium gold allocation',
@@ -141,7 +141,7 @@ export default function BNSLPlanComparison() {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 100, repeat: Infinity, ease: 'linear' }}
-          className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full border border-dashed border-purple-100/50"
+          className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full border border-dashed border-orange-100/50"
         />
         <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-amber-100/20 blur-3xl" />
       </div>
@@ -158,15 +158,15 @@ export default function BNSLPlanComparison() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/50 mb-6"
           >
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-medium text-purple-800">Choose Your Plan</span>
+            <Sparkles className="w-4 h-4 text-orange-600" />
+            <span className="text-sm font-medium text-orange-800">Choose Your Plan</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Investment{' '}
-            <span className="bg-gradient-to-r from-purple-500 to-violet-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               Plans
             </span>
           </h2>

@@ -61,15 +61,15 @@ export default function DashboardSlider() {
         whileHover={{ scale: 1.01 }}
         transition={{ duration: 0.2 }}
       >
-        <Card className="p-5 bg-white border-l-4 border-l-pink-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="p-5 bg-white border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
-                <CreditCard className="w-4 h-4 text-pink-600" />
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <CreditCard className="w-4 h-4 text-amber-600" />
               </div>
               <h4 className="font-semibold text-foreground">FinaCard</h4>
             </div>
-            <span className="text-xs text-pink-600 font-medium bg-pink-50 px-2 py-1 rounded-full">
+            <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded-full">
               Coming Soon
             </span>
           </div>
@@ -85,7 +85,7 @@ export default function DashboardSlider() {
           <div className="flex gap-6 pt-3 border-t border-border">
             <div>
               <p className="text-xs text-muted-foreground">Card Status</p>
-              <p className="text-sm font-semibold text-pink-600">Not Activated</p>
+              <p className="text-sm font-semibold text-amber-600">Not Activated</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Rewards</p>

@@ -35,7 +35,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
       case 'Sell': return 'bg-red-500/10 text-red-500';
       case 'Send': return 'bg-orange-500/10 text-orange-500';
       case 'Receive': return 'bg-blue-500/10 text-blue-500';
-      case 'Request': return 'bg-purple-500/10 text-purple-500';
+      case 'Request': return 'bg-orange-500/10 text-orange-500';
       default: return 'bg-gray-500/10 text-gray-500';
     }
   };

@@ -34,7 +34,7 @@ export default function WhyFinatrades() {
   const differentiators = getDifferentiators(accountType);
 
   return (
-    <section id="about" className="py-24 bg-[#1a1a2e] text-white overflow-hidden">
+    <section id="about" className="py-24 bg-slate-900 text-white overflow-hidden">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -64,7 +64,7 @@ export default function WhyFinatrades() {
               data-testid={`card-differentiator-${index}`}
             >
               <div className="mb-4 p-3 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] w-fit group-hover:scale-110 transition-transform">
-                <item.icon className="w-6 h-6 text-[#1a1a2e]" />
+                <item.icon className="w-6 h-6 text-slate-900" />
               </div>
               <h3 className="text-lg font-bold mb-2 text-white group-hover:text-[#D4AF37] transition-colors" data-testid={`text-differentiator-title-${index}`}>
                 {item.title}

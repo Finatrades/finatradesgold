@@ -251,14 +251,14 @@ export default function FinaVault() {
             {/* Locked in BNSL */}
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-bnsl-locked">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <Clock className="w-20 h-20 text-purple-500" />
+                <Clock className="w-20 h-20 text-orange-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in BNSL</p>
-                <p className="text-3xl font-bold text-purple-600 mb-1">
+                <p className="text-3xl font-bold text-orange-600 mb-1">
                   ${(bnslLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-purple-600/70">
+                <p className="text-sm text-orange-600/70">
                   {bnslLockedGrams.toFixed(3)} g
                 </p>
                 <p className="text-xs text-muted-foreground mt-3">

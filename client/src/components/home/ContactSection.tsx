@@ -34,7 +34,7 @@ export default function ContactSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold tracking-widest text-[#9333EA] uppercase mb-4 block">
+          <span className="text-sm font-semibold tracking-widest text-orange-500 uppercase mb-4 block">
             GET IN TOUCH
           </span>
           <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-gray-900">
@@ -53,8 +53,8 @@ export default function ContactSection() {
           >
             <div className="space-y-8">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9333EA]/10 to-[#EC4899]/10 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-[#9333EA]" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">Office Location</h4>
@@ -64,8 +64,8 @@ export default function ContactSection() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9333EA]/10 to-[#EC4899]/10 flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-5 h-5 text-[#9333EA]" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">Email Us</h4>
@@ -75,8 +75,8 @@ export default function ContactSection() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9333EA]/10 to-[#EC4899]/10 flex items-center justify-center flex-shrink-0">
-                  <Phone className="w-5 h-5 text-[#9333EA]" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">Call Us</h4>
@@ -85,8 +85,8 @@ export default function ContactSection() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9333EA]/10 to-[#EC4899]/10 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-5 h-5 text-[#9333EA]" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">Business Hours</h4>
@@ -111,7 +111,7 @@ export default function ContactSection() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Your name"
                     required
-                    className="h-12 rounded-xl border-gray-200 focus:border-[#9333EA] focus:ring-[#9333EA]/20"
+                    className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
                     data-testid="input-contact-name"
                   />
                 </div>
@@ -124,7 +124,7 @@ export default function ContactSection() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="you@example.com"
                     required
-                    className="h-12 rounded-xl border-gray-200 focus:border-[#9333EA] focus:ring-[#9333EA]/20"
+                    className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
                     data-testid="input-contact-email"
                   />
                 </div>
@@ -152,14 +152,14 @@ export default function ContactSection() {
                     placeholder="How can we help you?"
                     rows={4}
                     required
-                    className="rounded-xl border-gray-200 focus:border-[#9333EA] focus:ring-[#9333EA]/20 resize-none"
+                    className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 resize-none"
                     data-testid="input-contact-message"
                   />
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-[#EC4899] to-[#9333EA] hover:opacity-90 text-white rounded-full"
+                  className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white rounded-full"
                   data-testid="button-contact-submit"
                 >
                   <Send className="w-4 h-4 mr-2" />

@@ -95,7 +95,7 @@ export default function BNSLGoldPlanner() {
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-amber-100/40 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-purple-100/30 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-orange-100/30 blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
@@ -211,8 +211,8 @@ export default function BNSLGoldPlanner() {
               {/* Plan Selection */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-lg">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100">
-                    <Calendar className="w-5 h-5 text-purple-600" />
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                    <Calendar className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Select Plan Duration</h3>
@@ -229,7 +229,7 @@ export default function BNSLGoldPlanner() {
                       onClick={() => setSelectedPlan(plan)}
                       className={`w-full p-4 rounded-xl border-2 transition-all relative ${
                         selectedPlan.duration === plan.duration
-                          ? 'border-purple-400 bg-purple-50'
+                          ? 'border-orange-400 bg-orange-50'
                           : 'border-gray-100 bg-gray-50 hover:border-gray-200'
                       }`}
                       data-testid={`button-plan-${plan.duration}`}
@@ -245,7 +245,7 @@ export default function BNSLGoldPlanner() {
                           <div className="text-sm text-gray-500">{plan.description}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-purple-600">{plan.bonusRate}%</div>
+                          <div className="text-2xl font-bold text-orange-600">{plan.bonusRate}%</div>
                           <div className="text-xs text-gray-500">Monthly bonus</div>
                         </div>
                       </div>
@@ -345,7 +345,7 @@ export default function BNSLGoldPlanner() {
                       </div>
                       <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                         <div className="flex items-center gap-2 mb-2">
-                          <Gift className="w-4 h-4 text-purple-400" />
+                          <Gift className="w-4 h-4 text-orange-400" />
                           <span className="text-sm text-gray-400">Total Bonus</span>
                         </div>
                         <p className="text-2xl font-bold text-emerald-400">+{calculations.totalBonusGrams}g</p>

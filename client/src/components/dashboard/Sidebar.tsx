@@ -130,7 +130,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       )}
 
       <aside 
-        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-[#0D001E] via-[#2A0055] to-[#4B0082] z-50 transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         data-testid="sidebar"
@@ -202,7 +202,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
           <div className="p-4 border-t border-white/10">
             <div className="mb-4 p-3 rounded-xl bg-white/5 border border-white/10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] flex items-center justify-center text-[#0D001E] font-bold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] flex items-center justify-center text-slate-900 font-bold">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">

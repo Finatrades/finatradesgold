@@ -26,7 +26,7 @@ export default function BNSLFinalCTA() {
   return (
     <section className="py-24 relative overflow-hidden">
       {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         {/* Animated Gradient Orbs */}
         <motion.div
           animate={{
@@ -42,7 +42,7 @@ export default function BNSLFinalCTA() {
             opacity: [0.2, 0.4, 0.2],
           }}
           transition={{ duration: 10, repeat: Infinity }}
-          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-purple-500/20 blur-3xl"
+          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-orange-500/20 blur-3xl"
         />
 
         {/* Grid Pattern */}
