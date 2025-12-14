@@ -21,7 +21,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
-import { sendEmail, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
+import { sendEmail, sendEmailDirect, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
 import { 
   processTransactionDocuments, 
   resendCertificate, 
@@ -6228,6 +6228,314 @@ export async function registerRoutes(
     } catch (error) {
       console.error('Error generating admin manual:', error);
       res.status(500).json({ message: "Failed to generate admin manual" });
+    }
+  });
+
+  // ============================================================================
+  // ADMIN ACTION OTP VERIFICATION
+  // ============================================================================
+
+  // Check if OTP is required for a specific action type
+  app.get("/api/admin/action-otp/required/:actionType", ensureAdminAsync, async (req, res) => {
+    try {
+      const { actionType } = req.params;
+      const settings = await storage.getSecuritySettings();
+      
+      if (!settings || !settings.adminOtpEnabled) {
+        return res.json({ required: false });
+      }
+      
+      // Map action types to security settings
+      const actionToSetting: Record<string, boolean> = {
+        'kyc_approval': settings.adminOtpOnKycApproval,
+        'kyc_rejection': settings.adminOtpOnKycApproval,
+        'deposit_approval': settings.adminOtpOnDepositApproval,
+        'deposit_rejection': settings.adminOtpOnDepositApproval,
+        'withdrawal_approval': settings.adminOtpOnWithdrawalApproval,
+        'withdrawal_rejection': settings.adminOtpOnWithdrawalApproval,
+        'bnsl_approval': settings.adminOtpOnBnslApproval,
+        'bnsl_rejection': settings.adminOtpOnBnslApproval,
+        'trade_case_approval': settings.adminOtpOnTradeCaseApproval,
+        'trade_case_rejection': settings.adminOtpOnTradeCaseApproval,
+        'user_suspension': settings.adminOtpOnUserSuspension,
+        'user_activation': settings.adminOtpOnUserSuspension,
+      };
+      
+      const required = actionToSetting[actionType] ?? false;
+      res.json({ required });
+    } catch (error) {
+      console.error("Failed to check OTP requirement:", error);
+      res.status(500).json({ message: "Failed to check OTP requirement" });
+    }
+  });
+
+  // Send OTP for admin action
+  app.post("/api/admin/action-otp/send", ensureAdminAsync, async (req, res) => {
+    try {
+      const { actionType, targetId, targetType, actionData } = req.body;
+      const admin = (req as any).adminUser;
+      
+      if (!actionType || !targetId || !targetType) {
+        return res.status(400).json({ message: "Missing required fields: actionType, targetId, targetType" });
+      }
+      
+      // Check if OTP is required for this action
+      const settings = await storage.getSecuritySettings();
+      if (!settings || !settings.adminOtpEnabled) {
+        return res.json({ required: false, message: "OTP not required" });
+      }
+      
+      // Map action types to security settings
+      const actionToSetting: Record<string, boolean> = {
+        'kyc_approval': settings.adminOtpOnKycApproval,
+        'kyc_rejection': settings.adminOtpOnKycApproval,
+        'deposit_approval': settings.adminOtpOnDepositApproval,
+        'deposit_rejection': settings.adminOtpOnDepositApproval,
+        'withdrawal_approval': settings.adminOtpOnWithdrawalApproval,
+        'withdrawal_rejection': settings.adminOtpOnWithdrawalApproval,
+        'bnsl_approval': settings.adminOtpOnBnslApproval,
+        'bnsl_rejection': settings.adminOtpOnBnslApproval,
+        'trade_case_approval': settings.adminOtpOnTradeCaseApproval,
+        'trade_case_rejection': settings.adminOtpOnTradeCaseApproval,
+        'user_suspension': settings.adminOtpOnUserSuspension,
+        'user_activation': settings.adminOtpOnUserSuspension,
+      };
+      
+      if (!actionToSetting[actionType]) {
+        return res.json({ required: false, message: "OTP not required for this action" });
+      }
+      
+      // Generate 6-digit OTP code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      // Create OTP record
+      const otp = await storage.createAdminActionOtp({
+        adminId: admin.id,
+        actionType: actionType as any,
+        targetId,
+        targetType,
+        code,
+        expiresAt,
+        attempts: 0,
+        verified: false,
+        actionData: actionData || null,
+      });
+      
+      // Send email with OTP
+      const actionLabels: Record<string, string> = {
+        'kyc_approval': 'KYC Approval',
+        'kyc_rejection': 'KYC Rejection',
+        'deposit_approval': 'Deposit Approval',
+        'deposit_rejection': 'Deposit Rejection',
+        'withdrawal_approval': 'Withdrawal Approval',
+        'withdrawal_rejection': 'Withdrawal Rejection',
+        'bnsl_approval': 'BNSL Plan Approval',
+        'bnsl_rejection': 'BNSL Plan Rejection',
+        'trade_case_approval': 'Trade Case Approval',
+        'trade_case_rejection': 'Trade Case Rejection',
+        'user_suspension': 'User Suspension',
+        'user_activation': 'User Activation',
+      };
+      
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Admin Action Verification</h1>
+          </div>
+          <div style="padding: 30px; background: #ffffff;">
+            <p>Hello ${admin.firstName},</p>
+            <p>You are attempting to perform: <strong>${actionLabels[actionType] || actionType}</strong></p>
+            <p>Your verification code is:</p>
+            <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;">${code}</span>
+            </div>
+            <p>This code expires in <strong>10 minutes</strong>.</p>
+            <p style="color: #6b7280; font-size: 14px;">If you did not initiate this action, please contact security immediately.</p>
+          </div>
+          <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+            <p>Finatrades Admin Portal - Secure Action Verification</p>
+          </div>
+        </div>
+      `;
+      
+      await sendEmailDirect(admin.email, `Finatrades Admin Verification Code - ${actionLabels[actionType] || actionType}`, htmlBody);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "admin_action_otp",
+        entityId: otp.id,
+        actionType: "create",
+        actor: admin.id,
+        actorRole: "admin",
+        details: `OTP sent for ${actionType} on ${targetType}:${targetId}`,
+      });
+      
+      res.json({ 
+        otpId: otp.id,
+        message: "Verification code sent to your email",
+        expiresAt: otp.expiresAt,
+      });
+    } catch (error) {
+      console.error("Failed to send admin action OTP:", error);
+      res.status(500).json({ message: "Failed to send verification code" });
+    }
+  });
+
+  // Verify OTP for admin action
+  app.post("/api/admin/action-otp/verify", ensureAdminAsync, async (req, res) => {
+    try {
+      const { otpId, code } = req.body;
+      const admin = (req as any).adminUser;
+      
+      if (!otpId || !code) {
+        return res.status(400).json({ message: "Missing required fields: otpId, code" });
+      }
+      
+      const otp = await storage.getAdminActionOtp(otpId);
+      
+      if (!otp) {
+        return res.status(404).json({ message: "Verification request not found" });
+      }
+      
+      // Check if OTP belongs to the current admin
+      if (otp.adminId !== admin.id) {
+        return res.status(403).json({ message: "This verification code is not for your account" });
+      }
+      
+      // Check if already verified
+      if (otp.verified) {
+        return res.status(400).json({ message: "This verification code has already been used" });
+      }
+      
+      // Check expiry
+      if (new Date() > otp.expiresAt) {
+        return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
+      }
+      
+      // Check attempts (max 5)
+      if (otp.attempts >= 5) {
+        return res.status(429).json({ message: "Too many failed attempts. Please request a new code." });
+      }
+      
+      // Verify code
+      if (otp.code !== code) {
+        await storage.updateAdminActionOtp(otpId, { attempts: otp.attempts + 1 });
+        return res.status(400).json({ message: "Invalid verification code", attemptsRemaining: 4 - otp.attempts });
+      }
+      
+      // Mark as verified
+      await storage.updateAdminActionOtp(otpId, { 
+        verified: true, 
+        verifiedAt: new Date() 
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "admin_action_otp",
+        entityId: otp.id,
+        actionType: "verify",
+        actor: admin.id,
+        actorRole: "admin",
+        details: `OTP verified for ${otp.actionType} on ${otp.targetType}:${otp.targetId}`,
+      });
+      
+      res.json({ 
+        success: true,
+        message: "Verification successful",
+        actionType: otp.actionType,
+        targetId: otp.targetId,
+        targetType: otp.targetType,
+        actionData: otp.actionData,
+      });
+    } catch (error) {
+      console.error("Failed to verify admin action OTP:", error);
+      res.status(500).json({ message: "Failed to verify code" });
+    }
+  });
+
+  // Resend OTP for admin action
+  app.post("/api/admin/action-otp/resend", ensureAdminAsync, async (req, res) => {
+    try {
+      const { otpId } = req.body;
+      const admin = (req as any).adminUser;
+      
+      if (!otpId) {
+        return res.status(400).json({ message: "Missing required field: otpId" });
+      }
+      
+      const existingOtp = await storage.getAdminActionOtp(otpId);
+      
+      if (!existingOtp) {
+        return res.status(404).json({ message: "Verification request not found" });
+      }
+      
+      // Check if OTP belongs to the current admin
+      if (existingOtp.adminId !== admin.id) {
+        return res.status(403).json({ message: "This verification code is not for your account" });
+      }
+      
+      // Check if already verified
+      if (existingOtp.verified) {
+        return res.status(400).json({ message: "This verification has already been completed" });
+      }
+      
+      // Generate new code and update
+      const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const newExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      
+      await storage.updateAdminActionOtp(otpId, {
+        code: newCode,
+        expiresAt: newExpiresAt,
+        attempts: 0,
+      });
+      
+      // Send new email with OTP
+      const actionLabels: Record<string, string> = {
+        'kyc_approval': 'KYC Approval',
+        'kyc_rejection': 'KYC Rejection',
+        'deposit_approval': 'Deposit Approval',
+        'deposit_rejection': 'Deposit Rejection',
+        'withdrawal_approval': 'Withdrawal Approval',
+        'withdrawal_rejection': 'Withdrawal Rejection',
+        'bnsl_approval': 'BNSL Plan Approval',
+        'bnsl_rejection': 'BNSL Plan Rejection',
+        'trade_case_approval': 'Trade Case Approval',
+        'trade_case_rejection': 'Trade Case Rejection',
+        'user_suspension': 'User Suspension',
+        'user_activation': 'User Activation',
+      };
+      
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Admin Action Verification</h1>
+          </div>
+          <div style="padding: 30px; background: #ffffff;">
+            <p>Hello ${admin.firstName},</p>
+            <p>You requested a new verification code for: <strong>${actionLabels[existingOtp.actionType] || existingOtp.actionType}</strong></p>
+            <p>Your new verification code is:</p>
+            <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;">${newCode}</span>
+            </div>
+            <p>This code expires in <strong>10 minutes</strong>.</p>
+            <p style="color: #6b7280; font-size: 14px;">If you did not initiate this action, please contact security immediately.</p>
+          </div>
+          <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+            <p>Finatrades Admin Portal - Secure Action Verification</p>
+          </div>
+        </div>
+      `;
+      
+      await sendEmailDirect(admin.email, `Finatrades Admin Verification Code - ${actionLabels[existingOtp.actionType] || existingOtp.actionType}`, htmlBody);
+      
+      res.json({ 
+        message: "New verification code sent to your email",
+        expiresAt: newExpiresAt,
+      });
+    } catch (error) {
+      console.error("Failed to resend admin action OTP:", error);
+      res.status(500).json({ message: "Failed to resend verification code" });
     }
   });
 
