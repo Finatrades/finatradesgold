@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, LayoutDashboard, Menu, X, ChevronRight } from 'lucide-react';
+import { LogOut, LayoutDashboard, Menu, X, ChevronRight, User } from 'lucide-react';
 import FinatradesLogo from '@/components/FinatradesLogo';
 
 export default function Navbar() {
