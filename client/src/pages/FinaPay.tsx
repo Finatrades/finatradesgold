@@ -314,7 +314,7 @@ export default function FinaPay() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <button
             onClick={() => setActiveModal('deposit')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
@@ -324,6 +324,28 @@ export default function FinaPay() {
               <Plus className="w-5 h-5 text-green-600" />
             </div>
             <span className="text-sm font-medium">Add Funds</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModal('buy')}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-buy-gold"
+          >
+            <div className="p-3 bg-amber-100 rounded-full">
+              <ShoppingCart className="w-5 h-5 text-amber-600" />
+            </div>
+            <span className="text-sm font-medium">Buy Gold</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModal('sell')}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            data-testid="button-sell-gold"
+          >
+            <div className="p-3 bg-purple-100 rounded-full">
+              <Coins className="w-5 h-5 text-purple-600" />
+            </div>
+            <span className="text-sm font-medium">Sell Gold</span>
           </button>
 
           <button
@@ -353,8 +375,8 @@ export default function FinaPay() {
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
             data-testid="button-request-funds"
           >
-            <div className="p-3 bg-amber-100 rounded-full">
-              <ArrowDownLeft className="w-5 h-5 text-amber-600" />
+            <div className="p-3 bg-teal-100 rounded-full">
+              <ArrowDownLeft className="w-5 h-5 text-teal-600" />
             </div>
             <span className="text-sm font-medium">Request Funds</span>
           </button>
@@ -362,12 +384,6 @@ export default function FinaPay() {
 
         {/* Secondary Actions */}
         <div className="flex flex-wrap gap-2 justify-center">
-          <button onClick={() => setActiveModal('buy')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
-            <ShoppingCart className="w-4 h-4 inline mr-1" /> Buy Gold
-          </button>
-          <button onClick={() => setActiveModal('sell')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
-            <Coins className="w-4 h-4 inline mr-1" /> Sell Gold
-          </button>
           <button onClick={() => setLocation('/bnsl')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
             <TrendingUp className="w-4 h-4 inline mr-1" /> BNSL Plans
           </button>
