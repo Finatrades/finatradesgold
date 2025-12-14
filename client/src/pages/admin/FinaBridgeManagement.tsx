@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Briefcase, CheckCircle, XCircle, TrendingUp, 
-  Loader2, RefreshCw, Eye, Send, ArrowRight, Package
+  Loader2, RefreshCw, Eye, Send, ArrowRight, Package, FileCheck, AlertCircle
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
@@ -56,11 +56,21 @@ interface TradeProposal {
   };
 }
 
+interface DisclaimerUser {
+  id: string;
+  finatradesId: string | null;
+  fullName: string;
+  email: string;
+  companyName: string | null;
+  finabridgeDisclaimerAcceptedAt: string | null;
+}
+
 export default function FinaBridgeManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [requests, setRequests] = useState<TradeRequest[]>([]);
   const [proposals, setProposals] = useState<TradeProposal[]>([]);
+  const [disclaimerUsers, setDisclaimerUsers] = useState<DisclaimerUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<TradeRequest | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -90,8 +100,19 @@ export default function FinaBridgeManagement() {
     }
   };
 
+  const fetchDisclaimerUsers = async () => {
+    try {
+      const res = await apiRequest('GET', '/api/admin/finabridge/disclaimer-acceptances');
+      const data = await res.json();
+      setDisclaimerUsers(data.users || []);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to load disclaimer acceptances', variant: 'destructive' });
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
+    fetchDisclaimerUsers();
   }, []);
 
   const handleOpenRequest = async (request: TradeRequest) => {
@@ -241,6 +262,7 @@ export default function FinaBridgeManagement() {
             <TabsTrigger value="all">All Requests</TabsTrigger>
             <TabsTrigger value="review">Needs Review</TabsTrigger>
             <TabsTrigger value="active">Active Trades</TabsTrigger>
+            <TabsTrigger value="disclaimer">Disclaimer Acceptance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="mt-4">
@@ -358,6 +380,55 @@ export default function FinaBridgeManagement() {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="disclaimer" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileCheck className="w-5 h-5" />
+                  Business User Disclaimer Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {disclaimerUsers.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No business users found.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-5 gap-4 p-3 bg-muted rounded-lg font-medium text-sm">
+                      <div>User</div>
+                      <div>Company</div>
+                      <div>Email</div>
+                      <div>Finatrades ID</div>
+                      <div>Disclaimer Status</div>
+                    </div>
+                    {disclaimerUsers.map((u) => (
+                      <div key={u.id} className="grid grid-cols-5 gap-4 p-3 border rounded-lg items-center">
+                        <div className="font-medium">{u.fullName}</div>
+                        <div className="text-sm text-muted-foreground">{u.companyName || '-'}</div>
+                        <div className="text-sm text-muted-foreground">{u.email}</div>
+                        <div className="text-sm font-mono">{u.finatradesId || '-'}</div>
+                        <div>
+                          {u.finabridgeDisclaimerAcceptedAt ? (
+                            <Badge className="bg-green-100 text-green-700 flex items-center gap-1 w-fit">
+                              <CheckCircle className="w-3 h-3" />
+                              Accepted {new Date(u.finabridgeDisclaimerAcceptedAt).toLocaleDateString()}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-amber-100 text-amber-700 flex items-center gap-1 w-fit">
+                              <AlertCircle className="w-3 h-3" />
+                              Not Accepted
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

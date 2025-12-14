@@ -3750,6 +3750,27 @@ export async function registerRoutes(
   
   // ADMIN ENDPOINTS
   
+  // Get users who have accepted FinaBridge disclaimer (admin)
+  app.get("/api/admin/finabridge/disclaimer-acceptances", async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const businessUsers = allUsers.filter(u => u.accountType === 'business');
+      
+      const usersWithAcceptanceStatus = businessUsers.map(u => ({
+        id: u.id,
+        finatradesId: u.finatradesId,
+        fullName: `${u.firstName} ${u.lastName}`,
+        email: u.email,
+        companyName: u.companyName,
+        finabridgeDisclaimerAcceptedAt: u.finabridgeDisclaimerAcceptedAt,
+      }));
+      
+      res.json({ users: usersWithAcceptanceStatus });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get disclaimer acceptances" });
+    }
+  });
+  
   // Get all trade requests (admin)
   app.get("/api/admin/finabridge/requests", async (req, res) => {
     try {
