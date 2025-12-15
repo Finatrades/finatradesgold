@@ -255,9 +255,10 @@ export const kycSubmissions = pgTable("kyc_submissions", {
   companyAddress: text("company_address"),
   taxId: varchar("tax_id", { length: 100 }),
   
-  // Documents (stored as JSON with URLs)
+  // Documents (stored as JSON with base64 data or URLs)
   documents: json("documents").$type<{
     idProof?: { url: string; type: string; };
+    selfie?: { url: string; type: string; };
     proofOfAddress?: { url: string; type: string; };
     businessRegistration?: { url: string; type: string; };
     taxCertificate?: { url: string; type: string; };

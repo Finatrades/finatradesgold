@@ -211,6 +211,15 @@ export default function KYC() {
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const validatePersonalStep = () => {
     const isBusiness = user?.accountType === 'business';
     if (isBusiness) {
@@ -267,6 +276,39 @@ export default function KYC() {
     
     try {
       const isBusiness = user.accountType === 'business';
+      
+      // Convert uploaded files to base64 for documents field
+      const documents: {
+        idProof?: { url: string; type: string };
+        selfie?: { url: string; type: string };
+        proofOfAddress?: { url: string; type: string };
+        businessRegistration?: { url: string; type: string };
+      } = {};
+      
+      // ID Document (front side or combined)
+      if (uploadedFiles.front) {
+        const base64 = await fileToBase64(uploadedFiles.front);
+        documents.idProof = { url: base64, type: idType };
+      }
+      
+      // Selfie/Liveness photo
+      if (uploadedFiles.selfie) {
+        const base64 = await fileToBase64(uploadedFiles.selfie);
+        documents.selfie = { url: base64, type: 'selfie' };
+      }
+      
+      // Proof of address (utility bill)
+      if (uploadedFiles.utility) {
+        const base64 = await fileToBase64(uploadedFiles.utility);
+        documents.proofOfAddress = { url: base64, type: 'utility_bill' };
+      }
+      
+      // Business registration document
+      if (uploadedFiles.company_doc) {
+        const base64 = await fileToBase64(uploadedFiles.company_doc);
+        documents.businessRegistration = { url: base64, type: 'company_registration' };
+      }
+      
       const response = await fetch('/api/kyc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,6 +322,7 @@ export default function KYC() {
           companyName: user.companyName,
           registrationNumber: isBusiness ? registrationNumber : user.registrationNumber,
           jurisdiction: isBusiness ? jurisdiction : null,
+          documents: Object.keys(documents).length > 0 ? documents : null,
         }),
       });
       

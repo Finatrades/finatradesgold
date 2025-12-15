@@ -459,33 +459,69 @@ export default function KYCReview() {
                       <FileText className="w-4 h-4 text-gray-400" />
                       <span className="text-sm">ID Document</span>
                     </div>
-                    {selectedApplication?.documents?.idProof ? (
-                      <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
-                    ) : (
-                      <Badge variant="outline">Not Uploaded</Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {selectedApplication?.documents?.idProof ? (
+                        <>
+                          <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => window.open(selectedApplication.documents.idProof.url, '_blank')}
+                            data-testid="button-view-id-doc"
+                          >
+                            View
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant="outline">Not Uploaded</Badge>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
                       <span className="text-sm">Selfie</span>
                     </div>
-                    {selectedApplication?.documents?.selfie ? (
-                      <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
-                    ) : (
-                      <Badge variant="outline">Not Uploaded</Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {selectedApplication?.documents?.selfie ? (
+                        <>
+                          <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => window.open(selectedApplication.documents.selfie.url, '_blank')}
+                            data-testid="button-view-selfie"
+                          >
+                            View
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant="outline">Not Uploaded</Badge>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-gray-400" />
                       <span className="text-sm">Proof of Address</span>
                     </div>
-                    {selectedApplication?.documents?.proofOfAddress ? (
-                      <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
-                    ) : (
-                      <Badge variant="outline">Not Uploaded</Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {selectedApplication?.documents?.proofOfAddress ? (
+                        <>
+                          <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => window.open(selectedApplication.documents.proofOfAddress.url, '_blank')}
+                            data-testid="button-view-address-proof"
+                          >
+                            View
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant="outline">Not Uploaded</Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
 
