@@ -4,9 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
-import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image } from 'lucide-react';
+import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
+
+interface FeeInfo {
+  feeKey: string;
+  feeName: string;
+  feeType: string;
+  feeValue: string;
+  minAmount: string | null;
+  maxAmount: string | null;
+}
+
+interface GoldPriceInfo {
+  pricePerGram: number;
+  currency: string;
+}
 
 interface PlatformBankAccount {
   id: string;
@@ -46,14 +60,60 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [referenceNumber, setReferenceNumber] = useState('');
   const [ngeniusEnabled, setNgeniusEnabled] = useState(false);
   const [checkingNgenius, setCheckingNgenius] = useState(true);
+  const [depositFee, setDepositFee] = useState<FeeInfo | null>(null);
+  const [goldPrice, setGoldPrice] = useState<GoldPriceInfo | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       checkNgeniusStatus();
       fetchBankAccounts();
+      fetchFees();
+      fetchGoldPrice();
       resetForm();
     }
   }, [isOpen]);
+
+  const fetchFees = async () => {
+    try {
+      const response = await fetch('/api/fees/FinaPay');
+      const data = await response.json();
+      const fee = (data.fees || []).find((f: FeeInfo) => f.feeKey === 'deposit_fee');
+      setDepositFee(fee || null);
+    } catch (error) {
+      console.error('Failed to load fees');
+    }
+  };
+
+  const fetchGoldPrice = async () => {
+    try {
+      const response = await fetch('/api/gold-price');
+      const data = await response.json();
+      setGoldPrice({ pricePerGram: data.pricePerGram, currency: data.currency });
+    } catch (error) {
+      console.error('Failed to load gold price');
+    }
+  };
+
+  const calculateFee = (amountValue: number): number => {
+    if (!depositFee || amountValue <= 0) return 0;
+    let fee = 0;
+    if (depositFee.feeType === 'percentage') {
+      fee = amountValue * (parseFloat(depositFee.feeValue) / 100);
+    } else {
+      fee = parseFloat(depositFee.feeValue);
+    }
+    if (depositFee.minAmount) fee = Math.max(fee, parseFloat(depositFee.minAmount));
+    if (depositFee.maxAmount) fee = Math.min(fee, parseFloat(depositFee.maxAmount));
+    return fee;
+  };
+
+  const getDepositSummary = () => {
+    const amountNum = parseFloat(amount) || 0;
+    const feeAmount = calculateFee(amountNum);
+    const netDeposit = amountNum - feeAmount;
+    const goldGrams = goldPrice && netDeposit > 0 ? netDeposit / goldPrice.pricePerGram : 0;
+    return { amountNum, feeAmount, netDeposit, goldGrams };
+  };
 
   const resetForm = () => {
     setStep('method');
@@ -419,6 +479,45 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   />
                 </div>
               </div>
+
+              {parseFloat(amount) > 0 && (
+                <div className="border border-primary/20 rounded-xl p-4 bg-gradient-to-br from-orange-50 to-amber-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Coins className="w-5 h-5 text-primary" />
+                    <h4 className="font-semibold text-foreground">Deposit Summary</h4>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Deposit Amount:</span>
+                      <span className="font-medium">${getDepositSummary().amountNum.toFixed(2)}</span>
+                    </div>
+                    {depositFee && getDepositSummary().feeAmount > 0 && (
+                      <div className="flex justify-between text-orange-600">
+                        <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
+                        <span>-${getDepositSummary().feeAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
+                      <span>Net Credit to Wallet:</span>
+                      <span className="text-green-600">${getDepositSummary().netDeposit.toFixed(2)}</span>
+                    </div>
+                    {goldPrice && getDepositSummary().goldGrams > 0 && (
+                      <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
+                        <span className="flex items-center gap-1">
+                          <Coins className="w-4 h-4" />
+                          Gold Equivalent:
+                        </span>
+                        <span className="font-bold">{getDepositSummary().goldGrams.toFixed(4)}g</span>
+                      </div>
+                    )}
+                    {goldPrice && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Based on current gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -528,6 +627,23 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Min: $10 | Max: $10,000</p>
               </div>
+
+              {parseFloat(amount) > 0 && goldPrice && (
+                <div className="border border-green-200 rounded-lg p-3 bg-green-50/50 mt-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Coins className="w-4 h-4 text-primary" />
+                      Gold Equivalent:
+                    </span>
+                    <span className="font-bold text-primary">
+                      {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Based on ${goldPrice.pricePerGram.toFixed(2)}/gram
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex items-start gap-2">

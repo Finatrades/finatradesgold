@@ -3162,6 +3162,28 @@ export async function registerRoutes(
     }
   });
   
+  // Get public fees by module (for user-facing fee display)
+  app.get("/api/fees/:module", async (req, res) => {
+    try {
+      const { module } = req.params;
+      const fees = await storage.getModuleFees(module);
+      // Only return active fees with essential info
+      const publicFees = fees
+        .filter(f => f.isActive)
+        .map(f => ({
+          feeKey: f.feeKey,
+          feeName: f.feeName,
+          feeType: f.feeType,
+          feeValue: f.feeValue,
+          minAmount: f.minAmount,
+          maxAmount: f.maxAmount
+        }));
+      res.json({ fees: publicFees });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get fees" });
+    }
+  });
+
   // Get active bank accounts (User - for deposit form)
   app.get("/api/bank-accounts/active", async (req, res) => {
     try {
