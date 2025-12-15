@@ -18,6 +18,7 @@ import {
   securitySettings, otpVerifications, userPasskeys,
   invoices, certificateDeliveries, adminActionOtps,
   userRiskProfiles, amlScreeningLogs, amlCases, amlCaseActivities, amlMonitoringRules,
+  complianceSettings, finatradesPersonalKyc, finatradesCorporateKyc,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -74,7 +75,10 @@ import {
   type AmlScreeningLog, type InsertAmlScreeningLog,
   type AmlCase, type InsertAmlCase,
   type AmlCaseActivity, type InsertAmlCaseActivity,
-  type AmlMonitoringRule, type InsertAmlMonitoringRule
+  type AmlMonitoringRule, type InsertAmlMonitoringRule,
+  type ComplianceSettings, type InsertComplianceSettings,
+  type FinatradesPersonalKyc, type InsertFinatradesPersonalKyc,
+  type FinatradesCorporateKyc, type InsertFinatradesCorporateKyc
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -515,6 +519,21 @@ export interface IStorage {
   createAmlMonitoringRule(rule: InsertAmlMonitoringRule): Promise<AmlMonitoringRule>;
   updateAmlMonitoringRule(id: string, updates: Partial<AmlMonitoringRule>): Promise<AmlMonitoringRule | undefined>;
   deleteAmlMonitoringRule(id: string): Promise<boolean>;
+  
+  // Compliance Settings
+  getComplianceSettings(): Promise<ComplianceSettings | undefined>;
+  getOrCreateComplianceSettings(): Promise<ComplianceSettings>;
+  updateComplianceSettings(updates: Partial<ComplianceSettings>): Promise<ComplianceSettings | undefined>;
+  
+  // Finatrades Personal KYC
+  getFinatradesPersonalKyc(userId: string): Promise<FinatradesPersonalKyc | undefined>;
+  createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc>;
+  updateFinatradesPersonalKyc(id: string, updates: Partial<FinatradesPersonalKyc>): Promise<FinatradesPersonalKyc | undefined>;
+  
+  // Finatrades Corporate KYC
+  getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined>;
+  createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc>;
+  updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2203,6 +2222,80 @@ export class DatabaseStorage implements IStorage {
   async deleteAmlMonitoringRule(id: string): Promise<boolean> {
     const result = await db.delete(amlMonitoringRules).where(eq(amlMonitoringRules.id, id)).returning();
     return result.length > 0;
+  }
+
+  // ============================================
+  // COMPLIANCE SETTINGS
+  // ============================================
+
+  async getComplianceSettings(): Promise<ComplianceSettings | undefined> {
+    const [settings] = await db.select().from(complianceSettings).limit(1);
+    return settings || undefined;
+  }
+
+  async getOrCreateComplianceSettings(): Promise<ComplianceSettings> {
+    const existing = await this.getComplianceSettings();
+    if (existing) return existing;
+    
+    const [settings] = await db.insert(complianceSettings).values({
+      activeKycMode: 'kycAml',
+      finatradesPersonalConfig: {
+        enableBankingVerification: true,
+        enableLivenessCapture: true
+      },
+      finanatradesCorporateConfig: {
+        enableLivenessCapture: true,
+        requiredDocuments: ['certificate_of_incorporation', 'trade_license', 'memorandum_articles', 'ubo_passports', 'bank_reference', 'authorized_signatories']
+      }
+    }).returning();
+    return settings;
+  }
+
+  async updateComplianceSettings(updates: Partial<ComplianceSettings>): Promise<ComplianceSettings | undefined> {
+    const existing = await this.getOrCreateComplianceSettings();
+    const [settings] = await db.update(complianceSettings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(complianceSettings.id, existing.id))
+      .returning();
+    return settings || undefined;
+  }
+
+  // ============================================
+  // FINATRADES PERSONAL KYC
+  // ============================================
+
+  async getFinatradesPersonalKyc(userId: string): Promise<FinatradesPersonalKyc | undefined> {
+    const [kyc] = await db.select().from(finatradesPersonalKyc).where(eq(finatradesPersonalKyc.userId, userId)).orderBy(desc(finatradesPersonalKyc.createdAt)).limit(1);
+    return kyc || undefined;
+  }
+
+  async createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc> {
+    const [newKyc] = await db.insert(finatradesPersonalKyc).values(kyc).returning();
+    return newKyc;
+  }
+
+  async updateFinatradesPersonalKyc(id: string, updates: Partial<FinatradesPersonalKyc>): Promise<FinatradesPersonalKyc | undefined> {
+    const [kyc] = await db.update(finatradesPersonalKyc).set({ ...updates, updatedAt: new Date() }).where(eq(finatradesPersonalKyc.id, id)).returning();
+    return kyc || undefined;
+  }
+
+  // ============================================
+  // FINATRADES CORPORATE KYC
+  // ============================================
+
+  async getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined> {
+    const [kyc] = await db.select().from(finatradesCorporateKyc).where(eq(finatradesCorporateKyc.userId, userId)).orderBy(desc(finatradesCorporateKyc.createdAt)).limit(1);
+    return kyc || undefined;
+  }
+
+  async createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc> {
+    const [newKyc] = await db.insert(finatradesCorporateKyc).values(kyc).returning();
+    return newKyc;
+  }
+
+  async updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined> {
+    const [kyc] = await db.update(finatradesCorporateKyc).set({ ...updates, updatedAt: new Date() }).where(eq(finatradesCorporateKyc.id, id)).returning();
+    return kyc || undefined;
   }
 }
 

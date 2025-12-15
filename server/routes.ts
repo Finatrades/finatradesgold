@@ -7189,6 +7189,67 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================================================
+  // COMPLIANCE SETTINGS (KYC Mode Toggle)
+  // ============================================================================
+
+  // Get compliance settings (admin only)
+  app.get("/api/admin/compliance-settings", ensureAdminAsync, async (req, res) => {
+    try {
+      const settings = await storage.getOrCreateComplianceSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Failed to get compliance settings:", error);
+      res.status(400).json({ message: "Failed to get compliance settings" });
+    }
+  });
+
+  // Update compliance settings (admin only)
+  app.patch("/api/admin/compliance-settings", ensureAdminAsync, async (req, res) => {
+    try {
+      const updates = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const settings = await storage.updateComplianceSettings({
+        ...updates,
+        updatedBy: adminUser.id
+      });
+      
+      if (!settings) {
+        return res.status(404).json({ message: "Compliance settings not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "compliance_settings",
+        entityId: settings.id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `KYC mode changed to: ${settings.activeKycMode}`,
+      });
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Failed to update compliance settings:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update compliance settings" });
+    }
+  });
+
+  // Get active KYC mode (public endpoint for frontend to know which KYC flow to show)
+  app.get("/api/kyc-mode", async (req, res) => {
+    try {
+      const settings = await storage.getOrCreateComplianceSettings();
+      res.json({ 
+        activeKycMode: settings.activeKycMode,
+        finatradesPersonalConfig: settings.finatradesPersonalConfig,
+        finanatradesCorporateConfig: settings.finanatradesCorporateConfig
+      });
+    } catch (error) {
+      console.error("Failed to get KYC mode:", error);
+      res.status(400).json({ message: "Failed to get KYC mode" });
+    }
+  });
+
   // Request OTP for an action
   app.post("/api/otp/request", async (req, res) => {
     try {
