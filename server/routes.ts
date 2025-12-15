@@ -2757,6 +2757,33 @@ export async function registerRoutes(
   // FINAVAULT - GOLD STORAGE
   // ============================================================================
   
+  // Get user vault ownership summary (central ledger view)
+  app.get("/api/vault/ownership/:userId", async (req, res) => {
+    try {
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      const summary = await vaultLedgerService.getOrCreateOwnershipSummary(req.params.userId);
+      
+      // Sync from wallets to ensure up-to-date data
+      const syncedSummary = await vaultLedgerService.syncOwnershipFromWallets(req.params.userId);
+      
+      res.json({ ownership: syncedSummary });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get ownership summary" });
+    }
+  });
+
+  // Get user vault ledger history
+  app.get("/api/vault/ledger/:userId", async (req, res) => {
+    try {
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      const limit = parseInt(req.query.limit as string) || 50;
+      const entries = await vaultLedgerService.getLedgerHistory(req.params.userId, limit);
+      res.json({ entries });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get ledger history" });
+    }
+  });
+  
   // Get user vault holdings
   app.get("/api/vault/:userId", async (req, res) => {
     try {

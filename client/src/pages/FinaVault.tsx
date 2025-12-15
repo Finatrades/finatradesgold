@@ -67,6 +67,30 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Fetch vault ownership summary (central ledger)
+  const { data: ownershipData } = useQuery({
+    queryKey: ['vault-ownership', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { ownership: null };
+      const res = await fetch(`/api/vault/ownership/${user.id}`);
+      if (!res.ok) return { ownership: null };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch vault ledger history
+  const { data: ledgerData } = useQuery({
+    queryKey: ['vault-ledger', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { entries: [] };
+      const res = await fetch(`/api/vault/ledger/${user.id}?limit=50`);
+      if (!res.ok) return { entries: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Fetch FinaBridge wallet data for locked gold display
   const { data: finabridgeData } = useQuery({
     queryKey: ['finabridge-wallet', user?.id],
@@ -113,22 +137,44 @@ export default function FinaVault() {
     rejectionReason: req.rejectionReason,
   }));
 
-  const finabridgeLockedGrams = parseFloat(finabridgeData?.wallet?.lockedGoldGrams || '0');
   const goldPricePerGram = 85.22;
   
-  // Calculate BNSL locked gold from active plans
-  const bnslLockedGrams = (bnslData?.plans || [])
-    .filter((plan: any) => ['Active', 'Pending Activation', 'Maturing'].includes(plan.status))
-    .reduce((sum: number, plan: any) => sum + parseFloat(plan.goldSoldGrams || '0'), 0);
+  // Safe parse function to handle null/undefined values
+  const safeParseFloat = (val: any) => {
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+  };
   
-  // Calculate total locked gold
-  const totalLockedGrams = finabridgeLockedGrams + bnslLockedGrams;
+  // Use ownership summary from central ledger if available, otherwise fallback to individual wallet data
+  const ownership = ownershipData?.ownership;
   
-  // Calculate total vault holdings
-  const totalVaultGold = (holdingsData?.holdings || []).reduce((sum: number, h: any) => sum + parseFloat(h.goldGrams || '0'), 0);
+  // Get values from central ledger or calculate from individual wallets
+  const totalVaultGold = ownership 
+    ? safeParseFloat(ownership.totalGoldGrams)
+    : (holdingsData?.holdings || []).reduce((sum: number, h: any) => sum + safeParseFloat(h.goldGrams), 0);
   
-  // Available gold is total minus all locked
-  const availableGold = Math.max(0, totalVaultGold - totalLockedGrams);
+  const availableGold = ownership 
+    ? safeParseFloat(ownership.availableGrams)
+    : Math.max(0, totalVaultGold - safeParseFloat(finabridgeData?.wallet?.lockedGoldGrams) - 
+        (bnslData?.plans || []).filter((plan: any) => ['Active', 'Pending Activation', 'Maturing'].includes(plan.status))
+          .reduce((sum: number, plan: any) => sum + safeParseFloat(plan.goldSoldGrams), 0));
+  
+  const bnslLockedGrams = ownership 
+    ? safeParseFloat(ownership.lockedBnslGrams)
+    : (bnslData?.plans || []).filter((plan: any) => ['Active', 'Pending Activation', 'Maturing'].includes(plan.status))
+        .reduce((sum: number, plan: any) => sum + safeParseFloat(plan.goldSoldGrams), 0);
+  
+  const finabridgeLockedGrams = ownership 
+    ? safeParseFloat(ownership.reservedTradeGrams)
+    : safeParseFloat(finabridgeData?.wallet?.lockedGoldGrams);
+  
+  // Wallet breakdown from central ledger
+  const finaPayGrams = ownership ? safeParseFloat(ownership.finaPayGrams) : 0;
+  const bnslAvailableGrams = ownership ? safeParseFloat(ownership.bnslAvailableGrams) : 0;
+  const finaBridgeAvailableGrams = ownership ? safeParseFloat(ownership.finaBridgeAvailableGrams) : 0;
+  
+  // Ledger entries for history display
+  const ledgerEntries = ledgerData?.entries || [];
 
   // Check query params for initial tab
   useEffect(() => {
@@ -360,6 +406,14 @@ export default function FinaVault() {
                     <Banknote className="w-4 h-4 mr-2" />
                     Cash Out
                   </TabsTrigger>
+                  <TabsTrigger 
+                    value="ownership-ledger"
+                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    data-testid="tab-ownership-ledger"
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    Ownership Ledger
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="vault-activity" className="mt-0">
@@ -402,6 +456,121 @@ export default function FinaVault() {
 
                 <TabsContent value="cash-out">
                   <CashOutForm vaultBalance={totalVaultGold} />
+                </TabsContent>
+
+                <TabsContent value="ownership-ledger" className="mt-0">
+                  <div className="space-y-6">
+                    {/* Wallet Breakdown */}
+                    <Card className="bg-white border">
+                      <CardHeader className="border-b">
+                        <CardTitle className="text-lg">Wallet Breakdown</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="p-4 rounded-lg bg-gray-50 border">
+                            <p className="text-xs font-medium text-muted-foreground uppercase mb-1">FinaPay Wallet</p>
+                            <p className="text-xl font-bold">{finaPayGrams.toFixed(4)} g</p>
+                            <p className="text-sm text-muted-foreground">${(finaPayGrams * goldPricePerGram).toFixed(2)}</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-gray-50 border">
+                            <p className="text-xs font-medium text-muted-foreground uppercase mb-1">BNSL Wallet</p>
+                            <p className="text-xl font-bold">{(bnslAvailableGrams + bnslLockedGrams).toFixed(4)} g</p>
+                            <p className="text-sm text-muted-foreground">
+                              {bnslAvailableGrams.toFixed(4)} g available, {bnslLockedGrams.toFixed(4)} g locked
+                            </p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-gray-50 border">
+                            <p className="text-xs font-medium text-muted-foreground uppercase mb-1">FinaBridge Wallet</p>
+                            <p className="text-xl font-bold">{(finaBridgeAvailableGrams + finabridgeLockedGrams).toFixed(4)} g</p>
+                            <p className="text-sm text-muted-foreground">
+                              {finaBridgeAvailableGrams.toFixed(4)} g available, {finabridgeLockedGrams.toFixed(4)} g reserved
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Ledger History */}
+                    <Card className="bg-white border">
+                      <CardHeader className="border-b">
+                        <CardTitle className="text-lg">Ownership Ledger History</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        {ledgerEntries.length === 0 ? (
+                          <div className="p-12 text-center">
+                            <Lock className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                            <h3 className="text-lg font-bold mb-2">No Ledger Entries</h3>
+                            <p className="text-muted-foreground">
+                              Your ownership ledger will show all gold movements once you start transacting.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-gray-50 border-b">
+                                <tr>
+                                  <th className="text-left p-4 font-medium">Date</th>
+                                  <th className="text-left p-4 font-medium">Action</th>
+                                  <th className="text-left p-4 font-medium">From</th>
+                                  <th className="text-left p-4 font-medium">To</th>
+                                  <th className="text-right p-4 font-medium">Gold (g)</th>
+                                  <th className="text-right p-4 font-medium">Value</th>
+                                  <th className="text-right p-4 font-medium">Balance After</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y">
+                                {ledgerEntries.map((entry: any) => (
+                                  <tr key={entry.id} className="hover:bg-gray-50">
+                                    <td className="p-4 text-muted-foreground">
+                                      {new Date(entry.createdAt).toLocaleDateString()}
+                                    </td>
+                                    <td className="p-4">
+                                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                        entry.action.includes('Deposit') || entry.action.includes('Receive') || entry.action.includes('Credit') 
+                                          ? 'bg-green-100 text-green-700'
+                                          : entry.action.includes('Lock') || entry.action.includes('Reserve')
+                                          ? 'bg-orange-100 text-orange-700'
+                                          : entry.action.includes('Withdrawal') || entry.action.includes('Send') || entry.action.includes('Fee')
+                                          ? 'bg-red-100 text-red-700'
+                                          : 'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {entry.action.replace(/_/g, ' ')}
+                                      </span>
+                                    </td>
+                                    <td className="p-4">
+                                      {entry.fromWallet && (
+                                        <span className="text-muted-foreground">
+                                          {entry.fromWallet}
+                                          {entry.fromStatus && <span className="block text-xs">{entry.fromStatus}</span>}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="p-4">
+                                      {entry.toWallet && (
+                                        <span className="text-muted-foreground">
+                                          {entry.toWallet}
+                                          {entry.toStatus && <span className="block text-xs">{entry.toStatus}</span>}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="p-4 text-right font-medium">
+                                      {parseFloat(entry.goldGrams).toFixed(4)}
+                                    </td>
+                                    <td className="p-4 text-right text-muted-foreground">
+                                      {entry.valueUsd ? `$${parseFloat(entry.valueUsd).toFixed(2)}` : '-'}
+                                    </td>
+                                    <td className="p-4 text-right font-medium">
+                                      {parseFloat(entry.balanceAfterGrams).toFixed(4)} g
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
                 </TabsContent>
               </Tabs>
             </motion.div>

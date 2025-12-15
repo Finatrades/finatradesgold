@@ -888,6 +888,118 @@ export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
 export type Certificate = typeof certificates.$inferSelect;
 
 // ============================================
+// FINAVAULT - CENTRAL OWNERSHIP LEDGER
+// ============================================
+
+// Ownership status tracks where gold is allocated
+export const ownershipStatusEnum = pgEnum('ownership_status', [
+  'Available',           // In FinaPay wallet, freely transferable
+  'Locked_BNSL',         // Locked in BNSL plan
+  'Reserved_Trade',      // Reserved for FinaBridge trade settlement
+  'Pending_Deposit',     // Awaiting deposit confirmation
+  'Pending_Withdrawal'   // Awaiting withdrawal processing
+]);
+
+// Ledger action types for audit trail
+export const ledgerActionEnum = pgEnum('ledger_action', [
+  'Deposit',                    // Funds added to system
+  'Withdrawal',                 // Funds removed from system
+  'Transfer_Send',              // User-to-user transfer (sender)
+  'Transfer_Receive',           // User-to-user transfer (receiver)
+  'FinaPay_To_BNSL',           // Transfer from FinaPay to BNSL wallet
+  'BNSL_To_FinaPay',           // Transfer back from BNSL to FinaPay
+  'BNSL_Lock',                 // Lock gold in BNSL plan
+  'BNSL_Unlock',               // Unlock gold from BNSL plan (maturity/termination)
+  'FinaPay_To_FinaBridge',     // Transfer from FinaPay to FinaBridge wallet
+  'FinaBridge_To_FinaPay',     // Transfer back from FinaBridge to FinaPay
+  'Trade_Reserve',              // Reserve gold for trade settlement
+  'Trade_Release',              // Release gold from trade (settlement complete)
+  'Payout_Credit',              // BNSL payout credited as gold
+  'Fee_Deduction',              // Fee deducted from balance
+  'Adjustment'                  // Manual adjustment by admin
+]);
+
+// Wallet types for tracking source/destination
+export const walletTypeEnum = pgEnum('wallet_type', [
+  'FinaPay',      // Main user wallet
+  'BNSL',         // BNSL dedicated wallet
+  'FinaBridge',   // FinaBridge trade wallet
+  'External'      // External (deposits/withdrawals)
+]);
+
+// Central ledger tracking all gold ownership changes
+export const vaultLedgerEntries = pgTable("vault_ledger_entries", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Action details
+  action: ledgerActionEnum("action").notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  valueUsd: decimal("value_usd", { precision: 18, scale: 2 }),
+  
+  // Source and destination
+  fromWallet: walletTypeEnum("from_wallet"),
+  toWallet: walletTypeEnum("to_wallet"),
+  fromStatus: ownershipStatusEnum("from_status"),
+  toStatus: ownershipStatusEnum("to_status"),
+  
+  // Running balance after this entry
+  balanceAfterGrams: decimal("balance_after_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  // Reference IDs for linking to related entities
+  transactionId: varchar("transaction_id", { length: 255 }),
+  bnslPlanId: varchar("bnsl_plan_id", { length: 255 }),
+  bnslPayoutId: varchar("bnsl_payout_id", { length: 255 }),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }),
+  certificateId: varchar("certificate_id", { length: 255 }),
+  
+  // For transfers between users
+  counterpartyUserId: varchar("counterparty_user_id", { length: 255 }).references(() => users.id),
+  
+  // Audit fields
+  notes: text("notes"),
+  createdBy: varchar("created_by", { length: 255 }), // 'system' or admin userId
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertVaultLedgerEntrySchema = createInsertSchema(vaultLedgerEntries).omit({ id: true, createdAt: true });
+export type InsertVaultLedgerEntry = z.infer<typeof insertVaultLedgerEntrySchema>;
+export type VaultLedgerEntry = typeof vaultLedgerEntries.$inferSelect;
+
+// User's consolidated ownership view (aggregated from ledger)
+export const vaultOwnershipSummary = pgTable("vault_ownership_summary", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  
+  // Total gold owned by user
+  totalGoldGrams: decimal("total_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  
+  // Breakdown by status
+  availableGrams: decimal("available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  lockedBnslGrams: decimal("locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  reservedTradeGrams: decimal("reserved_trade_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  
+  // Breakdown by wallet
+  finaPayGrams: decimal("finapay_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  bnslAvailableGrams: decimal("bnsl_available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  bnslLockedGrams: decimal("bnsl_locked_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  finaBridgeAvailableGrams: decimal("finabridge_available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  finaBridgeReservedGrams: decimal("finabridge_reserved_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  
+  // Vault custody info
+  vaultLocation: varchar("vault_location", { length: 255 }).notNull().default('Dubai - Wingold & Metals DMCC'),
+  wingoldStorageRef: varchar("wingold_storage_ref", { length: 100 }),
+  
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertVaultOwnershipSummarySchema = createInsertSchema(vaultOwnershipSummary).omit({ id: true, createdAt: true, lastUpdated: true });
+export type InsertVaultOwnershipSummary = z.infer<typeof insertVaultOwnershipSummarySchema>;
+export type VaultOwnershipSummary = typeof vaultOwnershipSummary.$inferSelect;
+
+// ============================================
 // INVOICES - GOLD PURCHASE INVOICES
 // ============================================
 
