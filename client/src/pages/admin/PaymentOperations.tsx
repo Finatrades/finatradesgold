@@ -124,6 +124,46 @@ export default function FinaPayManagement() {
   const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null);
   const [withdrawalAdminNotes, setWithdrawalAdminNotes] = useState('');
+  
+  const [bankAccountDialogOpen, setBankAccountDialogOpen] = useState(false);
+  const [editingBankAccount, setEditingBankAccount] = useState<any>(null);
+  const [bankAccountForm, setBankAccountForm] = useState({
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+    routingNumber: '',
+    swiftCode: '',
+    iban: '',
+    currency: 'USD',
+    isActive: true
+  });
+
+  const handleSaveBankAccount = async () => {
+    try {
+      if (editingBankAccount) {
+        await apiRequest('PUT', `/api/admin/bank-accounts/${editingBankAccount.id}`, bankAccountForm);
+        toast.success("Bank account updated successfully");
+      } else {
+        await apiRequest('POST', '/api/admin/bank-accounts', bankAccountForm);
+        toast.success("Bank account created successfully");
+      }
+      setBankAccountDialogOpen(false);
+      setEditingBankAccount(null);
+      setBankAccountForm({
+        bankName: '',
+        accountName: '',
+        accountNumber: '',
+        routingNumber: '',
+        swiftCode: '',
+        iban: '',
+        currency: 'USD',
+        isActive: true
+      });
+      fetchData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save bank account");
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
