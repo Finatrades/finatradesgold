@@ -103,6 +103,18 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Fetch deposit requests (bank transfer deposits)
+  const { data: depositRequestsData } = useQuery({
+    queryKey: ['deposit-requests', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { requests: [] };
+      const res = await fetch(`/api/deposit-requests/${user.id}`);
+      if (!res.ok) return { requests: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Fetch FinaBridge wallet data for locked gold display
   const { data: finabridgeData } = useQuery({
     queryKey: ['finabridge-wallet', user?.id],
@@ -188,6 +200,7 @@ export default function FinaVault() {
   // Ledger entries for history display - combine ledger entries with transactions
   const ledgerEntries = ledgerData?.entries || [];
   const transactions = transactionsData?.transactions || [];
+  const depositRequests = depositRequestsData?.requests || [];
   
   // Convert transactions to ledger-like format for display
   const transactionRecords = transactions.map((tx: any) => ({
@@ -204,9 +217,31 @@ export default function FinaVault() {
     balanceAfterGrams: tx.balanceAfterGrams || '0',
     isTransaction: true,
   }));
+
+  // Convert deposit requests (bank deposits) to ledger-like format
+  const depositRecords = depositRequests.map((dep: any) => ({
+    id: dep.id,
+    createdAt: dep.createdAt,
+    action: 'Bank Deposit',
+    status: dep.status,
+    fromWallet: 'Bank Transfer',
+    toWallet: 'FinaPay',
+    fromStatus: null,
+    toStatus: 'Available',
+    goldGrams: '0',
+    valueUsd: dep.amountUsd || '0',
+    balanceAfterGrams: '0',
+    isDepositRequest: true,
+    referenceNumber: dep.referenceNumber,
+  }));
   
-  // Use ledger entries if available, otherwise show transactions
-  const displayRecords = ledgerEntries.length > 0 ? ledgerEntries : transactionRecords;
+  // Combine all records and sort by date (newest first)
+  const allRecords = [...transactionRecords, ...depositRecords].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  
+  // Use ledger entries if available, otherwise show combined records
+  const displayRecords = ledgerEntries.length > 0 ? ledgerEntries : allRecords;
 
   // Check query params for initial tab
   useEffect(() => {
