@@ -89,7 +89,7 @@ export default function KYC() {
     }
   });
   
-  const kycMode: KycModeType = kycModeData?.mode || 'kycAml';
+  const kycMode: KycModeType = kycModeData?.activeKycMode || 'kycAml';
   
   // === KYCAML MODE STATE (Existing Tiered KYC) ===
   const [activeStep, setActiveStep] = useState('tier_select');
