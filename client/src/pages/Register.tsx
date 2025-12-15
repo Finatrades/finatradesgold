@@ -435,12 +435,18 @@ export default function Register() {
                     autoPlay
                     playsInline
                     muted
-                    className="w-full rounded-lg bg-black"
+                    className="w-full aspect-[4/3] rounded-lg bg-gray-900 object-cover"
                     style={{ transform: 'scaleX(-1)' }}
                   />
                   <canvas ref={canvasRef} className="hidden" />
                   
-                  {countdown !== null && countdown > 0 && (
+                  {!isCameraReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-lg">
+                      <p className="text-white">Loading camera...</p>
+                    </div>
+                  )}
+                  
+                  {countdown !== null && countdown > 0 && isCameraReady && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="bg-black/50 text-white text-6xl font-bold rounded-full w-24 h-24 flex items-center justify-center">
                         {countdown}
