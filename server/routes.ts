@@ -42,6 +42,12 @@ import {
   HIGH_RISK_COUNTRIES,
   ELEVATED_RISK_COUNTRIES
 } from "./risk-scoring";
+import { 
+  evaluateTransaction, 
+  getAmlAlerts, 
+  seedDefaultAmlRules,
+  DEFAULT_AML_RULES 
+} from "./aml-monitoring";
 import PDFDocument from "pdfkit";
 
 // Middleware to ensure admin access using header-based auth
@@ -2089,67 +2095,56 @@ export async function registerRoutes(
   });
 
   // Seed default AML monitoring rules (Admin)
-  app.post("/api/admin/aml-rules/seed-defaults", async (req, res) => {
+  app.post("/api/admin/aml-rules/seed-defaults", ensureAdminAsync, async (req, res) => {
     try {
-      const { adminId } = req.body;
-      
-      const defaultRules = [
-        {
-          ruleName: 'High Value Transaction Alert',
-          ruleCode: 'HVT_ALERT',
-          description: 'Alert on transactions exceeding $10,000',
-          ruleType: 'threshold',
-          conditions: { amountThreshold: 10000, currency: 'USD' },
-          actionType: 'alert',
-          priority: 8,
-          createdBy: adminId,
-        },
-        {
-          ruleName: 'Velocity Check - Daily',
-          ruleCode: 'VEL_DAILY',
-          description: 'Flag users with more than 10 transactions in 24 hours',
-          ruleType: 'velocity',
-          conditions: { timeWindowHours: 24, transactionCount: 10 },
-          actionType: 'flag',
-          priority: 6,
-          createdBy: adminId,
-        },
-        {
-          ruleName: 'High Risk Country Transaction',
-          ruleCode: 'HR_COUNTRY',
-          description: 'Escalate transactions involving high-risk jurisdictions',
-          ruleType: 'geography',
-          conditions: { highRiskCountries: ['AF', 'IR', 'KP', 'SY', 'YE'] },
-          actionType: 'escalate',
-          priority: 9,
-          createdBy: adminId,
-        },
-        {
-          ruleName: 'Large Gold Purchase',
-          ruleCode: 'LG_GOLD',
-          description: 'Alert on gold purchases exceeding 100 grams',
-          ruleType: 'threshold',
-          conditions: { amountThreshold: 100, currency: 'GOLD_GRAMS' },
-          actionType: 'alert',
-          priority: 7,
-          createdBy: adminId,
-        },
-      ];
-      
-      const createdRules = [];
-      for (const ruleData of defaultRules) {
-        // Check if rule already exists
-        const existing = await storage.getAmlMonitoringRuleByCode(ruleData.ruleCode);
-        if (!existing) {
-          const rule = await storage.createAmlMonitoringRule(ruleData);
-          createdRules.push(rule);
-        }
-      }
-      
-      res.json({ message: `Created ${createdRules.length} default rules`, rules: createdRules });
+      await seedDefaultAmlRules();
+      const rules = await storage.getAllAmlMonitoringRules();
+      res.json({ message: `Seeded default AML rules`, rules });
     } catch (error) {
       console.error("Seed AML rules error:", error);
       res.status(400).json({ message: "Failed to seed AML rules" });
+    }
+  });
+
+  // Evaluate transaction against AML rules (Admin)
+  app.post("/api/admin/aml/evaluate-transaction", ensureAdminAsync, async (req, res) => {
+    try {
+      const { transactionId, userId } = req.body;
+      
+      if (!transactionId || !userId) {
+        return res.status(400).json({ message: "transactionId and userId are required" });
+      }
+      
+      const transaction = await storage.getTransaction(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      const result = await evaluateTransaction(transaction, userId);
+      res.json(result);
+    } catch (error) {
+      console.error("AML evaluation error:", error);
+      res.status(400).json({ message: "Failed to evaluate transaction" });
+    }
+  });
+
+  // Get AML alerts summary (Admin)
+  app.get("/api/admin/aml/alerts", ensureAdminAsync, async (req, res) => {
+    try {
+      const alerts = await getAmlAlerts();
+      res.json(alerts);
+    } catch (error) {
+      console.error("AML alerts error:", error);
+      res.status(400).json({ message: "Failed to get AML alerts" });
+    }
+  });
+
+  // Get default AML rule templates
+  app.get("/api/admin/aml-rules/templates", ensureAdminAsync, async (req, res) => {
+    try {
+      res.json({ templates: DEFAULT_AML_RULES });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get rule templates" });
     }
   });
   
