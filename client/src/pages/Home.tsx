@@ -357,23 +357,58 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how-it-works" className="py-24 bg-gradient-to-b from-orange-50/50 to-white overflow-hidden" data-testid="section-how-it-works">
+      <section id="how-it-works" className="py-24 bg-gradient-to-b from-purple-50/30 via-white to-purple-50/20 overflow-hidden" data-testid="section-how-it-works">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block text-[#f97316] text-sm font-semibold tracking-wider uppercase mb-4">
+            <span className="inline-block bg-gradient-to-r from-purple-100 to-pink-100 text-purple-600 text-sm font-semibold tracking-wider uppercase px-4 py-2 rounded-full mb-4">
               {accountType === 'personal' ? 'YOUR JOURNEY' : 'ENTERPRISE WORKFLOW'}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              How It Works
+              How It <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">Works</span>
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
               {accountType === 'personal' 
                 ? 'A simple journey from registration to gold-backed wealth management'
-                : 'A streamlined process designed for enterprise compliance and efficiency'}
+                : 'A structured, compliant pathway for corporate gold management'}
             </p>
           </div>
 
-          <div className="relative max-w-5xl mx-auto">
+          <div className="relative max-w-4xl mx-auto">
+            <svg
+              className="absolute left-1/2 top-0 -translate-x-1/2 w-full h-full pointer-events-none hidden md:block"
+              viewBox="0 0 400 1400"
+              fill="none"
+              preserveAspectRatio="none"
+              style={{ height: `${workflowSteps.length * 200}px` }}
+            >
+              <motion.path
+                d={`M200,40 
+                   C80,80 80,160 200,200 
+                   C320,240 320,320 200,360 
+                   C80,400 80,480 200,520 
+                   C320,560 320,640 200,680 
+                   C80,720 80,800 200,840 
+                   C320,880 320,960 200,1000
+                   C80,1040 80,1120 200,1160
+                   C320,1200 320,1280 200,1320`}
+                stroke="url(#purpleGradient)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                fill="none"
+                initial={{ pathLength: 0 }}
+                whileInView={{ pathLength: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 2, ease: "easeInOut" }}
+              />
+              <defs>
+                <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#a855f7" />
+                  <stop offset="50%" stopColor="#ec4899" />
+                  <stop offset="100%" stopColor="#a855f7" />
+                </linearGradient>
+              </defs>
+            </svg>
+
             {workflowSteps.map((step, index) => {
               const isEven = index % 2 === 0;
               const isLast = index === workflowSteps.length - 1;
@@ -381,50 +416,45 @@ export default function Home() {
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, x: isEven ? -50 : 50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
-                  transition={{ duration: 0.5, delay: index * 0.15 }}
-                  className={`flex items-start gap-6 mb-8 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className={`relative flex items-center gap-4 md:gap-8 mb-12 md:mb-16 ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'}`}
                 >
-                  <div className={`flex-1 ${isEven ? 'text-right' : 'text-left'}`}>
+                  <div className={`flex-1 ${isEven ? 'md:text-right' : 'md:text-left'}`}>
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
                       viewport={{ once: true }}
-                      transition={{ delay: index * 0.15 + 0.2 }}
-                      className={`inline-block bg-white rounded-2xl p-6 shadow-lg border border-gray-100 max-w-md ${isEven ? 'ml-auto' : 'mr-auto'}`}
+                      transition={{ delay: index * 0.1 + 0.2 }}
+                      className={`bg-white rounded-xl p-5 shadow-lg border border-purple-100/50 hover:shadow-xl hover:border-purple-200 transition-all duration-300 ${isEven ? 'md:ml-auto' : 'md:mr-auto'} max-w-sm`}
                     >
                       <h4 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h4>
-                      <p className="text-gray-600 text-sm">{step.description}</p>
+                      <p className="text-gray-500 text-sm leading-relaxed">{step.description}</p>
                     </motion.div>
                   </div>
                   
-                  <div className="relative flex flex-col items-center">
+                  <div className="relative flex-shrink-0 z-10">
                     <motion.div 
-                      className="w-16 h-16 rounded-full bg-gradient-to-br from-[#f97316] to-[#ea580c] flex items-center justify-center shadow-lg z-10"
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
+                      className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-200"
+                      initial={{ scale: 0, rotate: -10 }}
+                      whileInView={{ scale: 1, rotate: 0 }}
                       viewport={{ once: true }}
-                      transition={{ type: "spring", delay: index * 0.15, duration: 0.5 }}
-                      whileHover={{ scale: 1.1 }}
+                      transition={{ type: "spring", delay: index * 0.1, duration: 0.5 }}
+                      whileHover={{ scale: 1.1, rotate: 5 }}
                     >
-                      <span className="text-white font-bold text-xl">{step.number}</span>
+                      {index === 0 && <Building2 className="w-6 h-6 md:w-7 md:h-7 text-white" />}
+                      {index === 1 && <FileCheck className="w-6 h-6 md:w-7 md:h-7 text-white" />}
+                      {index === 2 && <Vault className="w-6 h-6 md:w-7 md:h-7 text-white" />}
+                      {index === 3 && <Wallet className="w-6 h-6 md:w-7 md:h-7 text-white" />}
+                      {index === 4 && <Award className="w-6 h-6 md:w-7 md:h-7 text-white" />}
+                      {index === 5 && <Globe className="w-6 h-6 md:w-7 md:h-7 text-white" />}
+                      {index === 6 && <BarChart3 className="w-6 h-6 md:w-7 md:h-7 text-white" />}
                     </motion.div>
-                    
-                    {!isLast && (
-                      <motion.div 
-                        className="w-1 h-24 bg-gradient-to-b from-[#f97316] to-[#ea580c] mt-2"
-                        initial={{ scaleY: 0 }}
-                        whileInView={{ scaleY: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: index * 0.15 + 0.3, duration: 0.4 }}
-                        style={{ originY: 0 }}
-                      />
-                    )}
                   </div>
                   
-                  <div className="flex-1" />
+                  <div className="flex-1 hidden md:block" />
                 </motion.div>
               );
             })}
@@ -434,7 +464,7 @@ export default function Home() {
             <Link href="/register">
               <Button 
                 size="lg"
-                className="bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white rounded-full px-8"
+                className="bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-white rounded-full px-8 shadow-lg shadow-purple-200"
                 data-testid="button-explore-business"
               >
                 {accountType === 'personal' ? 'Start Your Journey' : 'Explore Business Platform'}
