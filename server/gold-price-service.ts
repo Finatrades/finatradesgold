@@ -15,6 +15,65 @@ let cachedPrice: CachedPrice | null = null;
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 const FALLBACK_PRICE_PER_GRAM = 93.50; // Fallback price in USD
 
+async function fetchFromGoldPriceZ(): Promise<GoldPriceData | null> {
+  try {
+    const response = await fetch('https://goldpricez.com/api/rates/currency/usd/measure/gram');
+    
+    if (!response.ok) {
+      console.error('[GoldPrice] GoldPriceZ API error:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data.gold_rate) {
+      const pricePerGram = parseFloat(data.gold_rate);
+      return {
+        pricePerGram,
+        pricePerOunce: pricePerGram * 31.1035,
+        currency: 'USD',
+        timestamp: new Date(),
+        source: 'goldpricez.com'
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[GoldPrice] GoldPriceZ fetch error:', error);
+    return null;
+  }
+}
+
+async function fetchFromFreeGoldApi(): Promise<GoldPriceData | null> {
+  try {
+    const response = await fetch('https://freegoldapi.com/api/XAU/USD');
+    
+    if (!response.ok) {
+      console.error('[GoldPrice] FreeGoldAPI error:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data.price) {
+      const pricePerOunce = parseFloat(data.price);
+      const pricePerGram = pricePerOunce / 31.1035;
+      return {
+        pricePerGram,
+        pricePerOunce,
+        currency: 'USD',
+        timestamp: new Date(),
+        source: 'freegoldapi.com'
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[GoldPrice] FreeGoldAPI fetch error:', error);
+    return null;
+  }
+}
+
 async function fetchFromMetalsDev(apiKey: string): Promise<GoldPriceData | null> {
   try {
     const response = await fetch(
@@ -32,7 +91,7 @@ async function fetchFromMetalsDev(apiKey: string): Promise<GoldPriceData | null>
       const pricePerGram = data.metals.gold;
       return {
         pricePerGram,
-        pricePerOunce: pricePerGram * 31.1035, // Convert to troy ounce
+        pricePerOunce: pricePerGram * 31.1035,
         currency: 'USD',
         timestamp: new Date(),
         source: 'metals.dev'
@@ -42,41 +101,6 @@ async function fetchFromMetalsDev(apiKey: string): Promise<GoldPriceData | null>
     return null;
   } catch (error) {
     console.error('[GoldPrice] Metals.dev fetch error:', error);
-    return null;
-  }
-}
-
-async function fetchFromGoldApi(): Promise<GoldPriceData | null> {
-  try {
-    // Gold-API.com free endpoint (no key required for basic access)
-    const response = await fetch('https://www.goldapi.io/api/XAU/USD', {
-      headers: {
-        'x-access-token': process.env.GOLD_API_KEY || ''
-      }
-    });
-    
-    if (!response.ok) {
-      console.error('[GoldPrice] Gold-API error:', response.status);
-      return null;
-    }
-    
-    const data = await response.json();
-    
-    if (data.price) {
-      const pricePerOunce = data.price;
-      const pricePerGram = pricePerOunce / 31.1035;
-      return {
-        pricePerGram,
-        pricePerOunce,
-        currency: 'USD',
-        timestamp: new Date(),
-        source: 'goldapi.io'
-      };
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('[GoldPrice] Gold-API fetch error:', error);
     return null;
   }
 }
@@ -99,20 +123,25 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   
   let priceData: GoldPriceData | null = null;
   
-  // Try Metals.dev first if API key is available
-  const metalsDevKey = process.env.METALS_DEV_API_KEY;
-  if (metalsDevKey) {
-    priceData = await fetchFromMetalsDev(metalsDevKey);
+  // Try free APIs first (no key required)
+  priceData = await fetchFromGoldPriceZ();
+  
+  // Try FreeGoldAPI as backup
+  if (!priceData) {
+    priceData = await fetchFromFreeGoldApi();
   }
   
-  // Try Gold-API as backup
-  if (!priceData && process.env.GOLD_API_KEY) {
-    priceData = await fetchFromGoldApi();
+  // Try Metals.dev if API key is available
+  if (!priceData) {
+    const metalsDevKey = process.env.METALS_DEV_API_KEY;
+    if (metalsDevKey) {
+      priceData = await fetchFromMetalsDev(metalsDevKey);
+    }
   }
   
   // Use fallback if all APIs fail
   if (!priceData) {
-    console.log('[GoldPrice] Using fallback price - no API key configured or API unavailable');
+    console.log('[GoldPrice] Using fallback price - all APIs unavailable');
     priceData = getFallbackPrice();
   }
   
@@ -121,6 +150,8 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
     data: priceData,
     expiresAt: new Date(Date.now() + CACHE_DURATION_MS)
   };
+  
+  console.log(`[GoldPrice] Fetched from ${priceData.source}: $${priceData.pricePerGram.toFixed(2)}/gram`);
   
   return priceData;
 }
