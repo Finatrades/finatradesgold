@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import FinaBridgeDisclaimerModal from '@/components/finabridge/FinaBridgeDisclaimerModal';
+import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 
 interface TradeRequest {
   id: string;
@@ -535,13 +536,21 @@ export default function FinaBridge() {
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available to Trade</p>
-                <p className="text-3xl font-bold text-foreground mb-1">
-                  ${(parseFloat(wallet?.availableGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)} g
-                </p>
-                <p className="text-xs text-muted-foreground mt-3">
+                <div className="space-y-1 mb-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-muted-foreground">USD Value:</span>
+                    <span className="text-2xl font-bold text-foreground">
+                      ${(parseFloat(wallet?.availableGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                    <span className="text-lg font-semibold text-amber-600">
+                      {parseFloat(wallet?.availableGoldGrams || '0').toFixed(4)} g
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
                   Funds available for trade settlements.
                 </p>
               </div>
@@ -554,13 +563,21 @@ export default function FinaBridge() {
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in Escrow</p>
-                <p className="text-3xl font-bold text-amber-500 mb-1">
-                  ${(parseFloat(wallet?.lockedGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-sm text-amber-500/70">
-                  {parseFloat(wallet?.lockedGoldGrams || '0').toFixed(3)} g
-                </p>
-                <p className="text-xs text-muted-foreground mt-3">
+                <div className="space-y-1 mb-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-muted-foreground">USD Value:</span>
+                    <span className="text-2xl font-bold text-amber-500">
+                      ${(parseFloat(wallet?.lockedGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                    <span className="text-lg font-semibold text-amber-500/80">
+                      {parseFloat(wallet?.lockedGoldGrams || '0').toFixed(4)} g
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
                   <ArrowLeftRight className="w-3 h-3 inline mr-1" />
                   Gold secured for active trades.
                 </p>
@@ -574,16 +591,27 @@ export default function FinaBridge() {
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Bridge Value</p>
-                <p className="text-3xl font-bold text-amber-500 mb-1">
-                  ${((parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {(parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')).toFixed(3)} g Total
-                </p>
+                <div className="space-y-1 mb-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-muted-foreground">USD Value:</span>
+                    <span className="text-2xl font-bold text-amber-500">
+                      ${((parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                    <span className="text-lg font-semibold text-foreground">
+                      {(parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')).toFixed(4)} g
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
           </div>
+          
+          {/* Gold-Backed Disclosure */}
+          <GoldBackedDisclosure className="mt-4" />
         </div>
 
         {role === 'importer' ? (
