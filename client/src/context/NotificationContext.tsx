@@ -31,33 +31,8 @@ export const useNotifications = () => {
   return context;
 };
 
-// Mock initial notifications
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'notif-1',
-    title: 'Welcome to Finatrades',
-    message: 'Your account has been successfully created. Complete your profile to unlock full features.',
-    type: 'info',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    read: true
-  },
-  {
-    id: 'notif-2',
-    title: 'Gold Price Alert',
-    message: 'Gold has reached a new high of $2,350.40/oz.',
-    type: 'info',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    read: false
-  },
-  {
-    id: 'notif-3',
-    title: 'Security Update',
-    message: 'New login detected from Dubai, UAE.',
-    type: 'warning',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    read: false
-  }
-];
+// Start with empty notifications - real notifications will be added by user actions
+const INITIAL_NOTIFICATIONS: Notification[] = [];
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);

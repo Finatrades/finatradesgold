@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { useLocation } from 'wouter';
 
 export default function KYC() {
   const { user, refreshUser } = useAuth();
+  const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
   const [activeStep, setActiveStep] = useState('personal');
   const [progress, setProgress] = useState(25);
@@ -286,6 +288,13 @@ export default function KYC() {
       }
       
       await refreshUser();
+      
+      // Add notification to bell
+      addNotification({
+        title: 'KYC Verification Submitted',
+        message: 'Your documents are now under review. You will be notified once approved.',
+        type: 'success'
+      });
       
       toast.success("KYC Verification Submitted", {
         description: "Your documents are now under review. You will be notified once approved."
