@@ -7242,7 +7242,8 @@ export async function registerRoutes(
       res.json({ 
         activeKycMode: settings.activeKycMode,
         finatradesPersonalConfig: settings.finatradesPersonalConfig,
-        finanatradesCorporateConfig: settings.finanatradesCorporateConfig
+        finanatradesCorporateConfig: settings.finanatradesCorporateConfig,
+        blockedCountries: settings.blockedCountries || []
       });
     } catch (error) {
       console.error("Failed to get KYC mode:", error);
@@ -7250,10 +7251,10 @@ export async function registerRoutes(
     }
   });
 
-  // Submit Finatrades Personal KYC (banking + liveness)
+  // Submit Finatrades Personal KYC (personal info + documents + liveness)
   app.post("/api/finatrades-kyc/personal", async (req, res) => {
     try {
-      const { userId, bankingProvider, livenessCapture } = req.body;
+      const { userId, personalInformation, documents, livenessCapture, livenessVerified } = req.body;
       
       if (!userId) {
         return res.status(400).json({ message: "userId is required" });
@@ -7264,20 +7265,40 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
+      // Flatten the nested objects into individual fields
+      const kycData = {
+        userId,
+        // Personal Information
+        fullName: personalInformation?.fullName,
+        email: personalInformation?.email,
+        phone: personalInformation?.phone,
+        dateOfBirth: personalInformation?.dateOfBirth,
+        nationality: personalInformation?.nationality,
+        country: personalInformation?.country,
+        city: personalInformation?.city,
+        address: personalInformation?.address,
+        postalCode: personalInformation?.postalCode,
+        occupation: personalInformation?.occupation,
+        sourceOfFunds: personalInformation?.sourceOfFunds,
+        accountType: personalInformation?.accountType,
+        // Documents
+        idFrontUrl: documents?.idFront?.url,
+        idBackUrl: documents?.idBack?.url,
+        passportUrl: documents?.passport?.url,
+        addressProofUrl: documents?.addressProof?.url,
+        // Liveness
+        livenessCapture,
+        livenessVerified: !!livenessVerified,
+        livenessVerifiedAt: livenessVerified ? new Date() : null,
+        status: 'In Progress' as const,
+      };
+      
       // Check if already has a submission
       const existing = await storage.getFinatradesPersonalKyc(userId);
       
       if (existing) {
         // Update existing submission
-        const updated = await storage.updateFinatradesPersonalKyc(userId, {
-          bankingProvider,
-          bankingVerified: !!bankingProvider,
-          bankingVerifiedAt: bankingProvider ? new Date() : null,
-          livenessCapture,
-          livenessVerified: !!livenessCapture,
-          livenessVerifiedAt: livenessCapture ? new Date() : null,
-          status: 'In Progress',
-        });
+        const updated = await storage.updateFinatradesPersonalKyc(userId, kycData);
         
         // Update user's KYC status
         await storage.updateUser(userId, { kycStatus: 'In Progress' });
@@ -7285,16 +7306,7 @@ export async function registerRoutes(
         res.json({ success: true, submission: updated });
       } else {
         // Create new submission
-        const submission = await storage.createFinatradesPersonalKyc({
-          userId,
-          bankingProvider,
-          bankingVerified: !!bankingProvider,
-          bankingVerifiedAt: bankingProvider ? new Date() : null,
-          livenessCapture,
-          livenessVerified: !!livenessCapture,
-          livenessVerifiedAt: livenessCapture ? new Date() : null,
-          status: 'In Progress',
-        });
+        const submission = await storage.createFinatradesPersonalKyc(kycData);
         
         // Update user's KYC status
         await storage.updateUser(userId, { kycStatus: 'In Progress' });

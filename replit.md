@@ -50,6 +50,22 @@ Preferred communication style: Simple, everyday language.
 - **KYC Levels**: Multi-tier KYC status (Not Started, In Progress, Approved, Rejected)
 - **Protected Routes**: Client-side route protection with redirect to login
 
+### KYC System (Dual Mode)
+The platform supports two KYC modes, configurable via admin compliance settings:
+
+**Mode 1: kycAml (Tiered Verification)**
+- Tier 1 Basic: Government ID only ($5,000/month limit)
+- Tier 2 Enhanced: ID + Liveness + Proof of Address ($50,000/month limit)
+- Tier 3 Corporate: Full business verification (Unlimited)
+
+**Mode 2: Finatrades (Personal Info + Documents)**
+- Personal Information: Full name, email, phone, date of birth, nationality, country, city, address, postal code, occupation, source of funds, account type
+- Document Uploads: ID front/back, passport (optional), proof of address
+- Liveness Verification: Face capture with movement detection
+- Country Restrictions: Admin-managed blocked countries list
+- Data pre-fills from user profile where available
+- Corporate KYC: Comprehensive questionnaire with beneficial owners and corporate documents
+
 ### Project Structure
 ```
 ├── client/src/          # React frontend

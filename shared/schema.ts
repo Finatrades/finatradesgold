@@ -499,9 +499,8 @@ export const complianceSettings = pgTable("compliance_settings", {
   
   // Finatrades KYC settings for personal accounts
   finatradesPersonalConfig: json("finatrades_personal_config").$type<{
-    enableBankingVerification: boolean;
     enableLivenessCapture: boolean;
-    supportedBankingProviders?: string[];
+    requiredDocuments?: string[];
   }>(),
   
   // Finatrades KYC settings for corporate accounts
@@ -509,6 +508,10 @@ export const complianceSettings = pgTable("compliance_settings", {
     enableLivenessCapture: boolean;
     requiredDocuments: string[];
   }>(),
+  
+  // Country restrictions - list of allowed country codes (empty = all allowed)
+  allowedCountries: json("allowed_countries").$type<string[]>(),
+  blockedCountries: json("blocked_countries").$type<string[]>(),
   
   updatedBy: varchar("updated_by", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -594,26 +597,36 @@ export type InsertFinatradesCorporateKyc = z.infer<typeof insertFinatradesCorpor
 export type FinatradesCorporateKyc = typeof finatradesCorporateKyc.$inferSelect;
 
 // ============================================
-// FINATRADES PERSONAL KYC (Banking + Liveness)
+// FINATRADES PERSONAL KYC (Personal Info + Documents + Liveness)
 // ============================================
 
 export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   
-  // Banking verification
-  bankingProvider: varchar("banking_provider", { length: 100 }),
-  bankingVerified: boolean("banking_verified").default(false),
-  bankingVerifiedAt: timestamp("banking_verified_at"),
-  bankingVerificationData: json("banking_verification_data").$type<{
-    accountHolder?: string;
-    accountVerified?: boolean;
-    provider?: string;
-  }>(),
+  // Personal Information
+  fullName: varchar("full_name", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  country: varchar("country", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  address: text("address"),
+  postalCode: varchar("postal_code", { length: 20 }),
+  nationality: varchar("nationality", { length: 100 }),
+  occupation: varchar("occupation", { length: 100 }),
+  sourceOfFunds: varchar("source_of_funds", { length: 100 }),
+  accountType: varchar("account_type", { length: 50 }),
+  dateOfBirth: varchar("date_of_birth", { length: 20 }),
+  
+  // Document Uploads
+  idFrontUrl: text("id_front_url"),
+  idBackUrl: text("id_back_url"),
+  passportUrl: text("passport_url"),
+  addressProofUrl: text("address_proof_url"),
   
   // Liveness face capture
   livenessVerified: boolean("liveness_verified").default(false),
-  livenessCapture: text("liveness_capture"), // Base64 or URL
+  livenessCapture: text("liveness_capture"),
   livenessVerifiedAt: timestamp("liveness_verified_at"),
   
   // Status tracking

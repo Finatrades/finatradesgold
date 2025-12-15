@@ -67,11 +67,96 @@ const TIER_CONFIGS: TierConfig[] = [
   },
 ];
 
-const BANKING_PROVIDERS = [
-  { id: 'plaid', name: 'Plaid', description: 'Connect via Plaid network' },
-  { id: 'finicity', name: 'Finicity', description: 'Mastercard Open Banking' },
-  { id: 'yodlee', name: 'Yodlee', description: 'Envestnet Data Solutions' },
-  { id: 'manual', name: 'Manual Verification', description: 'Verify with bank statement' },
+const COUNTRIES = [
+  { code: 'AF', name: 'Afghanistan' }, { code: 'AL', name: 'Albania' }, { code: 'DZ', name: 'Algeria' },
+  { code: 'AD', name: 'Andorra' }, { code: 'AO', name: 'Angola' }, { code: 'AG', name: 'Antigua and Barbuda' },
+  { code: 'AR', name: 'Argentina' }, { code: 'AM', name: 'Armenia' }, { code: 'AU', name: 'Australia' },
+  { code: 'AT', name: 'Austria' }, { code: 'AZ', name: 'Azerbaijan' }, { code: 'BS', name: 'Bahamas' },
+  { code: 'BH', name: 'Bahrain' }, { code: 'BD', name: 'Bangladesh' }, { code: 'BB', name: 'Barbados' },
+  { code: 'BY', name: 'Belarus' }, { code: 'BE', name: 'Belgium' }, { code: 'BZ', name: 'Belize' },
+  { code: 'BJ', name: 'Benin' }, { code: 'BT', name: 'Bhutan' }, { code: 'BO', name: 'Bolivia' },
+  { code: 'BA', name: 'Bosnia and Herzegovina' }, { code: 'BW', name: 'Botswana' }, { code: 'BR', name: 'Brazil' },
+  { code: 'BN', name: 'Brunei' }, { code: 'BG', name: 'Bulgaria' }, { code: 'BF', name: 'Burkina Faso' },
+  { code: 'BI', name: 'Burundi' }, { code: 'KH', name: 'Cambodia' }, { code: 'CM', name: 'Cameroon' },
+  { code: 'CA', name: 'Canada' }, { code: 'CV', name: 'Cape Verde' }, { code: 'CF', name: 'Central African Republic' },
+  { code: 'TD', name: 'Chad' }, { code: 'CL', name: 'Chile' }, { code: 'CN', name: 'China' },
+  { code: 'CO', name: 'Colombia' }, { code: 'KM', name: 'Comoros' }, { code: 'CG', name: 'Congo' },
+  { code: 'CR', name: 'Costa Rica' }, { code: 'HR', name: 'Croatia' }, { code: 'CU', name: 'Cuba' },
+  { code: 'CY', name: 'Cyprus' }, { code: 'CZ', name: 'Czech Republic' }, { code: 'DK', name: 'Denmark' },
+  { code: 'DJ', name: 'Djibouti' }, { code: 'DM', name: 'Dominica' }, { code: 'DO', name: 'Dominican Republic' },
+  { code: 'EC', name: 'Ecuador' }, { code: 'EG', name: 'Egypt' }, { code: 'SV', name: 'El Salvador' },
+  { code: 'GQ', name: 'Equatorial Guinea' }, { code: 'ER', name: 'Eritrea' }, { code: 'EE', name: 'Estonia' },
+  { code: 'ET', name: 'Ethiopia' }, { code: 'FJ', name: 'Fiji' }, { code: 'FI', name: 'Finland' },
+  { code: 'FR', name: 'France' }, { code: 'GA', name: 'Gabon' }, { code: 'GM', name: 'Gambia' },
+  { code: 'GE', name: 'Georgia' }, { code: 'DE', name: 'Germany' }, { code: 'GH', name: 'Ghana' },
+  { code: 'GR', name: 'Greece' }, { code: 'GD', name: 'Grenada' }, { code: 'GT', name: 'Guatemala' },
+  { code: 'GN', name: 'Guinea' }, { code: 'GW', name: 'Guinea-Bissau' }, { code: 'GY', name: 'Guyana' },
+  { code: 'HT', name: 'Haiti' }, { code: 'HN', name: 'Honduras' }, { code: 'HU', name: 'Hungary' },
+  { code: 'IS', name: 'Iceland' }, { code: 'IN', name: 'India' }, { code: 'ID', name: 'Indonesia' },
+  { code: 'IR', name: 'Iran' }, { code: 'IQ', name: 'Iraq' }, { code: 'IE', name: 'Ireland' },
+  { code: 'IL', name: 'Israel' }, { code: 'IT', name: 'Italy' }, { code: 'JM', name: 'Jamaica' },
+  { code: 'JP', name: 'Japan' }, { code: 'JO', name: 'Jordan' }, { code: 'KZ', name: 'Kazakhstan' },
+  { code: 'KE', name: 'Kenya' }, { code: 'KI', name: 'Kiribati' }, { code: 'KP', name: 'North Korea' },
+  { code: 'KR', name: 'South Korea' }, { code: 'KW', name: 'Kuwait' }, { code: 'KG', name: 'Kyrgyzstan' },
+  { code: 'LA', name: 'Laos' }, { code: 'LV', name: 'Latvia' }, { code: 'LB', name: 'Lebanon' },
+  { code: 'LS', name: 'Lesotho' }, { code: 'LR', name: 'Liberia' }, { code: 'LY', name: 'Libya' },
+  { code: 'LI', name: 'Liechtenstein' }, { code: 'LT', name: 'Lithuania' }, { code: 'LU', name: 'Luxembourg' },
+  { code: 'MK', name: 'North Macedonia' }, { code: 'MG', name: 'Madagascar' }, { code: 'MW', name: 'Malawi' },
+  { code: 'MY', name: 'Malaysia' }, { code: 'MV', name: 'Maldives' }, { code: 'ML', name: 'Mali' },
+  { code: 'MT', name: 'Malta' }, { code: 'MH', name: 'Marshall Islands' }, { code: 'MR', name: 'Mauritania' },
+  { code: 'MU', name: 'Mauritius' }, { code: 'MX', name: 'Mexico' }, { code: 'FM', name: 'Micronesia' },
+  { code: 'MD', name: 'Moldova' }, { code: 'MC', name: 'Monaco' }, { code: 'MN', name: 'Mongolia' },
+  { code: 'ME', name: 'Montenegro' }, { code: 'MA', name: 'Morocco' }, { code: 'MZ', name: 'Mozambique' },
+  { code: 'MM', name: 'Myanmar' }, { code: 'NA', name: 'Namibia' }, { code: 'NR', name: 'Nauru' },
+  { code: 'NP', name: 'Nepal' }, { code: 'NL', name: 'Netherlands' }, { code: 'NZ', name: 'New Zealand' },
+  { code: 'NI', name: 'Nicaragua' }, { code: 'NE', name: 'Niger' }, { code: 'NG', name: 'Nigeria' },
+  { code: 'NO', name: 'Norway' }, { code: 'OM', name: 'Oman' }, { code: 'PK', name: 'Pakistan' },
+  { code: 'PW', name: 'Palau' }, { code: 'PA', name: 'Panama' }, { code: 'PG', name: 'Papua New Guinea' },
+  { code: 'PY', name: 'Paraguay' }, { code: 'PE', name: 'Peru' }, { code: 'PH', name: 'Philippines' },
+  { code: 'PL', name: 'Poland' }, { code: 'PT', name: 'Portugal' }, { code: 'QA', name: 'Qatar' },
+  { code: 'RO', name: 'Romania' }, { code: 'RU', name: 'Russia' }, { code: 'RW', name: 'Rwanda' },
+  { code: 'KN', name: 'Saint Kitts and Nevis' }, { code: 'LC', name: 'Saint Lucia' },
+  { code: 'VC', name: 'Saint Vincent and the Grenadines' }, { code: 'WS', name: 'Samoa' },
+  { code: 'SM', name: 'San Marino' }, { code: 'ST', name: 'Sao Tome and Principe' },
+  { code: 'SA', name: 'Saudi Arabia' }, { code: 'SN', name: 'Senegal' }, { code: 'RS', name: 'Serbia' },
+  { code: 'SC', name: 'Seychelles' }, { code: 'SL', name: 'Sierra Leone' }, { code: 'SG', name: 'Singapore' },
+  { code: 'SK', name: 'Slovakia' }, { code: 'SI', name: 'Slovenia' }, { code: 'SB', name: 'Solomon Islands' },
+  { code: 'SO', name: 'Somalia' }, { code: 'ZA', name: 'South Africa' }, { code: 'SS', name: 'South Sudan' },
+  { code: 'ES', name: 'Spain' }, { code: 'LK', name: 'Sri Lanka' }, { code: 'SD', name: 'Sudan' },
+  { code: 'SR', name: 'Suriname' }, { code: 'SZ', name: 'Eswatini' }, { code: 'SE', name: 'Sweden' },
+  { code: 'CH', name: 'Switzerland' }, { code: 'SY', name: 'Syria' }, { code: 'TW', name: 'Taiwan' },
+  { code: 'TJ', name: 'Tajikistan' }, { code: 'TZ', name: 'Tanzania' }, { code: 'TH', name: 'Thailand' },
+  { code: 'TL', name: 'Timor-Leste' }, { code: 'TG', name: 'Togo' }, { code: 'TO', name: 'Tonga' },
+  { code: 'TT', name: 'Trinidad and Tobago' }, { code: 'TN', name: 'Tunisia' }, { code: 'TR', name: 'Turkey' },
+  { code: 'TM', name: 'Turkmenistan' }, { code: 'TV', name: 'Tuvalu' }, { code: 'UG', name: 'Uganda' },
+  { code: 'UA', name: 'Ukraine' }, { code: 'AE', name: 'United Arab Emirates' }, { code: 'GB', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' }, { code: 'UY', name: 'Uruguay' }, { code: 'UZ', name: 'Uzbekistan' },
+  { code: 'VU', name: 'Vanuatu' }, { code: 'VA', name: 'Vatican City' }, { code: 'VE', name: 'Venezuela' },
+  { code: 'VN', name: 'Vietnam' }, { code: 'YE', name: 'Yemen' }, { code: 'ZM', name: 'Zambia' },
+  { code: 'ZW', name: 'Zimbabwe' }
+];
+
+const SOURCE_OF_FUNDS_OPTIONS = [
+  'Employment Income',
+  'Business Income',
+  'Investments',
+  'Inheritance',
+  'Savings',
+  'Pension',
+  'Sale of Property',
+  'Gift',
+  'Other'
+];
+
+const OCCUPATION_OPTIONS = [
+  'Employed',
+  'Self-Employed',
+  'Business Owner',
+  'Retired',
+  'Student',
+  'Homemaker',
+  'Unemployed',
+  'Other'
 ];
 
 export default function KYC() {
@@ -109,10 +194,43 @@ export default function KYC() {
   const [jurisdiction, setJurisdiction] = useState('');
   
   // === FINATRADES MODE STATE ===
-  const [finatradesStep, setFinatradesStep] = useState<'banking' | 'liveness' | 'complete'>('banking');
-  const [selectedBankingProvider, setSelectedBankingProvider] = useState('');
-  const [bankingVerified, setBankingVerified] = useState(false);
-  const [accountHolderName, setAccountHolderName] = useState('');
+  const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>('personal_info');
+  
+  // Personal Information (pre-filled from user where available)
+  const [personalFullName, setPersonalFullName] = useState('');
+  const [personalEmail, setPersonalEmail] = useState('');
+  const [personalPhone, setPersonalPhone] = useState('');
+  const [personalCountry, setPersonalCountry] = useState('');
+  const [personalCity, setPersonalCity] = useState('');
+  const [personalAddress, setPersonalAddress] = useState('');
+  const [personalPostalCode, setPersonalPostalCode] = useState('');
+  const [personalNationality, setPersonalNationality] = useState('');
+  const [personalOccupation, setPersonalOccupation] = useState('');
+  const [personalSourceOfFunds, setPersonalSourceOfFunds] = useState('');
+  const [personalAccountType, setPersonalAccountType] = useState('personal');
+  const [personalDateOfBirth, setPersonalDateOfBirth] = useState('');
+  
+  // Document uploads
+  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
+  const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [addressProofFile, setAddressProofFile] = useState<File | null>(null);
+  
+  // Pre-fill data from user profile
+  useEffect(() => {
+    if (user) {
+      setPersonalFullName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
+      setPersonalEmail(user.email || '');
+      setPersonalPhone(user.phoneNumber || '');
+      setPersonalAddress(user.address || '');
+      setPersonalCountry(user.country || '');
+      setPersonalAccountType(user.accountType || 'personal');
+    }
+  }, [user]);
+  
+  // Get allowed countries from server settings
+  const blockedCountries = kycModeData?.blockedCountries || [];
+  const availableCountries = COUNTRIES.filter(c => !blockedCountries.includes(c.code));
   
   // Corporate questionnaire state
   const [corporateStep, setCorporateStep] = useState(1);
@@ -498,8 +616,17 @@ export default function KYC() {
   const handleFinatradesPersonalSubmit = async () => {
     if (!user) return;
     
-    if (!bankingVerified) {
-      toast.error("Please complete banking verification first");
+    // Validate personal information
+    if (!personalFullName || !personalEmail || !personalPhone || !personalCountry || 
+        !personalCity || !personalAddress || !personalNationality || 
+        !personalOccupation || !personalSourceOfFunds || !personalDateOfBirth) {
+      toast.error("Please complete all personal information fields");
+      return;
+    }
+    
+    // Validate required documents
+    if (!idFrontFile || !idBackFile || !addressProofFile) {
+      toast.error("Please upload all required documents");
       return;
     }
     
@@ -511,17 +638,36 @@ export default function KYC() {
     setIsSubmitting(true);
     
     try {
+      // Convert documents to base64
+      const idFrontBase64 = await fileToBase64(idFrontFile);
+      const idBackBase64 = await fileToBase64(idBackFile);
+      const addressProofBase64 = await fileToBase64(addressProofFile);
+      const passportBase64 = passportFile ? await fileToBase64(passportFile) : null;
+      
       const response = await fetch('/api/finatrades-kyc/personal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
-          bankingProvider: selectedBankingProvider,
-          bankingVerified: true,
-          bankingVerificationData: {
-            accountHolder: accountHolderName,
-            accountVerified: true,
-            provider: selectedBankingProvider
+          personalInformation: {
+            fullName: personalFullName,
+            email: personalEmail,
+            phone: personalPhone,
+            dateOfBirth: personalDateOfBirth,
+            nationality: personalNationality,
+            country: personalCountry,
+            city: personalCity,
+            address: personalAddress,
+            postalCode: personalPostalCode,
+            occupation: personalOccupation,
+            sourceOfFunds: personalSourceOfFunds,
+            accountType: personalAccountType
+          },
+          documents: {
+            idFront: { url: idFrontBase64, uploaded: true },
+            idBack: { url: idBackBase64, uploaded: true },
+            addressProof: { url: addressProofBase64, uploaded: true },
+            passport: passportBase64 ? { url: passportBase64, uploaded: true } : null
           },
           livenessVerified: true,
           livenessCapture: capturedSelfie,
@@ -634,24 +780,6 @@ export default function KYC() {
     }
   };
 
-  // Simulate banking verification
-  const handleBankingVerification = () => {
-    if (!selectedBankingProvider) {
-      toast.error("Please select a banking provider");
-      return;
-    }
-    if (!accountHolderName.trim()) {
-      toast.error("Please enter account holder name");
-      return;
-    }
-    
-    toast.success("Banking verification initiated");
-    setTimeout(() => {
-      setBankingVerified(true);
-      toast.success("Bank account verified successfully!");
-    }, 1500);
-  };
-
   const addBeneficialOwner = () => {
     setBeneficialOwners([...beneficialOwners, { name: '', passportNumber: '', emailId: '', shareholdingPercentage: 0 }]);
   };
@@ -703,7 +831,15 @@ export default function KYC() {
 
   // === FINATRADES MODE: PERSONAL ACCOUNT KYC ===
   if (kycMode === 'finatrades' && !isBusiness) {
-    const finatradesProgress = finatradesStep === 'banking' ? 33 : finatradesStep === 'liveness' ? 66 : 100;
+    const stepOrder = ['personal_info', 'documents', 'liveness', 'complete'];
+    const currentStepIdx = stepOrder.indexOf(finatradesStep);
+    const finatradesProgress = Math.round(((currentStepIdx + 1) / stepOrder.length) * 100);
+    
+    const isPersonalInfoComplete = personalFullName && personalEmail && personalPhone && 
+      personalCountry && personalCity && personalAddress && personalNationality && 
+      personalOccupation && personalSourceOfFunds && personalDateOfBirth;
+    
+    const isDocumentsComplete = idFrontFile && idBackFile && addressProofFile;
     
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -713,7 +849,7 @@ export default function KYC() {
             <div className="text-center mb-10">
               <h1 className="text-3xl font-bold text-foreground mb-2">Identity Verification</h1>
               <p className="text-muted-foreground">
-                Complete your identity verification through banking and liveness check.
+                Complete your identity verification to access all features.
               </p>
             </div>
 
@@ -733,18 +869,25 @@ export default function KYC() {
               {/* Sidebar Steps */}
               <div className="md:col-span-4 space-y-4">
                 <StepItem 
-                  title="Bank Verification"
-                  description="Connect your bank account" 
-                  icon={<Landmark className="w-5 h-5" />} 
-                  isActive={finatradesStep === 'banking'} 
-                  isCompleted={bankingVerified}
+                  title="Personal Information"
+                  description="Your basic details" 
+                  icon={<User className="w-5 h-5" />} 
+                  isActive={finatradesStep === 'personal_info'} 
+                  isCompleted={currentStepIdx > 0}
+                />
+                <StepItem 
+                  title="Document Upload"
+                  description="ID and address proof" 
+                  icon={<FileText className="w-5 h-5" />} 
+                  isActive={finatradesStep === 'documents'} 
+                  isCompleted={currentStepIdx > 1}
                 />
                 <StepItem 
                   title="Liveness Check"
                   description="Verify your identity" 
                   icon={<Camera className="w-5 h-5" />} 
                   isActive={finatradesStep === 'liveness'} 
-                  isCompleted={!!capturedSelfie}
+                  isCompleted={!!capturedSelfie && currentStepIdx >= 2}
                 />
                 <StepItem 
                   title="Complete"
@@ -759,88 +902,274 @@ export default function KYC() {
               <div className="md:col-span-8">
                 <Card className="border-border shadow-sm">
                   
-                  {/* STEP 1: Banking Verification */}
-                  {finatradesStep === 'banking' && (
+                  {/* STEP 1: Personal Information */}
+                  {finatradesStep === 'personal_info' && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          <Landmark className="w-5 h-5" />
-                          Bank Account Verification
+                          <User className="w-5 h-5" />
+                          Personal Information
                         </CardTitle>
-                        <CardDescription>Connect your bank account to verify your identity. This is a secure one-time verification.</CardDescription>
+                        <CardDescription>Please provide your personal details. Some fields are pre-filled from your profile.</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-6">
-                        {!bankingVerified ? (
-                          <>
-                            <div className="space-y-4">
-                              <Label>Select Banking Provider</Label>
-                              <div className="grid grid-cols-2 gap-3">
-                                {BANKING_PROVIDERS.map((provider) => (
-                                  <div
-                                    key={provider.id}
-                                    onClick={() => setSelectedBankingProvider(provider.id)}
-                                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                                      selectedBankingProvider === provider.id
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-border hover:border-primary/50'
-                                    }`}
-                                    data-testid={`provider-${provider.id}`}
-                                  >
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <CreditCard className="w-4 h-4" />
-                                      <span className="font-medium">{provider.name}</span>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">{provider.description}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label>Account Holder Name <span className="text-red-500">*</span></Label>
-                              <Input
-                                value={accountHolderName}
-                                onChange={(e) => setAccountHolderName(e.target.value)}
-                                placeholder="Enter your full name as it appears on your bank account"
-                                data-testid="input-account-holder"
-                              />
-                            </div>
-                            
-                            <Button 
-                              onClick={handleBankingVerification}
-                              className="w-full bg-primary text-white"
-                              data-testid="button-verify-banking"
-                            >
-                              Verify Bank Account
-                            </Button>
-                          </>
-                        ) : (
-                          <div className="text-center py-8">
-                            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                              <CheckCircle2 className="w-8 h-8 text-green-600" />
-                            </div>
-                            <h3 className="font-bold text-lg text-foreground mb-2">Bank Account Verified</h3>
-                            <p className="text-muted-foreground mb-4">
-                              Account holder: {accountHolderName}<br />
-                              Provider: {BANKING_PROVIDERS.find(p => p.id === selectedBankingProvider)?.name}
-                            </p>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="col-span-2">
+                            <Label>Full Name <span className="text-red-500">*</span></Label>
+                            <Input
+                              value={personalFullName}
+                              onChange={(e) => setPersonalFullName(e.target.value)}
+                              placeholder="Enter your full legal name"
+                              data-testid="input-full-name"
+                            />
                           </div>
-                        )}
+                          
+                          <div>
+                            <Label>Email <span className="text-red-500">*</span></Label>
+                            <Input
+                              type="email"
+                              value={personalEmail}
+                              onChange={(e) => setPersonalEmail(e.target.value)}
+                              placeholder="your@email.com"
+                              data-testid="input-email"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label>Phone <span className="text-red-500">*</span></Label>
+                            <Input
+                              value={personalPhone}
+                              onChange={(e) => setPersonalPhone(e.target.value)}
+                              placeholder="+1 234 567 8900"
+                              data-testid="input-phone"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label>Date of Birth <span className="text-red-500">*</span></Label>
+                            <Input
+                              type="date"
+                              value={personalDateOfBirth}
+                              onChange={(e) => setPersonalDateOfBirth(e.target.value)}
+                              data-testid="input-dob"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label>Nationality <span className="text-red-500">*</span></Label>
+                            <Select value={personalNationality} onValueChange={setPersonalNationality}>
+                              <SelectTrigger data-testid="select-nationality">
+                                <SelectValue placeholder="Select nationality" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-60">
+                                {availableCountries.map((country) => (
+                                  <SelectItem key={country.code} value={country.name}>{country.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label>Country of Residence <span className="text-red-500">*</span></Label>
+                            <Select value={personalCountry} onValueChange={setPersonalCountry}>
+                              <SelectTrigger data-testid="select-country">
+                                <SelectValue placeholder="Select country" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-60">
+                                {availableCountries.map((country) => (
+                                  <SelectItem key={country.code} value={country.name}>{country.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label>City <span className="text-red-500">*</span></Label>
+                            <Input
+                              value={personalCity}
+                              onChange={(e) => setPersonalCity(e.target.value)}
+                              placeholder="Your city"
+                              data-testid="input-city"
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <Label>Address <span className="text-red-500">*</span></Label>
+                            <Textarea
+                              value={personalAddress}
+                              onChange={(e) => setPersonalAddress(e.target.value)}
+                              placeholder="Your full residential address"
+                              data-testid="input-address"
+                              rows={2}
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label>Postal Code</Label>
+                            <Input
+                              value={personalPostalCode}
+                              onChange={(e) => setPersonalPostalCode(e.target.value)}
+                              placeholder="Postal/ZIP code"
+                              data-testid="input-postal"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label>Occupation <span className="text-red-500">*</span></Label>
+                            <Select value={personalOccupation} onValueChange={setPersonalOccupation}>
+                              <SelectTrigger data-testid="select-occupation">
+                                <SelectValue placeholder="Select occupation" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {OCCUPATION_OPTIONS.map((occ) => (
+                                  <SelectItem key={occ} value={occ}>{occ}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label>Source of Funds <span className="text-red-500">*</span></Label>
+                            <Select value={personalSourceOfFunds} onValueChange={setPersonalSourceOfFunds}>
+                              <SelectTrigger data-testid="select-source-funds">
+                                <SelectValue placeholder="Select source" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SOURCE_OF_FUNDS_OPTIONS.map((src) => (
+                                  <SelectItem key={src} value={src}>{src}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label>Account Type</Label>
+                            <Select value={personalAccountType} onValueChange={setPersonalAccountType}>
+                              <SelectTrigger data-testid="select-account-type">
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="personal">Personal</SelectItem>
+                                <SelectItem value="business">Business</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
                       </CardContent>
                       <CardFooter className="flex justify-end">
                         <Button 
-                          onClick={() => setFinatradesStep('liveness')}
-                          disabled={!bankingVerified}
+                          onClick={() => setFinatradesStep('documents')}
+                          disabled={!isPersonalInfoComplete}
                           className="bg-primary text-white hover:bg-primary/90"
-                          data-testid="button-continue-liveness"
+                          data-testid="button-continue-documents"
                         >
-                          Continue
+                          Continue to Documents
                         </Button>
                       </CardFooter>
                     </div>
                   )}
 
-                  {/* STEP 2: Liveness Check */}
+                  {/* STEP 2: Document Upload */}
+                  {finatradesStep === 'documents' && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="w-5 h-5" />
+                          Document Upload
+                        </CardTitle>
+                        <CardDescription>Upload clear photos of your identification documents.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="p-4 border-2 border-dashed rounded-lg">
+                            <Label className="flex items-center gap-2 mb-2">
+                              <FileText className="w-4 h-4" />
+                              ID Document (Front) <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={(e) => setIdFrontFile(e.target.files?.[0] || null)}
+                              data-testid="input-id-front"
+                            />
+                            {idFrontFile && (
+                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4" /> {idFrontFile.name}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="p-4 border-2 border-dashed rounded-lg">
+                            <Label className="flex items-center gap-2 mb-2">
+                              <FileText className="w-4 h-4" />
+                              ID Document (Back) <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={(e) => setIdBackFile(e.target.files?.[0] || null)}
+                              data-testid="input-id-back"
+                            />
+                            {idBackFile && (
+                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4" /> {idBackFile.name}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="p-4 border-2 border-dashed rounded-lg">
+                            <Label className="flex items-center gap-2 mb-2">
+                              <FileText className="w-4 h-4" />
+                              Passport (Optional)
+                            </Label>
+                            <Input
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
+                              data-testid="input-passport"
+                            />
+                            {passportFile && (
+                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4" /> {passportFile.name}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="p-4 border-2 border-dashed rounded-lg">
+                            <Label className="flex items-center gap-2 mb-2">
+                              <FileText className="w-4 h-4" />
+                              Proof of Address <span className="text-red-500">*</span>
+                            </Label>
+                            <p className="text-xs text-muted-foreground mb-2">Utility bill, bank statement, or government letter (dated within 3 months)</p>
+                            <Input
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={(e) => setAddressProofFile(e.target.files?.[0] || null)}
+                              data-testid="input-address-proof"
+                            />
+                            {addressProofFile && (
+                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4" /> {addressProofFile.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => setFinatradesStep('personal_info')}>Back</Button>
+                        <Button 
+                          onClick={() => setFinatradesStep('liveness')}
+                          disabled={!isDocumentsComplete}
+                          className="bg-primary text-white hover:bg-primary/90"
+                          data-testid="button-continue-liveness"
+                        >
+                          Continue to Liveness Check
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {/* STEP 3: Liveness Check */}
                   {finatradesStep === 'liveness' && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
@@ -953,7 +1282,7 @@ export default function KYC() {
                          )}
                       </CardContent>
                       <CardFooter className="flex justify-between">
-                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('banking'); }}>Back</Button>
+                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('documents'); }}>Back</Button>
                         <Button 
                           onClick={handleFinatradesPersonalSubmit}
                           disabled={!capturedSelfie || isSubmitting}
