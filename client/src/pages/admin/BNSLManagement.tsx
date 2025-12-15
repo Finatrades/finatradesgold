@@ -94,6 +94,9 @@ function BnslTemplatesManager() {
 
   useEffect(() => {
     fetchTemplates();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchTemplates, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleCreate = async () => {

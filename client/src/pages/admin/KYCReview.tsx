@@ -32,6 +32,7 @@ export default function KYCReview() {
       if (!res.ok) throw new Error('Failed to fetch KYC submissions');
       return res.json();
     },
+    refetchInterval: 30000,
   });
 
   const submissions = data?.submissions || [];

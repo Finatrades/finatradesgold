@@ -59,6 +59,9 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchUsers, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleVerifyEmail = async (userId: string) => {

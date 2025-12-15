@@ -113,6 +113,12 @@ export default function FinaBridgeManagement() {
   useEffect(() => {
     fetchRequests();
     fetchDisclaimerUsers();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchRequests();
+      fetchDisclaimerUsers();
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleOpenRequest = async (request: TradeRequest) => {
