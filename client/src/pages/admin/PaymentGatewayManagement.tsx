@@ -15,6 +15,7 @@ import AdminLayout from './AdminLayout';
 interface BankAccount {
   id: string;
   bankName: string;
+  bankAddress: string;
   accountHolderName: string;
   accountNumber: string;
   routingNumber: string;
@@ -156,6 +157,7 @@ export default function PaymentGatewayManagement() {
     const newAccount: BankAccount = {
       id: `bank_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       bankName: '',
+      bankAddress: '',
       accountHolderName: '',
       accountNumber: '',
       routingNumber: '',
@@ -534,6 +536,15 @@ export default function PaymentGatewayManagement() {
                               value={account.bankName}
                               onChange={(e) => updateBankAccount(account.id, 'bankName', e.target.value)}
                               data-testid={`input-bank-name-${index}`}
+                            />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Bank Address</Label>
+                            <Input
+                              placeholder="Bank Address"
+                              value={account.bankAddress}
+                              onChange={(e) => updateBankAccount(account.id, 'bankAddress', e.target.value)}
+                              data-testid={`input-bank-address-${index}`}
                             />
                           </div>
                           <div className="space-y-2">

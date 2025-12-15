@@ -1484,6 +1484,7 @@ export const paymentGatewaySettings = pgTable("payment_gateway_settings", {
   bankAccounts: json("bank_accounts").$type<{
     id: string;
     bankName: string;
+    bankAddress: string;
     accountHolderName: string;
     accountNumber: string;
     routingNumber: string;
