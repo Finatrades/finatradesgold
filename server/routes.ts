@@ -35,6 +35,13 @@ import {
 } from "./document-service";
 import { generateUserManualPDF, generateAdminManualPDF } from "./pdf-generator";
 import { getGoldPrice, getGoldPricePerGram } from "./gold-price-service";
+import { 
+  calculateUserRiskScore, 
+  updateUserRiskProfile, 
+  checkTransactionAgainstLimits,
+  HIGH_RISK_COUNTRIES,
+  ELEVATED_RISK_COUNTRIES
+} from "./risk-scoring";
 import PDFDocument from "pdfkit";
 
 // Middleware to ensure admin access using header-based auth
@@ -1632,6 +1639,107 @@ export async function registerRoutes(
       res.json({ profile });
     } catch (error) {
       res.status(400).json({ message: "Failed to update risk profile" });
+    }
+  });
+
+  // Calculate and update user risk score (Admin)
+  app.post("/api/admin/risk-profile/:userId/calculate", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const adminUser = (req as any).adminUser;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const profile = await updateUserRiskProfile(userId, adminUser.id);
+      
+      await storage.createAuditLog({
+        entityType: "risk_profile",
+        entityId: profile.id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Risk score calculated - Score: ${profile.overallRiskScore}, Level: ${profile.riskLevel}`,
+      });
+      
+      res.json({ profile });
+    } catch (error) {
+      console.error("Risk calculation error:", error);
+      res.status(400).json({ message: "Failed to calculate risk score" });
+    }
+  });
+
+  // Get risk score preview without saving (Admin)
+  app.get("/api/admin/risk-profile/:userId/preview", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const riskScore = await calculateUserRiskScore(userId);
+      res.json({ riskScore });
+    } catch (error) {
+      console.error("Risk preview error:", error);
+      res.status(400).json({ message: "Failed to preview risk score" });
+    }
+  });
+
+  // Check transaction against user limits
+  app.post("/api/risk/check-limits", async (req, res) => {
+    try {
+      const { userId, amountUsd } = req.body;
+      
+      if (!userId || amountUsd === undefined) {
+        return res.status(400).json({ message: "userId and amountUsd are required" });
+      }
+      
+      const result = await checkTransactionAgainstLimits(userId, amountUsd);
+      res.json(result);
+    } catch (error) {
+      console.error("Limit check error:", error);
+      res.status(400).json({ message: "Failed to check transaction limits" });
+    }
+  });
+
+  // Get country risk information
+  app.get("/api/risk/countries", async (req, res) => {
+    try {
+      res.json({
+        highRisk: HIGH_RISK_COUNTRIES,
+        elevated: ELEVATED_RISK_COUNTRIES
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get country risk data" });
+    }
+  });
+
+  // Batch calculate risk scores for all users (Admin)
+  app.post("/api/admin/risk-profiles/batch-calculate", ensureAdminAsync, async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const users = await storage.getAllUsers();
+      
+      const results = [];
+      for (const user of users) {
+        if (user.role !== 'admin') {
+          try {
+            const profile = await updateUserRiskProfile(user.id, adminUser.id);
+            results.push({ userId: user.id, status: 'success', riskLevel: profile.riskLevel });
+          } catch (e) {
+            results.push({ userId: user.id, status: 'error', error: (e as Error).message });
+          }
+        }
+      }
+      
+      res.json({ processed: results.length, results });
+    } catch (error) {
+      console.error("Batch calculation error:", error);
+      res.status(400).json({ message: "Failed to batch calculate risk scores" });
     }
   });
 
