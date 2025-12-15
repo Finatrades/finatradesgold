@@ -91,6 +91,18 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Fetch user transactions for history display
+  const { data: transactionsData } = useQuery({
+    queryKey: ['user-transactions', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { transactions: [] };
+      const res = await fetch(`/api/transactions/${user.id}`);
+      if (!res.ok) return { transactions: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Fetch FinaBridge wallet data for locked gold display
   const { data: finabridgeData } = useQuery({
     queryKey: ['finabridge-wallet', user?.id],
@@ -173,8 +185,27 @@ export default function FinaVault() {
   const bnslAvailableGrams = ownership ? safeParseFloat(ownership.bnslAvailableGrams) : 0;
   const finaBridgeAvailableGrams = ownership ? safeParseFloat(ownership.finaBridgeAvailableGrams) : 0;
   
-  // Ledger entries for history display
+  // Ledger entries for history display - combine ledger entries with transactions
   const ledgerEntries = ledgerData?.entries || [];
+  const transactions = transactionsData?.transactions || [];
+  
+  // Convert transactions to ledger-like format for display
+  const transactionRecords = transactions.map((tx: any) => ({
+    id: tx.id,
+    createdAt: tx.createdAt,
+    action: tx.type,
+    fromWallet: tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy' ? 'External' : 'FinaPay',
+    toWallet: tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell' ? 'External' : 'FinaPay',
+    fromStatus: tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy' ? null : 'Available',
+    toStatus: tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell' ? null : 'Available',
+    goldGrams: tx.goldGrams,
+    valueUsd: tx.amountUsd,
+    balanceAfterGrams: tx.balanceAfterGrams || '0',
+    isTransaction: true,
+  }));
+  
+  // Use ledger entries if available, otherwise show transactions
+  const displayRecords = ledgerEntries.length > 0 ? ledgerEntries : transactionRecords;
 
   // Check query params for initial tab
   useEffect(() => {
@@ -496,12 +527,12 @@ export default function FinaVault() {
                         <CardTitle className="text-lg">Ownership Ledger History</CardTitle>
                       </CardHeader>
                       <CardContent className="p-0">
-                        {ledgerEntries.length === 0 ? (
+                        {displayRecords.length === 0 ? (
                           <div className="p-12 text-center">
                             <Lock className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                            <h3 className="text-lg font-bold mb-2">No Ledger Entries</h3>
+                            <h3 className="text-lg font-bold mb-2">No Transaction Records</h3>
                             <p className="text-muted-foreground">
-                              Your ownership ledger will show all gold movements once you start transacting.
+                              Your transaction history will appear here once you start transacting.
                             </p>
                           </div>
                         ) : (
@@ -519,7 +550,7 @@ export default function FinaVault() {
                                 </tr>
                               </thead>
                               <tbody className="divide-y">
-                                {ledgerEntries.map((entry: any) => (
+                                {displayRecords.map((entry: any) => (
                                   <tr key={entry.id} className="hover:bg-gray-50">
                                     <td className="p-4 text-muted-foreground">
                                       {new Date(entry.createdAt).toLocaleDateString()}
