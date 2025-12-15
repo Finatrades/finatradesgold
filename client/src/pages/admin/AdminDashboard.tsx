@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, AlertCircle, TrendingUp, Wallet, BarChart3 } from 'lucide-react';
+import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, AlertCircle, TrendingUp, Wallet, BarChart3, Vault, CreditCard, Building2, ArrowRightLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -113,6 +113,69 @@ export default function AdminDashboard() {
             gradient="from-emerald-500 to-teal-600"
             loading={isLoading}
           />
+        </div>
+
+        {/* Product Cards */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Products & Services</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <ProductCard
+              title="FinaPay"
+              description="Digital gold wallet management"
+              icon={<Wallet className="w-8 h-8" />}
+              href="/admin/transactions"
+              color="bg-black"
+            />
+            <ProductCard
+              title="FinaVault"
+              description="Gold storage & custody"
+              icon={<Vault className="w-8 h-8" />}
+              href="/admin/vault"
+              color="bg-black"
+            />
+            <ProductCard
+              title="FinaBridge"
+              description="Trade finance management"
+              icon={<Building2 className="w-8 h-8" />}
+              href="/admin/finabridge"
+              color="bg-black"
+            />
+            <ProductCard
+              title="BNSL"
+              description="Buy Now Sell Later plans"
+              icon={<ArrowRightLeft className="w-8 h-8" />}
+              href="/admin/bnsl"
+              color="bg-black"
+            />
+            <ProductCard
+              title="FinaCard"
+              description="Debit card management"
+              icon={<CreditCard className="w-8 h-8" />}
+              href="/admin/settings"
+              color="bg-black"
+            />
+            <ProductCard
+              title="KYC Review"
+              description="Verification submissions"
+              icon={<ShieldCheck className="w-8 h-8" />}
+              href="/admin/kyc"
+              color="bg-black"
+            />
+            <ProductCard
+              title="Users"
+              description="User management"
+              icon={<Users className="w-8 h-8" />}
+              href="/admin/users"
+              color="bg-black"
+            />
+            <ProductCard
+              title="Compliance"
+              description="AML & compliance settings"
+              icon={<Activity className="w-8 h-8" />}
+              href="/admin/compliance"
+              color="bg-black"
+            />
+          </div>
         </div>
 
         {/* Recent Activity & KYC Requests */}
@@ -241,5 +304,32 @@ function StatusItem({ label, status, color }: any) {
         <span className="text-xs text-gray-500">{status}</span>
       </div>
     </div>
+  );
+}
+
+function ProductCard({ title, description, icon, href, color }: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  href: string;
+  color: string;
+}) {
+  return (
+    <Link href={href}>
+      <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-2 border-black" data-testid={`card-product-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className={`p-3 rounded-xl ${color} text-white`}>
+              {icon}
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </div>
+          <div className="mt-4">
+            <h3 className="font-bold text-lg text-black">{title}</h3>
+            <p className="text-sm text-gray-600 mt-1">{description}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
