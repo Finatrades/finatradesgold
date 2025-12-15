@@ -194,12 +194,13 @@ export default function FinaVault() {
     id: tx.id,
     createdAt: tx.createdAt,
     action: tx.type,
+    status: tx.status,
     fromWallet: tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy' ? 'External' : 'FinaPay',
     toWallet: tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell' ? 'External' : 'FinaPay',
     fromStatus: tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy' ? null : 'Available',
     toStatus: tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell' ? null : 'Available',
-    goldGrams: tx.goldGrams,
-    valueUsd: tx.amountUsd,
+    goldGrams: tx.amountGold || tx.goldGrams || '0',
+    valueUsd: tx.amountUsd || '0',
     balanceAfterGrams: tx.balanceAfterGrams || '0',
     isTransaction: true,
   }));
@@ -542,11 +543,11 @@ export default function FinaVault() {
                                 <tr>
                                   <th className="text-left p-4 font-medium">Date</th>
                                   <th className="text-left p-4 font-medium">Action</th>
+                                  <th className="text-left p-4 font-medium">Status</th>
                                   <th className="text-left p-4 font-medium">From</th>
                                   <th className="text-left p-4 font-medium">To</th>
                                   <th className="text-right p-4 font-medium">Gold (g)</th>
                                   <th className="text-right p-4 font-medium">Value</th>
-                                  <th className="text-right p-4 font-medium">Balance After</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y">
@@ -557,22 +558,32 @@ export default function FinaVault() {
                                     </td>
                                     <td className="p-4">
                                       <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                        entry.action.includes('Deposit') || entry.action.includes('Receive') || entry.action.includes('Credit') 
+                                        entry.action === 'Buy' || entry.action.includes('Deposit') || entry.action.includes('Receive') || entry.action.includes('Credit') 
                                           ? 'bg-green-100 text-green-700'
                                           : entry.action.includes('Lock') || entry.action.includes('Reserve')
                                           ? 'bg-orange-100 text-orange-700'
-                                          : entry.action.includes('Withdrawal') || entry.action.includes('Send') || entry.action.includes('Fee')
+                                          : entry.action === 'Sell' || entry.action.includes('Withdrawal') || entry.action.includes('Send') || entry.action.includes('Fee')
                                           ? 'bg-red-100 text-red-700'
-                                          : 'bg-gray-100 text-gray-700'
+                                          : 'bg-blue-100 text-blue-700'
                                       }`}>
-                                        {entry.action.replace(/_/g, ' ')}
+                                        {entry.action === 'Buy' ? 'Add Funds' : entry.action.replace(/_/g, ' ')}
+                                      </span>
+                                    </td>
+                                    <td className="p-4">
+                                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                        entry.status === 'Completed' ? 'bg-green-100 text-green-700'
+                                        : entry.status === 'Pending' ? 'bg-yellow-100 text-yellow-700'
+                                        : entry.status === 'Processing' ? 'bg-blue-100 text-blue-700'
+                                        : entry.status === 'Failed' || entry.status === 'Cancelled' ? 'bg-red-100 text-red-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {entry.status || 'Recorded'}
                                       </span>
                                     </td>
                                     <td className="p-4">
                                       {entry.fromWallet && (
                                         <span className="text-muted-foreground">
                                           {entry.fromWallet}
-                                          {entry.fromStatus && <span className="block text-xs">{entry.fromStatus}</span>}
                                         </span>
                                       )}
                                     </td>
@@ -580,18 +591,14 @@ export default function FinaVault() {
                                       {entry.toWallet && (
                                         <span className="text-muted-foreground">
                                           {entry.toWallet}
-                                          {entry.toStatus && <span className="block text-xs">{entry.toStatus}</span>}
                                         </span>
                                       )}
                                     </td>
                                     <td className="p-4 text-right font-medium">
-                                      {parseFloat(entry.goldGrams).toFixed(4)}
+                                      {safeParseFloat(entry.goldGrams).toFixed(4)}
                                     </td>
                                     <td className="p-4 text-right text-muted-foreground">
-                                      {entry.valueUsd ? `$${parseFloat(entry.valueUsd).toFixed(2)}` : '-'}
-                                    </td>
-                                    <td className="p-4 text-right font-medium">
-                                      {parseFloat(entry.balanceAfterGrams).toFixed(4)} g
+                                      {entry.valueUsd ? `$${safeParseFloat(entry.valueUsd).toFixed(2)}` : '-'}
                                     </td>
                                   </tr>
                                 ))}
