@@ -249,7 +249,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground sm:max-w-[550px]">
+      <DialogContent className="bg-white border-border text-foreground sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Wallet className="w-5 h-5 text-primary" />
