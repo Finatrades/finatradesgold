@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,13 +6,82 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, XCircle, FileText, User, Building, RefreshCw, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, FileText, User, Building, RefreshCw, Clock, AlertCircle, Printer, X, Camera, CreditCard, MapPin } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
 import { useAdminOtp } from '@/hooks/useAdminOtp';
+
+// In-platform document viewer component
+function DocumentViewer({ 
+  isOpen, 
+  onClose, 
+  documentUrl, 
+  documentName 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  documentUrl: string; 
+  documentName: string; 
+}) {
+  const printRef = useRef<HTMLDivElement>(null);
+  
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${documentName}</title>
+          <style>
+            body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+            img { max-width: 100%; max-height: 90vh; object-fit: contain; }
+            @media print { body { padding: 0; } img { max-height: 100%; } }
+          </style>
+        </head>
+        <body>
+          <img src="${documentUrl}" alt="${documentName}" />
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    }
+  };
+  
+  if (!isOpen) return null;
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{documentName}</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print-document">
+                <Printer className="w-4 h-4 mr-2" /> Print
+              </Button>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+        <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[70vh] bg-gray-100 rounded-lg p-4">
+          <img 
+            src={documentUrl} 
+            alt={documentName} 
+            className="max-w-full max-h-[65vh] object-contain rounded"
+            data-testid="img-document-preview"
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function KYCReview() {
   const { user: adminUser } = useAuth();
@@ -24,6 +93,20 @@ export default function KYCReview() {
   const [bulkRejectionReason, setBulkRejectionReason] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { isOtpModalOpen, pendingAction, requestOtp, handleVerified, closeOtpModal } = useAdminOtp();
+  
+  // Document viewer state
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string }>({ url: '', name: '' });
+  
+  const openDocumentViewer = (url: string, name: string) => {
+    setViewerDocument({ url, name });
+    setViewerOpen(true);
+  };
+  
+  // Helper to check if this is a Finatrades personal KYC submission
+  const isFinatradesKyc = (app: any) => {
+    return app?.kycType === 'finatrades' || app?.idFrontUrl || app?.idBackUrl || app?.addressProofUrl;
+  };
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-kyc-submissions'],
@@ -412,11 +495,12 @@ export default function KYCReview() {
 
         {/* Review Dialog */}
         <Dialog open={!!selectedApplication && !showRejectDialog} onOpenChange={(open) => !open && setSelectedApplication(null)}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>KYC Application Review</DialogTitle>
               <DialogDescription>
                 Review documents for {selectedApplication?.fullName} ({selectedApplication?.accountType} Account)
+                {isFinatradesKyc(selectedApplication) && <Badge className="ml-2 bg-black text-white">Finatrades KYC</Badge>}
               </DialogDescription>
             </DialogHeader>
 
@@ -428,10 +512,45 @@ export default function KYCReview() {
                   <span className="font-medium">{selectedApplication?.fullName || 'Not provided'}</span>
                   <span className="text-gray-500">Account Type:</span>
                   <span className="font-medium capitalize">{selectedApplication?.accountType}</span>
+                  
+                  {/* Show additional fields for Finatrades KYC */}
+                  {isFinatradesKyc(selectedApplication) && (
+                    <>
+                      <span className="text-gray-500">Email:</span>
+                      <span className="font-medium">{selectedApplication?.email || 'Not provided'}</span>
+                      <span className="text-gray-500">Phone:</span>
+                      <span className="font-medium">{selectedApplication?.phone || 'Not provided'}</span>
+                      <span className="text-gray-500">Date of Birth:</span>
+                      <span className="font-medium">{selectedApplication?.dateOfBirth || 'Not provided'}</span>
+                    </>
+                  )}
+                  
                   <span className="text-gray-500">Country:</span>
                   <span className="font-medium">{selectedApplication?.country || 'Not provided'}</span>
+                  
+                  {isFinatradesKyc(selectedApplication) && (
+                    <>
+                      <span className="text-gray-500">City:</span>
+                      <span className="font-medium">{selectedApplication?.city || 'Not provided'}</span>
+                      <span className="text-gray-500">Address:</span>
+                      <span className="font-medium">{selectedApplication?.address || 'Not provided'}</span>
+                      <span className="text-gray-500">Postal Code:</span>
+                      <span className="font-medium">{selectedApplication?.postalCode || 'Not provided'}</span>
+                    </>
+                  )}
+                  
                   <span className="text-gray-500">Nationality:</span>
                   <span className="font-medium">{selectedApplication?.nationality || 'Not provided'}</span>
+                  
+                  {isFinatradesKyc(selectedApplication) && (
+                    <>
+                      <span className="text-gray-500">Occupation:</span>
+                      <span className="font-medium">{selectedApplication?.occupation || 'Not provided'}</span>
+                      <span className="text-gray-500">Source of Funds:</span>
+                      <span className="font-medium">{selectedApplication?.sourceOfFunds || 'Not provided'}</span>
+                    </>
+                  )}
+                  
                   <span className="text-gray-500">Submitted:</span>
                   <span className="font-medium">{selectedApplication?.createdAt ? new Date(selectedApplication.createdAt).toLocaleString() : '-'}</span>
                 </div>
@@ -454,75 +573,210 @@ export default function KYCReview() {
               <div className="space-y-4">
                 <h4 className="font-medium border-b pb-2">Documents Status</h4>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">ID Document</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {selectedApplication?.documents?.idProof ? (
-                        <>
-                          <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => window.open(selectedApplication.documents.idProof.url, '_blank')}
-                            data-testid="button-view-id-doc"
-                          >
-                            View
-                          </Button>
-                        </>
-                      ) : (
-                        <Badge variant="outline">Not Uploaded</Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">Selfie</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {selectedApplication?.documents?.selfie ? (
-                        <>
-                          <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => window.open(selectedApplication.documents.selfie.url, '_blank')}
-                            data-testid="button-view-selfie"
-                          >
-                            View
-                          </Button>
-                        </>
-                      ) : (
-                        <Badge variant="outline">Not Uploaded</Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">Proof of Address</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {selectedApplication?.documents?.proofOfAddress ? (
-                        <>
-                          <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => window.open(selectedApplication.documents.proofOfAddress.url, '_blank')}
-                            data-testid="button-view-address-proof"
-                          >
-                            View
-                          </Button>
-                        </>
-                      ) : (
-                        <Badge variant="outline">Not Uploaded</Badge>
-                      )}
-                    </div>
-                  </div>
+                  {/* Handle Finatrades KYC format */}
+                  {isFinatradesKyc(selectedApplication) ? (
+                    <>
+                      {/* ID Front */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">ID Front</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.idFrontUrl ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.idFrontUrl, 'ID Front')}
+                                data-testid="button-view-id-front"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* ID Back */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">ID Back</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.idBackUrl ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.idBackUrl, 'ID Back')}
+                                data-testid="button-view-id-back"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Passport (Optional) */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Passport (Optional)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.passportUrl ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.passportUrl, 'Passport')}
+                                data-testid="button-view-passport"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Address Proof */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Proof of Address</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.addressProofUrl ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.addressProofUrl, 'Proof of Address')}
+                                data-testid="button-view-address-proof"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Liveness Capture */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <Camera className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Liveness Verification</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.livenessCapture ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">
+                                {selectedApplication?.livenessVerified ? 'Verified' : 'Captured'}
+                              </Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.livenessCapture, 'Liveness Photo')}
+                                data-testid="button-view-liveness"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Captured</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Legacy KYC format */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">ID Document</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.idProof ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.idProof.url, 'ID Document')}
+                                data-testid="button-view-id-doc"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Selfie</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.selfie ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.selfie.url, 'Selfie')}
+                                data-testid="button-view-selfie"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Proof of Address</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.proofOfAddress ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.proofOfAddress.url, 'Proof of Address')}
+                                data-testid="button-view-address-proof-legacy"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {selectedApplication?.rejectionReason && (
@@ -557,6 +811,14 @@ export default function KYCReview() {
             )}
           </DialogContent>
         </Dialog>
+        
+        {/* Document Viewer */}
+        <DocumentViewer 
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          documentUrl={viewerDocument.url}
+          documentName={viewerDocument.name}
+        />
 
         {/* Reject Reason Dialog */}
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
