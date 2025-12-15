@@ -50,6 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: <Users className="w-5 h-5" />, label: 'User Management', href: '/admin/users' },
         { icon: <UserCog className="w-5 h-5" />, label: 'Employees', href: '/admin/employees' },
         { icon: <ShieldAlert className="w-5 h-5" />, label: 'KYC Reviews', href: '/admin/kyc' },
+        { icon: <Shield className="w-5 h-5" />, label: 'Compliance', href: '/admin/compliance' },
       ]
     },
     {

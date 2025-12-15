@@ -19,7 +19,7 @@ interface MonitoringResult {
   caseCreated?: string;
 }
 
-const DEFAULT_AML_RULES: Array<{
+export const DEFAULT_AML_RULES: Array<{
   ruleName: string;
   ruleCode: string;
   description: string;
@@ -447,5 +447,3 @@ export async function getAmlAlerts(): Promise<{
   
   return { openCases, recentViolations, highPriorityCases };
 }
-
-export { DEFAULT_AML_RULES };

@@ -71,6 +71,7 @@ import SecuritySettings from "@/pages/admin/SecuritySettings";
 import DocumentsManagement from "@/pages/admin/DocumentsManagement";
 import ReferralManagement from "@/pages/admin/ReferralManagement";
 import AuditLogs from "@/pages/admin/AuditLogs";
+import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 
 function Router() {
   return (
@@ -130,6 +131,7 @@ function Router() {
       <Route path="/admin/financial-reports" component={FinancialReports} />
       <Route path="/admin/referrals" component={ReferralManagement} />
       <Route path="/admin/audit-logs" component={AuditLogs} />
+      <Route path="/admin/compliance" component={ComplianceDashboard} />
 
       <Route component={NotFound} />
     </Switch>
