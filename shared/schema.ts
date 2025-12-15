@@ -7,10 +7,13 @@ import { z } from "zod";
 // ENUMS
 // ============================================
 
-export const kycStatusEnum = pgEnum('kyc_status', ['Not Started', 'In Progress', 'Approved', 'Rejected']);
+export const kycStatusEnum = pgEnum('kyc_status', ['Not Started', 'In Progress', 'Approved', 'Rejected', 'Escalated', 'Pending Review']);
+export const kycTierEnum = pgEnum('kyc_tier', ['tier_1_basic', 'tier_2_enhanced', 'tier_3_corporate']);
 export const accountTypeEnum = pgEnum('account_type', ['personal', 'business']);
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 export const riskLevelEnum = pgEnum('risk_level', ['Low', 'Medium', 'High', 'Critical']);
+export const screeningStatusEnum = pgEnum('screening_status', ['Pending', 'Clear', 'Match Found', 'Manual Review', 'Escalated']);
+export const amlCaseStatusEnum = pgEnum('aml_case_status', ['Open', 'Under Investigation', 'Pending SAR', 'SAR Filed', 'Closed - No Action', 'Closed - Action Taken']);
 
 export const transactionTypeEnum = pgEnum('transaction_type', ['Buy', 'Sell', 'Send', 'Receive', 'Swap', 'Deposit', 'Withdrawal']);
 export const transactionStatusEnum = pgEnum('transaction_status', ['Pending', 'Processing', 'Completed', 'Failed', 'Cancelled']);
@@ -239,6 +242,7 @@ export const kycSubmissions = pgTable("kyc_submissions", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   accountType: accountTypeEnum("account_type").notNull(),
+  tier: kycTierEnum("tier").notNull().default('tier_1_basic'),
   
   // Personal Info
   fullName: varchar("full_name", { length: 255 }),
@@ -257,17 +261,42 @@ export const kycSubmissions = pgTable("kyc_submissions", {
   
   // Documents (stored as JSON with base64 data or URLs)
   documents: json("documents").$type<{
-    idProof?: { url: string; type: string; };
+    idProof?: { url: string; type: string; expiryDate?: string; };
+    idBack?: { url: string; type: string; };
     selfie?: { url: string; type: string; };
-    proofOfAddress?: { url: string; type: string; };
+    proofOfAddress?: { url: string; type: string; issuedDate?: string; };
     businessRegistration?: { url: string; type: string; };
     taxCertificate?: { url: string; type: string; };
+    articlesOfIncorporation?: { url: string; type: string; };
+    beneficialOwnership?: { url: string; type: string; };
+  }>(),
+  
+  // Document Expiry Tracking
+  idExpiryDate: timestamp("id_expiry_date"),
+  addressProofIssuedDate: timestamp("address_proof_issued_date"),
+  
+  // Screening & Risk
+  screeningStatus: screeningStatusEnum("screening_status").default('Pending'),
+  riskScore: integer("risk_score").default(0),
+  riskLevel: riskLevelEnum("risk_level").default('Low'),
+  isPep: boolean("is_pep").default(false),
+  isSanctioned: boolean("is_sanctioned").default(false),
+  screeningResults: json("screening_results").$type<{
+    sanctions?: { checked: boolean; matchFound: boolean; details?: string; checkedAt?: string; };
+    pep?: { checked: boolean; matchFound: boolean; details?: string; checkedAt?: string; };
+    adverseMedia?: { checked: boolean; matchFound: boolean; details?: string; checkedAt?: string; };
   }>(),
   
   status: kycStatusEnum("status").notNull().default('In Progress'),
   reviewedBy: varchar("reviewed_by", { length: 255 }),
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
+  reviewNotes: text("review_notes"),
+  
+  // SLA Tracking
+  slaDeadline: timestamp("sla_deadline"),
+  escalatedAt: timestamp("escalated_at"),
+  escalatedTo: varchar("escalated_to", { length: 255 }),
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -276,6 +305,187 @@ export const kycSubmissions = pgTable("kyc_submissions", {
 export const insertKycSubmissionSchema = createInsertSchema(kycSubmissions).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertKycSubmission = z.infer<typeof insertKycSubmissionSchema>;
 export type KycSubmission = typeof kycSubmissions.$inferSelect;
+
+// ============================================
+// USER RISK PROFILES
+// ============================================
+
+export const userRiskProfiles = pgTable("user_risk_profiles", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Overall Risk Score (0-100)
+  overallRiskScore: integer("overall_risk_score").notNull().default(0),
+  riskLevel: riskLevelEnum("risk_level").notNull().default('Low'),
+  
+  // Risk Factors
+  geographyRisk: integer("geography_risk").default(0),
+  transactionRisk: integer("transaction_risk").default(0),
+  behaviorRisk: integer("behavior_risk").default(0),
+  screeningRisk: integer("screening_risk").default(0),
+  
+  // Flags
+  isPep: boolean("is_pep").notNull().default(false),
+  isSanctioned: boolean("is_sanctioned").notNull().default(false),
+  hasAdverseMedia: boolean("has_adverse_media").notNull().default(false),
+  requiresEnhancedDueDiligence: boolean("requires_edd").notNull().default(false),
+  
+  // Limits based on risk
+  dailyTransactionLimit: decimal("daily_transaction_limit", { precision: 18, scale: 2 }).default('10000'),
+  monthlyTransactionLimit: decimal("monthly_transaction_limit", { precision: 18, scale: 2 }).default('50000'),
+  
+  // Last Assessment
+  lastAssessedAt: timestamp("last_assessed_at").notNull().defaultNow(),
+  lastAssessedBy: varchar("last_assessed_by", { length: 255 }),
+  nextReviewDate: timestamp("next_review_date"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserRiskProfileSchema = createInsertSchema(userRiskProfiles).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUserRiskProfile = z.infer<typeof insertUserRiskProfileSchema>;
+export type UserRiskProfile = typeof userRiskProfiles.$inferSelect;
+
+// ============================================
+// AML SCREENING LOGS
+// ============================================
+
+export const amlScreeningLogs = pgTable("aml_screening_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  kycSubmissionId: varchar("kyc_submission_id", { length: 255 }).references(() => kycSubmissions.id),
+  
+  screeningType: varchar("screening_type", { length: 50 }).notNull(), // 'sanctions', 'pep', 'adverse_media', 'watchlist'
+  provider: varchar("provider", { length: 100 }), // Provider name if external (Sumsub, Onfido, etc.)
+  
+  status: screeningStatusEnum("status").notNull().default('Pending'),
+  matchFound: boolean("match_found").notNull().default(false),
+  matchScore: integer("match_score"), // Confidence score 0-100
+  
+  rawResponse: json("raw_response"), // Store provider's raw response
+  matchDetails: json("match_details").$type<{
+    matchedName?: string;
+    matchedEntity?: string;
+    listName?: string;
+    matchReason?: string;
+    additionalInfo?: string;
+  }>(),
+  
+  reviewedBy: varchar("reviewed_by", { length: 255 }),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewDecision: varchar("review_decision", { length: 50 }), // 'cleared', 'escalated', 'blocked'
+  reviewNotes: text("review_notes"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAmlScreeningLogSchema = createInsertSchema(amlScreeningLogs).omit({ id: true, createdAt: true });
+export type InsertAmlScreeningLog = z.infer<typeof insertAmlScreeningLogSchema>;
+export type AmlScreeningLog = typeof amlScreeningLogs.$inferSelect;
+
+// ============================================
+// AML CASES
+// ============================================
+
+export const amlCases = pgTable("aml_cases", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  caseNumber: varchar("case_number", { length: 50 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  caseType: varchar("case_type", { length: 50 }).notNull(), // 'suspicious_transaction', 'screening_match', 'threshold_breach', 'manual_referral'
+  status: amlCaseStatusEnum("status").notNull().default('Open'),
+  priority: riskLevelEnum("priority").notNull().default('Medium'),
+  
+  // Trigger Information
+  triggeredBy: varchar("triggered_by", { length: 50 }).notNull(), // 'system', 'manual', 'threshold', 'screening'
+  triggerTransactionId: varchar("trigger_transaction_id", { length: 255 }),
+  triggerDetails: json("trigger_details").$type<{
+    reason: string;
+    amount?: number;
+    threshold?: number;
+    ruleId?: string;
+  }>(),
+  
+  // Investigation
+  assignedTo: varchar("assigned_to", { length: 255 }),
+  assignedAt: timestamp("assigned_at"),
+  investigationNotes: text("investigation_notes"),
+  
+  // SAR (Suspicious Activity Report) tracking
+  sarRequired: boolean("sar_required").default(false),
+  sarFiledAt: timestamp("sar_filed_at"),
+  sarReferenceNumber: varchar("sar_reference_number", { length: 100 }),
+  
+  // Resolution
+  resolution: text("resolution"),
+  resolvedBy: varchar("resolved_by", { length: 255 }),
+  resolvedAt: timestamp("resolved_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAmlCaseSchema = createInsertSchema(amlCases).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAmlCase = z.infer<typeof insertAmlCaseSchema>;
+export type AmlCase = typeof amlCases.$inferSelect;
+
+// ============================================
+// AML CASE ACTIVITIES (Audit Trail)
+// ============================================
+
+export const amlCaseActivities = pgTable("aml_case_activities", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id", { length: 255 }).notNull().references(() => amlCases.id),
+  
+  activityType: varchar("activity_type", { length: 50 }).notNull(), // 'created', 'assigned', 'note_added', 'status_changed', 'sar_filed', 'resolved'
+  description: text("description").notNull(),
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  
+  performedBy: varchar("performed_by", { length: 255 }).notNull(),
+  performedAt: timestamp("performed_at").notNull().defaultNow(),
+});
+
+export const insertAmlCaseActivitySchema = createInsertSchema(amlCaseActivities).omit({ id: true });
+export type InsertAmlCaseActivity = z.infer<typeof insertAmlCaseActivitySchema>;
+export type AmlCaseActivity = typeof amlCaseActivities.$inferSelect;
+
+// ============================================
+// TRANSACTION MONITORING RULES
+// ============================================
+
+export const amlMonitoringRules = pgTable("aml_monitoring_rules", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  ruleName: varchar("rule_name", { length: 255 }).notNull(),
+  ruleCode: varchar("rule_code", { length: 50 }).notNull().unique(),
+  description: text("description"),
+  
+  isActive: boolean("is_active").notNull().default(true),
+  priority: integer("priority").notNull().default(5),
+  
+  // Rule Configuration
+  ruleType: varchar("rule_type", { length: 50 }).notNull(), // 'threshold', 'velocity', 'pattern', 'geography'
+  conditions: json("conditions").$type<{
+    amountThreshold?: number;
+    currency?: string;
+    timeWindowHours?: number;
+    transactionCount?: number;
+    transactionTypes?: string[];
+    highRiskCountries?: string[];
+  }>(),
+  
+  // Actions when triggered
+  actionType: varchar("action_type", { length: 50 }).notNull(), // 'alert', 'block', 'flag', 'escalate'
+  
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAmlMonitoringRuleSchema = createInsertSchema(amlMonitoringRules).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAmlMonitoringRule = z.infer<typeof insertAmlMonitoringRuleSchema>;
+export type AmlMonitoringRule = typeof amlMonitoringRules.$inferSelect;
 
 // ============================================
 // FINAPAY - WALLETS & TRANSACTIONS
