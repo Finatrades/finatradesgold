@@ -5,22 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Building, User, ShieldCheck, Eye, EyeOff, Camera, ArrowRight, ArrowLeft, X, Upload, RefreshCw } from 'lucide-react';
+import { Building, User, Eye, EyeOff, Camera, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 
 type AccountType = 'personal' | 'business';
-type Step = 'select' | 'details' | 'selfie' | 'verification';
 
 export default function Register() {
   const { setAccountType: setContextAccountType } = useAccountType();
   const { login } = useAuth();
   const [, setLocation] = useLocation();
   
-  const [step, setStep] = useState<Step>('select');
-  const [accountType, setAccountType] = useState<AccountType | null>(null);
+  const [accountType, setAccountType] = useState<AccountType>('personal');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -37,19 +34,28 @@ export default function Register() {
   });
 
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Camera states
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Start camera when entering selfie step
+  const [passwordStrength, setPasswordStrength] = useState({
+    length: false,
+    uppercase: false,
+    number: false,
+    special: false
+  });
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   const startCamera = useCallback(async () => {
     setCameraError(null);
     setIsCameraReady(false);
+    setCountdown(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -66,21 +72,24 @@ export default function Register() {
     } catch (err: any) {
       console.error('Camera error:', err);
       setCameraError(err.name === 'NotAllowedError' 
-        ? 'Camera access denied. Please allow camera access to continue.'
+        ? 'Camera access denied. Please allow camera access.'
         : 'Unable to access camera. Please check your device settings.');
     }
   }, []);
 
-  // Stop camera when leaving selfie step or component unmounts
   const stopCamera = useCallback(() => {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
       setIsCameraReady(false);
     }
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    setCountdown(null);
   }, [cameraStream]);
 
-  // Capture photo from video stream
   const capturePhoto = useCallback(() => {
     if (videoRef.current && canvasRef.current && isCameraReady) {
       const video = videoRef.current;
@@ -89,37 +98,45 @@ export default function Register() {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        // Mirror the image for selfie
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         setProfilePhoto(dataUrl);
         stopCamera();
-        toast.success('Photo captured successfully!');
+        toast.success('Photo captured!');
       }
     }
   }, [isCameraReady, stopCamera]);
 
-  // Handle step changes for camera
   useEffect(() => {
-    if (step === 'selfie' && !profilePhoto) {
-      startCamera();
-    } else if (step !== 'selfie') {
-      stopCamera();
+    if (isCameraReady && !profilePhoto && countdown === null) {
+      setCountdown(5);
+    }
+  }, [isCameraReady, profilePhoto, countdown]);
+
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      countdownRef.current = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    } else if (countdown === 0 && isCameraReady) {
+      capturePhoto();
     }
     return () => {
-      if (step === 'selfie') {
-        stopCamera();
+      if (countdownRef.current) {
+        clearTimeout(countdownRef.current);
       }
     };
-  }, [step, profilePhoto]);
+  }, [countdown, isCameraReady, capturePhoto]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
+      }
+      if (countdownRef.current) {
+        clearTimeout(countdownRef.current);
       }
     };
   }, [cameraStream]);
@@ -128,15 +145,6 @@ export default function Register() {
     setProfilePhoto(null);
     startCamera();
   }, [startCamera]);
-
-  const [passwordStrength, setPasswordStrength] = useState({
-    length: false,
-    uppercase: false,
-    number: false,
-    special: false
-  });
-
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const p = formData.password;
@@ -150,39 +158,12 @@ export default function Register() {
 
   const isPasswordValid = Object.values(passwordStrength).every(Boolean);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image too large. Please choose an image under 5MB.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePhoto(reader.result as string);
-        toast.success('Photo uploaded successfully!');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSelectAccountType = (type: AccountType) => {
-    setAccountType(type);
-    setStep('details');
-  };
-
-  const validateDetailsStep = () => {
+  const validateForm = () => {
     const errors: Record<string, string> = {};
     
-    if (!formData.firstName.trim()) {
-      errors.firstName = "First name is required";
-    }
-    if (!formData.lastName.trim()) {
-      errors.lastName = "Last name is required";
-    }
-    if (!formData.email.trim()) {
-      errors.email = "Email is required";
-    }
+    if (!formData.firstName.trim()) errors.firstName = "First name is required";
+    if (!formData.lastName.trim()) errors.lastName = "Last name is required";
+    if (!formData.email.trim()) errors.email = "Email is required";
     if (!formData.password) {
       errors.password = "Password is required";
     } else if (!isPasswordValid) {
@@ -196,6 +177,9 @@ export default function Register() {
     if (accountType === 'business' && !formData.companyName.trim()) {
       errors.companyName = "Company name is required";
     }
+    if (!profilePhoto) {
+      errors.photo = "Please capture your selfie";
+    }
     
     setFieldErrors(errors);
     
@@ -206,14 +190,11 @@ export default function Register() {
     return true;
   };
 
-  const handleNextToSelfie = () => {
-    if (validateDetailsStep()) {
-      // Skip selfie step - go directly to verification/terms
-      setStep('verification');
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     if (!formData.agreedToTerms) {
       toast.error("Please agree to the Terms and Conditions");
       return;
@@ -221,7 +202,7 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
-      setContextAccountType(accountType!);
+      setContextAccountType(accountType);
 
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -265,363 +246,285 @@ export default function Register() {
     }
   };
 
-  const handleDemoAccess = async () => {
-    setContextAccountType('personal');
-    try {
-      await login("demo@finatrades.com", "password");
-      toast.success("Demo Access Granted");
-    } catch (error) {
-      toast.error("Demo access failed");
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="min-h-screen py-12 bg-background">
-        <div className="container mx-auto px-6 max-w-2xl">
-          
-          <AnimatePresence mode="wait">
-            {step === 'select' && (
-              <motion.div
-                key="select"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="text-center"
+    <div className="min-h-screen bg-background py-8">
+      <div className="container mx-auto px-4 max-w-xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Create Your Account</h1>
+          <p className="text-muted-foreground">Join Finatrades today</p>
+        </div>
+
+        <Card className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex rounded-lg border overflow-hidden" data-testid="account-type-toggle">
+              <button
+                type="button"
+                onClick={() => setAccountType('personal')}
+                className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 transition-colors ${
+                  accountType === 'personal' 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+                data-testid="toggle-personal"
               >
-                <h1 className="text-4xl font-bold text-foreground mb-4">Create Your Account</h1>
-                <p className="text-muted-foreground mb-8">Choose your account type to get started</p>
-                
-                <div className="grid md:grid-cols-2 gap-6 mb-8">
-                  <Card 
-                    onClick={() => handleSelectAccountType('personal')}
-                    className="p-8 cursor-pointer border-2 hover:border-primary hover:shadow-lg transition-all group"
-                    data-testid="card-personal-account"
-                  >
-                    <div className="w-20 h-20 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <User className="w-10 h-10 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">Personal Account</h3>
-                    <p className="text-sm text-muted-foreground">For individuals looking to buy, sell, and store gold digitally</p>
-                  </Card>
+                <User className="w-5 h-5" />
+                <span className="font-medium">Personal</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('business')}
+                className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 transition-colors ${
+                  accountType === 'business' 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+                data-testid="toggle-business"
+              >
+                <Building className="w-5 h-5" />
+                <span className="font-medium">Corporate</span>
+              </button>
+            </div>
 
-                  <Card 
-                    onClick={() => handleSelectAccountType('business')}
-                    className="p-8 cursor-pointer border-2 hover:border-secondary hover:shadow-lg transition-all group"
-                    data-testid="card-corporate-account"
-                  >
-                    <div className="w-20 h-20 mx-auto mb-4 bg-secondary/10 rounded-full flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
-                      <Building className="w-10 h-10 text-secondary" />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">Corporate Account</h3>
-                    <p className="text-sm text-muted-foreground">For businesses needing trade finance and gold-backed solutions</p>
-                  </Card>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">First Name *</Label>
+                <Input
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  className={fieldErrors.firstName ? 'border-red-500' : ''}
+                  data-testid="input-firstname"
+                />
+                {fieldErrors.firstName && <p className="text-red-500 text-xs mt-1">{fieldErrors.firstName}</p>}
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name *</Label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  className={fieldErrors.lastName ? 'border-red-500' : ''}
+                  data-testid="input-lastname"
+                />
+                {fieldErrors.lastName && <p className="text-red-500 text-xs mt-1">{fieldErrors.lastName}</p>}
+              </div>
+            </div>
 
-                <div className="flex flex-col items-center gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    Already have an account?{' '}
-                    <Link href="/login">
-                      <span className="text-primary font-semibold hover:underline cursor-pointer">Sign In</span>
-                    </Link>
-                  </p>
+            <div>
+              <Label htmlFor="email">Email Address *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className={fieldErrors.email ? 'border-red-500' : ''}
+                data-testid="input-email"
+              />
+              {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                data-testid="input-phone"
+              />
+            </div>
+
+            {accountType === 'business' && (
+              <>
+                <div>
+                  <Label htmlFor="companyName">Company Name *</Label>
+                  <Input
+                    id="companyName"
+                    value={formData.companyName}
+                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    className={fieldErrors.companyName ? 'border-red-500' : ''}
+                    data-testid="input-company"
+                  />
+                  {fieldErrors.companyName && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyName}</p>}
                 </div>
-              </motion.div>
+                <div>
+                  <Label htmlFor="registrationNumber">Registration Number</Label>
+                  <Input
+                    id="registrationNumber"
+                    value={formData.registrationNumber}
+                    onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+                    data-testid="input-registration"
+                  />
+                </div>
+              </>
             )}
 
-            {step === 'details' && (
-              <motion.div
-                key="details"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <Button variant="ghost" size="icon" onClick={() => setStep('select')}>
-                    <ArrowLeft className="w-5 h-5" />
+            <div>
+              <Label htmlFor="password">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className={fieldErrors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                  data-testid="input-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
+              <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
+                <span className={passwordStrength.length ? 'text-green-600' : 'text-gray-400'}>✓ 8+ characters</span>
+                <span className={passwordStrength.uppercase ? 'text-green-600' : 'text-gray-400'}>✓ Uppercase</span>
+                <span className={passwordStrength.number ? 'text-green-600' : 'text-gray-400'}>✓ Number</span>
+                <span className={passwordStrength.special ? 'text-green-600' : 'text-gray-400'}>✓ Special char</span>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                className={fieldErrors.confirmPassword ? 'border-red-500' : ''}
+                data-testid="input-confirm-password"
+              />
+              {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+            </div>
+
+            <div className="border rounded-lg p-4">
+              <Label className="mb-3 block">Profile Selfie *</Label>
+              {fieldErrors.photo && <p className="text-red-500 text-xs mb-2">{fieldErrors.photo}</p>}
+              
+              {!profilePhoto && !cameraStream && (
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    onClick={startCamera}
+                    variant="outline"
+                    className="gap-2"
+                    data-testid="button-start-camera"
+                  >
+                    <Camera className="w-5 h-5" />
+                    Open Camera
                   </Button>
-                  <div>
-                    <h1 className="text-2xl font-bold text-foreground">
-                      {accountType === 'personal' ? 'Personal Account' : 'Corporate Account'}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">Step 1 of 2: Enter your details</p>
-                  </div>
                 </div>
+              )}
 
-                <Card className="p-6 bg-white border-border shadow-md">
-                  <div className="space-y-5">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>First Name *</Label>
-                        <Input 
-                          value={formData.firstName}
-                          onChange={e => { setFormData({...formData, firstName: e.target.value}); setFieldErrors(prev => ({...prev, firstName: ''})); }}
-                          placeholder="John"
-                          className={fieldErrors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""}
-                          data-testid="input-first-name"
-                        />
-                        {fieldErrors.firstName && <p className="text-red-500 text-xs">{fieldErrors.firstName}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Last Name *</Label>
-                        <Input 
-                          value={formData.lastName}
-                          onChange={e => { setFormData({...formData, lastName: e.target.value}); setFieldErrors(prev => ({...prev, lastName: ''})); }}
-                          placeholder="Doe"
-                          className={fieldErrors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""}
-                          data-testid="input-last-name"
-                        />
-                        {fieldErrors.lastName && <p className="text-red-500 text-xs">{fieldErrors.lastName}</p>}
-                      </div>
-                    </div>
+              {cameraError && (
+                <div className="text-center text-red-500 py-4">
+                  <p>{cameraError}</p>
+                  <Button type="button" onClick={startCamera} variant="outline" className="mt-2">
+                    Try Again
+                  </Button>
+                </div>
+              )}
 
-                    <div className="space-y-2">
-                      <Label>Email Address *</Label>
-                      <Input 
-                        type="email"
-                        value={formData.email}
-                        onChange={e => { setFormData({...formData, email: e.target.value}); setFieldErrors(prev => ({...prev, email: ''})); }}
-                        placeholder="john@example.com"
-                        className={fieldErrors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-                        data-testid="input-email"
-                      />
-                      {fieldErrors.email && <p className="text-red-500 text-xs">{fieldErrors.email}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Phone Number</Label>
-                      <Input 
-                        type="tel"
-                        value={formData.phone}
-                        onChange={e => setFormData({...formData, phone: e.target.value})}
-                        placeholder="+1 234 567 8900"
-                        data-testid="input-phone"
-                      />
-                    </div>
-
-                    {accountType === 'business' && (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Company Name *</Label>
-                          <Input 
-                            value={formData.companyName}
-                            onChange={e => { setFormData({...formData, companyName: e.target.value}); setFieldErrors(prev => ({...prev, companyName: ''})); }}
-                            placeholder="Acme Corporation"
-                            className={fieldErrors.companyName ? "border-red-500 focus-visible:ring-red-500" : ""}
-                            data-testid="input-company-name"
-                          />
-                          {fieldErrors.companyName && <p className="text-red-500 text-xs">{fieldErrors.companyName}</p>}
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Registration Number</Label>
-                          <Input 
-                            value={formData.registrationNumber}
-                            onChange={e => setFormData({...formData, registrationNumber: e.target.value})}
-                            placeholder="Company registration number"
-                            data-testid="input-registration-number"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Password *</Label>
-                        <div className="relative">
-                          <Input 
-                            type={showPassword ? "text" : "password"}
-                            value={formData.password}
-                            onChange={e => { setFormData({...formData, password: e.target.value}); setFieldErrors(prev => ({...prev, password: ''})); }}
-                            placeholder="••••••••"
-                            className={`pr-10 ${fieldErrors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                            data-testid="input-password"
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                        {fieldErrors.password && <p className="text-red-500 text-xs">{fieldErrors.password}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Confirm Password *</Label>
-                        <Input 
-                          type="password"
-                          value={formData.confirmPassword}
-                          onChange={e => { setFormData({...formData, confirmPassword: e.target.value}); setFieldErrors(prev => ({...prev, confirmPassword: ''})); }}
-                          placeholder="••••••••"
-                          className={fieldErrors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}
-                          data-testid="input-confirm-password"
-                        />
-                        {fieldErrors.confirmPassword && <p className="text-red-500 text-xs">{fieldErrors.confirmPassword}</p>}
+              {cameraStream && !profilePhoto && (
+                <div className="relative">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full rounded-lg bg-black"
+                    style={{ transform: 'scaleX(-1)' }}
+                  />
+                  <canvas ref={canvasRef} className="hidden" />
+                  
+                  {countdown !== null && countdown > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-black/50 text-white text-6xl font-bold rounded-full w-24 h-24 flex items-center justify-center">
+                        {countdown}
                       </div>
                     </div>
-                    
-                    <div className="bg-muted/30 p-4 rounded-xl border border-border text-sm">
-                      <p className="text-muted-foreground mb-2 font-medium">Password Requirements:</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <PasswordRequirement met={passwordStrength.length} text="At least 8 characters" />
-                        <PasswordRequirement met={passwordStrength.uppercase} text="One uppercase letter" />
-                        <PasswordRequirement met={passwordStrength.number} text="One number" />
-                        <PasswordRequirement met={passwordStrength.special} text="One special character" />
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={handleNextToSelfie}
-                      className="w-full bg-gradient-to-r from-primary to-secondary text-white h-12 text-lg font-semibold"
-                      data-testid="button-next-selfie"
+                  )}
+                  
+                  <div className="mt-3 flex justify-center gap-3">
+                    <Button
+                      type="button"
+                      onClick={capturePhoto}
+                      disabled={!isCameraReady}
+                      className="gap-2"
+                      data-testid="button-capture"
                     >
-                      Continue to Photo Verification <ArrowRight className="w-5 h-5 ml-2" />
+                      <Camera className="w-5 h-5" />
+                      Capture Now
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={stopCamera}
+                      variant="outline"
+                      data-testid="button-cancel-camera"
+                    >
+                      Cancel
                     </Button>
                   </div>
-                </Card>
-              </motion.div>
-            )}
-
-            {step === 'selfie' && (
-              <motion.div
-                key="selfie"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <Button variant="ghost" size="icon" onClick={() => { stopCamera(); setStep('details'); }}>
-                    <ArrowLeft className="w-5 h-5" />
-                  </Button>
-                  <div>
-                    <h1 className="text-2xl font-bold text-foreground">Photo Verification</h1>
-                    <p className="text-sm text-muted-foreground">Step 2 of 2: Take a selfie for identity verification</p>
-                  </div>
+                  <p className="text-center text-sm text-muted-foreground mt-2">
+                    Auto-capture in {countdown || 0} seconds
+                  </p>
                 </div>
+              )}
 
-                <Card className="p-6 bg-white border-border shadow-md">
-                  <div className="space-y-6">
-                    <div className="text-center">
-                      {/* Hidden canvas for capturing photo */}
-                      <canvas ref={canvasRef} className="hidden" />
-                      
-                      {/* Camera view - show when no photo captured yet */}
-                      {!profilePhoto && (
-                        <div className="space-y-4">
-                          {cameraError ? (
-                            <div className="space-y-4">
-                              <div className="w-48 h-48 mx-auto bg-muted rounded-full flex items-center justify-center border-2 border-dashed border-red-300">
-                                <Camera className="w-16 h-16 text-red-400" />
-                              </div>
-                              <p className="text-red-500 text-sm">{cameraError}</p>
-                              <Button onClick={startCamera} className="bg-primary" data-testid="button-retry-camera">
-                                <RefreshCw className="w-4 h-4 mr-2" /> Try Again
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <div className="relative w-64 h-64 mx-auto overflow-hidden rounded-full border-4 border-primary">
-                                <video
-                                  ref={videoRef}
-                                  autoPlay
-                                  playsInline
-                                  muted
-                                  className="w-full h-full object-cover"
-                                  style={{ transform: 'scaleX(-1)' }}
-                                  data-testid="video-camera"
-                                />
-                                {!isCameraReady && (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                                    <div className="text-center">
-                                      <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
-                                      <p className="text-sm text-muted-foreground">Starting camera...</p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-muted-foreground">Position your face in the circle and take a selfie</p>
-                              <Button 
-                                onClick={capturePhoto} 
-                                disabled={!isCameraReady}
-                                className="bg-primary h-12 px-8"
-                                data-testid="button-capture-photo"
-                              >
-                                <Camera className="w-5 h-5 mr-2" /> Capture Photo
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+              {profilePhoto && (
+                <div className="text-center">
+                  <img
+                    src={profilePhoto}
+                    alt="Profile selfie"
+                    className="w-40 h-40 mx-auto rounded-full object-cover border-4 border-primary"
+                  />
+                  <Button
+                    type="button"
+                    onClick={retakePhoto}
+                    variant="outline"
+                    className="mt-3 gap-2"
+                    data-testid="button-retake"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Retake Photo
+                  </Button>
+                </div>
+              )}
+            </div>
 
-                      {/* Captured photo view */}
-                      {profilePhoto && (
-                        <div className="space-y-4">
-                          <div className="relative w-48 h-48 mx-auto">
-                            <img 
-                              src={profilePhoto} 
-                              alt="Profile" 
-                              className="w-full h-full rounded-full object-cover border-4 border-green-500"
-                            />
-                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                              <CheckCircle2 className="w-6 h-6 text-white" />
-                            </div>
-                          </div>
-                          <p className="text-green-600 font-medium">Photo captured successfully!</p>
-                          <Button 
-                            variant="outline" 
-                            onClick={retakePhoto}
-                            data-testid="button-retake-photo"
-                          >
-                            <RefreshCw className="w-4 h-4 mr-2" /> Retake Photo
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="terms"
+                checked={formData.agreedToTerms}
+                onCheckedChange={(checked) => setFormData({ ...formData, agreedToTerms: checked as boolean })}
+                data-testid="checkbox-terms"
+              />
+              <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
+                I agree to the <Link href="/terms" className="text-primary hover:underline">Terms and Conditions</Link> and <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+              </Label>
+            </div>
 
-                    <div className="border-t pt-6 space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="terms" 
-                          checked={formData.agreedToTerms}
-                          onCheckedChange={(c: any) => setFormData({...formData, agreedToTerms: c})}
-                          data-testid="checkbox-terms"
-                        />
-                        <label htmlFor="terms" className="text-sm text-muted-foreground">
-                          I agree to the <span className="text-primary hover:underline cursor-pointer">Terms of Service</span> and <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
-                        </label>
-                      </div>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white py-6"
+              data-testid="button-submit"
+            >
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            </Button>
 
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
-                        <ShieldCheck className="w-4 h-4 text-primary" />
-                        Your data is encrypted and stored securely.
-                      </div>
-
-                      <Button 
-                        onClick={handleSubmit}
-                        disabled={!profilePhoto || !formData.agreedToTerms || isSubmitting}
-                        className="w-full bg-gradient-to-r from-primary to-secondary text-white h-12 text-lg font-semibold disabled:opacity-50"
-                        data-testid="button-create-account"
-                      >
-                        {isSubmitting ? 'Creating Account...' : 'Create Account'} <CheckCircle2 className="w-5 h-5 ml-2" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-        </div>
+            <p className="text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link href="/login" className="text-primary font-semibold hover:underline">
+                Sign In
+              </Link>
+            </p>
+          </form>
+        </Card>
       </div>
-    </div>
-  );
-}
-
-function PasswordRequirement({ met, text }: { met: boolean, text: string }) {
-  return (
-    <div className={`flex items-center gap-2 text-xs transition-colors ${met ? 'text-green-500' : 'text-muted-foreground'}`}>
-      {met ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current" />}
-      {text}
     </div>
   );
 }
