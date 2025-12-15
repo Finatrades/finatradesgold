@@ -133,11 +133,17 @@ export async function registerRoutes(
         details: "User registered - pending email verification",
       });
       
-      // Send verification email
-      const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.EMAIL_VERIFICATION, {
-        user_name: `${user.firstName} ${user.lastName}`,
-        verification_code: verificationCode,
-      });
+      // Send verification email (wrapped in try-catch to prevent registration failure)
+      let emailResult = { success: false, error: '' };
+      try {
+        emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.EMAIL_VERIFICATION, {
+          user_name: `${user.firstName} ${user.lastName}`,
+          verification_code: verificationCode,
+        });
+      } catch (emailError) {
+        console.error('[Registration] Email send failed:', emailError);
+        emailResult = { success: false, error: emailError instanceof Error ? emailError.message : 'Email failed' };
+      }
       
       res.json({ 
         user: sanitizeUser(user),
