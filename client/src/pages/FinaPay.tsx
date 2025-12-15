@@ -254,10 +254,6 @@ export default function FinaPay() {
               </div>
               <h2 className="text-lg font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'FinaPay Wallet')}</h2>
             </div>
-            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveModal('deposit')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Deposit Funds
-            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
