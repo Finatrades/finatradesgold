@@ -1080,15 +1080,22 @@ export default function KYC() {
                         <CardDescription>Upload clear photos of your identification documents.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
+                        {/* Format requirements notice */}
+                        <div className="p-3 bg-gray-50 border rounded-lg">
+                          <p className="text-sm font-medium text-gray-700">Accepted Formats:</p>
+                          <p className="text-xs text-gray-500">JPG, JPEG, PNG, PDF - Max file size: 5MB</p>
+                        </div>
+                        
                         <div className="space-y-4">
                           <div className="p-4 border-2 border-dashed rounded-lg">
                             <Label className="flex items-center gap-2 mb-2">
                               <FileText className="w-4 h-4" />
                               ID Document (Front) <span className="text-red-500">*</span>
                             </Label>
+                            <p className="text-xs text-muted-foreground mb-2">Format: JPG, PNG, or PDF</p>
                             <Input
                               type="file"
-                              accept="image/*,.pdf"
+                              accept=".jpg,.jpeg,.png,.pdf"
                               onChange={(e) => setIdFrontFile(e.target.files?.[0] || null)}
                               data-testid="input-id-front"
                             />
@@ -1104,9 +1111,10 @@ export default function KYC() {
                               <FileText className="w-4 h-4" />
                               ID Document (Back) <span className="text-red-500">*</span>
                             </Label>
+                            <p className="text-xs text-muted-foreground mb-2">Format: JPG, PNG, or PDF</p>
                             <Input
                               type="file"
-                              accept="image/*,.pdf"
+                              accept=".jpg,.jpeg,.png,.pdf"
                               onChange={(e) => setIdBackFile(e.target.files?.[0] || null)}
                               data-testid="input-id-back"
                             />
@@ -1122,9 +1130,10 @@ export default function KYC() {
                               <FileText className="w-4 h-4" />
                               Passport (Optional)
                             </Label>
+                            <p className="text-xs text-muted-foreground mb-2">Format: JPG, PNG, or PDF</p>
                             <Input
                               type="file"
-                              accept="image/*,.pdf"
+                              accept=".jpg,.jpeg,.png,.pdf"
                               onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
                               data-testid="input-passport"
                             />
@@ -1140,10 +1149,10 @@ export default function KYC() {
                               <FileText className="w-4 h-4" />
                               Proof of Address <span className="text-red-500">*</span>
                             </Label>
-                            <p className="text-xs text-muted-foreground mb-2">Utility bill, bank statement, or government letter (dated within 3 months)</p>
+                            <p className="text-xs text-muted-foreground mb-2">Utility bill, bank statement, or government letter (dated within 3 months). Format: JPG, PNG, or PDF</p>
                             <Input
                               type="file"
-                              accept="image/*,.pdf"
+                              accept=".jpg,.jpeg,.png,.pdf"
                               onChange={(e) => setAddressProofFile(e.target.files?.[0] || null)}
                               data-testid="input-address-proof"
                             />
