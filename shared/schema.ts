@@ -488,6 +488,149 @@ export type InsertAmlMonitoringRule = z.infer<typeof insertAmlMonitoringRuleSche
 export type AmlMonitoringRule = typeof amlMonitoringRules.$inferSelect;
 
 // ============================================
+// COMPLIANCE SETTINGS (KYC Mode Toggle)
+// ============================================
+
+export const kycModeEnum = pgEnum('kyc_mode', ['kycAml', 'finatrades']);
+
+export const complianceSettings = pgTable("compliance_settings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  activeKycMode: kycModeEnum("active_kyc_mode").notNull().default('kycAml'),
+  
+  // Finatrades KYC settings for personal accounts
+  finatradesPersonalConfig: json("finatrades_personal_config").$type<{
+    enableBankingVerification: boolean;
+    enableLivenessCapture: boolean;
+    supportedBankingProviders?: string[];
+  }>(),
+  
+  // Finatrades KYC settings for corporate accounts
+  finanatradesCorporateConfig: json("finatrades_corporate_config").$type<{
+    enableLivenessCapture: boolean;
+    requiredDocuments: string[];
+  }>(),
+  
+  updatedBy: varchar("updated_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertComplianceSettingsSchema = createInsertSchema(complianceSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertComplianceSettings = z.infer<typeof insertComplianceSettingsSchema>;
+export type ComplianceSettings = typeof complianceSettings.$inferSelect;
+
+// ============================================
+// FINATRADES CORPORATE KYC SUBMISSIONS
+// ============================================
+
+export const finatradesCorporateKyc = pgTable("finatrades_corporate_kyc", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Section 1: Corporate Details
+  companyName: varchar("company_name", { length: 255 }),
+  registrationNumber: varchar("registration_number", { length: 100 }),
+  incorporationDate: varchar("incorporation_date", { length: 50 }),
+  countryOfIncorporation: varchar("country_of_incorporation", { length: 100 }),
+  companyType: varchar("company_type", { length: 50 }), // 'public' or 'private'
+  natureOfBusiness: text("nature_of_business"),
+  numberOfEmployees: varchar("number_of_employees", { length: 50 }),
+  headOfficeAddress: text("head_office_address"),
+  telephoneNumber: varchar("telephone_number", { length: 50 }),
+  website: varchar("website", { length: 255 }),
+  emailAddress: varchar("email_address", { length: 255 }),
+  tradingContactName: varchar("trading_contact_name", { length: 255 }),
+  tradingContactEmail: varchar("trading_contact_email", { length: 255 }),
+  tradingContactPhone: varchar("trading_contact_phone", { length: 50 }),
+  financeContactName: varchar("finance_contact_name", { length: 255 }),
+  financeContactEmail: varchar("finance_contact_email", { length: 255 }),
+  financeContactPhone: varchar("finance_contact_phone", { length: 50 }),
+  
+  // Section 2: Beneficial Ownership & Shareholding
+  beneficialOwners: json("beneficial_owners").$type<Array<{
+    name: string;
+    passportNumber: string;
+    emailId: string;
+    shareholdingPercentage: number;
+  }>>(),
+  shareholderCompanyUbos: text("shareholder_company_ubos"),
+  hasPepOwners: boolean("has_pep_owners").default(false),
+  pepDetails: text("pep_details"),
+  
+  // Section 3: Documentation (checklist with file uploads)
+  documents: json("documents").$type<{
+    certificateOfIncorporation?: { url: string; uploaded: boolean; };
+    tradeLicense?: { url: string; uploaded: boolean; };
+    memorandumArticles?: { url: string; uploaded: boolean; };
+    shareholderList?: { url: string; uploaded: boolean; };
+    uboPassports?: { url: string; uploaded: boolean; };
+    bankReferenceLetter?: { url: string; uploaded: boolean; };
+    authorizedSignatories?: { url: string; uploaded: boolean; };
+  }>(),
+  
+  // Section 4: Banking Details
+  bankName: varchar("bank_name", { length: 255 }),
+  bankBranchAddress: text("bank_branch_address"),
+  bankCity: varchar("bank_city", { length: 100 }),
+  bankCountry: varchar("bank_country", { length: 100 }),
+  
+  // Liveness verification for authorized signatory
+  livenessVerified: boolean("liveness_verified").default(false),
+  livenessCapture: text("liveness_capture"), // Base64 or URL
+  livenessVerifiedAt: timestamp("liveness_verified_at"),
+  
+  // Status tracking
+  status: kycStatusEnum("status").notNull().default('In Progress'),
+  reviewedBy: varchar("reviewed_by", { length: 255 }),
+  reviewedAt: timestamp("reviewed_at"),
+  rejectionReason: text("rejection_reason"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFinatradesCorporateKycSchema = createInsertSchema(finatradesCorporateKyc).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFinatradesCorporateKyc = z.infer<typeof insertFinatradesCorporateKycSchema>;
+export type FinatradesCorporateKyc = typeof finatradesCorporateKyc.$inferSelect;
+
+// ============================================
+// FINATRADES PERSONAL KYC (Banking + Liveness)
+// ============================================
+
+export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Banking verification
+  bankingProvider: varchar("banking_provider", { length: 100 }),
+  bankingVerified: boolean("banking_verified").default(false),
+  bankingVerifiedAt: timestamp("banking_verified_at"),
+  bankingVerificationData: json("banking_verification_data").$type<{
+    accountHolder?: string;
+    accountVerified?: boolean;
+    provider?: string;
+  }>(),
+  
+  // Liveness face capture
+  livenessVerified: boolean("liveness_verified").default(false),
+  livenessCapture: text("liveness_capture"), // Base64 or URL
+  livenessVerifiedAt: timestamp("liveness_verified_at"),
+  
+  // Status tracking
+  status: kycStatusEnum("status").notNull().default('In Progress'),
+  reviewedBy: varchar("reviewed_by", { length: 255 }),
+  reviewedAt: timestamp("reviewed_at"),
+  rejectionReason: text("rejection_reason"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFinatradesPersonalKycSchema = createInsertSchema(finatradesPersonalKyc).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFinatradesPersonalKyc = z.infer<typeof insertFinatradesPersonalKycSchema>;
+export type FinatradesPersonalKyc = typeof finatradesPersonalKyc.$inferSelect;
+
+// ============================================
 // FINAPAY - WALLETS & TRANSACTIONS
 // ============================================
 
