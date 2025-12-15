@@ -62,13 +62,6 @@ export default function Register() {
         audio: false
       });
       setCameraStream(stream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setIsCameraReady(true);
-        };
-      }
     } catch (err: any) {
       console.error('Camera error:', err);
       setCameraError(err.name === 'NotAllowedError' 
@@ -76,6 +69,16 @@ export default function Register() {
         : 'Unable to access camera. Please check your device settings.');
     }
   }, []);
+
+  useEffect(() => {
+    if (cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current?.play();
+        setIsCameraReady(true);
+      };
+    }
+  }, [cameraStream]);
 
   const stopCamera = useCallback(() => {
     if (cameraStream) {
