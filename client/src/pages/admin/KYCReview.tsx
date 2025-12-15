@@ -14,6 +14,31 @@ import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
 import { useAdminOtp } from '@/hooks/useAdminOtp';
 
+// Helper to ensure proper image URL format (handles base64 without prefix)
+function getImageSrc(url: string): string {
+  if (!url) return '';
+  // If already a data URI or HTTP URL, return as-is
+  if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // If looks like base64 (long string without slashes at start), add data URI prefix
+  if (url.length > 100 && !url.includes('/')) {
+    // Try to detect image type from base64 header
+    if (url.startsWith('/9j/')) {
+      return `data:image/jpeg;base64,${url}`;
+    } else if (url.startsWith('iVBORw')) {
+      return `data:image/png;base64,${url}`;
+    } else if (url.startsWith('R0lGOD')) {
+      return `data:image/gif;base64,${url}`;
+    } else if (url.startsWith('UklGR')) {
+      return `data:image/webp;base64,${url}`;
+    }
+    // Default to jpeg if unknown
+    return `data:image/jpeg;base64,${url}`;
+  }
+  return url;
+}
+
 // In-platform document viewer component
 function DocumentViewer({ 
   isOpen, 
@@ -27,6 +52,7 @@ function DocumentViewer({
   documentName: string; 
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  const imageSrc = getImageSrc(documentUrl);
   
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -43,7 +69,7 @@ function DocumentViewer({
           </style>
         </head>
         <body>
-          <img src="${documentUrl}" alt="${documentName}" />
+          <img src="${imageSrc}" alt="${documentName}" />
         </body>
         </html>
       `);
@@ -72,10 +98,14 @@ function DocumentViewer({
         </DialogHeader>
         <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[70vh] bg-gray-100 rounded-lg p-4">
           <img 
-            src={documentUrl} 
+            src={imageSrc} 
             alt={documentName} 
             className="max-w-full max-h-[65vh] object-contain rounded"
             data-testid="img-document-preview"
+            onError={(e) => {
+              console.error('Image failed to load:', documentName);
+              (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext fill="%239ca3af" font-family="Arial" font-size="14" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+            }}
           />
         </div>
       </DialogContent>

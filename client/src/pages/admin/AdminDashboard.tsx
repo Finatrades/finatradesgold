@@ -115,6 +115,31 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Pending Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <PendingCard
+            title="Pending Deposits"
+            count={stats?.pendingDeposits || 0}
+            icon={<ArrowDownRight className="w-5 h-5" />}
+            color="green"
+            loading={isLoading}
+          />
+          <PendingCard
+            title="Pending Withdrawals"
+            count={stats?.pendingWithdrawals || 0}
+            icon={<ArrowUpRight className="w-5 h-5" />}
+            color="orange"
+            loading={isLoading}
+          />
+          <PendingCard
+            title="Pending Transactions"
+            count={stats?.pendingTransactions || 0}
+            icon={<Clock className="w-5 h-5" />}
+            color="yellow"
+            loading={isLoading}
+          />
+        </div>
+
         {/* Product Cards */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Products & Services</h2>
@@ -331,5 +356,39 @@ function ProductCard({ title, description, icon, href, color }: {
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function PendingCard({ title, count, icon, color, loading }: {
+  title: string;
+  count: number;
+  icon: React.ReactNode;
+  color: 'green' | 'orange' | 'yellow';
+  loading?: boolean;
+}) {
+  const colorClasses = {
+    green: { bg: 'bg-green-50', icon: 'bg-green-100 text-green-600', text: 'text-green-700' },
+    orange: { bg: 'bg-orange-50', icon: 'bg-orange-100 text-orange-600', text: 'text-orange-700' },
+    yellow: { bg: 'bg-yellow-50', icon: 'bg-yellow-100 text-yellow-600', text: 'text-yellow-700' },
+  };
+  
+  const colors = colorClasses[color];
+  
+  return (
+    <Card className={`${colors.bg} border-0 shadow-sm`} data-testid={`card-pending-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <CardContent className="p-5">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${colors.icon}`}>
+            {icon}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">{title}</p>
+            <p className={`text-2xl font-bold ${colors.text}`}>
+              {loading ? '...' : count}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

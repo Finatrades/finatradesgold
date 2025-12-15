@@ -902,12 +902,28 @@ export async function registerRoutes(
         })
       );
       
+      // Pending transaction counts
+      const pendingDeposits = allTransactions.filter(tx => 
+        tx.type === 'Deposit' && tx.status === 'Pending'
+      ).length;
+      
+      const pendingWithdrawals = allTransactions.filter(tx => 
+        tx.type === 'Withdrawal' && tx.status === 'Pending'
+      ).length;
+      
+      const pendingTransactions = allTransactions.filter(tx => 
+        tx.status === 'Pending'
+      ).length;
+      
       res.json({
         totalUsers,
         pendingKycCount,
         totalVolume,
         revenue,
-        pendingKycRequests
+        pendingKycRequests,
+        pendingDeposits,
+        pendingWithdrawals,
+        pendingTransactions
       });
     } catch (error) {
       console.error("Failed to get admin stats:", error);
