@@ -48,6 +48,12 @@ import {
   seedDefaultAmlRules,
   DEFAULT_AML_RULES 
 } from "./aml-monitoring";
+import { 
+  getExpiringDocuments, 
+  sendDocumentExpiryReminders, 
+  getDocumentExpiryStats,
+  startDocumentExpiryScheduler
+} from "./document-expiry";
 import PDFDocument from "pdfkit";
 
 // Middleware to ensure admin access using header-based auth
@@ -91,6 +97,9 @@ export async function registerRoutes(
   
   // Seed email templates on startup (must await to ensure templates exist before handling requests)
   await seedEmailTemplates().catch(err => console.error('[Email] Failed to seed templates:', err));
+  
+  // Start document expiry reminder scheduler
+  startDocumentExpiryScheduler();
   
   // ============================================================================
   // GOLD PRICE API
@@ -2145,6 +2154,47 @@ export async function registerRoutes(
       res.json({ templates: DEFAULT_AML_RULES });
     } catch (error) {
       res.status(400).json({ message: "Failed to get rule templates" });
+    }
+  });
+
+  // ============================================================================
+  // DOCUMENT EXPIRY REMINDERS
+  // ============================================================================
+
+  // Get documents expiring soon (Admin)
+  app.get("/api/admin/document-expiry", ensureAdminAsync, async (req, res) => {
+    try {
+      const daysAhead = parseInt(req.query.days as string) || 30;
+      const expiringDocs = await getExpiringDocuments(daysAhead);
+      res.json({ expiringDocuments: expiringDocs });
+    } catch (error) {
+      console.error("Document expiry check error:", error);
+      res.status(400).json({ message: "Failed to get expiring documents" });
+    }
+  });
+
+  // Get document expiry statistics (Admin)
+  app.get("/api/admin/document-expiry/stats", ensureAdminAsync, async (req, res) => {
+    try {
+      const stats = await getDocumentExpiryStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Document expiry stats error:", error);
+      res.status(400).json({ message: "Failed to get expiry statistics" });
+    }
+  });
+
+  // Manually trigger document expiry reminders (Admin)
+  app.post("/api/admin/document-expiry/send-reminders", ensureAdminAsync, async (req, res) => {
+    try {
+      const result = await sendDocumentExpiryReminders();
+      res.json({ 
+        message: `Sent ${result.sent} reminders`,
+        ...result 
+      });
+    } catch (error) {
+      console.error("Document expiry reminder error:", error);
+      res.status(400).json({ message: "Failed to send reminders" });
     }
   });
   

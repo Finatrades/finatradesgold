@@ -258,6 +258,7 @@ export const EMAIL_TEMPLATES = {
   BNSL_AGREEMENT_SIGNED: 'bnsl_agreement_signed',
   CERTIFICATE_DELIVERY: 'certificate_delivery',
   INVOICE_DELIVERY: 'invoice_delivery',
+  DOCUMENT_EXPIRY_REMINDER: 'document_expiry_reminder',
 } as const;
 
 export const DEFAULT_EMAIL_TEMPLATES = [
@@ -683,6 +684,53 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'invoice_date', description: 'Invoice date' },
       { name: 'gold_amount', description: 'Amount of gold in grams' },
       { name: 'total_amount', description: 'Total amount paid' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.DOCUMENT_EXPIRY_REMINDER,
+    name: 'Document Expiry Reminder',
+    type: 'email' as const,
+    module: 'kyc',
+    subject: 'Your ID document is expiring soon - Action Required',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Document Expiry Notice</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>This is a friendly reminder that your identification document is <strong>expiring on {{expiry_date}}</strong>.</p>
+          
+          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0;"><strong>Days remaining:</strong> {{days_remaining}} days</p>
+          </div>
+          
+          <p>To continue using Finatrades services without interruption, please update your KYC documents before the expiry date.</p>
+          
+          <p><strong>What you need to do:</strong></p>
+          <ol>
+            <li>Obtain a new valid ID document</li>
+            <li>Log in to your Finatrades account</li>
+            <li>Go to Settings → KYC Verification</li>
+            <li>Upload your new document</li>
+          </ol>
+          
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="{{kyc_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Update Documents</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>If you have already renewed your documents, please disregard this message.</p>
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: 'User\'s full name' },
+      { name: 'expiry_date', description: 'Document expiry date' },
+      { name: 'days_remaining', description: 'Number of days until expiry' },
+      { name: 'kyc_url', description: 'Link to KYC page' },
     ],
     status: 'published' as const,
   },
