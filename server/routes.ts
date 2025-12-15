@@ -1412,8 +1412,29 @@ export async function registerRoutes(
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", async (req, res) => {
     try {
-      const submissions = await storage.getAllKycSubmissions();
-      res.json({ submissions });
+      const kycAmlSubmissions = await storage.getAllKycSubmissions();
+      const finatradesPersonalSubmissions = await storage.getAllFinatradesPersonalKyc();
+      
+      // Normalize Finatrades personal KYC submissions to match kycAml format for admin display
+      const normalizedFinatradesPersonal = finatradesPersonalSubmissions.map(s => ({
+        ...s,
+        tier: 'finatrades_personal',
+        kycType: 'finatrades_personal',
+        documents: s.idFrontUrl || s.idBackUrl || s.passportUrl || s.addressProofUrl ? {
+          idFront: s.idFrontUrl,
+          idBack: s.idBackUrl,
+          passport: s.passportUrl,
+          addressProof: s.addressProofUrl,
+        } : null,
+      }));
+      
+      // Combine and sort by creation date
+      const allSubmissions = [
+        ...kycAmlSubmissions.map(s => ({ ...s, kycType: 'kycAml' })),
+        ...normalizedFinatradesPersonal,
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      res.json({ submissions: allSubmissions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get KYC submissions" });
     }

@@ -527,6 +527,7 @@ export interface IStorage {
   
   // Finatrades Personal KYC
   getFinatradesPersonalKyc(userId: string): Promise<FinatradesPersonalKyc | undefined>;
+  getAllFinatradesPersonalKyc(): Promise<FinatradesPersonalKyc[]>;
   createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc>;
   updateFinatradesPersonalKyc(id: string, updates: Partial<FinatradesPersonalKyc>): Promise<FinatradesPersonalKyc | undefined>;
   
@@ -2267,6 +2268,10 @@ export class DatabaseStorage implements IStorage {
   async getFinatradesPersonalKyc(userId: string): Promise<FinatradesPersonalKyc | undefined> {
     const [kyc] = await db.select().from(finatradesPersonalKyc).where(eq(finatradesPersonalKyc.userId, userId)).orderBy(desc(finatradesPersonalKyc.createdAt)).limit(1);
     return kyc || undefined;
+  }
+
+  async getAllFinatradesPersonalKyc(): Promise<FinatradesPersonalKyc[]> {
+    return await db.select().from(finatradesPersonalKyc).orderBy(desc(finatradesPersonalKyc.createdAt));
   }
 
   async createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc> {
