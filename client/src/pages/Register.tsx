@@ -110,17 +110,17 @@ export default function Register() {
   }, [isCameraReady, stopCamera]);
 
   useEffect(() => {
-    if (isCameraReady && !profilePhoto && countdown === null) {
+    if (isCameraReady && cameraStream && !profilePhoto && countdown === null) {
       setCountdown(5);
     }
-  }, [isCameraReady, profilePhoto, countdown]);
+  }, [isCameraReady, cameraStream, profilePhoto, countdown]);
 
   useEffect(() => {
-    if (countdown !== null && countdown > 0) {
+    if (countdown !== null && countdown > 0 && cameraStream) {
       countdownRef.current = setTimeout(() => {
         setCountdown(countdown - 1);
       }, 1000);
-    } else if (countdown === 0 && isCameraReady) {
+    } else if (countdown === 0 && isCameraReady && cameraStream) {
       capturePhoto();
     }
     return () => {
@@ -128,7 +128,7 @@ export default function Register() {
         clearTimeout(countdownRef.current);
       }
     };
-  }, [countdown, isCameraReady, capturePhoto]);
+  }, [countdown, isCameraReady, cameraStream, capturePhoto]);
 
   useEffect(() => {
     return () => {
