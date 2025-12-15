@@ -872,8 +872,8 @@ export const bnslAgreements = pgTable("bnsl_agreements", {
   signatureName: varchar("signature_name", { length: 255 }).notNull(),
   signedAt: timestamp("signed_at").notNull(),
   
-  pdfPath: text("pdf_path").notNull(),
-  pdfFileName: varchar("pdf_file_name", { length: 255 }).notNull(),
+  pdfPath: text("pdf_path"),
+  pdfFileName: varchar("pdf_file_name", { length: 255 }),
   
   planDetails: json("plan_details").$type<{
     tenorMonths: number;
@@ -893,7 +893,9 @@ export const bnslAgreements = pgTable("bnsl_agreements", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertBnslAgreementSchema = createInsertSchema(bnslAgreements).omit({ id: true, createdAt: true });
+export const insertBnslAgreementSchema = createInsertSchema(bnslAgreements).omit({ id: true, createdAt: true }).extend({
+  signedAt: z.union([z.date(), z.string().transform(s => new Date(s))]),
+});
 export type InsertBnslAgreement = z.infer<typeof insertBnslAgreementSchema>;
 export type BnslAgreement = typeof bnslAgreements.$inferSelect;
 
