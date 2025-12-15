@@ -34,6 +34,7 @@ import {
   generateTradeReleaseCertificate
 } from "./document-service";
 import { generateUserManualPDF, generateAdminManualPDF } from "./pdf-generator";
+import { getGoldPrice, getGoldPricePerGram } from "./gold-price-service";
 
 // Middleware to ensure admin access using header-based auth
 // This middleware validates that the X-Admin-User-Id header contains a valid admin user ID
@@ -76,6 +77,27 @@ export async function registerRoutes(
   
   // Seed email templates on startup (must await to ensure templates exist before handling requests)
   await seedEmailTemplates().catch(err => console.error('[Email] Failed to seed templates:', err));
+  
+  // ============================================================================
+  // GOLD PRICE API
+  // ============================================================================
+  
+  // Get current gold price (live from API or cached)
+  app.get("/api/gold-price", async (req, res) => {
+    try {
+      const priceData = await getGoldPrice();
+      res.json({
+        pricePerGram: priceData.pricePerGram,
+        pricePerOunce: priceData.pricePerOunce,
+        currency: priceData.currency,
+        timestamp: priceData.timestamp,
+        source: priceData.source
+      });
+    } catch (error) {
+      console.error('[GoldPrice] Error fetching gold price:', error);
+      res.status(500).json({ message: "Failed to fetch gold price" });
+    }
+  });
   
   // ============================================================================
   // AUTHENTICATION & USER MANAGEMENT
