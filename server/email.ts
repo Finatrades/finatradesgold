@@ -2,9 +2,8 @@ import nodemailer from 'nodemailer';
 import { db } from './db';
 import { templates } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import dns from 'dns';
-
-dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+import { lookup } from 'dns/promises';
+import net from 'net';
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
@@ -12,39 +11,103 @@ const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS || process.env.SMTP_KEY;
 const SMTP_FROM = process.env.SMTP_FROM || 'noreply@finatrades.com';
 
-const transporter = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465,
-  auth: SMTP_USER && SMTP_PASS ? {
-    user: SMTP_USER,
-    pass: SMTP_PASS,
-  } : undefined,
-  pool: true,
-  maxConnections: 5,
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 30000,
-});
+console.log(`[Email] Configured with host: ${SMTP_HOST}, port: ${SMTP_PORT}, user: ${SMTP_USER ? 'set' : 'not set'}`);
+
+// Resolve SMTP host IP manually using Google DNS to avoid local DNS issues
+let resolvedSmtpHost: string | null = null;
+
+async function resolveSmtpHost(): Promise<string> {
+  if (resolvedSmtpHost) {
+    return resolvedSmtpHost;
+  }
+  
+  try {
+    // Try to resolve the SMTP host to an IP address
+    const result = await lookup(SMTP_HOST, { family: 4 });
+    resolvedSmtpHost = result.address;
+    console.log(`[Email] Resolved ${SMTP_HOST} to ${resolvedSmtpHost}`);
+    return resolvedSmtpHost;
+  } catch (error) {
+    console.log(`[Email] Could not resolve ${SMTP_HOST}, using direct connection`);
+    // Fallback to known Brevo IP addresses
+    const brevoIps = ['185.107.232.1', '185.107.232.2', '185.107.232.3'];
+    for (const ip of brevoIps) {
+      try {
+        // Test if we can connect to this IP
+        await new Promise<void>((resolve, reject) => {
+          const socket = net.createConnection({ host: ip, port: SMTP_PORT, timeout: 5000 });
+          socket.on('connect', () => {
+            socket.destroy();
+            resolve();
+          });
+          socket.on('error', reject);
+          socket.on('timeout', () => reject(new Error('Connection timeout')));
+        });
+        console.log(`[Email] Using fallback IP: ${ip}`);
+        resolvedSmtpHost = ip;
+        return resolvedSmtpHost;
+      } catch {
+        continue;
+      }
+    }
+    // If all fallbacks fail, try using the hostname directly
+    console.log(`[Email] All fallbacks failed, using hostname directly: ${SMTP_HOST}`);
+    return SMTP_HOST;
+  }
+}
+
+// Create a fresh transporter for each send to avoid connection pooling issues
+async function createTransporter() {
+  const host = await resolveSmtpHost();
+  
+  const transportOptions: nodemailer.TransportOptions = {
+    host: host,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: SMTP_USER && SMTP_PASS ? {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    } : undefined,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+    tls: {
+      servername: SMTP_HOST,
+      rejectUnauthorized: false,
+    },
+  } as any;
+  
+  return nodemailer.createTransport(transportOptions);
+}
 
 async function sendMailWithRetry(mailOptions: nodemailer.SendMailOptions, maxRetries = 3): Promise<nodemailer.SentMessageInfo> {
   let lastError: Error | null = null;
+  
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await transporter.sendMail(mailOptions);
+      console.log(`[Email] Attempt ${attempt}/${maxRetries} to send email to ${mailOptions.to}`);
+      const transporter = await createTransporter();
+      const result = await transporter.sendMail(mailOptions);
+      transporter.close();
+      return result;
     } catch (error) {
       lastError = error as Error;
       console.log(`[Email] Attempt ${attempt}/${maxRetries} failed: ${lastError.message}`);
+      
+      // Reset resolved host on DNS-related errors to force re-resolution
+      if (lastError.message.includes('getaddrinfo') || lastError.message.includes('EAI_AGAIN')) {
+        resolvedSmtpHost = null;
+      }
+      
       if (attempt < maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        const delay = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+        console.log(`[Email] Waiting ${delay}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
   throw lastError;
 }
-
-console.log(`[Email] Configured with host: ${SMTP_HOST}, port: ${SMTP_PORT}, user: ${SMTP_USER ? 'set' : 'not set'}`);
 
 export interface EmailData {
   [key: string]: string | number | undefined;
@@ -131,6 +194,56 @@ export async function sendEmailDirect(
     console.error(`[Email] Failed to send to ${to}:`, error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
+}
+
+// Queue-based async email sending that doesn't block registration
+const emailQueue: Array<{ to: string; subject: string; html: string }> = [];
+let isProcessingQueue = false;
+
+async function processEmailQueue() {
+  if (isProcessingQueue || emailQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  while (emailQueue.length > 0) {
+    const email = emailQueue.shift();
+    if (!email) continue;
+    
+    try {
+      await sendMailWithRetry({
+        from: SMTP_FROM,
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+      });
+      console.log(`[Email Queue] Successfully sent to ${email.to}`);
+    } catch (error) {
+      console.error(`[Email Queue] Failed to send to ${email.to}:`, error);
+    }
+    
+    // Small delay between emails
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  isProcessingQueue = false;
+}
+
+export function queueEmail(to: string, subject: string, html: string) {
+  emailQueue.push({ to, subject, html });
+  // Process queue in background without blocking
+  setImmediate(() => processEmailQueue().catch(console.error));
+}
+
+export async function queueEmailWithTemplate(to: string, templateSlug: string, data: EmailData): Promise<void> {
+  const template = await getEmailTemplate(templateSlug);
+  if (!template) {
+    console.error(`[Email Queue] Template not found: ${templateSlug}`);
+    return;
+  }
+  
+  const subject = replaceVariables(template.subject, data);
+  const htmlBody = replaceVariables(template.body, data);
+  queueEmail(to, subject, htmlBody);
 }
 
 export const EMAIL_TEMPLATES = {
@@ -508,33 +621,28 @@ export const DEFAULT_EMAIL_TEMPLATES = [
               <tr><td style="padding: 8px 0;">Certificate No:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
               <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
               <tr><td style="padding: 8px 0;">Type:</td><td style="text-align: right; font-weight: bold;">{{certificate_type}}</td></tr>
-              <tr><td style="padding: 8px 0;">Issued By:</td><td style="text-align: right;">{{issuer}}</td></tr>
-              <tr><td style="padding: 8px 0;">Issue Date:</td><td style="text-align: right;">{{issue_date}}</td></tr>
+              <tr><td style="padding: 8px 0;">Issue Date:</td><td style="text-align: right; font-weight: bold;">{{issue_date}}</td></tr>
             </table>
           </div>
 
-          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Important:</strong> Please save the attached PDF certificate for your records. This document certifies your ownership of the specified gold holdings.</p>
-          </div>
-
+          <p>This certificate serves as proof of your gold ownership stored at Wingold and Metals DMCC, Dubai.</p>
+          
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Your Holdings</a>
+            <a href="{{vault_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in FinaVault</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
           <p>Finatrades - Gold-Backed Digital Finance</p>
-          <p style="margin-top: 10px;">If you have any questions, please contact our support team.</p>
         </div>
       </div>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
-      { name: 'certificate_number', description: 'Certificate reference number' },
+      { name: 'certificate_number', description: 'Certificate number' },
       { name: 'gold_amount', description: 'Amount of gold in grams' },
-      { name: 'certificate_type', description: 'Digital Ownership or Physical Storage' },
-      { name: 'issuer', description: 'Issuing entity name' },
-      { name: 'issue_date', description: 'Date certificate was issued' },
-      { name: 'dashboard_url', description: 'Link to user dashboard' },
+      { name: 'certificate_type', description: 'Type of certificate' },
+      { name: 'issue_date', description: 'Date of issue' },
+      { name: 'vault_url', description: 'Link to FinaVault' },
     ],
     status: 'published' as const,
   },
@@ -543,120 +651,104 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Invoice Delivery',
     type: 'email' as const,
     module: 'finapay',
-    subject: 'Your Gold Purchase Invoice - {{invoice_number}}',
+    subject: 'Invoice {{invoice_number}} - Gold Purchase',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Purchase Invoice</h1>
+          <h1 style="color: white; margin: 0;">Invoice</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
           <p>Dear {{user_name}},</p>
-          <p>Thank you for your gold purchase! Your invoice is attached to this email for your records.</p>
+          <p>Please find attached your invoice for the recent gold purchase.</p>
           
           <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin: 0 0 15px 0; color: #404040;">Invoice Summary</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr><td style="padding: 8px 0;">Invoice No:</td><td style="text-align: right; font-weight: bold;">{{invoice_number}}</td></tr>
-              <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
-              <tr><td style="padding: 8px 0;">Price per Gram:</td><td style="text-align: right;">\${{price_per_gram}}</td></tr>
-              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb;"><strong>Total Amount:</strong></td><td style="text-align: right; font-weight: bold; color: #f97316; border-top: 1px solid #e5e7eb;">\${{total_amount}}</td></tr>
+              <tr><td style="padding: 8px 0;">Date:</td><td style="text-align: right;">{{invoice_date}}</td></tr>
+              <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right;">{{gold_amount}}g</td></tr>
+              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb; margin-top: 10px;"><strong>Total Amount:</strong></td><td style="text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold; color: #f97316;">{{total_amount}}</td></tr>
             </table>
           </div>
 
-          <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0; color: #166534;"><strong>Payment Status:</strong> {{payment_status}}</p>
-          </div>
-
-          <p>Please keep this invoice for your records. The attached PDF contains all the details of your transaction.</p>
-
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Transaction History</a>
-          </p>
+          <p>Thank you for your purchase!</p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Wingold and Metals DMCC</p>
-          <p style="margin-top: 10px;">For billing inquiries, please contact our support team.</p>
+          <p>Finatrades - Gold-Backed Digital Finance</p>
         </div>
       </div>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
-      { name: 'invoice_number', description: 'Invoice reference number' },
+      { name: 'invoice_number', description: 'Invoice number' },
+      { name: 'invoice_date', description: 'Invoice date' },
       { name: 'gold_amount', description: 'Amount of gold in grams' },
-      { name: 'price_per_gram', description: 'Gold price per gram in USD' },
-      { name: 'total_amount', description: 'Total invoice amount in USD' },
-      { name: 'payment_status', description: 'Payment status (Paid/Pending)' },
-      { name: 'dashboard_url', description: 'Link to user dashboard' },
+      { name: 'total_amount', description: 'Total amount paid' },
     ],
     status: 'published' as const,
   },
 ];
 
+// Seed email templates to database
+export async function seedEmailTemplates(): Promise<void> {
+  try {
+    for (const template of DEFAULT_EMAIL_TEMPLATES) {
+      const existing = await getEmailTemplate(template.slug);
+      if (!existing) {
+        await db.insert(templates).values({
+          slug: template.slug,
+          name: template.name,
+          type: template.type,
+          module: template.module,
+          subject: template.subject,
+          body: template.body,
+          variables: template.variables,
+          status: template.status,
+        });
+        console.log(`[Email] Seeded template: ${template.slug}`);
+      }
+    }
+    console.log('[Email] Template seeding complete');
+  } catch (error) {
+    console.error('[Email] Failed to seed templates:', error);
+  }
+}
+
+// Send email with attachment
 export async function sendEmailWithAttachment(
   to: string,
-  templateSlug: string,
-  data: EmailData,
-  attachment?: { filename: string; content: Buffer; contentType?: string }
+  subject: string,
+  htmlBody: string,
+  attachments: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const template = await getEmailTemplate(templateSlug);
-    
-    if (!template) {
-      console.error(`[Email] Template not found: ${templateSlug}`);
-      return { success: false, error: `Template not found: ${templateSlug}` };
-    }
-
-    const subject = replaceVariables(template.subject, data);
-    const htmlBody = replaceVariables(template.body, data);
-
     if (!SMTP_USER || !SMTP_PASS) {
       console.log(`[Email Preview] To: ${to}`);
       console.log(`[Email Preview] Subject: ${subject}`);
-      console.log(`[Email Preview] Body: ${htmlBody.substring(0, 200)}...`);
-      if (attachment) {
-        console.log(`[Email Preview] Attachment: ${attachment.filename} (${attachment.content.length} bytes)`);
-      }
+      console.log(`[Email Preview] Attachments: ${attachments.map(a => a.filename).join(', ')}`);
       console.log(`[Email] SMTP not configured - email logged only`);
       return { success: true, messageId: 'preview-mode' };
     }
 
-    const mailOptions: any = {
+    const info = await sendMailWithRetry({
       from: SMTP_FROM,
       to,
       subject,
       html: htmlBody,
-    };
+      attachments: attachments.map(a => ({
+        filename: a.filename,
+        content: a.content,
+        contentType: a.contentType,
+      })),
+    });
 
-    if (attachment) {
-      mailOptions.attachments = [
-        {
-          filename: attachment.filename,
-          content: attachment.content,
-          contentType: attachment.contentType || 'application/pdf',
-        },
-      ];
-    }
-
-    const info = await sendMailWithRetry(mailOptions);
-
-    console.log(`[Email] Sent to ${to}: ${info.messageId}`);
+    console.log(`[Email] Sent with attachment to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error(`[Email] Failed to send to ${to}:`, error);
+    console.error(`[Email] Failed to send with attachment to ${to}:`, error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
-}
-
-export async function seedEmailTemplates(): Promise<void> {
-  console.log('[Email] Seeding default email templates...');
-  
-  for (const template of DEFAULT_EMAIL_TEMPLATES) {
-    const existing = await db.select().from(templates).where(eq(templates.slug, template.slug)).limit(1);
-    if (existing.length === 0) {
-      await db.insert(templates).values(template);
-      console.log(`[Email] Created template: ${template.slug}`);
-    }
-  }
-  
-  console.log('[Email] Email templates seeded');
 }

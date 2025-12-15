@@ -134,7 +134,7 @@ export async function registerRoutes(
       });
       
       // Send verification email (wrapped in try-catch to prevent registration failure)
-      let emailResult = { success: false, error: '' };
+      let emailResult: { success: boolean; messageId?: string; error?: string } = { success: false, error: '' };
       try {
         emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.EMAIL_VERIFICATION, {
           user_name: `${user.firstName} ${user.lastName}`,
