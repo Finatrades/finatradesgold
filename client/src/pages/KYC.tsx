@@ -7,21 +7,66 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, BadgeCheck, Crown, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
+
+type KycTier = 'tier_1_basic' | 'tier_2_enhanced' | 'tier_3_corporate';
+
+interface TierConfig {
+  id: KycTier;
+  name: string;
+  description: string;
+  limits: string;
+  sla: string;
+  requirements: string[];
+  icon: React.ReactNode;
+  recommended?: boolean;
+}
+
+const TIER_CONFIGS: TierConfig[] = [
+  {
+    id: 'tier_1_basic',
+    name: 'Basic',
+    description: 'Quick verification for casual users',
+    limits: 'Up to $5,000/month',
+    sla: '24 hours',
+    requirements: ['Government-issued ID'],
+    icon: <BadgeCheck className="w-6 h-6" />,
+  },
+  {
+    id: 'tier_2_enhanced',
+    name: 'Enhanced',
+    description: 'Full verification for active traders',
+    limits: 'Up to $50,000/month',
+    sla: '3 business days',
+    requirements: ['Government-issued ID', 'Liveness check', 'Proof of address'],
+    icon: <Crown className="w-6 h-6" />,
+    recommended: true,
+  },
+  {
+    id: 'tier_3_corporate',
+    name: 'Corporate',
+    description: 'Business verification for companies',
+    limits: 'Unlimited',
+    sla: '5 business days',
+    requirements: ['Company registration', 'Director ID', 'Liveness check', 'Proof of business address', 'Beneficial owner info'],
+    icon: <Briefcase className="w-6 h-6" />,
+  },
+];
 
 export default function KYC() {
   const { user, refreshUser } = useAuth();
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
-  const [activeStep, setActiveStep] = useState('personal');
-  const [progress, setProgress] = useState(25);
+  const [activeStep, setActiveStep] = useState('tier_select');
+  const [selectedTier, setSelectedTier] = useState<KycTier | null>(null);
+  const [progress, setProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form States
   const [idType, setIdType] = useState('passport');
-  const [uploadedFiles, setUploadedFiles] = useState<{front?: File, back?: File, selfie?: File, utility?: File, company_doc?: File}>({});
+  const [uploadedFiles, setUploadedFiles] = useState<{front?: File, back?: File, selfie?: File, utility?: File, company_doc?: File, beneficial_owner?: File}>({});
   
   // Required form fields
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -204,12 +249,19 @@ export default function KYC() {
     startLivenessCamera();
   }, [startLivenessCamera]);
   
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back' | 'selfie' | 'utility' | 'company_doc') => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back' | 'selfie' | 'utility' | 'company_doc' | 'beneficial_owner') => {
     if (e.target.files && e.target.files[0]) {
       setUploadedFiles(prev => ({...prev, [type]: e.target.files![0]}));
       toast.success(`${type.replace('_', ' ').charAt(0).toUpperCase() + type.replace('_', ' ').slice(1)} uploaded successfully`);
     }
   };
+
+  const getTierConfig = () => TIER_CONFIGS.find(t => t.id === selectedTier);
+
+  const requiresSelfie = selectedTier === 'tier_2_enhanced' || selectedTier === 'tier_3_corporate';
+  const requiresProofOfAddress = selectedTier === 'tier_2_enhanced' || selectedTier === 'tier_3_corporate';
+  const requiresCompanyDocs = selectedTier === 'tier_3_corporate';
+  const isCorporateTier = selectedTier === 'tier_3_corporate';
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -221,8 +273,7 @@ export default function KYC() {
   };
 
   const validatePersonalStep = () => {
-    const isBusiness = user?.accountType === 'business';
-    if (isBusiness) {
+    if (isCorporateTier) {
       if (!registrationNumber.trim()) {
         toast.error("Registration number is required");
         return false;
@@ -265,24 +316,23 @@ export default function KYC() {
   };
 
   const handleComplete = async () => {
-    if (!user) return;
+    if (!user || !selectedTier) return;
     
-    // Validate address step before submitting
-    if (!validateAddressStep()) {
+    // Validate final step before submitting
+    if (requiresProofOfAddress && !validateAddressStep()) {
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      const isBusiness = user.accountType === 'business';
-      
       // Convert uploaded files to base64 for documents field
       const documents: {
         idProof?: { url: string; type: string };
         selfie?: { url: string; type: string };
         proofOfAddress?: { url: string; type: string };
         businessRegistration?: { url: string; type: string };
+        beneficialOwner?: { url: string; type: string };
       } = {};
       
       // ID Document (front side or combined)
@@ -309,19 +359,28 @@ export default function KYC() {
         documents.businessRegistration = { url: base64, type: 'company_registration' };
       }
       
-      const response = await fetch('/api/kyc', {
+      // Beneficial owner document
+      if (uploadedFiles.beneficial_owner) {
+        const base64 = await fileToBase64(uploadedFiles.beneficial_owner);
+        documents.beneficialOwner = { url: base64, type: 'beneficial_owner' };
+      }
+      
+      const tierConfig = getTierConfig();
+      
+      const response = await fetch('/api/kyc/submit-tiered', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
-          accountType: user.accountType,
+          tier: selectedTier,
+          accountType: isCorporateTier ? 'business' : 'personal',
           fullName: `${user.firstName} ${user.lastName}`,
           country: nationality || user.country || 'Not specified',
           dateOfBirth: dateOfBirth || null,
           address: fullAddress,
           companyName: user.companyName,
-          registrationNumber: isBusiness ? registrationNumber : user.registrationNumber,
-          jurisdiction: isBusiness ? jurisdiction : null,
+          registrationNumber: isCorporateTier ? registrationNumber : user.registrationNumber,
+          jurisdiction: isCorporateTier ? jurisdiction : null,
           documents: Object.keys(documents).length > 0 ? documents : null,
         }),
       });
@@ -335,12 +394,12 @@ export default function KYC() {
       // Add notification to bell
       addNotification({
         title: 'KYC Verification Submitted',
-        message: 'Your documents are now under review. You will be notified once approved.',
+        message: `Your ${tierConfig?.name} verification is under review. Expected processing: ${tierConfig?.sla}.`,
         type: 'success'
       });
       
       toast.success("KYC Verification Submitted", {
-        description: "Your documents are now under review. You will be notified once approved."
+        description: `Your ${tierConfig?.name} verification is under review. Expected processing: ${tierConfig?.sla}.`
       });
       
       setLocation('/dashboard');
@@ -359,6 +418,21 @@ export default function KYC() {
   }
 
   const isBusiness = user.accountType === 'business';
+  const tierConfig = getTierConfig();
+
+  // Calculate total steps and current step for progress
+  const getSteps = () => {
+    const steps = ['tier_select', 'personal'];
+    if (requiresCompanyDocs) steps.push('company_docs');
+    steps.push('document');
+    if (requiresSelfie) steps.push('selfie');
+    if (requiresProofOfAddress) steps.push('address');
+    return steps;
+  };
+
+  const steps = getSteps();
+  const currentStepIndex = steps.indexOf(activeStep);
+  const calculatedProgress = selectedTier ? Math.round(((currentStepIndex + 1) / steps.length) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -367,73 +441,172 @@ export default function KYC() {
           
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-foreground mb-2">Identity Verification</h1>
-            <p className="text-muted-foreground">Complete your {isBusiness ? 'Corporate' : 'Personal'} KYC to unlock full platform features.</p>
+            <p className="text-muted-foreground">
+              {activeStep === 'tier_select' 
+                ? 'Choose your verification level based on your trading needs.'
+                : `Complete your ${tierConfig?.name || ''} verification to unlock platform features.`}
+            </p>
           </div>
 
-          <div className="mb-8">
-            <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
-            <span>Progress</span>
-            <span>{progress}%</span>
+          {selectedTier && (
+            <div className="mb-8">
+              <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Expected processing: {tierConfig?.sla}
+                </span>
+                <span>{calculatedProgress}%</span>
+              </div>
+              <Progress value={calculatedProgress} className="h-2 bg-muted" />
             </div>
-            <Progress value={progress} className="h-2 bg-muted" />
-          </div>
+          )}
 
           <div className="grid md:grid-cols-12 gap-8">
             
             {/* Sidebar Steps */}
             <div className="md:col-span-4 space-y-4">
               <StepItem 
-                title={isBusiness ? "Company Info" : "Personal Info"}
-                description="Review details" 
-                icon={isBusiness ? <Building className="w-5 h-5" /> : <User className="w-5 h-5" />} 
-                isActive={activeStep === 'personal'} 
-                isCompleted={progress > 25}
+                title="Select Tier"
+                description="Choose verification level" 
+                icon={<ShieldCheck className="w-5 h-5" />} 
+                isActive={activeStep === 'tier_select'} 
+                isCompleted={activeStep !== 'tier_select' && !!selectedTier}
               />
-              {isBusiness && (
-                <StepItem 
-                  title="Corporate Docs" 
-                  description="Registration & Articles" 
-                  icon={<FileText className="w-5 h-5" />} 
-                  isActive={activeStep === 'company_docs'} 
-                  isCompleted={progress > 40}
-                />
+              {selectedTier && (
+                <>
+                  <StepItem 
+                    title={isCorporateTier ? "Company Info" : "Personal Info"}
+                    description="Review details" 
+                    icon={isCorporateTier ? <Building className="w-5 h-5" /> : <User className="w-5 h-5" />} 
+                    isActive={activeStep === 'personal'} 
+                    isCompleted={steps.indexOf(activeStep) > steps.indexOf('personal')}
+                  />
+                  {requiresCompanyDocs && (
+                    <StepItem 
+                      title="Corporate Docs" 
+                      description="Registration & Articles" 
+                      icon={<FileText className="w-5 h-5" />} 
+                      isActive={activeStep === 'company_docs'} 
+                      isCompleted={steps.indexOf(activeStep) > steps.indexOf('company_docs')}
+                    />
+                  )}
+                  <StepItem 
+                    title={isCorporateTier ? "Director ID" : "ID Verification"}
+                    description="Upload Passport/ID" 
+                    icon={<User className="w-5 h-5" />} 
+                    isActive={activeStep === 'document'} 
+                    isCompleted={steps.indexOf(activeStep) > steps.indexOf('document')}
+                  />
+                  {requiresSelfie && (
+                    <StepItem 
+                      title="Liveness Check" 
+                      description="Take a selfie" 
+                      icon={<Camera className="w-5 h-5" />} 
+                      isActive={activeStep === 'selfie'} 
+                      isCompleted={steps.indexOf(activeStep) > steps.indexOf('selfie')}
+                    />
+                  )}
+                  {requiresProofOfAddress && (
+                    <StepItem 
+                      title="Proof of Address" 
+                      description="Utility Bill / Bank Statement" 
+                      icon={<AlertCircle className="w-5 h-5" />} 
+                      isActive={activeStep === 'address'} 
+                      isCompleted={calculatedProgress === 100}
+                    />
+                  )}
+                </>
               )}
-              <StepItem 
-                title={isBusiness ? "Representative ID" : "ID Verification"}
-                description="Upload Passport/ID" 
-                icon={<User className="w-5 h-5" />} 
-                isActive={activeStep === 'document'} 
-                isCompleted={progress > (isBusiness ? 60 : 50)}
-              />
-              <StepItem 
-                title="Liveness Check" 
-                description="Take a selfie" 
-                icon={<Camera className="w-5 h-5" />} 
-                isActive={activeStep === 'selfie'} 
-                isCompleted={progress > (isBusiness ? 80 : 75)}
-              />
-              <StepItem 
-                title="Proof of Address" 
-                description="Utility Bill / Bank Statement" 
-                icon={<AlertCircle className="w-5 h-5" />} 
-                isActive={activeStep === 'address'} 
-                isCompleted={progress === 100}
-              />
             </div>
 
             {/* Main Content */}
             <div className="md:col-span-8">
               <Card className="border-border shadow-sm">
                 
+                {/* STEP 0: Tier Selection */}
+                {activeStep === 'tier_select' && (
+                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                    <CardHeader>
+                      <CardTitle>Choose Verification Level</CardTitle>
+                      <CardDescription>Select the tier that matches your trading needs. Higher tiers unlock greater limits.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {TIER_CONFIGS.map((tier) => (
+                        <div
+                          key={tier.id}
+                          data-testid={`tier-card-${tier.id}`}
+                          onClick={() => setSelectedTier(tier.id)}
+                          className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                            selectedTier === tier.id 
+                              ? 'border-primary bg-primary/5 shadow-md' 
+                              : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                          }`}
+                        >
+                          {tier.recommended && (
+                            <div className="absolute -top-2 right-4 px-2 py-0.5 bg-primary text-white text-xs font-bold rounded-full">
+                              Recommended
+                            </div>
+                          )}
+                          <div className="flex items-start gap-4">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                              selectedTier === tier.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {tier.icon}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-foreground">{tier.name}</h3>
+                                <span className="text-xs text-muted-foreground">• {tier.sla}</span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">{tier.description}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                  {tier.limits}
+                                </span>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {tier.requirements.map((req, idx) => (
+                                  <span key={idx} className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                    {req}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            {selectedTier === tier.id && (
+                              <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                    <CardFooter className="flex justify-end">
+                      <Button 
+                        onClick={() => {
+                          if (!selectedTier) {
+                            toast.error("Please select a verification tier");
+                            return;
+                          }
+                          setActiveStep('personal');
+                        }}
+                        disabled={!selectedTier}
+                        className="bg-primary text-white hover:bg-primary/90"
+                        data-testid="button-continue-tier"
+                      >
+                        Continue
+                      </Button>
+                    </CardFooter>
+                  </div>
+                )}
+
                 {/* STEP 1: Personal / Company Info */}
                 {activeStep === 'personal' && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
-                      <CardTitle>{isBusiness ? "Confirm Company Details" : "Confirm Personal Details"}</CardTitle>
-                      <CardDescription>Please ensure details match your {isBusiness ? "registration documents" : "government ID"}.</CardDescription>
+                      <CardTitle>{isCorporateTier ? "Confirm Company Details" : "Confirm Personal Details"}</CardTitle>
+                      <CardDescription>Please ensure details match your {isCorporateTier ? "registration documents" : "government ID"}.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {isBusiness ? (
+                      {isCorporateTier ? (
                         <>
                           <div className="space-y-2">
                             <Label>Company Name</Label>
@@ -446,7 +619,8 @@ export default function KYC() {
                                 value={registrationNumber} 
                                 onChange={(e) => setRegistrationNumber(e.target.value)}
                                 placeholder="CHE-123.456.789" 
-                                className="bg-background" 
+                                className="bg-background"
+                                data-testid="input-registration-number"
                               />
                             </div>
                             <div className="space-y-2">
@@ -455,7 +629,8 @@ export default function KYC() {
                                 value={jurisdiction}
                                 onChange={(e) => setJurisdiction(e.target.value)}
                                 placeholder="Switzerland" 
-                                className="bg-background" 
+                                className="bg-background"
+                                data-testid="input-jurisdiction"
                               />
                             </div>
                           </div>
@@ -486,7 +661,8 @@ export default function KYC() {
                                type="date" 
                                value={dateOfBirth}
                                onChange={(e) => setDateOfBirth(e.target.value)}
-                               className="bg-background" 
+                               className="bg-background"
+                               data-testid="input-dob"
                              />
                           </div>
                           <div className="space-y-2">
@@ -495,16 +671,24 @@ export default function KYC() {
                                value={nationality}
                                onChange={(e) => setNationality(e.target.value)}
                                placeholder="Enter your nationality" 
-                               className="bg-background" 
+                               className="bg-background"
+                               data-testid="input-nationality"
                              />
                           </div>
                         </>
                       )}
                     </CardContent>
-                    <CardFooter className="flex justify-end">
+                    <CardFooter className="flex justify-between">
+                      <Button variant="outline" onClick={() => setActiveStep('tier_select')} data-testid="button-back-tier">
+                        Back
+                      </Button>
                       <Button 
-                        onClick={() => handleNextStep(isBusiness ? 'company_docs' : 'document', isBusiness ? 40 : 50, validatePersonalStep)}
+                        onClick={() => {
+                          if (!validatePersonalStep()) return;
+                          setActiveStep(requiresCompanyDocs ? 'company_docs' : 'document');
+                        }}
                         className="bg-primary text-white hover:bg-primary/90"
+                        data-testid="button-continue-personal"
                       >
                         Confirm & Continue
                       </Button>
@@ -512,8 +696,8 @@ export default function KYC() {
                   </div>
                 )}
 
-                {/* STEP 1.5: Company Docs (Business Only) */}
-                {activeStep === 'company_docs' && isBusiness && (
+                {/* STEP 1.5: Company Docs (Corporate Tier Only) */}
+                {activeStep === 'company_docs' && requiresCompanyDocs && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
                       <CardTitle>Corporate Documents</CardTitle>
@@ -534,9 +718,9 @@ export default function KYC() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => handleNextStep('personal', 25)}>Back</Button>
+                      <Button variant="outline" onClick={() => setActiveStep('personal')}>Back</Button>
                       <Button 
-                        onClick={() => handleNextStep('document', 60)}
+                        onClick={() => setActiveStep('document')}
                         disabled={!uploadedFiles.company_doc}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
@@ -550,8 +734,8 @@ export default function KYC() {
                 {activeStep === 'document' && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
-                      <CardTitle>{isBusiness ? "Authorized Representative ID" : "Document Verification"}</CardTitle>
-                      <CardDescription>Upload a valid government-issued ID{isBusiness ? " for the account manager" : ""}.</CardDescription>
+                      <CardTitle>{isCorporateTier ? "Director ID Verification" : "Document Verification"}</CardTitle>
+                      <CardDescription>Upload a valid government-issued ID{isCorporateTier ? " for the authorized representative" : ""}.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <Tabs defaultValue="passport" className="w-full" onValueChange={setIdType}>
@@ -593,20 +777,28 @@ export default function KYC() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => handleNextStep(isBusiness ? 'company_docs' : 'personal', isBusiness ? 40 : 25)}>Back</Button>
+                      <Button variant="outline" onClick={() => setActiveStep(requiresCompanyDocs ? 'company_docs' : 'personal')}>Back</Button>
                       <Button 
-                        onClick={() => handleNextStep('selfie', isBusiness ? 80 : 75)}
+                        onClick={() => {
+                          if (requiresSelfie) {
+                            setActiveStep('selfie');
+                          } else if (requiresProofOfAddress) {
+                            setActiveStep('address');
+                          } else {
+                            handleComplete();
+                          }
+                        }}
                         disabled={!uploadedFiles.front || (idType !== 'passport' && !uploadedFiles.back)}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
-                        Continue
+                        {requiresSelfie || requiresProofOfAddress ? 'Continue' : 'Submit'}
                       </Button>
                     </CardFooter>
                   </div>
                 )}
 
-                {/* STEP 3: Selfie with Liveness Detection */}
-                {activeStep === 'selfie' && (
+                {/* STEP 3: Selfie with Liveness Detection (Enhanced/Corporate only) */}
+                {activeStep === 'selfie' && requiresSelfie && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
                       <CardTitle>Liveness Check</CardTitle>
@@ -724,23 +916,29 @@ export default function KYC() {
                        )}
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => { stopLivenessCamera(); handleNextStep('document', isBusiness ? 60 : 50); }}>Back</Button>
+                      <Button variant="outline" onClick={() => { stopLivenessCamera(); setActiveStep('document'); }}>Back</Button>
                       <Button 
-                        onClick={() => handleNextStep('address', isBusiness ? 90 : 90)}
+                        onClick={() => {
+                          if (requiresProofOfAddress) {
+                            setActiveStep('address');
+                          } else {
+                            handleComplete();
+                          }
+                        }}
                         disabled={!capturedSelfie}
                         className="bg-primary text-white hover:bg-primary/90"
                       >
-                        Continue
+                        {requiresProofOfAddress ? 'Continue' : 'Submit'}
                       </Button>
                     </CardFooter>
                   </div>
                 )}
 
-                {/* STEP 4: Address */}
-                {activeStep === 'address' && (
+                {/* STEP 4: Address (Enhanced/Corporate only) */}
+                {activeStep === 'address' && requiresProofOfAddress && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
-                      <CardTitle>{isBusiness ? "Proof of Business Address" : "Proof of Address"}</CardTitle>
+                      <CardTitle>{isCorporateTier ? "Proof of Business Address" : "Proof of Address"}</CardTitle>
                       <CardDescription>Upload a recent utility bill or bank statement (max 3 months old).</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -768,7 +966,7 @@ export default function KYC() {
                        </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => handleNextStep('selfie', isBusiness ? 80 : 75)}>Back</Button>
+                      <Button variant="outline" onClick={() => setActiveStep(requiresSelfie ? 'selfie' : 'document')}>Back</Button>
                       <Button 
                         onClick={handleComplete}
                         disabled={isSubmitting}
