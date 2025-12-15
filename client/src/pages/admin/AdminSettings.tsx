@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,14 +6,76 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, RefreshCw, DollarSign, Percent, Globe, Shield, Landmark, Plus, Download, FileText } from 'lucide-react';
+import { Save, RefreshCw, DollarSign, Percent, Globe, Shield, Landmark, Plus, Download, FileText, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePlatform } from '@/context/PlatformContext';
 import { useAuth } from '@/context/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
+
+interface ComplianceSettings {
+  id: string;
+  activeKycMode: 'kycAml' | 'finatrades';
+  finatradesPersonalConfig?: {
+    enableBankingVerification: boolean;
+    enableLivenessCapture: boolean;
+  };
+  finanatradesCorporateConfig?: {
+    enableLivenessCapture: boolean;
+    requiredDocuments: string[];
+  };
+}
 
 export default function AdminSettings() {
   const { settings, updateSettings, updateBankAccount, addBankAccount } = usePlatform();
   const { user } = useAuth();
+  const [complianceSettings, setComplianceSettings] = useState<ComplianceSettings | null>(null);
+  const [loadingCompliance, setLoadingCompliance] = useState(true);
+
+  useEffect(() => {
+    fetchComplianceSettings();
+  }, []);
+
+  const fetchComplianceSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/compliance-settings', {
+        credentials: 'include',
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setComplianceSettings(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch compliance settings:', error);
+    } finally {
+      setLoadingCompliance(false);
+    }
+  };
+
+  const handleKycModeChange = async (mode: 'kycAml' | 'finatrades') => {
+    try {
+      const response = await fetch('/api/admin/compliance-settings', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-User-Id': user?.id || '' 
+        },
+        body: JSON.stringify({ activeKycMode: mode })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setComplianceSettings(data);
+        toast.success('KYC Mode Updated', {
+          description: `Switched to ${mode === 'kycAml' ? 'KYC/AML Compliance' : 'Finatrades KYC'} mode.`
+        });
+      } else {
+        toast.error('Failed to update KYC mode');
+      }
+    } catch (error) {
+      toast.error('Failed to update KYC mode');
+    }
+  };
 
   const handleSave = () => {
     toast.success("Settings Saved", {
@@ -146,16 +208,85 @@ export default function AdminSettings() {
             </TabsContent>
 
             <TabsContent value="limits">
-               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-blue-600" /> Compliance Limits
-                  </CardTitle>
-                  <CardDescription>Set transaction limits based on KYC levels.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="font-medium text-sm text-gray-900">Unverified Users (Level 0)</h3>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserCheck className="w-5 h-5 text-orange-600" /> KYC Verification Mode
+                    </CardTitle>
+                    <CardDescription>Choose which KYC verification system to use for user onboarding.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {loadingCompliance ? (
+                      <div className="text-sm text-gray-500">Loading...</div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div 
+                          data-testid="kyc-mode-kycaml"
+                          onClick={() => handleKycModeChange('kycAml')}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            complianceSettings?.activeKycMode === 'kycAml' 
+                              ? 'border-orange-500 bg-orange-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              complianceSettings?.activeKycMode === 'kycAml' 
+                                ? 'border-orange-500' 
+                                : 'border-gray-300'
+                            }`}>
+                              {complianceSettings?.activeKycMode === 'kycAml' && (
+                                <div className="w-2 h-2 rounded-full bg-orange-500" />
+                              )}
+                            </div>
+                            <span className="font-medium">KYC/AML Compliance</span>
+                          </div>
+                          <p className="text-sm text-gray-500 ml-7">
+                            Full regulatory compliance with document verification, sanctions screening, and risk assessment. Suitable for regulated financial services.
+                          </p>
+                        </div>
+                        
+                        <div 
+                          data-testid="kyc-mode-finatrades"
+                          onClick={() => handleKycModeChange('finatrades')}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            complianceSettings?.activeKycMode === 'finatrades' 
+                              ? 'border-orange-500 bg-orange-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              complianceSettings?.activeKycMode === 'finatrades' 
+                                ? 'border-orange-500' 
+                                : 'border-gray-300'
+                            }`}>
+                              {complianceSettings?.activeKycMode === 'finatrades' && (
+                                <div className="w-2 h-2 rounded-full bg-orange-500" />
+                              )}
+                            </div>
+                            <span className="font-medium">Finatrades KYC</span>
+                          </div>
+                          <p className="text-sm text-gray-500 ml-7">
+                            Simplified verification: Banking verification + liveness capture for personal accounts, standard questionnaire for corporate accounts.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-blue-600" /> Compliance Limits
+                    </CardTitle>
+                    <CardDescription>Set transaction limits based on KYC levels.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="font-medium text-sm text-gray-900">Unverified Users (Level 0)</h3>
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-2">
                           <Label>Daily Limit</Label>
@@ -205,6 +336,7 @@ export default function AdminSettings() {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="bank">

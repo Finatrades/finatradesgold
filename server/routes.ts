@@ -7250,6 +7250,140 @@ export async function registerRoutes(
     }
   });
 
+  // Submit Finatrades Personal KYC (banking + liveness)
+  app.post("/api/finatrades-kyc/personal", async (req, res) => {
+    try {
+      const { userId, bankingProvider, livenessCapture } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "userId is required" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if already has a submission
+      const existing = await storage.getFinatradesPersonalKyc(userId);
+      
+      if (existing) {
+        // Update existing submission
+        const updated = await storage.updateFinatradesPersonalKyc(userId, {
+          bankingProvider,
+          bankingVerified: !!bankingProvider,
+          bankingVerifiedAt: bankingProvider ? new Date() : null,
+          livenessCapture,
+          livenessVerified: !!livenessCapture,
+          livenessVerifiedAt: livenessCapture ? new Date() : null,
+          status: 'In Progress',
+        });
+        
+        // Update user's KYC status
+        await storage.updateUser(userId, { kycStatus: 'In Progress' });
+        
+        res.json({ success: true, submission: updated });
+      } else {
+        // Create new submission
+        const submission = await storage.createFinatradesPersonalKyc({
+          userId,
+          bankingProvider,
+          bankingVerified: !!bankingProvider,
+          bankingVerifiedAt: bankingProvider ? new Date() : null,
+          livenessCapture,
+          livenessVerified: !!livenessCapture,
+          livenessVerifiedAt: livenessCapture ? new Date() : null,
+          status: 'In Progress',
+        });
+        
+        // Update user's KYC status
+        await storage.updateUser(userId, { kycStatus: 'In Progress' });
+        
+        res.json({ success: true, submission });
+      }
+    } catch (error) {
+      console.error("Failed to submit Finatrades personal KYC:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
+    }
+  });
+
+  // Get Finatrades Personal KYC status
+  app.get("/api/finatrades-kyc/personal/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const submission = await storage.getFinatradesPersonalKyc(userId);
+      res.json({ submission });
+    } catch (error) {
+      console.error("Failed to get Finatrades personal KYC:", error);
+      res.status(400).json({ message: "Failed to get KYC status" });
+    }
+  });
+
+  // Submit Finatrades Corporate KYC (questionnaire)
+  app.post("/api/finatrades-kyc/corporate", async (req, res) => {
+    try {
+      const { userId, questionnaire, representativeLiveness } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "userId is required" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if already has a submission
+      const existing = await storage.getFinatradesCorporateKyc(userId);
+      
+      if (existing) {
+        // Update existing submission
+        const updated = await storage.updateFinatradesCorporateKyc(userId, {
+          questionnaire,
+          representativeLiveness,
+          livenessVerified: !!representativeLiveness,
+          livenessVerifiedAt: representativeLiveness ? new Date() : null,
+          status: 'In Progress',
+        });
+        
+        // Update user's KYC status
+        await storage.updateUser(userId, { kycStatus: 'In Progress' });
+        
+        res.json({ success: true, submission: updated });
+      } else {
+        // Create new submission
+        const submission = await storage.createFinatradesCorporateKyc({
+          userId,
+          questionnaire,
+          representativeLiveness,
+          livenessVerified: !!representativeLiveness,
+          livenessVerifiedAt: representativeLiveness ? new Date() : null,
+          status: 'In Progress',
+        });
+        
+        // Update user's KYC status
+        await storage.updateUser(userId, { kycStatus: 'In Progress' });
+        
+        res.json({ success: true, submission });
+      }
+    } catch (error) {
+      console.error("Failed to submit Finatrades corporate KYC:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
+    }
+  });
+
+  // Get Finatrades Corporate KYC status
+  app.get("/api/finatrades-kyc/corporate/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const submission = await storage.getFinatradesCorporateKyc(userId);
+      res.json({ submission });
+    } catch (error) {
+      console.error("Failed to get Finatrades corporate KYC:", error);
+      res.status(400).json({ message: "Failed to get KYC status" });
+    }
+  });
+
   // Request OTP for an action
   app.post("/api/otp/request", async (req, res) => {
     try {

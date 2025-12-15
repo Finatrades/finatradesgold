@@ -7,11 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, BadgeCheck, Crown, Briefcase } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, BadgeCheck, Crown, Briefcase, Plus, Trash2, Landmark, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 
 type KycTier = 'tier_1_basic' | 'tier_2_enhanced' | 'tier_3_corporate';
+type KycModeType = 'kycAml' | 'finatrades';
 
 interface TierConfig {
   id: KycTier;
@@ -22,6 +27,13 @@ interface TierConfig {
   requirements: string[];
   icon: React.ReactNode;
   recommended?: boolean;
+}
+
+interface BeneficialOwner {
+  name: string;
+  passportNumber: string;
+  emailId: string;
+  shareholdingPercentage: number;
 }
 
 const TIER_CONFIGS: TierConfig[] = [
@@ -55,16 +67,37 @@ const TIER_CONFIGS: TierConfig[] = [
   },
 ];
 
+const BANKING_PROVIDERS = [
+  { id: 'plaid', name: 'Plaid', description: 'Connect via Plaid network' },
+  { id: 'finicity', name: 'Finicity', description: 'Mastercard Open Banking' },
+  { id: 'yodlee', name: 'Yodlee', description: 'Envestnet Data Solutions' },
+  { id: 'manual', name: 'Manual Verification', description: 'Verify with bank statement' },
+];
+
 export default function KYC() {
   const { user, refreshUser } = useAuth();
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
+  
+  // Fetch KYC mode from server
+  const { data: kycModeData, isLoading: modeLoading } = useQuery({
+    queryKey: ['/api/kyc-mode'],
+    queryFn: async () => {
+      const res = await fetch('/api/kyc-mode');
+      if (!res.ok) throw new Error('Failed to fetch KYC mode');
+      return res.json();
+    }
+  });
+  
+  const kycMode: KycModeType = kycModeData?.mode || 'kycAml';
+  
+  // === KYCAML MODE STATE (Existing Tiered KYC) ===
   const [activeStep, setActiveStep] = useState('tier_select');
   const [selectedTier, setSelectedTier] = useState<KycTier | null>(null);
   const [progress, setProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form States
+  // Form States for tiered KYC
   const [idType, setIdType] = useState('passport');
   const [uploadedFiles, setUploadedFiles] = useState<{front?: File, back?: File, selfie?: File, utility?: File, company_doc?: File, beneficial_owner?: File}>({});
   
@@ -75,7 +108,56 @@ export default function KYC() {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [jurisdiction, setJurisdiction] = useState('');
   
-  // Liveness camera state
+  // === FINATRADES MODE STATE ===
+  const [finatradesStep, setFinatradesStep] = useState<'banking' | 'liveness' | 'complete'>('banking');
+  const [selectedBankingProvider, setSelectedBankingProvider] = useState('');
+  const [bankingVerified, setBankingVerified] = useState(false);
+  const [accountHolderName, setAccountHolderName] = useState('');
+  
+  // Corporate questionnaire state
+  const [corporateStep, setCorporateStep] = useState(1);
+  const [companyName, setCompanyName] = useState('');
+  const [corporateRegNumber, setCorporateRegNumber] = useState('');
+  const [incorporationDate, setIncorporationDate] = useState('');
+  const [countryOfIncorporation, setCountryOfIncorporation] = useState('');
+  const [companyType, setCompanyType] = useState<'public' | 'private'>('private');
+  const [natureOfBusiness, setNatureOfBusiness] = useState('');
+  const [numberOfEmployees, setNumberOfEmployees] = useState('');
+  const [headOfficeAddress, setHeadOfficeAddress] = useState('');
+  const [telephoneNumber, setTelephoneNumber] = useState('');
+  const [website, setWebsite] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [tradingContactName, setTradingContactName] = useState('');
+  const [tradingContactEmail, setTradingContactEmail] = useState('');
+  const [tradingContactPhone, setTradingContactPhone] = useState('');
+  const [financeContactName, setFinanceContactName] = useState('');
+  const [financeContactEmail, setFinanceContactEmail] = useState('');
+  const [financeContactPhone, setFinanceContactPhone] = useState('');
+  
+  // Beneficial owners
+  const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>([
+    { name: '', passportNumber: '', emailId: '', shareholdingPercentage: 0 }
+  ]);
+  const [shareholderCompanyUbos, setShareholderCompanyUbos] = useState('');
+  const [hasPepOwners, setHasPepOwners] = useState(false);
+  const [pepDetails, setPepDetails] = useState('');
+  
+  // Corporate documents
+  const [corpDocs, setCorpDocs] = useState<{
+    certificateOfIncorporation?: File;
+    tradeLicense?: File;
+    memorandumArticles?: File;
+    shareholderList?: File;
+    uboPassports?: File;
+    boardResolution?: File;
+    authorizedSignatoryList?: File;
+    bankAccountDetails?: File;
+    financialStatements?: File;
+    taxCertificate?: File;
+    pepSelfDeclaration?: File;
+  }>({});
+  
+  // Liveness camera state (shared between modes)
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previousFrameRef = useRef<ImageData | null>(null);
@@ -255,6 +337,13 @@ export default function KYC() {
       toast.success(`${type.replace('_', ' ').charAt(0).toUpperCase() + type.replace('_', ' ').slice(1)} uploaded successfully`);
     }
   };
+  
+  const handleCorpDocUpload = (e: React.ChangeEvent<HTMLInputElement>, type: keyof typeof corpDocs) => {
+    if (e.target.files && e.target.files[0]) {
+      setCorpDocs(prev => ({...prev, [type]: e.target.files![0]}));
+      toast.success('Document uploaded successfully');
+    }
+  };
 
   const getTierConfig = () => TIER_CONFIGS.find(t => t.id === selectedTier);
 
@@ -315,10 +404,10 @@ export default function KYC() {
     setProgress(progressValue);
   };
 
+  // === KYCAML MODE SUBMISSION ===
   const handleComplete = async () => {
     if (!user || !selectedTier) return;
     
-    // Validate final step before submitting
     if (requiresProofOfAddress && !validateAddressStep()) {
       return;
     }
@@ -326,7 +415,6 @@ export default function KYC() {
     setIsSubmitting(true);
     
     try {
-      // Convert uploaded files to base64 for documents field
       const documents: {
         idProof?: { url: string; type: string };
         selfie?: { url: string; type: string };
@@ -335,31 +423,26 @@ export default function KYC() {
         beneficialOwner?: { url: string; type: string };
       } = {};
       
-      // ID Document (front side or combined)
       if (uploadedFiles.front) {
         const base64 = await fileToBase64(uploadedFiles.front);
         documents.idProof = { url: base64, type: idType };
       }
       
-      // Selfie/Liveness photo
       if (uploadedFiles.selfie) {
         const base64 = await fileToBase64(uploadedFiles.selfie);
         documents.selfie = { url: base64, type: 'selfie' };
       }
       
-      // Proof of address (utility bill)
       if (uploadedFiles.utility) {
         const base64 = await fileToBase64(uploadedFiles.utility);
         documents.proofOfAddress = { url: base64, type: 'utility_bill' };
       }
       
-      // Business registration document
       if (uploadedFiles.company_doc) {
         const base64 = await fileToBase64(uploadedFiles.company_doc);
         documents.businessRegistration = { url: base64, type: 'company_registration' };
       }
       
-      // Beneficial owner document
       if (uploadedFiles.beneficial_owner) {
         const base64 = await fileToBase64(uploadedFiles.beneficial_owner);
         documents.beneficialOwner = { url: base64, type: 'beneficial_owner' };
@@ -391,7 +474,6 @@ export default function KYC() {
       
       await refreshUser();
       
-      // Add notification to bell
       addNotification({
         title: 'KYC Verification Submitted',
         message: `Your ${tierConfig?.name} verification is under review. Expected processing: ${tierConfig?.sla}.`,
@@ -412,15 +494,200 @@ export default function KYC() {
     }
   };
 
+  // === FINATRADES PERSONAL KYC SUBMISSION ===
+  const handleFinatradesPersonalSubmit = async () => {
+    if (!user) return;
+    
+    if (!bankingVerified) {
+      toast.error("Please complete banking verification first");
+      return;
+    }
+    
+    if (!capturedSelfie) {
+      toast.error("Please complete liveness verification");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/finatrades-kyc/personal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          bankingProvider: selectedBankingProvider,
+          bankingVerified: true,
+          bankingVerificationData: {
+            accountHolder: accountHolderName,
+            accountVerified: true,
+            provider: selectedBankingProvider
+          },
+          livenessVerified: true,
+          livenessCapture: capturedSelfie,
+          status: 'In Progress'
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit KYC');
+      }
+      
+      await refreshUser();
+      
+      addNotification({
+        title: 'KYC Verification Submitted',
+        message: 'Your identity verification is under review. Expected processing: 24 hours.',
+        type: 'success'
+      });
+      
+      toast.success("KYC Verification Submitted", {
+        description: "Your verification is under review. Expected processing: 24 hours."
+      });
+      
+      setLocation('/dashboard');
+    } catch (error) {
+      toast.error("Submission Failed", {
+        description: "Please try again later."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // === FINATRADES CORPORATE KYC SUBMISSION ===
+  const handleFinatradesCorporateSubmit = async () => {
+    if (!user) return;
+    
+    if (!capturedSelfie) {
+      toast.error("Please complete representative liveness verification");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const docsPayload: Record<string, { url: string; uploaded: boolean }> = {};
+      
+      for (const [key, file] of Object.entries(corpDocs)) {
+        if (file) {
+          const base64 = await fileToBase64(file);
+          docsPayload[key] = { url: base64, uploaded: true };
+        }
+      }
+      
+      const response = await fetch('/api/finatrades-kyc/corporate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          companyName,
+          registrationNumber: corporateRegNumber,
+          incorporationDate,
+          countryOfIncorporation,
+          companyType,
+          natureOfBusiness,
+          numberOfEmployees,
+          headOfficeAddress,
+          telephoneNumber,
+          website,
+          emailAddress,
+          tradingContactName,
+          tradingContactEmail,
+          tradingContactPhone,
+          financeContactName,
+          financeContactEmail,
+          financeContactPhone,
+          beneficialOwners: beneficialOwners.filter(o => o.name.trim()),
+          shareholderCompanyUbos,
+          hasPepOwners,
+          pepDetails: hasPepOwners ? pepDetails : null,
+          documents: docsPayload,
+          representativeLiveness: capturedSelfie,
+          status: 'In Progress'
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit KYC');
+      }
+      
+      await refreshUser();
+      
+      addNotification({
+        title: 'Corporate KYC Submitted',
+        message: 'Your corporate verification is under review. Expected processing: 5 business days.',
+        type: 'success'
+      });
+      
+      toast.success("Corporate KYC Submitted", {
+        description: "Your verification is under review. Expected processing: 5 business days."
+      });
+      
+      setLocation('/dashboard');
+    } catch (error) {
+      toast.error("Submission Failed", {
+        description: "Please try again later."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Simulate banking verification
+  const handleBankingVerification = () => {
+    if (!selectedBankingProvider) {
+      toast.error("Please select a banking provider");
+      return;
+    }
+    if (!accountHolderName.trim()) {
+      toast.error("Please enter account holder name");
+      return;
+    }
+    
+    toast.success("Banking verification initiated");
+    setTimeout(() => {
+      setBankingVerified(true);
+      toast.success("Bank account verified successfully!");
+    }, 1500);
+  };
+
+  const addBeneficialOwner = () => {
+    setBeneficialOwners([...beneficialOwners, { name: '', passportNumber: '', emailId: '', shareholdingPercentage: 0 }]);
+  };
+
+  const removeBeneficialOwner = (index: number) => {
+    if (beneficialOwners.length > 1) {
+      setBeneficialOwners(beneficialOwners.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateBeneficialOwner = (index: number, field: keyof BeneficialOwner, value: string | number) => {
+    const updated = [...beneficialOwners];
+    updated[index] = { ...updated[index], [field]: value };
+    setBeneficialOwners(updated);
+  };
+
   if (!user) {
     setLocation('/login');
     return null;
+  }
+  
+  if (modeLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading verification...</p>
+        </div>
+      </div>
+    );
   }
 
   const isBusiness = user.accountType === 'business';
   const tierConfig = getTierConfig();
 
-  // Calculate total steps and current step for progress
+  // Calculate total steps and current step for progress (KYCAML mode)
   const getSteps = () => {
     const steps = ['tier_select', 'personal'];
     if (requiresCompanyDocs) steps.push('company_docs');
@@ -434,6 +701,888 @@ export default function KYC() {
   const currentStepIndex = steps.indexOf(activeStep);
   const calculatedProgress = selectedTier ? Math.round(((currentStepIndex + 1) / steps.length) * 100) : 0;
 
+  // === FINATRADES MODE: PERSONAL ACCOUNT KYC ===
+  if (kycMode === 'finatrades' && !isBusiness) {
+    const finatradesProgress = finatradesStep === 'banking' ? 33 : finatradesStep === 'liveness' ? 66 : 100;
+    
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen py-12 bg-background">
+          <div className="container mx-auto px-6 max-w-4xl">
+            
+            <div className="text-center mb-10">
+              <h1 className="text-3xl font-bold text-foreground mb-2">Identity Verification</h1>
+              <p className="text-muted-foreground">
+                Complete your identity verification through banking and liveness check.
+              </p>
+            </div>
+
+            <div className="mb-8">
+              <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Expected processing: 24 hours
+                </span>
+                <span>{finatradesProgress}%</span>
+              </div>
+              <Progress value={finatradesProgress} className="h-2 bg-muted" />
+            </div>
+
+            <div className="grid md:grid-cols-12 gap-8">
+              
+              {/* Sidebar Steps */}
+              <div className="md:col-span-4 space-y-4">
+                <StepItem 
+                  title="Bank Verification"
+                  description="Connect your bank account" 
+                  icon={<Landmark className="w-5 h-5" />} 
+                  isActive={finatradesStep === 'banking'} 
+                  isCompleted={bankingVerified}
+                />
+                <StepItem 
+                  title="Liveness Check"
+                  description="Verify your identity" 
+                  icon={<Camera className="w-5 h-5" />} 
+                  isActive={finatradesStep === 'liveness'} 
+                  isCompleted={!!capturedSelfie}
+                />
+                <StepItem 
+                  title="Complete"
+                  description="Submit for review" 
+                  icon={<CheckCircle2 className="w-5 h-5" />} 
+                  isActive={finatradesStep === 'complete'} 
+                  isCompleted={false}
+                />
+              </div>
+
+              {/* Main Content */}
+              <div className="md:col-span-8">
+                <Card className="border-border shadow-sm">
+                  
+                  {/* STEP 1: Banking Verification */}
+                  {finatradesStep === 'banking' && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Landmark className="w-5 h-5" />
+                          Bank Account Verification
+                        </CardTitle>
+                        <CardDescription>Connect your bank account to verify your identity. This is a secure one-time verification.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {!bankingVerified ? (
+                          <>
+                            <div className="space-y-4">
+                              <Label>Select Banking Provider</Label>
+                              <div className="grid grid-cols-2 gap-3">
+                                {BANKING_PROVIDERS.map((provider) => (
+                                  <div
+                                    key={provider.id}
+                                    onClick={() => setSelectedBankingProvider(provider.id)}
+                                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                      selectedBankingProvider === provider.id
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border hover:border-primary/50'
+                                    }`}
+                                    data-testid={`provider-${provider.id}`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <CreditCard className="w-4 h-4" />
+                                      <span className="font-medium">{provider.name}</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">{provider.description}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label>Account Holder Name <span className="text-red-500">*</span></Label>
+                              <Input
+                                value={accountHolderName}
+                                onChange={(e) => setAccountHolderName(e.target.value)}
+                                placeholder="Enter your full name as it appears on your bank account"
+                                data-testid="input-account-holder"
+                              />
+                            </div>
+                            
+                            <Button 
+                              onClick={handleBankingVerification}
+                              className="w-full bg-primary text-white"
+                              data-testid="button-verify-banking"
+                            >
+                              Verify Bank Account
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                              <CheckCircle2 className="w-8 h-8 text-green-600" />
+                            </div>
+                            <h3 className="font-bold text-lg text-foreground mb-2">Bank Account Verified</h3>
+                            <p className="text-muted-foreground mb-4">
+                              Account holder: {accountHolderName}<br />
+                              Provider: {BANKING_PROVIDERS.find(p => p.id === selectedBankingProvider)?.name}
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
+                      <CardFooter className="flex justify-end">
+                        <Button 
+                          onClick={() => setFinatradesStep('liveness')}
+                          disabled={!bankingVerified}
+                          className="bg-primary text-white hover:bg-primary/90"
+                          data-testid="button-continue-liveness"
+                        >
+                          Continue
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {/* STEP 2: Liveness Check */}
+                  {finatradesStep === 'liveness' && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle>Liveness Check</CardTitle>
+                        <CardDescription>We need to verify you're a real person. Follow the instructions below.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex flex-col items-center py-6">
+                         <canvas ref={canvasRef} className="hidden" />
+                         
+                         {capturedSelfie && (
+                           <div className="text-center">
+                             <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
+                               <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
+                             </div>
+                             <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+                               <CheckCircle2 className="w-5 h-5" />
+                               <span className="font-medium">Liveness Verified!</span>
+                             </div>
+                             <Button 
+                               type="button"
+                               onClick={retakeLiveness}
+                               variant="outline"
+                               className="gap-2"
+                               data-testid="button-retake-liveness"
+                             >
+                               <RefreshCw className="w-4 h-4" />
+                               Retake Photo
+                             </Button>
+                           </div>
+                         )}
+
+                         {!cameraStream && !capturedSelfie && (
+                           <div className="text-center">
+                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6">
+                               <Camera className="w-16 h-16 text-muted-foreground" />
+                             </div>
+                             <Button 
+                               type="button"
+                               onClick={startLivenessCamera}
+                               variant="secondary"
+                               className="gap-2 mb-4"
+                               data-testid="button-start-liveness"
+                             >
+                               <Camera className="w-5 h-5" />
+                               Start Liveness Check
+                             </Button>
+                             <p className="text-xs text-muted-foreground max-w-xs">
+                               Please ensure your face is well-lit and centered. No glasses or hats.
+                             </p>
+                           </div>
+                         )}
+
+                         {cameraError && (
+                           <div className="text-center text-red-500 py-4">
+                             <p>{cameraError}</p>
+                             <Button type="button" onClick={startLivenessCamera} variant="outline" className="mt-2">
+                               Try Again
+                             </Button>
+                           </div>
+                         )}
+
+                         {cameraStream && !capturedSelfie && (
+                           <div className="relative w-full max-w-xs">
+                             <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-primary">
+                               <video
+                                 ref={videoRef}
+                                 autoPlay
+                                 playsInline
+                                 muted
+                                 className="w-full h-full object-cover"
+                                 style={{ transform: 'scaleX(-1)' }}
+                               />
+                               {!isCameraReady && (
+                                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                                   <p className="text-white text-sm">Loading camera...</p>
+                                 </div>
+                               )}
+                             </div>
+                             
+                             {isCameraReady && (
+                               <div className="mt-4 w-full">
+                                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                   <span>Movement Detection</span>
+                                   <span>{Math.round(movementProgress)}%</span>
+                                 </div>
+                                 <Progress value={movementProgress} className="h-2" />
+                               </div>
+                             )}
+                             
+                             <div className="mt-4 text-center">
+                               <p className="text-sm font-medium text-primary animate-pulse">
+                                 {instruction}
+                               </p>
+                               <p className="text-xs text-muted-foreground mt-2">
+                                 Slowly turn your head left and right to verify liveness
+                               </p>
+                             </div>
+                             
+                             <div className="mt-4 flex justify-center">
+                               <Button 
+                                 type="button"
+                                 onClick={stopLivenessCamera}
+                                 variant="outline"
+                                 size="sm"
+                               >
+                                 Cancel
+                               </Button>
+                             </div>
+                           </div>
+                         )}
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('banking'); }}>Back</Button>
+                        <Button 
+                          onClick={handleFinatradesPersonalSubmit}
+                          disabled={!capturedSelfie || isSubmitting}
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold"
+                          data-testid="button-submit-kyc"
+                        >
+                          {isSubmitting ? 'Submitting...' : 'Submit Verification'}
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                </Card>
+
+                <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+                  <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Bank-Grade Security</h4>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                      Your data is encrypted using AES-256 and stored in compliant data centers. We never share your personal information without consent.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // === FINATRADES MODE: CORPORATE ACCOUNT KYC ===
+  if (kycMode === 'finatrades' && isBusiness) {
+    const corpProgress = Math.round((corporateStep / 5) * 100);
+    
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen py-12 bg-background">
+          <div className="container mx-auto px-6 max-w-5xl">
+            
+            <div className="text-center mb-10">
+              <h1 className="text-3xl font-bold text-foreground mb-2">Corporate KYC Verification</h1>
+              <p className="text-muted-foreground">
+                Complete your corporate verification questionnaire.
+              </p>
+            </div>
+
+            <div className="mb-8">
+              <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Expected processing: 5 business days
+                </span>
+                <span>Step {corporateStep} of 5</span>
+              </div>
+              <Progress value={corpProgress} className="h-2 bg-muted" />
+            </div>
+
+            <div className="grid md:grid-cols-12 gap-8">
+              
+              {/* Sidebar Steps */}
+              <div className="md:col-span-3 space-y-3">
+                <StepItem 
+                  title="Corporate Details"
+                  description="Company information" 
+                  icon={<Building className="w-5 h-5" />} 
+                  isActive={corporateStep === 1} 
+                  isCompleted={corporateStep > 1}
+                />
+                <StepItem 
+                  title="Beneficial Owners"
+                  description="Ownership structure" 
+                  icon={<User className="w-5 h-5" />} 
+                  isActive={corporateStep === 2} 
+                  isCompleted={corporateStep > 2}
+                />
+                <StepItem 
+                  title="Documents"
+                  description="Corporate documents" 
+                  icon={<FileText className="w-5 h-5" />} 
+                  isActive={corporateStep === 3} 
+                  isCompleted={corporateStep > 3}
+                />
+                <StepItem 
+                  title="Representative"
+                  description="Liveness verification" 
+                  icon={<Camera className="w-5 h-5" />} 
+                  isActive={corporateStep === 4} 
+                  isCompleted={corporateStep > 4}
+                />
+                <StepItem 
+                  title="Review & Submit"
+                  description="Final submission" 
+                  icon={<CheckCircle2 className="w-5 h-5" />} 
+                  isActive={corporateStep === 5} 
+                  isCompleted={false}
+                />
+              </div>
+
+              {/* Main Content */}
+              <div className="md:col-span-9">
+                <Card className="border-border shadow-sm">
+                  
+                  {/* STEP 1: Corporate Details */}
+                  {corporateStep === 1 && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle>Corporate Details</CardTitle>
+                        <CardDescription>Enter your company's registration and contact information.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Company Name <span className="text-red-500">*</span></Label>
+                            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company legal name" data-testid="input-company-name" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Registration Number <span className="text-red-500">*</span></Label>
+                            <Input value={corporateRegNumber} onChange={(e) => setCorporateRegNumber(e.target.value)} placeholder="Company registration number" data-testid="input-reg-number" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Date of Incorporation</Label>
+                            <Input type="date" value={incorporationDate} onChange={(e) => setIncorporationDate(e.target.value)} data-testid="input-incorporation-date" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Country of Incorporation</Label>
+                            <Input value={countryOfIncorporation} onChange={(e) => setCountryOfIncorporation(e.target.value)} placeholder="Country" data-testid="input-country" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Company Type</Label>
+                            <Select value={companyType} onValueChange={(v: 'public' | 'private') => setCompanyType(v)}>
+                              <SelectTrigger data-testid="select-company-type">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="private">Private Company</SelectItem>
+                                <SelectItem value="public">Public Company</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Number of Employees</Label>
+                            <Select value={numberOfEmployees} onValueChange={setNumberOfEmployees}>
+                              <SelectTrigger data-testid="select-employees">
+                                <SelectValue placeholder="Select range" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1-10">1-10</SelectItem>
+                                <SelectItem value="11-50">11-50</SelectItem>
+                                <SelectItem value="51-200">51-200</SelectItem>
+                                <SelectItem value="201-500">201-500</SelectItem>
+                                <SelectItem value="500+">500+</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label>Nature of Business</Label>
+                          <Textarea value={natureOfBusiness} onChange={(e) => setNatureOfBusiness(e.target.value)} placeholder="Describe your company's primary business activities" data-testid="input-nature-business" />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label>Head Office Address</Label>
+                          <Textarea value={headOfficeAddress} onChange={(e) => setHeadOfficeAddress(e.target.value)} placeholder="Full address including city, state, postal code" data-testid="input-head-office" />
+                        </div>
+                        
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Telephone</Label>
+                            <Input value={telephoneNumber} onChange={(e) => setTelephoneNumber(e.target.value)} placeholder="+1 234 567 8900" data-testid="input-telephone" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Website</Label>
+                            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.example.com" data-testid="input-website" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email Address</Label>
+                            <Input value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder="info@company.com" data-testid="input-email" />
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-4">Contact Persons</h4>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                              <h5 className="text-sm font-medium text-muted-foreground">Trading Contact</h5>
+                              <Input value={tradingContactName} onChange={(e) => setTradingContactName(e.target.value)} placeholder="Full Name" data-testid="input-trading-name" />
+                              <Input value={tradingContactEmail} onChange={(e) => setTradingContactEmail(e.target.value)} placeholder="Email" data-testid="input-trading-email" />
+                              <Input value={tradingContactPhone} onChange={(e) => setTradingContactPhone(e.target.value)} placeholder="Phone" data-testid="input-trading-phone" />
+                            </div>
+                            <div className="space-y-3">
+                              <h5 className="text-sm font-medium text-muted-foreground">Finance Contact</h5>
+                              <Input value={financeContactName} onChange={(e) => setFinanceContactName(e.target.value)} placeholder="Full Name" data-testid="input-finance-name" />
+                              <Input value={financeContactEmail} onChange={(e) => setFinanceContactEmail(e.target.value)} placeholder="Email" data-testid="input-finance-email" />
+                              <Input value={financeContactPhone} onChange={(e) => setFinanceContactPhone(e.target.value)} placeholder="Phone" data-testid="input-finance-phone" />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-end">
+                        <Button 
+                          onClick={() => {
+                            if (!companyName.trim() || !corporateRegNumber.trim()) {
+                              toast.error("Company name and registration number are required");
+                              return;
+                            }
+                            setCorporateStep(2);
+                          }}
+                          className="bg-primary text-white hover:bg-primary/90"
+                          data-testid="button-continue-step-2"
+                        >
+                          Continue
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {/* STEP 2: Beneficial Owners */}
+                  {corporateStep === 2 && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle>Beneficial Owners & Shareholding</CardTitle>
+                        <CardDescription>List all persons with more than 25% ownership or control. Include passport details.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {beneficialOwners.map((owner, index) => (
+                          <div key={index} className="p-4 border rounded-lg space-y-4">
+                            <div className="flex justify-between items-center">
+                              <h4 className="font-medium">Beneficial Owner {index + 1}</h4>
+                              {beneficialOwners.length > 1 && (
+                                <Button variant="ghost" size="sm" onClick={() => removeBeneficialOwner(index)}>
+                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Full Name</Label>
+                                <Input 
+                                  value={owner.name} 
+                                  onChange={(e) => updateBeneficialOwner(index, 'name', e.target.value)}
+                                  placeholder="Full legal name"
+                                  data-testid={`input-ubo-name-${index}`}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Passport Number</Label>
+                                <Input 
+                                  value={owner.passportNumber}
+                                  onChange={(e) => updateBeneficialOwner(index, 'passportNumber', e.target.value)}
+                                  placeholder="Passport number"
+                                  data-testid={`input-ubo-passport-${index}`}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Email</Label>
+                                <Input 
+                                  value={owner.emailId}
+                                  onChange={(e) => updateBeneficialOwner(index, 'emailId', e.target.value)}
+                                  placeholder="Email address"
+                                  data-testid={`input-ubo-email-${index}`}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Shareholding %</Label>
+                                <Input 
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={owner.shareholdingPercentage || ''}
+                                  onChange={(e) => updateBeneficialOwner(index, 'shareholdingPercentage', parseFloat(e.target.value) || 0)}
+                                  placeholder="Percentage"
+                                  data-testid={`input-ubo-percentage-${index}`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        <Button variant="outline" onClick={addBeneficialOwner} className="w-full" data-testid="button-add-ubo">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Another Beneficial Owner
+                        </Button>
+                        
+                        <div className="space-y-2">
+                          <Label>Shareholder Company UBOs</Label>
+                          <Textarea 
+                            value={shareholderCompanyUbos}
+                            onChange={(e) => setShareholderCompanyUbos(e.target.value)}
+                            placeholder="If any shareholder is a company, list the ultimate beneficial owners of that company"
+                            data-testid="input-shareholder-ubos"
+                          />
+                        </div>
+                        
+                        <div className="border-t pt-4 space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="pep"
+                              checked={hasPepOwners}
+                              onCheckedChange={(checked) => setHasPepOwners(checked as boolean)}
+                              data-testid="checkbox-pep"
+                            />
+                            <Label htmlFor="pep" className="text-sm">
+                              Any beneficial owner is a Politically Exposed Person (PEP) or related to a PEP
+                            </Label>
+                          </div>
+                          
+                          {hasPepOwners && (
+                            <div className="space-y-2">
+                              <Label>PEP Details</Label>
+                              <Textarea 
+                                value={pepDetails}
+                                onChange={(e) => setPepDetails(e.target.value)}
+                                placeholder="Provide details about the PEP status including name, position held, and relationship"
+                                data-testid="input-pep-details"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => setCorporateStep(1)}>Back</Button>
+                        <Button 
+                          onClick={() => setCorporateStep(3)}
+                          className="bg-primary text-white hover:bg-primary/90"
+                          data-testid="button-continue-step-3"
+                        >
+                          Continue
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {/* STEP 3: Documents */}
+                  {corporateStep === 3 && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle>Corporate Documents</CardTitle>
+                        <CardDescription>Upload required corporate documents. All documents should be certified copies or originals.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {[
+                          { key: 'certificateOfIncorporation', label: 'Certificate of Incorporation', required: true },
+                          { key: 'tradeLicense', label: 'Trade License / Business License', required: false },
+                          { key: 'memorandumArticles', label: 'Memorandum & Articles of Association', required: true },
+                          { key: 'shareholderList', label: 'List of Shareholders', required: true },
+                          { key: 'uboPassports', label: 'UBO Passports (all beneficial owners)', required: true },
+                          { key: 'boardResolution', label: 'Board Resolution', required: false },
+                          { key: 'authorizedSignatoryList', label: 'Authorized Signatory List', required: false },
+                          { key: 'bankAccountDetails', label: 'Bank Account Details / Statement', required: false },
+                          { key: 'financialStatements', label: 'Financial Statements (last 2 years)', required: false },
+                          { key: 'taxCertificate', label: 'Tax Certificate / VAT Registration', required: false },
+                          { key: 'pepSelfDeclaration', label: 'PEP Self-Declaration Form', required: hasPepOwners },
+                        ].map((doc) => (
+                          <div key={doc.key} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                corpDocs[doc.key as keyof typeof corpDocs] ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {corpDocs[doc.key as keyof typeof corpDocs] ? <CheckCircle2 className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                              </div>
+                              <div>
+                                <span className="font-medium text-sm">{doc.label}</span>
+                                {doc.required && <span className="text-red-500 ml-1">*</span>}
+                                {corpDocs[doc.key as keyof typeof corpDocs] && (
+                                  <p className="text-xs text-muted-foreground">{corpDocs[doc.key as keyof typeof corpDocs]?.name}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <input 
+                                type="file" 
+                                id={`doc-${doc.key}`} 
+                                className="hidden" 
+                                onChange={(e) => handleCorpDocUpload(e, doc.key as keyof typeof corpDocs)}
+                              />
+                              <label htmlFor={`doc-${doc.key}`}>
+                                <Button variant="outline" size="sm" asChild>
+                                  <span className="cursor-pointer">
+                                    <Upload className="w-4 h-4 mr-1" />
+                                    {corpDocs[doc.key as keyof typeof corpDocs] ? 'Replace' : 'Upload'}
+                                  </span>
+                                </Button>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => setCorporateStep(2)}>Back</Button>
+                        <Button 
+                          onClick={() => setCorporateStep(4)}
+                          className="bg-primary text-white hover:bg-primary/90"
+                          data-testid="button-continue-step-4"
+                        >
+                          Continue
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {/* STEP 4: Representative Liveness */}
+                  {corporateStep === 4 && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle>Authorized Representative Verification</CardTitle>
+                        <CardDescription>The authorized representative must complete a liveness check to verify their identity.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex flex-col items-center py-6">
+                         <canvas ref={canvasRef} className="hidden" />
+                         
+                         {capturedSelfie && (
+                           <div className="text-center">
+                             <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
+                               <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
+                             </div>
+                             <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+                               <CheckCircle2 className="w-5 h-5" />
+                               <span className="font-medium">Liveness Verified!</span>
+                             </div>
+                             <Button 
+                               type="button"
+                               onClick={retakeLiveness}
+                               variant="outline"
+                               className="gap-2"
+                               data-testid="button-retake-liveness"
+                             >
+                               <RefreshCw className="w-4 h-4" />
+                               Retake Photo
+                             </Button>
+                           </div>
+                         )}
+
+                         {!cameraStream && !capturedSelfie && (
+                           <div className="text-center">
+                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6">
+                               <Camera className="w-16 h-16 text-muted-foreground" />
+                             </div>
+                             <Button 
+                               type="button"
+                               onClick={startLivenessCamera}
+                               variant="secondary"
+                               className="gap-2 mb-4"
+                               data-testid="button-start-liveness"
+                             >
+                               <Camera className="w-5 h-5" />
+                               Start Liveness Check
+                             </Button>
+                             <p className="text-xs text-muted-foreground max-w-xs">
+                               Please ensure your face is well-lit and centered. No glasses or hats.
+                             </p>
+                           </div>
+                         )}
+
+                         {cameraError && (
+                           <div className="text-center text-red-500 py-4">
+                             <p>{cameraError}</p>
+                             <Button type="button" onClick={startLivenessCamera} variant="outline" className="mt-2">
+                               Try Again
+                             </Button>
+                           </div>
+                         )}
+
+                         {cameraStream && !capturedSelfie && (
+                           <div className="relative w-full max-w-xs">
+                             <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-primary">
+                               <video
+                                 ref={videoRef}
+                                 autoPlay
+                                 playsInline
+                                 muted
+                                 className="w-full h-full object-cover"
+                                 style={{ transform: 'scaleX(-1)' }}
+                               />
+                               {!isCameraReady && (
+                                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                                   <p className="text-white text-sm">Loading camera...</p>
+                                 </div>
+                               )}
+                             </div>
+                             
+                             {isCameraReady && (
+                               <div className="mt-4 w-full">
+                                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                   <span>Movement Detection</span>
+                                   <span>{Math.round(movementProgress)}%</span>
+                                 </div>
+                                 <Progress value={movementProgress} className="h-2" />
+                               </div>
+                             )}
+                             
+                             <div className="mt-4 text-center">
+                               <p className="text-sm font-medium text-primary animate-pulse">
+                                 {instruction}
+                               </p>
+                               <p className="text-xs text-muted-foreground mt-2">
+                                 Slowly turn your head left and right to verify liveness
+                               </p>
+                             </div>
+                             
+                             <div className="mt-4 flex justify-center">
+                               <Button 
+                                 type="button"
+                                 onClick={stopLivenessCamera}
+                                 variant="outline"
+                                 size="sm"
+                               >
+                                 Cancel
+                               </Button>
+                             </div>
+                           </div>
+                         )}
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setCorporateStep(3); }}>Back</Button>
+                        <Button 
+                          onClick={() => setCorporateStep(5)}
+                          disabled={!capturedSelfie}
+                          className="bg-primary text-white hover:bg-primary/90"
+                          data-testid="button-continue-step-5"
+                        >
+                          Continue
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {/* STEP 5: Review & Submit */}
+                  {corporateStep === 5 && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle>Review & Submit</CardTitle>
+                        <CardDescription>Please review your submission before finalizing.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="p-4 bg-muted/30 rounded-lg">
+                            <h4 className="font-medium mb-2">Company Information</h4>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <span className="text-muted-foreground">Company Name:</span>
+                              <span>{companyName || '-'}</span>
+                              <span className="text-muted-foreground">Registration Number:</span>
+                              <span>{corporateRegNumber || '-'}</span>
+                              <span className="text-muted-foreground">Country:</span>
+                              <span>{countryOfIncorporation || '-'}</span>
+                              <span className="text-muted-foreground">Company Type:</span>
+                              <span className="capitalize">{companyType}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="p-4 bg-muted/30 rounded-lg">
+                            <h4 className="font-medium mb-2">Beneficial Owners</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {beneficialOwners.filter(o => o.name.trim()).length} beneficial owner(s) listed
+                            </p>
+                            {hasPepOwners && (
+                              <p className="text-sm text-amber-600 mt-1">PEP declaration included</p>
+                            )}
+                          </div>
+                          
+                          <div className="p-4 bg-muted/30 rounded-lg">
+                            <h4 className="font-medium mb-2">Documents Uploaded</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {Object.keys(corpDocs).filter(k => corpDocs[k as keyof typeof corpDocs]).length} document(s) uploaded
+                            </p>
+                          </div>
+                          
+                          <div className="p-4 bg-muted/30 rounded-lg">
+                            <h4 className="font-medium mb-2">Representative Verification</h4>
+                            <div className="flex items-center gap-2">
+                              {capturedSelfie ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                  <span className="text-sm text-green-600">Liveness verified</span>
+                                </>
+                              ) : (
+                                <>
+                                  <AlertCircle className="w-4 h-4 text-red-500" />
+                                  <span className="text-sm text-red-500">Not verified</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 rounded-lg">
+                          <p className="text-sm text-amber-800 dark:text-amber-200">
+                            By submitting this application, I confirm that all information provided is accurate and complete. 
+                            I understand that providing false information may result in rejection or account termination.
+                          </p>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => setCorporateStep(4)}>Back</Button>
+                        <Button 
+                          onClick={handleFinatradesCorporateSubmit}
+                          disabled={isSubmitting || !capturedSelfie}
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold"
+                          data-testid="button-submit-corporate-kyc"
+                        >
+                          {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                </Card>
+
+                <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+                  <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Secure Processing</h4>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                      Your corporate documents are encrypted and processed in compliance with international data protection regulations.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // === KYCAML MODE (Original Tiered KYC Flow) ===
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="min-h-screen py-12 bg-background">
@@ -588,7 +1737,6 @@ export default function KYC() {
                           }
                           setActiveStep('personal');
                         }}
-                        disabled={!selectedTier}
                         className="bg-primary text-white hover:bg-primary/90"
                         data-testid="button-continue-tier"
                       >
@@ -602,78 +1750,67 @@ export default function KYC() {
                 {activeStep === 'personal' && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardHeader>
-                      <CardTitle>{isCorporateTier ? "Confirm Company Details" : "Confirm Personal Details"}</CardTitle>
-                      <CardDescription>Please ensure details match your {isCorporateTier ? "registration documents" : "government ID"}.</CardDescription>
+                      <CardTitle>{isCorporateTier ? "Company Information" : "Personal Information"}</CardTitle>
+                      <CardDescription>{isCorporateTier ? "Confirm company details for verification." : "Confirm your details for verification."}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Full Name</Label>
+                          <Input value={`${user.firstName} ${user.lastName}`} disabled className="bg-muted" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Email</Label>
+                          <Input value={user.email} disabled className="bg-muted" />
+                        </div>
+                      </div>
+
                       {isCorporateTier ? (
                         <>
-                          <div className="space-y-2">
-                            <Label>Company Name</Label>
-                            <Input value={user.companyName || ''} disabled className="bg-muted" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Company Name</Label>
+                              <Input value={user.companyName || ''} disabled className="bg-muted" />
+                            </div>
                             <div className="space-y-2">
                               <Label>Registration Number <span className="text-red-500">*</span></Label>
                               <Input 
                                 value={registrationNumber} 
-                                onChange={(e) => setRegistrationNumber(e.target.value)}
-                                placeholder="CHE-123.456.789" 
-                                className="bg-background"
+                                onChange={(e) => setRegistrationNumber(e.target.value)} 
+                                placeholder="Enter registration number" 
                                 data-testid="input-registration-number"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Jurisdiction <span className="text-red-500">*</span></Label>
-                              <Input 
-                                value={jurisdiction}
-                                onChange={(e) => setJurisdiction(e.target.value)}
-                                placeholder="Switzerland" 
-                                className="bg-background"
-                                data-testid="input-jurisdiction"
                               />
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label>Authorized Representative</Label>
-                            <Input value={`${user.firstName} ${user.lastName}`} disabled className="bg-muted" />
+                            <Label>Jurisdiction <span className="text-red-500">*</span></Label>
+                            <Input 
+                              value={jurisdiction} 
+                              onChange={(e) => setJurisdiction(e.target.value)} 
+                              placeholder="Country/State of incorporation" 
+                              data-testid="input-jurisdiction"
+                            />
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>First Name</Label>
-                              <Input value={user.firstName} disabled className="bg-muted" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Last Name</Label>
-                              <Input value={user.lastName} disabled className="bg-muted" />
-                            </div>
+                          <div className="space-y-2">
+                            <Label>Date of Birth <span className="text-red-500">*</span></Label>
+                            <Input 
+                              type="date" 
+                              value={dateOfBirth} 
+                              onChange={(e) => setDateOfBirth(e.target.value)}
+                              data-testid="input-dob"
+                            />
                           </div>
                           <div className="space-y-2">
-                            <Label>Email Address</Label>
-                            <Input value={user.email} disabled className="bg-muted" />
-                          </div>
-                          <div className="space-y-2">
-                             <Label>Date of Birth <span className="text-red-500">*</span></Label>
-                             <Input 
-                               type="date" 
-                               value={dateOfBirth}
-                               onChange={(e) => setDateOfBirth(e.target.value)}
-                               className="bg-background"
-                               data-testid="input-dob"
-                             />
-                          </div>
-                          <div className="space-y-2">
-                             <Label>Nationality <span className="text-red-500">*</span></Label>
-                             <Input 
-                               value={nationality}
-                               onChange={(e) => setNationality(e.target.value)}
-                               placeholder="Enter your nationality" 
-                               className="bg-background"
-                               data-testid="input-nationality"
-                             />
+                            <Label>Nationality <span className="text-red-500">*</span></Label>
+                            <Input 
+                              value={nationality} 
+                              onChange={(e) => setNationality(e.target.value)} 
+                              placeholder="Your nationality"
+                              data-testid="input-nationality"
+                            />
                           </div>
                         </>
                       )}
@@ -807,7 +1944,6 @@ export default function KYC() {
                     <CardContent className="flex flex-col items-center py-6">
                        <canvas ref={canvasRef} className="hidden" />
                        
-                       {/* Show captured selfie */}
                        {capturedSelfie && (
                          <div className="text-center">
                            <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
@@ -830,7 +1966,6 @@ export default function KYC() {
                          </div>
                        )}
 
-                       {/* Camera not started */}
                        {!cameraStream && !capturedSelfie && (
                          <div className="text-center">
                            <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6">
@@ -852,7 +1987,6 @@ export default function KYC() {
                          </div>
                        )}
 
-                       {/* Camera error */}
                        {cameraError && (
                          <div className="text-center text-red-500 py-4">
                            <p>{cameraError}</p>
@@ -862,7 +1996,6 @@ export default function KYC() {
                          </div>
                        )}
 
-                       {/* Camera streaming */}
                        {cameraStream && !capturedSelfie && (
                          <div className="relative w-full max-w-xs">
                            <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-primary">
@@ -881,7 +2014,6 @@ export default function KYC() {
                              )}
                            </div>
                            
-                           {/* Movement progress bar */}
                            {isCameraReady && (
                              <div className="mt-4 w-full">
                                <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -892,7 +2024,6 @@ export default function KYC() {
                              </div>
                            )}
                            
-                           {/* Instruction text */}
                            <div className="mt-4 text-center">
                              <p className="text-sm font-medium text-primary animate-pulse">
                                {instruction}
