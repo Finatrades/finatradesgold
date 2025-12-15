@@ -17,6 +17,7 @@ import {
   employees, rolePermissions,
   securitySettings, otpVerifications, userPasskeys,
   invoices, certificateDeliveries, adminActionOtps,
+  userRiskProfiles, amlScreeningLogs, amlCases, amlCaseActivities, amlMonitoringRules,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -68,7 +69,12 @@ import {
   passwordResetTokens,
   type PasswordResetToken, type InsertPasswordResetToken,
   referrals,
-  type Referral, type InsertReferral
+  type Referral, type InsertReferral,
+  type UserRiskProfile, type InsertUserRiskProfile,
+  type AmlScreeningLog, type InsertAmlScreeningLog,
+  type AmlCase, type InsertAmlCase,
+  type AmlCaseActivity, type InsertAmlCaseActivity,
+  type AmlMonitoringRule, type InsertAmlMonitoringRule
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -470,6 +476,45 @@ export interface IStorage {
   
   // Audit Logs (extended)
   getAllAuditLogs(): Promise<AuditLog[]>;
+  
+  // User Risk Profiles
+  getUserRiskProfile(userId: string): Promise<UserRiskProfile | undefined>;
+  getAllUserRiskProfiles(): Promise<UserRiskProfile[]>;
+  getHighRiskProfiles(): Promise<UserRiskProfile[]>;
+  createUserRiskProfile(profile: InsertUserRiskProfile): Promise<UserRiskProfile>;
+  updateUserRiskProfile(id: string, updates: Partial<UserRiskProfile>): Promise<UserRiskProfile | undefined>;
+  getOrCreateUserRiskProfile(userId: string): Promise<UserRiskProfile>;
+  
+  // AML Screening Logs
+  getAmlScreeningLog(id: string): Promise<AmlScreeningLog | undefined>;
+  getUserAmlScreeningLogs(userId: string): Promise<AmlScreeningLog[]>;
+  getKycSubmissionScreeningLogs(kycSubmissionId: string): Promise<AmlScreeningLog[]>;
+  getAllAmlScreeningLogs(): Promise<AmlScreeningLog[]>;
+  createAmlScreeningLog(log: InsertAmlScreeningLog): Promise<AmlScreeningLog>;
+  updateAmlScreeningLog(id: string, updates: Partial<AmlScreeningLog>): Promise<AmlScreeningLog | undefined>;
+  
+  // AML Cases
+  getAmlCase(id: string): Promise<AmlCase | undefined>;
+  getAmlCaseByCaseNumber(caseNumber: string): Promise<AmlCase | undefined>;
+  getUserAmlCases(userId: string): Promise<AmlCase[]>;
+  getAllAmlCases(): Promise<AmlCase[]>;
+  getOpenAmlCases(): Promise<AmlCase[]>;
+  createAmlCase(amlCase: InsertAmlCase): Promise<AmlCase>;
+  updateAmlCase(id: string, updates: Partial<AmlCase>): Promise<AmlCase | undefined>;
+  generateAmlCaseNumber(): Promise<string>;
+  
+  // AML Case Activities
+  getAmlCaseActivities(caseId: string): Promise<AmlCaseActivity[]>;
+  createAmlCaseActivity(activity: InsertAmlCaseActivity): Promise<AmlCaseActivity>;
+  
+  // AML Monitoring Rules
+  getAmlMonitoringRule(id: string): Promise<AmlMonitoringRule | undefined>;
+  getAmlMonitoringRuleByCode(ruleCode: string): Promise<AmlMonitoringRule | undefined>;
+  getAllAmlMonitoringRules(): Promise<AmlMonitoringRule[]>;
+  getActiveAmlMonitoringRules(): Promise<AmlMonitoringRule[]>;
+  createAmlMonitoringRule(rule: InsertAmlMonitoringRule): Promise<AmlMonitoringRule>;
+  updateAmlMonitoringRule(id: string, updates: Partial<AmlMonitoringRule>): Promise<AmlMonitoringRule | undefined>;
+  deleteAmlMonitoringRule(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1982,7 +2027,182 @@ export class DatabaseStorage implements IStorage {
   // ============================================
 
   async getAllAuditLogs(): Promise<AuditLog[]> {
-    return await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt));
+    return await db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp));
+  }
+
+  // ============================================
+  // USER RISK PROFILES
+  // ============================================
+
+  async getUserRiskProfile(userId: string): Promise<UserRiskProfile | undefined> {
+    const [profile] = await db.select().from(userRiskProfiles).where(eq(userRiskProfiles.userId, userId));
+    return profile || undefined;
+  }
+
+  async getAllUserRiskProfiles(): Promise<UserRiskProfile[]> {
+    return await db.select().from(userRiskProfiles).orderBy(desc(userRiskProfiles.updatedAt));
+  }
+
+  async getHighRiskProfiles(): Promise<UserRiskProfile[]> {
+    return await db.select().from(userRiskProfiles)
+      .where(or(
+        eq(userRiskProfiles.riskLevel, 'High'),
+        eq(userRiskProfiles.riskLevel, 'Critical')
+      ))
+      .orderBy(desc(userRiskProfiles.overallRiskScore));
+  }
+
+  async createUserRiskProfile(profile: InsertUserRiskProfile): Promise<UserRiskProfile> {
+    const [newProfile] = await db.insert(userRiskProfiles).values(profile).returning();
+    return newProfile;
+  }
+
+  async updateUserRiskProfile(id: string, updates: Partial<UserRiskProfile>): Promise<UserRiskProfile | undefined> {
+    const [profile] = await db.update(userRiskProfiles).set({ ...updates, updatedAt: new Date() }).where(eq(userRiskProfiles.id, id)).returning();
+    return profile || undefined;
+  }
+
+  async getOrCreateUserRiskProfile(userId: string): Promise<UserRiskProfile> {
+    const existing = await this.getUserRiskProfile(userId);
+    if (existing) return existing;
+    
+    return await this.createUserRiskProfile({
+      userId,
+      overallRiskScore: 0,
+      riskLevel: 'Low',
+      lastAssessedAt: new Date(),
+    });
+  }
+
+  // ============================================
+  // AML SCREENING LOGS
+  // ============================================
+
+  async getAmlScreeningLog(id: string): Promise<AmlScreeningLog | undefined> {
+    const [log] = await db.select().from(amlScreeningLogs).where(eq(amlScreeningLogs.id, id));
+    return log || undefined;
+  }
+
+  async getUserAmlScreeningLogs(userId: string): Promise<AmlScreeningLog[]> {
+    return await db.select().from(amlScreeningLogs).where(eq(amlScreeningLogs.userId, userId)).orderBy(desc(amlScreeningLogs.createdAt));
+  }
+
+  async getKycSubmissionScreeningLogs(kycSubmissionId: string): Promise<AmlScreeningLog[]> {
+    return await db.select().from(amlScreeningLogs).where(eq(amlScreeningLogs.kycSubmissionId, kycSubmissionId)).orderBy(desc(amlScreeningLogs.createdAt));
+  }
+
+  async getAllAmlScreeningLogs(): Promise<AmlScreeningLog[]> {
+    return await db.select().from(amlScreeningLogs).orderBy(desc(amlScreeningLogs.createdAt));
+  }
+
+  async createAmlScreeningLog(log: InsertAmlScreeningLog): Promise<AmlScreeningLog> {
+    const [newLog] = await db.insert(amlScreeningLogs).values(log).returning();
+    return newLog;
+  }
+
+  async updateAmlScreeningLog(id: string, updates: Partial<AmlScreeningLog>): Promise<AmlScreeningLog | undefined> {
+    const [log] = await db.update(amlScreeningLogs).set(updates).where(eq(amlScreeningLogs.id, id)).returning();
+    return log || undefined;
+  }
+
+  // ============================================
+  // AML CASES
+  // ============================================
+
+  async getAmlCase(id: string): Promise<AmlCase | undefined> {
+    const [amlCase] = await db.select().from(amlCases).where(eq(amlCases.id, id));
+    return amlCase || undefined;
+  }
+
+  async getAmlCaseByCaseNumber(caseNumber: string): Promise<AmlCase | undefined> {
+    const [amlCase] = await db.select().from(amlCases).where(eq(amlCases.caseNumber, caseNumber));
+    return amlCase || undefined;
+  }
+
+  async getUserAmlCases(userId: string): Promise<AmlCase[]> {
+    return await db.select().from(amlCases).where(eq(amlCases.userId, userId)).orderBy(desc(amlCases.createdAt));
+  }
+
+  async getAllAmlCases(): Promise<AmlCase[]> {
+    return await db.select().from(amlCases).orderBy(desc(amlCases.createdAt));
+  }
+
+  async getOpenAmlCases(): Promise<AmlCase[]> {
+    return await db.select().from(amlCases)
+      .where(or(
+        eq(amlCases.status, 'Open'),
+        eq(amlCases.status, 'Under Investigation'),
+        eq(amlCases.status, 'Pending SAR')
+      ))
+      .orderBy(desc(amlCases.createdAt));
+  }
+
+  async createAmlCase(amlCase: InsertAmlCase): Promise<AmlCase> {
+    const [newCase] = await db.insert(amlCases).values(amlCase).returning();
+    return newCase;
+  }
+
+  async updateAmlCase(id: string, updates: Partial<AmlCase>): Promise<AmlCase | undefined> {
+    const [amlCase] = await db.update(amlCases).set({ ...updates, updatedAt: new Date() }).where(eq(amlCases.id, id)).returning();
+    return amlCase || undefined;
+  }
+
+  async generateAmlCaseNumber(): Promise<string> {
+    const prefix = 'AML';
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${prefix}-${year}-${timestamp}${random}`;
+  }
+
+  // ============================================
+  // AML CASE ACTIVITIES
+  // ============================================
+
+  async getAmlCaseActivities(caseId: string): Promise<AmlCaseActivity[]> {
+    return await db.select().from(amlCaseActivities).where(eq(amlCaseActivities.caseId, caseId)).orderBy(desc(amlCaseActivities.performedAt));
+  }
+
+  async createAmlCaseActivity(activity: InsertAmlCaseActivity): Promise<AmlCaseActivity> {
+    const [newActivity] = await db.insert(amlCaseActivities).values(activity).returning();
+    return newActivity;
+  }
+
+  // ============================================
+  // AML MONITORING RULES
+  // ============================================
+
+  async getAmlMonitoringRule(id: string): Promise<AmlMonitoringRule | undefined> {
+    const [rule] = await db.select().from(amlMonitoringRules).where(eq(amlMonitoringRules.id, id));
+    return rule || undefined;
+  }
+
+  async getAmlMonitoringRuleByCode(ruleCode: string): Promise<AmlMonitoringRule | undefined> {
+    const [rule] = await db.select().from(amlMonitoringRules).where(eq(amlMonitoringRules.ruleCode, ruleCode));
+    return rule || undefined;
+  }
+
+  async getAllAmlMonitoringRules(): Promise<AmlMonitoringRule[]> {
+    return await db.select().from(amlMonitoringRules).orderBy(desc(amlMonitoringRules.priority));
+  }
+
+  async getActiveAmlMonitoringRules(): Promise<AmlMonitoringRule[]> {
+    return await db.select().from(amlMonitoringRules).where(eq(amlMonitoringRules.isActive, true)).orderBy(desc(amlMonitoringRules.priority));
+  }
+
+  async createAmlMonitoringRule(rule: InsertAmlMonitoringRule): Promise<AmlMonitoringRule> {
+    const [newRule] = await db.insert(amlMonitoringRules).values(rule).returning();
+    return newRule;
+  }
+
+  async updateAmlMonitoringRule(id: string, updates: Partial<AmlMonitoringRule>): Promise<AmlMonitoringRule | undefined> {
+    const [rule] = await db.update(amlMonitoringRules).set({ ...updates, updatedAt: new Date() }).where(eq(amlMonitoringRules.id, id)).returning();
+    return rule || undefined;
+  }
+
+  async deleteAmlMonitoringRule(id: string): Promise<boolean> {
+    const result = await db.delete(amlMonitoringRules).where(eq(amlMonitoringRules.id, id)).returning();
+    return result.length > 0;
   }
 }
 

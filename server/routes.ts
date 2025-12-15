@@ -1396,6 +1396,654 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to get KYC submissions" });
     }
   });
+
+  // ============================================================================
+  // KYC WORKFLOW - TIERED VERIFICATION & STATE MACHINE
+  // ============================================================================
+
+  // Submit tiered KYC with SLA tracking
+  app.post("/api/kyc/submit-tiered", async (req, res) => {
+    try {
+      const { userId, tier, accountType, ...kycData } = req.body;
+      
+      // Calculate SLA deadline based on tier
+      const slaDays = tier === 'tier_3_corporate' ? 5 : tier === 'tier_2_enhanced' ? 3 : 1;
+      const slaDeadline = new Date();
+      slaDeadline.setDate(slaDeadline.getDate() + slaDays);
+      
+      const submission = await storage.createKycSubmission({
+        userId,
+        tier: tier || 'tier_1_basic',
+        accountType: accountType || 'personal',
+        status: 'Pending Review',
+        screeningStatus: 'Pending',
+        slaDeadline,
+        ...kycData,
+      });
+      
+      // Update user KYC status
+      await storage.updateUser(userId, { kycStatus: "In Progress" });
+      
+      // Create or update user risk profile
+      await storage.getOrCreateUserRiskProfile(userId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "kyc",
+        entityId: submission.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: `Tiered KYC (${tier}) submitted - SLA deadline: ${slaDeadline.toISOString()}`,
+      });
+      
+      res.json({ submission, slaDeadline });
+    } catch (error) {
+      console.error("Tiered KYC submission error:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "KYC submission failed" });
+    }
+  });
+
+  // Escalate KYC submission (Admin)
+  app.post("/api/admin/kyc/:id/escalate", async (req, res) => {
+    try {
+      const { escalatedTo, escalationReason, adminId } = req.body;
+      
+      const submission = await storage.updateKycSubmission(req.params.id, {
+        status: 'Escalated',
+        escalatedAt: new Date(),
+        escalatedTo,
+        reviewNotes: escalationReason,
+      });
+      
+      if (!submission) {
+        return res.status(404).json({ message: "KYC submission not found" });
+      }
+      
+      // Update user KYC status
+      await storage.updateUser(submission.userId, { kycStatus: "Escalated" });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "kyc",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `KYC escalated to ${escalatedTo}: ${escalationReason}`,
+      });
+      
+      res.json({ submission });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to escalate KYC" });
+    }
+  });
+
+  // Run AML screening on KYC submission (Admin)
+  app.post("/api/admin/kyc/:id/screen", async (req, res) => {
+    try {
+      const { adminId, screeningType } = req.body;
+      const kycId = req.params.id;
+      
+      // Get KYC submission
+      const allSubmissions = await storage.getAllKycSubmissions();
+      const submission = allSubmissions.find(s => s.id === kycId);
+      
+      if (!submission) {
+        return res.status(404).json({ message: "KYC submission not found" });
+      }
+      
+      // Simulate screening check (in production, integrate with Sumsub/Onfido)
+      const screeningTypes = screeningType ? [screeningType] : ['sanctions', 'pep', 'adverse_media'];
+      const screeningResults: any[] = [];
+      
+      for (const type of screeningTypes) {
+        // Create screening log
+        const screeningLog = await storage.createAmlScreeningLog({
+          userId: submission.userId,
+          kycSubmissionId: kycId,
+          screeningType: type,
+          provider: 'internal',
+          status: 'Clear',
+          matchFound: false,
+          matchScore: 0,
+        });
+        screeningResults.push(screeningLog);
+      }
+      
+      // Update KYC submission with screening results
+      await storage.updateKycSubmission(kycId, {
+        screeningStatus: 'Clear',
+        screeningResults: {
+          sanctions: { checked: true, matchFound: false, checkedAt: new Date().toISOString() },
+          pep: { checked: true, matchFound: false, checkedAt: new Date().toISOString() },
+          adverseMedia: { checked: true, matchFound: false, checkedAt: new Date().toISOString() },
+        },
+      });
+      
+      // Update user risk profile
+      const riskProfile = await storage.getOrCreateUserRiskProfile(submission.userId);
+      await storage.updateUserRiskProfile(riskProfile.id, {
+        screeningRisk: 0,
+        isPep: false,
+        isSanctioned: false,
+        hasAdverseMedia: false,
+        lastAssessedAt: new Date(),
+        lastAssessedBy: adminId,
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "kyc",
+        entityId: kycId,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `AML screening completed - Status: Clear`,
+      });
+      
+      res.json({ screeningResults, status: 'Clear' });
+    } catch (error) {
+      console.error("AML screening error:", error);
+      res.status(400).json({ message: "Failed to run AML screening" });
+    }
+  });
+
+  // Get KYC submissions pending SLA breach (Admin)
+  app.get("/api/admin/kyc/sla-alerts", async (req, res) => {
+    try {
+      const submissions = await storage.getAllKycSubmissions();
+      const now = new Date();
+      
+      const slaAlerts = submissions
+        .filter(s => s.status === 'Pending Review' || s.status === 'In Progress')
+        .filter(s => s.slaDeadline && new Date(s.slaDeadline) <= new Date(now.getTime() + 24 * 60 * 60 * 1000))
+        .map(s => ({
+          ...s,
+          hoursRemaining: s.slaDeadline ? Math.max(0, (new Date(s.slaDeadline).getTime() - now.getTime()) / (1000 * 60 * 60)) : null,
+          isBreached: s.slaDeadline ? new Date(s.slaDeadline) < now : false,
+        }));
+      
+      res.json({ slaAlerts });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get SLA alerts" });
+    }
+  });
+
+  // ============================================================================
+  // USER RISK PROFILES
+  // ============================================================================
+
+  // Get user risk profile
+  app.get("/api/risk-profile/:userId", async (req, res) => {
+    try {
+      const profile = await storage.getOrCreateUserRiskProfile(req.params.userId);
+      res.json({ profile });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get risk profile" });
+    }
+  });
+
+  // Get all risk profiles (Admin)
+  app.get("/api/admin/risk-profiles", async (req, res) => {
+    try {
+      const profiles = await storage.getAllUserRiskProfiles();
+      res.json({ profiles });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get risk profiles" });
+    }
+  });
+
+  // Get high-risk profiles (Admin)
+  app.get("/api/admin/risk-profiles/high-risk", async (req, res) => {
+    try {
+      const profiles = await storage.getHighRiskProfiles();
+      res.json({ profiles });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get high-risk profiles" });
+    }
+  });
+
+  // Update user risk profile (Admin)
+  app.patch("/api/admin/risk-profile/:id", async (req, res) => {
+    try {
+      const { adminId, ...updates } = req.body;
+      
+      const profile = await storage.updateUserRiskProfile(req.params.id, {
+        ...updates,
+        lastAssessedAt: new Date(),
+        lastAssessedBy: adminId,
+      });
+      
+      if (!profile) {
+        return res.status(404).json({ message: "Risk profile not found" });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "risk_profile",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `Risk profile updated - Level: ${updates.riskLevel || profile.riskLevel}`,
+      });
+      
+      res.json({ profile });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update risk profile" });
+    }
+  });
+
+  // ============================================================================
+  // AML SCREENING LOGS
+  // ============================================================================
+
+  // Get user screening logs
+  app.get("/api/screening-logs/:userId", async (req, res) => {
+    try {
+      const logs = await storage.getUserAmlScreeningLogs(req.params.userId);
+      res.json({ logs });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get screening logs" });
+    }
+  });
+
+  // Get all screening logs (Admin)
+  app.get("/api/admin/screening-logs", async (req, res) => {
+    try {
+      const logs = await storage.getAllAmlScreeningLogs();
+      res.json({ logs });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get screening logs" });
+    }
+  });
+
+  // Review screening log (Admin)
+  app.patch("/api/admin/screening-logs/:id", async (req, res) => {
+    try {
+      const { adminId, reviewDecision, reviewNotes } = req.body;
+      
+      const log = await storage.updateAmlScreeningLog(req.params.id, {
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        reviewDecision,
+        reviewNotes,
+        status: reviewDecision === 'cleared' ? 'Clear' : reviewDecision === 'escalated' ? 'Escalated' : 'Manual Review',
+      });
+      
+      if (!log) {
+        return res.status(404).json({ message: "Screening log not found" });
+      }
+      
+      res.json({ log });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update screening log" });
+    }
+  });
+
+  // ============================================================================
+  // AML CASES
+  // ============================================================================
+
+  // Get all AML cases (Admin)
+  app.get("/api/admin/aml-cases", async (req, res) => {
+    try {
+      const cases = await storage.getAllAmlCases();
+      res.json({ cases });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get AML cases" });
+    }
+  });
+
+  // Get open AML cases (Admin)
+  app.get("/api/admin/aml-cases/open", async (req, res) => {
+    try {
+      const cases = await storage.getOpenAmlCases();
+      res.json({ cases });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get open AML cases" });
+    }
+  });
+
+  // Get single AML case with activities (Admin)
+  app.get("/api/admin/aml-cases/:id", async (req, res) => {
+    try {
+      const amlCase = await storage.getAmlCase(req.params.id);
+      if (!amlCase) {
+        return res.status(404).json({ message: "AML case not found" });
+      }
+      
+      const activities = await storage.getAmlCaseActivities(req.params.id);
+      const user = await storage.getUser(amlCase.userId);
+      
+      res.json({ case: amlCase, activities, user });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get AML case" });
+    }
+  });
+
+  // Create AML case (Admin)
+  app.post("/api/admin/aml-cases", async (req, res) => {
+    try {
+      const { userId, caseType, priority, triggeredBy, triggerDetails, adminId } = req.body;
+      
+      const caseNumber = await storage.generateAmlCaseNumber();
+      
+      const amlCase = await storage.createAmlCase({
+        caseNumber,
+        userId,
+        caseType,
+        status: 'Open',
+        priority: priority || 'Medium',
+        triggeredBy: triggeredBy || 'manual',
+        triggerDetails,
+      });
+      
+      // Create initial activity
+      await storage.createAmlCaseActivity({
+        caseId: amlCase.id,
+        activityType: 'created',
+        description: `AML case created - Type: ${caseType}`,
+        performedBy: adminId || 'system',
+        performedAt: new Date(),
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "aml_case",
+        entityId: amlCase.id,
+        actionType: "create",
+        actor: adminId || "system",
+        actorRole: "admin",
+        details: `AML case ${caseNumber} created`,
+      });
+      
+      res.json({ case: amlCase });
+    } catch (error) {
+      console.error("Create AML case error:", error);
+      res.status(400).json({ message: "Failed to create AML case" });
+    }
+  });
+
+  // Update AML case (Admin)
+  app.patch("/api/admin/aml-cases/:id", async (req, res) => {
+    try {
+      const { adminId, ...updates } = req.body;
+      const previousCase = await storage.getAmlCase(req.params.id);
+      
+      if (!previousCase) {
+        return res.status(404).json({ message: "AML case not found" });
+      }
+      
+      // Handle assignment
+      if (updates.assignedTo && updates.assignedTo !== previousCase.assignedTo) {
+        updates.assignedAt = new Date();
+        
+        await storage.createAmlCaseActivity({
+          caseId: req.params.id,
+          activityType: 'assigned',
+          description: `Case assigned to ${updates.assignedTo}`,
+          previousValue: previousCase.assignedTo || 'Unassigned',
+          newValue: updates.assignedTo,
+          performedBy: adminId || 'admin',
+          performedAt: new Date(),
+        });
+      }
+      
+      // Handle status change
+      if (updates.status && updates.status !== previousCase.status) {
+        await storage.createAmlCaseActivity({
+          caseId: req.params.id,
+          activityType: 'status_changed',
+          description: `Status changed from ${previousCase.status} to ${updates.status}`,
+          previousValue: previousCase.status,
+          newValue: updates.status,
+          performedBy: adminId || 'admin',
+          performedAt: new Date(),
+        });
+        
+        // Handle resolution
+        if (updates.status.startsWith('Closed')) {
+          updates.resolvedBy = adminId;
+          updates.resolvedAt = new Date();
+        }
+      }
+      
+      // Handle SAR filing
+      if (updates.sarFiledAt && !previousCase.sarFiledAt) {
+        await storage.createAmlCaseActivity({
+          caseId: req.params.id,
+          activityType: 'sar_filed',
+          description: `SAR filed - Reference: ${updates.sarReferenceNumber || 'N/A'}`,
+          performedBy: adminId || 'admin',
+          performedAt: new Date(),
+        });
+      }
+      
+      const amlCase = await storage.updateAmlCase(req.params.id, updates);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "aml_case",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `AML case updated`,
+      });
+      
+      res.json({ case: amlCase });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update AML case" });
+    }
+  });
+
+  // Add note to AML case (Admin)
+  app.post("/api/admin/aml-cases/:id/notes", async (req, res) => {
+    try {
+      const { adminId, note } = req.body;
+      
+      const amlCase = await storage.getAmlCase(req.params.id);
+      if (!amlCase) {
+        return res.status(404).json({ message: "AML case not found" });
+      }
+      
+      // Append to investigation notes
+      const existingNotes = amlCase.investigationNotes || '';
+      const timestamp = new Date().toISOString();
+      const newNotes = existingNotes 
+        ? `${existingNotes}\n\n[${timestamp}] ${adminId}: ${note}`
+        : `[${timestamp}] ${adminId}: ${note}`;
+      
+      await storage.updateAmlCase(req.params.id, {
+        investigationNotes: newNotes,
+      });
+      
+      // Create activity
+      await storage.createAmlCaseActivity({
+        caseId: req.params.id,
+        activityType: 'note_added',
+        description: note,
+        performedBy: adminId || 'admin',
+        performedAt: new Date(),
+      });
+      
+      res.json({ message: "Note added successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add note" });
+    }
+  });
+
+  // ============================================================================
+  // AML MONITORING RULES
+  // ============================================================================
+
+  // Get all monitoring rules (Admin)
+  app.get("/api/admin/aml-rules", async (req, res) => {
+    try {
+      const rules = await storage.getAllAmlMonitoringRules();
+      res.json({ rules });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get AML rules" });
+    }
+  });
+
+  // Get active monitoring rules (Admin)
+  app.get("/api/admin/aml-rules/active", async (req, res) => {
+    try {
+      const rules = await storage.getActiveAmlMonitoringRules();
+      res.json({ rules });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get active AML rules" });
+    }
+  });
+
+  // Create monitoring rule (Admin)
+  app.post("/api/admin/aml-rules", async (req, res) => {
+    try {
+      const { adminId, ...ruleData } = req.body;
+      
+      const rule = await storage.createAmlMonitoringRule({
+        ...ruleData,
+        createdBy: adminId,
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "aml_rule",
+        entityId: rule.id,
+        actionType: "create",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `AML rule created: ${rule.ruleName}`,
+      });
+      
+      res.json({ rule });
+    } catch (error) {
+      console.error("Create AML rule error:", error);
+      res.status(400).json({ message: "Failed to create AML rule" });
+    }
+  });
+
+  // Update monitoring rule (Admin)
+  app.patch("/api/admin/aml-rules/:id", async (req, res) => {
+    try {
+      const { adminId, ...updates } = req.body;
+      
+      const rule = await storage.updateAmlMonitoringRule(req.params.id, updates);
+      
+      if (!rule) {
+        return res.status(404).json({ message: "AML rule not found" });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "aml_rule",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: `AML rule updated: ${rule.ruleName}`,
+      });
+      
+      res.json({ rule });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update AML rule" });
+    }
+  });
+
+  // Delete monitoring rule (Admin)
+  app.delete("/api/admin/aml-rules/:id", async (req, res) => {
+    try {
+      const { adminId } = req.body;
+      
+      const deleted = await storage.deleteAmlMonitoringRule(req.params.id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "AML rule not found" });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "aml_rule",
+        entityId: req.params.id,
+        actionType: "delete",
+        actor: adminId || "admin",
+        actorRole: "admin",
+        details: "AML rule deleted",
+      });
+      
+      res.json({ message: "Rule deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete AML rule" });
+    }
+  });
+
+  // Seed default AML monitoring rules (Admin)
+  app.post("/api/admin/aml-rules/seed-defaults", async (req, res) => {
+    try {
+      const { adminId } = req.body;
+      
+      const defaultRules = [
+        {
+          ruleName: 'High Value Transaction Alert',
+          ruleCode: 'HVT_ALERT',
+          description: 'Alert on transactions exceeding $10,000',
+          ruleType: 'threshold',
+          conditions: { amountThreshold: 10000, currency: 'USD' },
+          actionType: 'alert',
+          priority: 8,
+          createdBy: adminId,
+        },
+        {
+          ruleName: 'Velocity Check - Daily',
+          ruleCode: 'VEL_DAILY',
+          description: 'Flag users with more than 10 transactions in 24 hours',
+          ruleType: 'velocity',
+          conditions: { timeWindowHours: 24, transactionCount: 10 },
+          actionType: 'flag',
+          priority: 6,
+          createdBy: adminId,
+        },
+        {
+          ruleName: 'High Risk Country Transaction',
+          ruleCode: 'HR_COUNTRY',
+          description: 'Escalate transactions involving high-risk jurisdictions',
+          ruleType: 'geography',
+          conditions: { highRiskCountries: ['AF', 'IR', 'KP', 'SY', 'YE'] },
+          actionType: 'escalate',
+          priority: 9,
+          createdBy: adminId,
+        },
+        {
+          ruleName: 'Large Gold Purchase',
+          ruleCode: 'LG_GOLD',
+          description: 'Alert on gold purchases exceeding 100 grams',
+          ruleType: 'threshold',
+          conditions: { amountThreshold: 100, currency: 'GOLD_GRAMS' },
+          actionType: 'alert',
+          priority: 7,
+          createdBy: adminId,
+        },
+      ];
+      
+      const createdRules = [];
+      for (const ruleData of defaultRules) {
+        // Check if rule already exists
+        const existing = await storage.getAmlMonitoringRuleByCode(ruleData.ruleCode);
+        if (!existing) {
+          const rule = await storage.createAmlMonitoringRule(ruleData);
+          createdRules.push(rule);
+        }
+      }
+      
+      res.json({ message: `Created ${createdRules.length} default rules`, rules: createdRules });
+    } catch (error) {
+      console.error("Seed AML rules error:", error);
+      res.status(400).json({ message: "Failed to seed AML rules" });
+    }
+  });
   
   // ============================================================================
   // FINAPAY - WALLET & TRANSACTIONS
