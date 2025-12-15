@@ -2,6 +2,9 @@ import nodemailer from 'nodemailer';
 import { db } from './db';
 import { templates } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import dns from 'dns';
+
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
@@ -17,7 +20,29 @@ const transporter = nodemailer.createTransport({
     user: SMTP_USER,
     pass: SMTP_PASS,
   } : undefined,
+  pool: true,
+  maxConnections: 5,
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 30000,
 });
+
+async function sendMailWithRetry(mailOptions: nodemailer.SendMailOptions, maxRetries = 3): Promise<nodemailer.SentMessageInfo> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await transporter.sendMail(mailOptions);
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`[Email] Attempt ${attempt}/${maxRetries} failed: ${lastError.message}`);
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
 
 console.log(`[Email] Configured with host: ${SMTP_HOST}, port: ${SMTP_PORT}, user: ${SMTP_USER ? 'set' : 'not set'}`);
 
@@ -64,7 +89,7 @@ export async function sendEmail(
       return { success: true, messageId: 'preview-mode' };
     }
 
-    const info = await transporter.sendMail({
+    const info = await sendMailWithRetry({
       from: SMTP_FROM,
       to,
       subject,
@@ -93,7 +118,7 @@ export async function sendEmailDirect(
       return { success: true, messageId: 'preview-mode' };
     }
 
-    const info = await transporter.sendMail({
+    const info = await sendMailWithRetry({
       from: SMTP_FROM,
       to,
       subject,
@@ -612,7 +637,7 @@ export async function sendEmailWithAttachment(
       ];
     }
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMailWithRetry(mailOptions);
 
     console.log(`[Email] Sent to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
