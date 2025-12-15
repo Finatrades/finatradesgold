@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Shield, Mail, Key, Clock, AlertCircle } from 'lucide-react';
+import { Save, Shield, Mail, Key, Clock, AlertCircle, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
@@ -27,6 +27,15 @@ interface SecuritySettingsData {
   otpOnTradeBridge: boolean;
   otpOnPeerRequest: boolean;
   otpOnAccountDeletion: boolean;
+  // Admin OTP settings
+  adminOtpEnabled: boolean;
+  adminOtpOnKycApproval: boolean;
+  adminOtpOnDepositApproval: boolean;
+  adminOtpOnWithdrawalApproval: boolean;
+  adminOtpOnBnslApproval: boolean;
+  adminOtpOnTradeCaseApproval: boolean;
+  adminOtpOnUserSuspension: boolean;
+  // Passkey settings
   passkeyOnLogin: boolean;
   passkeyOnWithdrawal: boolean;
   passkeyOnTransfer: boolean;
@@ -130,8 +139,9 @@ export default function SecuritySettings() {
         </div>
 
         <Tabs defaultValue="otp" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[450px]">
-            <TabsTrigger value="otp" data-testid="tab-otp">Email OTP</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+            <TabsTrigger value="otp" data-testid="tab-otp">User OTP</TabsTrigger>
+            <TabsTrigger value="admin" data-testid="tab-admin">Admin Approval</TabsTrigger>
             <TabsTrigger value="passkey" data-testid="tab-passkey">Passkeys</TabsTrigger>
             <TabsTrigger value="config" data-testid="tab-config">Configuration</TabsTrigger>
           </TabsList>
@@ -265,6 +275,87 @@ export default function SecuritySettings() {
                             checked={settings.otpOnAccountDeletion}
                             onCheckedChange={(checked) => updateSetting('otpOnAccountDeletion', checked)}
                             data-testid="switch-otp-account-deletion"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="admin">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserCheck className="w-5 h-5 text-orange-500" /> Admin Multi-Approval OTP
+                    </CardTitle>
+                    <CardDescription>
+                      Require OTP verification for admin actions. When enabled, admins must verify via email code before approving sensitive operations.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <div>
+                        <Label className="text-base font-semibold">Enable Admin OTP Verification</Label>
+                        <p className="text-sm text-gray-500">Master switch for admin multi-approval OTP</p>
+                      </div>
+                      <Switch
+                        checked={settings.adminOtpEnabled}
+                        onCheckedChange={(checked) => updateSetting('adminOtpEnabled', checked)}
+                        data-testid="switch-admin-otp-enabled"
+                      />
+                    </div>
+
+                    {settings.adminOtpEnabled && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>KYC Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnKycApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnKycApproval', checked)}
+                            data-testid="switch-admin-otp-kyc"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Deposit Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnDepositApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnDepositApproval', checked)}
+                            data-testid="switch-admin-otp-deposit"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Withdrawal Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnWithdrawalApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnWithdrawalApproval', checked)}
+                            data-testid="switch-admin-otp-withdrawal"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>BNSL Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnBnslApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnBnslApproval', checked)}
+                            data-testid="switch-admin-otp-bnsl"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Trade Case Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnTradeCaseApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnTradeCaseApproval', checked)}
+                            data-testid="switch-admin-otp-trade-case"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>User Suspension</Label>
+                          <Switch
+                            checked={settings.adminOtpOnUserSuspension}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnUserSuspension', checked)}
+                            data-testid="switch-admin-otp-suspension"
                           />
                         </div>
                       </div>
