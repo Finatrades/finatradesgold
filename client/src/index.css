@@ -29,103 +29,103 @@
 }
 
 :root {
-  /* Brand Variables - Set dynamically via BrandingContext */
-  --brand-primary: #f97316;
+  /* Brand Variables - Classic Black & White Theme */
+  --brand-primary: #000000;
   --brand-primary-foreground: #ffffff;
-  --brand-secondary: #eab308;
+  --brand-secondary: #000000;
   --brand-secondary-foreground: #ffffff;
-  --brand-accent: #f59e0b;
+  --brand-accent: #000000;
   --brand-button-radius: 0.5rem;
-  --brand-button-primary-bg: #f97316;
+  --brand-button-primary-bg: #000000;
   --brand-button-primary-text: #ffffff;
-  --brand-button-secondary-bg: #f3f4f6;
-  --brand-button-secondary-text: #1f2937;
+  --brand-button-secondary-bg: #ffffff;
+  --brand-button-secondary-text: #000000;
   --brand-font-family: 'Inter', system-ui, sans-serif;
   --brand-heading-font-family: var(--brand-font-family);
   --brand-background: #ffffff;
   --brand-card-background: #ffffff;
-  --brand-sidebar-background: #1f2937;
+  --brand-sidebar-background: #000000;
   --brand-border-radius: 0.5rem;
-  --brand-border-color: #e5e7eb;
+  --brand-border-color: #000000;
 
-  /* Light Theme with Orange Gradient Aesthetic */
+  /* Classic Black & White Theme */
   
-  /* Background - uses brand background color */
-  --background: var(--brand-background);
-  --foreground: hsl(20 14% 4%); /* Almost black with hint of brown */
+  /* Background - Pure White */
+  --background: #ffffff;
+  --foreground: #000000;
 
-  /* Cards - uses brand card background color */
-  --card: var(--brand-card-background);
-  --card-foreground: hsl(20 14% 4%);
+  /* Cards - Pure White with Black Text */
+  --card: #ffffff;
+  --card-foreground: #000000;
 
-  --popover: var(--brand-card-background);
-  --popover-foreground: hsl(20 14% 4%);
+  --popover: #ffffff;
+  --popover-foreground: #000000;
   
   /* Sidebar background */
-  --sidebar-background: var(--brand-sidebar-background);
+  --sidebar-background: #000000;
 
-  /* Primary - uses brand primary color */
-  --primary: var(--brand-primary);
-  --primary-foreground: var(--brand-primary-foreground);
+  /* Primary - Pure Black */
+  --primary: #000000;
+  --primary-foreground: #ffffff;
 
-  /* Secondary - uses brand secondary color */
-  --secondary: var(--brand-secondary);
-  --secondary-foreground: var(--brand-secondary-foreground);
+  /* Secondary - Pure Black */
+  --secondary: #000000;
+  --secondary-foreground: #ffffff;
 
-  /* Muted backgrounds - Very light orange/gray */
-  --muted: hsl(30 20% 96%);
-  --muted-foreground: hsl(25 5% 45%);
+  /* Muted backgrounds - Light Gray */
+  --muted: #f5f5f5;
+  --muted-foreground: #000000;
 
-  /* Accent - uses brand accent color */
-  --accent: var(--brand-accent);
-  --accent-foreground: hsl(0 0% 100%);
+  /* Accent - Pure Black */
+  --accent: #000000;
+  --accent-foreground: #ffffff;
 
-  --destructive: hsl(0 84% 60%);
-  --destructive-foreground: hsl(0 0% 98%);
+  --destructive: #000000;
+  --destructive-foreground: #ffffff;
 
-  --border: var(--brand-border-color);
-  --input: var(--brand-border-color);
-  --ring: var(--brand-primary);
+  --border: #000000;
+  --input: #000000;
+  --ring: #000000;
 
   --radius: var(--brand-border-radius);
 }
 
 .dark {
-  /* Dark Theme with Orange Accents */
+  /* Dark Theme - Pure Black & White (Inverted) */
   
-  /* Dark Background */
-  --background: hsl(220 20% 10%);
-  --foreground: hsl(0 0% 95%);
+  /* Dark Background - Pure Black */
+  --background: #000000;
+  --foreground: #ffffff;
 
-  /* Cards - Dark with subtle border */
-  --card: hsl(220 20% 13%);
-  --card-foreground: hsl(0 0% 95%);
+  /* Cards - Pure Black with White Text */
+  --card: #111111;
+  --card-foreground: #ffffff;
 
-  --popover: hsl(220 20% 13%);
-  --popover-foreground: hsl(0 0% 95%);
+  --popover: #111111;
+  --popover-foreground: #ffffff;
 
-  /* Primary Orange - Same as light */
-  --primary: hsl(25 100% 50%);
-  --primary-foreground: hsl(0 0% 100%);
+  /* Primary - Pure White on Dark */
+  --primary: #ffffff;
+  --primary-foreground: #000000;
 
-  /* Secondary - Lighter Orange/Gold */
-  --secondary: hsl(35 100% 50%);
-  --secondary-foreground: hsl(0 0% 100%);
+  /* Secondary - Pure White */
+  --secondary: #ffffff;
+  --secondary-foreground: #000000;
 
   /* Muted backgrounds - Dark gray */
-  --muted: hsl(220 15% 18%);
-  --muted-foreground: hsl(220 10% 60%);
+  --muted: #222222;
+  --muted-foreground: #ffffff;
 
-  /* Accent - Deep Orange/Red */
-  --accent: hsl(15 90% 55%);
-  --accent-foreground: hsl(0 0% 100%);
+  /* Accent - Pure White */
+  --accent: #ffffff;
+  --accent-foreground: #000000;
 
-  --destructive: hsl(0 62% 50%);
-  --destructive-foreground: hsl(0 0% 98%);
+  --destructive: #ffffff;
+  --destructive-foreground: #000000;
 
-  --border: hsl(220 15% 22%);
-  --input: hsl(220 15% 22%);
-  --ring: hsl(25 100% 50%);
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffffff;
 }
 
 @layer base {
@@ -141,12 +141,12 @@
   }
 }
 
-/* Custom Gradient Utilities */
+/* Custom Gradient Utilities - Black & White */
 @layer utilities {
   .bg-orange-gradient {
-    @apply bg-gradient-to-r from-[hsl(25,100%,50%)] to-[hsl(35,100%,50%)];
+    @apply bg-black;
   }
   .text-orange-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,100%,50%)] to-[hsl(35,100%,50%)];
+    @apply text-black;
   }
 }
