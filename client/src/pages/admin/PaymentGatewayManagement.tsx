@@ -52,6 +52,8 @@ interface PaymentGatewaySettings {
   bankTransferEnabled: boolean;
   bankAccounts: BankAccount[];
   bankInstructions: string;
+  bankTransferFeePercent: string;
+  bankTransferFixedFee: string;
   binancePayEnabled: boolean;
   ngeniusEnabled: boolean;
   ngeniusApiKey: string;
@@ -80,6 +82,8 @@ export default function PaymentGatewayManagement() {
     bankTransferEnabled: false,
     bankAccounts: [],
     bankInstructions: '',
+    bankTransferFeePercent: '0',
+    bankTransferFixedFee: '0',
     binancePayEnabled: false,
     ngeniusEnabled: false,
     ngeniusApiKey: '',
@@ -119,6 +123,8 @@ export default function PaymentGatewayManagement() {
           bankTransferEnabled: data.bankTransferEnabled || false,
           bankAccounts: data.bankAccounts || [],
           bankInstructions: data.bankInstructions || '',
+          bankTransferFeePercent: data.bankTransferFeePercent || '0',
+          bankTransferFixedFee: data.bankTransferFixedFee || '0',
           binancePayEnabled: data.binancePayEnabled || false,
           ngeniusEnabled: data.ngeniusEnabled || false,
           ngeniusApiKey: data.ngeniusApiKey || '',
@@ -608,6 +614,38 @@ export default function PaymentGatewayManagement() {
                   className="min-h-[100px]"
                   data-testid="textarea-bank-instructions"
                 />
+              </div>
+
+              <div className="pt-4 border-t">
+                <h3 className="text-lg font-medium mb-4">Bank Transfer Fees</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Fee Percentage (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      placeholder="0"
+                      value={settings.bankTransferFeePercent}
+                      onChange={(e) => setSettings(prev => ({ ...prev, bankTransferFeePercent: e.target.value }))}
+                      data-testid="input-bank-fee-percent"
+                    />
+                    <p className="text-xs text-muted-foreground">Percentage fee charged on bank transfers</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fixed Fee (USD)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={settings.bankTransferFixedFee}
+                      onChange={(e) => setSettings(prev => ({ ...prev, bankTransferFixedFee: e.target.value }))}
+                      data-testid="input-bank-fixed-fee"
+                    />
+                    <p className="text-xs text-muted-foreground">Fixed amount added to each bank transfer</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
