@@ -120,7 +120,7 @@ export default function FinaBridge() {
   const [insufficientFundsError, setInsufficientFundsError] = useState<string | null>(null);
   
   const [requestForm, setRequestForm] = useState({
-    financeType: 'LC',
+    financeType: 'FinaBridge Finance',
     currency: 'USD',
     paymentTerms: '',
     goodsName: '',
@@ -288,7 +288,7 @@ export default function FinaBridge() {
       });
       
       setRequestForm({
-        financeType: 'LC',
+        financeType: 'FinaBridge Finance',
         currency: 'USD',
         paymentTerms: '',
         goodsName: '',
