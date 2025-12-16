@@ -24,23 +24,35 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [currentGoldPriceUsdPerGram, setCurrentGoldPriceUsdPerGram] = useState(75.50);
+  const [currentGoldPriceUsdPerGram, setCurrentGoldPriceUsdPerGram] = useState(0);
   const [goldPriceHistory, setGoldPriceHistory] = useState<GoldPricePoint[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Generate mock price history (will be replaced with real data later)
-  useEffect(() => {
-    const history: GoldPricePoint[] = [];
-    let price = 74.00;
-    for (let i = 0; i < 30; i++) {
-      price = price + (Math.random() - 0.5);
-      history.push({
-        timestamp: new Date(Date.now() - (30 - i) * 24 * 60 * 60 * 1000).toISOString(),
-        priceUsd: price
-      });
+  const fetchGoldPrice = async () => {
+    try {
+      const response = await fetch('/api/gold-price');
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentGoldPriceUsdPerGram(data.pricePerGram || 0);
+        
+        setGoldPriceHistory(prev => {
+          const newPoint = {
+            timestamp: new Date().toISOString(),
+            priceUsd: data.pricePerGram || 0
+          };
+          const updated = [...prev, newPoint].slice(-30);
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch gold price:', error);
     }
-    setGoldPriceHistory(history);
-    setCurrentGoldPriceUsdPerGram(price);
+  };
+
+  useEffect(() => {
+    fetchGoldPrice();
+    const interval = setInterval(fetchGoldPrice, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
