@@ -7434,7 +7434,33 @@ export async function registerRoutes(
   // Submit Finatrades Corporate KYC (questionnaire)
   app.post("/api/finatrades-kyc/corporate", async (req, res) => {
     try {
-      const { userId, questionnaire, representativeLiveness } = req.body;
+      const { 
+        userId, 
+        representativeLiveness,
+        companyName,
+        registrationNumber,
+        incorporationDate,
+        countryOfIncorporation,
+        companyType,
+        natureOfBusiness,
+        numberOfEmployees,
+        headOfficeAddress,
+        telephoneNumber,
+        website,
+        emailAddress,
+        tradingContactName,
+        tradingContactEmail,
+        tradingContactPhone,
+        financeContactName,
+        financeContactEmail,
+        financeContactPhone,
+        beneficialOwners,
+        shareholderCompanyUbos,
+        hasPepOwners,
+        pepDetails,
+        documents,
+        status
+      } = req.body;
       
       if (!userId) {
         return res.status(400).json({ message: "userId is required" });
@@ -7445,32 +7471,51 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
+      const kycData = {
+        companyName,
+        registrationNumber,
+        incorporationDate,
+        countryOfIncorporation,
+        companyType,
+        natureOfBusiness,
+        numberOfEmployees,
+        headOfficeAddress,
+        telephoneNumber,
+        website,
+        emailAddress,
+        tradingContactName,
+        tradingContactEmail,
+        tradingContactPhone,
+        financeContactName,
+        financeContactEmail,
+        financeContactPhone,
+        beneficialOwners,
+        shareholderCompanyUbos,
+        hasPepOwners,
+        pepDetails,
+        documents,
+        representativeLiveness,
+        livenessVerified: !!representativeLiveness,
+        livenessVerifiedAt: representativeLiveness ? new Date() : null,
+        status: status || 'In Progress',
+      };
+      
       // Check if already has a submission
       const existing = await storage.getFinatradesCorporateKyc(userId);
       
       if (existing) {
-        // Update existing submission - spread questionnaire fields
-        const updated = await storage.updateFinatradesCorporateKyc(userId, {
-          ...(questionnaire || {}),
-          representativeLiveness,
-          livenessVerified: !!representativeLiveness,
-          livenessVerifiedAt: representativeLiveness ? new Date() : null,
-          status: 'In Progress',
-        });
+        // Update existing submission
+        const updated = await storage.updateFinatradesCorporateKyc(existing.id, kycData);
         
         // Update user's KYC status
         await storage.updateUser(userId, { kycStatus: 'In Progress' });
         
         res.json({ success: true, submission: updated });
       } else {
-        // Create new submission - spread questionnaire fields
+        // Create new submission
         const submission = await storage.createFinatradesCorporateKyc({
           userId,
-          ...(questionnaire || {}),
-          representativeLiveness,
-          livenessVerified: !!representativeLiveness,
-          livenessVerifiedAt: representativeLiveness ? new Date() : null,
-          status: 'In Progress',
+          ...kycData,
         });
         
         // Update user's KYC status
