@@ -186,8 +186,8 @@ export default function LiveGoldChart() {
               <AreaChart data={displayData}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
@@ -207,7 +207,7 @@ export default function LiveGoldChart() {
                 />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#fff', borderColor: 'rgba(0,0,0,0.1)', color: '#000' }}
-                  itemStyle={{ color: '#D4AF37' }}
+                  itemStyle={{ color: '#F97316' }}
                   formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
                   labelFormatter={(label) => `Time: ${label}`}
                   cursor={{ stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1 }}
@@ -215,7 +215,7 @@ export default function LiveGoldChart() {
                 <Area 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#D4AF37" 
+                  stroke="#F97316" 
                   strokeWidth={2}
                   fillOpacity={1} 
                   fill="url(#colorValue)" 

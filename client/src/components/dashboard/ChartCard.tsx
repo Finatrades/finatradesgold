@@ -237,8 +237,8 @@ export default function ChartCard() {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.05}/>
+                  <stop offset="5%" stopColor="#F97316" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#F97316" stopOpacity={0.05}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -273,12 +273,12 @@ export default function ChartCard() {
               <Area 
                 type="monotone" 
                 dataKey="value" 
-                stroke="#D4AF37" 
+                stroke="#F97316" 
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#goldGradient)" 
                 dot={false}
-                activeDot={{ r: 4, fill: '#D4AF37', stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: '#F97316', stroke: '#fff', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
