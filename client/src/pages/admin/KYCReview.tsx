@@ -769,10 +769,189 @@ export default function KYCReview() {
               <div className="space-y-4">
                 <h4 className="font-medium border-b pb-2">Documents Status</h4>
                 <div className="space-y-2">
-                  {/* Handle Finatrades KYC format */}
-                  {isFinatradesKyc(selectedApplication) ? (
+                  {/* Handle Corporate KYC format */}
+                  {selectedApplication?.kycType === 'finatrades_corporate' ? (
                     <>
-                      {/* ID Front */}
+                      {/* Certificate of Incorporation */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Certificate of Incorporation</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.certificateOfIncorporation?.url ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.certificateOfIncorporation.url, 'Certificate of Incorporation')}
+                                data-testid="button-view-cert-inc"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Trade License */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Trade License</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.tradeLicense?.url ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.tradeLicense.url, 'Trade License')}
+                                data-testid="button-view-trade-license"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Memorandum & Articles */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Memorandum & Articles</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.memorandumArticles?.url ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.memorandumArticles.url, 'Memorandum & Articles')}
+                                data-testid="button-view-memo-articles"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* UBO Passports */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">UBO Passports</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.uboPassports?.url ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.uboPassports.url, 'UBO Passports')}
+                                data-testid="button-view-ubo-passports"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Bank Reference Letter */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Bank Reference Letter</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.bankReferenceLetter?.url ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.bankReferenceLetter.url, 'Bank Reference Letter')}
+                                data-testid="button-view-bank-ref"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Authorized Signatories */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Authorized Signatories</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.documents?.authorizedSignatories?.url ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.documents.authorizedSignatories.url, 'Authorized Signatories')}
+                                data-testid="button-view-auth-sigs"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Uploaded</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Liveness Capture for authorized signatory */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <Camera className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Signatory Liveness</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.livenessCapture ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700">
+                                {selectedApplication?.livenessVerified ? 'Verified' : 'Captured'}
+                              </Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDocumentViewer(selectedApplication.livenessCapture, 'Signatory Liveness')}
+                                data-testid="button-view-corp-liveness"
+                              >
+                                View
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="outline">Not Captured</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : isFinatradesKyc(selectedApplication) ? (
+                    <>
+                      {/* Finatrades Personal KYC - ID Front */}
                       <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4 text-gray-400" />
