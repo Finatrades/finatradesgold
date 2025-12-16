@@ -39,7 +39,13 @@ function getImageSrc(url: string): string {
   return url;
 }
 
-// In-platform document viewer component
+// Helper to detect if URL is a PDF
+function isPdfUrl(url: string): boolean {
+  if (!url) return false;
+  return url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf');
+}
+
+// In-platform document viewer component that handles both images and PDFs
 function DocumentViewer({ 
   isOpen, 
   onClose, 
@@ -52,61 +58,93 @@ function DocumentViewer({
   documentName: string; 
 }) {
   const printRef = useRef<HTMLDivElement>(null);
-  const imageSrc = getImageSrc(documentUrl);
+  const isPdf = isPdfUrl(documentUrl);
+  const imageSrc = isPdf ? documentUrl : getImageSrc(documentUrl);
   
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${documentName}</title>
-          <style>
-            body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-            img { max-width: 100%; max-height: 90vh; object-fit: contain; }
-            @media print { body { padding: 0; } img { max-height: 100%; } }
-          </style>
-        </head>
-        <body>
-          <img src="${imageSrc}" alt="${documentName}" />
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
+    if (isPdf) {
+      const printWindow = window.open(documentUrl, '_blank');
+      if (printWindow) {
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
+    } else {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${documentName}</title>
+            <style>
+              body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+              img { max-width: 100%; max-height: 90vh; object-fit: contain; }
+              @media print { body { padding: 0; } img { max-height: 100%; } }
+            </style>
+          </head>
+          <body>
+            <img src="${imageSrc}" alt="${documentName}" />
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      }
     }
+  };
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = documentUrl;
+    link.download = `${documentName.replace(/\s+/g, '_')}.${isPdf ? 'pdf' : 'jpg'}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
   
   if (!isOpen) return null;
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-5xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>{documentName}</span>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleDownload} data-testid="button-download-document">
+                <FileText className="w-4 h-4 mr-2" /> Download
+              </Button>
               <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print-document">
                 <Printer className="w-4 h-4 mr-2" /> Print
               </Button>
             </div>
           </DialogTitle>
         </DialogHeader>
-        <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[70vh] bg-gray-100 rounded-lg p-4">
-          <img 
-            src={imageSrc} 
-            alt={documentName} 
-            className="max-w-full max-h-[65vh] object-contain rounded"
-            data-testid="img-document-preview"
-            onError={(e) => {
-              console.error('Image failed to load:', documentName);
-              (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext fill="%239ca3af" font-family="Arial" font-size="14" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
-            }}
-          />
+        <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[75vh] bg-gray-100 rounded-lg p-4">
+          {isPdf ? (
+            <iframe 
+              src={documentUrl}
+              title={documentName}
+              className="w-full h-[70vh] border-0 rounded"
+              data-testid="iframe-document-preview"
+            />
+          ) : (
+            <img 
+              src={imageSrc} 
+              alt={documentName} 
+              className="max-w-full max-h-[65vh] object-contain rounded"
+              data-testid="img-document-preview"
+              onError={(e) => {
+                console.error('Image failed to load:', documentName);
+                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext fill="%239ca3af" font-family="Arial" font-size="14" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+              }}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
