@@ -4828,7 +4828,7 @@ export async function registerRoutes(
     return result;
   }
   
-  // Record FinaBridge disclaimer acceptance
+  // Record FinaBridge disclaimer acceptance with role selection
   app.post("/api/finabridge/accept-disclaimer/:userId", async (req, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
@@ -4836,8 +4836,14 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
+      const { role } = req.body;
+      if (!role || !['importer', 'exporter', 'both'].includes(role)) {
+        return res.status(400).json({ message: "Please select your role: importer, exporter, or both" });
+      }
+      
       const updatedUser = await storage.updateUser(req.params.userId, {
         finabridgeDisclaimerAcceptedAt: new Date(),
+        finabridgeRole: role,
       });
       
       await storage.createAuditLog({
@@ -4846,10 +4852,14 @@ export async function registerRoutes(
         actionType: "update",
         actor: req.params.userId,
         actorRole: "user",
-        details: "FinaBridge disclaimer accepted",
+        details: `FinaBridge disclaimer accepted as ${role}`,
       });
       
-      res.json({ success: true, acceptedAt: updatedUser?.finabridgeDisclaimerAcceptedAt });
+      res.json({ 
+        success: true, 
+        acceptedAt: updatedUser?.finabridgeDisclaimerAcceptedAt,
+        role: updatedUser?.finabridgeRole 
+      });
     } catch (error) {
       res.status(400).json({ message: "Failed to record disclaimer acceptance" });
     }
@@ -5245,6 +5255,7 @@ export async function registerRoutes(
         email: u.email,
         companyName: u.companyName,
         finabridgeDisclaimerAcceptedAt: u.finabridgeDisclaimerAcceptedAt,
+        finabridgeRole: u.finabridgeRole,
       }));
       
       res.json({ users: usersWithAcceptanceStatus });
