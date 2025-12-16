@@ -5551,6 +5551,37 @@ export async function registerRoutes(
   // ============================================================================
   // DEAL ROOM - TRADE CASE CONVERSATIONS
   // ============================================================================
+
+  // Admin: Get all deal rooms
+  app.get("/api/admin/deal-rooms", ensureAdminAsync, async (req, res) => {
+    try {
+      const rooms = await storage.getAllDealRooms();
+      
+      // Fetch related data for each room
+      const roomsWithDetails = await Promise.all(rooms.map(async (room) => {
+        const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
+        const importer = await storage.getUser(room.importerUserId);
+        const exporter = await storage.getUser(room.exporterUserId);
+        
+        return {
+          ...room,
+          tradeRequest: tradeRequest ? {
+            tradeRefId: tradeRequest.tradeRefId,
+            goodsName: tradeRequest.goodsName,
+            tradeValueUsd: tradeRequest.tradeValueUsd,
+            status: tradeRequest.status,
+          } : null,
+          importer: importer ? { id: importer.id, finatradesId: importer.finatradesId, email: importer.email } : null,
+          exporter: exporter ? { id: exporter.id, finatradesId: exporter.finatradesId, email: exporter.email } : null,
+        };
+      }));
+      
+      res.json({ rooms: roomsWithDetails });
+    } catch (error) {
+      console.error('Failed to get all deal rooms:', error);
+      res.status(400).json({ message: "Failed to get deal rooms" });
+    }
+  });
   
   // Get user's deal rooms
   app.get("/api/deal-rooms/user/:userId", async (req, res) => {

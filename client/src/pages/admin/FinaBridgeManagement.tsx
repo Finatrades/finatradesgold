@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Briefcase, CheckCircle, XCircle, TrendingUp, 
   Loader2, RefreshCw, Eye, Send, ArrowRight, Package, FileCheck, AlertCircle,
-  ChevronDown, ChevronUp, Ship, Building, Phone, Mail, Calendar, Edit3
+  ChevronDown, ChevronUp, Ship, Building, Phone, Mail, Calendar, Edit3, MessageCircle
 } from 'lucide-react';
+import DealRoom from '@/components/finabridge/DealRoom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -79,6 +80,27 @@ interface DisclaimerUser {
   finabridgeDisclaimerAcceptedAt: string | null;
 }
 
+interface AdminDealRoom {
+  id: string;
+  tradeRequestId: string;
+  acceptedProposalId: string;
+  importerUserId: string;
+  exporterUserId: string;
+  assignedAdminId: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  tradeRequest?: {
+    tradeRefId: string;
+    goodsName: string;
+    tradeValueUsd: string;
+    status: string;
+  };
+  importer?: { id: string; finatradesId: string | null; email: string } | null;
+  exporter?: { id: string; finatradesId: string | null; email: string } | null;
+  unreadCount?: number;
+}
+
 export default function FinaBridgeManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -96,6 +118,8 @@ export default function FinaBridgeManagement() {
   const [requestedDocuments, setRequestedDocuments] = useState<string[]>([]);
   const [customDocumentNotes, setCustomDocumentNotes] = useState('');
   const [customDocumentInput, setCustomDocumentInput] = useState('');
+  const [dealRooms, setDealRooms] = useState<AdminDealRoom[]>([]);
+  const [selectedDealRoom, setSelectedDealRoom] = useState<string | null>(null);
 
   const STANDARD_DOCUMENTS = [
     { key: 'company_registration', label: 'Company Registration Certificate' },
@@ -143,13 +167,25 @@ export default function FinaBridgeManagement() {
     }
   };
 
+  const fetchDealRooms = async () => {
+    try {
+      const res = await apiRequest('GET', '/api/admin/deal-rooms');
+      const data = await res.json();
+      setDealRooms(data.rooms || []);
+    } catch (err) {
+      console.error('Failed to load deal rooms:', err);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
     fetchDisclaimerUsers();
+    fetchDealRooms();
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchRequests();
       fetchDisclaimerUsers();
+      fetchDealRooms();
     }, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -344,6 +380,7 @@ export default function FinaBridgeManagement() {
             <TabsTrigger value="all">All Requests</TabsTrigger>
             <TabsTrigger value="review">Needs Review</TabsTrigger>
             <TabsTrigger value="active">Active Trades</TabsTrigger>
+            <TabsTrigger value="dealrooms">Deal Rooms ({dealRooms.length})</TabsTrigger>
             <TabsTrigger value="disclaimer">Disclaimer Acceptance</TabsTrigger>
           </TabsList>
 
@@ -511,6 +548,76 @@ export default function FinaBridgeManagement() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="dealrooms" className="mt-4">
+            {selectedDealRoom ? (
+              <DealRoom 
+                dealRoomId={selectedDealRoom} 
+                userRole="admin" 
+                onClose={() => setSelectedDealRoom(null)} 
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5" />
+                    Active Deal Rooms
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {dealRooms.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                      <p className="font-medium">No active deal rooms</p>
+                      <p className="text-sm">Deal rooms are created when a trade proposal is accepted.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {dealRooms.map((room) => (
+                        <Card 
+                          key={room.id} 
+                          className="hover:border-secondary/50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedDealRoom(room.id)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="p-2 bg-secondary/10 rounded-lg">
+                                  <MessageCircle className="w-5 h-5 text-secondary" />
+                                </div>
+                                <div>
+                                  <h3 className="font-bold">{room.tradeRequest?.tradeRefId || 'Unknown'}</h3>
+                                  <p className="text-sm text-muted-foreground">{room.tradeRequest?.goodsName}</p>
+                                  <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                                    <span>Importer: {room.importer?.finatradesId || room.importer?.email}</span>
+                                    <span>Exporter: {room.exporter?.finatradesId || room.exporter?.email}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <p className="font-bold">${parseFloat(room.tradeRequest?.tradeValueUsd || '0').toLocaleString()}</p>
+                                  {room.unreadCount && Number(room.unreadCount) > 0 && (
+                                    <Badge className="bg-red-500 text-white">{room.unreadCount} unread</Badge>
+                                  )}
+                                </div>
+                                <Badge className={room.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                                  {room.status}
+                                </Badge>
+                                <Button size="sm" variant="ghost">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
 
