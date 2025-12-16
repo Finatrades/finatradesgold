@@ -981,11 +981,8 @@ export default function FinaBridge() {
                             type="number"
                             step="0.001"
                             value={requestForm.settlementGoldGrams}
-                            onChange={(e) => {
-                              setRequestForm({ ...requestForm, settlementGoldGrams: e.target.value });
-                              setInsufficientFundsError(null);
-                            }}
-                            className={`w-full p-3 border rounded-lg ${
+                            readOnly
+                            className={`w-full p-3 border rounded-lg bg-gray-50 cursor-not-allowed ${
                               requestForm.settlementGoldGrams && 
                               parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
                                 ? 'border-red-400 bg-red-50/50'
