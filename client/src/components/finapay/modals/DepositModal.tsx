@@ -309,7 +309,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-white border-border text-foreground sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Wallet className="w-5 h-5 text-primary" />
@@ -396,205 +396,214 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             )}
           </div>
         ) : step === 'details' && selectedAccount ? (
-          <div className="space-y-6 py-4">
-            <div className="border border-border rounded-xl p-4 bg-muted/20 space-y-3">
-              <div className="flex items-center justify-between border-b border-border pb-2 mb-2">
-                <h4 className="font-bold text-foreground">{selectedAccount.bankName}</h4>
-                <span className="text-xs font-bold px-2 py-1 bg-primary/10 text-primary rounded">
-                  {selectedAccount.currency}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-3 text-sm">
-                <div className="flex flex-col gap-1">
-                  <span className="text-muted-foreground text-xs uppercase">Beneficiary Name</span>
-                  <div className="flex items-center justify-between bg-white p-2 rounded border border-border">
-                    <span className="font-medium font-mono text-sm">{selectedAccount.accountName}</span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
-                      <Copy className="w-3 h-3" />
-                    </Button>
+          <div className="py-4">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Left Panel - Bank Account Details */}
+              <div className="border border-border rounded-xl p-4 bg-muted/10 h-fit">
+                <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-5 h-5 text-primary" />
+                    <h4 className="font-bold text-foreground">Bank Details</h4>
                   </div>
+                  <span className="text-xs font-bold px-2 py-1 bg-primary/10 text-primary rounded">
+                    {selectedAccount.currency}
+                  </span>
                 </div>
-
-                <div className="flex flex-col gap-1">
-                  <span className="text-muted-foreground text-xs uppercase">Account Number</span>
-                  <div className="flex items-center justify-between bg-white p-2 rounded border border-border">
-                    <span className="font-medium font-mono text-sm">{selectedAccount.accountNumber}</span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                {selectedAccount.swiftCode && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-xs uppercase">SWIFT Code</span>
-                    <div className="flex items-center justify-between bg-white p-2 rounded border border-border">
-                      <span className="font-medium font-mono text-sm">{selectedAccount.swiftCode}</span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {selectedAccount.iban && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-xs uppercase">IBAN</span>
-                    <div className="flex items-center justify-between bg-white p-2 rounded border border-border">
-                      <span className="font-medium font-mono text-sm">{selectedAccount.iban}</span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {selectedAccount.routingNumber && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-xs uppercase">Routing Number</span>
-                    <div className="flex items-center justify-between bg-white p-2 rounded border border-border">
-                      <span className="font-medium font-mono text-sm">{selectedAccount.routingNumber}</span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm">Amount (USD) *</Label>
-                <div className="relative mt-1">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="pl-9"
-                    data-testid="input-deposit-amount"
-                  />
-                </div>
-              </div>
-
-              {parseFloat(amount) > 0 && (
-                <div className="border border-primary/20 rounded-xl p-4 bg-gradient-to-br from-orange-50 to-amber-50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Coins className="w-5 h-5 text-primary" />
-                    <h4 className="font-semibold text-foreground">Deposit Summary</h4>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Deposit Amount:</span>
-                      <span className="font-medium">${getDepositSummary().amountNum.toFixed(2)}</span>
-                    </div>
-                    {depositFee && getDepositSummary().feeAmount > 0 && (
-                      <div className="flex justify-between text-orange-600">
-                        <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
-                        <span>-${getDepositSummary().feeAmount.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
-                      <span>Net Credit to Wallet:</span>
-                      <span className="text-green-600">${getDepositSummary().netDeposit.toFixed(2)}</span>
-                    </div>
-                    {goldPrice && getDepositSummary().goldGrams > 0 && (
-                      <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
-                        <span className="flex items-center gap-1">
-                          <Coins className="w-4 h-4" />
-                          Gold Equivalent:
-                        </span>
-                        <span className="font-bold">{getDepositSummary().goldGrams.toFixed(4)}g</span>
-                      </div>
-                    )}
-                    {goldPrice && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Based on current gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm">Your Bank Name (Optional)</Label>
-                  <Input 
-                    value={senderBankName}
-                    onChange={(e) => setSenderBankName(e.target.value)}
-                    placeholder="e.g., Chase Bank"
-                    className="mt-1"
-                    data-testid="input-sender-bank"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm">Your Account Name (Optional)</Label>
-                  <Input 
-                    value={senderAccountName}
-                    onChange={(e) => setSenderAccountName(e.target.value)}
-                    placeholder="e.g., John Doe"
-                    className="mt-1"
-                    data-testid="input-sender-account"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm">Proof of Payment / Receipt *</Label>
-                <p className="text-xs text-muted-foreground mb-2">Upload a screenshot or photo of your bank transfer confirmation</p>
-                <input 
-                  type="file" 
-                  ref={fileInputRef}
-                  accept="image/*,.pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  data-testid="input-proof-file"
-                />
                 
-                {!proofOfPayment ? (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-border rounded-lg p-6 hover:border-primary/50 hover:bg-muted/30 transition-colors text-center"
-                    data-testid="button-upload-proof"
-                  >
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm font-medium text-foreground">Click to upload receipt</p>
-                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG, or PDF (max 5MB)</p>
-                  </button>
-                ) : (
-                  <div className="border border-border rounded-lg p-4 bg-green-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                          <Image className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{proofFileName}</p>
-                          <p className="text-xs text-green-600">Uploaded successfully</p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={removeProof}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        data-testid="button-remove-proof"
-                      >
-                        <X className="w-4 h-4" />
+                <p className="text-sm text-muted-foreground mb-4">{selectedAccount.bankName}</p>
+                
+                <div className="space-y-3 text-sm">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground text-xs uppercase">Beneficiary Name</span>
+                    <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
+                      <span className="font-medium font-mono text-sm truncate mr-2">{selectedAccount.accountName}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
+                        <Copy className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
-                )}
+
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground text-xs uppercase">Account Number</span>
+                    <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
+                      <span className="font-medium font-mono text-sm truncate mr-2">{selectedAccount.accountNumber}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
+                        <Copy className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {selectedAccount.swiftCode && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-muted-foreground text-xs uppercase">SWIFT Code</span>
+                      <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
+                        <span className="font-medium font-mono text-sm">{selectedAccount.swiftCode}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedAccount.iban && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-muted-foreground text-xs uppercase">IBAN</span>
+                      <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
+                        <span className="font-medium font-mono text-sm truncate mr-2">{selectedAccount.iban}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedAccount.routingNumber && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-muted-foreground text-xs uppercase">Routing Number</span>
+                      <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
+                        <span className="font-medium font-mono text-sm">{selectedAccount.routingNumber}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            
-            <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg flex items-start gap-2">
-               <div className="mt-0.5">⚠️</div>
-               <p>After making your bank transfer, your deposit request will be reviewed by our team. Once the funds are received and verified, your wallet will be credited within 1-3 business days.</p>
+
+              {/* Right Panel - Deposit Information */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Amount (USD) *</Label>
+                  <div className="relative mt-1.5">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-9 h-11"
+                      data-testid="input-deposit-amount"
+                    />
+                  </div>
+                </div>
+
+                {parseFloat(amount) > 0 && (
+                  <div className="border border-primary/20 rounded-xl p-4 bg-gradient-to-br from-orange-50 to-amber-50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Coins className="w-5 h-5 text-primary" />
+                      <h4 className="font-semibold text-foreground">Deposit Summary</h4>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Deposit Amount:</span>
+                        <span className="font-medium">${getDepositSummary().amountNum.toFixed(2)}</span>
+                      </div>
+                      {depositFee && getDepositSummary().feeAmount > 0 && (
+                        <div className="flex justify-between text-orange-600">
+                          <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
+                          <span>-${getDepositSummary().feeAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
+                        <span>Net Credit to Wallet:</span>
+                        <span className="text-green-600">${getDepositSummary().netDeposit.toFixed(2)}</span>
+                      </div>
+                      {goldPrice && getDepositSummary().goldGrams > 0 && (
+                        <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
+                          <span className="flex items-center gap-1">
+                            <Coins className="w-4 h-4" />
+                            Gold Equivalent:
+                          </span>
+                          <span className="font-bold">{getDepositSummary().goldGrams.toFixed(4)}g</span>
+                        </div>
+                      )}
+                      {goldPrice && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Based on current gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm">Your Bank Name</Label>
+                    <Input 
+                      value={senderBankName}
+                      onChange={(e) => setSenderBankName(e.target.value)}
+                      placeholder="e.g., Chase Bank"
+                      className="mt-1.5"
+                      data-testid="input-sender-bank"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Your Account Name</Label>
+                    <Input 
+                      value={senderAccountName}
+                      onChange={(e) => setSenderAccountName(e.target.value)}
+                      placeholder="e.g., John Doe"
+                      className="mt-1.5"
+                      data-testid="input-sender-account"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Proof of Payment *</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Upload transfer confirmation</p>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    accept="image/*,.pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    data-testid="input-proof-file"
+                  />
+                  
+                  {!proofOfPayment ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors text-center"
+                      data-testid="button-upload-proof"
+                    >
+                      <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm font-medium text-foreground">Click to upload</p>
+                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG, PDF (max 5MB)</p>
+                    </button>
+                  ) : (
+                    <div className="border border-border rounded-lg p-3 bg-green-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <Image className="w-4 h-4 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground truncate max-w-[150px]">{proofFileName}</p>
+                            <p className="text-xs text-green-600">Uploaded</p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={removeProof}
+                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          data-testid="button-remove-proof"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg flex items-start gap-2">
+                   <div className="mt-0.5">⚠️</div>
+                   <p>Your deposit will be reviewed and credited within 1-3 business days after verification.</p>
+                </div>
+              </div>
             </div>
           </div>
         ) : step === 'card-amount' ? (
