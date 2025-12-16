@@ -67,45 +67,46 @@ export default function CertificatesCard() {
             });
 
             return (
-              <div
-                key={cert.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all border border-gray-100"
-                data-testid={`certificate-row-${cert.id}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isDigital ? 'bg-amber-100' : 'bg-gray-200'
-                  }`}>
-                    {isDigital ? (
-                      <Award className="w-5 h-5 text-amber-600" />
-                    ) : (
-                      <Box className="w-5 h-5 text-gray-600" />
-                    )}
+              <Link key={cert.id} href="/finavault?tab=certificates">
+                <div
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all border border-gray-100 cursor-pointer"
+                  data-testid={`certificate-row-${cert.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      isDigital ? 'bg-amber-100' : 'bg-gray-200'
+                    }`}>
+                      {isDigital ? (
+                        <Award className="w-5 h-5 text-amber-600" />
+                      ) : (
+                        <Box className="w-5 h-5 text-gray-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {isDigital ? 'Digital Ownership' : 'Physical Storage'}
+                      </p>
+                      <p className="text-xs text-gray-500">{issueDate}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {isDigital ? 'Digital Ownership' : 'Physical Storage'}
-                    </p>
-                    <p className="text-xs text-gray-500">{issueDate}</p>
+                  <div className="text-right flex items-center gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{goldGrams.toFixed(2)}g</p>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${
+                          cert.status === 'Active' 
+                            ? 'bg-green-50 text-green-600 border-green-200' 
+                            : 'bg-gray-50 text-gray-600 border-gray-200'
+                        }`}
+                      >
+                        {cert.status}
+                      </Badge>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
                   </div>
                 </div>
-                <div className="text-right flex items-center gap-2">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{goldGrams.toFixed(2)}g</p>
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${
-                        cert.status === 'Active' 
-                          ? 'bg-green-50 text-green-600 border-green-200' 
-                          : 'bg-gray-50 text-gray-600 border-gray-200'
-                      }`}
-                    >
-                      {cert.status}
-                    </Badge>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
+              </Link>
             );
           })
         )}
