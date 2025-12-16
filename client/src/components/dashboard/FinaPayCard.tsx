@@ -75,7 +75,7 @@ export default function FinaPayCard() {
         <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white hover:text-white border-zinc-600">
           Freeze Card
         </Button>
-        <Button className="bg-secondary text-white hover:bg-secondary/90 font-semibold">
+        <Button className="bg-primary text-white hover:bg-primary/90 font-semibold">
           View Details
         </Button>
       </div>

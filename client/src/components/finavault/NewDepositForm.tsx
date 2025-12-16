@@ -445,7 +445,7 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
         </div>
 
         <div className="flex gap-4 pt-4">
-          <Button onClick={handleSubmit} className="flex-1 bg-secondary text-white hover:bg-secondary/90 font-bold h-12">
+          <Button onClick={handleSubmit} className="flex-1 bg-primary text-white hover:bg-primary/90 font-bold h-12">
             Submit Deposit Request
           </Button>
           <Button onClick={onCancel} variant="outline" className="flex-1 border-border hover:bg-muted text-foreground h-12">

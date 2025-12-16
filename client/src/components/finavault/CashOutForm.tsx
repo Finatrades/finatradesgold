@@ -339,7 +339,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
 
                   <Button 
                     onClick={handleProceed}
-                    className="w-full h-12 bg-secondary text-white hover:bg-secondary/90 font-bold text-lg"
+                    className="w-full h-12 bg-primary text-white hover:bg-primary/90 font-bold text-lg"
                     data-testid="button-review-withdrawal"
                   >
                     Review Withdrawal Request
@@ -429,7 +429,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     </Button>
                     <Button 
                       onClick={handleConfirm}
-                      className="flex-1 bg-secondary text-white hover:bg-secondary/90 font-bold h-12"
+                      className="flex-1 bg-primary text-white hover:bg-primary/90 font-bold h-12"
                       disabled={isLoading}
                       data-testid="button-submit-withdrawal"
                     >

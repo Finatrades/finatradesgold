@@ -81,7 +81,7 @@ export default function BnslWalletCard({
             </CardTitle>
             <Button 
               size="sm" 
-              className="bg-secondary text-white hover:bg-secondary/90 font-bold"
+              className="bg-primary text-white hover:bg-primary/90 font-bold"
               onClick={() => setIsTransferModalOpen(true)}
             >
               <ArrowRightLeft className="w-4 h-4 mr-2" /> Transfer from FinaPay

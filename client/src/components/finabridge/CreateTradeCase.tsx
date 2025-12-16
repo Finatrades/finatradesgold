@@ -504,7 +504,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                <div className="space-y-4">
                  <div className="flex justify-between items-center">
                     <Label>Items & HS Codes</Label>
-                    <Button size="sm" onClick={addItem} className="bg-secondary text-white hover:bg-secondary/90 h-8 text-xs">
+                    <Button size="sm" onClick={addItem} className="bg-primary text-white hover:bg-primary/90 h-8 text-xs">
                       <Plus className="w-3 h-3 mr-1" /> Add Item
                     </Button>
                  </div>

@@ -146,7 +146,7 @@ export default function BnslPlanDetail({
              {nextPayout && (
                <Button 
                  size="sm" 
-                 className="bg-secondary text-white hover:bg-secondary/90"
+                 className="bg-primary text-white hover:bg-primary/90"
                  onClick={() => onSimulatePayout(nextPayout.id, currentGoldPrice)}
                >
                  <PlayCircle className="w-4 h-4 mr-2" /> Simulate Next Payout

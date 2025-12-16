@@ -87,7 +87,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
         </div>
         <Button 
           onClick={onNewRequest}
-          className="bg-secondary text-white hover:bg-secondary/90 font-bold shadow-lg shadow-secondary/20 rounded-full px-6"
+          className="bg-primary text-white hover:bg-primary/90 font-bold shadow-lg shadow-primary/20 rounded-full px-6"
         >
           <Plus className="w-4 h-4 mr-2" /> New Deposit Request
         </Button>

@@ -291,7 +291,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                   />
                 </div>
                 <Button 
-                  className="shrink-0 bg-secondary text-white hover:bg-secondary/90"
+                  className="shrink-0 bg-primary text-white hover:bg-primary/90"
                   onClick={handleSendMessage}
                 >
                   <Send className="w-4 h-4" />
@@ -309,7 +309,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                 <CardTitle className="text-foreground">Document Management System</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">Manage and track all trade-related documentation</p>
               </div>
-              <Button size="sm" onClick={handleFileUpload} className="bg-secondary text-white hover:bg-secondary/90">
+              <Button size="sm" onClick={handleFileUpload} className="bg-primary text-white hover:bg-primary/90">
                 <Upload className="w-4 h-4 mr-2" /> Upload Document
               </Button>
             </CardHeader>

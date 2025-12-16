@@ -39,7 +39,7 @@ export default function ReferralCard() {
           <div className="text-xs text-muted-foreground">
             Current Reward: <span className="text-foreground font-medium">0.25 g / user</span>
           </div>
-          <Button size="sm" className="bg-secondary text-white hover:bg-secondary/90 font-semibold">
+          <Button size="sm" className="bg-primary text-white hover:bg-primary/90 font-semibold">
             <Users className="w-4 h-4 mr-2" /> Invite Friend
           </Button>
         </div>

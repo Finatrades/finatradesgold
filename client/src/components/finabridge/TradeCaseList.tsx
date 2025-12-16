@@ -34,7 +34,7 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
           <CardTitle className="text-xl font-bold text-foreground">Active Trades</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">Manage your ongoing trade finance deals.</p>
         </div>
-        <Button onClick={onCreateNew} className="bg-secondary text-white hover:bg-secondary/90 font-bold">
+        <Button onClick={onCreateNew} className="bg-primary text-white hover:bg-primary/90 font-bold">
           + Create New Trade
         </Button>
       </CardHeader>

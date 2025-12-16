@@ -351,7 +351,7 @@ export default function BNSL() {
           
           <div className="flex items-center gap-4">
             <Button 
-              className="bg-secondary text-white hover:bg-secondary/90 shadow-sm hidden md:flex items-center gap-2"
+              className="bg-primary text-white hover:bg-primary/90 shadow-sm hidden md:flex items-center gap-2"
               onClick={() => setActiveTab('create')}
             >
               <Plus className="w-4 h-4" /> Start New Plan

@@ -349,7 +349,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
                  </div>
                  <h3 className="text-green-600 font-bold mb-1">Securely Stored</h3>
                  <p className="text-muted-foreground text-xs mb-4">Vault Ref: {request.vaultInternalReference || 'PENDING'}</p>
-                 <Button className="w-full bg-secondary text-white hover:bg-secondary/90">
+                 <Button className="w-full bg-primary text-white hover:bg-primary/90">
                    Download Vault Receipt
                  </Button>
                </CardContent>

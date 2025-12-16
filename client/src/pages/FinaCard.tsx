@@ -123,7 +123,7 @@ export default function FinaCard() {
                    Be the first to know when FinaCard launches in your region. Early access members get a free Metal card upgrade.
                  </p>
                  <div className="flex gap-3">
-                   <Button className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                   <Button className="flex-1 bg-primary text-white hover:bg-primary/90">
                      Join Waitlist
                    </Button>
                    <Button variant="outline" className="flex-1">

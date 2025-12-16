@@ -414,7 +414,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
             </Button>
           ) : (
             <Button 
-              className="w-full h-12 bg-secondary text-white hover:bg-secondary/90 font-bold"
+              className="w-full h-12 bg-primary text-white hover:bg-primary/90 font-bold"
               disabled={numericGrams <= 0 || isLoading || isLoadingMethods || !method || enabledMethodsCount === 0}
               onClick={handleConfirm}
               data-testid="button-confirm-purchase"
