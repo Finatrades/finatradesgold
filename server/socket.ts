@@ -184,6 +184,108 @@ export function setupSocketIO(httpServer: HttpServer) {
       io.to(`session-${data.sessionId}`).emit('call:ended', data);
     });
 
+    // ============================================================================
+    // DEAL ROOM (Trade Case Conversations)
+    // ============================================================================
+
+    // Join a deal room
+    socket.on("dealroom:join", (data: { dealRoomId: string; userId: string }) => {
+      if (data.dealRoomId) {
+        socket.join(`dealroom-${data.dealRoomId}`);
+        console.log(`Socket ${socket.id} joined deal room: dealroom-${data.dealRoomId}`);
+        
+        // Notify others that user is online in the room
+        socket.to(`dealroom-${data.dealRoomId}`).emit('dealroom:user-joined', {
+          dealRoomId: data.dealRoomId,
+          userId: data.userId,
+        });
+      }
+    });
+
+    // Leave a deal room
+    socket.on("dealroom:leave", (data: { dealRoomId: string; userId: string }) => {
+      if (data.dealRoomId) {
+        socket.leave(`dealroom-${data.dealRoomId}`);
+        console.log(`Socket ${socket.id} left deal room: dealroom-${data.dealRoomId}`);
+        
+        socket.to(`dealroom-${data.dealRoomId}`).emit('dealroom:user-left', {
+          dealRoomId: data.dealRoomId,
+          userId: data.userId,
+        });
+      }
+    });
+
+    // Handle deal room message
+    socket.on("dealroom:message", async (data: {
+      dealRoomId: string;
+      senderUserId: string;
+      senderRole: 'importer' | 'exporter' | 'admin';
+      content?: string;
+      attachmentUrl?: string;
+      attachmentName?: string;
+      attachmentType?: string;
+    }) => {
+      try {
+        const { dealRoomId, senderUserId, senderRole, content, attachmentUrl, attachmentName, attachmentType } = data;
+
+        // Verify the room exists and user is a participant
+        const room = await storage.getDealRoom(dealRoomId);
+        if (!room) {
+          socket.emit('dealroom:error', { message: 'Deal room not found' });
+          return;
+        }
+
+        const isParticipant = [room.importerUserId, room.exporterUserId, room.assignedAdminId].includes(senderUserId);
+        if (!isParticipant) {
+          socket.emit('dealroom:error', { message: 'Not a participant in this deal room' });
+          return;
+        }
+
+        // Save message to database
+        const message = await storage.createDealRoomMessage({
+          dealRoomId,
+          senderUserId,
+          senderRole,
+          content: content || null,
+          attachmentUrl: attachmentUrl || null,
+          attachmentName: attachmentName || null,
+          attachmentType: attachmentType || null,
+          isRead: false,
+        });
+
+        // Get sender info
+        const sender = await storage.getUser(senderUserId);
+
+        // Broadcast message to all users in the deal room
+        io.to(`dealroom-${dealRoomId}`).emit('dealroom:message', {
+          ...message,
+          sender: sender ? { id: sender.id, finatradesId: sender.finatradesId, email: sender.email } : null,
+        });
+
+      } catch (error) {
+        console.error('Error sending deal room message:', error);
+        socket.emit('dealroom:error', { message: 'Failed to send message' });
+      }
+    });
+
+    // Handle deal room typing indicator
+    socket.on("dealroom:typing", (data: { dealRoomId: string; userId: string; isTyping: boolean }) => {
+      socket.to(`dealroom-${data.dealRoomId}`).emit('dealroom:typing', data);
+    });
+
+    // Handle deal room read receipts
+    socket.on("dealroom:read", async (data: { dealRoomId: string; userId: string }) => {
+      try {
+        await storage.markDealRoomMessagesAsRead(data.dealRoomId, data.userId);
+        io.to(`dealroom-${data.dealRoomId}`).emit('dealroom:read', { 
+          dealRoomId: data.dealRoomId, 
+          userId: data.userId 
+        });
+      } catch (error) {
+        console.error('Error marking deal room messages as read:', error);
+      }
+    });
+
     // Handle disconnect
     socket.on("disconnect", () => {
       console.log(`Socket disconnected: ${socket.id}`);
