@@ -166,6 +166,7 @@ export default function FinaBridge() {
     otherDocNote: '',
   });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [proposalFiles, setProposalFiles] = useState<File[]>([]);
   
   const [proposalForm, setProposalForm] = useState({
     quotePrice: '',
@@ -403,6 +404,7 @@ export default function FinaBridge() {
         contactPhone: '',
         notes: '' 
       });
+      setProposalFiles([]);
       fetchExporterData();
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to submit proposal', variant: 'destructive' });
@@ -1733,6 +1735,54 @@ export default function FinaBridge() {
                   placeholder="Additional details about your proposal, product quality, experience, etc..."
                   data-testid="input-proposal-notes"
                 />
+              </div>
+
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Supporting Documents
+                </h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Upload certificates, product specs, company profiles, or other supporting documents
+                </p>
+                <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-secondary transition-colors cursor-pointer bg-white">
+                  <label className="cursor-pointer text-center">
+                    <FileText className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <span className="text-sm text-secondary font-medium">Click to upload documents</span>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC (Max 10MB each)</p>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setProposalFiles([...proposalFiles, ...Array.from(e.target.files)]);
+                        }
+                      }}
+                      data-testid="input-proposal-files"
+                    />
+                  </label>
+                </div>
+                {proposalFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-medium text-gray-600">{proposalFiles.length} file(s) selected:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {proposalFiles.map((file, idx) => (
+                        <span key={idx} className="text-xs bg-white border px-2 py-1 rounded flex items-center gap-1">
+                          <FileText className="w-3 h-3 text-gray-400" />
+                          {file.name}
+                          <button
+                            type="button"
+                            onClick={() => setProposalFiles(proposalFiles.filter((_, i) => i !== idx))}
+                            className="text-red-500 hover:text-red-700 ml-1"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-4 pt-4 border-t">
