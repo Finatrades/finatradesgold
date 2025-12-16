@@ -35,6 +35,13 @@ interface TradeRequest {
   currency: string;
   status: string;
   createdAt: string;
+  modeOfTransport: string | null;
+  portOfLoading: string | null;
+  portOfDischarge: string | null;
+  partialShipment: boolean | null;
+  transshipment: boolean | null;
+  insuranceCoverage: string | null;
+  insuranceProvider: string | null;
   importer?: { finatradesId: string | null };
 }
 
@@ -1362,7 +1369,7 @@ export default function FinaBridge() {
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-b border-border">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-border">
                           <div>
                             <p className="text-xs text-muted-foreground">Quantity</p>
                             <p className="font-medium">{request.quantity || 'N/A'}</p>
@@ -1381,8 +1388,64 @@ export default function FinaBridge() {
                           </div>
                         </div>
                         
+                        <div className="p-4 my-4 bg-blue-50/50 border border-blue-100 rounded-lg">
+                          <h4 className="text-sm font-medium text-blue-800 mb-3 flex items-center gap-2">
+                            <Truck className="w-4 h-4" /> Shipping & Logistics
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Mode of Transport</p>
+                              <p className="font-medium text-sm">{request.modeOfTransport || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Port of Loading</p>
+                              <p className="font-medium text-sm">{request.portOfLoading || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Port of Discharge</p>
+                              <p className="font-medium text-sm">{request.portOfDischarge || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Final Destination</p>
+                              <p className="font-medium text-sm">{request.destination || 'N/A'}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-6 mt-3 pt-3 border-t border-blue-100">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.partialShipment ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>
+                                {request.partialShipment ? '✓' : '✗'}
+                              </span>
+                              <span className="text-sm">Partial Shipment</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.transshipment ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>
+                                {request.transshipment ? '✓' : '✗'}
+                              </span>
+                              <span className="text-sm">Transshipment</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {(request.insuranceCoverage || request.insuranceProvider) && (
+                          <div className="p-4 mb-4 bg-purple-50/50 border border-purple-100 rounded-lg">
+                            <h4 className="text-sm font-medium text-purple-800 mb-3 flex items-center gap-2">
+                              <Shield className="w-4 h-4" /> Insurance
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Coverage Type</p>
+                                <p className="font-medium text-sm">{request.insuranceCoverage || 'Not specified'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Insurance Provider</p>
+                                <p className="font-medium text-sm">{request.insuranceProvider || 'Not specified'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         {request.description && (
-                          <div className="mt-4">
+                          <div className="p-3 bg-gray-50 rounded-lg border">
                             <p className="text-xs text-muted-foreground mb-1">Description</p>
                             <p className="text-sm">{request.description}</p>
                           </div>
