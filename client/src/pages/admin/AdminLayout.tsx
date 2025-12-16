@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation, Link } from 'wouter';
 import { 
@@ -8,7 +8,6 @@ import {
   Settings, 
   LogOut, 
   Menu,
-  Search,
   ShieldAlert,
   Shield,
   Package,
@@ -21,9 +20,7 @@ import {
   DollarSign,
   UserCog,
   Receipt,
-  ChevronRight,
-  X,
-  Sparkles
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,11 +33,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (!user || user.role !== 'admin') return null;
 
@@ -93,150 +100,170 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isActive = (path: string) => location === path;
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-gray-50 to-orange-50/30 flex">
-      {/* Mobile Overlay */}
+    <div className="min-h-screen bg-muted text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative">
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          data-testid="admin-sidebar-overlay"
         />
       )}
       
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white transform transition-all duration-300 ease-out lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Logo Header */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/30">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">FinaAdmin</span>
-              <p className="text-xs text-slate-400">Control Panel</p>
-            </div>
+      <aside 
+        className={`fixed top-0 left-0 h-full w-72 bg-background border-r border-border z-50 transition-transform duration-300 lg:translate-x-0 shadow-xl lg:shadow-none ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        data-testid="admin-sidebar"
+      >
+        <div className="flex flex-col h-full">
+          <div className="h-20 flex items-center justify-between px-6 border-b border-border">
+            <Link href="/admin">
+              <div className="flex items-center gap-3 cursor-pointer" data-testid="admin-sidebar-logo">
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-lg">F</span>
+                </div>
+                <div>
+                  <span className="text-xl font-bold text-foreground">FinaAdmin</span>
+                  <p className="text-xs text-muted-foreground">Control Panel</p>
+                </div>
+              </div>
+            </Link>
+            <button 
+              className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button 
-            className="lg:hidden p-1 hover:bg-white/10 rounded-lg transition-colors"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="w-5 h-5 text-slate-400" />
-          </button>
-        </div>
 
-        {/* Navigation */}
-        <nav className="p-4 space-y-6 h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-          {menuSections.map((section) => (
-            <div key={section.title}>
-              <h3 className="px-4 mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{section.title}</h3>
-              <div className="space-y-1">
+          <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-6 custom-scrollbar">
+            {menuSections.map((section) => (
+              <div key={section.title} className="space-y-1">
+                <p className="px-4 text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                  {section.title}
+                </p>
                 {section.items.map((item) => (
                   <Link key={item.href} href={item.href}>
-                    <div className={`group flex items-center justify-between px-4 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
-                      isActive(item.href) 
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30' 
-                        : 'text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <span className={isActive(item.href) ? 'text-white' : 'text-slate-500 group-hover:text-orange-400 transition-colors'}>{item.icon}</span>
-                        <span className="font-medium text-sm">{item.label}</span>
+                    <div 
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
+                        isActive(item.href) 
+                          ? 'bg-primary text-primary-foreground shadow-md' 
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      }`}
+                      onClick={() => setSidebarOpen(false)}
+                      data-testid={`admin-sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
+                    >
+                      <div className={isActive(item.href) ? 'text-primary-foreground' : ''}>
+                        {item.icon}
                       </div>
-                      {isActive(item.href) && <ChevronRight className="w-4 h-4" />}
+                      <span className="font-medium text-sm">{item.label}</span>
                     </div>
                   </Link>
                 ))}
               </div>
-            </div>
-          ))}
-        </nav>
+            ))}
+          </nav>
 
-        {/* Logout Button */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-slate-900/80 backdrop-blur-sm">
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl"
-            onClick={logout}
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Log Out
-          </Button>
+          <div className="p-4 border-t border-border">
+            <div className="mb-4 p-4 rounded-xl bg-secondary border border-primary/20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-primary capitalize font-medium">
+                    Super Admin
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              onClick={logout}
+              data-testid="button-admin-logout"
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              Log Out
+            </Button>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
-        {/* Header */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 flex items-center justify-between px-6 sticky top-0 z-40">
-          <button 
-            className="lg:hidden p-2.5 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-
-          <div className="flex-1 max-w-xl mx-4 hidden md:block">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search users, transactions, documents..." 
-                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 focus:bg-white transition-all"
-              />
+      <div className="lg:ml-72 min-h-screen flex flex-col transition-all duration-300">
+        <header className={`sticky top-0 z-30 h-16 transition-all duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-background border-b border-border'}`}>
+          <div className="h-full px-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-admin-mobile-sidebar"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <NotificationCenter />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 pl-4 border-l border-gray-200 cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors" data-testid="button-admin-user-menu">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
-                    <p className="text-xs text-gray-500">Super Admin</p>
-                  </div>
-                  <Avatar className="w-10 h-10 ring-2 ring-orange-100">
-                    <AvatarImage src="" />
-                    <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white font-semibold">
-                      {user.firstName?.[0]}{user.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span className="font-semibold">{user.firstName} {user.lastName}</span>
-                    <span className="text-xs text-gray-500 font-normal">{user.email}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <Link href="/admin/settings">
-                  <DropdownMenuItem className="cursor-pointer" data-testid="link-admin-settings">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/admin/security">
-                  <DropdownMenuItem className="cursor-pointer" data-testid="link-admin-security">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Security
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-                  onClick={logout}
-                  data-testid="button-admin-logout"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Log Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+
+              <NotificationCenter />
+              
+              <div className="flex items-center gap-3 pl-3 border-l border-border">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-3 cursor-pointer hover:bg-secondary rounded-lg px-3 py-2 transition-colors" data-testid="button-admin-user-menu">
+                      <div className="text-right hidden sm:block">
+                        <p className="text-sm font-medium text-foreground">{user.firstName} {user.lastName}</p>
+                        <p className="text-xs text-primary capitalize font-medium">Super Admin</p>
+                      </div>
+                      <Avatar className="h-10 w-10 border-2 border-primary/30 ring-2 ring-primary/10">
+                        <AvatarImage src="" alt={user.firstName} />
+                        <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+                          {user.firstName?.[0]}{user.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col">
+                        <span className="font-semibold">{user.firstName} {user.lastName}</span>
+                        <span className="text-xs text-muted-foreground font-normal">{user.email}</span>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <Link href="/admin/settings">
+                      <DropdownMenuItem className="cursor-pointer" data-testid="link-admin-settings">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/admin/security">
+                      <DropdownMenuItem className="cursor-pointer" data-testid="link-admin-security">
+                        <Shield className="w-4 h-4 mr-2" />
+                        Security
+                      </DropdownMenuItem>
+                    </Link>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                      onClick={logout}
+                      data-testid="button-admin-logout-menu"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Log Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto w-full">
+        <main className="flex-1 p-6 overflow-x-hidden bg-muted">
           {children}
         </main>
       </div>
