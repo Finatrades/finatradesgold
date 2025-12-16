@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash, UserPlus, ExternalLink } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash, UserPlus, ExternalLink, ArrowRight } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 import QRScanner from '../QRScanner';
 
 const PAYMENT_REASONS = [
@@ -71,6 +72,13 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [notFoundEmail, setNotFoundEmail] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+
+  const { data: goldPrice } = useQuery({
+    queryKey: ['/api/gold-price'],
+    staleTime: 60000,
+  });
+
+  const currentGoldPrice = goldPrice?.pricePerGram || 85;
 
   useEffect(() => {
     if (isOpen) {
@@ -197,9 +205,11 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     onClose();
   };
 
+  const goldEquivalent = numericAmount > 0 ? (numericAmount / currentGoldPrice).toFixed(4) : '0.0000';
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground sm:max-w-[480px]">
+      <DialogContent className={`bg-white border-border text-foreground ${foundUser && step === 'search' ? 'sm:max-w-[800px]' : 'sm:max-w-[480px]'}`}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
@@ -369,98 +379,171 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
             )}
 
             {foundUser && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12 border-2 border-green-300">
-                    {foundUser.profilePhotoUrl && (
-                      <AvatarImage src={foundUser.profilePhotoUrl} alt={`${foundUser.firstName} ${foundUser.lastName}`} />
-                    )}
-                    <AvatarFallback className="bg-green-100 text-green-700 font-bold">
-                      {foundUser.firstName[0]}{foundUser.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-foreground">{foundUser.firstName} {foundUser.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{foundUser.email}</p>
-                    <p className="text-xs text-green-600 font-mono">{foundUser.finatradesId}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Panel - Recipient & Payment Details */}
+                <div className="space-y-4">
+                  {/* Recipient Info */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12 border-2 border-green-300">
+                        {foundUser.profilePhotoUrl && (
+                          <AvatarImage src={foundUser.profilePhotoUrl} alt={`${foundUser.firstName} ${foundUser.lastName}`} />
+                        )}
+                        <AvatarFallback className="bg-green-100 text-green-700 font-bold">
+                          {foundUser.firstName[0]}{foundUser.lastName[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground truncate">{foundUser.firstName} {foundUser.lastName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{foundUser.email}</p>
+                        <p className="text-xs text-green-600 font-mono">{foundUser.finatradesId}</p>
+                      </div>
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    </div>
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto" />
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label>Amount (USD)</Label>
-                    <span className="text-xs text-muted-foreground">Balance: ${walletBalance.toFixed(2)}</span>
+                  {/* Amount Input */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label>Amount (USD) <span className="text-red-500">*</span></Label>
+                      <span className="text-xs text-muted-foreground">Balance: ${walletBalance.toFixed(2)}</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
+                      <Input 
+                        type="number" 
+                        placeholder="0.00" 
+                        className="bg-background border-input pl-8 text-lg font-medium"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                      />
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-primary"
+                        onClick={() => setAmount(walletBalance.toString())}
+                      >
+                        MAX
+                      </Button>
+                    </div>
                   </div>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className="bg-background border-input pl-8 text-lg font-medium"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+
+                  {/* Payment Reason */}
+                  <div className="space-y-2">
+                    <Label>Payment Reason <span className="text-red-500">*</span></Label>
+                    <Select value={paymentReason} onValueChange={setPaymentReason}>
+                      <SelectTrigger className="bg-background border-input" data-testid="select-payment-reason">
+                        <SelectValue placeholder="Select payment reason" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_REASONS.map((reason) => (
+                          <SelectItem key={reason} value={reason} data-testid={`option-reason-${reason.replace(/\s/g, '-').toLowerCase()}`}>
+                            {reason}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Source of Funds */}
+                  <div className="space-y-2">
+                    <Label>Source of Funds <span className="text-red-500">*</span></Label>
+                    <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
+                      <SelectTrigger className="bg-background border-input" data-testid="select-source-of-funds">
+                        <SelectValue placeholder="Select source of funds" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SOURCE_OF_FUNDS.map((source) => (
+                          <SelectItem key={source} value={source} data-testid={`option-source-${source.replace(/\s/g, '-').toLowerCase()}`}>
+                            {source}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Note */}
+                  <div className="space-y-2">
+                    <Label>Note (Optional)</Label>
+                    <Textarea 
+                      placeholder="What's this for?" 
+                      className="bg-background border-input resize-none h-16"
+                      value={memo}
+                      onChange={(e) => setMemo(e.target.value)}
                     />
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-primary"
-                      onClick={() => setAmount(walletBalance.toString())}
-                    >
-                      MAX
-                    </Button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Payment Reason <span className="text-red-500">*</span></Label>
-                  <Select value={paymentReason} onValueChange={setPaymentReason}>
-                    <SelectTrigger className="bg-background border-input" data-testid="select-payment-reason">
-                      <SelectValue placeholder="Select payment reason" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_REASONS.map((reason) => (
-                        <SelectItem key={reason} value={reason} data-testid={`option-reason-${reason.replace(/\s/g, '-').toLowerCase()}`}>
-                          {reason}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Right Panel - Send Summary */}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center gap-2 text-orange-700 font-semibold">
+                      <Send className="w-4 h-4" />
+                      <span>Send Summary</span>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Source of Funds <span className="text-red-500">*</span></Label>
-                  <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
-                    <SelectTrigger className="bg-background border-input" data-testid="select-source-of-funds">
-                      <SelectValue placeholder="Select source of funds" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SOURCE_OF_FUNDS.map((source) => (
-                        <SelectItem key={source} value={source} data-testid={`option-source-${source.replace(/\s/g, '-').toLowerCase()}`}>
-                          {source}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between items-center py-2 border-b border-orange-200/50">
+                        <span className="text-muted-foreground">Send Amount:</span>
+                        <span className="font-semibold text-foreground">${numericAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-orange-200/50">
+                        <span className="text-muted-foreground">Transaction Fee:</span>
+                        <span className="font-semibold text-green-600">$0.00</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-orange-200/50">
+                        <span className="text-muted-foreground font-medium">Recipient Receives:</span>
+                        <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground">Gold Equivalent:</span>
+                        <span className="font-bold text-primary">{goldEquivalent}g</span>
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Note (Optional)</Label>
-                  <Textarea 
-                    placeholder="What's this for?" 
-                    className="bg-background border-input resize-none h-16"
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                  />
-                </div>
+                    <div className="text-xs text-muted-foreground bg-white/50 p-2 rounded-md">
+                      Based on current gold price: ${currentGoldPrice.toFixed(2)}/gram
+                    </div>
+                  </div>
 
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold"
-                  disabled={numericAmount <= 0 || numericAmount > walletBalance || !paymentReason || !sourceOfFunds}
-                  onClick={() => setStep('confirm')}
-                >
-                  Continue to Review
-                </Button>
+                  {/* Sending To Visual */}
+                  <div className="bg-muted/30 border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                            {user?.firstName?.[0]}{user?.lastName?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-muted-foreground">You</span>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="h-px flex-1 bg-border"></div>
+                        <ArrowRight className="w-5 h-5 text-primary mx-2" />
+                        <div className="h-px flex-1 bg-border"></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{foundUser.firstName}</span>
+                        <Avatar className="w-8 h-8 border border-green-300">
+                          {foundUser.profilePhotoUrl && (
+                            <AvatarImage src={foundUser.profilePhotoUrl} alt={foundUser.firstName} />
+                          )}
+                          <AvatarFallback className="bg-green-100 text-green-700 text-xs font-bold">
+                            {foundUser.firstName[0]}{foundUser.lastName[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12"
+                    disabled={numericAmount <= 0 || numericAmount > walletBalance || !paymentReason || !sourceOfFunds}
+                    onClick={() => setStep('confirm')}
+                  >
+                    Continue to Review
+                  </Button>
+                </div>
               </div>
             )}
           </div>
