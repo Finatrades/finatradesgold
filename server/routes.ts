@@ -1483,12 +1483,14 @@ export async function registerRoutes(
     try {
       const kycAmlSubmissions = await storage.getAllKycSubmissions();
       const finatradesPersonalSubmissions = await storage.getAllFinatradesPersonalKyc();
+      const finatradesCorporateSubmissions = await storage.getAllFinatradesCorporateKyc();
       
       // Normalize Finatrades personal KYC submissions to match kycAml format for admin display
       const normalizedFinatradesPersonal = finatradesPersonalSubmissions.map(s => ({
         ...s,
         tier: 'finatrades_personal',
         kycType: 'finatrades_personal',
+        accountType: 'personal',
         documents: s.idFrontUrl || s.idBackUrl || s.passportUrl || s.addressProofUrl ? {
           idFront: s.idFrontUrl,
           idBack: s.idBackUrl,
@@ -1497,10 +1499,19 @@ export async function registerRoutes(
         } : null,
       }));
       
+      // Normalize Finatrades corporate KYC submissions
+      const normalizedFinatradesCorporate = finatradesCorporateSubmissions.map(s => ({
+        ...s,
+        tier: 'finatrades_corporate',
+        kycType: 'finatrades_corporate',
+        accountType: 'business',
+      }));
+      
       // Combine and sort by creation date
       const allSubmissions = [
         ...kycAmlSubmissions.map(s => ({ ...s, kycType: 'kycAml' })),
         ...normalizedFinatradesPersonal,
+        ...normalizedFinatradesCorporate,
       ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       res.json({ submissions: allSubmissions });

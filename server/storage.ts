@@ -535,6 +535,7 @@ export interface IStorage {
   
   // Finatrades Corporate KYC
   getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined>;
+  getAllFinatradesCorporateKyc(): Promise<FinatradesCorporateKyc[]>;
   createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc>;
   updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined>;
   
@@ -2302,6 +2303,10 @@ export class DatabaseStorage implements IStorage {
   async getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined> {
     const [kyc] = await db.select().from(finatradesCorporateKyc).where(eq(finatradesCorporateKyc.userId, userId)).orderBy(desc(finatradesCorporateKyc.createdAt)).limit(1);
     return kyc || undefined;
+  }
+
+  async getAllFinatradesCorporateKyc(): Promise<FinatradesCorporateKyc[]> {
+    return await db.select().from(finatradesCorporateKyc).orderBy(desc(finatradesCorporateKyc.createdAt));
   }
 
   async createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc> {
