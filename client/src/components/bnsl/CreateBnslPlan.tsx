@@ -311,11 +311,17 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
                 type="number" 
                 value={goldAmount}
                 onChange={(e) => setGoldAmount(e.target.value)}
-                className="bg-background border-input h-14 text-xl font-bold pr-12"
+                className={`bg-background h-14 text-xl font-bold pr-12 ${amount > bnslWalletBalance ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
                 data-testid="input-gold-amount"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">g</span>
             </div>
+            {amount > bnslWalletBalance && (
+              <div className="flex items-center gap-2 text-sm text-red-500 font-medium" data-testid="error-insufficient-balance">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Insufficient balance. You only have {bnslWalletBalance.toFixed(3)}g available in your BNSL Wallet.</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Info className="w-4 h-4" />
               <span>Your gold will be sold at the locked enrollment price of <span className="font-bold text-foreground">${enrollmentPrice.toFixed(2)}/g</span></span>
