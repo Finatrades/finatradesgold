@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Download, Share2, Award, ShieldCheck, Box, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { jsPDF } from 'jspdf';
 
 interface DigitalCertificateModalProps {
   request: DepositRequest | null;
@@ -13,12 +15,134 @@ interface DigitalCertificateModalProps {
 }
 
 export default function DigitalCertificateModal({ request, open, onOpenChange }: DigitalCertificateModalProps) {
+  const { toast } = useToast();
   if (!request) return null;
 
   const certificateId = `CERT-${request.id.replace(/[^0-9]/g, '')}-${new Date().getFullYear()}`;
   const storageRef = `STR-${request.id.replace(/[^0-9]/g, '')}-WG`;
   const issueDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   const [activeTab, setActiveTab] = useState('ownership');
+
+  const handleDownloadPDF = () => {
+    const certType = activeTab === 'ownership' ? 'Digital Ownership Certificate' : 'Storage Certificate';
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    if (activeTab === 'ownership') {
+      doc.setFillColor(13, 5, 21);
+      doc.rect(0, 0, pageWidth, 297, 'F');
+      doc.setTextColor(212, 175, 55);
+      doc.setFontSize(28);
+      doc.text('CERTIFICATE', pageWidth / 2, 40, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text('of Digital Ownership', pageWidth / 2, 52, { align: 'center' });
+      doc.setFontSize(10);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`ID: ${certificateId}`, pageWidth / 2, 62, { align: 'center' });
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.text(`This certifies that User #${request.userId.substring(0, 8)}...`, pageWidth / 2, 85, { align: 'center' });
+      doc.text(`is the beneficial owner of the following precious metal assets.`, pageWidth / 2, 93, { align: 'center' });
+      doc.setTextColor(212, 175, 55);
+      doc.setFontSize(10);
+      const detailsY = 115;
+      doc.text('ASSET TYPE', 30, detailsY);
+      doc.text('TOTAL WEIGHT', 70, detailsY);
+      doc.text('PURITY', 120, detailsY);
+      doc.text('VALUATION', 160, detailsY);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.text(request.depositType, 30, detailsY + 10);
+      doc.text(`${request.totalDeclaredWeightGrams}g`, 70, detailsY + 10);
+      doc.text('999.9', 120, detailsY + 10);
+      doc.text(`$${(request.totalDeclaredWeightGrams * 85.22).toFixed(2)}`, 160, detailsY + 10);
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(8);
+      doc.text('Issued by Finatrades | Vault: ' + request.vaultLocation, pageWidth / 2, 250, { align: 'center' });
+      doc.text(issueDate, pageWidth / 2, 258, { align: 'center' });
+    } else {
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, 297, 'F');
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(20);
+      doc.text('WinGold & Metals Vault', 20, 25);
+      doc.setFontSize(10);
+      doc.text('Secure Logistics & Storage', 20, 33);
+      doc.setFontSize(16);
+      doc.text('Certificate of Deposit', pageWidth - 20, 25, { align: 'right' });
+      doc.setFontSize(10);
+      doc.text(`REF: ${storageRef}`, pageWidth - 20, 33, { align: 'right' });
+      doc.line(20, 45, pageWidth - 20, 45);
+      doc.setFontSize(10);
+      doc.text('Depositor / Owner', 20, 60);
+      doc.setFontSize(12);
+      doc.text(`FINATRADES CLIENT #${request.userId.substring(0, 8)}`, 20, 70);
+      doc.setFontSize(10);
+      doc.text('Via FinaTrades Custody Account', 20, 78);
+      doc.text('Storage Location', pageWidth - 20, 60, { align: 'right' });
+      doc.setFontSize(12);
+      doc.text(request.vaultLocation.toUpperCase(), pageWidth - 20, 70, { align: 'right' });
+      doc.setFontSize(11);
+      let yPos = 100;
+      doc.setFillColor(0, 0, 0);
+      doc.rect(20, yPos - 5, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Description', 25, yPos + 2);
+      doc.text('Brand', 70, yPos + 2);
+      doc.text('Qty', 110, yPos + 2);
+      doc.text('Weight', 135, yPos + 2);
+      doc.text('Purity', 170, yPos + 2);
+      doc.setTextColor(0, 0, 0);
+      yPos += 15;
+      request.items.forEach((item) => {
+        doc.text(item.itemType, 25, yPos);
+        doc.text(item.brand || 'Standard', 70, yPos);
+        doc.text(String(item.quantity), 110, yPos);
+        doc.text(`${item.totalWeightGrams}g`, 135, yPos);
+        doc.text(item.purity, 170, yPos);
+        yPos += 10;
+      });
+      doc.setFontSize(8);
+      doc.text('This certificate acknowledges receipt and storage of the above precious metals.', 20, 240);
+      doc.text('Assets are held in a segregated account and fully insured.', 20, 247);
+      doc.text(`Issued: ${issueDate}`, pageWidth - 20, 280, { align: 'right' });
+    }
+    
+    doc.save(`${certType.replace(/\s+/g, '_')}_${certificateId}.pdf`);
+    
+    toast({
+      title: "Certificate Downloaded",
+      description: `${certType} has been saved as PDF.`
+    });
+  };
+
+  const handleShare = async () => {
+    const certType = activeTab === 'ownership' ? 'Digital Ownership Certificate' : 'Storage Certificate';
+    const shareData = {
+      title: certType,
+      text: `${certType}\nCertificate ID: ${activeTab === 'ownership' ? certificateId : storageRef}\nWeight: ${request.totalDeclaredWeightGrams}g\nValue: $${(request.totalDeclaredWeightGrams * 85.22).toFixed(2)}\nIssued: ${issueDate}`,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast({ title: "Shared Successfully" });
+      } else {
+        await navigator.clipboard.writeText(shareData.text);
+        toast({ title: "Copied to Clipboard", description: "Certificate details copied." });
+      }
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(shareData.text);
+        toast({ title: "Copied to Clipboard", description: "Certificate details copied." });
+      } catch {
+        toast({ title: "Share Failed", description: "Could not share or copy.", variant: "destructive" });
+      }
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,10 +253,10 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
               
               {/* Footer Actions */}
               <div className="mt-12 flex justify-center gap-4 relative z-10 print:hidden">
-                <Button className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold">
+                <Button className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 font-bold" onClick={handleDownloadPDF} data-testid="button-download-ownership-cert">
                   <Download className="w-4 h-4 mr-2" /> Download PDF
                 </Button>
-                <Button variant="outline" className="border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10">
+                <Button variant="outline" className="border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10" onClick={handleShare} data-testid="button-share-ownership-cert">
                   <Share2 className="w-4 h-4 mr-2" /> Share
                 </Button>
               </div>
@@ -222,9 +346,10 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
 
                 <div className="flex justify-between items-end mt-16 pt-8 border-t border-black/20">
                   <div>
-                     <div className="mb-4">
-                       <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Signature_sample_2.svg/1200px-Signature_sample_2.svg.png" className="h-12 opacity-80" alt="Vault Manager Signature" />
+                     <div className="mb-4 h-12 flex items-end">
+                       <span className="font-signature text-2xl italic text-black/70" style={{ fontFamily: 'cursive' }}>M. Al-Rashid</span>
                      </div>
+                     <Separator className="bg-black/40 w-32 mb-2" />
                      <p className="font-bold uppercase">Vault Manager</p>
                      <p className="text-xs text-black/50">Authorized Officer</p>
                   </div>
@@ -237,10 +362,10 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
               
               {/* Footer Actions */}
               <div className="mt-12 flex justify-center gap-4 relative z-10 print:hidden">
-                <Button className="bg-black text-white hover:bg-black/80 font-bold">
+                <Button className="bg-black text-white hover:bg-black/80 font-bold" onClick={handleDownloadPDF} data-testid="button-download-storage-cert">
                   <Download className="w-4 h-4 mr-2" /> Download PDF
                 </Button>
-                <Button variant="outline" className="border-black/20 text-black hover:bg-black/5">
+                <Button variant="outline" className="border-black/20 text-black hover:bg-black/5" onClick={handleShare} data-testid="button-share-storage-cert">
                   <Share2 className="w-4 h-4 mr-2" /> Share
                 </Button>
               </div>

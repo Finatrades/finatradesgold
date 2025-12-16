@@ -6,6 +6,7 @@ import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, CheckC
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { jsPDF } from 'jspdf';
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
@@ -40,34 +41,64 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
   };
 
   const handleDownloadReceipt = () => {
-    const receiptContent = `
-FINATRADES TRANSACTION RECEIPT
-================================
-
-Transaction Type: ${transaction.type} ${transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}
-Amount: ${transaction.assetType === 'GOLD' ? `${transaction.amountGrams?.toFixed(4)} g` : `$${transaction.amountUsd.toFixed(2)}`}
-${transaction.assetType === 'GOLD' ? `USD Value: $${transaction.amountUsd.toFixed(2)}` : ''}
-Status: ${transaction.status}
-Reference ID: ${transaction.referenceId}
-Date & Time: ${new Date(transaction.timestamp).toLocaleString()}
-${transaction.description ? `Description: ${transaction.description}` : ''}
-Network Fee: $${(transaction.feeUsd || 0).toFixed(2)}
-
-================================
-Thank you for using Finatrades
-    `.trim();
-
-    const blob = new Blob([receiptContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `finatrades-receipt-${transaction.referenceId}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
     
-    toast({ title: 'Receipt Downloaded', description: 'Your transaction receipt has been saved' });
+    pdf.setFillColor(249, 115, 22);
+    pdf.rect(0, 0, pageWidth, 35, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(22);
+    pdf.text('FINATRADES', pageWidth / 2, 20, { align: 'center' });
+    pdf.setFontSize(10);
+    pdf.text('Transaction Receipt', pageWidth / 2, 28, { align: 'center' });
+    
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(16);
+    const amount = transaction.assetType === 'GOLD' 
+      ? `${transaction.amountGrams?.toFixed(4)} g` 
+      : `$${transaction.amountUsd.toFixed(2)}`;
+    const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive') ? '+' : '-';
+    pdf.text(`${prefix} ${amount}`, pageWidth / 2, 55, { align: 'center' });
+    
+    if (transaction.assetType === 'GOLD') {
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`≈ $${transaction.amountUsd.toFixed(2)} USD`, pageWidth / 2, 63, { align: 'center' });
+    }
+    
+    pdf.setDrawColor(230, 230, 230);
+    pdf.line(20, 75, pageWidth - 20, 75);
+    
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+    let yPos = 90;
+    const addRow = (label: string, value: string) => {
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(label, 25, yPos);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(value, pageWidth - 25, yPos, { align: 'right' });
+      yPos += 12;
+    };
+    
+    addRow('Transaction Type', `${transaction.type} ${transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}`);
+    addRow('Status', transaction.status);
+    addRow('Reference ID', transaction.referenceId);
+    addRow('Date & Time', new Date(transaction.timestamp).toLocaleString());
+    if (transaction.description) {
+      addRow('Description', transaction.description);
+    }
+    addRow('Network Fee', `$${(transaction.feeUsd || 0).toFixed(2)}`);
+    
+    pdf.line(20, yPos + 5, pageWidth - 20, yPos + 5);
+    
+    pdf.setFontSize(9);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Thank you for using Finatrades', pageWidth / 2, 280, { align: 'center' });
+    pdf.text(new Date().toLocaleDateString(), pageWidth / 2, 287, { align: 'center' });
+    
+    pdf.save(`finatrades-receipt-${transaction.referenceId}.pdf`);
+    
+    toast({ title: 'Receipt Downloaded', description: 'Your transaction receipt has been saved as PDF' });
   };
 
   const getIcon = (type: string, asset: string = 'USD') => {
