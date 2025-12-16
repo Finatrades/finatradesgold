@@ -207,102 +207,105 @@ export default function CertificatesView() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin w-8 h-8 border-4 border-[#D4AF37] border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6" data-testid="certificates-view">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">My Certificates</h2>
-          <p className="text-white/60">View your Digital Ownership and Physical Storage certificates</p>
-        </div>
-        <Badge variant="outline" className="text-[#D4AF37] border-[#D4AF37]">
-          {activeCertificates.length} Active
-        </Badge>
-      </div>
+      <Card className="bg-white border">
+        <CardHeader className="border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">My Certificates</CardTitle>
+              <p className="text-muted-foreground text-sm">View your Digital Ownership and Physical Storage certificates</p>
+            </div>
+            <Badge variant="outline" className="text-amber-600 border-amber-500">
+              {activeCertificates.length} Active
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
+            <TabsList className="bg-muted mb-6">
+              <TabsTrigger value="active" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+                Active
+              </TabsTrigger>
+              <TabsTrigger value="digital" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+                Digital Ownership
+              </TabsTrigger>
+              <TabsTrigger value="storage" className="data-[state=active]:bg-gray-500 data-[state=active]:text-white">
+                Physical Storage
+              </TabsTrigger>
+              <TabsTrigger value="all" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white">
+                All History
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
-        <TabsList className="bg-white/5 mb-4">
-          <TabsTrigger value="active" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
-            Active
-          </TabsTrigger>
-          <TabsTrigger value="digital" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
-            Digital Ownership
-          </TabsTrigger>
-          <TabsTrigger value="storage" className="data-[state=active]:bg-[#C0C0C0] data-[state=active]:text-black">
-            Physical Storage
-          </TabsTrigger>
-          <TabsTrigger value="all" className="data-[state=active]:bg-white/20">
-            All History
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {filteredCertificates.length === 0 ? (
-        <Card className="bg-white/5 border-white/10">
-          <CardContent className="p-8 text-center">
-            <FileText className="w-12 h-12 text-white/30 mx-auto mb-4" />
-            <p className="text-white/60">No certificates found</p>
-            <p className="text-white/40 text-sm mt-2">Certificates are issued when you buy, receive, or deposit gold</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {filteredCertificates.map((cert) => {
-            const isDigital = cert.type === 'Digital Ownership';
-            const goldGrams = parseFloat(cert.goldGrams || '0');
-            const totalValue = parseFloat(cert.totalValueUsd || '0');
-            
-            return (
-              <Card 
-                key={cert.id} 
-                className={`bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors ${
-                  cert.status !== 'Active' ? 'opacity-60' : ''
-                }`}
-                onClick={() => openCertificate(cert)}
-                data-testid={`certificate-card-${cert.id}`}
-              >
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    isDigital ? 'bg-[#D4AF37]/20' : 'bg-[#C0C0C0]/20'
-                  }`}>
-                    {isDigital ? (
-                      <Award className={`w-6 h-6 ${isDigital ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'}`} />
-                    ) : (
-                      <Box className="w-6 h-6 text-[#C0C0C0]" />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${isDigital ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'}`}>
-                        {cert.type}
-                      </span>
-                      <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={`text-xs ${
-                        cert.status === 'Active' ? 'bg-green-600' : ''
-                      }`}>
-                        {cert.status}
-                      </Badge>
+          {filteredCertificates.length === 0 ? (
+            <div className="p-12 text-center">
+              <FileText className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+              <h3 className="text-lg font-bold mb-2">No Certificates Found</h3>
+              <p className="text-muted-foreground">
+                Certificates are issued when you buy, receive, or deposit gold.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredCertificates.map((cert) => {
+                const isDigital = cert.type === 'Digital Ownership';
+                const goldGrams = parseFloat(cert.goldGrams || '0');
+                const totalValue = parseFloat(cert.totalValueUsd || '0');
+                
+                return (
+                  <div 
+                    key={cert.id} 
+                    className={`p-4 rounded-xl border bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors flex items-center gap-4 ${
+                      cert.status !== 'Active' ? 'opacity-60' : ''
+                    }`}
+                    onClick={() => openCertificate(cert)}
+                    data-testid={`certificate-card-${cert.id}`}
+                  >
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      isDigital ? 'bg-amber-100' : 'bg-gray-200'
+                    }`}>
+                      {isDigital ? (
+                        <Award className="w-6 h-6 text-amber-600" />
+                      ) : (
+                        <Box className="w-6 h-6 text-gray-500" />
+                      )}
                     </div>
-                    <p className="text-white/60 text-sm truncate">{cert.certificateNumber}</p>
-                    <p className="text-white/40 text-xs">Issued by {cert.issuer}</p>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold ${isDigital ? 'text-amber-600' : 'text-gray-600'}`}>
+                          {cert.type}
+                        </span>
+                        <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={`text-xs ${
+                          cert.status === 'Active' ? 'bg-green-600' : ''
+                        }`}>
+                          {cert.status}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground text-sm truncate">{cert.certificateNumber}</p>
+                      <p className="text-muted-foreground/70 text-xs">Issued by {cert.issuer}</p>
+                    </div>
+                    
+                    <div className="text-right">
+                      <p className="font-bold text-foreground">{goldGrams.toFixed(4)}g</p>
+                      <p className="text-muted-foreground text-sm">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
-                  
-                  <div className="text-right">
-                    <p className="text-white font-bold">{goldGrams.toFixed(4)}g</p>
-                    <p className="text-white/60 text-sm">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  </div>
-                  
-                  <ChevronRight className="w-5 h-5 text-white/40" />
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <CertificateDetailModal 
         certificate={selectedCertificate} 

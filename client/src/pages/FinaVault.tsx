@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
-import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock } from 'lucide-react';
+import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -10,6 +10,7 @@ import NewDepositForm from '@/components/finavault/NewDepositForm';
 import RequestDetails from '@/components/finavault/RequestDetails';
 import CashOutForm from '@/components/finavault/CashOutForm';
 import VaultActivityList from '@/components/finavault/VaultActivityList';
+import CertificatesView from '@/components/finavault/CertificatesView';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -505,6 +506,14 @@ export default function FinaVault() {
                     <Lock className="w-4 h-4 mr-2" />
                     Ownership Ledger
                   </TabsTrigger>
+                  <TabsTrigger 
+                    value="certificates"
+                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    data-testid="tab-certificates"
+                  >
+                    <Award className="w-4 h-4 mr-2" />
+                    Certificates
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="vault-activity" className="mt-0">
@@ -668,6 +677,10 @@ export default function FinaVault() {
                       </CardContent>
                     </Card>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="certificates" className="mt-0">
+                  <CertificatesView />
                 </TabsContent>
               </Tabs>
             </motion.div>
