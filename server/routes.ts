@@ -2876,6 +2876,10 @@ export async function registerRoutes(
       const vaultTypes = ['Buy', 'Sell', 'Send', 'Receive', 'Deposit', 'Withdrawal'];
       const vaultTransactions = allTransactions.filter(tx => vaultTypes.includes(tx.type));
       
+      // Get vault deposit and withdrawal requests
+      const vaultDepositReqs = await storage.getUserVaultDepositRequests(userId);
+      const vaultWithdrawalReqs = await storage.getUserVaultWithdrawalRequests(userId);
+      
       // Get holdings and certificates
       const holdings = await storage.getUserVaultHoldings(userId);
       const certificates = await storage.getUserCertificates(userId);
@@ -2898,8 +2902,51 @@ export async function registerRoutes(
         };
       });
       
+      // Convert vault deposit requests to transaction-like format
+      const vaultDepositTxs = vaultDepositReqs.map(dep => ({
+        id: dep.id,
+        userId: dep.userId,
+        type: 'Vault Deposit' as const,
+        status: dep.status === 'Stored' || dep.status === 'Approved' ? 'Completed' : dep.status === 'Rejected' ? 'Cancelled' : 'Pending',
+        amountGold: dep.verifiedWeightGrams || dep.totalDeclaredWeightGrams,
+        amountUsd: null,
+        goldPriceUsdPerGram: null,
+        recipientEmail: null,
+        senderEmail: null,
+        description: `Physical Gold Deposit - ${dep.vaultLocation}`,
+        referenceId: dep.referenceNumber,
+        createdAt: dep.createdAt,
+        completedAt: dep.storedAt || dep.reviewedAt,
+        certificates: []
+      }));
+      
+      // Convert vault withdrawal requests to transaction-like format
+      const vaultWithdrawalTxs = vaultWithdrawalReqs.map(wd => ({
+        id: wd.id,
+        userId: wd.userId,
+        type: 'Vault Withdrawal' as const,
+        status: wd.status === 'Completed' ? 'Completed' : wd.status === 'Rejected' ? 'Cancelled' : 'Pending',
+        amountGold: wd.goldGrams,
+        amountUsd: wd.totalValueUsd,
+        goldPriceUsdPerGram: wd.goldPriceUsdPerGram,
+        recipientEmail: null,
+        senderEmail: null,
+        description: `Cash Out via ${wd.withdrawalMethod}`,
+        referenceId: wd.referenceNumber,
+        createdAt: wd.createdAt,
+        completedAt: wd.reviewedAt,
+        certificates: []
+      }));
+      
+      // Combine all activities and sort by date
+      const allActivities = [
+        ...enrichedTransactions,
+        ...vaultDepositTxs,
+        ...vaultWithdrawalTxs
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
       res.json({ 
-        transactions: enrichedTransactions,
+        transactions: allActivities,
         holdings,
         certificates,
         currentBalance: {

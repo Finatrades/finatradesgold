@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 
 interface VaultTransaction {
   id: string;
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal';
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal' | 'Vault Deposit' | 'Vault Withdrawal';
   status: string;
   amountGold: string | null;
   amountUsd: string | null;
@@ -20,6 +20,7 @@ interface VaultTransaction {
   recipientEmail: string | null;
   senderEmail: string | null;
   description: string | null;
+  referenceId?: string | null;
   createdAt: string;
   completedAt: string | null;
   certificates: {
@@ -110,6 +111,8 @@ export default function VaultActivityList() {
       case 'Receive': return <ArrowDownLeft className="w-4 h-4" />;
       case 'Deposit': return <ArrowDownLeft className="w-4 h-4" />;
       case 'Withdrawal': return <ArrowUpRight className="w-4 h-4" />;
+      case 'Vault Deposit': return <Box className="w-4 h-4" />;
+      case 'Vault Withdrawal': return <ArrowUpRight className="w-4 h-4" />;
       default: return <Coins className="w-4 h-4" />;
     }
   };
@@ -122,8 +125,18 @@ export default function VaultActivityList() {
       case 'Receive': return 'bg-orange-100 text-orange-700';
       case 'Deposit': return 'bg-emerald-100 text-emerald-700';
       case 'Withdrawal': return 'bg-amber-100 text-amber-700';
+      case 'Vault Deposit': return 'bg-[#D4AF37]/20 text-[#B8860B]';
+      case 'Vault Withdrawal': return 'bg-purple-100 text-purple-700';
       default: return 'bg-gray-100 text-gray-700';
     }
+  };
+  
+  const isGoldIncoming = (type: string) => {
+    return ['Buy', 'Receive', 'Vault Deposit'].includes(type);
+  };
+  
+  const isUsdIncoming = (type: string) => {
+    return type === 'Deposit';
   };
 
   const getStatusBadge = (status: string) => {
@@ -178,6 +191,8 @@ export default function VaultActivityList() {
                 <SelectItem value="Receive">Receive</SelectItem>
                 <SelectItem value="Deposit">Deposit</SelectItem>
                 <SelectItem value="Withdrawal">Withdrawal</SelectItem>
+                <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
+                <SelectItem value="Vault Withdrawal">Vault Withdrawal</SelectItem>
               </SelectContent>
             </Select>
             <Button size="icon" variant="outline" onClick={fetchActivity} data-testid="button-refresh-vault">
@@ -227,13 +242,26 @@ export default function VaultActivityList() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className={`font-bold ${tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? 'text-green-600' : 'text-red-600'}`}>
-                      {tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' ? '+' : '-'}
-                      {tx.amountGold ? parseFloat(tx.amountGold).toFixed(4) : '0'}g
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      ${tx.amountUsd ? parseFloat(tx.amountUsd).toFixed(2) : '0.00'}
-                    </p>
+                    {tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
+                      <>
+                        <p className={`font-bold ${isGoldIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+                          {isGoldIncoming(tx.type) ? '+' : '-'}
+                          {parseFloat(tx.amountGold).toFixed(4)}g
+                        </p>
+                        {tx.amountUsd && (
+                          <p className="text-sm text-muted-foreground">
+                            ${parseFloat(tx.amountUsd).toFixed(2)}
+                          </p>
+                        )}
+                      </>
+                    ) : tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
+                      <p className={`font-bold ${isUsdIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+                        {isUsdIncoming(tx.type) ? '+' : '-'}
+                        ${parseFloat(tx.amountUsd).toFixed(2)}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">--</p>
+                    )}
                   </div>
                   <div className="text-right">
                     {getStatusBadge(tx.status)}
