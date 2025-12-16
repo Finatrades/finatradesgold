@@ -1383,7 +1383,7 @@ export async function registerRoutes(
     }
   });
   
-  // Update KYC status (Admin)
+  // Update KYC status (Admin) - handles both kycAml and Finatrades personal KYC
   app.patch("/api/kyc/:id", async (req, res) => {
     try {
       const updates = { ...req.body };
@@ -1393,7 +1393,16 @@ export async function registerRoutes(
         updates.reviewedAt = new Date(updates.reviewedAt);
       }
       
-      const submission = await storage.updateKycSubmission(req.params.id, updates);
+      // Try kycAml table first
+      let submission = await storage.updateKycSubmission(req.params.id, updates);
+      let kycType = 'kycAml';
+      
+      // If not found in kycAml, try Finatrades personal KYC table
+      if (!submission) {
+        submission = await storage.updateFinatradesPersonalKyc(req.params.id, updates);
+        kycType = 'finatrades_personal';
+      }
+      
       if (!submission) {
         return res.status(404).json({ message: "KYC submission not found" });
       }
@@ -1426,10 +1435,10 @@ export async function registerRoutes(
         }
         
         // Include email status in response for admin visibility
-        return res.json({ submission, emailSent });
+        return res.json({ submission, emailSent, kycType });
       }
       
-      res.json({ submission });
+      res.json({ submission, kycType });
     } catch (error) {
       console.error("KYC update error:", error);
       const message = error instanceof Error ? error.message : "Failed to update KYC";
