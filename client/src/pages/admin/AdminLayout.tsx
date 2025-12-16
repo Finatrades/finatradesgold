@@ -27,6 +27,14 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -178,18 +186,52 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div className="flex items-center gap-3">
             <NotificationCenter />
-            <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
-                <p className="text-xs text-gray-500">Super Admin</p>
-              </div>
-              <Avatar className="w-10 h-10 ring-2 ring-orange-100">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white font-semibold">
-                  {user.firstName?.[0]}{user.lastName?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 pl-4 border-l border-gray-200 cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors" data-testid="button-admin-user-menu">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
+                    <p className="text-xs text-gray-500">Super Admin</p>
+                  </div>
+                  <Avatar className="w-10 h-10 ring-2 ring-orange-100">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white font-semibold">
+                      {user.firstName?.[0]}{user.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span className="font-semibold">{user.firstName} {user.lastName}</span>
+                    <span className="text-xs text-gray-500 font-normal">{user.email}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <Link href="/admin/settings">
+                  <DropdownMenuItem className="cursor-pointer" data-testid="link-admin-settings">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/admin/security">
+                  <DropdownMenuItem className="cursor-pointer" data-testid="link-admin-security">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Security
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                  onClick={logout}
+                  data-testid="button-admin-logout"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
