@@ -66,6 +66,7 @@ interface PaymentGatewaySettings {
   metalsApiKey: string;
   metalsApiProvider: string;
   metalsApiCacheDuration: string;
+  goldPriceMarkupPercent: string;
   minDepositUsd: string;
   maxDepositUsd: string;
 }
@@ -101,6 +102,7 @@ export default function PaymentGatewayManagement() {
     metalsApiKey: '',
     metalsApiProvider: 'metals-api',
     metalsApiCacheDuration: '5',
+    goldPriceMarkupPercent: '0',
     minDepositUsd: '10',
     maxDepositUsd: '100000',
   });
@@ -147,6 +149,7 @@ export default function PaymentGatewayManagement() {
           metalsApiKey: data.metalsApiKey || '',
           metalsApiProvider: data.metalsApiProvider || 'metals-api',
           metalsApiCacheDuration: data.metalsApiCacheDuration?.toString() || '5',
+          goldPriceMarkupPercent: data.goldPriceMarkupPercent?.toString() || '0',
           minDepositUsd: data.minDepositUsd || '10',
           maxDepositUsd: data.maxDepositUsd || '100000',
         });
@@ -857,10 +860,14 @@ export default function PaymentGatewayManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="metals-api">Metals-API.com</SelectItem>
-                      <SelectItem value="metals-dev">Metals.dev</SelectItem>
-                      <SelectItem value="goldapi">GoldAPI.io</SelectItem>
+                      <SelectItem value="gold-api">GoldAPI.io</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {settings.metalsApiProvider === 'gold-api' 
+                      ? 'Get your API key from goldapi.io'
+                      : 'Get your API key from metals-api.com'}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Cache Duration (minutes)</Label>
@@ -873,6 +880,19 @@ export default function PaymentGatewayManagement() {
                     data-testid="input-metals-api-cache"
                   />
                   <p className="text-xs text-muted-foreground">How long to cache gold prices before fetching new data</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Price Markup (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    step="0.1"
+                    value={settings.goldPriceMarkupPercent}
+                    onChange={(e) => setSettings(prev => ({ ...prev, goldPriceMarkupPercent: e.target.value }))}
+                    data-testid="input-gold-price-markup"
+                  />
+                  <p className="text-xs text-muted-foreground">Percentage markup added to the gold price (e.g., 2.5 adds 2.5% to the API price)</p>
                 </div>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
