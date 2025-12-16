@@ -1406,13 +1406,19 @@ export async function registerRoutes(
       }
       
       // Try kycAml table first
-      let submission = await storage.updateKycSubmission(req.params.id, updates);
+      let submission: any = await storage.updateKycSubmission(req.params.id, updates);
       let kycType = 'kycAml';
       
       // If not found in kycAml, try Finatrades personal KYC table
       if (!submission) {
         submission = await storage.updateFinatradesPersonalKyc(req.params.id, updates);
         kycType = 'finatrades_personal';
+      }
+      
+      // If not found in personal, try Finatrades corporate KYC table
+      if (!submission) {
+        submission = await storage.updateFinatradesCorporateKyc(req.params.id, updates);
+        kycType = 'finatrades_corporate';
       }
       
       if (!submission) {
