@@ -35,6 +35,9 @@ interface SecuritySettingsData {
   adminOtpOnBnslApproval: boolean;
   adminOtpOnTradeCaseApproval: boolean;
   adminOtpOnUserSuspension: boolean;
+  adminOtpOnVaultDepositApproval: boolean;
+  adminOtpOnVaultWithdrawalApproval: boolean;
+  adminOtpOnTransactionApproval: boolean;
   // Passkey settings
   passkeyOnLogin: boolean;
   passkeyOnWithdrawal: boolean;
@@ -356,6 +359,30 @@ export default function SecuritySettings() {
                             checked={settings.adminOtpOnUserSuspension}
                             onCheckedChange={(checked) => updateSetting('adminOtpOnUserSuspension', checked)}
                             data-testid="switch-admin-otp-suspension"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Vault Deposit Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnVaultDepositApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnVaultDepositApproval', checked)}
+                            data-testid="switch-admin-otp-vault-deposit"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Vault Withdrawal Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnVaultWithdrawalApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnVaultWithdrawalApproval', checked)}
+                            data-testid="switch-admin-otp-vault-withdrawal"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <Label>Transaction Approval</Label>
+                          <Switch
+                            checked={settings.adminOtpOnTransactionApproval}
+                            onCheckedChange={(checked) => updateSetting('adminOtpOnTransactionApproval', checked)}
+                            data-testid="switch-admin-otp-transaction"
                           />
                         </div>
                       </div>

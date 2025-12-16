@@ -7905,6 +7905,12 @@ export async function registerRoutes(
         'trade_case_rejection': settings.adminOtpOnTradeCaseApproval,
         'user_suspension': settings.adminOtpOnUserSuspension,
         'user_activation': settings.adminOtpOnUserSuspension,
+        'vault_deposit_approval': settings.adminOtpOnVaultDepositApproval ?? true,
+        'vault_deposit_rejection': settings.adminOtpOnVaultDepositApproval ?? true,
+        'vault_withdrawal_approval': settings.adminOtpOnVaultWithdrawalApproval ?? true,
+        'vault_withdrawal_rejection': settings.adminOtpOnVaultWithdrawalApproval ?? true,
+        'transaction_approval': settings.adminOtpOnTransactionApproval ?? true,
+        'transaction_rejection': settings.adminOtpOnTransactionApproval ?? true,
       };
       
       const required = actionToSetting[actionType] ?? false;
@@ -7945,6 +7951,12 @@ export async function registerRoutes(
         'trade_case_rejection': settings.adminOtpOnTradeCaseApproval,
         'user_suspension': settings.adminOtpOnUserSuspension,
         'user_activation': settings.adminOtpOnUserSuspension,
+        'vault_deposit_approval': settings.adminOtpOnVaultDepositApproval ?? true,
+        'vault_deposit_rejection': settings.adminOtpOnVaultDepositApproval ?? true,
+        'vault_withdrawal_approval': settings.adminOtpOnVaultWithdrawalApproval ?? true,
+        'vault_withdrawal_rejection': settings.adminOtpOnVaultWithdrawalApproval ?? true,
+        'transaction_approval': settings.adminOtpOnTransactionApproval ?? true,
+        'transaction_rejection': settings.adminOtpOnTransactionApproval ?? true,
       };
       
       if (!actionToSetting[actionType]) {
@@ -7982,6 +7994,12 @@ export async function registerRoutes(
         'trade_case_rejection': 'Trade Case Rejection',
         'user_suspension': 'User Suspension',
         'user_activation': 'User Activation',
+        'vault_deposit_approval': 'Vault Deposit Approval',
+        'vault_deposit_rejection': 'Vault Deposit Rejection',
+        'vault_withdrawal_approval': 'Vault Withdrawal Approval',
+        'vault_withdrawal_rejection': 'Vault Withdrawal Rejection',
+        'transaction_approval': 'Transaction Approval',
+        'transaction_rejection': 'Transaction Rejection',
       };
       
       const htmlBody = `
@@ -8150,6 +8168,12 @@ export async function registerRoutes(
         'trade_case_rejection': 'Trade Case Rejection',
         'user_suspension': 'User Suspension',
         'user_activation': 'User Activation',
+        'vault_deposit_approval': 'Vault Deposit Approval',
+        'vault_deposit_rejection': 'Vault Deposit Rejection',
+        'vault_withdrawal_approval': 'Vault Withdrawal Approval',
+        'vault_withdrawal_rejection': 'Vault Withdrawal Rejection',
+        'transaction_approval': 'Transaction Approval',
+        'transaction_rejection': 'Transaction Rejection',
       };
       
       const htmlBody = `

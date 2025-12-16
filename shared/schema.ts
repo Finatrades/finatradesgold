@@ -2134,6 +2134,9 @@ export const securitySettings = pgTable("security_settings", {
   adminOtpOnBnslApproval: boolean("admin_otp_on_bnsl_approval").notNull().default(true),
   adminOtpOnTradeCaseApproval: boolean("admin_otp_on_trade_case_approval").notNull().default(true),
   adminOtpOnUserSuspension: boolean("admin_otp_on_user_suspension").notNull().default(true),
+  adminOtpOnVaultDepositApproval: boolean("admin_otp_on_vault_deposit_approval").notNull().default(true),
+  adminOtpOnVaultWithdrawalApproval: boolean("admin_otp_on_vault_withdrawal_approval").notNull().default(true),
+  adminOtpOnTransactionApproval: boolean("admin_otp_on_transaction_approval").notNull().default(true),
   
   // Passkey Requirements per Action (when passkeyEnabled is true)
   passkeyOnLogin: boolean("passkey_on_login").notNull().default(true),
