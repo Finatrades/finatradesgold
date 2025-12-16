@@ -3080,7 +3080,8 @@ export async function registerRoutes(
         }
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get vault activity" });
+      console.error("Vault activity error:", error);
+      res.status(400).json({ message: "Failed to get vault activity", error: String(error) });
     }
   });
   
