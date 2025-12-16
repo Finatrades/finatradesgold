@@ -100,7 +100,7 @@ export default function PaymentGatewayManagement() {
     ngeniusFixedFee: '0.30',
     metalsApiEnabled: false,
     metalsApiKey: '',
-    metalsApiProvider: 'metals-api',
+    metalsApiProvider: 'gold-api',
     metalsApiCacheDuration: '5',
     goldPriceMarkupPercent: '0',
     minDepositUsd: '10',
@@ -812,11 +812,11 @@ export default function PaymentGatewayManagement() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Gold Price API (Metals API)</CardTitle>
-                  <CardDescription>Configure live gold price feed from metals-api.com</CardDescription>
+                  <CardTitle>Gold Price API (GoldAPI.io)</CardTitle>
+                  <CardDescription>Configure live gold price feed from goldapi.io</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label>Enable Metals API</Label>
+                  <Label>Enable Gold Price API</Label>
                   <Switch
                     checked={settings.metalsApiEnabled}
                     onCheckedChange={(checked) => setSettings(prev => ({ ...prev, metalsApiEnabled: checked }))}
@@ -847,27 +847,7 @@ export default function PaymentGatewayManagement() {
                       {showSecrets['metalsApiKey'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Get your API key from <a href="https://metals-api.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">metals-api.com</a></p>
-                </div>
-                <div className="space-y-2">
-                  <Label>API Provider</Label>
-                  <Select
-                    value={settings.metalsApiProvider}
-                    onValueChange={(value) => setSettings(prev => ({ ...prev, metalsApiProvider: value }))}
-                  >
-                    <SelectTrigger data-testid="select-metals-api-provider">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="metals-api">Metals-API.com</SelectItem>
-                      <SelectItem value="gold-api">GoldAPI.io</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {settings.metalsApiProvider === 'gold-api' 
-                      ? 'Get your API key from goldapi.io'
-                      : 'Get your API key from metals-api.com'}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Get your API key from <a href="https://www.goldapi.io" target="_blank" rel="noopener noreferrer" className="text-primary underline">goldapi.io</a></p>
                 </div>
                 <div className="space-y-2">
                   <Label>Cache Duration (minutes)</Label>
@@ -897,8 +877,8 @@ export default function PaymentGatewayManagement() {
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
                 <p className="text-sm text-amber-800">
-                  <strong>Note:</strong> When enabled, the Metals API will be used as the primary source for gold prices. 
-                  If disabled or if the API fails, the system will fall back to free gold price APIs.
+                  <strong>Note:</strong> When enabled, GoldAPI.io will be used as the primary source for gold prices. 
+                  If disabled or if the API fails, the system will fall back to the last known price.
                 </p>
               </div>
             </CardContent>

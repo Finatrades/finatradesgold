@@ -42,7 +42,7 @@ async function getGoldApiConfig(): Promise<GoldApiConfig> {
       return {
         enabled: settings[0].metalsApiEnabled || false,
         apiKey: settings[0].metalsApiKey || null,
-        provider: settings[0].metalsApiProvider || 'metals-api',
+        provider: 'gold-api',
         cacheDuration: settings[0].metalsApiCacheDuration || 5,
         markupPercent: parseFloat(settings[0].goldPriceMarkupPercent || '0'),
       };
@@ -50,7 +50,7 @@ async function getGoldApiConfig(): Promise<GoldApiConfig> {
   } catch (error) {
     console.error('[GoldPrice] Failed to get Gold API config:', error);
   }
-  return { enabled: false, apiKey: null, provider: 'metals-api', cacheDuration: 5, markupPercent: 0 };
+  return { enabled: false, apiKey: null, provider: 'gold-api', cacheDuration: 5, markupPercent: 0 };
 }
 
 async function fetchFromMetalsApi(apiKey: string): Promise<GoldPriceData> {
