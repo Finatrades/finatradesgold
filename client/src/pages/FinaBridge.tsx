@@ -186,6 +186,8 @@ export default function FinaBridge() {
   const [proposalFiles, setProposalFiles] = useState<File[]>([]);
   const [editingProposal, setEditingProposal] = useState<TradeProposal | null>(null);
   const [showEditProposalDialog, setShowEditProposalDialog] = useState(false);
+  const [viewingProposal, setViewingProposal] = useState<TradeProposal | null>(null);
+  const [showProposalDetailsDialog, setShowProposalDetailsDialog] = useState(false);
   
   const [proposalForm, setProposalForm] = useState({
     quotePrice: '',
@@ -1356,18 +1358,54 @@ export default function FinaBridge() {
                   ) : (
                     <div className="space-y-4">
                       {forwardedProposals.map((proposal) => (
-                        <Card key={proposal.id} className="border">
+                        <Card key={proposal.id} className="border hover:border-secondary/50 transition-colors">
                           <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-bold">Exporter: {proposal.exporter?.finatradesId || 'Unknown'}</p>
-                                <p className="text-sm text-muted-foreground">Quote: ${parseFloat(proposal.quotePrice).toLocaleString()}</p>
-                                <p className="text-sm text-muted-foreground">Timeline: {proposal.timelineDays} days</p>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <p className="font-bold text-lg">Exporter: {proposal.exporter?.finatradesId || 'Unknown'}</p>
+                                  {proposal.companyName && (
+                                    <span className="text-sm text-muted-foreground">({proposal.companyName})</span>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Quote:</span>
+                                    <span className="font-semibold ml-1 text-secondary">${parseFloat(proposal.quotePrice).toLocaleString()}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Timeline:</span>
+                                    <span className="font-semibold ml-1">{proposal.timelineDays} days</span>
+                                  </div>
+                                  {proposal.shippingMethod && (
+                                    <div>
+                                      <span className="text-muted-foreground">Shipping:</span>
+                                      <span className="font-semibold ml-1">{proposal.shippingMethod}</span>
+                                    </div>
+                                  )}
+                                  {proposal.incoterms && (
+                                    <div>
+                                      <span className="text-muted-foreground">Incoterms:</span>
+                                      <span className="font-semibold ml-1">{proposal.incoterms}</span>
+                                    </div>
+                                  )}
+                                </div>
                                 {proposal.notes && (
-                                  <p className="text-sm mt-2">{proposal.notes}</p>
+                                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{proposal.notes}</p>
                                 )}
                               </div>
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setViewingProposal(proposal);
+                                    setShowProposalDetailsDialog(true);
+                                  }}
+                                  data-testid={`button-view-details-${proposal.id}`}
+                                >
+                                  <Eye className="w-4 h-4 mr-1" /> View Details
+                                </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -2146,6 +2184,156 @@ export default function FinaBridge() {
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showProposalDetailsDialog} onOpenChange={(open) => { if (!open) { setShowProposalDetailsDialog(false); setViewingProposal(null); } }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-secondary" />
+                Proposal Details
+              </DialogTitle>
+            </DialogHeader>
+            {viewingProposal && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/5 rounded-lg border">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Quote Price</p>
+                    <p className="text-2xl font-bold text-secondary">${parseFloat(viewingProposal.quotePrice).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Timeline</p>
+                    <p className="text-2xl font-bold">{viewingProposal.timelineDays} days</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground border-b pb-2">Company Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Company Name</p>
+                      <p className="font-medium">{viewingProposal.companyName || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Registration Number</p>
+                      <p className="font-medium">{viewingProposal.companyRegistration || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Exporter ID</p>
+                      <p className="font-medium">{viewingProposal.exporter?.finatradesId || 'Unknown'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground border-b pb-2">Shipping Details</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Port of Loading</p>
+                      <p className="font-medium">{viewingProposal.portOfLoading || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Shipping Method</p>
+                      <p className="font-medium flex items-center gap-1">
+                        {viewingProposal.shippingMethod === 'Sea' && <Ship className="w-4 h-4 text-blue-500" />}
+                        {viewingProposal.shippingMethod === 'Air' && <Plane className="w-4 h-4 text-sky-500" />}
+                        {viewingProposal.shippingMethod === 'Road' && <Truck className="w-4 h-4 text-amber-600" />}
+                        {viewingProposal.shippingMethod === 'Rail' && <Train className="w-4 h-4 text-slate-600" />}
+                        {viewingProposal.shippingMethod || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Incoterms</p>
+                      <p className="font-medium">{viewingProposal.incoterms || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Estimated Delivery</p>
+                      <p className="font-medium">{viewingProposal.estimatedDeliveryDate || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Insurance Included</p>
+                      <p className="font-medium flex items-center gap-1">
+                        {viewingProposal.insuranceIncluded ? (
+                          <><Shield className="w-4 h-4 text-green-500" /> Yes</>
+                        ) : (
+                          <span className="text-muted-foreground">No</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground border-b pb-2">Payment & Terms</h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Payment Terms</p>
+                      <p className="font-medium">{viewingProposal.paymentTerms || 'Not specified'}</p>
+                    </div>
+                    {viewingProposal.certificationsAvailable && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Certifications Available</p>
+                        <p className="font-medium">{viewingProposal.certificationsAvailable}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground border-b pb-2">Contact Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Contact Person</p>
+                      <p className="font-medium">{viewingProposal.contactPerson || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="font-medium">{viewingProposal.contactEmail || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Phone</p>
+                      <p className="font-medium">{viewingProposal.contactPhone || 'Not provided'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {viewingProposal.notes && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground border-b pb-2">Additional Notes</h4>
+                    <p className="text-sm bg-muted/50 p-3 rounded-lg">{viewingProposal.notes}</p>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => { setShowProposalDetailsDialog(false); setViewingProposal(null); }}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => { 
+                      setShowProposalDetailsDialog(false); 
+                      handleDeclineProposal(viewingProposal.id); 
+                    }}
+                    disabled={submitting}
+                  >
+                    <X className="w-4 h-4 mr-1" /> Decline
+                  </Button>
+                  <Button
+                    onClick={() => { 
+                      setShowProposalDetailsDialog(false); 
+                      handleAcceptProposal(viewingProposal.id); 
+                    }}
+                    disabled={submitting}
+                  >
+                    <Check className="w-4 h-4 mr-1" /> Accept Proposal
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
