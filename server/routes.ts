@@ -3281,12 +3281,13 @@ export async function registerRoutes(
             goldGrams: newGoldBalance.toFixed(6),
           });
 
-          // Create transaction record
+          // Create transaction record - include USD value calculation
           await storage.createTransaction({
             userId: request.userId,
             type: 'Deposit',
             status: 'Completed',
             amountGold: finalWeightGrams.toString(),
+            amountUsd: totalValue.toFixed(2),
             goldPriceUsdPerGram: pricePerGram.toString(),
             description: `FinaVault deposit: ${finalWeightGrams}g physical gold stored`,
             sourceModule: 'finavault',
@@ -3582,6 +3583,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
       }
       
+      // Get current gold price for USD value calculation
+      const goldPrice = await getGoldPricePerGram();
+      const usdValue = amountGrams * goldPrice;
+      
       // Debit from FinaPay wallet
       await storage.updateWallet(finapayWallet.id, {
         goldGrams: (availableGold - amountGrams).toFixed(6)
@@ -3594,13 +3599,16 @@ export async function registerRoutes(
         availableGoldGrams: newAvailable.toFixed(6)
       });
       
-      // Create transaction record
+      // Create transaction record with USD value
       await storage.createTransaction({
         userId,
         type: 'Send',
         status: 'Completed',
         amountGold: amountGrams.toFixed(6),
-        description: `Transfer ${amountGrams.toFixed(3)}g from FinaPay to BNSL wallet`
+        amountUsd: usdValue.toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        description: `Transfer ${amountGrams.toFixed(3)}g from FinaPay to BNSL wallet`,
+        sourceModule: 'bnsl'
       });
       
       // Get updated wallets
