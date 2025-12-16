@@ -72,6 +72,7 @@ import DocumentsManagement from "@/pages/admin/DocumentsManagement";
 import ReferralManagement from "@/pages/admin/ReferralManagement";
 import AuditLogs from "@/pages/admin/AuditLogs";
 import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
+import AdminLogin from "@/pages/admin/AdminLogin";
 
 function Router() {
   return (
@@ -101,6 +102,7 @@ function Router() {
       <ProtectedRoute path="/security" component={Security} />
 
       {/* Admin Routes */}
+      <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/kyc" component={KYCReview} />
