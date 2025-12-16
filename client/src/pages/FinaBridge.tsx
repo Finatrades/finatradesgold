@@ -119,13 +119,19 @@ export default function FinaBridge() {
     return !user?.finabridgeDisclaimerAcceptedAt;
   });
 
-  const handleDisclaimerAccept = async () => {
+  const handleDisclaimerAccept = async (selectedRole: 'importer' | 'exporter' | 'both') => {
     if (!user) return;
     try {
-      const response = await apiRequest('POST', `/api/finabridge/accept-disclaimer/${user.id}`);
+      const response = await apiRequest('POST', `/api/finabridge/accept-disclaimer/${user.id}`, { role: selectedRole });
       if (response.ok) {
         setShowDisclaimer(false);
-        toast({ title: 'Disclaimer Accepted', description: 'You can now use FinaBridge Trade Finance.' });
+        // Set the role based on user selection for the UI
+        if (selectedRole === 'importer' || selectedRole === 'both') {
+          setRole('importer');
+        } else {
+          setRole('exporter');
+        }
+        toast({ title: 'Disclaimer Accepted', description: `You are now registered as ${selectedRole === 'both' ? 'Importer & Exporter' : selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}.` });
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to record disclaimer acceptance', variant: 'destructive' });

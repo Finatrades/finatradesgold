@@ -3,20 +3,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertTriangle, Shield, Scale, FileText, ArrowLeft } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { AlertTriangle, Shield, Scale, FileText, ArrowLeft, Package, Ship, ArrowLeftRight } from 'lucide-react';
+
+type FinaBridgeRole = 'importer' | 'exporter' | 'both';
 
 interface FinaBridgeDisclaimerModalProps {
   open: boolean;
-  onAccept: () => void;
+  onAccept: (role: FinaBridgeRole) => void;
 }
 
 export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridgeDisclaimerModalProps) {
   const [accepted, setAccepted] = useState(false);
   const [showFullTerms, setShowFullTerms] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<FinaBridgeRole | null>(null);
 
   const handleAccept = () => {
-    if (accepted) {
-      onAccept();
+    if (accepted && selectedRole) {
+      onAccept(selectedRole);
     }
   };
 
@@ -274,18 +279,64 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
           </div>
         </ScrollArea>
 
-        <div className="p-6 pt-4 border-t bg-gray-50">
+        <div className="p-6 pt-4 border-t bg-gray-50 space-y-4">
           <Button
             variant="outline"
             onClick={() => setShowFullTerms(true)}
-            className="w-full mb-3 border-orange-300 text-orange-600 hover:bg-orange-50"
+            className="w-full border-orange-300 text-orange-600 hover:bg-orange-50"
             data-testid="button-view-full-terms"
           >
             <FileText className="w-4 h-4 mr-2" />
             View Full Terms & Conditions
           </Button>
           
-          <div className="flex items-start gap-3 mb-4">
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <Ship className="w-5 h-5" />
+              Select Your Role
+            </h4>
+            <p className="text-sm text-blue-700 mb-3">
+              Please indicate your primary role in trade operations:
+            </p>
+            <RadioGroup 
+              value={selectedRole || ''} 
+              onValueChange={(value) => setSelectedRole(value as FinaBridgeRole)}
+              className="space-y-2"
+            >
+              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
+                <RadioGroupItem value="importer" id="role-importer" data-testid="radio-role-importer" />
+                <Label htmlFor="role-importer" className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-gray-900">Importer</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">I buy goods/commodities and need to pay suppliers</p>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
+                <RadioGroupItem value="exporter" id="role-exporter" data-testid="radio-role-exporter" />
+                <Label htmlFor="role-exporter" className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Ship className="w-4 h-4 text-green-600" />
+                    <span className="font-medium text-gray-900">Exporter</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">I sell goods/commodities and receive payments</p>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
+                <RadioGroupItem value="both" id="role-both" data-testid="radio-role-both" />
+                <Label htmlFor="role-both" className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                    <span className="font-medium text-gray-900">Both</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">I operate as both importer and exporter</p>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
+          <div className="flex items-start gap-3">
             <Checkbox 
               id="accept-terms" 
               checked={accepted} 
@@ -300,8 +351,8 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
           
           <Button 
             onClick={handleAccept}
-            disabled={!accepted}
-            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold"
+            disabled={!accepted || !selectedRole}
+            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold disabled:opacity-50"
             data-testid="button-accept-disclaimer"
           >
             <Scale className="w-4 h-4 mr-2" />
