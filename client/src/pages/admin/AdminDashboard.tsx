@@ -12,7 +12,12 @@ interface AdminStats {
   totalUsers: number;
   pendingKycCount: number;
   totalVolume: number;
+  totalVolumeAed: number;
   revenue: number;
+  revenueAed: number;
+  pendingDeposits: number;
+  pendingWithdrawals: number;
+  pendingTransactions: number;
   pendingKycRequests: Array<{
     id: string;
     userId: string;
@@ -21,6 +26,15 @@ interface AdminStats {
     status: string;
     createdAt: string;
   }>;
+}
+
+function formatAed(amount: number): string {
+  if (amount >= 1000000) {
+    return `AED ${(amount / 1000000).toFixed(1)}M`;
+  } else if (amount >= 1000) {
+    return `AED ${(amount / 1000).toFixed(1)}k`;
+  }
+  return `AED ${amount.toFixed(0)}`;
 }
 
 function formatCurrency(amount: number): string {
@@ -92,7 +106,7 @@ export default function AdminDashboard() {
           <GlassStatsCard 
             title="Total Volume" 
             value={isLoading ? '...' : formatCurrency(stats?.totalVolume || 0)}
-            subtitle="All-time transactions"
+            subtitle={isLoading ? 'All-time transactions' : `${formatAed(stats?.totalVolumeAed || 0)}`}
             icon={<BarChart3 className="w-6 h-6" />} 
             gradient="from-purple-500 to-pink-600"
             loading={isLoading}
@@ -108,7 +122,7 @@ export default function AdminDashboard() {
           <GlassStatsCard 
             title="Revenue" 
             value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
-            subtitle="Platform earnings"
+            subtitle={isLoading ? 'Platform earnings' : `${formatAed(stats?.revenueAed || 0)}`}
             icon={<TrendingUp className="w-6 h-6" />} 
             gradient="from-emerald-500 to-teal-600"
             loading={isLoading}

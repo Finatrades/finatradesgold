@@ -915,11 +915,18 @@ export async function registerRoutes(
         tx.status === 'Pending'
       ).length;
       
+      // USD to AED conversion rate
+      const USD_TO_AED = 3.67;
+      const totalVolumeAed = totalVolume * USD_TO_AED;
+      const revenueAed = revenue * USD_TO_AED;
+      
       res.json({
         totalUsers,
         pendingKycCount,
         totalVolume,
+        totalVolumeAed,
         revenue,
+        revenueAed,
         pendingKycRequests,
         pendingDeposits,
         pendingWithdrawals,
