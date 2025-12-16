@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock } from 'lucide-react';
+import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -54,6 +54,16 @@ const actions = [
     color: 'text-accent',
     bg: 'bg-accent/10 hover:bg-accent/20',
     border: 'border-accent/30',
+    requiresKyc: true,
+    isModal: false
+  },
+  {
+    title: 'BNSL',
+    path: '/bnsl',
+    icon: <TrendingUp className="w-5 h-5" />,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20',
+    border: 'border-emerald-500/30',
     requiresKyc: true,
     isModal: false
   }
