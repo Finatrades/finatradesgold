@@ -4956,7 +4956,16 @@ export async function registerRoutes(
         }
       }
       
-      res.json({ settlementHold, message: "Proposal accepted and gold locked" });
+      // Create Deal Room for communication between importer, exporter, and admin
+      const dealRoom = await storage.createDealRoom({
+        tradeRequestId: request.id,
+        acceptedProposalId: proposal.id,
+        importerUserId: request.importerUserId,
+        exporterUserId: proposal.exporterUserId,
+        status: 'active',
+      });
+      
+      res.json({ settlementHold, dealRoom, message: "Proposal accepted, gold locked, and deal room created" });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to accept proposal" });
     }
@@ -5468,6 +5477,203 @@ export async function registerRoutes(
       res.json({ message: "Settlement released and gold transferred to exporter" });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release settlement" });
+    }
+  });
+  
+  // ============================================================================
+  // DEAL ROOM - TRADE CASE CONVERSATIONS
+  // ============================================================================
+  
+  // Get user's deal rooms
+  app.get("/api/deal-rooms/user/:userId", async (req, res) => {
+    try {
+      const rooms = await storage.getUserDealRooms(req.params.userId);
+      
+      // Fetch related data for each room
+      const roomsWithDetails = await Promise.all(rooms.map(async (room) => {
+        const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
+        const proposal = await storage.getTradeProposal(room.acceptedProposalId);
+        const importer = await storage.getUser(room.importerUserId);
+        const exporter = await storage.getUser(room.exporterUserId);
+        const unreadCount = await storage.getUnreadDealRoomMessageCount(room.id, req.params.userId);
+        
+        return {
+          ...room,
+          tradeRequest,
+          proposal,
+          importer: importer ? { id: importer.id, finatradesId: importer.finatradesId, email: importer.email } : null,
+          exporter: exporter ? { id: exporter.id, finatradesId: exporter.finatradesId, email: exporter.email } : null,
+          unreadCount,
+        };
+      }));
+      
+      res.json({ rooms: roomsWithDetails });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deal rooms" });
+    }
+  });
+  
+  // Get deal room by ID
+  app.get("/api/deal-rooms/:id", async (req, res) => {
+    try {
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+      
+      const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
+      const proposal = await storage.getTradeProposal(room.acceptedProposalId);
+      const importer = await storage.getUser(room.importerUserId);
+      const exporter = await storage.getUser(room.exporterUserId);
+      const assignedAdmin = room.assignedAdminId ? await storage.getUser(room.assignedAdminId) : null;
+      
+      res.json({
+        room: {
+          ...room,
+          tradeRequest,
+          proposal,
+          importer: importer ? { id: importer.id, finatradesId: importer.finatradesId, email: importer.email } : null,
+          exporter: exporter ? { id: exporter.id, finatradesId: exporter.finatradesId, email: exporter.email } : null,
+          assignedAdmin: assignedAdmin ? { id: assignedAdmin.id, finatradesId: assignedAdmin.finatradesId, email: assignedAdmin.email } : null,
+        },
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deal room" });
+    }
+  });
+  
+  // Get deal room by trade request ID
+  app.get("/api/deal-rooms/trade-request/:tradeRequestId", async (req, res) => {
+    try {
+      const room = await storage.getDealRoomByTradeRequest(req.params.tradeRequestId);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found for this trade request" });
+      }
+      res.json({ room });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deal room" });
+    }
+  });
+  
+  // Get deal room messages
+  app.get("/api/deal-rooms/:id/messages", async (req, res) => {
+    try {
+      const messages = await storage.getDealRoomMessages(req.params.id);
+      
+      // Get sender info for each message
+      const messagesWithSenders = await Promise.all(messages.map(async (msg) => {
+        const sender = await storage.getUser(msg.senderUserId);
+        return {
+          ...msg,
+          sender: sender ? { id: sender.id, finatradesId: sender.finatradesId, email: sender.email } : null,
+        };
+      }));
+      
+      res.json({ messages: messagesWithSenders });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get messages" });
+    }
+  });
+  
+  // Send message in deal room
+  app.post("/api/deal-rooms/:id/messages", async (req, res) => {
+    try {
+      const { senderUserId, senderRole, content, attachmentUrl, attachmentName, attachmentType } = req.body;
+      
+      if (!senderUserId || !senderRole) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      if (!content && !attachmentUrl) {
+        return res.status(400).json({ message: "Message must have content or attachment" });
+      }
+      
+      // Verify user is a participant
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+      
+      const isParticipant = [room.importerUserId, room.exporterUserId, room.assignedAdminId].includes(senderUserId);
+      if (!isParticipant) {
+        return res.status(403).json({ message: "User is not a participant in this deal room" });
+      }
+      
+      const message = await storage.createDealRoomMessage({
+        dealRoomId: req.params.id,
+        senderUserId,
+        senderRole,
+        content: content || null,
+        attachmentUrl: attachmentUrl || null,
+        attachmentName: attachmentName || null,
+        attachmentType: attachmentType || null,
+        isRead: false,
+      });
+      
+      const sender = await storage.getUser(senderUserId);
+      
+      res.json({ 
+        message: {
+          ...message,
+          sender: sender ? { id: sender.id, finatradesId: sender.finatradesId, email: sender.email } : null,
+        }
+      });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
+    }
+  });
+  
+  // Mark messages as read
+  app.post("/api/deal-rooms/:id/mark-read", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ message: "Missing userId" });
+      }
+      
+      await storage.markDealRoomMessagesAsRead(req.params.id, userId);
+      res.json({ message: "Messages marked as read" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to mark messages as read" });
+    }
+  });
+  
+  // Admin: Get all deal rooms
+  app.get("/api/admin/deal-rooms", async (req, res) => {
+    try {
+      const rooms = await storage.getAllDealRooms();
+      
+      const roomsWithDetails = await Promise.all(rooms.map(async (room) => {
+        const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
+        const importer = await storage.getUser(room.importerUserId);
+        const exporter = await storage.getUser(room.exporterUserId);
+        
+        return {
+          ...room,
+          tradeRequest,
+          importer: importer ? { id: importer.id, finatradesId: importer.finatradesId } : null,
+          exporter: exporter ? { id: exporter.id, finatradesId: exporter.finatradesId } : null,
+        };
+      }));
+      
+      res.json({ rooms: roomsWithDetails });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get deal rooms" });
+    }
+  });
+  
+  // Admin: Assign admin to deal room
+  app.post("/api/admin/deal-rooms/:id/assign", async (req, res) => {
+    try {
+      const { adminId } = req.body;
+      if (!adminId) {
+        return res.status(400).json({ message: "Missing adminId" });
+      }
+      
+      const room = await storage.updateDealRoom(req.params.id, { assignedAdminId: adminId });
+      res.json({ room });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to assign admin" });
     }
   });
   
