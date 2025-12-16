@@ -7226,12 +7226,7 @@ export async function registerRoutes(
         },
         bankTransfer: { 
           enabled: s.bankTransferEnabled,
-          bankName: s.bankTransferEnabled ? s.bankName : null,
-          accountName: s.bankTransferEnabled ? s.bankAccountName : null,
-          accountNumber: s.bankTransferEnabled ? s.bankAccountNumber : null,
-          routingNumber: s.bankTransferEnabled ? s.bankRoutingNumber : null,
-          swiftCode: s.bankTransferEnabled ? s.bankSwiftCode : null,
-          iban: s.bankTransferEnabled ? s.bankIban : null,
+          accounts: s.bankTransferEnabled ? s.bankAccounts : [],
           instructions: s.bankTransferEnabled ? s.bankInstructions : null
         },
         binancePay: { enabled: s.binancePayEnabled },
@@ -7454,9 +7449,9 @@ export async function registerRoutes(
       const existing = await storage.getFinatradesCorporateKyc(userId);
       
       if (existing) {
-        // Update existing submission
+        // Update existing submission - spread questionnaire fields
         const updated = await storage.updateFinatradesCorporateKyc(userId, {
-          questionnaire,
+          ...(questionnaire || {}),
           representativeLiveness,
           livenessVerified: !!representativeLiveness,
           livenessVerifiedAt: representativeLiveness ? new Date() : null,
@@ -7468,10 +7463,10 @@ export async function registerRoutes(
         
         res.json({ success: true, submission: updated });
       } else {
-        // Create new submission
+        // Create new submission - spread questionnaire fields
         const submission = await storage.createFinatradesCorporateKyc({
           userId,
-          questionnaire,
+          ...(questionnaire || {}),
           representativeLiveness,
           livenessVerified: !!representativeLiveness,
           livenessVerifiedAt: representativeLiveness ? new Date() : null,
