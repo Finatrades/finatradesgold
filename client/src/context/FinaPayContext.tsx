@@ -105,7 +105,7 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
           type: 'Deposit',
           status: dep.status === 'Approved' ? 'Completed' : dep.status,
           amountUsd: dep.amountUsd,
-          amountGold: '0',
+          amountGold: null,
           createdAt: dep.createdAt,
           referenceId: dep.referenceNumber,
           description: `Bank Transfer - ${dep.senderBankName || 'Bank Deposit'}`,
