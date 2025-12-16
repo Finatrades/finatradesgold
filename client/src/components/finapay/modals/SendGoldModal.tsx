@@ -413,7 +413,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <Input 
                         type="number" 
                         placeholder="0.00" 
-                        className="bg-background border-input pl-8 text-lg font-medium"
+                        className={`bg-background pl-8 text-lg font-medium ${numericAmount > walletBalance ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                       />
@@ -426,6 +426,12 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                         MAX
                       </Button>
                     </div>
+                    {numericAmount > walletBalance && (
+                      <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>Insufficient funds. Your balance is ${walletBalance.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Payment Reason */}
