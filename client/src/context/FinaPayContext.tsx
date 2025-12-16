@@ -71,11 +71,43 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      const response = await fetch(`/api/transactions/${user.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data.transactions);
+      // Fetch both regular transactions and deposit requests
+      const [txResponse, depositResponse] = await Promise.all([
+        fetch(`/api/transactions/${user.id}`),
+        fetch(`/api/deposit-requests/${user.id}`)
+      ]);
+      
+      let allTransactions: any[] = [];
+      
+      if (txResponse.ok) {
+        const txData = await txResponse.json();
+        allTransactions = [...(txData.transactions || [])];
       }
+      
+      // Convert deposit requests to transaction-like format
+      if (depositResponse.ok) {
+        const depositData = await depositResponse.json();
+        const depositTransactions = (depositData.requests || []).map((dep: any) => ({
+          id: dep.id,
+          userId: dep.userId,
+          type: 'Deposit',
+          status: dep.status === 'Approved' ? 'Completed' : dep.status,
+          amountUsd: dep.amountUsd,
+          amountGold: '0',
+          createdAt: dep.createdAt,
+          referenceId: dep.referenceNumber,
+          description: `Bank Transfer - ${dep.senderBankName || 'Bank Deposit'}`,
+          isDepositRequest: true,
+        }));
+        allTransactions = [...allTransactions, ...depositTransactions];
+      }
+      
+      // Sort by date (newest first)
+      allTransactions.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      setTransactions(allTransactions);
     } catch (error) {
       console.error('Failed to fetch transactions:', error);
     }
