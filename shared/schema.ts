@@ -43,6 +43,9 @@ export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'adm
 
 export const mfaMethodEnum = pgEnum('mfa_method', ['totp', 'email']);
 
+// FinaBridge role enum for differentiating importers and exporters
+export const finabridgeRoleEnum = pgEnum('finabridge_role', ['importer', 'exporter', 'both']);
+
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   finatradesId: varchar("finatrades_id", { length: 20 }).unique(), // Unique user identifier for transfers
@@ -69,8 +72,9 @@ export const users = pgTable("users", {
   // Business fields (for business accounts)
   companyName: varchar("company_name", { length: 255 }),
   registrationNumber: varchar("registration_number", { length: 100 }),
-  // FinaBridge disclaimer acceptance
+  // FinaBridge disclaimer acceptance and role
   finabridgeDisclaimerAcceptedAt: timestamp("finabridge_disclaimer_accepted_at"),
+  finabridgeRole: finabridgeRoleEnum("finabridge_role"), // importer, exporter, or both
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -93,6 +97,7 @@ export const insertUserSchema = createInsertSchema(users)
     registrationNumber: z.string().nullable().optional(),
     profilePhoto: z.string().nullable().optional(),
     finabridgeDisclaimerAcceptedAt: z.date().nullable().optional(),
+    finabridgeRole: z.enum(['importer', 'exporter', 'both']).nullable().optional(),
     // MFA fields
     mfaEnabled: z.boolean().optional(),
     mfaMethod: z.enum(['totp', 'email']).nullable().optional(),
