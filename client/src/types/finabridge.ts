@@ -120,3 +120,14 @@ export type LockedFundsSummary = {
   totalReleasedGoldGrams: number;
   activeCasesCount: number;
 };
+
+export type FinaBridgeWalletBalance = {
+  availableGoldGrams: number;
+  lockedGoldGrams: number;
+  incomingLockedGoldGrams?: number;
+};
+
+export type FinaBridgeWallet = {
+  importer: FinaBridgeWalletBalance;
+  exporter: FinaBridgeWalletBalance;
+};
