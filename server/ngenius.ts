@@ -91,20 +91,13 @@ export class NgeniusService {
       authHeader = `Basic ${this.config.apiKey}`;
     }
 
-    // Use NGenius token endpoint: https://api-gateway.ngenius-payments.com/identity/auth/access-token
-    // Include realmName in body if provided (required by NGenius)
-    const requestBody = this.config.realmName 
-      ? JSON.stringify({ realmName: this.config.realmName })
-      : undefined;
-
+    // Use NGenius token endpoint - NO body required per NGenius documentation
     const response = await fetch(`${this.getBaseUrl()}/identity/auth/access-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/vnd.ni-identity.v1+json',
-        'Accept': 'application/vnd.ni-identity.v1+json',
         'Authorization': authHeader,
       },
-      ...(requestBody && { body: requestBody }),
     });
 
     if (!response.ok) {
