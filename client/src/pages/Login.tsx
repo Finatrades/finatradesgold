@@ -25,11 +25,9 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin') {
-        setLocation('/admin');
-      } else {
-        setLocation('/dashboard');
-      }
+      // Regular login page always goes to user dashboard
+      // Admins must use /admin/login to access admin portal
+      setLocation('/dashboard');
     }
   }, [user, setLocation]);
 

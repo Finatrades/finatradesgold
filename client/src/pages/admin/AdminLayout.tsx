@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useLocation, Link } from 'wouter';
+import { useLocation, Link, Redirect } from 'wouter';
 import { 
   LayoutDashboard, 
   Users, 
@@ -49,7 +49,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (!user || user.role !== 'admin') return null;
+  if (!user || user.role !== 'admin') {
+    return <Redirect to="/admin/login" />;
+  }
 
   const menuSections = [
     {
