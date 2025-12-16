@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash, UserPlus, ExternalLink } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
@@ -67,6 +67,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [transferRef, setTransferRef] = useState('');
   const [paymentReason, setPaymentReason] = useState('');
   const [sourceOfFunds, setSourceOfFunds] = useState('');
+  const [notFoundEmail, setNotFoundEmail] = useState('');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -82,6 +85,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setTransferRef('');
       setPaymentReason('');
       setSourceOfFunds('');
+      setNotFoundEmail('');
+      setIsSendingInvite(false);
+      setInviteSent(false);
     }
   }, [isOpen]);
 
@@ -94,6 +100,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     setIsSearching(true);
     setSearchError('');
     setFoundUser(null);
+    setNotFoundEmail('');
+    setInviteSent(false);
     
     try {
       const res = await apiRequest('GET', `/api/finapay/search-user?identifier=${encodeURIComponent(searchValue.trim())}`);
@@ -108,9 +116,44 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
         }
       }
     } catch (error) {
-      setSearchError("User not found. Check the email or Finatrades ID.");
+      // Check if it's an email format - if so, offer invitation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (activeTab === 'email' && emailRegex.test(searchValue.trim())) {
+        setNotFoundEmail(searchValue.trim());
+        setSearchError('');
+      } else {
+        setSearchError("User not found. Check the email or Finatrades ID.");
+      }
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleSendInvitation = async () => {
+    if (!notFoundEmail || !user) return;
+    
+    setIsSendingInvite(true);
+    
+    try {
+      const res = await apiRequest('POST', '/api/users/check-and-invite', {
+        email: notFoundEmail,
+        senderName: `${user.firstName} ${user.lastName}`,
+        amount: amount || '0',
+        type: 'send'
+      });
+      
+      const data = await res.json();
+      
+      if (data.invitationSent) {
+        setInviteSent(true);
+        toast.success(`Invitation sent to ${notFoundEmail}!`);
+      } else {
+        toast.error(data.message || 'Failed to send invitation');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send invitation');
+    } finally {
+      setIsSendingInvite(false);
     }
   };
 
@@ -255,6 +298,72 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
                 <AlertCircle className="w-4 h-4" />
                 {searchError}
+              </div>
+            )}
+
+            {notFoundEmail && !inviteSent && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 text-orange-700">
+                  <UserPlus className="w-5 h-5" />
+                  <span className="font-medium">User not on Finatrades yet</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  <strong>{notFoundEmail}</strong> is not registered on Finatrades. 
+                  Send them an invitation to join so they can receive funds from you!
+                </p>
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 text-white"
+                  onClick={handleSendInvitation}
+                  disabled={isSendingInvite}
+                  data-testid="button-send-invitation"
+                >
+                  {isSendingInvite ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Sending Invitation...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Invitation to Join Finatrades
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {inviteSent && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-medium">Invitation Sent!</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  We've sent an email to <strong>{notFoundEmail}</strong> inviting them to join Finatrades. 
+                  Once they register, you'll be able to send funds to them.
+                </p>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setNotFoundEmail('');
+                      setInviteSent(false);
+                      setIdentifier('');
+                    }}
+                    data-testid="button-try-another"
+                  >
+                    Try Another Email
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleClose}
+                    data-testid="button-done-invite"
+                  >
+                    Done
+                  </Button>
+                </div>
               </div>
             )}
 
