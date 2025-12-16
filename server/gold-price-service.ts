@@ -1,3 +1,6 @@
+import { db } from "./db";
+import { paymentGatewaySettings } from "@shared/schema";
+
 interface GoldPriceData {
   pricePerGram: number;
   pricePerOunce: number;
@@ -11,9 +14,33 @@ interface CachedPrice {
   expiresAt: Date;
 }
 
+interface MetalsApiConfig {
+  enabled: boolean;
+  apiKey: string | null;
+  provider: string;
+  cacheDuration: number;
+}
+
 let cachedPrice: CachedPrice | null = null;
-const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+let cacheDurationMs = 5 * 60 * 1000; // 5 minutes default
 const FALLBACK_PRICE_PER_GRAM = 93.50; // Fallback price in USD
+
+async function getMetalsApiConfig(): Promise<MetalsApiConfig> {
+  try {
+    const settings = await db.select().from(paymentGatewaySettings).limit(1);
+    if (settings[0]) {
+      return {
+        enabled: settings[0].metalsApiEnabled || false,
+        apiKey: settings[0].metalsApiKey || null,
+        provider: settings[0].metalsApiProvider || 'metals-api',
+        cacheDuration: settings[0].metalsApiCacheDuration || 5,
+      };
+    }
+  } catch (error) {
+    console.error('[GoldPrice] Failed to get Metals API config:', error);
+  }
+  return { enabled: false, apiKey: null, provider: 'metals-api', cacheDuration: 5 };
+}
 
 async function fetchFromGoldPriceZ(): Promise<GoldPriceData | null> {
   try {
@@ -105,6 +132,80 @@ async function fetchFromMetalsDev(apiKey: string): Promise<GoldPriceData | null>
   }
 }
 
+async function fetchFromMetalsApi(apiKey: string): Promise<GoldPriceData | null> {
+  try {
+    const response = await fetch(
+      `https://metals-api.com/api/latest?access_key=${apiKey}&base=USD&symbols=XAU`
+    );
+    
+    if (!response.ok) {
+      console.error('[GoldPrice] Metals-API error:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.rates?.XAU) {
+      const pricePerOunce = 1 / data.rates.XAU;
+      const pricePerGram = pricePerOunce / 31.1035;
+      return {
+        pricePerGram,
+        pricePerOunce,
+        currency: 'USD',
+        timestamp: new Date(),
+        source: 'metals-api.com'
+      };
+    }
+    
+    if (data.error) {
+      console.error('[GoldPrice] Metals-API error:', data.error.info || data.error.type);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[GoldPrice] Metals-API fetch error:', error);
+    return null;
+  }
+}
+
+async function fetchFromGoldApi(apiKey: string): Promise<GoldPriceData | null> {
+  try {
+    const response = await fetch(
+      `https://www.goldapi.io/api/XAU/USD`,
+      {
+        headers: {
+          'x-access-token': apiKey,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      console.error('[GoldPrice] GoldAPI error:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data.price) {
+      const pricePerOunce = data.price;
+      const pricePerGram = pricePerOunce / 31.1035;
+      return {
+        pricePerGram,
+        pricePerOunce,
+        currency: 'USD',
+        timestamp: new Date(),
+        source: 'goldapi.io'
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[GoldPrice] GoldAPI fetch error:', error);
+    return null;
+  }
+}
+
 function getFallbackPrice(): GoldPriceData {
   return {
     pricePerGram: FALLBACK_PRICE_PER_GRAM,
@@ -116,6 +217,10 @@ function getFallbackPrice(): GoldPriceData {
 }
 
 export async function getGoldPrice(): Promise<GoldPriceData> {
+  // Get config from database
+  const config = await getMetalsApiConfig();
+  cacheDurationMs = config.cacheDuration * 60 * 1000;
+  
   // Return cached price if still valid
   if (cachedPrice && cachedPrice.expiresAt > new Date()) {
     return cachedPrice.data;
@@ -123,15 +228,28 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   
   let priceData: GoldPriceData | null = null;
   
-  // Try free APIs first (no key required)
-  priceData = await fetchFromGoldPriceZ();
+  // If Metals API is enabled with a key, use it as primary source
+  if (config.enabled && config.apiKey) {
+    if (config.provider === 'metals-api') {
+      priceData = await fetchFromMetalsApi(config.apiKey);
+    } else if (config.provider === 'metals-dev') {
+      priceData = await fetchFromMetalsDev(config.apiKey);
+    } else if (config.provider === 'goldapi') {
+      priceData = await fetchFromGoldApi(config.apiKey);
+    }
+  }
+  
+  // Try free APIs as fallback
+  if (!priceData) {
+    priceData = await fetchFromGoldPriceZ();
+  }
   
   // Try FreeGoldAPI as backup
   if (!priceData) {
     priceData = await fetchFromFreeGoldApi();
   }
   
-  // Try Metals.dev if API key is available
+  // Try Metals.dev if env API key is available
   if (!priceData) {
     const metalsDevKey = process.env.METALS_DEV_API_KEY;
     if (metalsDevKey) {
@@ -148,7 +266,7 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   // Cache the result
   cachedPrice = {
     data: priceData,
-    expiresAt: new Date(Date.now() + CACHE_DURATION_MS)
+    expiresAt: new Date(Date.now() + cacheDurationMs)
   };
   
   console.log(`[GoldPrice] Fetched from ${priceData.source}: $${priceData.pricePerGram.toFixed(2)}/gram`);

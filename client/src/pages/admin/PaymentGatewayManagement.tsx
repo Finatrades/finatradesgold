@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2 } from 'lucide-react';
+import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
@@ -58,9 +58,14 @@ interface PaymentGatewaySettings {
   ngeniusEnabled: boolean;
   ngeniusApiKey: string;
   ngeniusOutletRef: string;
+  ngeniusRealmName: string;
   ngeniusMode: string;
   ngeniusFeePercent: string;
   ngeniusFixedFee: string;
+  metalsApiEnabled: boolean;
+  metalsApiKey: string;
+  metalsApiProvider: string;
+  metalsApiCacheDuration: string;
   minDepositUsd: string;
   maxDepositUsd: string;
 }
@@ -88,9 +93,14 @@ export default function PaymentGatewayManagement() {
     ngeniusEnabled: false,
     ngeniusApiKey: '',
     ngeniusOutletRef: '',
+    ngeniusRealmName: '',
     ngeniusMode: 'sandbox',
     ngeniusFeePercent: '2.5',
     ngeniusFixedFee: '0.30',
+    metalsApiEnabled: false,
+    metalsApiKey: '',
+    metalsApiProvider: 'metals-api',
+    metalsApiCacheDuration: '5',
     minDepositUsd: '10',
     maxDepositUsd: '100000',
   });
@@ -129,9 +139,14 @@ export default function PaymentGatewayManagement() {
           ngeniusEnabled: data.ngeniusEnabled || false,
           ngeniusApiKey: data.ngeniusApiKey || '',
           ngeniusOutletRef: data.ngeniusOutletRef || '',
+          ngeniusRealmName: data.ngeniusRealmName || '',
           ngeniusMode: data.ngeniusMode || 'sandbox',
           ngeniusFeePercent: data.ngeniusFeePercent || '2.5',
           ngeniusFixedFee: data.ngeniusFixedFee || '0.30',
+          metalsApiEnabled: data.metalsApiEnabled || false,
+          metalsApiKey: data.metalsApiKey || '',
+          metalsApiProvider: data.metalsApiProvider || 'metals-api',
+          metalsApiCacheDuration: data.metalsApiCacheDuration?.toString() || '5',
           minDepositUsd: data.minDepositUsd || '10',
           maxDepositUsd: data.maxDepositUsd || '100000',
         });
@@ -267,7 +282,7 @@ export default function PaymentGatewayManagement() {
       </div>
 
       <Tabs defaultValue="stripe" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="stripe" data-testid="tab-stripe">
             <CreditCard className="w-4 h-4 mr-2" /> Stripe
           </TabsTrigger>
@@ -282,6 +297,9 @@ export default function PaymentGatewayManagement() {
           </TabsTrigger>
           <TabsTrigger value="ngenius" data-testid="tab-ngenius">
             <CreditCard className="w-4 h-4 mr-2" /> NGenius
+          </TabsTrigger>
+          <TabsTrigger value="metals-api" data-testid="tab-metals-api">
+            <TrendingUp className="w-4 h-4 mr-2" /> Gold API
           </TabsTrigger>
         </TabsList>
 
@@ -731,6 +749,16 @@ export default function PaymentGatewayManagement() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>Realm Name</Label>
+                  <Input
+                    placeholder="Realm name (e.g., ni)"
+                    value={settings.ngeniusRealmName}
+                    onChange={(e) => setSettings(prev => ({ ...prev, ngeniusRealmName: e.target.value }))}
+                    data-testid="input-ngenius-realm-name"
+                  />
+                  <p className="text-xs text-muted-foreground">Required for authentication - found in your NGenius portal</p>
+                </div>
+                <div className="space-y-2">
                   <Label>Mode</Label>
                   <Select
                     value={settings.ngeniusMode}
@@ -770,6 +798,87 @@ export default function PaymentGatewayManagement() {
                 <p className="text-sm text-purple-800">
                   NGenius is a card payment gateway by Network International. Once enabled, users will see a "Card Payment" option when depositing funds. 
                   They will be redirected to the secure NGenius hosted payment page to complete the transaction.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="metals-api">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Gold Price API (Metals API)</CardTitle>
+                  <CardDescription>Configure live gold price feed from metals-api.com</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label>Enable Metals API</Label>
+                  <Switch
+                    checked={settings.metalsApiEnabled}
+                    onCheckedChange={(checked) => setSettings(prev => ({ ...prev, metalsApiEnabled: checked }))}
+                    data-testid="switch-metals-api-enabled"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>API Key</Label>
+                  <div className="relative">
+                    <Input
+                      type={showSecrets['metalsApiKey'] ? 'text' : 'password'}
+                      placeholder="Your Metals API Key"
+                      value={settings.metalsApiKey}
+                      onChange={(e) => setSettings(prev => ({ ...prev, metalsApiKey: e.target.value }))}
+                      data-testid="input-metals-api-key"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => toggleSecret('metalsApiKey')}
+                    >
+                      {showSecrets['metalsApiKey'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Get your API key from <a href="https://metals-api.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">metals-api.com</a></p>
+                </div>
+                <div className="space-y-2">
+                  <Label>API Provider</Label>
+                  <Select
+                    value={settings.metalsApiProvider}
+                    onValueChange={(value) => setSettings(prev => ({ ...prev, metalsApiProvider: value }))}
+                  >
+                    <SelectTrigger data-testid="select-metals-api-provider">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="metals-api">Metals-API.com</SelectItem>
+                      <SelectItem value="metals-dev">Metals.dev</SelectItem>
+                      <SelectItem value="goldapi">GoldAPI.io</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cache Duration (minutes)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={settings.metalsApiCacheDuration}
+                    onChange={(e) => setSettings(prev => ({ ...prev, metalsApiCacheDuration: e.target.value }))}
+                    data-testid="input-metals-api-cache"
+                  />
+                  <p className="text-xs text-muted-foreground">How long to cache gold prices before fetching new data</p>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+                <p className="text-sm text-amber-800">
+                  <strong>Note:</strong> When enabled, the Metals API will be used as the primary source for gold prices. 
+                  If disabled or if the API fails, the system will fall back to free gold price APIs.
                 </p>
               </div>
             </CardContent>
