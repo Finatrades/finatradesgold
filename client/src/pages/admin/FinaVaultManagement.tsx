@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { 
   Package, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle, XCircle, 
@@ -17,6 +19,22 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
+
+const DEPOSIT_STATUSES = [
+  'Submitted',
+  'Under Review',
+  'Approved – Awaiting Delivery',
+  'Received at Vault'
+] as const;
+
+const FINAL_STATUSES = ['Stored in Vault', 'Stored'] as const;
+
+const PROCESSING_TIMES = [
+  { value: '1-2', label: '1-2 Days' },
+  { value: '3-6', label: '3-6 Days' },
+  { value: '7-14', label: '7-14 Days' },
+  { value: 'custom', label: 'Custom' }
+] as const;
 
 interface DepositRequest {
   id: number;
@@ -77,6 +95,9 @@ export default function FinaVaultManagement() {
   const [goldPrice, setGoldPrice] = useState('85.22');
   const [rejectionReason, setRejectionReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [processingTime, setProcessingTime] = useState('3-6');
+  const [customDays, setCustomDays] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
@@ -208,6 +229,37 @@ export default function FinaVaultManagement() {
     }
   };
 
+  const handleUpdateStatus = async () => {
+    if (!selectedDeposit || !selectedStatus) {
+      toast.error('Please select a status');
+      return;
+    }
+    
+    const days = processingTime === 'custom' ? customDays : processingTime;
+    const estimatedDays = days.includes('-') ? parseInt(days.split('-')[1]) : parseInt(days);
+    const estimatedCompletionDate = new Date();
+    estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + estimatedDays);
+    
+    setProcessingId(selectedDeposit.id);
+    try {
+      await apiRequest('PATCH', `/api/admin/vault/deposit/${selectedDeposit.id}`, {
+        status: selectedStatus,
+        estimatedProcessingDays: days,
+        estimatedCompletionDate: estimatedCompletionDate.toISOString(),
+        adminNotes,
+        adminId: user?.id
+      });
+      
+      toast.success(`Status updated to "${selectedStatus}"`);
+      resetDepositForm();
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to update status');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const resetDepositForm = () => {
     setSelectedDeposit(null);
     setVaultReference('');
@@ -215,6 +267,9 @@ export default function FinaVaultManagement() {
     setGoldPrice('85.22');
     setAdminNotes('');
     setRejectionReason('');
+    setSelectedStatus('');
+    setProcessingTime('3-6');
+    setCustomDays('');
   };
 
   const resetWithdrawalForm = () => {
@@ -591,12 +646,74 @@ export default function FinaVaultManagement() {
                   </>
                 )}
 
-                {selectedDeposit.status === 'Submitted' || selectedDeposit.status === 'In Review' ? (
+                {selectedDeposit.status !== 'Stored' && selectedDeposit.status !== 'Stored in Vault' && selectedDeposit.status !== 'Rejected' ? (
                   <>
                     <Separator />
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-sm font-medium text-orange-800">Update Status</p>
+                      <p className="text-xs text-orange-600 mt-1">Progress the deposit through the workflow stages</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>New Status</Label>
+                        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                          <SelectTrigger data-testid="select-deposit-status">
+                            <SelectValue placeholder="Select status..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DEPOSIT_STATUSES.filter(s => {
+                              const currentIndex = DEPOSIT_STATUSES.indexOf(selectedDeposit.status as any);
+                              const statusIndex = DEPOSIT_STATUSES.indexOf(s);
+                              return statusIndex > currentIndex;
+                            }).map((status) => (
+                              <SelectItem key={status} value={status}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Estimated Processing Time</Label>
+                        <RadioGroup value={processingTime} onValueChange={setProcessingTime} className="flex flex-wrap gap-3">
+                          {PROCESSING_TIMES.map((time) => (
+                            <div key={time.value} className="flex items-center space-x-2">
+                              <RadioGroupItem value={time.value} id={`time-${time.value}`} />
+                              <Label htmlFor={`time-${time.value}`} className="cursor-pointer text-sm">{time.label}</Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                        {processingTime === 'custom' && (
+                          <Input 
+                            type="number" 
+                            placeholder="Enter number of days" 
+                            value={customDays}
+                            onChange={(e) => setCustomDays(e.target.value)}
+                            className="mt-2 w-40"
+                          />
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={handleUpdateStatus}
+                          disabled={processingId === selectedDeposit.id || !selectedStatus}
+                          className="bg-orange-600 hover:bg-orange-700"
+                          data-testid="button-update-status"
+                        >
+                          {processingId === selectedDeposit.id ? (
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Updating...</>
+                          ) : (
+                            <><RefreshCw className="w-4 h-4 mr-2" /> Update Status</>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <Separator />
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm font-medium text-blue-800">Verification Section</p>
-                      <p className="text-xs text-blue-600 mt-1">Confirm the actual weight after physical verification</p>
+                      <p className="text-sm font-medium text-blue-800">Final Verification & Approval</p>
+                      <p className="text-xs text-blue-600 mt-1">Confirm the actual weight after physical verification to complete the deposit</p>
                     </div>
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
@@ -673,7 +790,7 @@ export default function FinaVaultManagement() {
                 ) : (
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      {selectedDeposit.status === 'Approved' && selectedDeposit.vaultInternalReference && (
+                      {(selectedDeposit.status === 'Stored' || selectedDeposit.status === 'Stored in Vault') && selectedDeposit.vaultInternalReference && (
                         <>Vault Reference: <span className="font-mono">{selectedDeposit.vaultInternalReference}</span></>
                       )}
                       {selectedDeposit.status === 'Rejected' && selectedDeposit.rejectionReason && (

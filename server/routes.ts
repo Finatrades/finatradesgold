@@ -3225,7 +3225,7 @@ export async function registerRoutes(
   // Admin: Update vault deposit request status
   app.patch("/api/admin/vault/deposit/:id", async (req, res) => {
     try {
-      const { status, adminNotes, rejectionReason, verifiedWeightGrams, goldPriceUsdPerGram, adminId } = req.body;
+      const { status, adminNotes, rejectionReason, verifiedWeightGrams, goldPriceUsdPerGram, adminId, estimatedProcessingDays, estimatedCompletionDate } = req.body;
       
       const request = await storage.getVaultDepositRequest(req.params.id);
       if (!request) {
@@ -3242,9 +3242,11 @@ export async function registerRoutes(
       if (rejectionReason) updates.rejectionReason = rejectionReason;
       if (verifiedWeightGrams) updates.verifiedWeightGrams = verifiedWeightGrams.toString();
       if (goldPriceUsdPerGram) updates.goldPriceUsdPerGram = goldPriceUsdPerGram.toString();
+      if (estimatedProcessingDays) updates.estimatedProcessingDays = estimatedProcessingDays;
+      if (estimatedCompletionDate) updates.estimatedCompletionDate = new Date(estimatedCompletionDate);
 
-      // If status is "Stored", create vault holding, certificate, and credit wallet
-      if (status === 'Stored') {
+      // If status is "Stored" or "Stored in Vault", create vault holding, certificate, and credit wallet
+      if (status === 'Stored' || status === 'Stored in Vault') {
         const finalWeightGrams = verifiedWeightGrams || parseFloat(request.totalDeclaredWeightGrams);
         const pricePerGram = goldPriceUsdPerGram || 85.22;
         const totalValue = finalWeightGrams * pricePerGram;

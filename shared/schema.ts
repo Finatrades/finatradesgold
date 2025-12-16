@@ -1081,7 +1081,7 @@ export type CertificateDelivery = typeof certificateDeliveries.$inferSelect;
 // ============================================
 
 export const vaultDepositStatusEnum = pgEnum('vault_deposit_status', [
-  'Submitted', 'Under Review', 'Approved', 'Awaiting Delivery', 'Received', 'Stored', 'Rejected', 'Cancelled'
+  'Submitted', 'Under Review', 'Approved – Awaiting Delivery', 'Received at Vault', 'Stored in Vault', 'Approved', 'Awaiting Delivery', 'Received', 'Stored', 'Rejected', 'Cancelled'
 ]);
 
 export const vaultWithdrawalStatusEnum = pgEnum('vault_withdrawal_status', [
@@ -1144,6 +1144,10 @@ export const vaultDepositRequests = pgTable("vault_deposit_requests", {
   // Verified weight (may differ from declared)
   verifiedWeightGrams: decimal("verified_weight_grams", { precision: 18, scale: 6 }),
   goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  
+  // Processing time estimates
+  estimatedProcessingDays: varchar("estimated_processing_days", { length: 20 }),
+  estimatedCompletionDate: timestamp("estimated_completion_date"),
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
