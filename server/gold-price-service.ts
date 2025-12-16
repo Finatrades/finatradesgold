@@ -21,7 +21,17 @@ interface MetalsApiConfig {
 }
 
 let cachedPrice: CachedPrice | null = null;
+let lastKnownPrice: GoldPriceData | null = null; // Keep last successful price as fallback
 let cacheDurationMs = 5 * 60 * 1000; // 5 minutes default
+
+// Default fallback price when no cached data available
+const DEFAULT_FALLBACK_PRICE: GoldPriceData = {
+  pricePerGram: 85.00,
+  pricePerOunce: 2643.50,
+  currency: 'USD',
+  timestamp: new Date(),
+  source: 'fallback-default'
+};
 
 async function getMetalsApiConfig(): Promise<MetalsApiConfig> {
   try {
@@ -93,12 +103,31 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
       expiresAt: new Date(Date.now() + cacheDurationMs)
     };
     
+    // Save as last known price for future fallback
+    lastKnownPrice = priceData;
+    
     console.log(`[GoldPrice] Fetched from ${priceData.source}: $${priceData.pricePerGram.toFixed(2)}/gram, $${priceData.pricePerOunce.toFixed(2)}/oz`);
     
     return priceData;
   } catch (error) {
-    cachedPrice = null;
-    throw error;
+    console.error('[GoldPrice] Error fetching gold price:', error);
+    
+    // Try to use last known price as fallback
+    if (lastKnownPrice) {
+      console.log('[GoldPrice] Using last known price as fallback');
+      return {
+        ...lastKnownPrice,
+        source: 'fallback-last-known',
+        timestamp: new Date()
+      };
+    }
+    
+    // Use default fallback price
+    console.log('[GoldPrice] Using default fallback price');
+    return {
+      ...DEFAULT_FALLBACK_PRICE,
+      timestamp: new Date()
+    };
   }
 }
 
