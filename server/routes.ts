@@ -15,7 +15,9 @@ import {
   insertTradeRequestSchema, insertTradeProposalSchema, insertForwardedProposalSchema,
   insertTradeConfirmationSchema, insertSettlementHoldSchema, insertFinabridgeWalletSchema,
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
-  insertSecuritySettingsSchema
+  insertSecuritySettingsSchema,
+  vaultLedgerEntries, vaultOwnershipSummary,
+  wallets, transactions, auditLogs
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -4290,36 +4292,120 @@ export async function registerRoutes(
       
       const updates = req.body;
       
-      // If confirming deposit, credit the user's wallet
+      // If confirming deposit, credit the user's wallet with USD and calculate gold backing
       if (updates.status === 'Confirmed' && request.status === 'Pending') {
         const wallet = await storage.getWallet(request.userId);
         if (wallet) {
-          const currentBalance = parseFloat(wallet.usdBalance.toString());
-          const depositAmount = parseFloat(request.amountUsd.toString());
-          await storage.updateWallet(wallet.id, {
-            usdBalance: (currentBalance + depositAmount).toString(),
+          // Fetch live gold price from metals-api BEFORE the transaction
+          let goldPricePerGram: number;
+          
+          try {
+            goldPricePerGram = await getGoldPricePerGram();
+          } catch (priceError) {
+            console.error('[Deposit Approval] Failed to fetch gold price:', priceError);
+            return res.status(400).json({ 
+              message: "Cannot approve deposit: Unable to fetch gold price. Please try again or configure Metals API."
+            });
+          }
+          
+          const depositAmountUsd = parseFloat(request.amountUsd.toString());
+          
+          // Calculate gold grams from USD amount
+          const goldGrams = depositAmountUsd / goldPricePerGram;
+          
+          // Wrap all database operations in a transaction for atomicity
+          await db.transaction(async (tx) => {
+            // Get current wallet balances
+            const currentUsdBalance = parseFloat(wallet.usdBalance.toString());
+            const currentGoldGrams = parseFloat(wallet.goldGrams.toString());
+            const newUsdBalance = currentUsdBalance + depositAmountUsd;
+            const newGoldBalance = currentGoldGrams + goldGrams;
+            
+            // Update wallet: add both USD and gold grams
+            await tx.update(wallets)
+              .set({
+                usdBalance: newUsdBalance.toString(),
+                goldGrams: newGoldBalance.toFixed(6),
+                updatedAt: new Date(),
+              })
+              .where(eq(wallets.id, wallet.id));
+            
+            // Create transaction record with gold backing metadata
+            const [transaction] = await tx.insert(transactions).values({
+              userId: request.userId,
+              type: 'Deposit',
+              status: 'Completed',
+              amountUsd: depositAmountUsd.toString(),
+              amountGold: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              description: `Deposit confirmed - Ref: ${request.referenceNumber} | Gold backing: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+              referenceId: request.referenceNumber,
+              sourceModule: 'finapay',
+              approvedBy: updates.processedBy,
+              approvedAt: new Date(),
+              completedAt: new Date(),
+              updatedAt: new Date(),
+            }).returning();
+            
+            // Create FinaVault ledger entry for audit trail
+            await tx.insert(vaultLedgerEntries).values({
+              userId: request.userId,
+              action: 'Deposit',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              valueUsd: depositAmountUsd.toString(),
+              fromWallet: 'External',
+              toWallet: 'FinaPay',
+              toStatus: 'Available',
+              balanceAfterGrams: newGoldBalance.toFixed(6),
+              transactionId: transaction.id,
+              notes: `Bank deposit approved - Ref: ${request.referenceNumber}`,
+              createdBy: updates.processedBy || 'system',
+            });
+            
+            // Update or create vault ownership summary
+            const existingSummary = await tx.select().from(vaultOwnershipSummary)
+              .where(eq(vaultOwnershipSummary.userId, request.userId)).limit(1);
+            
+            if (existingSummary.length > 0) {
+              const currentTotal = parseFloat(existingSummary[0].totalGoldGrams || '0');
+              const currentAvailable = parseFloat(existingSummary[0].availableGrams || '0');
+              const currentFinaPay = parseFloat(existingSummary[0].finaPayGrams || '0');
+              
+              await tx.update(vaultOwnershipSummary)
+                .set({
+                  totalGoldGrams: (currentTotal + goldGrams).toFixed(6),
+                  availableGrams: (currentAvailable + goldGrams).toFixed(6),
+                  finaPayGrams: (currentFinaPay + goldGrams).toFixed(6),
+                  lastUpdated: new Date(),
+                })
+                .where(eq(vaultOwnershipSummary.userId, request.userId));
+            } else {
+              await tx.insert(vaultOwnershipSummary).values({
+                userId: request.userId,
+                totalGoldGrams: goldGrams.toFixed(6),
+                availableGrams: goldGrams.toFixed(6),
+                finaPayGrams: goldGrams.toFixed(6),
+              });
+            }
+            
+            // Create audit log within transaction
+            await tx.insert(auditLogs).values({
+              entityType: 'deposit_request',
+              entityId: request.id,
+              actionType: 'approve',
+              actor: updates.processedBy || 'system',
+              actorRole: 'admin',
+              details: `Deposit approved: $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
+            });
           });
           
-          // Create transaction record
-          await storage.createTransaction({
-            userId: request.userId,
-            type: 'Deposit',
-            status: 'Completed',
-            amountUsd: request.amountUsd.toString(),
-            description: `Deposit confirmed - Ref: ${request.referenceNumber}`,
-            referenceId: request.referenceNumber,
-            sourceModule: 'finapay',
-            approvedBy: updates.processedBy,
-            approvedAt: new Date(),
-            updatedAt: new Date(),
-          });
-          
-          // Send email notification for deposit confirmation
+          // Send email notification for deposit confirmation with gold backing (outside transaction)
           const depositUser = await storage.getUser(request.userId);
           if (depositUser && depositUser.email) {
             sendEmailDirect(
               depositUser.email,
-              `Deposit Confirmed - $${parseFloat(request.amountUsd.toString()).toFixed(2)}`,
+              `Deposit Confirmed - $${depositAmountUsd.toFixed(2)} (${goldGrams.toFixed(4)}g Gold)`,
               `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
@@ -4329,10 +4415,12 @@ export async function registerRoutes(
                   <p>Hello ${depositUser.firstName},</p>
                   <p>Your bank deposit has been confirmed and credited to your FinaPay wallet.</p>
                   <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                    <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${parseFloat(request.amountUsd.toString()).toFixed(2)}</p>
+                    <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${depositAmountUsd.toFixed(2)}</p>
+                    <p style="font-size: 18px; font-weight: bold; color: #92400e; margin: 10px 0;">Gold Backing: ${goldGrams.toFixed(4)}g</p>
+                    <p style="color: #6b7280; margin: 5px 0;">Price: $${goldPricePerGram.toFixed(2)}/gram</p>
                     <p style="color: #6b7280; margin: 5px 0;">Reference: ${request.referenceNumber}</p>
                   </div>
-                  <p>Your new balance is now available for trading gold or sending to others.</p>
+                  <p>Your gold-backed balance is now available in your FinaPay wallet.</p>
                   <p style="text-align: center; margin-top: 30px;">
                     <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
                   </p>
@@ -4344,6 +4432,10 @@ export async function registerRoutes(
               `
             ).catch(err => console.error('[Email] Failed to send deposit confirmation:', err));
           }
+          
+          // Update the deposit request with gold details
+          updates.amountGold = goldGrams.toFixed(6);
+          updates.goldPriceUsdPerGram = goldPricePerGram.toFixed(2);
         }
       }
       
@@ -4352,9 +4444,14 @@ export async function registerRoutes(
         processedAt: new Date(),
       });
       
-      res.json({ request: updatedRequest });
+      res.json({ 
+        request: updatedRequest,
+        goldPriceUsed: updates.goldPriceUsdPerGram,
+        goldGramsAllocated: updates.amountGold,
+      });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update deposit request" });
+      console.error('[Deposit Approval] Error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update deposit request" });
     }
   });
   

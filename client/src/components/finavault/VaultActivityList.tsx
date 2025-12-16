@@ -242,7 +242,18 @@ export default function VaultActivityList() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    {tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
+                    {tx.type === 'Deposit' && tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
+                      <>
+                        <p className="font-bold text-green-600">
+                          +${parseFloat(tx.amountUsd).toFixed(2)}
+                        </p>
+                        {tx.amountGold && parseFloat(tx.amountGold) > 0 && (
+                          <p className="text-sm text-amber-600 font-medium">
+                            {parseFloat(tx.amountGold).toFixed(4)}g gold
+                          </p>
+                        )}
+                      </>
+                    ) : tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
                       <>
                         <p className={`font-bold ${isGoldIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
                           {isGoldIncoming(tx.type) ? '+' : '-'}

@@ -178,8 +178,13 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                     <div className="col-span-3 text-right">
                       {tx.assetType === 'GOLD' ? (
                          <>
-                           <p className="font-bold text-foreground text-sm">{tx.amountGrams?.toFixed(3)} g</p>
+                           <p className="font-bold text-foreground text-sm">{tx.amountGrams?.toFixed(4)} g</p>
                            <p className="text-[10px] text-muted-foreground">${tx.amountUsd.toFixed(2)}</p>
+                         </>
+                      ) : tx.amountGrams && tx.amountGrams > 0 ? (
+                         <>
+                           <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
+                           <p className="text-[10px] text-amber-600 font-medium">{tx.amountGrams.toFixed(4)}g gold</p>
                          </>
                       ) : (
                          <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
