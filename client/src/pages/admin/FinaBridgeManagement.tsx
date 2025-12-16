@@ -486,33 +486,63 @@ export default function FinaBridgeManagement() {
             
             {selectedRequest && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Goods</p>
                     <p className="font-medium">{selectedRequest.goodsName}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Trade Value</p>
-                    <p className="font-medium">${parseFloat(selectedRequest.tradeValueUsd).toLocaleString()}</p>
+                    <p className="font-medium text-green-600">${parseFloat(selectedRequest.tradeValueUsd).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Settlement Gold</p>
-                    <p className="font-medium">{parseFloat(selectedRequest.settlementGoldGrams).toFixed(3)}g</p>
+                    <p className="font-medium text-amber-600">{parseFloat(selectedRequest.settlementGoldGrams).toFixed(3)}g</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Status</p>
                     <Badge className={getStatusColor(selectedRequest.status)}>{selectedRequest.status}</Badge>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Importer</p>
-                    <p className="font-medium">{selectedRequest.importer?.fullName}</p>
-                    <p className="text-xs text-muted-foreground">{selectedRequest.importer?.email}</p>
+                    <p className="text-xs text-muted-foreground">Quantity</p>
+                    <p className="font-medium">{selectedRequest.quantity || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Incoterms</p>
+                    <p className="font-medium">{selectedRequest.incoterms || 'Not specified'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Destination</p>
                     <p className="font-medium">{selectedRequest.destination || 'Not specified'}</p>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Expected Ship Date</p>
+                    <p className="font-medium">{selectedRequest.expectedShipDate || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Created</p>
+                    <p className="font-medium">{new Date(selectedRequest.createdAt).toLocaleDateString()}</p>
+                  </div>
                 </div>
+
+                <div className="p-4 bg-muted/30 rounded-lg border">
+                  <p className="text-xs text-muted-foreground mb-1">Importer Details</p>
+                  <p className="font-medium">{selectedRequest.importer?.fullName}</p>
+                  <p className="text-sm text-muted-foreground">{selectedRequest.importer?.email}</p>
+                  {selectedRequest.importer?.companyName && (
+                    <p className="text-sm text-muted-foreground">Company: {selectedRequest.importer.companyName}</p>
+                  )}
+                  {selectedRequest.importer?.finatradesId && (
+                    <p className="text-xs text-muted-foreground font-mono">ID: {selectedRequest.importer.finatradesId}</p>
+                  )}
+                </div>
+
+                {selectedRequest.description && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-xs font-medium text-blue-800 mb-1">Description</p>
+                    <p className="text-sm text-blue-700">{selectedRequest.description}</p>
+                  </div>
+                )}
 
                 <div className="border-t pt-4">
                   <h3 className="font-bold mb-4">Proposals ({proposals.length})</h3>
