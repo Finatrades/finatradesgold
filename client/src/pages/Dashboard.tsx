@@ -103,7 +103,7 @@ export default function Dashboard() {
               />
               <KpiCard 
                 title="Vault Value (AED)" 
-                value={`AED ${formatNumber(totals.vaultGoldValueAed)}`}
+                value={`د.إ ${formatNumber(totals.vaultGoldValueAed)}`}
                 definition="The value of your Vault gold shown in UAE Dirhams (AED). This is the same gold, just displayed in a different currency."
                 icon={<Globe className="w-5 h-5" />}
                 delay={2}

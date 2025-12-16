@@ -112,7 +112,7 @@ export default function ReportsSection() {
         const portfolioData = [
           ['Vault Gold Holdings', `${formatNumber(totals.vaultGoldGrams, 4)} g`],
           ['Vault Value (USD)', `$${formatNumber(totals.vaultGoldValueUsd)}`],
-          ['Vault Value (AED)', `AED ${formatNumber(totals.vaultGoldValueAed)}`],
+          ['Vault Value (AED)', `د.إ ${formatNumber(totals.vaultGoldValueAed)}`],
           ['Wallet Gold Balance', `${formatNumber(totals.walletGoldGrams, 4)} g`],
           ['Wallet USD Balance', `$${formatNumber(totals.walletUsdBalance)}`],
           ['BNSL Locked Gold', `${formatNumber(totals.bnslLockedGrams, 4)} g`],
