@@ -1,19 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import DepositModal from '@/components/finapay/modals/DepositModal';
 
 const actions = [
   {
     title: 'Add Fund',
-    path: '/finapay',
+    path: '',
     icon: <Plus className="w-5 h-5" />,
     color: 'text-primary',
     bg: 'bg-primary/10 hover:bg-primary/20',
     border: 'border-primary/20',
-    requiresKyc: true
+    requiresKyc: true,
+    isModal: true
   },
   {
     title: 'Buy Gold',
@@ -22,7 +24,8 @@ const actions = [
     color: 'text-secondary',
     bg: 'bg-secondary/10 hover:bg-secondary/20',
     border: 'border-secondary/30',
-    requiresKyc: true
+    requiresKyc: true,
+    isModal: false
   },
   {
     title: 'Deposit Gold',
@@ -31,7 +34,8 @@ const actions = [
     color: 'text-secondary',
     bg: 'bg-secondary/10 hover:bg-secondary/20',
     border: 'border-secondary/30',
-    requiresKyc: true
+    requiresKyc: true,
+    isModal: false
   },
   {
     title: 'Send Payment',
@@ -40,7 +44,8 @@ const actions = [
     color: 'text-orange-600',
     bg: 'bg-orange-500/10 hover:bg-orange-500/20',
     border: 'border-orange-500/30',
-    requiresKyc: true
+    requiresKyc: true,
+    isModal: false
   },
   {
     title: 'Request Payment',
@@ -49,13 +54,15 @@ const actions = [
     color: 'text-accent',
     bg: 'bg-accent/10 hover:bg-accent/20',
     border: 'border-accent/30',
-    requiresKyc: true
+    requiresKyc: true,
+    isModal: false
   }
 ];
 
 export default function QuickActionsTop() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
   
   const isKycApproved = user?.kycStatus === 'Approved';
   const kycPending = user?.kycStatus === 'In Progress';
@@ -77,46 +84,59 @@ export default function QuickActionsTop() {
       }
       return;
     }
+    
+    if (action.isModal && action.title === 'Add Fund') {
+      setDepositModalOpen(true);
+      return;
+    }
+    
     setLocation(action.path);
   };
 
   return (
-    <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
-      <div className="flex gap-4 min-w-max">
-        {actions.map((action, index) => {
-          const isLocked = action.requiresKyc && !isKycApproved;
-          
-          return (
-            <motion.button
-              key={action.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: isLocked ? 1 : 1.02, y: isLocked ? 0 : -2 }}
-              whileTap={{ scale: isLocked ? 1 : 0.98 }}
-              onClick={() => handleAction(action)}
-              className={`flex items-center gap-3 px-6 py-4 rounded-xl border backdrop-blur-sm transition-all min-w-[180px] bg-white shadow-sm relative ${
-                isLocked 
-                  ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200' 
-                  : `${action.bg} ${action.border}`
-              }`}
-              data-testid={`button-action-${action.title.toLowerCase().replace(' ', '-')}`}
-            >
-              <div className={`p-2 rounded-lg bg-white/50 ${isLocked ? 'text-gray-400' : action.color}`}>
-                {action.icon}
-              </div>
-              <span className={`font-semibold text-sm whitespace-nowrap ${isLocked ? 'text-gray-400' : 'text-foreground'}`}>
-                {action.title}
-              </span>
-              {isLocked && (
-                <div className="absolute top-2 right-2">
-                  <Lock className="w-3 h-3 text-gray-400" />
+    <>
+      <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
+        <div className="flex gap-4 min-w-max">
+          {actions.map((action, index) => {
+            const isLocked = action.requiresKyc && !isKycApproved;
+            
+            return (
+              <motion.button
+                key={action.title}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: isLocked ? 1 : 1.02, y: isLocked ? 0 : -2 }}
+                whileTap={{ scale: isLocked ? 1 : 0.98 }}
+                onClick={() => handleAction(action)}
+                className={`flex items-center gap-3 px-6 py-4 rounded-xl border backdrop-blur-sm transition-all min-w-[180px] bg-white shadow-sm relative ${
+                  isLocked 
+                    ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200' 
+                    : `${action.bg} ${action.border}`
+                }`}
+                data-testid={`button-action-${action.title.toLowerCase().replace(' ', '-')}`}
+              >
+                <div className={`p-2 rounded-lg bg-white/50 ${isLocked ? 'text-gray-400' : action.color}`}>
+                  {action.icon}
                 </div>
-              )}
-            </motion.button>
-          );
-        })}
+                <span className={`font-semibold text-sm whitespace-nowrap ${isLocked ? 'text-gray-400' : 'text-foreground'}`}>
+                  {action.title}
+                </span>
+                {isLocked && (
+                  <div className="absolute top-2 right-2">
+                    <Lock className="w-3 h-3 text-gray-400" />
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+      
+      <DepositModal 
+        isOpen={depositModalOpen} 
+        onClose={() => setDepositModalOpen(false)} 
+      />
+    </>
   );
 }

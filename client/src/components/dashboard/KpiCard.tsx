@@ -57,7 +57,7 @@ export default function KpiCard({ title, value, definition, subValue, icon, dela
           <div className="space-y-1">
             <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
             {subValue && (
-              <p className="text-xs text-amber-700 dark:text-[#D4AF37] font-medium">{subValue}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">{subValue}</p>
             )}
           </div>
         </div>
