@@ -1454,7 +1454,7 @@ export const tradeRequestStatusEnum = pgEnum('trade_request_status', [
 ]);
 
 export const proposalStatusEnum = pgEnum('proposal_status', [
-  'Submitted', 'Shortlisted', 'Rejected', 'Forwarded', 'Accepted', 'Declined'
+  'Submitted', 'Shortlisted', 'Rejected', 'Forwarded', 'Accepted', 'Declined', 'Modification Requested'
 ]);
 
 export const settlementHoldStatusEnum = pgEnum('settlement_hold_status', [
@@ -1500,6 +1500,22 @@ export const tradeProposals = pgTable("trade_proposals", {
   timelineDays: integer("timeline_days").notNull(),
   notes: text("notes"),
   attachmentUrl: text("attachment_url"),
+  
+  portOfLoading: varchar("port_of_loading", { length: 255 }),
+  shippingMethod: varchar("shipping_method", { length: 50 }),
+  incoterms: varchar("incoterms", { length: 50 }),
+  paymentTerms: text("payment_terms"),
+  estimatedDeliveryDate: varchar("estimated_delivery_date", { length: 50 }),
+  insuranceIncluded: boolean("insurance_included").default(false),
+  certificationsAvailable: text("certifications_available"),
+  
+  companyName: varchar("company_name", { length: 255 }),
+  companyRegistration: varchar("company_registration", { length: 100 }),
+  contactPerson: varchar("contact_person", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  
+  modificationRequest: text("modification_request"),
   
   status: proposalStatusEnum("status").notNull().default('Submitted'),
   

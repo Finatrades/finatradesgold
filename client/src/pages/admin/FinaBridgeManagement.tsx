@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Briefcase, CheckCircle, XCircle, TrendingUp, 
-  Loader2, RefreshCw, Eye, Send, ArrowRight, Package, FileCheck, AlertCircle
+  Loader2, RefreshCw, Eye, Send, ArrowRight, Package, FileCheck, AlertCircle,
+  ChevronDown, ChevronUp, Ship, Building, Phone, Mail, Calendar, Edit3
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
@@ -47,6 +48,19 @@ interface TradeProposal {
   notes: string | null;
   status: string;
   createdAt: string;
+  portOfLoading: string | null;
+  shippingMethod: string | null;
+  incoterms: string | null;
+  paymentTerms: string | null;
+  estimatedDeliveryDate: string | null;
+  insuranceIncluded: boolean | null;
+  certificationsAvailable: string | null;
+  companyName: string | null;
+  companyRegistration: string | null;
+  contactPerson: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  modificationRequest: string | null;
   exporter?: {
     id: string;
     finatradesId: string | null;
@@ -76,6 +90,9 @@ export default function FinaBridgeManagement() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [selectedProposals, setSelectedProposals] = useState<string[]>([]);
+  const [expandedProposal, setExpandedProposal] = useState<string | null>(null);
+  const [modificationDialog, setModificationDialog] = useState<TradeProposal | null>(null);
+  const [modificationText, setModificationText] = useState('');
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -181,6 +198,26 @@ export default function FinaBridgeManagement() {
       setSelectedProposals(selectedProposals.filter(id => id !== proposalId));
     } else {
       setSelectedProposals([...selectedProposals, proposalId]);
+    }
+  };
+
+  const handleRequestModification = async () => {
+    if (!modificationDialog || !modificationText.trim()) return;
+    setUpdating(true);
+    try {
+      await apiRequest('POST', `/api/admin/finabridge/proposals/${modificationDialog.id}/request-modification`, {
+        modificationRequest: modificationText.trim()
+      });
+      toast({ title: 'Success', description: 'Modification request sent to exporter' });
+      setModificationDialog(null);
+      setModificationText('');
+      if (selectedRequest) {
+        await fetchProposals(selectedRequest.id);
+      }
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to send modification request', variant: 'destructive' });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -507,37 +544,130 @@ export default function FinaBridgeManagement() {
                                     Quote: <strong>${parseFloat(proposal.quotePrice).toLocaleString()}</strong> | 
                                     Timeline: <strong>{proposal.timelineDays} days</strong>
                                   </p>
-                                  {proposal.notes && (
-                                    <p className="text-sm text-muted-foreground mt-1">{proposal.notes}</p>
-                                  )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge className={getStatusColor(proposal.status)}>{proposal.status}</Badge>
-                                
-                                {proposal.status === 'Submitted' && (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={(e) => { e.stopPropagation(); handleReject(proposal.id); }}
-                                      disabled={updating}
-                                      data-testid={`button-reject-${proposal.id}`}
-                                    >
-                                      <XCircle className="w-4 h-4 mr-1" /> Reject
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      onClick={(e) => { e.stopPropagation(); handleShortlist(proposal.id); }}
-                                      disabled={updating}
-                                      data-testid={`button-shortlist-${proposal.id}`}
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-1" /> Shortlist
-                                    </Button>
-                                  </>
-                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => { e.stopPropagation(); setExpandedProposal(expandedProposal === proposal.id ? null : proposal.id); }}
+                                  data-testid={`button-expand-${proposal.id}`}
+                                >
+                                  {expandedProposal === proposal.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </Button>
                               </div>
                             </div>
+                            
+                            {expandedProposal === proposal.id && (
+                              <div className="mt-4 pt-4 border-t space-y-4">
+                                {proposal.modificationRequest && (
+                                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-xs font-medium text-amber-800 mb-1">Modification Requested:</p>
+                                    <p className="text-sm text-amber-700">{proposal.modificationRequest}</p>
+                                  </div>
+                                )}
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                  <div className="flex items-start gap-2">
+                                    <Building className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Company</p>
+                                      <p className="font-medium">{proposal.companyName || 'N/A'}</p>
+                                      {proposal.companyRegistration && <p className="text-xs text-muted-foreground">Reg: {proposal.companyRegistration}</p>}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Contact Person</p>
+                                      <p className="font-medium">{proposal.contactPerson || 'N/A'}</p>
+                                      {proposal.contactPhone && <p className="text-xs text-muted-foreground">{proposal.contactPhone}</p>}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <Mail className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Contact Email</p>
+                                      <p className="font-medium break-all">{proposal.contactEmail || 'N/A'}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <Ship className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Shipping</p>
+                                      <p className="font-medium">{proposal.shippingMethod || 'N/A'}</p>
+                                      {proposal.portOfLoading && <p className="text-xs text-muted-foreground">Port: {proposal.portOfLoading}</p>}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Incoterms</p>
+                                    <p className="font-medium">{proposal.incoterms || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Payment Terms</p>
+                                    <p className="font-medium">{proposal.paymentTerms || 'N/A'}</p>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Est. Delivery</p>
+                                      <p className="font-medium">{proposal.estimatedDeliveryDate ? new Date(proposal.estimatedDeliveryDate).toLocaleDateString() : 'N/A'}</p>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Insurance</p>
+                                    <p className="font-medium">{proposal.insuranceIncluded ? 'Included' : 'Not Included'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Certifications</p>
+                                    <p className="font-medium">{proposal.certificationsAvailable || 'N/A'}</p>
+                                  </div>
+                                </div>
+                                
+                                {proposal.notes && (
+                                  <div className="p-3 bg-muted/50 rounded-lg">
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Additional Notes:</p>
+                                    <p className="text-sm">{proposal.notes}</p>
+                                  </div>
+                                )}
+                                
+                                <div className="flex gap-2 pt-2">
+                                  {proposal.status === 'Submitted' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => { e.stopPropagation(); setModificationDialog(proposal); setModificationText(proposal.modificationRequest || ''); }}
+                                        data-testid={`button-request-mod-${proposal.id}`}
+                                      >
+                                        <Edit3 className="w-4 h-4 mr-1" /> Request Modification
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => { e.stopPropagation(); handleReject(proposal.id); }}
+                                        disabled={updating}
+                                        data-testid={`button-reject-${proposal.id}`}
+                                      >
+                                        <XCircle className="w-4 h-4 mr-1" /> Reject
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={(e) => { e.stopPropagation(); handleShortlist(proposal.id); }}
+                                        disabled={updating}
+                                        data-testid={`button-shortlist-${proposal.id}`}
+                                      >
+                                        <CheckCircle className="w-4 h-4 mr-1" /> Shortlist
+                                      </Button>
+                                    </>
+                                  )}
+                                  {proposal.status === 'Modification Requested' && (
+                                    <Badge className="bg-amber-100 text-amber-700">Awaiting Exporter Response</Badge>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -569,6 +699,46 @@ export default function FinaBridgeManagement() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetailOpen(false)}>
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!modificationDialog} onOpenChange={(open) => { if (!open) { setModificationDialog(null); setModificationText(''); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5" />
+                Request Modification
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Send a modification request to the exporter. They will be notified and can update their proposal.
+              </p>
+              <div>
+                <label className="text-sm font-medium">Modification Details *</label>
+                <textarea
+                  value={modificationText}
+                  onChange={(e) => setModificationText(e.target.value)}
+                  className="w-full mt-1 p-3 border rounded-lg min-h-[120px]"
+                  placeholder="Describe what changes you need from the exporter (e.g., 'Please provide better pricing or include insurance in your quote')"
+                  data-testid="input-modification-text"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setModificationDialog(null); setModificationText(''); }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleRequestModification} 
+                disabled={updating || !modificationText.trim()}
+                data-testid="button-send-modification"
+              >
+                {updating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <Send className="w-4 h-4 mr-2" />
+                Send Request
               </Button>
             </DialogFooter>
           </DialogContent>

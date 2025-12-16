@@ -5181,6 +5181,29 @@ export async function registerRoutes(
     }
   });
   
+  // Request modification from exporter (admin)
+  app.post("/api/admin/finabridge/proposals/:id/request-modification", async (req, res) => {
+    try {
+      const proposal = await storage.getTradeProposal(req.params.id);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      
+      const { modificationRequest } = req.body;
+      if (!modificationRequest || typeof modificationRequest !== 'string') {
+        return res.status(400).json({ message: "Modification request text is required" });
+      }
+      
+      const updated = await storage.updateTradeProposal(req.params.id, { 
+        status: 'Modification Requested',
+        modificationRequest: modificationRequest.trim()
+      });
+      res.json({ proposal: updated });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to request modification" });
+    }
+  });
+  
   // Forward shortlisted proposals to importer (admin)
   app.post("/api/admin/finabridge/requests/:requestId/forward-proposals", async (req, res) => {
     try {
