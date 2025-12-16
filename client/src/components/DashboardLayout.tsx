@@ -132,9 +132,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation('/settings')} className="cursor-pointer" data-testid="menu-item-settings">
+                  <DropdownMenuItem onClick={() => setLocation('/security')} className="cursor-pointer" data-testid="menu-item-settings">
                     <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                    Security
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
