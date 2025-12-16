@@ -220,10 +220,10 @@ export default function FinaPay() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleModalClose = () => {
+    setActiveModal(null);
     refreshWallet();
     refreshTransactions();
-    toast({ title: "Refreshing", description: "Updating your wallet data..." });
   };
 
   if (!user) return null;
@@ -300,12 +300,6 @@ export default function FinaPay() {
               </div>
             </div>
 
-          </div>
-
-          <div className="mt-4 text-center">
-            <button onClick={handleRefresh} className="text-sm text-amber-600 hover:text-amber-700 hover:underline">
-              {loading ? 'Refreshing...' : 'Refresh Balance'}
-            </button>
           </div>
         </div>
 
@@ -408,14 +402,14 @@ export default function FinaPay() {
         {/* Modals */}
         <BuyGoldModal 
           isOpen={activeModal === 'buy'} 
-          onClose={() => setActiveModal(null)}
+          onClose={handleModalClose}
           goldPrice={currentGoldPriceUsdPerGram}
           spreadPercent={settings.buySpreadPercent}
           onConfirm={handleBuyConfirm}
         />
         <SellGoldModal 
           isOpen={activeModal === 'sell'} 
-          onClose={() => setActiveModal(null)}
+          onClose={handleModalClose}
           goldPrice={currentGoldPriceUsdPerGram}
           walletBalance={goldGrams}
           spreadPercent={settings.sellSpreadPercent}
@@ -423,23 +417,23 @@ export default function FinaPay() {
         />
         <SendGoldModal 
           isOpen={activeModal === 'send'} 
-          onClose={() => setActiveModal(null)}
+          onClose={handleModalClose}
           walletBalance={usdBalance}
           goldBalance={goldGrams}
           onConfirm={handleSendConfirm}
         />
         <RequestGoldModal 
           isOpen={activeModal === 'request'} 
-          onClose={() => setActiveModal(null)}
+          onClose={handleModalClose}
           onConfirm={handleRequestConfirm}
         />
         <DepositModal 
           isOpen={activeModal === 'deposit'} 
-          onClose={() => setActiveModal(null)}
+          onClose={handleModalClose}
         />
         <WithdrawalModal 
           isOpen={activeModal === 'withdraw'} 
-          onClose={() => setActiveModal(null)}
+          onClose={handleModalClose}
           walletBalance={usdBalance}
         />
 
