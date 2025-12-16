@@ -89,7 +89,7 @@ export default function Dashboard() {
                 title="Gold Holdings" 
                 value={formatGrams(totals.vaultGoldGrams + totals.walletGoldGrams)}
                 subValue={totals.vaultGoldGrams > 0 || totals.walletGoldGrams > 0 ? `Vault: ${formatGrams(totals.vaultGoldGrams)} | Wallet: ${formatGrams(totals.walletGoldGrams)}` : "No gold yet"}
-                definition="Total gold across vault and wallet"
+                definition="How much physical gold you own in grams. This includes gold stored in your secure Vault plus gold in your digital Wallet ready for transactions."
                 icon={<Database className="w-5 h-5" />}
                 delay={0}
               />
@@ -97,14 +97,14 @@ export default function Dashboard() {
                 title="Gold Value (USD)" 
                 value={`$${formatNumber(totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice))}`}
                 subValue={totals.walletUsdBalance > 0 ? `+ $${formatNumber(totals.walletUsdBalance)} Cash` : undefined}
-                definition="Current market value of all gold holdings"
+                definition="What your gold is worth today in US dollars at the current market price. The 'Cash' shown below is your separate dollar balance that can be used to buy more gold."
                 icon={<DollarSign className="w-5 h-5" />}
                 delay={1}
               />
               <KpiCard 
                 title="Vault Value (AED)" 
                 value={`AED ${formatNumber(totals.vaultGoldValueAed)}`}
-                definition="Current market value of your vault holdings in AED"
+                definition="The value of your Vault gold shown in UAE Dirhams (AED). This is the same gold, just displayed in a different currency."
                 icon={<Globe className="w-5 h-5" />}
                 delay={2}
               />
@@ -112,7 +112,7 @@ export default function Dashboard() {
                 title="Total Portfolio" 
                 value={`$${formatNumber(totals.totalPortfolioUsd)}`}
                 subValue={totals.walletUsdBalance > 0 ? `$${formatNumber(totals.walletUsdBalance)} Cash` : `Gold @ $${formatNumber(goldPrice, 2)}/g`}
-                definition="Combined value: gold holdings + cash balance"
+                definition="Your complete account value: the dollar value of all your gold PLUS any cash balance you have. This is everything you own on Finatrades added together."
                 icon={<Coins className="w-5 h-5" />}
                 delay={3}
               />
@@ -120,7 +120,7 @@ export default function Dashboard() {
                 title="BNSL Locked" 
                 value={formatGrams(totals.bnslLockedGrams)}
                 subValue="Locked in BNSL Plans"
-                definition="Gold locked in Buy Now Sell Later agreements"
+                definition="Gold that is currently committed to 'Buy Now Sell Later' agreements. This gold cannot be moved until the agreement ends, when you'll receive your agreed sale price."
                 icon={<TrendingUp className="w-5 h-5" />}
                 delay={4}
               />
@@ -128,7 +128,7 @@ export default function Dashboard() {
                 title="BNSL Earnings" 
                 value={`$${formatNumber(totals.bnslTotalProfit)}`}
                 subValue="Total margin received"
-                definition="Total margin payments received from BNSL plans"
+                definition="The upfront payments you've received from BNSL agreements. When you lock gold in a BNSL plan, you receive an immediate cash payment (margin) as part of the deal."
                 icon={<LineChart className="w-5 h-5" />}
                 delay={5}
               />
