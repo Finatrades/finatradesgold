@@ -1516,6 +1516,10 @@ export const tradeProposals = pgTable("trade_proposals", {
   contactPhone: varchar("contact_phone", { length: 50 }),
   
   modificationRequest: text("modification_request"),
+  requestedDocuments: text("requested_documents").array(),
+  customDocumentNotes: text("custom_document_notes"),
+  fieldsToUpdate: text("fields_to_update").array(),
+  uploadedRevisionDocuments: text("uploaded_revision_documents"),
   
   status: proposalStatusEnum("status").notNull().default('Submitted'),
   

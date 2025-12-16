@@ -67,6 +67,10 @@ interface TradeProposal {
   contactEmail?: string | null;
   contactPhone?: string | null;
   modificationRequest?: string | null;
+  requestedDocuments?: string[] | null;
+  customDocumentNotes?: string | null;
+  fieldsToUpdate?: string[] | null;
+  uploadedRevisionDocuments?: string | null;
   exporter?: { finatradesId: string | null };
   tradeRequest?: {
     tradeRefId: string;

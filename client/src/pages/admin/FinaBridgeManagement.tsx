@@ -93,6 +93,22 @@ export default function FinaBridgeManagement() {
   const [expandedProposal, setExpandedProposal] = useState<string | null>(null);
   const [modificationDialog, setModificationDialog] = useState<TradeProposal | null>(null);
   const [modificationText, setModificationText] = useState('');
+  const [requestedDocuments, setRequestedDocuments] = useState<string[]>([]);
+  const [customDocumentNotes, setCustomDocumentNotes] = useState('');
+  const [customDocumentInput, setCustomDocumentInput] = useState('');
+
+  const STANDARD_DOCUMENTS = [
+    { key: 'company_registration', label: 'Company Registration Certificate' },
+    { key: 'trade_license', label: 'Trade License' },
+    { key: 'export_license', label: 'Export License' },
+    { key: 'product_certification', label: 'Product Certification' },
+    { key: 'quality_certificate', label: 'Quality Certificate' },
+    { key: 'bank_reference', label: 'Bank Reference Letter' },
+    { key: 'financial_statement', label: 'Financial Statements' },
+    { key: 'insurance_certificate', label: 'Insurance Certificate' },
+    { key: 'packing_list', label: 'Packing List Sample' },
+    { key: 'product_photos', label: 'Product Photos' },
+  ];
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -202,15 +218,23 @@ export default function FinaBridgeManagement() {
   };
 
   const handleRequestModification = async () => {
-    if (!modificationDialog || !modificationText.trim()) return;
+    if (!modificationDialog || (requestedDocuments.length === 0 && !modificationText.trim() && !customDocumentNotes.trim())) {
+      toast({ title: 'Error', description: 'Please select documents or provide instructions', variant: 'destructive' });
+      return;
+    }
     setUpdating(true);
     try {
       await apiRequest('POST', `/api/admin/finabridge/proposals/${modificationDialog.id}/request-modification`, {
-        modificationRequest: modificationText.trim()
+        modificationRequest: modificationText.trim(),
+        requestedDocuments: requestedDocuments,
+        customDocumentNotes: customDocumentNotes.trim(),
       });
       toast({ title: 'Success', description: 'Modification request sent to exporter' });
       setModificationDialog(null);
       setModificationText('');
+      setRequestedDocuments([]);
+      setCustomDocumentNotes('');
+      setCustomDocumentInput('');
       if (selectedRequest) {
         await fetchProposals(selectedRequest.id);
       }
@@ -218,6 +242,21 @@ export default function FinaBridgeManagement() {
       toast({ title: 'Error', description: 'Failed to send modification request', variant: 'destructive' });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const toggleDocumentSelection = (docKey: string) => {
+    if (requestedDocuments.includes(docKey)) {
+      setRequestedDocuments(requestedDocuments.filter(d => d !== docKey));
+    } else {
+      setRequestedDocuments([...requestedDocuments, docKey]);
+    }
+  };
+
+  const addCustomDocument = () => {
+    if (customDocumentInput.trim() && !requestedDocuments.includes(`custom:${customDocumentInput.trim()}`)) {
+      setRequestedDocuments([...requestedDocuments, `custom:${customDocumentInput.trim()}`]);
+      setCustomDocumentInput('');
     }
   };
 
@@ -736,36 +775,108 @@ export default function FinaBridgeManagement() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={!!modificationDialog} onOpenChange={(open) => { if (!open) { setModificationDialog(null); setModificationText(''); } }}>
-          <DialogContent>
+        <Dialog open={!!modificationDialog} onOpenChange={(open) => { if (!open) { setModificationDialog(null); setModificationText(''); setRequestedDocuments([]); setCustomDocumentNotes(''); setCustomDocumentInput(''); } }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit3 className="w-5 h-5" />
-                Request Modification
+                Request Modification & Documents
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Send a modification request to the exporter. They will be notified and can update their proposal.
+                Select the documents you need from the exporter and provide any additional instructions.
               </p>
-              <div>
-                <label className="text-sm font-medium">Modification Details *</label>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Required Documents</label>
+                <div className="grid grid-cols-2 gap-2 p-3 bg-muted/30 rounded-lg max-h-[200px] overflow-y-auto">
+                  {STANDARD_DOCUMENTS.map((doc) => (
+                    <label key={doc.key} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-muted rounded">
+                      <input
+                        type="checkbox"
+                        checked={requestedDocuments.includes(doc.key)}
+                        onChange={() => toggleDocumentSelection(doc.key)}
+                        className="w-4 h-4 rounded"
+                      />
+                      <span className="text-sm">{doc.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Custom Document Request</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customDocumentInput}
+                    onChange={(e) => setCustomDocumentInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomDocument(); } }}
+                    className="flex-1 p-2 border rounded-lg text-sm"
+                    placeholder="Enter document name and press Enter"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={addCustomDocument}>
+                    Add
+                  </Button>
+                </div>
+                {requestedDocuments.filter(d => d.startsWith('custom:')).length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {requestedDocuments.filter(d => d.startsWith('custom:')).map((doc) => (
+                      <span key={doc} className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
+                        {doc.replace('custom:', '')}
+                        <button
+                          type="button"
+                          onClick={() => setRequestedDocuments(requestedDocuments.filter(d => d !== doc))}
+                          className="hover:text-red-600"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Additional Notes for Exporter</label>
+                <textarea
+                  value={customDocumentNotes}
+                  onChange={(e) => setCustomDocumentNotes(e.target.value)}
+                  className="w-full p-3 border rounded-lg text-sm"
+                  rows={2}
+                  placeholder="Specific requirements for documents (e.g., 'Certificates must be less than 6 months old')"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">General Instructions</label>
                 <textarea
                   value={modificationText}
                   onChange={(e) => setModificationText(e.target.value)}
-                  className="w-full mt-1 p-3 border rounded-lg min-h-[120px]"
-                  placeholder="Describe what changes you need from the exporter (e.g., 'Please provide better pricing or include insurance in your quote')"
+                  className="w-full p-3 border rounded-lg text-sm"
+                  rows={2}
+                  placeholder="Other changes needed (pricing, timeline, shipping details, etc.)"
                   data-testid="input-modification-text"
                 />
               </div>
+
+              {requestedDocuments.length > 0 && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs font-medium text-amber-800 mb-1">Documents to be requested ({requestedDocuments.length}):</p>
+                  <p className="text-xs text-amber-700">
+                    {requestedDocuments.map(d => d.startsWith('custom:') ? d.replace('custom:', '') : STANDARD_DOCUMENTS.find(sd => sd.key === d)?.label || d).join(', ')}
+                  </p>
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setModificationDialog(null); setModificationText(''); }}>
+              <Button variant="outline" onClick={() => { setModificationDialog(null); setModificationText(''); setRequestedDocuments([]); setCustomDocumentNotes(''); setCustomDocumentInput(''); }}>
                 Cancel
               </Button>
               <Button 
                 onClick={handleRequestModification} 
-                disabled={updating || !modificationText.trim()}
+                disabled={updating || (requestedDocuments.length === 0 && !modificationText.trim() && !customDocumentNotes.trim())}
                 data-testid="button-send-modification"
               >
                 {updating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
