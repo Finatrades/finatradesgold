@@ -61,6 +61,8 @@ export default function AdminLogin() {
           description: "Please enter the code from your authenticator app."
         });
       } else {
+        // Mark admin session
+        sessionStorage.setItem('adminPortalSession', 'true');
         toast.success("Welcome back, Admin!", {
           description: "You have successfully logged in."
         });
@@ -85,6 +87,8 @@ export default function AdminLogin() {
 
     try {
       await verifyMfa(mfaChallengeToken, mfaCode);
+      // Mark admin session
+      sessionStorage.setItem('adminPortalSession', 'true');
       toast.success("Welcome back, Admin!", {
         description: "You have successfully logged in."
       });

@@ -49,7 +49,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (!user || user.role !== 'admin') {
+  const isAdminSession = sessionStorage.getItem('adminPortalSession') === 'true';
+  
+  if (!user || user.role !== 'admin' || !isAdminSession) {
     return <Redirect to="/admin/login" />;
   }
 

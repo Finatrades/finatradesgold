@@ -152,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('fina_user_id');
+    sessionStorage.removeItem('adminPortalSession');
     setLocation('/');
   };
 
