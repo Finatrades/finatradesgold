@@ -127,7 +127,10 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
                     />
                   </div>
                   {amount && parseFloat(amount) > walletBalance && (
-                    <p className="text-xs text-red-500 mt-2">Amount exceeds available balance</p>
+                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
+                      <span className="text-red-500">⚠️</span>
+                      <span>Insufficient funds. Your balance is ${walletBalance.toFixed(2)}</span>
+                    </div>
                   )}
                 </div>
               </div>

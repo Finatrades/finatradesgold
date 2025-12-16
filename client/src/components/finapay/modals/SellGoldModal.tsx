@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Building, Wallet, ArrowRightLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, Building, Wallet, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface SellGoldModalProps {
@@ -133,6 +133,13 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
                 </div>
               </div>
             </div>
+
+            {numericGrams > safeBalance && (
+              <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Insufficient gold balance. You only have {safeBalance.toFixed(4)}g available.</span>
+              </div>
+            )}
           </div>
 
           {/* Method Selection */}

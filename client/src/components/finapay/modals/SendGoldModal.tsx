@@ -73,7 +73,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
 
-  const { data: goldPrice } = useQuery({
+  const { data: goldPrice } = useQuery<{ pricePerGram: number }>({
     queryKey: ['/api/gold-price'],
     staleTime: 60000,
   });
