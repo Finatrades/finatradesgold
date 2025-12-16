@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/card';
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 import DashboardWalletCards from '@/components/dashboard/DashboardWalletCards';
 import CreditCardPreview from '@/components/dashboard/CreditCardPreview';
+import TransactionsTable from '@/components/dashboard/TransactionsTable';
+import CertificatesCard from '@/components/dashboard/CertificatesCard';
 
 function formatNumber(num: number, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -165,6 +167,14 @@ export default function Dashboard() {
               userName={userName}
               isBusinessUser={isBusinessUser}
             />
+          </section>
+        )}
+
+        {/* Recent Transactions & Certificates */}
+        {!isLoading && (
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TransactionsTable transactions={transactions} goldPrice={goldPrice} />
+            <CertificatesCard />
           </section>
         )}
 
