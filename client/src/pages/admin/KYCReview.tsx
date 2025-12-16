@@ -45,6 +45,30 @@ function isPdfUrl(url: string): boolean {
   return url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf');
 }
 
+// Convert base64 data URL to Blob URL for secure PDF viewing
+function base64ToBlobUrl(dataUrl: string): string {
+  try {
+    const parts = dataUrl.split(',');
+    if (parts.length !== 2) return dataUrl;
+    
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+    const base64 = parts[1];
+    
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mime });
+    return URL.createObjectURL(blob);
+  } catch (e) {
+    console.error('Error converting base64 to blob:', e);
+    return dataUrl;
+  }
+}
+
 // In-platform document viewer component that handles both images and PDFs
 function DocumentViewer({ 
   isOpen, 
@@ -61,9 +85,26 @@ function DocumentViewer({
   const isPdf = isPdfUrl(documentUrl);
   const imageSrc = isPdf ? documentUrl : getImageSrc(documentUrl);
   
+  // Create blob URL for PDF to avoid iframe security restrictions
+  const [pdfBlobUrl, setPdfBlobUrl] = React.useState<string>('');
+  
+  React.useEffect(() => {
+    if (isPdf && documentUrl.startsWith('data:')) {
+      const blobUrl = base64ToBlobUrl(documentUrl);
+      setPdfBlobUrl(blobUrl);
+      return () => {
+        if (blobUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(blobUrl);
+        }
+      };
+    } else if (isPdf) {
+      setPdfBlobUrl(documentUrl);
+    }
+  }, [documentUrl, isPdf]);
+  
   const handlePrint = () => {
-    if (isPdf) {
-      const printWindow = window.open(documentUrl, '_blank');
+    if (isPdf && pdfBlobUrl) {
+      const printWindow = window.open(pdfBlobUrl, '_blank');
       if (printWindow) {
         printWindow.focus();
         setTimeout(() => {
@@ -100,11 +141,19 @@ function DocumentViewer({
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = documentUrl;
+    link.href = isPdf && pdfBlobUrl ? pdfBlobUrl : documentUrl;
     link.download = `${documentName.replace(/\s+/g, '_')}.${isPdf ? 'pdf' : 'jpg'}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleOpenInNewTab = () => {
+    if (isPdf && pdfBlobUrl) {
+      window.open(pdfBlobUrl, '_blank');
+    } else {
+      window.open(imageSrc, '_blank');
+    }
   };
   
   if (!isOpen) return null;
@@ -116,6 +165,9 @@ function DocumentViewer({
           <DialogTitle className="flex items-center justify-between">
             <span>{documentName}</span>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleOpenInNewTab} data-testid="button-open-new-tab">
+                Open in New Tab
+              </Button>
               <Button variant="outline" size="sm" onClick={handleDownload} data-testid="button-download-document">
                 <FileText className="w-4 h-4 mr-2" /> Download
               </Button>
@@ -127,12 +179,19 @@ function DocumentViewer({
         </DialogHeader>
         <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[75vh] bg-gray-100 rounded-lg p-4">
           {isPdf ? (
-            <iframe 
-              src={documentUrl}
-              title={documentName}
-              className="w-full h-[70vh] border-0 rounded"
-              data-testid="iframe-document-preview"
-            />
+            pdfBlobUrl ? (
+              <embed 
+                src={pdfBlobUrl}
+                type="application/pdf"
+                className="w-full h-[70vh] border-0 rounded"
+                data-testid="embed-document-preview"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+                <FileText className="w-16 h-16 mb-4" />
+                <p>Loading PDF...</p>
+              </div>
+            )
           ) : (
             <img 
               src={imageSrc} 
