@@ -63,11 +63,13 @@ export default function QRScanner({ onScan, isActive }: QRScannerProps) {
     } catch (err: any) {
       console.error('QR Scanner error:', err);
       if (err.message?.includes('Permission denied') || err.name === 'NotAllowedError') {
-        setError('Camera access denied. Please allow camera access in your browser settings.');
+        setError('Camera access denied. Please allow camera permissions or use manual entry below.');
       } else if (err.message?.includes('NotFoundError') || err.name === 'NotFoundError') {
         setError('No camera found on this device.');
+      } else if (err.message?.includes('NotSupportedError') || err.name === 'NotSupportedError') {
+        setError('Camera not supported in this browser. Please use manual entry below.');
       } else {
-        setError('Failed to start camera. Please try again.');
+        setError('Camera unavailable. Please use manual entry below.');
       }
     } finally {
       setIsInitializing(false);
