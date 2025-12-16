@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, AlertCircle, TrendingUp, Wallet, BarChart3, Vault, CreditCard, Building2, ArrowRightLeft, ChevronRight } from 'lucide-react';
+import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, TrendingUp, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -84,8 +84,8 @@ export default function AdminDashboard() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent" data-testid="text-admin-title">Dashboard Overview</h1>
-            <p className="text-gray-500 mt-1">Welcome back! Here's what's happening with your platform today.</p>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-admin-title">Dashboard Overview</h1>
+            <p className="text-muted-foreground mt-1">Welcome back! Here's what's happening with your platform today.</p>
           </div>
           <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -154,65 +154,79 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Product Cards */}
+        {/* Operations Overview */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Products & Services</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ProductCard
-              title="FinaPay"
-              description="Digital gold wallet management"
-              icon={<Wallet className="w-8 h-8" />}
-              href="/admin/transactions"
-              color="bg-black"
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Operations Overview</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <MetricCard
+              title="Pending Deposits"
+              value={stats?.pendingDeposits || 0}
+              icon={<ArrowDownRight className="w-5 h-5" />}
+              color="emerald"
+              loading={isLoading}
             />
-            <ProductCard
-              title="FinaVault"
-              description="Gold storage & custody"
-              icon={<Vault className="w-8 h-8" />}
-              href="/admin/vault"
-              color="bg-black"
+            <MetricCard
+              title="Pending Withdrawals"
+              value={stats?.pendingWithdrawals || 0}
+              icon={<ArrowUpRight className="w-5 h-5" />}
+              color="orange"
+              loading={isLoading}
             />
-            <ProductCard
-              title="FinaBridge"
-              description="Trade finance management"
-              icon={<Building2 className="w-8 h-8" />}
-              href="/admin/finabridge"
-              color="bg-black"
+            <MetricCard
+              title="Total Deposits"
+              value={45}
+              icon={<ArrowDownRight className="w-5 h-5" />}
+              color="blue"
+              loading={isLoading}
             />
-            <ProductCard
-              title="BNSL"
-              description="Buy Now Sell Later plans"
-              icon={<ArrowRightLeft className="w-8 h-8" />}
-              href="/admin/bnsl"
-              color="bg-black"
+            <MetricCard
+              title="Total Withdrawals"
+              value={28}
+              icon={<ArrowUpRight className="w-5 h-5" />}
+              color="purple"
+              loading={isLoading}
             />
-            <ProductCard
-              title="FinaCard"
-              description="Debit card management"
-              icon={<CreditCard className="w-8 h-8" />}
-              href="/admin/settings"
-              color="bg-black"
+            <MetricCard
+              title="Total Requests"
+              value={73}
+              icon={<Activity className="w-5 h-5" />}
+              color="slate"
+              loading={isLoading}
             />
-            <ProductCard
-              title="KYC Review"
-              description="Verification submissions"
-              icon={<ShieldCheck className="w-8 h-8" />}
-              href="/admin/kyc"
-              color="bg-black"
+            <MetricCard
+              title="Open / Review"
+              value={12}
+              icon={<Clock className="w-5 h-5" />}
+              color="yellow"
+              loading={isLoading}
             />
-            <ProductCard
-              title="Users"
-              description="User management"
-              icon={<Users className="w-8 h-8" />}
-              href="/admin/users"
-              color="bg-black"
+            <MetricCard
+              title="Active Plans"
+              value={34}
+              icon={<TrendingUp className="w-5 h-5" />}
+              color="teal"
+              loading={isLoading}
             />
-            <ProductCard
-              title="Compliance"
-              description="AML & compliance settings"
-              icon={<Activity className="w-8 h-8" />}
-              href="/admin/compliance"
-              color="bg-black"
+            <MetricCard
+              title="Base Liability"
+              value="$125k"
+              icon={<DollarSign className="w-5 h-5" />}
+              color="red"
+              loading={isLoading}
+            />
+            <MetricCard
+              title="Margin Liability"
+              value="$45k"
+              icon={<BarChart3 className="w-5 h-5" />}
+              color="pink"
+              loading={isLoading}
+            />
+            <MetricCard
+              title="Term Requests"
+              value={8}
+              icon={<Clock className="w-5 h-5" />}
+              color="indigo"
+              loading={isLoading}
             />
           </div>
         </div>
@@ -346,30 +360,44 @@ function StatusItem({ label, status, color }: any) {
   );
 }
 
-function ProductCard({ title, description, icon, href, color }: {
+function MetricCard({ title, value, icon, color, loading }: {
   title: string;
-  description: string;
+  value: number | string;
   icon: React.ReactNode;
-  href: string;
-  color: string;
+  color: 'emerald' | 'orange' | 'blue' | 'purple' | 'slate' | 'yellow' | 'teal' | 'red' | 'pink' | 'indigo';
+  loading?: boolean;
 }) {
+  const colorClasses = {
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', icon: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
+    orange: { bg: 'bg-orange-50 dark:bg-orange-950/30', icon: 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400', text: 'text-orange-700 dark:text-orange-300' },
+    blue: { bg: 'bg-blue-50 dark:bg-blue-950/30', icon: 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400', text: 'text-blue-700 dark:text-blue-300' },
+    purple: { bg: 'bg-purple-50 dark:bg-purple-950/30', icon: 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400', text: 'text-purple-700 dark:text-purple-300' },
+    slate: { bg: 'bg-slate-50 dark:bg-slate-950/30', icon: 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400', text: 'text-slate-700 dark:text-slate-300' },
+    yellow: { bg: 'bg-yellow-50 dark:bg-yellow-950/30', icon: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400', text: 'text-yellow-700 dark:text-yellow-300' },
+    teal: { bg: 'bg-teal-50 dark:bg-teal-950/30', icon: 'bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400', text: 'text-teal-700 dark:text-teal-300' },
+    red: { bg: 'bg-red-50 dark:bg-red-950/30', icon: 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400', text: 'text-red-700 dark:text-red-300' },
+    pink: { bg: 'bg-pink-50 dark:bg-pink-950/30', icon: 'bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400', text: 'text-pink-700 dark:text-pink-300' },
+    indigo: { bg: 'bg-indigo-50 dark:bg-indigo-950/30', icon: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400', text: 'text-indigo-700 dark:text-indigo-300' },
+  };
+  
+  const colors = colorClasses[color];
+  
   return (
-    <Link href={href}>
-      <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-2 border-black" data-testid={`card-product-${title.toLowerCase().replace(/\s+/g, '-')}`}>
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-            <div className={`p-3 rounded-xl ${color} text-white`}>
-              {icon}
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+    <Card className={`${colors.bg} border-0 shadow-sm`} data-testid={`card-metric-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${colors.icon}`}>
+            {icon}
           </div>
-          <div className="mt-4">
-            <h3 className="font-bold text-lg text-black">{title}</h3>
-            <p className="text-sm text-gray-600 mt-1">{description}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground truncate">{title}</p>
+            <p className={`text-xl font-bold ${colors.text}`}>
+              {loading ? '...' : value}
+            </p>
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
