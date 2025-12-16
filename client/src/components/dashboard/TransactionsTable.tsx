@@ -82,7 +82,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
             const isPositive = tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit';
             
             return (
-              <Link key={tx.id} href="/transactions">
+              <Link key={tx.id} href="/finapay">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/60 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/60 transition-all duration-200 group hover:scale-[1.01] border border-transparent hover:border-border/50 cursor-pointer" data-testid={`transaction-row-${tx.id}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getBgColor(tx.type)} ring-2 ring-white/50 dark:ring-zinc-800/50`}>
