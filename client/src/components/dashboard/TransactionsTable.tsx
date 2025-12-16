@@ -23,6 +23,7 @@ interface TransactionsTableProps {
 const getIcon = (type: string) => {
   const t = type?.toLowerCase() || '';
   if (t === 'buy') return <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+  if (t === 'deposit') return <ArrowDownLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   if (t === 'sell') return <DollarSign className="w-4 h-4 text-rose-600 dark:text-rose-400" />;
   if (t === 'send') return <ArrowUpRight className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
   if (t === 'receive') return <ArrowDownLeft className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
@@ -32,6 +33,7 @@ const getIcon = (type: string) => {
 const getBgColor = (type: string) => {
   const t = type?.toLowerCase() || '';
   if (t === 'buy') return 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 dark:from-emerald-500/25 dark:to-emerald-600/10';
+  if (t === 'deposit') return 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 dark:from-emerald-500/25 dark:to-emerald-600/10';
   if (t === 'sell') return 'bg-gradient-to-br from-rose-500/15 to-rose-600/5 dark:from-rose-500/25 dark:to-rose-600/10';
   if (t === 'send') return 'bg-gradient-to-br from-amber-500/15 to-amber-600/5 dark:from-amber-500/25 dark:to-amber-600/10';
   if (t === 'receive') return 'bg-gradient-to-br from-sky-500/15 to-sky-600/5 dark:from-sky-500/25 dark:to-sky-600/10';
@@ -77,7 +79,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
           recentTransactions.map((tx) => {
             const goldAmount = parseFloat(tx.amountGold || '0');
             const usdAmount = parseFloat(tx.amountUsd || '0') || goldAmount * goldPrice;
-            const isPositive = tx.type === 'Receive' || tx.type === 'Buy';
+            const isPositive = tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit';
             
             return (
               <div key={tx.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/60 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/60 transition-all duration-200 group hover:scale-[1.01] border border-transparent hover:border-border/50" data-testid={`transaction-row-${tx.id}`}>

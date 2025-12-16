@@ -21,6 +21,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
   const getIcon = (type: string, asset: string = 'USD') => {
     switch (type) {
       case 'Buy': return <ShoppingCart className="w-4 h-4" />;
+      case 'Deposit': return <ArrowDownLeft className="w-4 h-4" />;
       case 'Sell': return <Banknote className="w-4 h-4" />;
       case 'Send': return asset === 'GOLD' ? <ArrowUpRight className="w-4 h-4" /> : <DollarSign className="w-4 h-4" />;
       case 'Receive': return <ArrowDownLeft className="w-4 h-4" />;
@@ -32,6 +33,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
   const getColor = (type: string) => {
     switch (type) {
       case 'Buy': return 'bg-green-500/10 text-green-500';
+      case 'Deposit': return 'bg-green-500/10 text-green-500';
       case 'Sell': return 'bg-red-500/10 text-red-500';
       case 'Send': return 'bg-orange-500/10 text-orange-500';
       case 'Receive': return 'bg-blue-500/10 text-blue-500';
@@ -79,6 +81,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                  </DropdownMenuTrigger>
                  <DropdownMenuContent className="bg-popover border-border text-foreground">
                    <DropdownMenuItem onClick={() => setFilter('All')}>All</DropdownMenuItem>
+                   <DropdownMenuItem onClick={() => setFilter('Deposit')}>Deposit</DropdownMenuItem>
                    <DropdownMenuItem onClick={() => setFilter('Buy')}>Buy</DropdownMenuItem>
                    <DropdownMenuItem onClick={() => setFilter('Sell')}>Sell</DropdownMenuItem>
                    <DropdownMenuItem onClick={() => setFilter('Send')}>Send</DropdownMenuItem>
