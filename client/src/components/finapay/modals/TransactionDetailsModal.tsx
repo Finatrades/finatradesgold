@@ -5,6 +5,7 @@ import { Transaction } from '@/types/finapay';
 import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, CheckCircle2, XCircle, Clock, Share2, Download, Printer, Copy } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
@@ -13,7 +14,61 @@ interface TransactionDetailsModalProps {
 }
 
 export default function TransactionDetailsModal({ isOpen, onClose, transaction }: TransactionDetailsModalProps) {
+  const { toast } = useToast();
+  
   if (!transaction) return null;
+
+  const handleShare = async () => {
+    const shareText = `Finatrades Transaction Receipt\n\nType: ${transaction.type}\nAmount: ${transaction.assetType === 'GOLD' ? `${transaction.amountGrams?.toFixed(4)} g` : `$${transaction.amountUsd.toFixed(2)}`}\nStatus: ${transaction.status}\nReference: ${transaction.referenceId}\nDate: ${new Date(transaction.timestamp).toLocaleDateString()}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Finatrades Transaction',
+          text: shareText,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          await navigator.clipboard.writeText(shareText);
+          toast({ title: 'Copied to clipboard', description: 'Transaction details copied' });
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      toast({ title: 'Copied to clipboard', description: 'Transaction details copied' });
+    }
+  };
+
+  const handleDownloadReceipt = () => {
+    const receiptContent = `
+FINATRADES TRANSACTION RECEIPT
+================================
+
+Transaction Type: ${transaction.type} ${transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}
+Amount: ${transaction.assetType === 'GOLD' ? `${transaction.amountGrams?.toFixed(4)} g` : `$${transaction.amountUsd.toFixed(2)}`}
+${transaction.assetType === 'GOLD' ? `USD Value: $${transaction.amountUsd.toFixed(2)}` : ''}
+Status: ${transaction.status}
+Reference ID: ${transaction.referenceId}
+Date & Time: ${new Date(transaction.timestamp).toLocaleString()}
+${transaction.description ? `Description: ${transaction.description}` : ''}
+Network Fee: $${(transaction.feeUsd || 0).toFixed(2)}
+
+================================
+Thank you for using Finatrades
+    `.trim();
+
+    const blob = new Blob([receiptContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finatrades-receipt-${transaction.referenceId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({ title: 'Receipt Downloaded', description: 'Your transaction receipt has been saved' });
+  };
 
   const getIcon = (type: string, asset: string = 'USD') => {
     switch (type) {
@@ -111,15 +166,25 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
              <Separator className="bg-border" />
              <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Network Fee</span>
-              <span className="font-medium text-muted-foreground">${transaction.feeUsd.toFixed(2)}</span>
+              <span className="font-medium text-muted-foreground">${(transaction.feeUsd || 0).toFixed(2)}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-             <Button variant="outline" className="border-border hover:bg-muted text-muted-foreground hover:text-foreground w-full">
+             <Button 
+               variant="outline" 
+               className="border-border hover:bg-muted text-muted-foreground hover:text-foreground w-full"
+               onClick={handleShare}
+               data-testid="button-share-transaction"
+             >
                <Share2 className="w-4 h-4 mr-2" /> Share
              </Button>
-             <Button variant="outline" className="border-border hover:bg-muted text-muted-foreground hover:text-foreground w-full">
+             <Button 
+               variant="outline" 
+               className="border-border hover:bg-muted text-muted-foreground hover:text-foreground w-full"
+               onClick={handleDownloadReceipt}
+               data-testid="button-download-receipt"
+             >
                <Download className="w-4 h-4 mr-2" /> Receipt
              </Button>
           </div>
