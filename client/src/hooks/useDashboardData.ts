@@ -42,6 +42,7 @@ interface DashboardData {
   transactions: Transaction[];
   bnslPlans: BnslPlan[];
   goldPrice: number;
+  goldPriceSource: string | null;
   isLoading: boolean;
   error: string | null;
   totals: {
@@ -140,6 +141,7 @@ export function useDashboardData(): DashboardData {
   const depositRequests = depositData?.requests || [];
   const bnslPlans = bnslData?.plans || [];
   const goldPrice = priceData?.pricePerGram || 0;
+  const goldPriceSource = priceData?.source || null;
 
   // Convert deposit requests to transaction-like format and merge
   const depositTransactions = depositRequests.map((dep: any) => ({
@@ -185,6 +187,7 @@ export function useDashboardData(): DashboardData {
     transactions,
     bnslPlans,
     goldPrice,
+    goldPriceSource,
     isLoading: walletLoading || vaultLoading || txLoading || depositLoading || bnslLoading,
     error: errorMessage,
     totals: {

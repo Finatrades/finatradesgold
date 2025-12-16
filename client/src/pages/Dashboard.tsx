@@ -1,7 +1,7 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, Coins, Loader2, BarChart3 } from 'lucide-react';
+import { Database, DollarSign, TrendingUp, Coins, Loader2, BarChart3, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
 
@@ -50,17 +50,39 @@ function KpiBox({ title, value, subtitle, icon, iconBg = 'bg-gray-100', valueCol
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { totals, wallet, transactions, goldPrice, isLoading } = useDashboardData();
+  const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading } = useDashboardData();
 
   if (!user) return null;
 
   const userName = user.firstName || user.email?.split('@')[0] || 'User';
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || userName;
   const isBusinessUser = user.accountType === 'business';
+  const isGoldPriceLive = goldPriceSource && !goldPriceSource.includes('fallback');
 
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* Gold Price Status Banner */}
+        {goldPriceSource && (
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
+            isGoldPriceLive 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : 'bg-amber-50 text-amber-700 border border-amber-200'
+          }`}>
+            {isGoldPriceLive ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong> - Live from {goldPriceSource}</span>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-4 h-4" />
+                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong> - Using estimated price (live feed temporarily unavailable)</span>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Header Section */}
         <div>
