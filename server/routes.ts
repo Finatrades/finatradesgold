@@ -34,7 +34,7 @@ import {
   generateTradeReleaseCertificate
 } from "./document-service";
 import { generateUserManualPDF, generateAdminManualPDF } from "./pdf-generator";
-import { getGoldPrice, getGoldPricePerGram, getAllGoldPrices } from "./gold-price-service";
+import { getGoldPrice, getGoldPricePerGram, getGoldPriceStatus } from "./gold-price-service";
 import { 
   calculateUserRiskScore, 
   updateUserRiskProfile, 
@@ -105,7 +105,7 @@ export async function registerRoutes(
   // GOLD PRICE API
   // ============================================================================
   
-  // Get current gold price (live from API or cached)
+  // Get current gold price (live from Metals-API.com)
   app.get("/api/gold-price", async (req, res) => {
     try {
       const priceData = await getGoldPrice();
@@ -118,18 +118,19 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error('[GoldPrice] Error fetching gold price:', error);
-      res.status(500).json({ message: "Failed to fetch gold price" });
+      const message = error instanceof Error ? error.message : "Failed to fetch gold price";
+      res.status(503).json({ message, configured: false });
     }
   });
   
-  // Get gold prices from ALL available APIs (for comparison/admin)
-  app.get("/api/gold-price/all", async (req, res) => {
+  // Get gold price API status (for admin)
+  app.get("/api/gold-price/status", async (req, res) => {
     try {
-      const allPrices = await getAllGoldPrices();
-      res.json(allPrices);
+      const status = await getGoldPriceStatus();
+      res.json(status);
     } catch (error) {
-      console.error('[GoldPrice] Error fetching all gold prices:', error);
-      res.status(500).json({ message: "Failed to fetch gold prices" });
+      console.error('[GoldPrice] Error getting status:', error);
+      res.status(500).json({ message: "Failed to get gold price status" });
     }
   });
   
