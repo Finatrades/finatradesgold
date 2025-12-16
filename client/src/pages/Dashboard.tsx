@@ -86,16 +86,18 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <KpiCard 
-                title="Gold Storage (Vault)" 
-                value={formatGrams(totals.vaultGoldGrams)}
-                definition="Total physical gold stored in FinaVault"
+                title="Gold Holdings" 
+                value={formatGrams(totals.vaultGoldGrams + totals.walletGoldGrams)}
+                subValue={totals.vaultGoldGrams > 0 || totals.walletGoldGrams > 0 ? `Vault: ${formatGrams(totals.vaultGoldGrams)} | Wallet: ${formatGrams(totals.walletGoldGrams)}` : "No gold yet"}
+                definition="Total gold across vault and wallet"
                 icon={<Database className="w-5 h-5" />}
                 delay={0}
               />
               <KpiCard 
-                title="Vault Value (USD)" 
-                value={`$${formatNumber(totals.vaultGoldValueUsd)}`}
-                definition="Current market value of your vault holdings in USD"
+                title="Gold Value (USD)" 
+                value={`$${formatNumber(totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice))}`}
+                subValue={totals.walletUsdBalance > 0 ? `+ $${formatNumber(totals.walletUsdBalance)} Cash` : undefined}
+                definition="Current market value of all gold holdings"
                 icon={<DollarSign className="w-5 h-5" />}
                 delay={1}
               />
@@ -109,8 +111,8 @@ export default function Dashboard() {
               <KpiCard 
                 title="Total Portfolio" 
                 value={`$${formatNumber(totals.totalPortfolioUsd)}`}
-                subValue={`Gold @ $${formatNumber(goldPrice, 2)}/g`}
-                definition="Combined value of vault holdings, wallet balance, and cash"
+                subValue={totals.walletUsdBalance > 0 ? `$${formatNumber(totals.walletUsdBalance)} Cash` : `Gold @ $${formatNumber(goldPrice, 2)}/g`}
+                definition="Combined value: gold holdings + cash balance"
                 icon={<Coins className="w-5 h-5" />}
                 delay={3}
               />
