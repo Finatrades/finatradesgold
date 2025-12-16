@@ -2061,11 +2061,12 @@ export const paymentGatewaySettings = pgTable("payment_gateway_settings", {
   ngeniusFeePercent: decimal("ngenius_fee_percent", { precision: 5, scale: 2 }).default('2.5'),
   ngeniusFixedFee: decimal("ngenius_fixed_fee", { precision: 10, scale: 2 }).default('0.30'),
   
-  // Metals API Configuration (Gold Price)
+  // Gold Price API Configuration
   metalsApiEnabled: boolean("metals_api_enabled").notNull().default(false),
   metalsApiKey: text("metals_api_key"),
-  metalsApiProvider: varchar("metals_api_provider", { length: 50 }).default('metals-api'), // 'metals-api', 'metals-dev', 'goldapi'
+  metalsApiProvider: varchar("metals_api_provider", { length: 50 }).default('metals-api'), // 'metals-api', 'gold-api'
   metalsApiCacheDuration: integer("metals_api_cache_duration").default(5), // minutes
+  goldPriceMarkupPercent: decimal("gold_price_markup_percent", { precision: 5, scale: 2 }).default('0'), // % markup on gold price
   
   // General Settings
   minDepositUsd: decimal("min_deposit_usd", { precision: 10, scale: 2 }).default('10'),
