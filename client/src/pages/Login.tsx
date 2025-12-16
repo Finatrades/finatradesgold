@@ -11,14 +11,8 @@ import { Link, useLocation } from 'wouter';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 export default function Login() {
-  const { login, verifyMfa, user } = useAuth();
+  const { login, verifyMfa, user, loading } = useAuth();
   const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (user) {
-      setLocation('/dashboard');
-    }
-  }, [user, setLocation]);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +22,25 @@ export default function Login() {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaChallengeToken, setMfaChallengeToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/dashboard');
+      }
+    }
+  }, [user, setLocation]);
+
+  // Show loading while auth is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
