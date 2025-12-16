@@ -843,9 +843,27 @@ export default function FinaPayManagement() {
                 {selectedDeposit.proofOfPayment && (
                   <div>
                     <p className="text-gray-500 text-sm mb-2">Proof of Payment</p>
-                    <a href={selectedDeposit.proofOfPayment} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm">
-                      View Document
-                    </a>
+                    <div className="border rounded-lg p-2 bg-gray-50">
+                      <img 
+                        src={selectedDeposit.proofOfPayment} 
+                        alt="Proof of Payment" 
+                        className="max-w-full max-h-64 object-contain mx-auto cursor-pointer rounded"
+                        onClick={() => {
+                          const newWindow = window.open('', '_blank');
+                          if (newWindow) {
+                            newWindow.document.write(`
+                              <html>
+                                <head><title>Proof of Payment</title></head>
+                                <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">
+                                  <img src="${selectedDeposit.proofOfPayment}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
+                                </body>
+                              </html>
+                            `);
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-center text-gray-400 mt-1">Click image to view full size</p>
+                    </div>
                   </div>
                 )}
                 
