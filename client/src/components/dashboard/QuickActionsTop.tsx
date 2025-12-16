@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock } from 'lucide-react';
+import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -49,6 +49,15 @@ const actions = [
     icon: <ArrowDownLeft className="w-4 h-4" />,
     gradient: 'from-pink-500 to-rose-500',
     hoverGradient: 'hover:from-pink-600 hover:to-rose-600',
+    requiresKyc: true,
+    isModal: false
+  },
+  {
+    title: 'BNSL',
+    path: '/bnsl',
+    icon: <TrendingUp className="w-4 h-4" />,
+    gradient: 'from-violet-500 to-purple-600',
+    hoverGradient: 'hover:from-violet-600 hover:to-purple-700',
     requiresKyc: true,
     isModal: false
   }
