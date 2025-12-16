@@ -92,6 +92,17 @@ export function useDashboardData(): DashboardData {
     enabled: !!userId,
   });
 
+  // Fetch deposit requests (pending bank deposits)
+  const { data: depositData, isLoading: depositLoading } = useQuery({
+    queryKey: ['depositRequests', userId],
+    queryFn: async () => {
+      if (!userId) return { requests: [] };
+      const res = await apiRequest('GET', `/api/deposit-requests/${userId}`);
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+
   const { data: bnslData, isLoading: bnslLoading, error: bnslError } = useQuery({
     queryKey: ['bnslPlans', userId],
     queryFn: async () => {
@@ -124,9 +135,28 @@ export function useDashboardData(): DashboardData {
 
   const wallet = walletData?.wallet || null;
   const vaultHoldings = vaultData?.holdings || [];
-  const transactions = txData?.transactions || [];
+  const rawTransactions = txData?.transactions || [];
+  const depositRequests = depositData?.requests || [];
   const bnslPlans = bnslData?.plans || [];
   const goldPrice = priceData?.price || 85.00;
+
+  // Convert deposit requests to transaction-like format and merge
+  const depositTransactions = depositRequests.map((dep: any) => ({
+    id: dep.id,
+    type: 'Deposit',
+    status: dep.status === 'Approved' ? 'Completed' : dep.status,
+    amountUsd: dep.amountUsd,
+    amountGold: null,
+    createdAt: dep.createdAt,
+    description: `Bank Transfer - ${dep.senderBankName || 'Pending'}`,
+    sourceModule: 'FinaPay',
+    isDepositRequest: true,
+  }));
+
+  // Combine and sort by date (newest first)
+  const transactions = [...rawTransactions, ...depositTransactions].sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const walletGoldGrams = parseFloat(wallet?.goldGrams || '0');
   const walletUsdBalance = parseFloat(wallet?.usdBalance || '0');
@@ -153,7 +183,7 @@ export function useDashboardData(): DashboardData {
     transactions,
     bnslPlans,
     goldPrice,
-    isLoading: walletLoading || vaultLoading || txLoading || bnslLoading,
+    isLoading: walletLoading || vaultLoading || txLoading || depositLoading || bnslLoading,
     error: errorMessage,
     totals: {
       vaultGoldGrams,
