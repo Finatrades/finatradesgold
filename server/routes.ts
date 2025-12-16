@@ -81,6 +81,26 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
   }
 }
 
+// Helper to notify all admin users
+async function notifyAllAdmins(notification: { title: string; message: string; type: 'info' | 'success' | 'warning' | 'error' | 'transaction'; link?: string }) {
+  try {
+    const allUsers = await storage.getAllUsers();
+    const admins = allUsers.filter(u => u.role === 'admin');
+    for (const admin of admins) {
+      await storage.createNotification({
+        userId: admin.id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        link: notification.link || null,
+        read: false,
+      });
+    }
+  } catch (error) {
+    console.error('Failed to notify admins:', error);
+  }
+}
+
 // Helper to strip sensitive fields from user object
 function sanitizeUser(user: User): Omit<User, 'password' | 'emailVerificationCode' | 'mfaSecret' | 'mfaBackupCodes'> {
   const { password, emailVerificationCode, mfaSecret, mfaBackupCodes, ...safeUser } = user;
@@ -4276,6 +4296,16 @@ export async function registerRoutes(
         referenceNumber,
       });
       const request = await storage.createDepositRequest(requestData);
+      
+      // Notify all admins of new deposit request
+      const depositUser = await storage.getUser(req.body.userId);
+      notifyAllAdmins({
+        title: 'New Deposit Request',
+        message: `${depositUser?.firstName || 'User'} submitted a deposit request for $${parseFloat(req.body.amountUsd).toLocaleString()}`,
+        type: 'transaction',
+        link: '/admin/transactions',
+      });
+      
       res.json({ request });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
@@ -4509,6 +4539,16 @@ export async function registerRoutes(
       });
       
       const request = await storage.createWithdrawalRequest(requestData);
+      
+      // Notify all admins of new withdrawal request
+      const withdrawUser = await storage.getUser(userId);
+      notifyAllAdmins({
+        title: 'New Withdrawal Request',
+        message: `${withdrawUser?.firstName || 'User'} requested a withdrawal of $${parseFloat(amountUsd).toLocaleString()}`,
+        type: 'transaction',
+        link: '/admin/transactions',
+      });
+      
       res.json({ request });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
@@ -4794,6 +4834,16 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Only draft requests can be submitted" });
       }
       const updated = await storage.updateTradeRequest(req.params.id, { status: 'Open' });
+      
+      // Notify all admins of new trade request
+      const importerUser = await storage.getUser(request.importerUserId);
+      notifyAllAdmins({
+        title: 'New Trade Request',
+        message: `${importerUser?.companyName || importerUser?.firstName || 'Importer'} submitted trade request for ${request.goodsName} ($${parseFloat(request.tradeValueUsd.toString()).toLocaleString()})`,
+        type: 'info',
+        link: '/admin/finabridge',
+      });
+      
       res.json({ tradeRequest: updated });
     } catch (error) {
       res.status(400).json({ message: "Failed to submit trade request" });
@@ -5060,6 +5110,15 @@ export async function registerRoutes(
       if (request.status === 'Open') {
         await storage.updateTradeRequest(request.id, { status: 'Proposal Review' });
       }
+      
+      // Notify all admins of new proposal
+      const exporterUser = await storage.getUser(proposalData.exporterUserId);
+      notifyAllAdmins({
+        title: 'New Trade Proposal',
+        message: `${exporterUser?.companyName || exporterUser?.firstName || 'Exporter'} submitted a proposal for ${request.tradeRefId} ($${parseFloat(proposalData.quotePrice).toLocaleString()})`,
+        type: 'info',
+        link: '/admin/finabridge',
+      });
       
       res.json({ proposal });
     } catch (error) {
@@ -7626,6 +7685,14 @@ export async function registerRoutes(
         // Update user's KYC status
         await storage.updateUser(userId, { kycStatus: 'In Progress' });
         
+        // Notify all admins of KYC update
+        notifyAllAdmins({
+          title: 'KYC Updated',
+          message: `${user.firstName} ${user.lastName} updated their personal KYC submission`,
+          type: 'info',
+          link: '/admin/kyc',
+        });
+        
         res.json({ success: true, submission: updated });
       } else {
         // Create new submission
@@ -7633,6 +7700,14 @@ export async function registerRoutes(
         
         // Update user's KYC status
         await storage.updateUser(userId, { kycStatus: 'In Progress' });
+        
+        // Notify all admins of new KYC submission
+        notifyAllAdmins({
+          title: 'New KYC Submission',
+          message: `${user.firstName} ${user.lastName} submitted personal KYC documents for review`,
+          type: 'info',
+          link: '/admin/kyc',
+        });
         
         res.json({ success: true, submission });
       }
@@ -7733,6 +7808,14 @@ export async function registerRoutes(
         // Update user's KYC status and account type to business
         await storage.updateUser(userId, { kycStatus: 'In Progress', accountType: 'business' });
         
+        // Notify all admins of corporate KYC update
+        notifyAllAdmins({
+          title: 'Corporate KYC Updated',
+          message: `${companyName || user.firstName} updated their corporate KYC submission`,
+          type: 'info',
+          link: '/admin/kyc',
+        });
+        
         res.json({ success: true, submission: updated });
       } else {
         // Create new submission
@@ -7743,6 +7826,14 @@ export async function registerRoutes(
         
         // Update user's KYC status and account type to business
         await storage.updateUser(userId, { kycStatus: 'In Progress', accountType: 'business' });
+        
+        // Notify all admins of new corporate KYC submission
+        notifyAllAdmins({
+          title: 'New Corporate KYC',
+          message: `${companyName || user.firstName} submitted corporate KYC documents for review`,
+          type: 'info',
+          link: '/admin/kyc',
+        });
         
         res.json({ success: true, submission });
       }
