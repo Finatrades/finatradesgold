@@ -4,7 +4,11 @@ import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp } f
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import DepositModal from '@/components/finapay/modals/DepositModal';
+import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
+import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 
 const actions = [
   {
@@ -36,21 +40,21 @@ const actions = [
   },
   {
     title: 'Send Payment',
-    path: '/finapay',
+    path: '',
     icon: <Send className="w-4 h-4" />,
     gradient: 'from-orange-500 to-red-500',
     hoverGradient: 'hover:from-orange-600 hover:to-red-600',
     requiresKyc: true,
-    isModal: false
+    isModal: true
   },
   {
     title: 'Request Payment',
-    path: '/finapay',
+    path: '',
     icon: <ArrowDownLeft className="w-4 h-4" />,
     gradient: 'from-pink-500 to-rose-500',
     hoverGradient: 'hover:from-pink-600 hover:to-rose-600',
     requiresKyc: true,
-    isModal: false
+    isModal: true
   },
   {
     title: 'BNSL',
@@ -67,9 +71,24 @@ export default function QuickActionsTop() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
   
   const isKycApproved = user?.kycStatus === 'Approved';
   const kycPending = user?.kycStatus === 'In Progress';
+
+  const { data: walletData } = useQuery({
+    queryKey: ['/api/wallet', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const res = await apiRequest('GET', `/api/wallet/${user.id}`);
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const walletBalance = parseFloat(walletData?.wallet?.usdBalance || '0');
+  const goldBalance = parseFloat(walletData?.wallet?.goldGrams || '0');
 
   const handleAction = (action: typeof actions[0]) => {
     if (action.requiresKyc && !isKycApproved) {
@@ -89,9 +108,19 @@ export default function QuickActionsTop() {
       return;
     }
     
-    if (action.isModal && action.title === 'Add Fund') {
-      setDepositModalOpen(true);
-      return;
+    if (action.isModal) {
+      if (action.title === 'Add Fund') {
+        setDepositModalOpen(true);
+        return;
+      }
+      if (action.title === 'Send Payment') {
+        setSendModalOpen(true);
+        return;
+      }
+      if (action.title === 'Request Payment') {
+        setRequestModalOpen(true);
+        return;
+      }
     }
     
     setLocation(action.path);
@@ -134,6 +163,20 @@ export default function QuickActionsTop() {
       <DepositModal 
         isOpen={depositModalOpen} 
         onClose={() => setDepositModalOpen(false)} 
+      />
+      
+      <SendGoldModal 
+        isOpen={sendModalOpen} 
+        onClose={() => setSendModalOpen(false)}
+        walletBalance={walletBalance}
+        goldBalance={goldBalance}
+        onConfirm={() => setSendModalOpen(false)}
+      />
+      
+      <RequestGoldModal 
+        isOpen={requestModalOpen} 
+        onClose={() => setRequestModalOpen(false)}
+        onConfirm={() => setRequestModalOpen(false)}
       />
     </>
   );

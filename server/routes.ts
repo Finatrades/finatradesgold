@@ -6403,7 +6403,8 @@ export async function registerRoutes(
           finatradesId: user.finatradesId,
           firstName: user.firstName, 
           lastName: user.lastName, 
-          email: user.email 
+          email: user.email,
+          profilePhotoUrl: user.profilePhoto
         } 
       });
     } catch (error) {
