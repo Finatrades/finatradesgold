@@ -798,56 +798,20 @@ export default function FinaPayManagement() {
         </Dialog>
 
         <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Process Deposit Request</DialogTitle>
             </DialogHeader>
             {selectedDeposit && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Amount</p>
-                    <p className="font-bold text-lg">${parseFloat(selectedDeposit.amountUsd).toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Status</p>
-                    {getStatusBadge(selectedDeposit.status)}
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Reference</p>
-                    <p className="font-mono text-xs">{selectedDeposit.referenceNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">User</p>
-                    <p>{getUserName(selectedDeposit.userId)}</p>
-                    <p className="text-xs text-gray-400">{getUserEmail(selectedDeposit.userId)}</p>
-                  </div>
-                  {selectedDeposit.senderBankName && (
-                    <>
-                      <div>
-                        <p className="text-gray-500">Sender Bank</p>
-                        <p>{selectedDeposit.senderBankName}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Sender Account</p>
-                        <p>{selectedDeposit.senderAccountName}</p>
-                      </div>
-                    </>
-                  )}
-                  <div className="col-span-2">
-                    <p className="text-gray-500">Submitted</p>
-                    <p>{new Date(selectedDeposit.createdAt).toLocaleString()}</p>
-                  </div>
-                </div>
-                
+              <div className="flex gap-6">
                 {selectedDeposit.proofOfPayment && (
-                  <div>
+                  <div className="w-1/2 flex-shrink-0">
                     <p className="text-gray-500 text-sm mb-2">Proof of Payment</p>
                     <div className="border rounded-lg p-2 bg-gray-50">
                       <img 
                         src={selectedDeposit.proofOfPayment} 
                         alt="Proof of Payment" 
-                        className="max-w-full max-h-64 object-contain mx-auto cursor-pointer rounded"
+                        className="max-w-full max-h-80 object-contain cursor-pointer rounded"
                         onClick={() => {
                           const newWindow = window.open('', '_blank');
                           if (newWindow) {
@@ -862,20 +826,58 @@ export default function FinaPayManagement() {
                           }
                         }}
                       />
-                      <p className="text-xs text-center text-gray-400 mt-1">Click image to view full size</p>
+                      <p className="text-xs text-center text-gray-400 mt-1">Click to view full size</p>
                     </div>
                   </div>
                 )}
                 
-                <div>
-                  <Label>Admin Notes</Label>
-                  <Textarea 
-                    value={depositAdminNotes} 
-                    onChange={e => setDepositAdminNotes(e.target.value)} 
-                    placeholder="Add notes about this deposit..."
-                    disabled={selectedDeposit.status !== 'Pending'}
-                    data-testid="input-deposit-notes"
-                  />
+                <div className={`space-y-4 ${selectedDeposit.proofOfPayment ? 'w-1/2' : 'w-full'}`}>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-500">Amount</p>
+                      <p className="font-bold text-lg">${parseFloat(selectedDeposit.amountUsd).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Status</p>
+                      {getStatusBadge(selectedDeposit.status)}
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Reference</p>
+                      <p className="font-mono text-xs">{selectedDeposit.referenceNumber}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">User</p>
+                      <p className="text-sm">{getUserName(selectedDeposit.userId)}</p>
+                      <p className="text-xs text-gray-400">{getUserEmail(selectedDeposit.userId)}</p>
+                    </div>
+                    {selectedDeposit.senderBankName && (
+                      <>
+                        <div>
+                          <p className="text-gray-500">Sender Bank</p>
+                          <p className="text-sm">{selectedDeposit.senderBankName}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Sender Account</p>
+                          <p className="text-sm">{selectedDeposit.senderAccountName}</p>
+                        </div>
+                      </>
+                    )}
+                    <div className="col-span-2">
+                      <p className="text-gray-500">Submitted</p>
+                      <p className="text-sm">{new Date(selectedDeposit.createdAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Admin Notes</Label>
+                    <Textarea 
+                      value={depositAdminNotes} 
+                      onChange={e => setDepositAdminNotes(e.target.value)} 
+                      placeholder="Add notes about this deposit..."
+                      disabled={selectedDeposit.status !== 'Pending'}
+                      data-testid="input-deposit-notes"
+                    />
+                  </div>
                 </div>
               </div>
             )}
