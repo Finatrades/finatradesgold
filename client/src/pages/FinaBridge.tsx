@@ -108,15 +108,22 @@ export default function FinaBridge() {
     return null;
   }
   
-  const [role, setRole] = useState<'importer' | 'exporter'>('importer');
+  // Initialize role based on user's stored finabridgeRole preference
+  const [role, setRole] = useState<'importer' | 'exporter'>(() => {
+    // If user is exporter-only, default to exporter view
+    if (user?.finabridgeRole === 'exporter') return 'exporter';
+    // Otherwise default to importer (for importer, both, or undefined)
+    return 'importer';
+  });
   const [activeTab, setActiveTab] = useState('requests');
   const [selectedDealRoom, setSelectedDealRoom] = useState<{ id: string; userRole: 'importer' | 'exporter' | 'admin' } | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Disclaimer modal state - check if user has accepted in database
+  // Also show if user accepted but doesn't have a role set (backward compatibility)
   const [showDisclaimer, setShowDisclaimer] = useState(() => {
-    // Show disclaimer if user hasn't accepted yet (check user object)
-    return !user?.finabridgeDisclaimerAcceptedAt;
+    // Show disclaimer if user hasn't accepted yet OR if they accepted but don't have a role
+    return !user?.finabridgeDisclaimerAcceptedAt || (user?.finabridgeDisclaimerAcceptedAt && !user?.finabridgeRole);
   });
 
   const handleDisclaimerAccept = async (selectedRole: 'importer' | 'exporter' | 'both') => {
