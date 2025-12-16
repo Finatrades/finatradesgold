@@ -1317,33 +1317,63 @@ export default function FinaBridge() {
                 <div className="space-y-4">
                   {openRequests.map((request) => (
                     <Card key={request.id} className="bg-white border hover:border-secondary/50 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-4">
-                            <div className="p-2 bg-secondary/10 rounded-lg">
-                              <Package className="w-5 h-5 text-secondary" />
+                            <div className="p-3 bg-secondary/10 rounded-lg">
+                              <Package className="w-6 h-6 text-secondary" />
                             </div>
                             <div>
-                              <h3 className="font-bold">{request.tradeRefId}</h3>
-                              <p className="text-sm text-muted-foreground">{request.goodsName}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Importer: {request.importer?.finatradesId || 'N/A'} | {request.destination || 'Destination TBD'}
-                              </p>
+                              <h3 className="font-bold text-lg">{request.tradeRefId}</h3>
+                              <p className="text-sm font-medium text-foreground">{request.goodsName}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
-                              <p className="text-xs text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</p>
-                            </div>
-                            <Button
-                              size="sm"
-                              onClick={() => { setSelectedRequest(request); setShowProposalDialog(true); }}
-                              data-testid={`button-submit-proposal-${request.id}`}
-                            >
-                              Submit Proposal
-                            </Button>
+                          <div className="text-right">
+                            <p className="font-bold text-xl text-secondary">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
+                            <p className="text-sm text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold settlement</p>
                           </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-b border-border">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Quantity</p>
+                            <p className="font-medium">{request.quantity || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Incoterms</p>
+                            <p className="font-medium">{request.incoterms || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Destination</p>
+                            <p className="font-medium">{request.destination || 'TBD'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Expected Ship Date</p>
+                            <p className="font-medium">{request.expectedShipDate ? new Date(request.expectedShipDate).toLocaleDateString() : 'TBD'}</p>
+                          </div>
+                        </div>
+                        
+                        {request.description && (
+                          <div className="mt-4">
+                            <p className="text-xs text-muted-foreground mb-1">Description</p>
+                            <p className="text-sm">{request.description}</p>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>Importer ID: {request.importer?.finatradesId || 'Anonymous'}</span>
+                            <span>•</span>
+                            <span>Currency: {request.currency}</span>
+                            <span>•</span>
+                            <span>Posted: {new Date(request.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          <Button
+                            onClick={() => { setSelectedRequest(request); setShowProposalDialog(true); }}
+                            data-testid={`button-submit-proposal-${request.id}`}
+                          >
+                            Submit Proposal
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
