@@ -16,6 +16,27 @@ The application follows a client-server architecture with a React frontend and E
 
 Preferred communication style: Simple, everyday language.
 
+## Core Calculation Rule (Single Source of Truth)
+
+All financial calculations on the Finatrades platform are performed in **USD value**, while the underlying asset is **gold (grams)**.
+
+**USD is used for:**
+- User input
+- Transaction calculations
+- Reporting clarity
+
+**Gold (grams) is the actual asset owned**
+
+This rule applies universally across:
+- FinaPay Wallet
+- FinaVault Wallet (ledger view)
+- BNSL Wallet
+
+**Display Guidelines:**
+- USD value is shown as the primary/headline amount
+- Gold grams are shown as the actual asset owned
+- Cash balances are shown separately from gold holdings
+
 ## System Architecture
 
 ### Frontend Architecture

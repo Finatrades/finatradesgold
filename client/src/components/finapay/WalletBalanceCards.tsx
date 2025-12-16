@@ -47,16 +47,20 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">USD Value:</span>
                 <span className="text-2xl font-bold text-foreground">
                   ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                <span className="text-xs text-muted-foreground">Gold Owned:</span>
                 <span className="text-lg font-semibold text-amber-600">
                   {wallet.goldBalanceGrams.toFixed(4)} g
                 </span>
+                {wallet.usdBalance > 0 && (
+                  <span className="text-xs text-muted-foreground ml-1">
+                    + ${wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} cash
+                  </span>
+                )}
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -74,13 +78,12 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">USD Value:</span>
                 <span className="text-2xl font-bold text-amber-500">
                   ${totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                <span className="text-xs text-muted-foreground">Gold Locked:</span>
                 <span className="text-lg font-semibold text-amber-500/80">
                   {totalLockedGrams.toFixed(4)} g
                 </span>
@@ -102,13 +105,12 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">USD Value:</span>
                 <span className="text-2xl font-bold text-amber-500">
                   ${grandTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Gold Holdings:</span>
+                <span className="text-xs text-muted-foreground">Total Gold:</span>
                 <span className="text-lg font-semibold text-foreground">
                   {grandTotalGoldGrams.toFixed(4)} g
                 </span>
