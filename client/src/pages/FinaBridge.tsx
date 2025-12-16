@@ -1620,10 +1620,49 @@ export default function FinaBridge() {
                             )}
                           </div>
                         </div>
-                        {proposal.status === 'Modification Requested' && proposal.modificationRequest && (
-                          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                            <p className="text-xs font-medium text-amber-800 mb-1">Admin Requested Changes:</p>
-                            <p className="text-sm text-amber-700">{proposal.modificationRequest}</p>
+                        {proposal.status === 'Modification Requested' && (proposal.modificationRequest || (proposal.requestedDocuments && proposal.requestedDocuments.length > 0)) && (
+                          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                            <p className="text-xs font-medium text-amber-800">Admin Requested Changes:</p>
+                            
+                            {proposal.requestedDocuments && proposal.requestedDocuments.length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-amber-700 mb-1">Required Documents:</p>
+                                <ul className="text-sm text-amber-700 space-y-1">
+                                  {proposal.requestedDocuments.map((doc: string, idx: number) => (
+                                    <li key={idx} className="flex items-center gap-2">
+                                      <span className="w-4 h-4 rounded border border-amber-400 flex items-center justify-center text-xs">
+                                        {idx + 1}
+                                      </span>
+                                      {doc.startsWith('custom:') ? doc.replace('custom:', '') : 
+                                        doc === 'company_registration' ? 'Company Registration Certificate' :
+                                        doc === 'trade_license' ? 'Trade License' :
+                                        doc === 'export_license' ? 'Export License' :
+                                        doc === 'product_certification' ? 'Product Certification' :
+                                        doc === 'quality_certificate' ? 'Quality Certificate' :
+                                        doc === 'bank_reference' ? 'Bank Reference Letter' :
+                                        doc === 'financial_statement' ? 'Financial Statements' :
+                                        doc === 'insurance_certificate' ? 'Insurance Certificate' :
+                                        doc === 'packing_list' ? 'Packing List Sample' :
+                                        doc === 'product_photos' ? 'Product Photos' : doc}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {proposal.customDocumentNotes && (
+                              <div>
+                                <p className="text-xs font-medium text-amber-700 mb-1">Document Notes:</p>
+                                <p className="text-sm text-amber-700">{proposal.customDocumentNotes}</p>
+                              </div>
+                            )}
+                            
+                            {proposal.modificationRequest && (
+                              <div>
+                                <p className="text-xs font-medium text-amber-700 mb-1">Additional Instructions:</p>
+                                <p className="text-sm text-amber-700">{proposal.modificationRequest}</p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -1914,10 +1953,49 @@ export default function FinaBridge() {
                 Update your proposal and resubmit for review
               </p>
             </DialogHeader>
-            {editingProposal?.modificationRequest && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-xs font-medium text-amber-800 mb-1">Admin Requested Changes:</p>
-                <p className="text-sm text-amber-700">{editingProposal.modificationRequest}</p>
+            {(editingProposal?.modificationRequest || (editingProposal?.requestedDocuments && editingProposal.requestedDocuments.length > 0)) && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                <p className="text-xs font-medium text-amber-800">Admin Requested Changes:</p>
+                
+                {editingProposal.requestedDocuments && editingProposal.requestedDocuments.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-amber-700 mb-1">Required Documents:</p>
+                    <ul className="text-sm text-amber-700 space-y-1">
+                      {editingProposal.requestedDocuments.map((doc: string, idx: number) => (
+                        <li key={idx} className="flex items-center gap-2">
+                          <span className="w-4 h-4 rounded border border-amber-400 flex items-center justify-center text-xs">
+                            {idx + 1}
+                          </span>
+                          {doc.startsWith('custom:') ? doc.replace('custom:', '') : 
+                            doc === 'company_registration' ? 'Company Registration Certificate' :
+                            doc === 'trade_license' ? 'Trade License' :
+                            doc === 'export_license' ? 'Export License' :
+                            doc === 'product_certification' ? 'Product Certification' :
+                            doc === 'quality_certificate' ? 'Quality Certificate' :
+                            doc === 'bank_reference' ? 'Bank Reference Letter' :
+                            doc === 'financial_statement' ? 'Financial Statements' :
+                            doc === 'insurance_certificate' ? 'Insurance Certificate' :
+                            doc === 'packing_list' ? 'Packing List Sample' :
+                            doc === 'product_photos' ? 'Product Photos' : doc}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {editingProposal.customDocumentNotes && (
+                  <div>
+                    <p className="text-xs font-medium text-amber-700 mb-1">Document Notes:</p>
+                    <p className="text-sm text-amber-700">{editingProposal.customDocumentNotes}</p>
+                  </div>
+                )}
+                
+                {editingProposal.modificationRequest && (
+                  <div>
+                    <p className="text-xs font-medium text-amber-700 mb-1">Additional Instructions:</p>
+                    <p className="text-sm text-amber-700">{editingProposal.modificationRequest}</p>
+                  </div>
+                )}
               </div>
             )}
             <form onSubmit={handleUpdateProposal} className="space-y-4">

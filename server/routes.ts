@@ -5275,14 +5275,19 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Proposal not found" });
       }
       
-      const { modificationRequest } = req.body;
-      if (!modificationRequest || typeof modificationRequest !== 'string') {
-        return res.status(400).json({ message: "Modification request text is required" });
+      const { modificationRequest, requestedDocuments, customDocumentNotes } = req.body;
+      
+      // At least one of: text, documents, or notes must be provided
+      if (!modificationRequest && (!requestedDocuments || requestedDocuments.length === 0) && !customDocumentNotes) {
+        return res.status(400).json({ message: "Modification request details are required" });
       }
       
       const updated = await storage.updateTradeProposal(req.params.id, { 
         status: 'Modification Requested',
-        modificationRequest: modificationRequest.trim()
+        modificationRequest: modificationRequest?.trim() || '',
+        requestedDocuments: requestedDocuments || [],
+        customDocumentNotes: customDocumentNotes?.trim() || '',
+        uploadedRevisionDocuments: '[]', // Reset uploaded documents on new request
       });
       res.json({ proposal: updated });
     } catch (error) {
