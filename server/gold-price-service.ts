@@ -54,33 +54,42 @@ async function getGoldApiConfig(): Promise<GoldApiConfig> {
 }
 
 async function fetchFromMetalsApi(apiKey: string): Promise<GoldPriceData> {
-  const response = await fetch(
-    `https://metals-api.com/api/latest?access_key=${apiKey}&base=USD&symbols=XAU`
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
   
-  if (!response.ok) {
-    throw new Error(`Metals-API returned status ${response.status}`);
+  try {
+    const response = await fetch(
+      `https://metals-api.com/api/latest?access_key=${apiKey}&base=USD&symbols=XAU`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`Metals-API returned status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.rates?.XAU) {
+      const pricePerOunce = 1 / data.rates.XAU;
+      const pricePerGram = pricePerOunce / 31.1035;
+      return {
+        pricePerGram,
+        pricePerOunce,
+        currency: 'USD',
+        timestamp: new Date(),
+        source: 'metals-api.com'
+      };
+    }
+    
+    if (data.error) {
+      throw new Error(data.error.info || data.error.type || 'Unknown Metals-API error');
+    }
+    
+    throw new Error('Invalid response from Metals-API');
+  } finally {
+    clearTimeout(timeout);
   }
-  
-  const data = await response.json();
-  
-  if (data.success && data.rates?.XAU) {
-    const pricePerOunce = 1 / data.rates.XAU;
-    const pricePerGram = pricePerOunce / 31.1035;
-    return {
-      pricePerGram,
-      pricePerOunce,
-      currency: 'USD',
-      timestamp: new Date(),
-      source: 'metals-api.com'
-    };
-  }
-  
-  if (data.error) {
-    throw new Error(data.error.info || data.error.type || 'Unknown Metals-API error');
-  }
-  
-  throw new Error('Invalid response from Metals-API');
 }
 
 async function fetchFromGoldApi(apiKey: string): Promise<GoldPriceData> {
@@ -158,11 +167,24 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   try {
     let priceData: GoldPriceData;
     
-    // Fetch from the configured provider
+    // Fetch from the configured provider (GoldAPI.io)
     if (config.provider === 'gold-api') {
-      priceData = await fetchFromGoldApi(config.apiKey);
+      try {
+        priceData = await fetchFromGoldApi(config.apiKey);
+      } catch (goldApiError) {
+        console.error('[GoldPrice] GoldAPI.io failed, trying Metals-API.com backup:', goldApiError);
+        
+        // Try Metals-API.com as backup using the METALS_API_KEY secret
+        const metalsApiKey = process.env.METALS_API_KEY;
+        if (metalsApiKey) {
+          console.log('[GoldPrice] Attempting Metals-API.com as backup...');
+          priceData = await fetchFromMetalsApi(metalsApiKey);
+        } else {
+          throw goldApiError; // Re-throw if no backup available
+        }
+      }
     } else {
-      // Default to metals-api
+      // Use metals-api as primary
       priceData = await fetchFromMetalsApi(config.apiKey);
     }
     
