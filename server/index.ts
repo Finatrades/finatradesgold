@@ -3,8 +3,12 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupSocketIO } from "./socket";
+import path from "path";
 
 const app = express();
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 const httpServer = createServer(app);
 
 declare module "http" {

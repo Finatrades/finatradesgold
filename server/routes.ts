@@ -57,6 +57,53 @@ import {
   startDocumentExpiryScheduler
 } from "./document-expiry";
 import PDFDocument from "pdfkit";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Configure multer for file uploads
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const multerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Validate both mimetype and file extension for security
+const allowedMimeTypes: Record<string, string[]> = {
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/gif': ['.gif'],
+  'application/pdf': ['.pdf'],
+  'application/msword': ['.doc'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+  'application/vnd.ms-excel': ['.xls'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+};
+
+const upload = multer({ 
+  storage: multerStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExts = allowedMimeTypes[file.mimetype];
+    
+    // Check both mimetype is allowed AND extension matches
+    if (allowedExts && allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images, PDFs, and office documents are allowed.'));
+    }
+  }
+});
 
 // Middleware to ensure admin access using header-based auth
 // This middleware validates that the X-Admin-User-Id header contains a valid admin user ID
@@ -122,6 +169,27 @@ export async function registerRoutes(
   
   // Start document expiry reminder scheduler
   startDocumentExpiryScheduler();
+
+  // File upload endpoint for Deal Room and other attachments
+  app.post("/api/documents/upload", upload.single('file'), (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+      
+      // Return the URL to access the uploaded file
+      const fileUrl = `/uploads/${req.file.filename}`;
+      res.json({ 
+        url: fileUrl, 
+        filename: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size 
+      });
+    } catch (error) {
+      console.error('File upload error:', error);
+      res.status(500).json({ message: 'Failed to upload file' });
+    }
+  });
   
   // ============================================================================
   // GOLD PRICE API
