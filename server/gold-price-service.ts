@@ -84,39 +84,48 @@ async function fetchFromMetalsApi(apiKey: string): Promise<GoldPriceData> {
 }
 
 async function fetchFromGoldApi(apiKey: string): Promise<GoldPriceData> {
-  const response = await fetch(
-    `https://www.goldapi.io/api/XAU/USD`,
-    {
-      headers: {
-        'x-access-token': apiKey,
-        'Content-Type': 'application/json'
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  
+  try {
+    const response = await fetch(
+      `https://www.goldapi.io/api/XAU/USD`,
+      {
+        headers: {
+          'x-access-token': apiKey,
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
       }
+    );
+    clearTimeout(timeout);
+  
+    if (!response.ok) {
+      throw new Error(`Gold-API returned status ${response.status}`);
     }
-  );
-  
-  if (!response.ok) {
-    throw new Error(`Gold-API returned status ${response.status}`);
+    
+    const data = await response.json();
+    
+    if (data.price) {
+      const pricePerOunce = data.price;
+      const pricePerGram = pricePerOunce / 31.1035;
+      return {
+        pricePerGram,
+        pricePerOunce,
+        currency: 'USD',
+        timestamp: new Date(),
+        source: 'goldapi.io'
+      };
+    }
+    
+    if (data.error) {
+      throw new Error(data.error || 'Unknown Gold-API error');
+    }
+    
+    throw new Error('Invalid response from Gold-API');
+  } finally {
+    clearTimeout(timeout);
   }
-  
-  const data = await response.json();
-  
-  if (data.price) {
-    const pricePerOunce = data.price;
-    const pricePerGram = pricePerOunce / 31.1035;
-    return {
-      pricePerGram,
-      pricePerOunce,
-      currency: 'USD',
-      timestamp: new Date(),
-      source: 'goldapi.io'
-    };
-  }
-  
-  if (data.error) {
-    throw new Error(data.error || 'Unknown Gold-API error');
-  }
-  
-  throw new Error('Invalid response from Gold-API');
 }
 
 function applyMarkup(priceData: GoldPriceData, markupPercent: number): GoldPriceData {
