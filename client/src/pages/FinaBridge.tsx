@@ -889,11 +889,7 @@ export default function FinaBridge() {
                             className="w-full p-3 border rounded-lg bg-white"
                             data-testid="select-finance-type"
                           >
-                            <option value="LC">Letter of Credit (LC)</option>
-                            <option value="SBLC">Standby Letter of Credit (SBLC)</option>
-                            <option value="BG">Bank Guarantee (BG)</option>
-                            <option value="Invoice Finance">Invoice Finance</option>
-                            <option value="Supply Chain Finance">Supply Chain Finance</option>
+                            <option value="FinaBridge Finance">FinaBridge Finance</option>
                           </select>
                         </div>
                         <div className="space-y-2">
