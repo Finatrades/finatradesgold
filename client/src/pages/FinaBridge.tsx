@@ -163,6 +163,18 @@ export default function FinaBridge() {
   const [proposalForm, setProposalForm] = useState({
     quotePrice: '',
     timelineDays: '',
+    portOfLoading: '',
+    shippingMethod: 'Sea',
+    incoterms: 'FOB',
+    paymentTerms: '',
+    estimatedDeliveryDate: '',
+    insuranceIncluded: false,
+    certificationsAvailable: '',
+    companyName: '',
+    companyRegistration: '',
+    contactPerson: '',
+    contactEmail: '',
+    contactPhone: '',
     notes: '',
   });
 
@@ -367,7 +379,23 @@ export default function FinaBridge() {
       
       toast({ title: 'Proposal Submitted', description: 'Your proposal has been submitted for review' });
       setShowProposalDialog(false);
-      setProposalForm({ quotePrice: '', timelineDays: '', notes: '' });
+      setProposalForm({ 
+        quotePrice: '', 
+        timelineDays: '', 
+        portOfLoading: '',
+        shippingMethod: 'Sea',
+        incoterms: 'FOB',
+        paymentTerms: '',
+        estimatedDeliveryDate: '',
+        insuranceIncluded: false,
+        certificationsAvailable: '',
+        companyName: '',
+        companyRegistration: '',
+        contactPerson: '',
+        contactEmail: '',
+        contactPhone: '',
+        notes: '' 
+      });
       fetchExporterData();
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to submit proposal', variant: 'destructive' });
@@ -1435,47 +1463,216 @@ export default function FinaBridge() {
         )}
 
         <Dialog open={showProposalDialog} onOpenChange={setShowProposalDialog}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Submit Proposal for {selectedRequest?.tradeRefId}</DialogTitle>
+              <DialogTitle>Submit Export Proposal for {selectedRequest?.tradeRefId}</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Goods: {selectedRequest?.goodsName} | Value: ${parseFloat(selectedRequest?.tradeValueUsd || '0').toLocaleString()}
+              </p>
             </DialogHeader>
-            <form onSubmit={handleSubmitProposal} className="space-y-4">
+            <form onSubmit={handleSubmitProposal} className="space-y-6">
+              
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-3">Company Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Company Name *</label>
+                    <input
+                      type="text"
+                      value={proposalForm.companyName}
+                      onChange={(e) => setProposalForm({ ...proposalForm, companyName: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="Your Export Company Ltd."
+                      required
+                      data-testid="input-company-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Registration No.</label>
+                    <input
+                      type="text"
+                      value={proposalForm.companyRegistration}
+                      onChange={(e) => setProposalForm({ ...proposalForm, companyRegistration: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="CR-123456"
+                      data-testid="input-company-reg"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Contact Person *</label>
+                    <input
+                      type="text"
+                      value={proposalForm.contactPerson}
+                      onChange={(e) => setProposalForm({ ...proposalForm, contactPerson: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="Full Name"
+                      required
+                      data-testid="input-contact-person"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Contact Email *</label>
+                    <input
+                      type="email"
+                      value={proposalForm.contactEmail}
+                      onChange={(e) => setProposalForm({ ...proposalForm, contactEmail: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="email@company.com"
+                      required
+                      data-testid="input-contact-email"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-sm font-medium">Contact Phone</label>
+                    <input
+                      type="tel"
+                      value={proposalForm.contactPhone}
+                      onChange={(e) => setProposalForm({ ...proposalForm, contactPhone: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="+971 50 123 4567"
+                      data-testid="input-contact-phone"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h4 className="font-medium text-green-800 mb-3">Pricing & Terms</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Quote Price (USD) *</label>
+                    <input
+                      type="number"
+                      value={proposalForm.quotePrice}
+                      onChange={(e) => setProposalForm({ ...proposalForm, quotePrice: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="0.00"
+                      required
+                      data-testid="input-quote-price"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Incoterms *</label>
+                    <select
+                      value={proposalForm.incoterms}
+                      onChange={(e) => setProposalForm({ ...proposalForm, incoterms: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm bg-white"
+                      data-testid="select-incoterms"
+                    >
+                      <option value="FOB">FOB (Free On Board)</option>
+                      <option value="CIF">CIF (Cost, Insurance, Freight)</option>
+                      <option value="EXW">EXW (Ex Works)</option>
+                      <option value="DAP">DAP (Delivered at Place)</option>
+                      <option value="DDP">DDP (Delivered Duty Paid)</option>
+                      <option value="CFR">CFR (Cost and Freight)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Payment Terms</label>
+                    <input
+                      type="text"
+                      value={proposalForm.paymentTerms}
+                      onChange={(e) => setProposalForm({ ...proposalForm, paymentTerms: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="e.g., 30% advance, 70% on B/L"
+                      data-testid="input-payment-terms"
+                    />
+                  </div>
+                  <div className="space-y-2 flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={proposalForm.insuranceIncluded}
+                        onChange={(e) => setProposalForm({ ...proposalForm, insuranceIncluded: e.target.checked })}
+                        className="w-4 h-4"
+                        data-testid="checkbox-insurance"
+                      />
+                      <span className="text-sm font-medium">Insurance Included</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <h4 className="font-medium text-orange-800 mb-3">Shipping Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Port of Loading *</label>
+                    <input
+                      type="text"
+                      value={proposalForm.portOfLoading}
+                      onChange={(e) => setProposalForm({ ...proposalForm, portOfLoading: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="e.g., Jebel Ali Port, UAE"
+                      required
+                      data-testid="input-port-loading"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Shipping Method *</label>
+                    <select
+                      value={proposalForm.shippingMethod}
+                      onChange={(e) => setProposalForm({ ...proposalForm, shippingMethod: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm bg-white"
+                      data-testid="select-shipping-method"
+                    >
+                      <option value="Sea">Sea Freight</option>
+                      <option value="Air">Air Freight</option>
+                      <option value="Road">Road Transport</option>
+                      <option value="Rail">Rail Freight</option>
+                      <option value="Multimodal">Multimodal</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Delivery Timeline (Days) *</label>
+                    <input
+                      type="number"
+                      value={proposalForm.timelineDays}
+                      onChange={(e) => setProposalForm({ ...proposalForm, timelineDays: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="30"
+                      required
+                      data-testid="input-timeline-days"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Estimated Delivery Date</label>
+                    <input
+                      type="date"
+                      value={proposalForm.estimatedDeliveryDate}
+                      onChange={(e) => setProposalForm({ ...proposalForm, estimatedDeliveryDate: e.target.value })}
+                      className="w-full p-2 border rounded-lg text-sm"
+                      data-testid="input-delivery-date"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <label className="text-sm font-medium">Quote Price (USD) *</label>
+                <label className="text-sm font-medium">Available Certifications</label>
                 <input
-                  type="number"
-                  value={proposalForm.quotePrice}
-                  onChange={(e) => setProposalForm({ ...proposalForm, quotePrice: e.target.value })}
-                  className="w-full p-3 border rounded-lg"
-                  placeholder="0.00"
-                  required
-                  data-testid="input-quote-price"
+                  type="text"
+                  value={proposalForm.certificationsAvailable}
+                  onChange={(e) => setProposalForm({ ...proposalForm, certificationsAvailable: e.target.value })}
+                  className="w-full p-2 border rounded-lg text-sm"
+                  placeholder="e.g., ISO 9001, HACCP, Certificate of Origin, SGS Inspection"
+                  data-testid="input-certifications"
                 />
               </div>
+
               <div className="space-y-2">
-                <label className="text-sm font-medium">Timeline (Days) *</label>
-                <input
-                  type="number"
-                  value={proposalForm.timelineDays}
-                  onChange={(e) => setProposalForm({ ...proposalForm, timelineDays: e.target.value })}
-                  className="w-full p-3 border rounded-lg"
-                  placeholder="30"
-                  required
-                  data-testid="input-timeline-days"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Notes</label>
+                <label className="text-sm font-medium">Additional Notes</label>
                 <textarea
                   value={proposalForm.notes}
                   onChange={(e) => setProposalForm({ ...proposalForm, notes: e.target.value })}
-                  className="w-full p-3 border rounded-lg"
+                  className="w-full p-2 border rounded-lg text-sm"
                   rows={3}
-                  placeholder="Additional details about your proposal..."
+                  placeholder="Additional details about your proposal, product quality, experience, etc..."
                   data-testid="input-proposal-notes"
                 />
               </div>
-              <div className="flex justify-end gap-4">
+
+              <div className="flex justify-end gap-4 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setShowProposalDialog(false)}>
                   Cancel
                 </Button>
