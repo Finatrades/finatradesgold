@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   BarChart3, PlusCircle, Briefcase, Loader2, RefreshCw, 
   ArrowLeftRight, Package, Send, Eye, Check, X, Wallet,
-  CreditCard, Truck, Ship, Plane, Train, Shield, FileText
+  CreditCard, Truck, Ship, Plane, Train, Shield, FileText, MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import FinaBridgeDisclaimerModal from '@/components/finabridge/FinaBridgeDisclaimerModal';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
+import DealRoom from '@/components/finabridge/DealRoom';
+import DealRoomList from '@/components/finabridge/DealRoomList';
 
 interface TradeRequest {
   id: string;
@@ -108,6 +110,7 @@ export default function FinaBridge() {
   
   const [role, setRole] = useState<'importer' | 'exporter'>('importer');
   const [activeTab, setActiveTab] = useState('requests');
+  const [selectedDealRoom, setSelectedDealRoom] = useState<{ id: string; userRole: 'importer' | 'exporter' | 'admin' } | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Disclaimer modal state - check if user has accepted in database
@@ -737,6 +740,9 @@ export default function FinaBridge() {
               </TabsTrigger>
               <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <Eye className="w-4 h-4 mr-2" /> Forwarded Proposals
+              </TabsTrigger>
+              <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+                <MessageCircle className="w-4 h-4 mr-2" /> Deal Rooms
               </TabsTrigger>
             </TabsList>
 
@@ -1433,6 +1439,30 @@ export default function FinaBridge() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="dealrooms">
+              {selectedDealRoom ? (
+                <DealRoom 
+                  dealRoomId={selectedDealRoom.id} 
+                  userRole={selectedDealRoom.userRole}
+                  onClose={() => setSelectedDealRoom(null)}
+                />
+              ) : (
+                <Card className="bg-white border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageCircle className="w-5 h-5" />
+                      Deal Rooms
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DealRoomList 
+                      onOpenDealRoom={(id, userRole) => setSelectedDealRoom({ id, userRole })}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
           </Tabs>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1442,6 +1472,9 @@ export default function FinaBridge() {
               </TabsTrigger>
               <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
                 <Send className="w-4 h-4 mr-2" /> My Proposals
+              </TabsTrigger>
+              <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+                <MessageCircle className="w-4 h-4 mr-2" /> Deal Rooms
               </TabsTrigger>
             </TabsList>
 
@@ -1707,6 +1740,30 @@ export default function FinaBridge() {
                     </Card>
                   ))}
                 </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="dealrooms">
+              {selectedDealRoom ? (
+                <DealRoom 
+                  dealRoomId={selectedDealRoom.id} 
+                  userRole={selectedDealRoom.userRole}
+                  onClose={() => setSelectedDealRoom(null)}
+                />
+              ) : (
+                <Card className="bg-white border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageCircle className="w-5 h-5" />
+                      Deal Rooms
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DealRoomList 
+                      onOpenDealRoom={(id, userRole) => setSelectedDealRoom({ id, userRole })}
+                    />
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
           </Tabs>

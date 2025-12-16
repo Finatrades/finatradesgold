@@ -5558,6 +5558,21 @@ export async function registerRoutes(
   // Get deal room messages
   app.get("/api/deal-rooms/:id/messages", async (req, res) => {
     try {
+      const { userId } = req.query;
+      
+      // Verify user is a participant before allowing message access
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+      
+      if (userId) {
+        const isParticipant = [room.importerUserId, room.exporterUserId, room.assignedAdminId].includes(userId as string);
+        if (!isParticipant) {
+          return res.status(403).json({ message: "Access denied - not a participant" });
+        }
+      }
+      
       const messages = await storage.getDealRoomMessages(req.params.id);
       
       // Get sender info for each message
