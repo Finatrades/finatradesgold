@@ -15,7 +15,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
   const totalLockedUsd = wallet.bnslLockedUsd + wallet.finaBridgeLockedUsd;
   const totalLockedGrams = wallet.goldPriceUsdPerGram > 0 ? totalLockedUsd / wallet.goldPriceUsdPerGram : 0;
   const grandTotalUsd = totalAvailableUsd + totalLockedUsd;
-  const grandTotalGrams = wallet.goldPriceUsdPerGram > 0 ? grandTotalUsd / wallet.goldPriceUsdPerGram : 0;
+  const grandTotalGoldGrams = wallet.goldBalanceGrams + totalLockedGrams;
 
   return (
     <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
@@ -108,9 +108,9 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                <span className="text-xs text-muted-foreground">Gold Holdings:</span>
                 <span className="text-lg font-semibold text-foreground">
-                  {grandTotalGrams.toFixed(4)} g
+                  {grandTotalGoldGrams.toFixed(4)} g
                 </span>
               </div>
             </div>
