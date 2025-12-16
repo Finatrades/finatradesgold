@@ -2250,3 +2250,26 @@ export const referrals = pgTable("referrals", {
 export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type Referral = typeof referrals.$inferSelect;
+
+// ============================================
+// USER NOTIFICATIONS
+// ============================================
+
+export const notificationTypeEnum = pgEnum('notification_type', [
+  'info', 'success', 'warning', 'error', 'transaction', 'kyc', 'bnsl', 'trade', 'system'
+]);
+
+export const notifications = pgTable("notifications", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: notificationTypeEnum("type").notNull().default('info'),
+  link: varchar("link", { length: 500 }), // Optional link to related page
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
