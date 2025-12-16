@@ -78,7 +78,9 @@ import {
   type AmlMonitoringRule, type InsertAmlMonitoringRule,
   type ComplianceSettings, type InsertComplianceSettings,
   type FinatradesPersonalKyc, type InsertFinatradesPersonalKyc,
-  type FinatradesCorporateKyc, type InsertFinatradesCorporateKyc
+  type FinatradesCorporateKyc, type InsertFinatradesCorporateKyc,
+  notifications,
+  type Notification, type InsertNotification
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -535,6 +537,15 @@ export interface IStorage {
   getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined>;
   createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc>;
   updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined>;
+  
+  // User Notifications
+  getNotification(id: string): Promise<Notification | undefined>;
+  getUserNotifications(userId: string): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationRead(id: string): Promise<Notification | undefined>;
+  markAllNotificationsRead(userId: string): Promise<void>;
+  deleteNotification(id: string): Promise<boolean>;
+  deleteAllNotifications(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2301,6 +2312,42 @@ export class DatabaseStorage implements IStorage {
   async updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined> {
     const [kyc] = await db.update(finatradesCorporateKyc).set({ ...updates, updatedAt: new Date() }).where(eq(finatradesCorporateKyc.id, id)).returning();
     return kyc || undefined;
+  }
+
+  // ============================================
+  // USER NOTIFICATIONS
+  // ============================================
+
+  async getNotification(id: string): Promise<Notification | undefined> {
+    const [notification] = await db.select().from(notifications).where(eq(notifications.id, id));
+    return notification || undefined;
+  }
+
+  async getUserNotifications(userId: string): Promise<Notification[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    return newNotification;
+  }
+
+  async markNotificationRead(id: string): Promise<Notification | undefined> {
+    const [notification] = await db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).returning();
+    return notification || undefined;
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<void> {
+    await db.update(notifications).set({ read: true }).where(eq(notifications.userId, userId));
+  }
+
+  async deleteNotification(id: string): Promise<boolean> {
+    const result = await db.delete(notifications).where(eq(notifications.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async deleteAllNotifications(userId: string): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.userId, userId));
   }
 }
 
