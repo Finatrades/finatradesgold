@@ -133,6 +133,161 @@ export default function KYCReview() {
     setViewerOpen(true);
   };
   
+  // Print KYC application with all documents including selfie
+  const handlePrintApplication = () => {
+    if (!selectedApplication) return;
+    
+    const app = selectedApplication;
+    const isFinatrades = isFinatradesKyc(app);
+    
+    // Build document images HTML
+    const buildImageSection = (url: string | undefined, label: string) => {
+      if (!url) return '';
+      const imageSrc = getImageSrc(url);
+      return `
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+          <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #333;">${label}</h4>
+          <img src="${imageSrc}" alt="${label}" style="max-width: 100%; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" />
+        </div>
+      `;
+    };
+    
+    // Build documents section based on KYC type
+    let documentsHtml = '';
+    if (isFinatrades) {
+      documentsHtml = `
+        ${buildImageSection(app.idFrontUrl, 'ID Front')}
+        ${buildImageSection(app.idBackUrl, 'ID Back')}
+        ${buildImageSection(app.passportUrl, 'Passport')}
+        ${buildImageSection(app.addressProofUrl, 'Proof of Address')}
+        ${buildImageSection(app.selfieUrl || app.livenessImageUrl, 'Selfie / Liveness Verification')}
+      `;
+    } else {
+      documentsHtml = `
+        ${buildImageSection(app.documents?.idProof?.url, 'ID Document')}
+        ${buildImageSection(app.documents?.selfie?.url, 'Selfie')}
+        ${buildImageSection(app.documents?.proofOfAddress?.url, 'Proof of Address')}
+      `;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>KYC Application - ${app.fullName || 'Unknown'}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+            .header { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .header p { margin: 5px 0 0; color: #666; }
+            .badge { display: inline-block; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
+            .section { margin-bottom: 25px; }
+            .section h3 { margin: 0 0 15px; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+            .details-grid { display: grid; grid-template-columns: 150px 1fr; gap: 8px 15px; }
+            .details-grid .label { color: #666; font-size: 13px; }
+            .details-grid .value { font-weight: 500; font-size: 13px; }
+            .documents-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+            .status-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+            .status-approved { background: #dcfce7; color: #166534; }
+            .status-rejected { background: #fee2e2; color: #991b1b; }
+            .status-pending { background: #fef9c3; color: #854d0e; }
+            @media print { 
+              body { margin: 10px; }
+              .documents-grid { grid-template-columns: 1fr; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>KYC Application Review ${isFinatrades ? '<span class="badge">Finatrades KYC</span>' : ''}</h1>
+            <p>${app.fullName || 'Unknown'} - ${app.accountType || 'Personal'} Account</p>
+            <p style="margin-top: 10px;">
+              Status: <span class="status-badge ${app.status === 'Approved' ? 'status-approved' : app.status === 'Rejected' ? 'status-rejected' : 'status-pending'}">${app.status || 'Pending'}</span>
+            </p>
+          </div>
+          
+          <div class="section">
+            <h3>Applicant Details</h3>
+            <div class="details-grid">
+              <span class="label">Full Name:</span>
+              <span class="value">${app.fullName || 'Not provided'}</span>
+              <span class="label">Account Type:</span>
+              <span class="value">${app.accountType || 'Personal'}</span>
+              ${isFinatrades ? `
+                <span class="label">Email:</span>
+                <span class="value">${app.email || 'Not provided'}</span>
+                <span class="label">Phone:</span>
+                <span class="value">${app.phone || 'Not provided'}</span>
+                <span class="label">Date of Birth:</span>
+                <span class="value">${app.dateOfBirth || 'Not provided'}</span>
+              ` : ''}
+              <span class="label">Country:</span>
+              <span class="value">${app.country || 'Not provided'}</span>
+              ${isFinatrades ? `
+                <span class="label">City:</span>
+                <span class="value">${app.city || 'Not provided'}</span>
+                <span class="label">Address:</span>
+                <span class="value">${app.address || 'Not provided'}</span>
+                <span class="label">Postal Code:</span>
+                <span class="value">${app.postalCode || 'Not provided'}</span>
+              ` : ''}
+              <span class="label">Nationality:</span>
+              <span class="value">${app.nationality || 'Not provided'}</span>
+              ${isFinatrades ? `
+                <span class="label">Occupation:</span>
+                <span class="value">${app.occupation || 'Not provided'}</span>
+                <span class="label">Source of Funds:</span>
+                <span class="value">${app.sourceOfFunds || 'Not provided'}</span>
+              ` : ''}
+              <span class="label">Submitted:</span>
+              <span class="value">${app.createdAt ? new Date(app.createdAt).toLocaleString() : 'Unknown'}</span>
+            </div>
+          </div>
+          
+          ${app.accountType === 'business' ? `
+            <div class="section">
+              <h3>Business Details</h3>
+              <div class="details-grid">
+                <span class="label">Company Name:</span>
+                <span class="value">${app.companyName || 'Not provided'}</span>
+                <span class="label">Registration Number:</span>
+                <span class="value">${app.registrationNumber || 'Not provided'}</span>
+                <span class="label">Tax ID:</span>
+                <span class="value">${app.taxId || 'Not provided'}</span>
+              </div>
+            </div>
+          ` : ''}
+          
+          <div class="section">
+            <h3>Documents</h3>
+            <div class="documents-grid">
+              ${documentsHtml}
+            </div>
+          </div>
+          
+          ${app.rejectionReason ? `
+            <div class="section" style="background: #fee2e2; padding: 15px; border-radius: 8px;">
+              <h3 style="color: #991b1b; border-bottom-color: #fca5a5;">Rejection Reason</h3>
+              <p style="margin: 0; color: #991b1b;">${app.rejectionReason}</p>
+            </div>
+          ` : ''}
+          
+          <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #999;">
+            <p>Printed on ${new Date().toLocaleString()} | Finatrades KYC System</p>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+  };
+  
   // Helper to check if this is a Finatrades personal KYC submission
   const isFinatradesKyc = (app: any) => {
     return app?.kycType === 'finatrades' || app?.idFrontUrl || app?.idBackUrl || app?.addressProofUrl;
@@ -527,7 +682,18 @@ export default function KYCReview() {
         <Dialog open={!!selectedApplication && !showRejectDialog} onOpenChange={(open) => !open && setSelectedApplication(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>KYC Application Review</DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle>KYC Application Review</DialogTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePrintApplication}
+                  className="ml-4"
+                  data-testid="button-print-kyc-application"
+                >
+                  <Printer className="w-4 h-4 mr-2" /> Print
+                </Button>
+              </div>
               <DialogDescription>
                 Review documents for {selectedApplication?.fullName} ({selectedApplication?.accountType} Account)
                 {isFinatradesKyc(selectedApplication) && <Badge className="ml-2 bg-black text-white">Finatrades KYC</Badge>}
