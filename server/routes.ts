@@ -5488,6 +5488,16 @@ export async function registerRoutes(
     }
   });
   
+  // Admin: Get all settlement holds
+  app.get("/api/admin/finabridge/settlement-holds", async (req, res) => {
+    try {
+      const holds = await storage.getAllSettlementHolds();
+      res.json({ holds });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get settlement holds" });
+    }
+  });
+  
   // Release settlement hold (admin - after trade completion)
   app.post("/api/admin/finabridge/settlement-holds/:id/release", async (req, res) => {
     try {

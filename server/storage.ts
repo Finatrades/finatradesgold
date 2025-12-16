@@ -320,6 +320,7 @@ export interface IStorage {
   getTradeSettlementHold(tradeRequestId: string): Promise<SettlementHold | undefined>;
   getUserSettlementHolds(userId: string): Promise<SettlementHold[]>;
   getExporterSettlementHolds(exporterUserId: string): Promise<SettlementHold[]>;
+  getAllSettlementHolds(): Promise<SettlementHold[]>;
   createSettlementHold(hold: InsertSettlementHold): Promise<SettlementHold>;
   updateSettlementHold(id: string, updates: Partial<SettlementHold>): Promise<SettlementHold | undefined>;
   
@@ -1022,6 +1023,10 @@ export class DatabaseStorage implements IStorage {
 
   async getExporterSettlementHolds(exporterUserId: string): Promise<SettlementHold[]> {
     return await db.select().from(settlementHolds).where(eq(settlementHolds.exporterUserId, exporterUserId)).orderBy(desc(settlementHolds.createdAt));
+  }
+
+  async getAllSettlementHolds(): Promise<SettlementHold[]> {
+    return await db.select().from(settlementHolds).orderBy(desc(settlementHolds.createdAt));
   }
 
   async createSettlementHold(insertHold: InsertSettlementHold): Promise<SettlementHold> {

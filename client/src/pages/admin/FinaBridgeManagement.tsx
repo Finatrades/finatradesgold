@@ -101,6 +101,17 @@ interface AdminDealRoom {
   unreadCount?: number;
 }
 
+interface SettlementHold {
+  id: string;
+  tradeRequestId: string;
+  proposalId: string;
+  importerUserId: string;
+  exporterUserId: string;
+  lockedGoldGrams: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function FinaBridgeManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -120,6 +131,8 @@ export default function FinaBridgeManagement() {
   const [customDocumentInput, setCustomDocumentInput] = useState('');
   const [dealRooms, setDealRooms] = useState<AdminDealRoom[]>([]);
   const [selectedDealRoom, setSelectedDealRoom] = useState<string | null>(null);
+  const [settlementHolds, setSettlementHolds] = useState<SettlementHold[]>([]);
+  const [completingTrade, setCompletingTrade] = useState<string | null>(null);
 
   const STANDARD_DOCUMENTS = [
     { key: 'company_registration', label: 'Company Registration Certificate' },
@@ -168,8 +181,12 @@ export default function FinaBridgeManagement() {
   };
 
   const fetchDealRooms = async () => {
+    if (!user?.id) return;
     try {
-      const res = await apiRequest('GET', '/api/admin/deal-rooms');
+      const res = await fetch('/api/admin/deal-rooms', {
+        headers: { 'X-Admin-User-Id': user.id }
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setDealRooms(data.rooms || []);
     } catch (err) {
@@ -177,18 +194,48 @@ export default function FinaBridgeManagement() {
     }
   };
 
+  const fetchSettlementHolds = async () => {
+    try {
+      const res = await apiRequest('GET', '/api/admin/finabridge/settlement-holds');
+      const data = await res.json();
+      setSettlementHolds(data.holds || []);
+    } catch (err) {
+      console.error('Failed to load settlement holds:', err);
+    }
+  };
+
+  const handleCompleteTrade = async (holdId: string, tradeRefId: string) => {
+    if (!confirm(`Are you sure you want to complete this trade and release the gold to the exporter?\n\nTrade: ${tradeRefId}\n\nThis action cannot be undone.`)) {
+      return;
+    }
+    
+    setCompletingTrade(holdId);
+    try {
+      await apiRequest('POST', `/api/admin/finabridge/settlement-holds/${holdId}/release`);
+      toast({ title: 'Success', description: 'Trade completed! Gold has been released to the exporter.' });
+      fetchRequests();
+      fetchSettlementHolds();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to complete trade', variant: 'destructive' });
+    } finally {
+      setCompletingTrade(null);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
     fetchDisclaimerUsers();
     fetchDealRooms();
+    fetchSettlementHolds();
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchRequests();
       fetchDisclaimerUsers();
       fetchDealRooms();
+      fetchSettlementHolds();
     }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.id]);
 
   const handleOpenRequest = async (request: TradeRequest) => {
     setSelectedRequest(request);
@@ -470,27 +517,51 @@ export default function FinaBridgeManagement() {
 
           <TabsContent value="active" className="mt-4">
             <div className="space-y-3">
-              {requests.filter(r => r.status === 'Active Trade').map((request) => (
-                <Card key={request.id} className="hover:border-secondary/50 transition-colors cursor-pointer" onClick={() => handleOpenRequest(request)}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+              {requests.filter(r => r.status === 'Active Trade').map((request) => {
+                const hold = settlementHolds.find(h => h.tradeRequestId === request.id && h.status === 'Held');
+                return (
+                  <Card key={request.id} className="hover:border-secondary/50 transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 cursor-pointer" onClick={() => handleOpenRequest(request)}>
+                          <div className="p-2 bg-green-100 rounded-lg">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold">{request.tradeRefId}</h3>
+                            <p className="text-sm text-muted-foreground">{request.goodsName}</p>
+                            {hold && (
+                              <p className="text-xs text-green-600 mt-1">
+                                {parseFloat(hold.lockedGoldGrams).toFixed(3)}g gold locked for settlement
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-bold">{request.tradeRefId}</h3>
-                          <p className="text-sm text-muted-foreground">{request.goodsName}</p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</p>
+                          </div>
+                          <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                          {hold && (
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCompleteTrade(hold.id, request.tradeRefId);
+                              }}
+                              disabled={completingTrade === hold.id}
+                            >
+                              {completingTrade === hold.id ? 'Releasing...' : 'Complete Trade'}
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
-                        <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
               {requests.filter(r => r.status === 'Active Trade').length === 0 && (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
