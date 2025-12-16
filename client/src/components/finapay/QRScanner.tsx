@@ -28,6 +28,8 @@ export default function QRScanner({ onScan, isActive }: QRScannerProps) {
       if (!document.getElementById(scannerId)) {
         const scannerElement = document.createElement('div');
         scannerElement.id = scannerId;
+        scannerElement.style.width = '100%';
+        scannerElement.style.height = '100%';
         containerRef.current.appendChild(scannerElement);
       }
 
@@ -103,7 +105,8 @@ export default function QRScanner({ onScan, isActive }: QRScannerProps) {
     <div className="space-y-3">
       <div 
         ref={containerRef}
-        className="bg-muted/50 border-2 border-dashed border-border rounded-xl min-h-[200px] flex flex-col items-center justify-center overflow-hidden relative"
+        className={`bg-muted/50 border-2 border-dashed border-border rounded-xl min-h-[200px] overflow-hidden relative ${isScanning ? '' : 'flex flex-col items-center justify-center'}`}
+        style={isScanning ? { minHeight: '250px' } : undefined}
       >
         {!isScanning && !isInitializing && (
           <div className="text-center p-4">
