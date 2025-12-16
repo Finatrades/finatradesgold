@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface UserProfile {
@@ -13,15 +13,6 @@ export interface UserProfile {
   lastLogin?: string;
 }
 
-// Initial Mock Data
-const MOCK_USERS: UserProfile[] = [
-  { id: '1', firstName: 'Demo', lastName: 'User', email: 'demo@finatrades.com', role: 'user', status: 'Pending KYC', kycLevel: 0, joinedDate: '2024-12-01' },
-  { id: '2', firstName: 'Alice', lastName: 'Freeman', email: 'alice@example.com', role: 'user', status: 'Active', kycLevel: 1, joinedDate: '2024-11-15' },
-  { id: '3', firstName: 'Bob', lastName: 'Smith', email: 'bob@example.com', role: 'user', status: 'Active', kycLevel: 1, joinedDate: '2024-11-20' },
-  { id: '4', firstName: 'Charlie', lastName: 'Brown', email: 'charlie@example.com', role: 'user', status: 'Suspended', kycLevel: 0, joinedDate: '2024-12-01' },
-  { id: '99', firstName: 'Admin', lastName: 'Super', email: 'admin@finatrades.com', role: 'admin', status: 'Active', kycLevel: 2, joinedDate: '2024-10-01' },
-];
-
 interface UserContextType {
   users: UserProfile[];
   updateUserStatus: (id: string, status: UserProfile['status']) => void;
@@ -32,7 +23,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<UserProfile[]>(MOCK_USERS);
+  const [users, setUsers] = useState<UserProfile[]>([]);
 
   const updateUserStatus = (id: string, status: UserProfile['status']) => {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u));
