@@ -466,6 +466,92 @@ export default function UserDetails() {
                         </div>
                       )}
 
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-4 flex items-center gap-2">
+                          <FileText className="w-4 h-4" /> Uploaded Documents
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {kycSubmission.idFrontUrl && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Front</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.idFrontUrl} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idFrontUrl, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.idBackUrl && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Back</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.idBackUrl} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idBackUrl, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.passportUrl && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Passport</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.passportUrl} alt="Passport" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.passportUrl, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.addressProofUrl && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Proof of Address</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.addressProofUrl} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.addressProofUrl, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.livenessCapture && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Liveness Verification</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.livenessCapture} alt="Liveness Capture" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.livenessCapture, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.documents?.idFront?.url && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Front (Documents)</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.documents.idFront.url} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idFront.url, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.documents?.idBack?.url && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Back (Documents)</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.documents.idBack.url} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idBack.url, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.documents?.selfie?.url && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Selfie</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.documents.selfie.url} alt="Selfie" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.selfie.url, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {kycSubmission.documents?.proofOfAddress?.url && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Proof of Address (Documents)</p>
+                              <div className="p-2">
+                                <img src={kycSubmission.documents.proofOfAddress.url} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.proofOfAddress.url, '_blank')} />
+                              </div>
+                            </div>
+                          )}
+                          {!kycSubmission.idFrontUrl && !kycSubmission.idBackUrl && !kycSubmission.passportUrl && !kycSubmission.addressProofUrl && !kycSubmission.livenessCapture && !kycSubmission.documents?.idFront?.url && !kycSubmission.documents?.idBack?.url && !kycSubmission.documents?.selfie?.url && !kycSubmission.documents?.proofOfAddress?.url && (
+                            <div className="col-span-full text-center py-4 text-gray-500">
+                              <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                              <p className="text-sm">No documents uploaded yet</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       {kycSubmission.rejectionReason && (
                         <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
                           <p className="text-sm font-medium text-red-800">Rejection Reason</p>
