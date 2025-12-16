@@ -7536,8 +7536,8 @@ export async function registerRoutes(
         // Update existing submission
         const updated = await storage.updateFinatradesCorporateKyc(existing.id, kycData);
         
-        // Update user's KYC status
-        await storage.updateUser(userId, { kycStatus: 'In Progress' });
+        // Update user's KYC status and account type to business
+        await storage.updateUser(userId, { kycStatus: 'In Progress', accountType: 'business' });
         
         res.json({ success: true, submission: updated });
       } else {
@@ -7547,8 +7547,8 @@ export async function registerRoutes(
           ...kycData,
         });
         
-        // Update user's KYC status
-        await storage.updateUser(userId, { kycStatus: 'In Progress' });
+        // Update user's KYC status and account type to business
+        await storage.updateUser(userId, { kycStatus: 'In Progress', accountType: 'business' });
         
         res.json({ success: true, submission });
       }
