@@ -282,3 +282,61 @@ export async function getGoldPricePerGram(): Promise<number> {
 export function clearPriceCache(): void {
   cachedPrice = null;
 }
+
+interface AllPricesResult {
+  prices: GoldPriceData[];
+  fetchedAt: Date;
+  config: {
+    metalsApiEnabled: boolean;
+    provider: string;
+  };
+}
+
+export async function getAllGoldPrices(): Promise<AllPricesResult> {
+  const config = await getMetalsApiConfig();
+  const prices: GoldPriceData[] = [];
+  
+  const fetchPromises: Promise<void>[] = [];
+  
+  fetchPromises.push(
+    fetchFromGoldPriceZ().then(p => { if (p) prices.push(p); })
+  );
+  
+  fetchPromises.push(
+    fetchFromFreeGoldApi().then(p => { if (p) prices.push(p); })
+  );
+  
+  if (config.enabled && config.apiKey) {
+    if (config.provider === 'metals-api') {
+      fetchPromises.push(
+        fetchFromMetalsApi(config.apiKey).then(p => { if (p) prices.push(p); })
+      );
+    } else if (config.provider === 'metals-dev') {
+      fetchPromises.push(
+        fetchFromMetalsDev(config.apiKey).then(p => { if (p) prices.push(p); })
+      );
+    } else if (config.provider === 'goldapi') {
+      fetchPromises.push(
+        fetchFromGoldApi(config.apiKey).then(p => { if (p) prices.push(p); })
+      );
+    }
+  }
+  
+  const metalsDevKey = process.env.METALS_DEV_API_KEY;
+  if (metalsDevKey && config.provider !== 'metals-dev') {
+    fetchPromises.push(
+      fetchFromMetalsDev(metalsDevKey).then(p => { if (p) prices.push(p); })
+    );
+  }
+  
+  await Promise.allSettled(fetchPromises);
+  
+  return {
+    prices,
+    fetchedAt: new Date(),
+    config: {
+      metalsApiEnabled: config.enabled,
+      provider: config.provider,
+    }
+  };
+}

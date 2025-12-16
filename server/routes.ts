@@ -34,7 +34,7 @@ import {
   generateTradeReleaseCertificate
 } from "./document-service";
 import { generateUserManualPDF, generateAdminManualPDF } from "./pdf-generator";
-import { getGoldPrice, getGoldPricePerGram } from "./gold-price-service";
+import { getGoldPrice, getGoldPricePerGram, getAllGoldPrices } from "./gold-price-service";
 import { 
   calculateUserRiskScore, 
   updateUserRiskProfile, 
@@ -119,6 +119,17 @@ export async function registerRoutes(
     } catch (error) {
       console.error('[GoldPrice] Error fetching gold price:', error);
       res.status(500).json({ message: "Failed to fetch gold price" });
+    }
+  });
+  
+  // Get gold prices from ALL available APIs (for comparison/admin)
+  app.get("/api/gold-price/all", async (req, res) => {
+    try {
+      const allPrices = await getAllGoldPrices();
+      res.json(allPrices);
+    } catch (error) {
+      console.error('[GoldPrice] Error fetching all gold prices:', error);
+      res.status(500).json({ message: "Failed to fetch gold prices" });
     }
   });
   
