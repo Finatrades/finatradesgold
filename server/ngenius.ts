@@ -88,20 +88,14 @@ export class NgeniusService {
     console.log('[NGenius] Requesting access token from:', tokenUrl);
     console.log('[NGenius] Mode:', this.config.mode);
 
-    // NGenius token endpoint - requires specific headers and optionally realmName
-    const requestBody: { realmName?: string } = {};
-    if (this.config.realmName) {
-      requestBody.realmName = this.config.realmName;
-    }
-    
+    // NGenius token endpoint - per docs: Content-Type, Accept, and Authorization
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Accept': 'application/vnd.ni-identity.v1+json',
-        'Authorization': authHeader,
         'Content-Type': 'application/vnd.ni-identity.v1+json',
+        'Authorization': authHeader,
       },
-      body: Object.keys(requestBody).length > 0 ? JSON.stringify(requestBody) : undefined,
     });
 
     if (!response.ok) {
