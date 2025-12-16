@@ -26,15 +26,16 @@ interface KpiBoxProps {
   subtitle: string;
   icon: React.ReactNode;
   iconBg?: string;
+  valueColor?: string;
 }
 
-function KpiBox({ title, value, subtitle, icon, iconBg = 'bg-gray-100' }: KpiBoxProps) {
+function KpiBox({ title, value, subtitle, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
   return (
-    <Card className="p-4 bg-white border border-gray-100 shadow-sm">
+    <Card className="p-4 bg-white border border-orange-200 shadow-sm rounded-lg">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs text-gray-500 mb-2">{title}</p>
-          <p className="text-xl font-bold text-gray-900 mb-1">{value}</p>
+          <p className={`text-xl font-bold ${valueColor} mb-1`}>{value}</p>
           <p className="text-xs text-gray-400">{subtitle}</p>
         </div>
         <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center`}>
@@ -53,6 +54,7 @@ export default function Dashboard() {
 
   const userName = user.firstName || user.email?.split('@')[0] || 'User';
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || userName;
+  const isBusinessUser = user.accountType === 'business';
 
   return (
     <DashboardLayout>
@@ -69,7 +71,7 @@ export default function Dashboard() {
           <QuickActionsTop />
         </section>
         
-        {/* KPI Cards Row 1 - With Credit Card */}
+        {/* KPI Cards Grid - 3x3 with Credit Card */}
         <section>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -77,14 +79,16 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              {/* KPI Cards - First 3 */}
+              {/* KPI Cards - 3x2 grid */}
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Row 1 */}
                 <KpiBox
                   title="Gold Storage"
                   value={formatGrams(totals.vaultGoldGrams)}
                   subtitle="Deposited in FinaVault"
-                  icon={<Database className="w-5 h-5 text-gray-600" />}
-                  iconBg="bg-amber-50"
+                  icon={<Database className="w-5 h-5 text-orange-600" />}
+                  iconBg="bg-orange-50"
+                  valueColor="text-orange-600"
                 />
                 <KpiBox
                   title="Gold Value (USD)"
@@ -100,48 +104,47 @@ export default function Dashboard() {
                   icon={<span className="text-lg font-bold text-blue-600">د.إ</span>}
                   iconBg="bg-blue-50"
                 />
+                
+                {/* Row 2 */}
+                <KpiBox
+                  title="Total Portfolio"
+                  value={`$${formatNumber(totals.totalPortfolioUsd)}`}
+                  subtitle="Overall investment"
+                  icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
+                  iconBg="bg-purple-50"
+                  valueColor="text-orange-600"
+                />
+                <KpiBox
+                  title="BNSL Invested"
+                  value={formatGrams(totals.bnslLockedGrams)}
+                  subtitle="In active plans"
+                  icon={<TrendingUp className="w-5 h-5 text-teal-600" />}
+                  iconBg="bg-teal-50"
+                  valueColor="text-orange-600"
+                />
+                <KpiBox
+                  title="Total Profit"
+                  value={`+$${formatNumber(totals.bnslTotalProfit)}`}
+                  subtitle="ROI from BNSL"
+                  icon={<Coins className="w-5 h-5 text-orange-600" />}
+                  iconBg="bg-orange-50"
+                  valueColor="text-green-600"
+                />
               </div>
               
-              {/* Credit Card Preview */}
-              <div className="lg:col-span-1">
-                <CreditCardPreview 
-                  userName={fullName.toUpperCase()}
-                  cardNumber="4532  ••••  ••••  0003"
-                  expiry="12/28"
-                />
+              {/* Credit Card Preview - Spanning 2 rows */}
+              <div className="lg:col-span-1 lg:row-span-2 flex items-stretch">
+                <div className="w-full">
+                  <CreditCardPreview 
+                    userName={fullName.toUpperCase()}
+                    cardNumber="4532  ••••  ••••  0003"
+                    expiry="12/28"
+                  />
+                </div>
               </div>
             </div>
           )}
         </section>
-
-        {/* KPI Cards Row 2 */}
-        {!isLoading && (
-          <section>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <KpiBox
-                title="Total Portfolio"
-                value={`$${formatNumber(totals.totalPortfolioUsd)}`}
-                subtitle="Overall investment"
-                icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
-                iconBg="bg-purple-50"
-              />
-              <KpiBox
-                title="BNSL Invested"
-                value={formatGrams(totals.bnslLockedGrams)}
-                subtitle="In active plans"
-                icon={<TrendingUp className="w-5 h-5 text-teal-600" />}
-                iconBg="bg-teal-50"
-              />
-              <KpiBox
-                title="Total Profit"
-                value={`+$${formatNumber(totals.bnslTotalProfit)}`}
-                subtitle="ROI from BNSL"
-                icon={<Coins className="w-5 h-5 text-orange-600" />}
-                iconBg="bg-orange-50"
-              />
-            </div>
-          </section>
-        )}
 
         {/* Wallet Cards Section */}
         {!isLoading && (
@@ -160,6 +163,7 @@ export default function Dashboard() {
                 activePlans: totals.activeBnslPlans || 0
               }}
               userName={userName}
+              isBusinessUser={isBusinessUser}
             />
           </section>
         )}
