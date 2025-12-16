@@ -764,19 +764,52 @@ export async function seedEmailTemplates(): Promise<void> {
 // Send email with attachment
 export async function sendEmailWithAttachment(
   to: string,
-  subject: string,
-  htmlBody: string,
+  templateSlugOrSubject: string,
+  dataOrHtmlBody: Record<string, string> | string,
   attachments: Array<{
     filename: string;
     content: Buffer | string;
     contentType?: string;
-  }>
+  }> | {
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    // Normalize attachments to always be an array
+    const attachmentsArray = Array.isArray(attachments) ? attachments : [attachments];
+    
+    let subject: string;
+    let htmlBody: string;
+    
+    // Check if second param is a template slug or direct subject
+    if (typeof dataOrHtmlBody === 'object') {
+      // Template-based email: templateSlugOrSubject is a template slug, dataOrHtmlBody is variables
+      const template = await getEmailTemplate(templateSlugOrSubject);
+      if (!template) {
+        console.error(`[Email] Template not found: ${templateSlugOrSubject}`);
+        return { success: false, error: `Email template not found: ${templateSlugOrSubject}` };
+      }
+      subject = template.subject;
+      htmlBody = template.body;
+      
+      // Replace template variables
+      for (const [key, value] of Object.entries(dataOrHtmlBody)) {
+        const placeholder = new RegExp(`{{${key}}}`, 'g');
+        subject = subject.replace(placeholder, value);
+        htmlBody = htmlBody.replace(placeholder, value);
+      }
+    } else {
+      // Direct email: templateSlugOrSubject is the subject, dataOrHtmlBody is the HTML body
+      subject = templateSlugOrSubject;
+      htmlBody = dataOrHtmlBody;
+    }
+    
     if (!SMTP_USER || !SMTP_PASS) {
       console.log(`[Email Preview] To: ${to}`);
       console.log(`[Email Preview] Subject: ${subject}`);
-      console.log(`[Email Preview] Attachments: ${attachments.map(a => a.filename).join(', ')}`);
+      console.log(`[Email Preview] Attachments: ${attachmentsArray.map(a => a.filename).join(', ')}`);
       console.log(`[Email] SMTP not configured - email logged only`);
       return { success: true, messageId: 'preview-mode' };
     }
@@ -786,7 +819,7 @@ export async function sendEmailWithAttachment(
       to,
       subject,
       html: htmlBody,
-      attachments: attachments.map(a => ({
+      attachments: attachmentsArray.map(a => ({
         filename: a.filename,
         content: a.content,
         contentType: a.contentType,
