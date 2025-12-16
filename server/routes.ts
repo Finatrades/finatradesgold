@@ -17,7 +17,7 @@ import {
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
   vaultLedgerEntries, vaultOwnershipSummary,
-  wallets, transactions, auditLogs
+  wallets, transactions, auditLogs, certificates
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -4590,6 +4590,22 @@ export async function registerRoutes(
               actor: updates.processedBy || 'system',
               actorRole: 'admin',
               details: `Deposit approved: $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
+            });
+            
+            // Create Digital Ownership certificate for the deposited gold
+            const certNumber = await storage.generateCertificateNumber('Digital Ownership');
+            await tx.insert(certificates).values({
+              certificateNumber: certNumber,
+              userId: request.userId,
+              transactionId: transaction.id,
+              type: 'Digital Ownership',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              totalValueUsd: depositAmountUsd.toFixed(2),
+              issuer: 'Finatrades',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              issuedAt: new Date(),
             });
           });
           
