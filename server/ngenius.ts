@@ -80,28 +80,25 @@ export class NgeniusService {
       return this.accessToken;
     }
 
-    // NGenius expects the API key to be used directly as Basic auth
-    // The API key from portal is already base64 encoded
-    let authHeader: string;
-    if (this.config.apiKey.includes(':')) {
-      // Raw credentials in format "client_id:client_secret" - encode them
-      authHeader = `Basic ${Buffer.from(this.config.apiKey).toString('base64')}`;
-    } else {
-      // Already base64 encoded - use directly
-      authHeader = `Basic ${this.config.apiKey}`;
-    }
+    // NGenius API Key should be used directly with Basic auth
+    // Format: Basic <api_key_from_portal>
+    const authHeader = `Basic ${this.config.apiKey}`;
+    const tokenUrl = `${this.getBaseUrl()}/identity/auth/access-token`;
+    
+    console.log('[NGenius] Requesting access token from:', tokenUrl);
+    console.log('[NGenius] Mode:', this.config.mode);
 
-    // Use NGenius token endpoint - NO body required per NGenius documentation
-    const response = await fetch(`${this.getBaseUrl()}/identity/auth/access-token`, {
+    // NGenius token endpoint - NO body, minimal headers
+    const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/vnd.ni-identity.v1+json',
         'Authorization': authHeader,
       },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('[NGenius] Auth failed:', response.status, errorText);
       throw new Error(`NGenius auth failed: ${response.status} - ${errorText}`);
     }
 
@@ -109,6 +106,8 @@ export class NgeniusService {
     this.accessToken = data.access_token;
     // Token expires in ~5 minutes, refresh 30 seconds early
     this.tokenExpiry = Date.now() + (data.expires_in ? data.expires_in * 1000 : 270000) - 30000;
+    
+    console.log('[NGenius] Access token obtained successfully');
 
     return this.accessToken;
   }
