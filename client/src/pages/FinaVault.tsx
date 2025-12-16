@@ -131,6 +131,18 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Fetch wallet for USD balance
+  const { data: walletData } = useQuery({
+    queryKey: ['wallet', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { wallet: null };
+      const res = await fetch(`/api/wallet/${user.id}`);
+      if (!res.ok) return { wallet: null };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Fetch BNSL plans for locked gold calculation
   const { data: bnslData } = useQuery({
     queryKey: ['bnsl-plans', user?.id],
@@ -196,6 +208,16 @@ export default function FinaVault() {
   const finaPayGrams = ownership ? safeParseFloat(ownership.finaPayGrams) : 0;
   const bnslAvailableGrams = ownership ? safeParseFloat(ownership.bnslAvailableGrams) : 0;
   const finaBridgeAvailableGrams = ownership ? safeParseFloat(ownership.finaBridgeAvailableGrams) : 0;
+  
+  // USD balance from wallet
+  const usdBalance = safeParseFloat(walletData?.wallet?.usdBalance);
+  
+  // Calculate total available value in USD (gold value + cash)
+  const availableGoldValueUsd = availableGold * goldPricePerGram;
+  const totalAvailableUsd = availableGoldValueUsd + usdBalance;
+  
+  // Total vault value including USD
+  const totalVaultValueUsd = (totalVaultGold * goldPricePerGram) + usdBalance;
   
   // Ledger entries for history display - combine ledger entries with transactions
   const ledgerEntries = ledgerData?.entries || [];
@@ -350,13 +372,14 @@ export default function FinaVault() {
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
                 <p className="text-3xl font-bold text-green-600 mb-1">
-                  ${(availableGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-green-600/70">
-                  {availableGold.toFixed(3)} g
-                </p>
-                <p className="text-xs text-muted-foreground mt-3">
-                  Gold available for withdrawal or transfer.
+                <div className="text-sm text-green-600/70 space-y-0.5">
+                  <p>${usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cash</p>
+                  <p>{availableGold.toFixed(4)}g Gold (${availableGoldValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Available for withdrawal or transfer.
                 </p>
               </div>
             </div>
@@ -409,11 +432,12 @@ export default function FinaVault() {
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Vault Value</p>
                 <p className="text-3xl font-bold text-foreground mb-1">
-                  ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${totalVaultValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {totalVaultGold.toFixed(3)} g Total
-                </p>
+                <div className="text-sm text-muted-foreground space-y-0.5">
+                  <p>${usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cash</p>
+                  <p>{totalVaultGold.toFixed(4)}g Gold</p>
+                </div>
               </div>
             </div>
 
