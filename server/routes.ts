@@ -2813,6 +2813,41 @@ export async function registerRoutes(
           status: 'Completed',
           completedAt: new Date()
         });
+
+        // Record ledger entries for Buy/Sell/Deposit/Withdrawal transactions
+        const { vaultLedgerService } = await import('./vault-ledger-service');
+        if (transaction.type === 'Buy' || transaction.type === 'Deposit') {
+          await vaultLedgerService.recordLedgerEntry({
+            userId: transaction.userId,
+            action: 'Deposit',
+            goldGrams: goldAmount,
+            goldPriceUsdPerGram: goldPrice,
+            fromWallet: 'External',
+            toWallet: 'FinaPay',
+            toStatus: 'Available',
+            transactionId: transaction.id,
+            certificateId: generatedCertificates[0]?.id,
+            notes: transaction.type === 'Buy' 
+              ? `Purchased ${goldAmount.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g`
+              : `Deposited ${goldAmount.toFixed(4)}g physical gold`,
+            createdBy: req.body.adminId || 'admin',
+          });
+        } else if (transaction.type === 'Sell' || transaction.type === 'Withdrawal') {
+          await vaultLedgerService.recordLedgerEntry({
+            userId: transaction.userId,
+            action: 'Withdrawal',
+            goldGrams: goldAmount,
+            goldPriceUsdPerGram: goldPrice,
+            fromWallet: 'FinaPay',
+            toWallet: 'External',
+            fromStatus: 'Available',
+            transactionId: transaction.id,
+            notes: transaction.type === 'Sell'
+              ? `Sold ${goldAmount.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g`
+              : `Withdrew ${goldAmount.toFixed(4)}g physical gold`,
+            createdBy: req.body.adminId || 'admin',
+          });
+        }
         
         // Audit log
         await txStorage.createAuditLog({
@@ -3284,7 +3319,7 @@ export async function registerRoutes(
           });
 
           // Create transaction record - include USD value calculation
-          await storage.createTransaction({
+          const depositTx = await storage.createTransaction({
             userId: request.userId,
             type: 'Deposit',
             status: 'Completed',
@@ -3294,6 +3329,22 @@ export async function registerRoutes(
             description: `FinaVault deposit: ${finalWeightGrams}g physical gold stored`,
             sourceModule: 'finavault',
             referenceId: request.referenceNumber,
+          });
+
+          // Record ledger entry for deposit
+          const { vaultLedgerService } = await import('./vault-ledger-service');
+          await vaultLedgerService.recordLedgerEntry({
+            userId: request.userId,
+            action: 'Deposit',
+            goldGrams: finalWeightGrams,
+            goldPriceUsdPerGram: pricePerGram,
+            fromWallet: 'External',
+            toWallet: 'FinaPay',
+            toStatus: 'Available',
+            transactionId: depositTx.id,
+            certificateId: certificate.id,
+            notes: `FinaVault physical deposit: ${finalWeightGrams}g gold stored at ${request.vaultLocation}`,
+            createdBy: adminId,
           });
         }
 
@@ -3602,7 +3653,7 @@ export async function registerRoutes(
       });
       
       // Create transaction record with USD value
-      await storage.createTransaction({
+      const transferTx = await storage.createTransaction({
         userId,
         type: 'Send',
         status: 'Completed',
@@ -3611,6 +3662,22 @@ export async function registerRoutes(
         goldPriceUsdPerGram: goldPrice.toFixed(2),
         description: `Transfer ${amountGrams.toFixed(3)}g from FinaPay to BNSL wallet`,
         sourceModule: 'bnsl'
+      });
+
+      // Record ledger entry for FinaPay to BNSL transfer
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId,
+        action: 'FinaPay_To_BNSL',
+        goldGrams: amountGrams,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'FinaPay',
+        toWallet: 'BNSL',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        transactionId: transferTx.id,
+        notes: `Transferred ${amountGrams.toFixed(4)}g from FinaPay to BNSL Wallet`,
+        createdBy: 'system',
       });
       
       // Get updated wallets
@@ -3934,6 +4001,23 @@ export async function registerRoutes(
         })
         .catch(err => console.error('[Routes] BNSL Lock certificate error:', err));
       
+      // Record ledger entry for BNSL lock
+      const enrollmentPriceVal = parseFloat(planData.enrollmentPriceUsdPerGram);
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: planData.userId,
+        action: 'BNSL_Lock',
+        goldGrams: goldGrams,
+        goldPriceUsdPerGram: enrollmentPriceVal,
+        fromWallet: 'BNSL',
+        toWallet: 'BNSL',
+        fromStatus: 'Available',
+        toStatus: 'Locked_BNSL',
+        bnslPlanId: plan.id,
+        notes: `Locked ${goldGrams.toFixed(4)}g for BNSL contract ${plan.contractId}`,
+        createdBy: 'system',
+      });
+
       // Create audit log
       await storage.createAuditLog({
         entityType: "bnsl",
@@ -6531,6 +6615,40 @@ export async function registerRoutes(
             status: 'Completed',
             senderTransactionId: senderTx.id,
             recipientTransactionId: recipientTx.id,
+          });
+
+          // 11. Record ledger entries for sender and recipient
+          const { vaultLedgerService } = await import('./vault-ledger-service');
+          
+          // Sender: Transfer_Send
+          await vaultLedgerService.recordLedgerEntry({
+            userId: sender.id,
+            action: 'Transfer_Send',
+            goldGrams: goldAmount,
+            goldPriceUsdPerGram: goldPrice,
+            fromWallet: 'FinaPay',
+            toWallet: 'External',
+            fromStatus: 'Available',
+            transactionId: senderTx.id,
+            counterpartyUserId: recipient.id,
+            notes: `Sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}`,
+            createdBy: 'system',
+          });
+          
+          // Recipient: Transfer_Receive (from sender's FinaPay to recipient's FinaPay)
+          await vaultLedgerService.recordLedgerEntry({
+            userId: recipient.id,
+            action: 'Transfer_Receive',
+            goldGrams: goldAmount,
+            goldPriceUsdPerGram: goldPrice,
+            fromWallet: 'FinaPay',
+            toWallet: 'FinaPay',
+            fromStatus: 'Available',
+            toStatus: 'Available',
+            transactionId: recipientTx.id,
+            counterpartyUserId: sender.id,
+            notes: `Received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
+            createdBy: 'system',
           });
           
           return { transfer, certificates: generatedCertificates, senderTx, recipientTx };
