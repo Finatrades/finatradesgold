@@ -854,6 +854,7 @@ export async function registerRoutes(
       const users = await storage.getAllUsers();
       const kycSubmissions = await storage.getAllKycSubmissions();
       const allTransactions = await storage.getAllTransactions();
+      const allDepositRequests = await storage.getAllDepositRequests();
       
       // Total users count
       const totalUsers = users.length;
@@ -902,10 +903,14 @@ export async function registerRoutes(
         })
       );
       
-      // Pending transaction counts
-      const pendingDeposits = allTransactions.filter(tx => 
+      // Pending transaction counts - include both transactions and deposit_requests tables
+      const pendingDepositsFromTx = allTransactions.filter(tx => 
         tx.type === 'Deposit' && tx.status === 'Pending'
       ).length;
+      const pendingDepositsFromRequests = allDepositRequests.filter(dep => 
+        dep.status === 'Pending'
+      ).length;
+      const pendingDeposits = pendingDepositsFromTx + pendingDepositsFromRequests;
       
       const pendingWithdrawals = allTransactions.filter(tx => 
         tx.type === 'Withdrawal' && tx.status === 'Pending'
