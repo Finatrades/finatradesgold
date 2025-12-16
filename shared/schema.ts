@@ -1583,6 +1583,47 @@ export type InsertSettlementHold = z.infer<typeof insertSettlementHoldSchema>;
 export type SettlementHold = typeof settlementHolds.$inferSelect;
 
 // ============================================
+// DEAL ROOM - TRADE CASE CONVERSATIONS
+// ============================================
+
+export const dealRoomParticipantRoleEnum = pgEnum('deal_room_participant_role', [
+  'importer', 'exporter', 'admin'
+]);
+
+export const dealRooms = pgTable("deal_rooms", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  acceptedProposalId: varchar("accepted_proposal_id", { length: 255 }).notNull().references(() => tradeProposals.id),
+  importerUserId: varchar("importer_user_id", { length: 255 }).notNull().references(() => users.id),
+  exporterUserId: varchar("exporter_user_id", { length: 255 }).notNull().references(() => users.id),
+  assignedAdminId: varchar("assigned_admin_id", { length: 255 }).references(() => users.id),
+  status: varchar("status", { length: 50 }).notNull().default('active'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDealRoomSchema = createInsertSchema(dealRooms).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDealRoom = z.infer<typeof insertDealRoomSchema>;
+export type DealRoom = typeof dealRooms.$inferSelect;
+
+export const dealRoomMessages = pgTable("deal_room_messages", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).notNull().references(() => dealRooms.id),
+  senderUserId: varchar("sender_user_id", { length: 255 }).notNull().references(() => users.id),
+  senderRole: dealRoomParticipantRoleEnum("sender_role").notNull(),
+  content: text("content"),
+  attachmentUrl: text("attachment_url"),
+  attachmentName: varchar("attachment_name", { length: 255 }),
+  attachmentType: varchar("attachment_type", { length: 100 }),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDealRoomMessageSchema = createInsertSchema(dealRoomMessages).omit({ id: true, createdAt: true });
+export type InsertDealRoomMessage = z.infer<typeof insertDealRoomMessageSchema>;
+export type DealRoomMessage = typeof dealRoomMessages.$inferSelect;
+
+// ============================================
 // CHAT
 // ============================================
 
