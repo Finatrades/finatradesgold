@@ -15,7 +15,7 @@ interface Certificate {
   userId: string;
   transactionId: string | null;
   vaultHoldingId: string | null;
-  type: 'Digital Ownership' | 'Physical Storage';
+  type: string;
   status: 'Active' | 'Updated' | 'Cancelled' | 'Transferred';
   goldGrams: string;
   goldPriceUsdPerGram: string | null;
@@ -37,7 +37,7 @@ interface CertificateDetailModalProps {
 function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
   if (!certificate) return null;
 
-  const isDigitalOwnership = certificate.type === 'Digital Ownership';
+  const isDigitalOwnership = certificate.type === 'Digital Ownership' || certificate.type === 'BNSL Lock' || certificate.type === 'Trade Lock' || certificate.type === 'Trade Release';
   const issueDate = new Date(certificate.issuedAt).toLocaleDateString('en-US', { 
     day: 'numeric', 
     month: 'long', 
@@ -194,7 +194,7 @@ export default function CertificatesView() {
 
   const filteredCertificates = certificates.filter(cert => {
     if (filter === 'active') return cert.status === 'Active';
-    if (filter === 'digital') return cert.type === 'Digital Ownership';
+    if (filter === 'digital') return cert.type === 'Digital Ownership' || cert.type === 'BNSL Lock' || cert.type === 'Trade Lock' || cert.type === 'Trade Release';
     if (filter === 'storage') return cert.type === 'Physical Storage';
     return true;
   });
@@ -255,7 +255,7 @@ export default function CertificatesView() {
           ) : (
             <div className="grid gap-4">
               {filteredCertificates.map((cert) => {
-                const isDigital = cert.type === 'Digital Ownership';
+                const isDigital = cert.type !== 'Physical Storage';
                 const goldGrams = parseFloat(cert.goldGrams || '0');
                 const totalValue = parseFloat(cert.totalValueUsd || '0');
                 

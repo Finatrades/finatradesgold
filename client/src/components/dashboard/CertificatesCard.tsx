@@ -10,7 +10,7 @@ import { Link } from 'wouter';
 interface Certificate {
   id: string;
   certificateNumber: string;
-  type: 'Digital Ownership' | 'Physical Storage';
+  type: string;
   status: 'Active' | 'Updated' | 'Cancelled' | 'Transferred';
   goldGrams: string;
   issuer: string;
@@ -58,7 +58,7 @@ export default function CertificatesCard() {
           </div>
         ) : (
           recentCertificates.map((cert: Certificate) => {
-            const isDigital = cert.type === 'Digital Ownership';
+            const isDigital = cert.type !== 'Physical Storage';
             const goldGrams = parseFloat(cert.goldGrams || '0');
             const issueDate = new Date(cert.issuedAt).toLocaleDateString('en-US', {
               month: 'short',
@@ -84,7 +84,7 @@ export default function CertificatesCard() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {isDigital ? 'Digital Ownership' : 'Physical Storage'}
+                        {cert.type}
                       </p>
                       <p className="text-xs text-gray-500">{issueDate}</p>
                     </div>
