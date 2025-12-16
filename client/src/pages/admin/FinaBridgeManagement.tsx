@@ -632,17 +632,19 @@ export default function FinaBridgeManagement() {
                                   </div>
                                 )}
                                 
-                                <div className="flex gap-2 pt-2">
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                  {(proposal.status === 'Submitted' || proposal.status === 'Shortlisted') && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => { e.stopPropagation(); setModificationDialog(proposal); setModificationText(proposal.modificationRequest || ''); }}
+                                      data-testid={`button-request-mod-${proposal.id}`}
+                                    >
+                                      <Edit3 className="w-4 h-4 mr-1" /> Request Modification
+                                    </Button>
+                                  )}
                                   {proposal.status === 'Submitted' && (
                                     <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => { e.stopPropagation(); setModificationDialog(proposal); setModificationText(proposal.modificationRequest || ''); }}
-                                        data-testid={`button-request-mod-${proposal.id}`}
-                                      >
-                                        <Edit3 className="w-4 h-4 mr-1" /> Request Modification
-                                      </Button>
                                       <Button
                                         size="sm"
                                         variant="outline"
