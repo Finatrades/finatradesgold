@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -12,16 +11,11 @@ import {
   Shield, 
   LogOut,
   ShieldCheck,
-  ChevronDown,
-  ArrowLeftRight,
   Receipt,
-  Coins,
   History,
-  Compass,
   FileText,
-  Briefcase,
   Send,
-  Home
+  X
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -33,187 +27,140 @@ interface MenuItem {
   href: string;
 }
 
-interface MenuGroup {
-  title: string;
-  items: MenuItem[];
-  defaultOpen?: boolean;
-}
-
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) {
   const [location] = useLocation();
   const { logout, user } = useAuth();
   const { accountType } = useAccountType();
 
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    'Overview': true,
-    'Money Movement': true,
-    'FinaVault': true,
-    'BNSL': true,
-    'FinaBridge': true,
-    'Account': false
-  });
-
-  const toggleGroup = (title: string) => {
-    setExpandedGroups(prev => ({ ...prev, [title]: !prev[title] }));
-  };
-
-  const menuGroups: MenuGroup[] = [
-    {
-      title: 'Overview',
-      defaultOpen: true,
-      items: [
-        { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
-        { icon: <Home className="w-5 h-5" />, label: 'Home Page', href: '/' },
-      ]
-    },
-    {
-      title: 'Money Movement',
-      defaultOpen: true,
-      items: [
-        { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay', href: '/finapay' },
-        { icon: <Receipt className="w-5 h-5" />, label: 'Transactions', href: '/finapay/transactions' },
-      ]
-    },
-    {
-      title: 'FinaVault',
-      defaultOpen: true,
-      items: [
-        { icon: <Database className="w-5 h-5" />, label: 'My Holdings', href: '/finavault' },
-        { icon: <History className="w-5 h-5" />, label: 'Vault History', href: '/finavault/history' },
-      ]
-    },
-    {
-      title: 'BNSL',
-      defaultOpen: true,
-      items: [
-        { icon: <TrendingUp className="w-5 h-5" />, label: 'My Plans', href: '/bnsl' },
-      ]
-    },
-    ...(accountType === 'business' ? [{
-      title: 'FinaBridge',
-      defaultOpen: true,
-      items: [
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Overview', href: '/finabridge' },
-        { icon: <FileText className="w-5 h-5" />, label: 'Trade Requests', href: '/finabridge/requests' },
-        { icon: <Send className="w-5 h-5" />, label: 'Proposals', href: '/finabridge/proposals' },
-      ]
-    }] : []),
-    {
-      title: 'Account',
-      defaultOpen: false,
-      items: [
-        { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
-        { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/profile' },
-        { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
-      ]
-    }
+  const mainMenuItems: MenuItem[] = [
+    { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
+    { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay', href: '/finapay' },
+    { icon: <Receipt className="w-5 h-5" />, label: 'Transactions', href: '/finapay/transactions' },
+    { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
+    { icon: <History className="w-5 h-5" />, label: 'Vault History', href: '/finavault/history' },
+    { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL', href: '/bnsl' },
   ];
 
-  if (user?.kycStatus === 'Not Started') {
-    menuGroups[0].items.push({ 
+  const businessMenuItems: MenuItem[] = accountType === 'business' ? [
+    { icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' },
+    { icon: <FileText className="w-5 h-5" />, label: 'Trade Requests', href: '/finabridge/requests' },
+    { icon: <Send className="w-5 h-5" />, label: 'Proposals', href: '/finabridge/proposals' },
+  ] : [];
+
+  const accountMenuItems: MenuItem[] = [
+    { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
+    { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/profile' },
+    { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
+  ];
+
+  if (user?.kycStatus === 'Not Started' || user?.kycStatus === 'Rejected') {
+    mainMenuItems.splice(1, 0, { 
       icon: <ShieldCheck className="w-5 h-5" />, 
-      label: 'Complete Verification', 
+      label: 'Verify Identity', 
       href: '/kyc' 
     });
   }
 
   const isActive = (path: string) => location === path;
 
+  const renderMenuItem = (item: MenuItem) => (
+    <Link key={item.href} href={item.href}>
+      <div 
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
+          isActive(item.href) 
+            ? 'bg-primary text-primary-foreground shadow-md' 
+            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+        }`}
+        onClick={() => setIsOpen(false)}
+        data-testid={`sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
+      >
+        <div className={isActive(item.href) ? 'text-primary-foreground' : ''}>
+          {item.icon}
+        </div>
+        <span className="font-medium">{item.label}</span>
+      </div>
+    </Link>
+  );
+
   return (
     <>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
           data-testid="sidebar-overlay"
         />
       )}
 
       <aside 
-        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-72 bg-background border-r border-border z-50 transition-transform duration-300 lg:translate-x-0 shadow-xl lg:shadow-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         data-testid="sidebar"
       >
         <div className="flex flex-col h-full">
           
-          <div className="h-20 flex items-center px-6 border-b border-white/10">
+          <div className="h-20 flex items-center justify-between px-6 border-b border-border">
             <Link href="/">
-              <div className="flex items-center gap-2 cursor-pointer group" data-testid="sidebar-logo">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] rounded-xl group-hover:scale-105 transition-transform" />
-                <span className="text-xl font-bold tracking-tight text-white">Finatrades</span>
+              <div className="flex items-center gap-3 cursor-pointer" data-testid="sidebar-logo">
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-lg">F</span>
+                </div>
+                <span className="text-xl font-bold text-foreground">Finatrades</span>
               </div>
             </Link>
+            <button 
+              className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsOpen(false)}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 custom-scrollbar">
-            {menuGroups.map((group, index) => (
-              <div key={group.title} className="space-y-1">
-                {index > 0 && (
-                  <div className="h-px bg-white/10 mx-2 mb-3" />
-                )}
-                <button
-                  onClick={() => toggleGroup(group.title)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37]/80 hover:text-[#D4AF37] transition-colors bg-white/5 rounded-lg"
-                  data-testid={`sidebar-group-${group.title.toLowerCase().replace(' ', '-')}`}
-                >
-                  <span>{group.title}</span>
-                  <ChevronDown 
-                    className={`w-4 h-4 transition-transform duration-200 ${
-                      expandedGroups[group.title] ? 'rotate-180' : ''
-                    }`} 
-                  />
-                </button>
-                
-                <AnimatePresence initial={false}>
-                  {expandedGroups[group.title] && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden pl-2 mt-1 space-y-0.5"
-                    >
-                      {group.items.map((item) => (
-                        <Link key={item.href} href={item.href}>
-                          <div 
-                            className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all cursor-pointer group ${
-                              isActive(item.href) 
-                                ? 'bg-[#D4AF37]/20 text-[#D4AF37] border-l-2 border-[#D4AF37]' 
-                                : 'text-white/70 hover:text-white hover:bg-white/10'
-                            }`}
-                            onClick={() => setIsOpen(false)}
-                            data-testid={`sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
-                          >
-                            <div className={`${isActive(item.href) ? 'text-[#D4AF37]' : 'text-white/60 group-hover:text-white'}`}>
-                              {item.icon}
-                            </div>
-                            <span className="font-medium text-sm">{item.label}</span>
-                          </div>
-                        </Link>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-6 custom-scrollbar">
+            <div className="space-y-1">
+              <p className="px-4 text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                Main Menu
+              </p>
+              {mainMenuItems.map(renderMenuItem)}
+            </div>
+
+            {businessMenuItems.length > 0 && (
+              <div className="space-y-1">
+                <p className="px-4 text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                  Business
+                </p>
+                {businessMenuItems.map(renderMenuItem)}
               </div>
-            ))}
+            )}
+
+            <div className="space-y-1">
+              <p className="px-4 text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                Account
+              </p>
+              {accountMenuItems.map(renderMenuItem)}
+            </div>
           </div>
 
-          <div className="p-4 border-t border-white/10">
-            <div className="mb-4 p-3 rounded-xl bg-white/5 border border-white/10">
+          <div className="p-4 border-t border-border">
+            <div className="mb-4 p-4 rounded-xl bg-secondary border border-primary/20">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] flex items-center justify-center text-slate-900 font-bold">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{user?.firstName} {user?.lastName}</p>
-                  <p className="text-xs text-white/50 capitalize">{accountType} Account</p>
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-primary capitalize font-medium">
+                    {accountType} Account
+                  </p>
                 </div>
               </div>
             </div>
             <Button 
               variant="ghost" 
-              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               onClick={logout}
               data-testid="button-logout"
             >
