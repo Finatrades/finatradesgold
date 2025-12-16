@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import QRScanner from '../QRScanner';
 
 const PAYMENT_REASONS = [
   'Buying Gold / Precious Metals',
@@ -86,15 +87,16 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
   const numericAmount = parseFloat(amount) || 0;
 
-  const handleSearch = async () => {
-    if (!identifier.trim()) return;
+  const handleSearch = async (searchIdentifier?: string) => {
+    const searchValue = searchIdentifier || identifier;
+    if (!searchValue.trim()) return;
     
     setIsSearching(true);
     setSearchError('');
     setFoundUser(null);
     
     try {
-      const res = await apiRequest('GET', `/api/finapay/search-user?identifier=${encodeURIComponent(identifier.trim())}`);
+      const res = await apiRequest('GET', `/api/finapay/search-user?identifier=${encodeURIComponent(searchValue.trim())}`);
       const data = await res.json();
       
       if (data.user) {
@@ -102,6 +104,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
           setSearchError("You cannot send money to yourself");
         } else {
           setFoundUser(data.user);
+          toast.success(`Found user: ${data.user.firstName} ${data.user.lastName}`);
         }
       }
     } catch (error) {
@@ -110,6 +113,12 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setIsSearching(false);
     }
   };
+
+  const handleQRScan = useCallback((scannedData: string) => {
+    setIdentifier(scannedData);
+    toast.info(`Scanned: ${scannedData}`, { duration: 2000 });
+    handleSearch(scannedData);
+  }, [user]);
 
   const handleConfirmSend = async () => {
     if (!user || !foundUser || numericAmount <= 0) return;
@@ -191,7 +200,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                       />
                     </div>
-                    <Button onClick={handleSearch} disabled={isSearching || !identifier.trim()}>
+                    <Button onClick={() => handleSearch()} disabled={isSearching || !identifier.trim()}>
                       {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     </Button>
                   </div>
@@ -212,7 +221,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                       />
                     </div>
-                    <Button onClick={handleSearch} disabled={isSearching || !identifier.trim()}>
+                    <Button onClick={() => handleSearch()} disabled={isSearching || !identifier.trim()}>
                       {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     </Button>
                   </div>
@@ -220,11 +229,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               </TabsContent>
 
               <TabsContent value="qr_code" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-2 border-dashed border-border rounded-xl h-[200px] flex flex-col items-center justify-center">
-                  <Scan className="w-12 h-12 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground text-sm font-medium">Scan recipient's QR code</p>
-                  <p className="text-xs text-muted-foreground mt-1">Camera access required</p>
-                </div>
+                <QRScanner 
+                  onScan={handleQRScan} 
+                  isActive={isOpen && activeTab === 'qr_code'}
+                />
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Or enter Finatrades ID from QR</Label>
                   <div className="flex gap-2">
@@ -233,8 +241,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       className="bg-background border-input uppercase"
                       value={identifier}
                       onChange={(e) => { setIdentifier(e.target.value.toUpperCase()); setFoundUser(null); setSearchError(''); }}
+                      data-testid="input-qr-finatrades-id"
                     />
-                    <Button onClick={handleSearch} disabled={isSearching || !identifier.trim()}>
+                    <Button onClick={() => handleSearch()} disabled={isSearching || !identifier.trim()} data-testid="button-search-qr-id">
                       {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     </Button>
                   </div>
