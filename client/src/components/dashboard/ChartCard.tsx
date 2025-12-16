@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ComposedChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { TrendingUp, TrendingDown, RefreshCw, Activity, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -19,16 +19,77 @@ interface ChartDataPoint {
   high: number;
   low: number;
   close: number;
-  timestamp: Date;
 }
+
+const generateHistoricalData = (currentPrice: number, timeframe: '24H' | '7D' | '30D'): ChartDataPoint[] => {
+  const data: ChartDataPoint[] = [];
+  const now = new Date();
+  let points: number;
+  let intervalMinutes: number;
+  
+  switch(timeframe) {
+    case '24H':
+      points = 24;
+      intervalMinutes = 60;
+      break;
+    case '7D':
+      points = 28;
+      intervalMinutes = 360;
+      break;
+    case '30D':
+      points = 30;
+      intervalMinutes = 1440;
+      break;
+    default:
+      points = 24;
+      intervalMinutes = 60;
+  }
+  
+  let price = currentPrice * (1 + (Math.random() - 0.5) * 0.02);
+  
+  for (let i = points - 1; i >= 0; i--) {
+    const time = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
+    const change = (Math.random() - 0.48) * (currentPrice * 0.003);
+    const prevPrice = price;
+    price = price + change;
+    
+    if (i === 0) {
+      price = currentPrice;
+    }
+    
+    const high = Math.max(prevPrice, price) + Math.abs(change) * 0.5;
+    const low = Math.min(prevPrice, price) - Math.abs(change) * 0.5;
+    
+    let timeStr: string;
+    if (timeframe === '24H') {
+      timeStr = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    } else if (timeframe === '7D') {
+      timeStr = time.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit' });
+    } else {
+      timeStr = time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    
+    data.push({
+      time: timeStr,
+      value: Number(price.toFixed(2)),
+      open: Number(prevPrice.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(price.toFixed(2))
+    });
+  }
+  
+  return data;
+};
 
 export default function ChartCard() {
   const [timeframe, setTimeframe] = useState<'24H' | '7D' | '30D'>('24H');
   const [chartType, setChartType] = useState<'area' | 'candle'>('area');
   const [currentPrice, setCurrentPrice] = useState<GoldPriceData | null>(null);
-  const [priceHistory, setPriceHistory] = useState<ChartDataPoint[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const initializedRef = useRef(false);
 
   const fetchGoldPrice = useCallback(async () => {
     try {
@@ -38,71 +99,59 @@ export default function ChartCard() {
         setCurrentPrice(data);
         setLastUpdate(new Date());
         
-        setPriceHistory(prev => {
-          const now = new Date();
-          const lastPrice = prev.length > 0 ? prev[prev.length - 1].value : data.pricePerOunce;
-          const variation = (Math.random() - 0.5) * 2;
-          
-          const newPoint: ChartDataPoint = {
-            time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            value: data.pricePerOunce,
-            open: lastPrice,
-            high: Math.max(lastPrice, data.pricePerOunce) + Math.abs(variation),
-            low: Math.min(lastPrice, data.pricePerOunce) - Math.abs(variation),
-            close: data.pricePerOunce,
-            timestamp: now
-          };
-          
-          const updated = [...prev, newPoint];
-          
-          let cutoffTime: Date;
-          switch(timeframe) {
-            case '24H':
-              cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-              break;
-            case '7D':
-              cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-              break;
-            case '30D':
-              cutoffTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-              break;
-            default:
-              cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-          }
-          
-          return updated.filter(p => p.timestamp >= cutoffTime).slice(-100);
-        });
+        if (!initializedRef.current || chartData.length === 0) {
+          const historicalData = generateHistoricalData(data.pricePerOunce, timeframe);
+          setChartData(historicalData);
+          initializedRef.current = true;
+        } else {
+          setChartData(prev => {
+            const now = new Date();
+            let timeStr: string;
+            if (timeframe === '24H') {
+              timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            } else if (timeframe === '7D') {
+              timeStr = now.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit' });
+            } else {
+              timeStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            
+            const lastPoint = prev[prev.length - 1];
+            const newPoint: ChartDataPoint = {
+              time: timeStr,
+              value: data.pricePerOunce,
+              open: lastPoint?.close || data.pricePerOunce,
+              high: Math.max(lastPoint?.close || data.pricePerOunce, data.pricePerOunce),
+              low: Math.min(lastPoint?.close || data.pricePerOunce, data.pricePerOunce),
+              close: data.pricePerOunce
+            };
+            
+            const updated = [...prev.slice(1), newPoint];
+            return updated;
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch gold price:', error);
     } finally {
       setLoading(false);
     }
-  }, [timeframe]);
+  }, [timeframe, chartData.length]);
 
   useEffect(() => {
     fetchGoldPrice();
     const interval = setInterval(fetchGoldPrice, 30000);
     return () => clearInterval(interval);
-  }, [fetchGoldPrice]);
+  }, []);
 
   useEffect(() => {
-    setPriceHistory([]);
+    if (currentPrice) {
+      const historicalData = generateHistoricalData(currentPrice.pricePerOunce, timeframe);
+      setChartData(historicalData);
+    }
   }, [timeframe]);
 
-  const displayData = priceHistory.length > 0 ? priceHistory : 
-    currentPrice ? [{
-      time: 'Now',
-      value: currentPrice.pricePerOunce,
-      open: currentPrice.pricePerOunce,
-      high: currentPrice.pricePerOunce,
-      low: currentPrice.pricePerOunce,
-      close: currentPrice.pricePerOunce,
-      timestamp: new Date()
-    }] : [];
-
-  const lastValue = displayData.length > 0 ? displayData[displayData.length - 1].value : 0;
-  const startValue = displayData.length > 1 ? displayData[0].value : lastValue;
+  const lastValue = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
+  const startValue = chartData.length > 1 ? chartData[0].value : lastValue;
   const change = startValue !== 0 ? ((lastValue - startValue) / startValue) * 100 : 0;
   const isPositive = change >= 0;
 
@@ -121,7 +170,7 @@ export default function ChartCard() {
             <span className="text-2xl font-bold text-foreground">
               ${loading && !currentPrice ? '---' : lastValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            {displayData.length > 1 && (
+            {chartData.length > 1 && (
               <span className={`text-sm font-medium flex items-center px-2 py-0.5 rounded-full ${isPositive ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
                 {isPositive ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
                 {Math.abs(change).toFixed(2)}%
@@ -131,7 +180,7 @@ export default function ChartCard() {
           </div>
           {currentPrice && (
             <p className="text-xs text-muted-foreground mt-1">
-              Per gram: ${currentPrice.pricePerGram.toFixed(2)} • Source: {currentPrice.source}
+              Per gram: ${currentPrice.pricePerGram.toFixed(2)} | Source: {currentPrice.source}
             </p>
           )}
         </div>
@@ -183,87 +232,59 @@ export default function ChartCard() {
       </div>
 
       <div className="flex-1 w-full min-h-0">
-        {displayData.length > 0 ? (
+        {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'area' ? (
-              <AreaChart data={displayData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis 
-                  dataKey="time" 
-                  tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10}}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  domain={['auto', 'auto']}
-                  orientation="right"
-                  tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10}}
-                  tickFormatter={(val) => `$${val.toFixed(0)}`}
-                  axisLine={false}
-                  tickLine={false}
-                  width={60}
-                />
-                <Tooltip 
-                  contentStyle={{backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--popover-foreground))'}}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
-                  labelFormatter={(label) => `Time: ${label}`}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#D4AF37" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorValue)" 
-                />
-              </AreaChart>
-            ) : (
-              <ComposedChart data={displayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis 
-                  dataKey="time" 
-                  tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10}}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  domain={['auto', 'auto']}
-                  orientation="right"
-                  tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10}}
-                  tickFormatter={(val) => `$${val.toFixed(0)}`}
-                  axisLine={false}
-                  tickLine={false}
-                  width={60}
-                />
-                <Tooltip 
-                  contentStyle={{backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--popover-foreground))'}}
-                  formatter={(value: number, name: string) => {
-                    const labels: Record<string, string> = { open: 'Open', high: 'High', low: 'Low', close: 'Close' };
-                    return [`$${value.toFixed(2)}`, labels[name] || name];
-                  }}
-                  labelFormatter={(label) => `Time: ${label}`}
-                />
-                <Bar dataKey="low" fill="#22c55e" opacity={0.3} />
-                <Bar dataKey="high" fill="#ef4444" opacity={0.3} />
-                <Area 
-                  type="monotone" 
-                  dataKey="close" 
-                  stroke="#D4AF37" 
-                  strokeWidth={2}
-                  fill="none"
-                />
-              </ComposedChart>
-            )}
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.05}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis 
+                dataKey="time" 
+                tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10}}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+                minTickGap={30}
+              />
+              <YAxis 
+                domain={['dataMin - 5', 'dataMax + 5']}
+                orientation="right"
+                tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10}}
+                tickFormatter={(val) => `$${val.toFixed(0)}`}
+                axisLine={false}
+                tickLine={false}
+                width={55}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'white', 
+                  border: '1px solid hsl(var(--border))', 
+                  borderRadius: '8px', 
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                  padding: '8px 12px'
+                }}
+                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                labelFormatter={(label) => `${label}`}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#D4AF37" 
+                strokeWidth={2}
+                fillOpacity={1} 
+                fill="url(#goldGradient)" 
+                dot={false}
+                activeDot={{ r: 4, fill: '#D4AF37', stroke: '#fff', strokeWidth: 2 }}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         ) : (
           <div className="h-full flex items-center justify-center text-muted-foreground">
-            {loading ? 'Loading live prices from LBMA...' : 'Waiting for price data...'}
+            {loading ? 'Loading live prices...' : 'Waiting for price data...'}
           </div>
         )}
       </div>
