@@ -138,7 +138,7 @@ export function useDashboardData(): DashboardData {
   const rawTransactions = txData?.transactions || [];
   const depositRequests = depositData?.requests || [];
   const bnslPlans = bnslData?.plans || [];
-  const goldPrice = priceData?.price || 85.00;
+  const goldPrice = priceData?.pricePerGram || 0;
 
   // Convert deposit requests to transaction-like format and merge
   const depositTransactions = depositRequests.map((dep: any) => ({
