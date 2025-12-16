@@ -551,6 +551,46 @@ export default function FinaVaultManagement() {
                   </>
                 )}
 
+                {selectedDeposit.documents && selectedDeposit.documents.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Uploaded Documents</Label>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {selectedDeposit.documents.map((doc: any, idx: number) => (
+                          <div key={idx} className="border rounded-lg p-2 bg-gray-50">
+                            {typeof doc === 'string' && doc.startsWith('data:image') ? (
+                              <img 
+                                src={doc} 
+                                alt={`Document ${idx + 1}`}
+                                className="max-w-full max-h-32 object-contain cursor-pointer rounded mx-auto"
+                                onClick={() => {
+                                  const newWindow = window.open('', '_blank');
+                                  if (newWindow) {
+                                    newWindow.document.write(`
+                                      <html>
+                                        <head><title>Document ${idx + 1}</title></head>
+                                        <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">
+                                          <img src="${doc}" style="max-width:100%;max-height:100vh;object-fit:contain;" />
+                                        </body>
+                                      </html>
+                                    `);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <a href={doc.url || doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm">
+                                {doc.name || `Document ${idx + 1}`}
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-center text-gray-400 mt-1">Click images to view full size</p>
+                    </div>
+                  </>
+                )}
+
                 {selectedDeposit.status === 'Submitted' || selectedDeposit.status === 'In Review' ? (
                   <>
                     <Separator />
