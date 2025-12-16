@@ -92,10 +92,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Menu className="w-5 h-5" />
               </button>
               
-              <div className="hidden sm:flex items-center bg-secondary border border-primary/20 rounded-full px-4 py-1.5">
-                <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
-                <span className="text-xs text-muted-foreground font-medium">Gold Spot: <span className="text-primary font-semibold">2,350.40 USD/oz</span></span>
-              </div>
             </div>
 
             <div className="flex items-center gap-3">
