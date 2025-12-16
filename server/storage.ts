@@ -4,7 +4,7 @@ import {
   bnslPlanTemplates, bnslTemplateVariants, bnslAgreements,
   tradeCases, tradeDocuments,
   tradeRequests, tradeProposals, forwardedProposals, tradeConfirmations,
-  finabridgeWallets, settlementHolds,
+  finabridgeWallets, settlementHolds, dealRooms, dealRoomMessages,
   chatSessions, chatMessages, auditLogs, certificates,
   contentPages, contentBlocks, templates, mediaAssets,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
@@ -39,6 +39,8 @@ import {
   type TradeConfirmation, type InsertTradeConfirmation,
   type FinabridgeWallet, type InsertFinabridgeWallet,
   type SettlementHold, type InsertSettlementHold,
+  type DealRoom, type InsertDealRoom,
+  type DealRoomMessage, type InsertDealRoomMessage,
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
   type AuditLog, type InsertAuditLog,
@@ -320,6 +322,20 @@ export interface IStorage {
   getExporterSettlementHolds(exporterUserId: string): Promise<SettlementHold[]>;
   createSettlementHold(hold: InsertSettlementHold): Promise<SettlementHold>;
   updateSettlementHold(id: string, updates: Partial<SettlementHold>): Promise<SettlementHold | undefined>;
+  
+  // Deal Rooms
+  getDealRoom(id: string): Promise<DealRoom | undefined>;
+  getDealRoomByTradeRequest(tradeRequestId: string): Promise<DealRoom | undefined>;
+  getUserDealRooms(userId: string): Promise<DealRoom[]>;
+  createDealRoom(room: InsertDealRoom): Promise<DealRoom>;
+  updateDealRoom(id: string, updates: Partial<DealRoom>): Promise<DealRoom | undefined>;
+  getAllDealRooms(): Promise<DealRoom[]>;
+  
+  // Deal Room Messages
+  getDealRoomMessages(dealRoomId: string): Promise<DealRoomMessage[]>;
+  createDealRoomMessage(message: InsertDealRoomMessage): Promise<DealRoomMessage>;
+  markDealRoomMessagesAsRead(dealRoomId: string, userId: string): Promise<void>;
+  getUnreadDealRoomMessageCount(dealRoomId: string, userId: string): Promise<number>;
   
   // Chat
   getChatSession(userId: string): Promise<ChatSession | undefined>;
@@ -1016,6 +1032,73 @@ export class DatabaseStorage implements IStorage {
   async updateSettlementHold(id: string, updates: Partial<SettlementHold>): Promise<SettlementHold | undefined> {
     const [hold] = await db.update(settlementHolds).set({ ...updates, updatedAt: new Date() }).where(eq(settlementHolds.id, id)).returning();
     return hold || undefined;
+  }
+
+  // Deal Rooms
+  async getDealRoom(id: string): Promise<DealRoom | undefined> {
+    const [room] = await db.select().from(dealRooms).where(eq(dealRooms.id, id));
+    return room || undefined;
+  }
+
+  async getDealRoomByTradeRequest(tradeRequestId: string): Promise<DealRoom | undefined> {
+    const [room] = await db.select().from(dealRooms).where(eq(dealRooms.tradeRequestId, tradeRequestId));
+    return room || undefined;
+  }
+
+  async getUserDealRooms(userId: string): Promise<DealRoom[]> {
+    return await db.select().from(dealRooms).where(
+      or(
+        eq(dealRooms.importerUserId, userId),
+        eq(dealRooms.exporterUserId, userId),
+        eq(dealRooms.assignedAdminId, userId)
+      )
+    ).orderBy(desc(dealRooms.updatedAt));
+  }
+
+  async createDealRoom(insertRoom: InsertDealRoom): Promise<DealRoom> {
+    const [room] = await db.insert(dealRooms).values(insertRoom).returning();
+    return room;
+  }
+
+  async updateDealRoom(id: string, updates: Partial<DealRoom>): Promise<DealRoom | undefined> {
+    const [room] = await db.update(dealRooms).set({ ...updates, updatedAt: new Date() }).where(eq(dealRooms.id, id)).returning();
+    return room || undefined;
+  }
+
+  async getAllDealRooms(): Promise<DealRoom[]> {
+    return await db.select().from(dealRooms).orderBy(desc(dealRooms.createdAt));
+  }
+
+  // Deal Room Messages
+  async getDealRoomMessages(dealRoomId: string): Promise<DealRoomMessage[]> {
+    return await db.select().from(dealRoomMessages).where(eq(dealRoomMessages.dealRoomId, dealRoomId)).orderBy(dealRoomMessages.createdAt);
+  }
+
+  async createDealRoomMessage(insertMessage: InsertDealRoomMessage): Promise<DealRoomMessage> {
+    const [message] = await db.insert(dealRoomMessages).values(insertMessage).returning();
+    await db.update(dealRooms).set({ updatedAt: new Date() }).where(eq(dealRooms.id, insertMessage.dealRoomId));
+    return message;
+  }
+
+  async markDealRoomMessagesAsRead(dealRoomId: string, userId: string): Promise<void> {
+    await db.update(dealRoomMessages).set({ isRead: true }).where(
+      and(
+        eq(dealRoomMessages.dealRoomId, dealRoomId),
+        eq(dealRoomMessages.isRead, false),
+        sql`${dealRoomMessages.senderUserId} != ${userId}`
+      )
+    );
+  }
+
+  async getUnreadDealRoomMessageCount(dealRoomId: string, userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(dealRoomMessages).where(
+      and(
+        eq(dealRoomMessages.dealRoomId, dealRoomId),
+        eq(dealRoomMessages.isRead, false),
+        sql`${dealRoomMessages.senderUserId} != ${userId}`
+      )
+    );
+    return result[0]?.count || 0;
   }
 
   // Chat
