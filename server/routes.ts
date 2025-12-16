@@ -8306,5 +8306,83 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // USER NOTIFICATIONS
+  // ============================================
+
+  // Get user's notifications
+  app.get("/api/notifications/:userId", async (req, res) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.params.userId);
+      res.json({ notifications });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get notifications" });
+    }
+  });
+
+  // Create notification (internal use)
+  app.post("/api/notifications", async (req, res) => {
+    try {
+      const { userId, title, message, type, link } = req.body;
+      const notification = await storage.createNotification({
+        userId,
+        title,
+        message,
+        type: type || 'info',
+        link,
+        read: false,
+      });
+      res.json({ notification });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create notification" });
+    }
+  });
+
+  // Mark notification as read
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const notification = await storage.markNotificationRead(req.params.id);
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      res.json({ notification });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.patch("/api/notifications/:userId/read-all", async (req, res) => {
+    try {
+      await storage.markAllNotificationsRead(req.params.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark notifications as read" });
+    }
+  });
+
+  // Delete notification
+  app.delete("/api/notifications/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteNotification(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // Clear all notifications for user
+  app.delete("/api/notifications/user/:userId", async (req, res) => {
+    try {
+      await storage.deleteAllNotifications(req.params.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear notifications" });
+    }
+  });
+
   return httpServer;
 }
