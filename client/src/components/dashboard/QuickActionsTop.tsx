@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
+import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -10,60 +10,45 @@ const actions = [
   {
     title: 'Add Fund',
     path: '',
-    icon: <Plus className="w-5 h-5" />,
-    color: 'text-primary',
-    bg: 'bg-primary/10 hover:bg-primary/20',
-    border: 'border-primary/20',
+    icon: <Plus className="w-4 h-4" />,
+    gradient: 'from-emerald-500 to-green-600',
+    hoverGradient: 'hover:from-emerald-600 hover:to-green-700',
     requiresKyc: true,
     isModal: true
   },
   {
     title: 'Buy Gold',
     path: '/finapay',
-    icon: <ShoppingCart className="w-5 h-5" />,
-    color: 'text-secondary',
-    bg: 'bg-secondary/10 hover:bg-secondary/20',
-    border: 'border-secondary/30',
+    icon: <ShoppingCart className="w-4 h-4" />,
+    gradient: 'from-amber-400 to-yellow-500',
+    hoverGradient: 'hover:from-amber-500 hover:to-yellow-600',
     requiresKyc: true,
     isModal: false
   },
   {
     title: 'Deposit Gold',
     path: '/finavault?tab=new-request',
-    icon: <Database className="w-5 h-5" />,
-    color: 'text-secondary',
-    bg: 'bg-secondary/10 hover:bg-secondary/20',
-    border: 'border-secondary/30',
+    icon: <Database className="w-4 h-4" />,
+    gradient: 'from-teal-500 to-cyan-600',
+    hoverGradient: 'hover:from-teal-600 hover:to-cyan-700',
     requiresKyc: true,
     isModal: false
   },
   {
     title: 'Send Payment',
     path: '/finapay',
-    icon: <Send className="w-5 h-5" />,
-    color: 'text-orange-600',
-    bg: 'bg-orange-500/10 hover:bg-orange-500/20',
-    border: 'border-orange-500/30',
+    icon: <Send className="w-4 h-4" />,
+    gradient: 'from-orange-500 to-red-500',
+    hoverGradient: 'hover:from-orange-600 hover:to-red-600',
     requiresKyc: true,
     isModal: false
   },
   {
     title: 'Request Payment',
     path: '/finapay',
-    icon: <ArrowDownLeft className="w-5 h-5" />,
-    color: 'text-accent',
-    bg: 'bg-accent/10 hover:bg-accent/20',
-    border: 'border-accent/30',
-    requiresKyc: true,
-    isModal: false
-  },
-  {
-    title: 'BNSL',
-    path: '/bnsl',
-    icon: <TrendingUp className="w-5 h-5" />,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20',
-    border: 'border-emerald-500/30',
+    icon: <ArrowDownLeft className="w-4 h-4" />,
+    gradient: 'from-pink-500 to-rose-500',
+    hoverGradient: 'hover:from-pink-600 hover:to-rose-600',
     requiresKyc: true,
     isModal: false
   }
@@ -105,42 +90,36 @@ export default function QuickActionsTop() {
 
   return (
     <>
-      <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
-        <div className="flex gap-4 min-w-max">
-          {actions.map((action, index) => {
-            const isLocked = action.requiresKyc && !isKycApproved;
-            
-            return (
-              <motion.button
-                key={action.title}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ scale: isLocked ? 1 : 1.02, y: isLocked ? 0 : -2 }}
-                whileTap={{ scale: isLocked ? 1 : 0.98 }}
-                onClick={() => handleAction(action)}
-                className={`flex items-center gap-3 px-6 py-4 rounded-xl border backdrop-blur-sm transition-all min-w-[180px] bg-white shadow-sm relative ${
-                  isLocked 
-                    ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200' 
-                    : `${action.bg} ${action.border}`
-                }`}
-                data-testid={`button-action-${action.title.toLowerCase().replace(' ', '-')}`}
-              >
-                <div className={`p-2 rounded-lg bg-white/50 ${isLocked ? 'text-gray-400' : action.color}`}>
-                  {action.icon}
-                </div>
-                <span className={`font-semibold text-sm whitespace-nowrap ${isLocked ? 'text-gray-400' : 'text-foreground'}`}>
-                  {action.title}
-                </span>
-                {isLocked && (
-                  <div className="absolute top-2 right-2">
-                    <Lock className="w-3 h-3 text-gray-400" />
-                  </div>
-                )}
-              </motion.button>
-            );
-          })}
-        </div>
+      <div className="flex flex-wrap gap-3">
+        {actions.map((action, index) => {
+          const isLocked = action.requiresKyc && !isKycApproved;
+          
+          return (
+            <motion.button
+              key={action.title}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              whileHover={{ scale: isLocked ? 1 : 1.02 }}
+              whileTap={{ scale: isLocked ? 1 : 0.98 }}
+              onClick={() => handleAction(action)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium text-sm shadow-md transition-all relative ${
+                isLocked 
+                  ? 'bg-gray-400 cursor-not-allowed opacity-60' 
+                  : `bg-gradient-to-r ${action.gradient} ${action.hoverGradient}`
+              }`}
+              data-testid={`button-action-${action.title.toLowerCase().replace(' ', '-')}`}
+            >
+              <span className="flex items-center justify-center w-5 h-5 bg-white/20 rounded">
+                {action.icon}
+              </span>
+              <span className="whitespace-nowrap">{action.title}</span>
+              {isLocked && (
+                <Lock className="w-3 h-3 ml-1 opacity-70" />
+              )}
+            </motion.button>
+          );
+        })}
       </div>
       
       <DepositModal 

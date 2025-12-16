@@ -53,6 +53,7 @@ interface DashboardData {
     totalPortfolioUsd: number;
     bnslLockedGrams: number;
     bnslTotalProfit: number;
+    activeBnslPlans: number;
   };
 }
 
@@ -176,6 +177,7 @@ export function useDashboardData(): DashboardData {
     .reduce((sum: number, p: BnslPlan) => sum + parseFloat(p.paidMarginUsd || '0'), 0);
 
   const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance;
+  const activeBnslPlans = bnslPlans.filter((p: BnslPlan) => p.status === 'Active').length;
 
   return {
     wallet,
@@ -194,6 +196,7 @@ export function useDashboardData(): DashboardData {
       totalPortfolioUsd,
       bnslLockedGrams,
       bnslTotalProfit,
+      activeBnslPlans,
     },
   };
 }
