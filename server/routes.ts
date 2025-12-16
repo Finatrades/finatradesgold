@@ -5063,6 +5063,33 @@ export async function registerRoutes(
       
       res.json({ proposal });
     } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create proposal" });
+    }
+  });
+
+  // Update exporter proposal (for modification resubmission)
+  app.put("/api/finabridge/exporter/proposals/:id", async (req, res) => {
+    try {
+      const proposal = await storage.getTradeProposal(req.params.id);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      
+      // Only allow update if status is 'Modification Requested'
+      if (proposal.status !== 'Modification Requested') {
+        return res.status(400).json({ message: "Proposal cannot be modified at this stage" });
+      }
+      
+      const updateData = {
+        ...req.body,
+        status: 'Submitted' as const, // Reset to Submitted after modification
+        modificationRequest: null, // Clear the modification request
+      };
+      
+      const updated = await storage.updateTradeProposal(req.params.id, updateData);
+      
+      res.json({ proposal });
+    } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit proposal" });
     }
   });

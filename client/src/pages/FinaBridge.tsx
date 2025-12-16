@@ -54,6 +54,19 @@ interface TradeProposal {
   notes: string | null;
   status: string;
   createdAt: string;
+  portOfLoading?: string | null;
+  shippingMethod?: string | null;
+  incoterms?: string | null;
+  paymentTerms?: string | null;
+  estimatedDeliveryDate?: string | null;
+  insuranceIncluded?: boolean | null;
+  certificationsAvailable?: string | null;
+  companyName?: string | null;
+  companyRegistration?: string | null;
+  contactPerson?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  modificationRequest?: string | null;
   exporter?: { finatradesId: string | null };
   tradeRequest?: {
     tradeRefId: string;
@@ -167,6 +180,8 @@ export default function FinaBridge() {
   });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [proposalFiles, setProposalFiles] = useState<File[]>([]);
+  const [editingProposal, setEditingProposal] = useState<TradeProposal | null>(null);
+  const [showEditProposalDialog, setShowEditProposalDialog] = useState(false);
   
   const [proposalForm, setProposalForm] = useState({
     quotePrice: '',
@@ -408,6 +423,60 @@ export default function FinaBridge() {
       fetchExporterData();
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to submit proposal', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateProposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingProposal) return;
+    
+    setSubmitting(true);
+    try {
+      const payload = {
+        quotePrice: proposalForm.quotePrice,
+        timelineDays: parseInt(proposalForm.timelineDays),
+        notes: proposalForm.notes || null,
+        portOfLoading: proposalForm.portOfLoading || null,
+        shippingMethod: proposalForm.shippingMethod || null,
+        incoterms: proposalForm.incoterms || null,
+        paymentTerms: proposalForm.paymentTerms || null,
+        estimatedDeliveryDate: proposalForm.estimatedDeliveryDate || null,
+        insuranceIncluded: proposalForm.insuranceIncluded,
+        certificationsAvailable: proposalForm.certificationsAvailable || null,
+        companyName: proposalForm.companyName || null,
+        companyRegistration: proposalForm.companyRegistration || null,
+        contactPerson: proposalForm.contactPerson || null,
+        contactEmail: proposalForm.contactEmail || null,
+        contactPhone: proposalForm.contactPhone || null,
+      };
+
+      await apiRequest('PUT', `/api/finabridge/exporter/proposals/${editingProposal.id}`, payload);
+      
+      toast({ title: 'Proposal Updated', description: 'Your proposal has been resubmitted for review' });
+      setShowEditProposalDialog(false);
+      setEditingProposal(null);
+      setProposalForm({ 
+        quotePrice: '', 
+        timelineDays: '', 
+        portOfLoading: '',
+        shippingMethod: 'Sea',
+        incoterms: 'FOB',
+        paymentTerms: '',
+        estimatedDeliveryDate: '',
+        insuranceIncluded: false,
+        certificationsAvailable: '',
+        companyName: '',
+        companyRegistration: '',
+        contactPerson: '',
+        contactEmail: '',
+        contactPhone: '',
+        notes: '' 
+      });
+      fetchExporterData();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update proposal', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -1497,12 +1566,12 @@ export default function FinaBridge() {
               ) : (
                 <div className="space-y-4">
                   {myProposals.map((proposal) => (
-                    <Card key={proposal.id} className="bg-white border">
+                    <Card key={proposal.id} className={`bg-white border ${proposal.status === 'Modification Requested' ? 'border-amber-300 ring-2 ring-amber-100' : ''}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-2 bg-secondary/10 rounded-lg">
-                              <Send className="w-5 h-5 text-secondary" />
+                            <div className={`p-2 rounded-lg ${proposal.status === 'Modification Requested' ? 'bg-amber-100' : 'bg-secondary/10'}`}>
+                              <Send className={`w-5 h-5 ${proposal.status === 'Modification Requested' ? 'text-amber-600' : 'text-secondary'}`} />
                             </div>
                             <div>
                               <h3 className="font-bold">{proposal.tradeRequest?.tradeRefId}</h3>
@@ -1516,8 +1585,43 @@ export default function FinaBridge() {
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(proposal.status)}`}>
                               {proposal.status}
                             </span>
+                            {proposal.status === 'Modification Requested' && (
+                              <Button 
+                                size="sm"
+                                onClick={() => {
+                                  setEditingProposal(proposal);
+                                  setProposalForm({
+                                    quotePrice: proposal.quotePrice,
+                                    timelineDays: String(proposal.timelineDays),
+                                    portOfLoading: proposal.portOfLoading || '',
+                                    shippingMethod: proposal.shippingMethod || 'Sea',
+                                    incoterms: proposal.incoterms || 'FOB',
+                                    paymentTerms: proposal.paymentTerms || '',
+                                    estimatedDeliveryDate: proposal.estimatedDeliveryDate || '',
+                                    insuranceIncluded: proposal.insuranceIncluded || false,
+                                    certificationsAvailable: proposal.certificationsAvailable || '',
+                                    companyName: proposal.companyName || '',
+                                    companyRegistration: proposal.companyRegistration || '',
+                                    contactPerson: proposal.contactPerson || '',
+                                    contactEmail: proposal.contactEmail || '',
+                                    contactPhone: proposal.contactPhone || '',
+                                    notes: proposal.notes || ''
+                                  });
+                                  setShowEditProposalDialog(true);
+                                }}
+                                data-testid={`button-edit-proposal-${proposal.id}`}
+                              >
+                                Edit & Resubmit
+                              </Button>
+                            )}
                           </div>
                         </div>
+                        {proposal.status === 'Modification Requested' && proposal.modificationRequest && (
+                          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-xs font-medium text-amber-800 mb-1">Admin Requested Changes:</p>
+                            <p className="text-sm text-amber-700">{proposal.modificationRequest}</p>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -1792,6 +1896,118 @@ export default function FinaBridge() {
                 <Button type="submit" disabled={submitting} data-testid="button-confirm-proposal">
                   {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Submit Proposal
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEditProposalDialog} onOpenChange={(open) => { if (!open) { setShowEditProposalDialog(false); setEditingProposal(null); } }}>
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit & Resubmit Proposal</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Update your proposal and resubmit for review
+              </p>
+            </DialogHeader>
+            {editingProposal?.modificationRequest && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-xs font-medium text-amber-800 mb-1">Admin Requested Changes:</p>
+                <p className="text-sm text-amber-700">{editingProposal.modificationRequest}</p>
+              </div>
+            )}
+            <form onSubmit={handleUpdateProposal} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Quote Price (USD) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={proposalForm.quotePrice}
+                    onChange={(e) => setProposalForm({ ...proposalForm, quotePrice: e.target.value })}
+                    className="w-full p-2 border rounded-lg"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Timeline (Days) *</label>
+                  <input
+                    type="number"
+                    value={proposalForm.timelineDays}
+                    onChange={(e) => setProposalForm({ ...proposalForm, timelineDays: e.target.value })}
+                    className="w-full p-2 border rounded-lg"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Port of Loading</label>
+                  <input
+                    type="text"
+                    value={proposalForm.portOfLoading}
+                    onChange={(e) => setProposalForm({ ...proposalForm, portOfLoading: e.target.value })}
+                    className="w-full p-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Shipping Method</label>
+                  <select
+                    value={proposalForm.shippingMethod}
+                    onChange={(e) => setProposalForm({ ...proposalForm, shippingMethod: e.target.value })}
+                    className="w-full p-2 border rounded-lg text-sm"
+                  >
+                    <option value="Sea">Sea Freight</option>
+                    <option value="Air">Air Freight</option>
+                    <option value="Road">Road Transport</option>
+                    <option value="Rail">Rail</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Incoterms</label>
+                  <select
+                    value={proposalForm.incoterms}
+                    onChange={(e) => setProposalForm({ ...proposalForm, incoterms: e.target.value })}
+                    className="w-full p-2 border rounded-lg text-sm"
+                  >
+                    <option value="FOB">FOB</option>
+                    <option value="CIF">CIF</option>
+                    <option value="CFR">CFR</option>
+                    <option value="EXW">EXW</option>
+                    <option value="DDP">DDP</option>
+                  </select>
+                </div>
+                <div className="space-y-2 flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer mt-6">
+                    <input
+                      type="checkbox"
+                      checked={proposalForm.insuranceIncluded}
+                      onChange={(e) => setProposalForm({ ...proposalForm, insuranceIncluded: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Insurance Included</span>
+                  </label>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Additional Notes</label>
+                <textarea
+                  value={proposalForm.notes}
+                  onChange={(e) => setProposalForm({ ...proposalForm, notes: e.target.value })}
+                  className="w-full p-2 border rounded-lg text-sm"
+                  rows={3}
+                  placeholder="Additional details, response to modification request..."
+                />
+              </div>
+              <div className="flex justify-end gap-4 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => { setShowEditProposalDialog(false); setEditingProposal(null); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Resubmit Proposal
                 </Button>
               </div>
             </form>
