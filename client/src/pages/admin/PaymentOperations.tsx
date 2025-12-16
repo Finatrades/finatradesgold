@@ -13,6 +13,7 @@ import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, 
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
+import AdminOtpModal, { AdminActionType } from '@/components/admin/AdminOtpModal';
 
 interface Transaction {
   id: string;
@@ -124,6 +125,11 @@ export default function FinaPayManagement() {
   const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null);
   const [withdrawalAdminNotes, setWithdrawalAdminNotes] = useState('');
+  
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [otpActionType, setOtpActionType] = useState<AdminActionType>('deposit_approval');
+  const [otpTargetId, setOtpTargetId] = useState('');
+  const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
   
   const [bankAccountDialogOpen, setBankAccountDialogOpen] = useState(false);
   const [editingBankAccount, setEditingBankAccount] = useState<any>(null);
@@ -265,7 +271,7 @@ export default function FinaPayManagement() {
     setDepositDialogOpen(true);
   };
 
-  const handleDepositAction = async (action: 'Confirmed' | 'Rejected') => {
+  const executeDepositAction = async (action: 'Confirmed' | 'Rejected') => {
     if (!selectedDeposit) return;
     try {
       await apiRequest('PATCH', `/api/admin/deposit-requests/${selectedDeposit.id}`, {
@@ -281,13 +287,23 @@ export default function FinaPayManagement() {
     }
   };
 
+  const handleDepositAction = (action: 'Confirmed' | 'Rejected') => {
+    if (!selectedDeposit || !currentUser) return;
+    
+    const actionType: AdminActionType = action === 'Confirmed' ? 'deposit_approval' : 'deposit_rejection';
+    setOtpActionType(actionType);
+    setOtpTargetId(selectedDeposit.id);
+    setPendingAction(() => () => executeDepositAction(action));
+    setOtpModalOpen(true);
+  };
+
   const openWithdrawalDialog = (withdrawal: WithdrawalRequest) => {
     setSelectedWithdrawal(withdrawal);
     setWithdrawalAdminNotes(withdrawal.adminNotes || '');
     setWithdrawalDialogOpen(true);
   };
 
-  const handleWithdrawalAction = async (action: 'Processing' | 'Completed' | 'Rejected') => {
+  const executeWithdrawalAction = async (action: 'Processing' | 'Completed' | 'Rejected') => {
     if (!selectedWithdrawal) return;
     try {
       await apiRequest('PATCH', `/api/admin/withdrawal-requests/${selectedWithdrawal.id}`, {
@@ -301,6 +317,24 @@ export default function FinaPayManagement() {
     } catch (error) {
       toast.error(`Failed to update withdrawal`);
     }
+  };
+
+  const handleWithdrawalAction = (action: 'Processing' | 'Completed' | 'Rejected') => {
+    if (!selectedWithdrawal || !currentUser) return;
+    
+    const actionType: AdminActionType = action === 'Rejected' ? 'withdrawal_rejection' : 'withdrawal_approval';
+    setOtpActionType(actionType);
+    setOtpTargetId(selectedWithdrawal.id);
+    setPendingAction(() => () => executeWithdrawalAction(action));
+    setOtpModalOpen(true);
+  };
+
+  const handleOtpVerified = () => {
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+    setOtpModalOpen(false);
   };
 
   const pendingDeposits = depositRequests.filter(d => d.status === 'Pending');
@@ -1082,6 +1116,20 @@ export default function FinaPayManagement() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Admin OTP Verification Modal */}
+        <AdminOtpModal
+          isOpen={otpModalOpen}
+          onClose={() => {
+            setOtpModalOpen(false);
+            setPendingAction(null);
+          }}
+          onVerified={handleOtpVerified}
+          actionType={otpActionType}
+          targetId={otpTargetId}
+          targetType={otpActionType.includes('deposit') ? 'deposit_request' : 'withdrawal_request'}
+          adminUserId={currentUser?.id || ''}
+        />
       </div>
     </AdminLayout>
   );
