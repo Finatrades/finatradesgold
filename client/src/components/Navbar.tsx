@@ -110,7 +110,7 @@ export default function Navbar() {
                   <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 hover:bg-transparent" data-testid="button-user-menu">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Avatar className="h-11 w-11 border-2 border-orange-200 shadow-lg shadow-orange-100">
-                        <AvatarImage src="" alt={user.firstName} />
+                        {user.profilePhoto && <AvatarImage src={user.profilePhoto} alt={user.firstName} />}
                         <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold text-sm">
                           {user.firstName[0]}{user.lastName[0]}
                         </AvatarFallback>
