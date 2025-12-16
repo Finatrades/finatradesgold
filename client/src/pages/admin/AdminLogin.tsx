@@ -24,6 +24,8 @@ export default function AdminLogin() {
   useEffect(() => {
     if (user) {
       if (user.role === 'admin') {
+        // Set session flag for admin who's already logged in visiting this page
+        sessionStorage.setItem('adminPortalSession', 'true');
         setLocation('/admin/dashboard');
       } else {
         toast.error("Access Denied", {
