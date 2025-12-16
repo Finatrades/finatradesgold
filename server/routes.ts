@@ -1424,6 +1424,16 @@ export async function registerRoutes(
               dashboard_url: `${baseUrl}/dashboard`,
             });
             emailSent = emailResult.success;
+            
+            // Create in-app notification for KYC approval
+            await storage.createNotification({
+              userId: submission.userId,
+              title: 'KYC Approved',
+              message: 'Congratulations! Your identity verification has been approved. You now have full access to all Finatrades features.',
+              type: 'success',
+              link: '/dashboard',
+              read: false,
+            });
           } else if (req.body.status === 'Rejected') {
             const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.KYC_REJECTED, {
               user_name: `${user.firstName} ${user.lastName}`,
@@ -1431,6 +1441,16 @@ export async function registerRoutes(
               kyc_url: `${baseUrl}/kyc`,
             });
             emailSent = emailResult.success;
+            
+            // Create in-app notification for KYC rejection
+            await storage.createNotification({
+              userId: submission.userId,
+              title: 'KYC Rejected',
+              message: req.body.rejectionReason || 'Your verification documents could not be verified. Please resubmit with valid documents.',
+              type: 'error',
+              link: '/kyc',
+              read: false,
+            });
           }
         }
         
