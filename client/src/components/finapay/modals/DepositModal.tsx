@@ -45,6 +45,7 @@ interface CryptoWallet {
   memo: string | null;
   instructions: string | null;
   isActive: boolean;
+  qrCodeImage: string | null;
 }
 
 interface DepositModalProps {
@@ -81,6 +82,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [transactionHash, setTransactionHash] = useState('');
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [cryptoPaymentRequestId, setCryptoPaymentRequestId] = useState<string | null>(null);
+  const [cryptoReceipt, setCryptoReceipt] = useState<string | null>(null);
+  const [cryptoReceiptFileName, setCryptoReceiptFileName] = useState<string>('');
+  const cryptoReceiptInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -149,6 +153,24 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setTransactionHash('');
     setCopiedAddress(false);
     setCryptoPaymentRequestId(null);
+    setCryptoReceipt(null);
+    setCryptoReceiptFileName('');
+  };
+  
+  const handleCryptoReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCryptoReceipt(reader.result as string);
+        setCryptoReceiptFileName(file.name);
+      };
+      reader.readAsDataURL(file);
+    }
   };
   
   const fetchCryptoWallets = async () => {
@@ -220,6 +242,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transactionHash: transactionHash.trim(),
+          proofImageUrl: cryptoReceipt,
         }),
       });
       
@@ -931,6 +954,20 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
               
               <div className="space-y-3">
+                {/* QR Code Display */}
+                {selectedCryptoWallet.qrCodeImage && (
+                  <div className="flex justify-center">
+                    <div className="p-3 bg-white rounded-lg border">
+                      <img 
+                        src={selectedCryptoWallet.qrCodeImage} 
+                        alt="Scan to pay" 
+                        className="w-40 h-40 object-contain"
+                        data-testid="img-crypto-qrcode"
+                      />
+                    </div>
+                  </div>
+                )}
+                
                 <div>
                   <Label className="text-xs text-muted-foreground">Send to this address:</Label>
                   <div className="mt-1 p-3 bg-white rounded-lg border flex items-center gap-2">
@@ -996,6 +1033,55 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               />
               <p className="text-xs text-muted-foreground mt-1">
                 This is the unique ID of your transaction on the blockchain.
+              </p>
+            </div>
+            
+            {/* Receipt Upload Section */}
+            <div>
+              <Label>Transaction Receipt (Optional)</Label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                ref={cryptoReceiptInputRef}
+                onChange={handleCryptoReceiptUpload}
+                className="hidden"
+                data-testid="input-crypto-receipt"
+              />
+              <div className="mt-2">
+                {cryptoReceipt ? (
+                  <div className="border rounded-lg p-3 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm truncate max-w-[200px]">{cryptoReceiptFileName}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setCryptoReceipt(null);
+                          setCryptoReceiptFileName('');
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => cryptoReceiptInputRef.current?.click()}
+                    data-testid="button-upload-crypto-receipt"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Receipt Screenshot
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Upload a screenshot of your transaction for faster verification.
               </p>
             </div>
             
