@@ -89,6 +89,7 @@ export class NgeniusService {
     console.log('[NGenius] Mode:', this.config.mode);
 
     // NGenius token endpoint - per docs: Content-Type, Accept, and Authorization
+    // Important: NGenius requires an empty body in the POST request
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
@@ -96,6 +97,7 @@ export class NgeniusService {
         'Content-Type': 'application/vnd.ni-identity.v1+json',
         'Authorization': authHeader,
       },
+      body: '',
     });
 
     if (!response.ok) {
