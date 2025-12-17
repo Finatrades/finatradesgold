@@ -56,10 +56,10 @@ function formatDate(dateString: string): string {
 }
 
 export default function TransactionsTable({ transactions = [], goldPrice = 85 }: TransactionsTableProps) {
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = transactions.slice(0, 10);
 
   return (
-    <Card className="p-6 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 border border-white/50 dark:border-zinc-800/50 h-[400px] flex flex-col rounded-2xl">
+    <Card className="p-6 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 border border-white/50 dark:border-zinc-800/50 min-h-[300px] max-h-[450px] flex flex-col rounded-2xl">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
         <Link href="/finapay">
