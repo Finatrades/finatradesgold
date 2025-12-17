@@ -20,6 +20,7 @@ import {
   DollarSign,
   UserCog,
   Receipt,
+  Mail,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -94,6 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { icon: <Receipt className="w-5 h-5" />, label: 'Documents', href: '/admin/documents' },
         { icon: <MessageSquare className="w-5 h-5" />, label: 'Support Chat', href: '/admin/chat' },
+        { icon: <Mail className="w-5 h-5" />, label: 'Email Notifications', href: '/admin/email-notifications' },
         { icon: <PanelLeft className="w-5 h-5" />, label: 'CMS', href: '/admin/cms' },
         { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/admin/security' },
         { icon: <Settings className="w-5 h-5" />, label: 'Platform Config', href: '/admin/platform-config' },

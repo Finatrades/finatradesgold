@@ -74,6 +74,7 @@ import ReferralManagement from "@/pages/admin/ReferralManagement";
 import AuditLogs from "@/pages/admin/AuditLogs";
 import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
+import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
 
 function Router() {
   return (
@@ -120,6 +121,7 @@ function Router() {
       <Route path="/admin/platform-config" component={PlatformConfiguration} />
       <Route path="/admin/security" component={SecuritySettings} />
       <Route path="/admin/documents" component={DocumentsManagement} />
+      <Route path="/admin/email-notifications" component={EmailNotificationsManagement} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />
