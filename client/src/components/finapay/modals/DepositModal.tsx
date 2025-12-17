@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
-import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins } from 'lucide-react';
+import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -35,13 +36,24 @@ interface PlatformBankAccount {
   status: 'Active' | 'Inactive';
 }
 
+interface CryptoWallet {
+  id: string;
+  network: string;
+  networkLabel: string;
+  currency: string;
+  walletAddress: string;
+  memo: string | null;
+  instructions: string | null;
+  isActive: boolean;
+}
+
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type PaymentMethod = 'bank' | 'card';
-type Step = 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing';
+type PaymentMethod = 'bank' | 'card' | 'crypto';
+type Step = 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing' | 'crypto-amount' | 'crypto-select-wallet' | 'crypto-address' | 'crypto-submit-proof' | 'crypto-submitted';
 
 export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const { user } = useAuth();
@@ -62,11 +74,19 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [checkingNgenius, setCheckingNgenius] = useState(true);
   const [depositFee, setDepositFee] = useState<FeeInfo | null>(null);
   const [goldPrice, setGoldPrice] = useState<GoldPriceInfo | null>(null);
+  
+  // Crypto payment state
+  const [cryptoWallets, setCryptoWallets] = useState<CryptoWallet[]>([]);
+  const [selectedCryptoWallet, setSelectedCryptoWallet] = useState<CryptoWallet | null>(null);
+  const [transactionHash, setTransactionHash] = useState('');
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [cryptoPaymentRequestId, setCryptoPaymentRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       checkNgeniusStatus();
       fetchBankAccounts();
+      fetchCryptoWallets();
       fetchFees();
       fetchGoldPrice();
       resetForm();
@@ -125,6 +145,96 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setProofOfPayment(null);
     setProofFileName('');
     setReferenceNumber('');
+    setSelectedCryptoWallet(null);
+    setTransactionHash('');
+    setCopiedAddress(false);
+    setCryptoPaymentRequestId(null);
+  };
+  
+  const fetchCryptoWallets = async () => {
+    try {
+      const response = await fetch('/api/crypto-wallets/active');
+      const data = await response.json();
+      setCryptoWallets(data.wallets || []);
+    } catch (error) {
+      console.error('Failed to load crypto wallets');
+    }
+  };
+  
+  const copyToClipboardCrypto = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedAddress(true);
+    toast.success("Address copied to clipboard");
+    setTimeout(() => setCopiedAddress(false), 2000);
+  };
+  
+  const handleCryptoCreatePayment = async () => {
+    if (!user || !selectedCryptoWallet || !amount) return;
+    
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum < 10) {
+      toast.error("Minimum deposit amount is $10");
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/crypto-payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          walletConfigId: selectedCryptoWallet.id,
+          amountUsd: amountNum.toFixed(2),
+          goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
+          goldPriceAtTime: goldPrice?.pricePerGram.toFixed(2) || '0',
+          paymentType: 'deposit',
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create payment request');
+      }
+      
+      setCryptoPaymentRequestId(data.paymentRequest.id);
+      setStep('crypto-address');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create payment request");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  const handleCryptoSubmitProof = async () => {
+    if (!cryptoPaymentRequestId || !transactionHash.trim()) {
+      toast.error("Please enter your transaction hash");
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/crypto-payments/${cryptoPaymentRequestId}/submit-proof`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactionHash: transactionHash.trim(),
+        }),
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to submit proof');
+      }
+      
+      setStep('crypto-submitted');
+      toast.success("Payment submitted for verification");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit proof");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,6 +308,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       setStep('select');
     } else if (method === 'card') {
       setStep('card-amount');
+    } else if (method === 'crypto') {
+      setStep('crypto-amount');
     }
   };
 
@@ -299,11 +411,18 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const handleBack = () => {
-    if (step === 'select' || step === 'card-amount') {
+    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount') {
       setStep('method');
       setPaymentMethod(null);
     } else if (step === 'details') {
       setStep('select');
+    } else if (step === 'crypto-select-wallet') {
+      setStep('crypto-amount');
+    } else if (step === 'crypto-address') {
+      setStep('crypto-select-wallet');
+      setSelectedCryptoWallet(null);
+    } else if (step === 'crypto-submit-proof') {
+      setStep('crypto-address');
     }
   };
 
@@ -322,6 +441,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             {step === 'submitted' && "Deposit request submitted successfully"}
             {step === 'card-amount' && "Enter the amount to deposit via card"}
             {step === 'card-processing' && "Redirecting to secure payment..."}
+            {step === 'crypto-amount' && "Enter the amount to deposit via crypto"}
+            {step === 'crypto-select-wallet' && "Select a cryptocurrency network"}
+            {step === 'crypto-address' && "Send crypto to the wallet address below"}
+            {step === 'crypto-submit-proof' && "Submit your transaction hash for verification"}
+            {step === 'crypto-submitted' && "Payment submitted for verification"}
           </DialogDescription>
         </DialogHeader>
 
@@ -361,6 +485,25 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <div className="flex-1">
                     <h4 className="font-bold text-foreground">Card Payment</h4>
                     <p className="text-sm text-muted-foreground">Pay with Visa or Mastercard (instant)</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </button>
+            )}
+
+            {cryptoWallets.length > 0 && (
+              <button
+                onClick={() => handleSelectMethod('crypto')}
+                className="w-full border border-border rounded-xl p-4 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
+                data-testid="button-select-crypto-payment"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <Bitcoin className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-foreground">Crypto Payment</h4>
+                    <p className="text-sm text-muted-foreground">Pay with cryptocurrency (manual verification)</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-muted-foreground" />
                 </div>
@@ -670,6 +813,219 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </p>
             </div>
           </div>
+        ) : step === 'crypto-amount' ? (
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Amount (USD)</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="pl-10"
+                  min="10"
+                  data-testid="input-crypto-amount"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Minimum: $10</p>
+            </div>
+
+            {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
+              <div className="border border-green-200 rounded-lg p-3 bg-green-50/50">
+                <div className="flex justify-between text-sm">
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Coins className="w-4 h-4 text-primary" />
+                    Gold Equivalent:
+                  </span>
+                  <span className="font-bold text-primary">
+                    {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on ${goldPrice.pricePerGram.toFixed(2)}/gram
+                </p>
+              </div>
+            )}
+            
+            <div className="bg-orange-50 text-orange-800 text-xs p-3 rounded-lg flex items-start gap-2">
+              <div className="mt-0.5">ℹ️</div>
+              <p>After entering the amount, you'll select a crypto network and send payment to our wallet address.</p>
+            </div>
+          </div>
+        ) : step === 'crypto-select-wallet' ? (
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            {cryptoWallets.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Bitcoin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No crypto wallets available at this time.</p>
+              </div>
+            ) : (
+              cryptoWallets.map((wallet) => (
+                <button
+                  key={wallet.id}
+                  onClick={async () => {
+                    setSelectedCryptoWallet(wallet);
+                    if (!user || !amount) return;
+                    const amountNum = parseFloat(amount);
+                    if (isNaN(amountNum) || amountNum < 10) {
+                      toast.error("Minimum deposit amount is $10");
+                      return;
+                    }
+                    setSubmitting(true);
+                    try {
+                      const response = await fetch('/api/crypto-payments', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          userId: user.id,
+                          walletConfigId: wallet.id,
+                          amountUsd: amountNum.toFixed(2),
+                          goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
+                          goldPriceAtTime: goldPrice?.pricePerGram?.toFixed(2) || '0',
+                          paymentType: 'deposit',
+                        }),
+                      });
+                      const data = await response.json();
+                      if (!response.ok) {
+                        throw new Error(data.message || 'Failed to create payment request');
+                      }
+                      setCryptoPaymentRequestId(data.paymentRequest.id);
+                      setStep('crypto-address');
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Failed to create payment request");
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  disabled={submitting}
+                  className={`w-full border rounded-xl p-4 transition-colors text-left ${
+                    selectedCryptoWallet?.id === wallet.id 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border bg-muted/10 hover:bg-muted/30'
+                  }`}
+                  data-testid={`button-select-crypto-${wallet.id}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-foreground">{wallet.networkLabel}</h4>
+                      <p className="text-sm text-muted-foreground">{wallet.currency}</p>
+                    </div>
+                    {submitting && selectedCryptoWallet?.id === wallet.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    ) : (
+                      <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        ) : step === 'crypto-address' && selectedCryptoWallet ? (
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Bitcoin className="w-5 h-5 text-orange-600" />
+                <span className="font-semibold">{selectedCryptoWallet.networkLabel}</span>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Send to this address:</Label>
+                  <div className="mt-1 p-3 bg-white rounded-lg border flex items-center gap-2">
+                    <code className="text-sm font-mono flex-1 break-all">{selectedCryptoWallet.walletAddress}</code>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => copyToClipboardCrypto(selectedCryptoWallet.walletAddress)}
+                    >
+                      {copiedAddress ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {selectedCryptoWallet.memo && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Memo/Tag (required):</Label>
+                    <div className="mt-1 p-2 bg-white rounded-lg border text-sm font-mono">
+                      {selectedCryptoWallet.memo}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedCryptoWallet.instructions && (
+                  <p className="text-xs text-orange-700">{selectedCryptoWallet.instructions}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg border p-3 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount to send:</span>
+                <span className="font-bold text-secondary">${parseFloat(amount).toFixed(2)} worth</span>
+              </div>
+              {goldPrice?.pricePerGram && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Gold to receive:</span>
+                  <span className="font-medium">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+              <p className="font-medium mb-1">After sending, click "I've Sent Payment" below</p>
+              <p className="text-xs">You'll then enter your transaction hash for verification.</p>
+            </div>
+          </div>
+        ) : step === 'crypto-submit-proof' ? (
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Transaction Hash / TX ID</Label>
+              <Textarea 
+                placeholder="Enter your transaction hash..."
+                className="mt-2 font-mono text-sm"
+                value={transactionHash}
+                onChange={(e) => setTransactionHash(e.target.value)}
+                rows={2}
+                data-testid="input-transaction-hash"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This is the unique ID of your transaction on the blockchain.
+              </p>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg border p-3 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Network:</span>
+                <span className="font-medium">{selectedCryptoWallet?.networkLabel}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount:</span>
+                <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        ) : step === 'crypto-submitted' ? (
+          <div className="text-center py-8 space-y-4">
+            <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Payment Submitted</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your payment is being reviewed. Your wallet will be credited once verified.
+              </p>
+            </div>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
+              <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>Verification typically takes 1-24 hours depending on network confirmations.</span>
+            </div>
+          </div>
         ) : step === 'submitted' ? (
           <div className="py-8 text-center space-y-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
@@ -724,7 +1080,48 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </Button>
             </>
           )}
-          {step === 'submitted' && (
+          {step === 'crypto-amount' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={() => setStep('crypto-select-wallet')} 
+                disabled={!amount || parseFloat(amount) < 10}
+                data-testid="button-proceed-crypto-select"
+              >
+                <Bitcoin className="w-4 h-4 mr-2" />
+                Select Crypto Network
+              </Button>
+            </>
+          )}
+          {step === 'crypto-select-wallet' && (
+            <Button variant="outline" onClick={handleBack}>Back</Button>
+          )}
+          {step === 'crypto-address' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={() => setStep('crypto-submit-proof')}
+                data-testid="button-crypto-sent"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                I've Sent Payment
+              </Button>
+            </>
+          )}
+          {step === 'crypto-submit-proof' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={handleCryptoSubmitProof}
+                disabled={!transactionHash.trim() || submitting}
+                data-testid="button-submit-crypto-proof"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                Submit for Verification
+              </Button>
+            </>
+          )}
+          {(step === 'submitted' || step === 'crypto-submitted') && (
             <Button onClick={handleClose} data-testid="button-close-deposit">Done</Button>
           )}
         </DialogFooter>
