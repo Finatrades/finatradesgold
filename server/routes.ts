@@ -17,7 +17,7 @@ import {
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
   vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings,
-  wallets, transactions, auditLogs, certificates
+  wallets, transactions, auditLogs, certificates, platformConfig
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -12379,6 +12379,138 @@ export async function registerRoutes(
     return res.status(403).json({ message: "QA access requires admin role or QA mode" });
   }
 
+  // Internal QA test runner (only works in development/QA mode)
+  app.post("/api/qa/internal/run-test", async (req, res) => {
+    if (!QA_MODE) {
+      return res.status(403).json({ message: "Internal QA tests only available in QA mode" });
+    }
+    
+    const requestId = `qa-int-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const logs: any[] = [];
+    
+    const log = (event: string, details: any = {}) => {
+      const entry = { ts: new Date().toISOString(), level: 'info', requestId, event, ...details };
+      logs.push(entry);
+      console.log(`[QA-Internal] ${JSON.stringify(entry)}`);
+    };
+
+    try {
+      const { email, method, amountUsd } = req.body;
+      
+      log('INTERNAL_TEST_START', { email, method, amountUsd });
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ code: 'USER_NOT_FOUND', message: `User not found: ${email}`, requestId, logs });
+      }
+
+      const configRows = await db.select().from(platformConfig);
+      const config: Record<string, number> = {};
+      configRows.forEach((row: any) => { config[row.configKey] = parseFloat(row.configValue) || 0; });
+
+      const minDeposit = config['min_deposit'] || 50;
+      const maxDeposit = config['max_deposit_single'] || 100000;
+      const amount = parseFloat(amountUsd);
+
+      if (amount < minDeposit || amount > maxDeposit) {
+        return res.status(400).json({ code: 'LIMIT_ERROR', message: `Amount must be between $${minDeposit} and $${maxDeposit}`, requestId, logs });
+      }
+
+      const goldPrice = await getGoldPricePerGram();
+      const goldGrams = amount / goldPrice;
+
+      const transaction = await storage.createTransaction({
+        userId: user.id,
+        type: 'Deposit',
+        amount: amount.toFixed(2),
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceAtTime: goldPrice.toFixed(2),
+        status: 'Completed',
+        description: `QA Internal ${method.toUpperCase()} deposit - $${amount.toFixed(2)}`,
+        paymentMethod: method.toLowerCase(),
+        reference: `QA-INT-${requestId}`,
+      });
+
+      log('TX_CREATED', { transactionId: transaction.id });
+
+      const wallet = await storage.getWallet(user.id);
+      if (wallet) {
+        const newGoldBalance = (parseFloat(wallet.goldGrams) + goldGrams).toFixed(6);
+        await storage.updateWallet(wallet.id, { goldGrams: newGoldBalance });
+        log('WALLET_UPDATED', { newGoldBalance });
+      }
+
+      const vaultHolding = await storage.createVaultHolding({
+        userId: user.id,
+        transactionId: transaction.id,
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceAtPurchase: goldPrice.toFixed(2),
+        purchaseValue: amount.toFixed(2),
+        purity: '99.99%',
+        status: 'Active',
+        allocationType: 'Allocated',
+        storageLocation: 'FinaVault Dubai',
+        vaultOperator: 'FinaVault',
+        vaultFacilitator: 'Wingold & Metals DMCC',
+      });
+
+      log('VAULT_HOLDING_CREATED', { holdingId: vaultHolding.id });
+
+      const certTime = Date.now();
+      const ownershipCert = await db.insert(certificates).values({
+        certificateNumber: `OWN-QA-INT-${certTime}`,
+        userId: user.id,
+        transactionId: transaction.id,
+        vaultHoldingId: vaultHolding.id,
+        type: 'Digital Ownership',
+        status: 'Active',
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        totalValueUsd: amount.toFixed(2),
+        issuer: 'Finatrades',
+        vaultLocation: 'FinaVault Dubai',
+      }).returning();
+
+      const storageCert = await db.insert(certificates).values({
+        certificateNumber: `STOR-QA-INT-${certTime}`,
+        userId: user.id,
+        transactionId: transaction.id,
+        vaultHoldingId: vaultHolding.id,
+        type: 'Physical Storage',
+        status: 'Active',
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        totalValueUsd: amount.toFixed(2),
+        issuer: 'Wingold & Metals DMCC',
+        vaultLocation: 'FinaVault Dubai',
+      }).returning();
+
+      log('CERTS_GENERATED', { ownership: ownershipCert[0]?.id, storage: storageCert[0]?.id });
+
+      emitLedgerEvent(user.id, 'balance_update', { transactionId: transaction.id, type: 'deposit', amount, goldGrams, status: 'Completed' });
+      log('STATUS_CONFIRMED', { transactionId: transaction.id });
+
+      const updatedWallet = await storage.getWallet(user.id);
+
+      res.json({
+        status: 'CONFIRMED',
+        requestId,
+        transactionId: transaction.id,
+        vaultHoldingId: vaultHolding.id,
+        certificates: { ownership: ownershipCert[0]?.id, storage: storageCert[0]?.id },
+        balances: { goldGrams: updatedWallet?.goldGrams || '0', usdBalance: updatedWallet?.usdBalance || '0' },
+        goldReceived: goldGrams.toFixed(6),
+        goldPrice: goldPrice.toFixed(2),
+        method,
+        email,
+        logs
+      });
+    } catch (error) {
+      log('ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      res.status(500).json({ code: 'INTERNAL_ERROR', message: 'Failed to process test', requestId, logs });
+    }
+  });
+
   // QA Deposit Run API
   app.post("/api/qa/deposit/run", ensureQaAccess, async (req, res) => {
     const requestId = `qa-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -12425,7 +12557,7 @@ export async function registerRoutes(
       }
 
       // Get platform config for limits
-      const configRows = await db.select().from(require('@shared/schema').platformConfig);
+      const configRows = await db.select().from(platformConfig);
       const config: Record<string, number> = {};
       configRows.forEach((row: any) => {
         config[row.configKey] = parseFloat(row.configValue) || 0;
@@ -12686,7 +12818,7 @@ export async function registerRoutes(
   // Get QA config (limits) - allows any authenticated user to see config
   app.get("/api/qa/config", ensureAuthenticated, async (req, res) => {
     try {
-      const configRows = await db.select().from(require('@shared/schema').platformConfig);
+      const configRows = await db.select().from(platformConfig);
       const config: Record<string, any> = {};
       configRows.forEach((row: any) => {
         config[row.configKey] = row.configValue;
