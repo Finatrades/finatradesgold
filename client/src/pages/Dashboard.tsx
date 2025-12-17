@@ -1,7 +1,7 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
 
@@ -111,26 +111,27 @@ export default function Dashboard() {
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Row 1 */}
                 <KpiBox
-                  title="Gold Storage"
+                  title="FinaVault Storage"
                   value={formatGrams(totals.vaultGoldGrams)}
-                  subtitle="Deposited in FinaVault"
+                  subtitle="Physical gold in vault"
                   icon={<Database className="w-5 h-5 text-orange-600" />}
                   iconBg="bg-orange-50"
                   valueColor="text-orange-600"
                 />
                 <KpiBox
-                  title="Gold Value (USD)"
+                  title="FinaPay Wallet"
+                  value={formatGrams(totals.walletGoldGrams)}
+                  subtitle="Digital gold balance"
+                  icon={<Wallet className="w-5 h-5 text-emerald-600" />}
+                  iconBg="bg-emerald-50"
+                  valueColor="text-emerald-600"
+                />
+                <KpiBox
+                  title="Total Gold Value"
                   value={`$${formatNumber(totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice))}`}
                   subtitle="Worth in USD"
                   icon={<DollarSign className="w-5 h-5 text-green-600" />}
                   iconBg="bg-green-50"
-                />
-                <KpiBox
-                  title="Gold Value (AED)"
-                  value={`د.إ ${formatNumber(totals.vaultGoldValueAed)}`}
-                  subtitle="Worth in AED"
-                  icon={<span className="text-lg font-bold text-blue-600">د.إ</span>}
-                  iconBg="bg-blue-50"
                 />
                 
                 {/* Row 2 */}
