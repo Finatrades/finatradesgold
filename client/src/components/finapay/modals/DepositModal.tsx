@@ -9,8 +9,7 @@ import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCa
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
-import IframeCardPayment from '../IframeCardPayment';
-import EmbeddedCardForm from '../EmbeddedCardForm';
+import HybridCardPayment from '../HybridCardPayment';
 
 interface FeeInfo {
   feeKey: string;
@@ -853,7 +852,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'card-embedded' ? (
           <div className="py-4">
-            <EmbeddedCardForm
+            <HybridCardPayment
               amount={parseFloat(amount) || 0}
               onSuccess={handleCardSuccess}
               onError={handleCardError}
