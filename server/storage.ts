@@ -87,7 +87,11 @@ import {
   type CryptoWalletConfig, type InsertCryptoWalletConfig,
   type CryptoPaymentRequest, type InsertCryptoPaymentRequest,
   platformConfig,
-  type PlatformConfig, type InsertPlatformConfig
+  type PlatformConfig, type InsertPlatformConfig,
+  emailNotificationSettings,
+  emailLogs,
+  type EmailNotificationSetting, type InsertEmailNotificationSetting,
+  type EmailLog, type InsertEmailLog
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -579,6 +583,24 @@ export interface IStorage {
   upsertPlatformConfig(config: InsertPlatformConfig): Promise<PlatformConfig>;
   deletePlatformConfig(id: string): Promise<boolean>;
   seedDefaultPlatformConfig(): Promise<void>;
+  
+  // Email Notification Settings
+  getEmailNotificationSetting(notificationType: string): Promise<EmailNotificationSetting | undefined>;
+  getEmailNotificationSettingsByCategory(category: string): Promise<EmailNotificationSetting[]>;
+  getAllEmailNotificationSettings(): Promise<EmailNotificationSetting[]>;
+  createEmailNotificationSetting(setting: InsertEmailNotificationSetting): Promise<EmailNotificationSetting>;
+  updateEmailNotificationSetting(id: string, updates: Partial<EmailNotificationSetting>): Promise<EmailNotificationSetting | undefined>;
+  toggleEmailNotification(notificationType: string, isEnabled: boolean, updatedBy?: string): Promise<EmailNotificationSetting | undefined>;
+  isEmailNotificationEnabled(notificationType: string): Promise<boolean>;
+  seedDefaultEmailNotificationSettings(): Promise<void>;
+  
+  // Email Logs
+  getEmailLog(id: string): Promise<EmailLog | undefined>;
+  getEmailLogsByUser(userId: string): Promise<EmailLog[]>;
+  getEmailLogsByType(notificationType: string): Promise<EmailLog[]>;
+  getAllEmailLogs(): Promise<EmailLog[]>;
+  createEmailLog(log: InsertEmailLog): Promise<EmailLog>;
+  updateEmailLog(id: string, updates: Partial<EmailLog>): Promise<EmailLog | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2669,6 +2691,132 @@ export class DatabaseStorage implements IStorage {
     for (const config of defaultConfigs) {
       await this.createPlatformConfig(config);
     }
+  }
+
+  // Email Notification Settings
+  async getEmailNotificationSetting(notificationType: string): Promise<EmailNotificationSetting | undefined> {
+    const [setting] = await db.select().from(emailNotificationSettings).where(eq(emailNotificationSettings.notificationType, notificationType));
+    return setting || undefined;
+  }
+
+  async getEmailNotificationSettingsByCategory(category: string): Promise<EmailNotificationSetting[]> {
+    return await db.select().from(emailNotificationSettings).where(eq(emailNotificationSettings.category, category)).orderBy(emailNotificationSettings.displayOrder);
+  }
+
+  async getAllEmailNotificationSettings(): Promise<EmailNotificationSetting[]> {
+    return await db.select().from(emailNotificationSettings).orderBy(emailNotificationSettings.category, emailNotificationSettings.displayOrder);
+  }
+
+  async createEmailNotificationSetting(setting: InsertEmailNotificationSetting): Promise<EmailNotificationSetting> {
+    const [created] = await db.insert(emailNotificationSettings).values(setting).returning();
+    return created;
+  }
+
+  async updateEmailNotificationSetting(id: string, updates: Partial<EmailNotificationSetting>): Promise<EmailNotificationSetting | undefined> {
+    const [setting] = await db.update(emailNotificationSettings).set({ ...updates, updatedAt: new Date() }).where(eq(emailNotificationSettings.id, id)).returning();
+    return setting || undefined;
+  }
+
+  async toggleEmailNotification(notificationType: string, isEnabled: boolean, updatedBy?: string): Promise<EmailNotificationSetting | undefined> {
+    const [setting] = await db.update(emailNotificationSettings)
+      .set({ isEnabled, updatedBy, updatedAt: new Date() })
+      .where(eq(emailNotificationSettings.notificationType, notificationType))
+      .returning();
+    return setting || undefined;
+  }
+
+  async isEmailNotificationEnabled(notificationType: string): Promise<boolean> {
+    const setting = await this.getEmailNotificationSetting(notificationType);
+    return setting?.isEnabled ?? true; // Default to enabled if not found
+  }
+
+  async seedDefaultEmailNotificationSettings(): Promise<void> {
+    const existingSettings = await this.getAllEmailNotificationSettings();
+    if (existingSettings.length > 0) {
+      console.log('[EmailNotifications] Settings already exist, skipping seed');
+      return;
+    }
+
+    console.log('[EmailNotifications] Seeding default notification settings...');
+
+    const defaultSettings: InsertEmailNotificationSetting[] = [
+      // Auth category
+      { notificationType: 'welcome_email', displayName: 'Welcome Email', description: 'Sent when a new user registers', category: 'auth', isEnabled: true, templateSlug: 'welcome_email', displayOrder: 1 },
+      { notificationType: 'email_verification', displayName: 'Email Verification', description: 'Verification code for new accounts', category: 'auth', isEnabled: true, templateSlug: 'email_verification', displayOrder: 2 },
+      { notificationType: 'password_reset', displayName: 'Password Reset', description: 'Password reset instructions', category: 'auth', isEnabled: true, templateSlug: 'password_reset', displayOrder: 3 },
+      { notificationType: 'mfa_enabled', displayName: 'MFA Enabled', description: 'Confirmation when 2FA is enabled', category: 'auth', isEnabled: true, templateSlug: 'mfa_enabled', displayOrder: 4 },
+      
+      // Transactions category
+      { notificationType: 'gold_purchase', displayName: 'Gold Purchase Confirmation', description: 'Sent after gold is purchased', category: 'transactions', isEnabled: true, templateSlug: 'gold_purchase', displayOrder: 1 },
+      { notificationType: 'gold_sale', displayName: 'Gold Sale Confirmation', description: 'Sent after gold is sold', category: 'transactions', isEnabled: true, templateSlug: 'gold_sale', displayOrder: 2 },
+      { notificationType: 'transfer_sent', displayName: 'Transfer Sent', description: 'Confirmation of outgoing transfer', category: 'transactions', isEnabled: true, templateSlug: 'transfer_sent', displayOrder: 3 },
+      { notificationType: 'transfer_received', displayName: 'Transfer Received', description: 'Notification of incoming transfer', category: 'transactions', isEnabled: true, templateSlug: 'transfer_received', displayOrder: 4 },
+      { notificationType: 'deposit_confirmed', displayName: 'Deposit Confirmed', description: 'Deposit has been processed', category: 'transactions', isEnabled: true, templateSlug: 'deposit_confirmed', displayOrder: 5 },
+      { notificationType: 'withdrawal_initiated', displayName: 'Withdrawal Initiated', description: 'Withdrawal request received', category: 'transactions', isEnabled: true, templateSlug: 'withdrawal_initiated', displayOrder: 6 },
+      { notificationType: 'withdrawal_completed', displayName: 'Withdrawal Completed', description: 'Withdrawal has been processed', category: 'transactions', isEnabled: true, templateSlug: 'withdrawal_completed', displayOrder: 7 },
+      
+      // KYC category
+      { notificationType: 'kyc_approved', displayName: 'KYC Approved', description: 'KYC verification approved', category: 'kyc', isEnabled: true, templateSlug: 'kyc_approved', displayOrder: 1 },
+      { notificationType: 'kyc_rejected', displayName: 'KYC Rejected', description: 'KYC verification rejected', category: 'kyc', isEnabled: true, templateSlug: 'kyc_rejected', displayOrder: 2 },
+      { notificationType: 'kyc_document_expiry', displayName: 'Document Expiry Reminder', description: 'Reminder when documents are expiring', category: 'kyc', isEnabled: true, templateSlug: 'document_expiry_reminder', displayOrder: 3 },
+      
+      // BNSL category
+      { notificationType: 'bnsl_agreement_signed', displayName: 'BNSL Agreement Signed', description: 'BNSL plan agreement confirmation', category: 'bnsl', isEnabled: true, templateSlug: 'bnsl_agreement_signed', displayOrder: 1 },
+      { notificationType: 'bnsl_payout', displayName: 'BNSL Payout', description: 'Monthly BNSL payout notification', category: 'bnsl', isEnabled: true, templateSlug: 'bnsl_payout', displayOrder: 2 },
+      { notificationType: 'bnsl_maturity', displayName: 'BNSL Maturity', description: 'BNSL plan reaching maturity', category: 'bnsl', isEnabled: true, templateSlug: 'bnsl_maturity', displayOrder: 3 },
+      
+      // Trade Finance category
+      { notificationType: 'trade_case_created', displayName: 'Trade Case Created', description: 'New trade case submitted', category: 'trade_finance', isEnabled: true, templateSlug: 'trade_case_created', displayOrder: 1 },
+      { notificationType: 'trade_case_approved', displayName: 'Trade Case Approved', description: 'Trade case has been approved', category: 'trade_finance', isEnabled: true, templateSlug: 'trade_case_approved', displayOrder: 2 },
+      { notificationType: 'trade_proposal_received', displayName: 'Trade Proposal Received', description: 'New proposal on trade request', category: 'trade_finance', isEnabled: true, templateSlug: 'trade_proposal_received', displayOrder: 3 },
+      
+      // Documents category
+      { notificationType: 'certificate_delivery', displayName: 'Certificate Delivery', description: 'Ownership certificate delivered', category: 'documents', isEnabled: true, templateSlug: 'certificate_delivery', displayOrder: 1 },
+      { notificationType: 'invoice_delivery', displayName: 'Invoice Delivery', description: 'Invoice sent after purchase', category: 'documents', isEnabled: true, templateSlug: 'invoice_delivery', displayOrder: 2 },
+      
+      // System category
+      { notificationType: 'invitation', displayName: 'Referral Invitation', description: 'Invitation sent to referred users', category: 'system', isEnabled: true, templateSlug: 'invitation', displayOrder: 1 },
+      { notificationType: 'account_locked', displayName: 'Account Locked', description: 'Security alert when account is locked', category: 'system', isEnabled: true, templateSlug: 'account_locked', displayOrder: 2 },
+      { notificationType: 'suspicious_activity', displayName: 'Suspicious Activity Alert', description: 'Security warning for unusual activity', category: 'system', isEnabled: true, templateSlug: 'suspicious_activity', displayOrder: 3 },
+    ];
+
+    for (const setting of defaultSettings) {
+      try {
+        await this.createEmailNotificationSetting(setting);
+      } catch (error) {
+        console.log(`[EmailNotifications] Setting ${setting.notificationType} already exists or failed:`, error);
+      }
+    }
+
+    console.log(`[EmailNotifications] Seeded ${defaultSettings.length} default notification settings`);
+  }
+
+  // Email Logs
+  async getEmailLog(id: string): Promise<EmailLog | undefined> {
+    const [log] = await db.select().from(emailLogs).where(eq(emailLogs.id, id));
+    return log || undefined;
+  }
+
+  async getEmailLogsByUser(userId: string): Promise<EmailLog[]> {
+    return await db.select().from(emailLogs).where(eq(emailLogs.userId, userId)).orderBy(desc(emailLogs.createdAt));
+  }
+
+  async getEmailLogsByType(notificationType: string): Promise<EmailLog[]> {
+    return await db.select().from(emailLogs).where(eq(emailLogs.notificationType, notificationType)).orderBy(desc(emailLogs.createdAt));
+  }
+
+  async getAllEmailLogs(): Promise<EmailLog[]> {
+    return await db.select().from(emailLogs).orderBy(desc(emailLogs.createdAt));
+  }
+
+  async createEmailLog(log: InsertEmailLog): Promise<EmailLog> {
+    const [created] = await db.insert(emailLogs).values(log).returning();
+    return created;
+  }
+
+  async updateEmailLog(id: string, updates: Partial<EmailLog>): Promise<EmailLog | undefined> {
+    const [log] = await db.update(emailLogs).set(updates).where(eq(emailLogs.id, id)).returning();
+    return log || undefined;
   }
 }
 
