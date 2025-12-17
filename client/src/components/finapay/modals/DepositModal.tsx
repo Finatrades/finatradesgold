@@ -131,7 +131,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     const amountNum = parseFloat(amount) || 0;
     const feeAmount = calculateFee(amountNum);
     const netDeposit = amountNum - feeAmount;
-    const goldGrams = goldPrice && netDeposit > 0 ? netDeposit / goldPrice.pricePerGram : 0;
+    const goldGrams = goldPrice?.pricePerGram && netDeposit > 0 ? netDeposit / goldPrice.pricePerGram : 0;
     return { amountNum, feeAmount, netDeposit, goldGrams };
   };
 
@@ -652,7 +652,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         <span>Net Credit to Wallet:</span>
                         <span className="text-green-600">${getDepositSummary().netDeposit.toFixed(2)}</span>
                       </div>
-                      {goldPrice && getDepositSummary().goldGrams > 0 && (
+                      {goldPrice?.pricePerGram && getDepositSummary().goldGrams > 0 && (
                         <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
                           <span className="flex items-center gap-1">
                             <Coins className="w-4 h-4" />
@@ -661,7 +661,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           <span className="font-bold">{getDepositSummary().goldGrams.toFixed(4)}g</span>
                         </div>
                       )}
-                      {goldPrice && (
+                      {goldPrice?.pricePerGram && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Based on current gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
                         </p>
@@ -780,7 +780,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 <p className="text-xs text-muted-foreground mt-1">Min: $10 | Max: $10,000</p>
               </div>
 
-              {parseFloat(amount) > 0 && goldPrice && (
+              {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
                 <div className="border border-green-200 rounded-lg p-3 bg-green-50/50 mt-3">
                   <div className="flex justify-between text-sm">
                     <span className="flex items-center gap-1 text-muted-foreground">
