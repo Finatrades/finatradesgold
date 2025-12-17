@@ -45,13 +45,37 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
+      staleTime: 30000,
+      gcTime: 300000,
+      refetchOnWindowFocus: true,
+      retry: 1,
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
     },
     mutations: {
-      retry: false,
+      retry: 1,
     },
   },
 });
+
+export function prefetchDashboardData(userId: string) {
+  const startTime = performance.now();
+  console.log('[Prefetch] Starting dashboard data prefetch...');
+  
+  return queryClient.prefetchQuery({
+    queryKey: ['dashboard', userId],
+    queryFn: async () => {
+      const res = await fetch(`/api/dashboard/${userId}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to prefetch dashboard');
+      const data = await res.json();
+      const loadTime = (performance.now() - startTime).toFixed(0);
+      console.log(`[Prefetch] Dashboard data loaded in ${loadTime}ms`);
+      return data;
+    },
+    staleTime: 30000,
+  });
+}
+
+export function clearQueryCache() {
+  console.log('[Cache] Clearing all query cache on logout');
+  queryClient.clear();
+}

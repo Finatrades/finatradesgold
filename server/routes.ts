@@ -226,6 +226,122 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to get gold price status" });
     }
   });
+
+  // ============================================================================
+  // UNIFIED DASHBOARD API (Performance Optimized)
+  // ============================================================================
+  
+  // Single endpoint for all dashboard data - replaces 7 separate API calls
+  app.get("/api/dashboard/:userId", async (req, res) => {
+    const startTime = Date.now();
+    try {
+      const userId = req.params.userId;
+      
+      // Parallel fetch all data sources
+      const [
+        wallet,
+        vaultHoldings,
+        transactions,
+        depositRequests,
+        cryptoPayments,
+        bnslPlans,
+        priceData,
+        notifications,
+        tradeCases
+      ] = await Promise.all([
+        storage.getWallet(userId).catch(() => null),
+        storage.getUserVaultHoldings(userId).catch(() => []),
+        storage.getUserTransactions(userId).catch(() => []),
+        storage.getUserDepositRequests(userId).catch(() => []),
+        storage.getUserCryptoPaymentRequests(userId).catch(() => []),
+        storage.getUserBnslPlans(userId).catch(() => []),
+        getGoldPrice().catch(() => ({ pricePerGram: 85, source: 'fallback' })),
+        storage.getUserNotifications(userId).catch(() => []),
+        storage.getUserTradeCases(userId).catch(() => [])
+      ]);
+
+      const goldPrice = priceData.pricePerGram || 85;
+      const goldPriceSource = priceData.source || 'fallback';
+      
+      // Convert deposit requests to transaction format
+      const depositTransactions = (depositRequests || []).map((dep: any) => ({
+        id: dep.id,
+        type: 'Deposit',
+        status: dep.status === 'Approved' || dep.status === 'Confirmed' ? 'Completed' : dep.status,
+        amountUsd: dep.amountUsd,
+        amountGold: null,
+        createdAt: dep.createdAt,
+        description: `Bank Transfer - ${dep.senderBankName || 'Pending'}`,
+        sourceModule: 'FinaPay',
+      }));
+
+      // Convert crypto payments to transaction format
+      const cryptoTransactions = (cryptoPayments || [])
+        .filter((cp: any) => cp.status !== 'Approved')
+        .map((cp: any) => ({
+          id: cp.id,
+          type: 'Deposit',
+          status: cp.status === 'Approved' ? 'Completed' : cp.status,
+          amountUsd: cp.amountUsd,
+          amountGold: cp.goldGrams,
+          createdAt: cp.createdAt,
+          description: `Crypto Deposit - ${cp.status}`,
+          sourceModule: 'FinaPay',
+        }));
+
+      // Combine and sort transactions (limit to 20 for dashboard)
+      const allTransactions = [...(transactions || []), ...depositTransactions, ...cryptoTransactions]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 20);
+
+      // Calculate totals
+      const walletGoldGrams = parseFloat(wallet?.goldGrams || '0');
+      const walletUsdBalance = parseFloat(wallet?.usdBalance || '0');
+      const vaultGoldGrams = (vaultHoldings || []).reduce((sum: number, h: any) => 
+        sum + parseFloat(h.goldGrams || '0'), 0);
+      const vaultGoldValueUsd = vaultGoldGrams * goldPrice;
+      const vaultGoldValueAed = vaultGoldValueUsd * 3.67;
+
+      const activeBnslPlans = (bnslPlans || []).filter((p: any) => p.status === 'Active');
+      const bnslLockedGrams = activeBnslPlans.reduce((sum: number, p: any) => 
+        sum + parseFloat(p.goldSoldGrams || '0'), 0);
+      const bnslTotalProfit = activeBnslPlans.reduce((sum: number, p: any) => 
+        sum + parseFloat(p.paidMarginUsd || '0'), 0);
+      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance;
+
+      const loadTime = Date.now() - startTime;
+      console.log(`[Dashboard] Loaded for user ${userId} in ${loadTime}ms`);
+
+      res.json({
+        wallet: wallet || { goldGrams: '0', usdBalance: '0', eurBalance: '0' },
+        vaultHoldings: vaultHoldings || [],
+        transactions: allTransactions,
+        bnslPlans: bnslPlans || [],
+        goldPrice,
+        goldPriceSource,
+        notifications: (notifications || []).slice(0, 5),
+        tradeCounts: {
+          active: (tradeCases || []).filter((tc: any) => !['Completed', 'Cancelled', 'Rejected'].includes(tc.status)).length,
+          total: (tradeCases || []).length
+        },
+        totals: {
+          vaultGoldGrams,
+          vaultGoldValueUsd,
+          vaultGoldValueAed,
+          walletGoldGrams,
+          walletUsdBalance,
+          totalPortfolioUsd,
+          bnslLockedGrams,
+          bnslTotalProfit,
+          activeBnslPlans: activeBnslPlans.length
+        },
+        _meta: { loadTimeMs: loadTime }
+      });
+    } catch (error) {
+      console.error('[Dashboard] Error:', error);
+      res.status(500).json({ message: "Failed to load dashboard data" });
+    }
+  });
   
   // ============================================================================
   // AUTHENTICATION & USER MANAGEMENT

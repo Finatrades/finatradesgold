@@ -36,6 +36,29 @@ interface BnslPlan {
   totalMarginComponentUsd: string;
 }
 
+interface DashboardResponse {
+  wallet: Wallet;
+  vaultHoldings: VaultHolding[];
+  transactions: Transaction[];
+  bnslPlans: BnslPlan[];
+  goldPrice: number;
+  goldPriceSource: string | null;
+  notifications: any[];
+  tradeCounts: { active: number; total: number };
+  totals: {
+    vaultGoldGrams: number;
+    vaultGoldValueUsd: number;
+    vaultGoldValueAed: number;
+    walletGoldGrams: number;
+    walletUsdBalance: number;
+    totalPortfolioUsd: number;
+    bnslLockedGrams: number;
+    bnslTotalProfit: number;
+    activeBnslPlans: number;
+  };
+  _meta: { loadTimeMs: number };
+}
+
 interface DashboardData {
   wallet: Wallet | null;
   vaultHoldings: VaultHolding[];
@@ -44,6 +67,7 @@ interface DashboardData {
   goldPrice: number;
   goldPriceSource: string | null;
   isLoading: boolean;
+  isFetching: boolean;
   error: string | null;
   totals: {
     vaultGoldGrams: number;
@@ -56,177 +80,62 @@ interface DashboardData {
     bnslTotalProfit: number;
     activeBnslPlans: number;
   };
+  refetch: () => void;
 }
-
-const USD_TO_AED = 3.67;
 
 export function useDashboardData(): DashboardData {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { data: walletData, isLoading: walletLoading, error: walletError } = useQuery({
-    queryKey: ['wallet', userId],
+  const { data, isLoading, isFetching, error, refetch } = useQuery<DashboardResponse>({
+    queryKey: ['dashboard', userId],
     queryFn: async () => {
-      if (!userId) return null;
-      const res = await apiRequest('GET', `/api/wallet/${userId}`);
-      return res.json();
+      if (!userId) throw new Error('No user ID');
+      const startTime = performance.now();
+      const res = await apiRequest('GET', `/api/dashboard/${userId}`);
+      const data = await res.json();
+      const clientTime = (performance.now() - startTime).toFixed(0);
+      console.log(`[Dashboard] Client fetch: ${clientTime}ms, Server: ${data._meta?.loadTimeMs}ms`);
+      return data;
     },
     enabled: !!userId,
+    staleTime: 30000,
+    gcTime: 300000,
+    refetchOnWindowFocus: true,
+    retry: 1,
   });
-
-  const { data: vaultData, isLoading: vaultLoading, error: vaultError } = useQuery({
-    queryKey: ['vaultHoldings', userId],
-    queryFn: async () => {
-      if (!userId) return { holdings: [] };
-      const res = await apiRequest('GET', `/api/vault/${userId}`);
-      return res.json();
-    },
-    enabled: !!userId,
-  });
-
-  const { data: txData, isLoading: txLoading, error: txError } = useQuery({
-    queryKey: ['transactions', userId],
-    queryFn: async () => {
-      if (!userId) return { transactions: [] };
-      const res = await apiRequest('GET', `/api/transactions/${userId}`);
-      return res.json();
-    },
-    enabled: !!userId,
-  });
-
-  // Fetch deposit requests (pending bank deposits)
-  const { data: depositData, isLoading: depositLoading } = useQuery({
-    queryKey: ['depositRequests', userId],
-    queryFn: async () => {
-      if (!userId) return { requests: [] };
-      const res = await apiRequest('GET', `/api/deposit-requests/${userId}`);
-      return res.json();
-    },
-    enabled: !!userId,
-  });
-
-  // Fetch crypto payment requests (pending crypto deposits)
-  const { data: cryptoData, isLoading: cryptoLoading } = useQuery({
-    queryKey: ['cryptoPayments', userId],
-    queryFn: async () => {
-      if (!userId) return { requests: [] };
-      const res = await apiRequest('GET', `/api/crypto-payments/user/${userId}`);
-      return res.json();
-    },
-    enabled: !!userId,
-  });
-
-  const { data: bnslData, isLoading: bnslLoading, error: bnslError } = useQuery({
-    queryKey: ['bnslPlans', userId],
-    queryFn: async () => {
-      if (!userId) return { plans: [] };
-      const res = await apiRequest('GET', `/api/bnsl/plans/${userId}`);
-      return res.json();
-    },
-    enabled: !!userId,
-  });
-
-  const { data: priceData } = useQuery({
-    queryKey: ['goldPrice'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/gold-price');
-      return res.json();
-    },
-    refetchInterval: 60000,
-  });
-
-  const hasError = walletError || vaultError || txError || bnslError;
-  const errorMessage = hasError ? 'Failed to load dashboard data' : null;
 
   useEffect(() => {
-    if (hasError) {
+    if (error) {
       toast.error('Failed to load dashboard data', {
         description: 'Some data may not be displayed. Please try refreshing.'
       });
     }
-  }, [hasError]);
+  }, [error]);
 
-  const wallet = walletData?.wallet || null;
-  const vaultHoldings = vaultData?.holdings || [];
-  const rawTransactions = txData?.transactions || [];
-  const depositRequests = depositData?.requests || [];
-  const cryptoPayments = cryptoData?.requests || [];
-  const bnslPlans = bnslData?.plans || [];
-  const goldPrice = priceData?.pricePerGram || 0;
-  const goldPriceSource = priceData?.source || null;
-
-  // Convert deposit requests to transaction-like format and merge
-  const depositTransactions = depositRequests.map((dep: any) => ({
-    id: dep.id,
-    type: 'Deposit',
-    status: dep.status === 'Approved' ? 'Completed' : dep.status,
-    amountUsd: dep.amountUsd,
-    amountGold: null,
-    createdAt: dep.createdAt,
-    description: `Bank Transfer - ${dep.senderBankName || 'Pending'}`,
-    sourceModule: 'FinaPay',
-    isDepositRequest: true,
-  }));
-
-  // Convert crypto payment requests to transaction-like format
-  const cryptoTransactions = cryptoPayments
-    .filter((cp: any) => cp.status !== 'Approved') // Only show non-approved (pending/under review)
-    .map((cp: any) => ({
-      id: cp.id,
-      type: 'Deposit',
-      status: cp.status === 'Approved' ? 'Completed' : cp.status,
-      amountUsd: cp.amountUsd,
-      amountGold: cp.goldGrams,
-      createdAt: cp.createdAt,
-      description: `Crypto Deposit - ${cp.status}`,
-      sourceModule: 'FinaPay',
-      isCryptoPayment: true,
-    }));
-
-  // Combine and sort by date (newest first)
-  const transactions = [...rawTransactions, ...depositTransactions, ...cryptoTransactions].sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const walletGoldGrams = parseFloat(wallet?.goldGrams || '0');
-  const walletUsdBalance = parseFloat(wallet?.usdBalance || '0');
-
-  const vaultGoldGrams = vaultHoldings.reduce((sum: number, h: VaultHolding) => 
-    sum + parseFloat(h.goldGrams || '0'), 0);
-  
-  const vaultGoldValueUsd = vaultGoldGrams * goldPrice;
-  const vaultGoldValueAed = vaultGoldValueUsd * USD_TO_AED;
-
-  const bnslLockedGrams = bnslPlans
-    .filter((p: BnslPlan) => p.status === 'Active')
-    .reduce((sum: number, p: BnslPlan) => sum + parseFloat(p.goldSoldGrams || '0'), 0);
-
-  const bnslTotalProfit = bnslPlans
-    .filter((p: BnslPlan) => p.status === 'Active')
-    .reduce((sum: number, p: BnslPlan) => sum + parseFloat(p.paidMarginUsd || '0'), 0);
-
-  const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance;
-  const activeBnslPlans = bnslPlans.filter((p: BnslPlan) => p.status === 'Active').length;
+  const defaultTotals = {
+    vaultGoldGrams: 0,
+    vaultGoldValueUsd: 0,
+    vaultGoldValueAed: 0,
+    walletGoldGrams: 0,
+    walletUsdBalance: 0,
+    totalPortfolioUsd: 0,
+    bnslLockedGrams: 0,
+    bnslTotalProfit: 0,
+    activeBnslPlans: 0,
+  };
 
   return {
-    wallet,
-    vaultHoldings,
-    transactions,
-    bnslPlans,
-    goldPrice,
-    goldPriceSource,
-    isLoading: walletLoading || vaultLoading || txLoading || depositLoading || cryptoLoading || bnslLoading,
-    error: errorMessage,
-    totals: {
-      vaultGoldGrams,
-      vaultGoldValueUsd,
-      vaultGoldValueAed,
-      walletGoldGrams,
-      walletUsdBalance,
-      totalPortfolioUsd,
-      bnslLockedGrams,
-      bnslTotalProfit,
-      activeBnslPlans,
-    },
+    wallet: data?.wallet || null,
+    vaultHoldings: data?.vaultHoldings || [],
+    transactions: data?.transactions || [],
+    bnslPlans: data?.bnslPlans || [],
+    goldPrice: data?.goldPrice || 0,
+    goldPriceSource: data?.goldPriceSource || null,
+    isLoading,
+    isFetching,
+    error: error ? 'Failed to load dashboard data' : null,
+    totals: data?.totals || defaultTotals,
+    refetch,
   };
 }

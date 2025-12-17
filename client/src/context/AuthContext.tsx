@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import type { User } from '@shared/schema';
+import { prefetchDashboardData, clearQueryCache } from '@/lib/queryClient';
 
 interface MfaChallenge {
   requiresMfa: boolean;
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user.role === 'admin') {
         setLocation('/admin');
       } else {
+        prefetchDashboardData(data.user.id);
         setLocation('/dashboard');
       }
       
@@ -121,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user.role === 'admin') {
         setLocation('/admin');
       } else {
+        prefetchDashboardData(data.user.id);
         setLocation('/dashboard');
       }
     } catch (error) {
@@ -151,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    clearQueryCache();
     setUser(null);
     localStorage.removeItem('fina_user_id');
     sessionStorage.removeItem('adminPortalSession');

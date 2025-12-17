@@ -1,7 +1,7 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, Coins, Loader2, BarChart3, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
 
@@ -10,6 +10,7 @@ import DashboardWalletCards from '@/components/dashboard/DashboardWalletCards';
 import CreditCardPreview from '@/components/dashboard/CreditCardPreview';
 import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import CertificatesCard from '@/components/dashboard/CertificatesCard';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 function formatNumber(num: number, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -53,6 +54,14 @@ export default function Dashboard() {
   const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading } = useDashboardData();
 
   if (!user) return null;
+  
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardSkeleton />
+      </DashboardLayout>
+    );
+  }
 
   const userName = user.firstName || user.email?.split('@')[0] || 'User';
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || userName;
@@ -97,12 +106,7 @@ export default function Dashboard() {
         
         {/* KPI Cards Grid - 3x3 with Credit Card */}
         <section>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
               {/* KPI Cards - 3x2 grid */}
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Row 1 */}
@@ -167,13 +171,11 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          )}
         </section>
 
         {/* Wallet Cards Section */}
-        {!isLoading && (
-          <section>
-            <DashboardWalletCards
+        <section>
+          <DashboardWalletCards
               finaPayWallet={{
                 goldGrams: totals.walletGoldGrams || 0,
                 usdValue: (totals.walletGoldGrams || 0) * goldPrice,
@@ -189,16 +191,13 @@ export default function Dashboard() {
               userName={userName}
               isBusinessUser={isBusinessUser}
             />
-          </section>
-        )}
+        </section>
 
         {/* Recent Transactions & Certificates */}
-        {!isLoading && (
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TransactionsTable transactions={transactions} goldPrice={goldPrice} />
-            <CertificatesCard />
-          </section>
-        )}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TransactionsTable transactions={transactions} goldPrice={goldPrice} />
+          <CertificatesCard />
+        </section>
 
       </div>
     </DashboardLayout>
