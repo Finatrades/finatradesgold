@@ -4,6 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupSocketIO } from "./socket";
 import path from "path";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -66,6 +67,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Seed default platform configuration
+  try {
+    await storage.seedDefaultPlatformConfig();
+  } catch (error) {
+    console.error('[Platform Config] Failed to seed defaults:', error);
+  }
+  
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   

@@ -87,6 +87,30 @@ The platform supports two KYC modes, configurable via admin compliance settings:
 - Data pre-fills from user profile where available
 - Corporate KYC: Comprehensive questionnaire with beneficial owners and corporate documents
 
+### Centralized Platform Configuration
+All platform fees, limits, and system settings are managed through a centralized database-driven configuration system:
+
+**Database Table**: `platform_config` stores all settings with keys, categories, and values
+**Admin Interface**: `/admin/platform-config` provides a tabbed UI for managing all 12 configuration categories
+**Public API**: `GET /api/platform-config/public` exposes non-sensitive settings to frontend
+**Admin API**: `GET/POST /api/admin/platform-config` for full CRUD operations (admin only)
+
+**12 Configuration Categories**:
+1. **Gold Pricing**: Buy/sell spreads, storage fees, minimum trade amounts
+2. **Transaction Limits**: Tier-based daily/monthly limits (Tier 1-3)
+3. **Deposits**: Min/max amounts, daily/monthly limits
+4. **Withdrawals**: Min/max amounts, fees, pending hours
+5. **P2P Transfers**: Min/max amounts, limits, fees
+6. **BNSL**: Agreement fees, max terms, early exit penalties
+7. **FinaBridge**: Trade finance fees, LC issuance, document processing
+8. **Payment Methods**: Bank transfer, card, and crypto fees
+9. **KYC**: Auto-approval, expiry days, blocked countries
+10. **System**: Maintenance mode, registrations, notifications, session timeout
+11. **Vault Inventory**: Physical gold stock, reserved amounts, alerts
+12. **Referrals**: Bonus amounts, max referrals, validity periods
+
+**Context Integration**: `PlatformContext` fetches settings from database API on app load
+
 ### Project Structure
 ```
 ├── client/src/          # React frontend
