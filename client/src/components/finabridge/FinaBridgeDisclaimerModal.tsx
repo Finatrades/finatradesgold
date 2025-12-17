@@ -12,9 +12,10 @@ type FinaBridgeRole = 'importer' | 'exporter' | 'both';
 interface FinaBridgeDisclaimerModalProps {
   open: boolean;
   onAccept: (role: FinaBridgeRole) => void;
+  onClose?: () => void;
 }
 
-export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridgeDisclaimerModalProps) {
+export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: FinaBridgeDisclaimerModalProps) {
   const [accepted, setAccepted] = useState(false);
   const [showFullTerms, setShowFullTerms] = useState(false);
   const [selectedRole, setSelectedRole] = useState<FinaBridgeRole | null>(null);
@@ -27,8 +28,8 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
 
   if (showFullTerms) {
     return (
-      <Dialog open={open} onOpenChange={() => {}}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-0 overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
+      <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && onClose) onClose(); }}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-0 flex flex-col">
           <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-slate-800 to-slate-700 text-white">
             <div className="flex items-center gap-3">
               <Button 
@@ -51,7 +52,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
             </div>
           </DialogHeader>
 
-          <ScrollArea className="h-[500px] px-6 py-4">
+          <ScrollArea className="flex-1 min-h-0 px-6 py-4">
             <div className="prose prose-sm max-w-none text-gray-700">
               <h2 className="text-lg font-bold text-gray-900 mb-4">1. Introduction</h2>
               <p className="mb-2">1.1. Finatrades provides a regulated Gold-Backed Trade Infrastructure designed for corporates, importers, exporters, trading houses, and institutional partners.</p>
@@ -177,8 +178,8 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
   }
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && onClose) onClose(); }}>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 flex flex-col">
         <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
@@ -193,7 +194,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
           </div>
         </DialogHeader>
 
-        <ScrollArea className="h-[400px] px-6 py-4">
+        <ScrollArea className="flex-1 min-h-0 px-6 py-4">
           <div className="space-y-4 text-sm text-gray-700">
             <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
