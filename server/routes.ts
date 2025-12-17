@@ -8363,7 +8363,14 @@ export async function registerRoutes(
       });
 
       const orderReference = generateOrderReference();
-      const description = `Wallet deposit - ${amount} ${currency}`;
+      
+      // NGenius outlet is configured for AED - convert USD to AED
+      const USD_TO_AED_RATE = 3.6725;
+      const amountUsd = parseFloat(amount);
+      const amountAed = Math.round(amountUsd * USD_TO_AED_RATE * 100) / 100;
+      const paymentCurrency = 'AED';
+      
+      const description = `Wallet deposit - $${amountUsd} USD (${amountAed} AED)`;
 
       // Build return URL with order reference
       let finalReturnUrl: string;
@@ -8374,11 +8381,11 @@ export async function registerRoutes(
         finalReturnUrl = `${req.protocol}://${req.get('host')}/deposit/callback?ref=${orderReference}`;
       }
 
-      // Create order with NGenius
+      // Create order with NGenius in AED
       const orderResponse = await ngeniusService.createOrder({
         orderReference,
-        amount: parseFloat(amount),
-        currency,
+        amount: amountAed,
+        currency: paymentCurrency,
         description,
         returnUrl: finalReturnUrl,
         cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/deposit?cancelled=true`,
