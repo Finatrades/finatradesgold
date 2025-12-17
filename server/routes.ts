@@ -35,7 +35,7 @@ import {
   generateTradeLockCertificate,
   generateTradeReleaseCertificate
 } from "./document-service";
-import { generateUserManualPDF, generateAdminManualPDF } from "./pdf-generator";
+import { generateUserManualPDF, generateAdminManualPDF, generateCertificatePDF, generateTransactionReceiptPDF } from "./pdf-generator";
 import { getGoldPrice, getGoldPricePerGram, getGoldPriceStatus } from "./gold-price-service";
 import { 
   calculateUserRiskScore, 
@@ -5420,7 +5420,7 @@ export async function registerRoutes(
             
             // Create Digital Ownership certificate for the deposited gold
             const certNumber = await storage.generateCertificateNumber('Digital Ownership');
-            await tx.insert(certificates).values({
+            const [createdCert] = await tx.insert(certificates).values({
               certificateNumber: certNumber,
               userId: request.userId,
               transactionId: transaction.id,
@@ -5432,16 +5432,54 @@ export async function registerRoutes(
               issuer: 'Finatrades',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               issuedAt: new Date(),
-            });
+            }).returning();
+            
+            return { createdCert };
           });
           
-          // Send email notification for deposit confirmation with gold backing (outside transaction)
+          // Send email notification for deposit confirmation with PDF attachments
           const depositUser = await storage.getUser(request.userId);
+          
+          // Get the most recently created certificate for this user (the one we just created)
+          const userCerts = await storage.getUserCertificates(request.userId);
+          const freshCert = userCerts
+            .filter(c => c.type === 'Digital Ownership')
+            .sort((a, b) => new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime())[0];
+          
           if (depositUser && depositUser.email) {
-            sendEmailDirect(
-              depositUser.email,
-              `Deposit Confirmed - $${depositAmountUsd.toFixed(2)} (${goldGrams.toFixed(4)}g Gold)`,
-              `
+            // Generate transaction receipt PDF
+            const receiptPdf = await generateTransactionReceiptPDF({
+              referenceNumber: request.referenceNumber,
+              transactionType: 'Deposit',
+              amountUsd: depositAmountUsd,
+              goldGrams: goldGrams,
+              goldPricePerGram: goldPricePerGram,
+              userName: `${depositUser.firstName || ''} ${depositUser.lastName || ''}`.trim() || 'Customer',
+              userEmail: depositUser.email,
+              transactionDate: new Date(),
+              status: 'Completed',
+              description: `Bank deposit confirmed - Gold backing: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+            });
+            
+            const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
+              {
+                filename: `Transaction_Receipt_${request.referenceNumber}.pdf`,
+                content: receiptPdf,
+                contentType: 'application/pdf',
+              }
+            ];
+            
+            // Generate and add certificate PDF using the freshly created certificate
+            if (freshCert) {
+              const certPdf = await generateCertificatePDF(freshCert, depositUser);
+              attachments.push({
+                filename: `Certificate_${freshCert.certificateNumber}.pdf`,
+                content: certPdf,
+                contentType: 'application/pdf',
+              });
+            }
+            
+            const htmlBody = `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
                   <h1 style="color: white; margin: 0;">Deposit Confirmed!</h1>
@@ -5456,6 +5494,11 @@ export async function registerRoutes(
                     <p style="color: #6b7280; margin: 5px 0;">Reference: ${request.referenceNumber}</p>
                   </div>
                   <p>Your gold-backed balance is now available in your FinaPay wallet.</p>
+                  <p><strong>Attached Documents:</strong></p>
+                  <ul>
+                    <li>Transaction Receipt (PDF)</li>
+                    ${latestCert ? '<li>Digital Ownership Certificate (PDF)</li>' : ''}
+                  </ul>
                   <p style="text-align: center; margin-top: 30px;">
                     <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
                   </p>
@@ -5464,8 +5507,14 @@ export async function registerRoutes(
                   <p>Finatrades - Gold-Backed Digital Finance</p>
                 </div>
               </div>
-              `
-            ).catch(err => console.error('[Email] Failed to send deposit confirmation:', err));
+            `;
+            
+            sendEmailWithAttachment(
+              depositUser.email,
+              `Deposit Confirmed - $${depositAmountUsd.toFixed(2)} (${goldGrams.toFixed(4)}g Gold)`,
+              htmlBody,
+              attachments
+            ).catch(err => console.error('[Email] Failed to send deposit confirmation with PDF:', err));
           }
           
           // Update the deposit request with gold details
@@ -10467,7 +10516,7 @@ export async function registerRoutes(
         details: `Approved and credited crypto payment: $${paymentRequest.amountUsd} (${paymentRequest.goldGrams}g gold)`,
       });
       
-      // Notify user
+      // Notify user (in-app)
       await storage.createNotification({
         userId: paymentRequest.userId,
         title: "Payment Approved",
@@ -10475,6 +10524,78 @@ export async function registerRoutes(
         type: "success",
         read: false,
       });
+      
+      // Send email with PDF attachments
+      const cryptoUser = await storage.getUser(paymentRequest.userId);
+      if (cryptoUser && cryptoUser.email) {
+        // Generate transaction receipt PDF
+        const receiptPdf = await generateTransactionReceiptPDF({
+          referenceNumber: paymentRequest.transactionHash || `CRYPTO-${id.substring(0, 8)}`,
+          transactionType: 'Crypto Deposit',
+          amountUsd: usdAmount,
+          goldGrams: goldGrams,
+          goldPricePerGram: goldPrice,
+          userName: `${cryptoUser.firstName || ''} ${cryptoUser.lastName || ''}`.trim() || 'Customer',
+          userEmail: cryptoUser.email,
+          transactionDate: new Date(),
+          status: 'Completed',
+          description: `Crypto payment confirmed - ${paymentRequest.cryptoCurrency}`,
+        });
+        
+        const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
+          {
+            filename: `Transaction_Receipt_${paymentRequest.transactionHash?.substring(0, 10) || id.substring(0, 8)}.pdf`,
+            content: receiptPdf,
+            contentType: 'application/pdf',
+          }
+        ];
+        
+        // Generate certificate PDFs
+        for (const cert of generatedCertificates) {
+          const certPdf = await generateCertificatePDF(cert, cryptoUser);
+          attachments.push({
+            filename: `Certificate_${cert.certificateNumber}.pdf`,
+            content: certPdf,
+            contentType: 'application/pdf',
+          });
+        }
+        
+        const htmlBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0;">Crypto Payment Confirmed!</h1>
+            </div>
+            <div style="padding: 30px; background: #ffffff;">
+              <p>Hello ${cryptoUser.firstName},</p>
+              <p>Your crypto payment has been verified and gold has been credited to your wallet.</p>
+              <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${usdAmount.toFixed(2)}</p>
+                <p style="font-size: 18px; font-weight: bold; color: #92400e; margin: 10px 0;">Gold Credited: ${goldGrams.toFixed(4)}g</p>
+                <p style="color: #6b7280; margin: 5px 0;">Currency: ${paymentRequest.cryptoCurrency}</p>
+              </div>
+              <p><strong>Attached Documents:</strong></p>
+              <ul>
+                <li>Transaction Receipt (PDF)</li>
+                <li>Digital Ownership Certificate (PDF)</li>
+                <li>Physical Storage Certificate (PDF)</li>
+              </ul>
+              <p style="text-align: center; margin-top: 30px;">
+                <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
+              </p>
+            </div>
+            <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+              <p>Finatrades - Gold-Backed Digital Finance</p>
+            </div>
+          </div>
+        `;
+        
+        sendEmailWithAttachment(
+          cryptoUser.email,
+          `Crypto Payment Confirmed - $${usdAmount.toFixed(2)} (${goldGrams.toFixed(4)}g Gold)`,
+          htmlBody,
+          attachments
+        ).catch(err => console.error('[Email] Failed to send crypto confirmation with PDF:', err));
+      }
       
       res.json({ paymentRequest: updated, transaction });
     } catch (error: any) {

@@ -640,6 +640,169 @@ export { getCertificateTemplateSlug };
 export const INVOICE_TEMPLATE_SLUG = 'invoice_gold_purchase';
 
 // ============================================
+// TRANSACTION RECEIPT PDF GENERATOR
+// ============================================
+
+export interface TransactionReceiptData {
+  referenceNumber: string;
+  transactionType: string;
+  amountUsd: number;
+  goldGrams: number;
+  goldPricePerGram: number;
+  userName: string;
+  userEmail: string;
+  transactionDate: Date;
+  status: string;
+  description?: string;
+}
+
+export function generateTransactionReceiptPDF(data: TransactionReceiptData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const pageWidth = doc.page.width;
+      const margin = 50;
+
+      // Header
+      doc.rect(0, 0, pageWidth, 100).fill(FINATRADES_ORANGE);
+
+      doc.fillColor('white')
+         .fontSize(22)
+         .font('Helvetica-Bold')
+         .text('TRANSACTION RECEIPT', 0, 35, { align: 'center', width: pageWidth });
+
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text('Finatrades - Gold-Backed Digital Finance', 0, 65, { align: 'center', width: pageWidth });
+
+      let yPos = 120;
+
+      // Reference and Date
+      doc.fillColor('#404040')
+         .fontSize(11)
+         .font('Helvetica-Bold')
+         .text(`Reference: ${data.referenceNumber}`, margin, yPos);
+
+      doc.text(`Date: ${formatDate(data.transactionDate)}`, pageWidth - margin - 150, yPos, { width: 150, align: 'right' });
+
+      yPos += 15;
+      doc.strokeColor(FINATRADES_ORANGE)
+         .lineWidth(0.5)
+         .moveTo(margin, yPos)
+         .lineTo(pageWidth - margin, yPos)
+         .stroke();
+
+      // Customer Details
+      yPos += 25;
+      doc.fillColor(FINATRADES_ORANGE)
+         .fontSize(10)
+         .font('Helvetica-Bold')
+         .text('CUSTOMER DETAILS', margin, yPos);
+
+      yPos += 18;
+      doc.fillColor('#282828')
+         .font('Helvetica-Bold')
+         .text(data.userName, margin, yPos);
+
+      yPos += 15;
+      doc.fillColor('#505050')
+         .fontSize(9)
+         .font('Helvetica')
+         .text(data.userEmail, margin, yPos);
+
+      // Transaction Details Box
+      yPos += 40;
+      doc.rect(margin, yPos, pageWidth - 2 * margin, 120).fill('#FBF6DC');
+      doc.strokeColor(FINATRADES_ORANGE).lineWidth(1).rect(margin, yPos, pageWidth - 2 * margin, 120).stroke();
+
+      yPos += 15;
+      doc.fillColor(FINATRADES_ORANGE)
+         .fontSize(12)
+         .font('Helvetica-Bold')
+         .text('TRANSACTION SUMMARY', 0, yPos, { align: 'center', width: pageWidth });
+
+      yPos += 25;
+      doc.fillColor('#282828')
+         .fontSize(10)
+         .font('Helvetica');
+
+      const detailsX = margin + 30;
+      const valuesX = pageWidth / 2 + 20;
+
+      const details: [string, string][] = [
+        ['Transaction Type:', data.transactionType],
+        ['Amount (USD):', formatCurrency(data.amountUsd)],
+        ['Gold Amount:', formatGrams(data.goldGrams)],
+        ['Gold Price:', `${formatCurrency(data.goldPricePerGram)} / gram`],
+        ['Status:', data.status],
+      ];
+
+      details.forEach(([label, value]) => {
+        doc.font('Helvetica-Bold').text(label, detailsX, yPos);
+        doc.font('Helvetica').text(value, valuesX, yPos);
+        yPos += 18;
+      });
+
+      // Highlights box
+      yPos += 30;
+      const highlightWidth = 200;
+      const highlightX = (pageWidth - highlightWidth) / 2;
+
+      doc.roundedRect(highlightX, yPos, highlightWidth, 70, 8)
+         .fillAndStroke('#ffffff', FINATRADES_ORANGE);
+
+      doc.fillColor(FINATRADES_ORANGE)
+         .fontSize(24)
+         .font('Helvetica-Bold')
+         .text(formatCurrency(data.amountUsd), highlightX, yPos + 15, { width: highlightWidth, align: 'center' });
+
+      doc.fillColor('#505050')
+         .fontSize(12)
+         .font('Helvetica')
+         .text(formatGrams(data.goldGrams) + ' Gold', highlightX, yPos + 45, { width: highlightWidth, align: 'center' });
+
+      // Description if provided
+      if (data.description) {
+        yPos += 100;
+        doc.fillColor('#505050')
+           .fontSize(9)
+           .font('Helvetica')
+           .text(`Note: ${data.description}`, margin, yPos, { width: pageWidth - 2 * margin });
+      }
+
+      // Footer
+      const footerY = doc.page.height - 70;
+
+      doc.strokeColor('#C8C8C8')
+         .lineWidth(0.3)
+         .moveTo(margin, footerY)
+         .lineTo(pageWidth - margin, footerY)
+         .stroke();
+
+      doc.fillColor('#787878')
+         .fontSize(8)
+         .text('This receipt is issued for the transaction through the Finatrades platform.', margin, footerY + 10, { align: 'center', width: pageWidth - 2 * margin });
+      doc.text('For questions, please contact support@finatrades.com', margin, footerY + 22, { align: 'center', width: pageWidth - 2 * margin });
+      doc.text('This document is electronically generated and does not require a physical signature.', margin, footerY + 34, { align: 'center', width: pageWidth - 2 * margin });
+      doc.text(`Generated: ${new Date().toISOString()}`, margin, footerY + 46, { align: 'center', width: pageWidth - 2 * margin });
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// ============================================
 // USER MANUAL PDF GENERATOR
 // ============================================
 
