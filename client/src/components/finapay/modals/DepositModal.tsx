@@ -689,6 +689,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           Based on current gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
                         </p>
                       )}
+                      {goldPrice?.pricePerGram && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-2.5 mt-3">
+                          <p className="font-medium text-amber-800 dark:text-amber-300 text-xs mb-1">Important Notice:</p>
+                          <p className="text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+                            Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
+                            After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
