@@ -1765,12 +1765,23 @@ export async function registerRoutes(
         } : null,
       }));
       
-      // Normalize Finatrades corporate KYC submissions
-      const normalizedFinatradesCorporate = finatradesCorporateSubmissions.map(s => ({
-        ...s,
-        tier: 'finatrades_corporate',
-        kycType: 'finatrades_corporate',
-        accountType: 'business',
+      // Normalize Finatrades corporate KYC submissions - include user details for Applicant Details display
+      const normalizedFinatradesCorporate = await Promise.all(finatradesCorporateSubmissions.map(async (s) => {
+        // Fetch user data to get personal details (fullName, country, nationality)
+        const user = await storage.getUser(s.userId);
+        // Also check if there's a personal KYC with details
+        const personalKyc = finatradesPersonalSubmissions.find(p => p.userId === s.userId);
+        
+        return {
+          ...s,
+          tier: 'finatrades_corporate',
+          kycType: 'finatrades_corporate',
+          accountType: 'business',
+          // Include user's personal details for Applicant Details section
+          fullName: personalKyc?.fullName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null),
+          country: personalKyc?.country || user?.country || s.countryOfIncorporation,
+          nationality: personalKyc?.nationality || user?.nationality,
+        };
       }));
       
       // Combine and sort by creation date
