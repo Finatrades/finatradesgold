@@ -180,9 +180,53 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
 
   if (loading) {
     return (
-      <div className="py-12 text-center space-y-4">
-        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-        <p className="text-muted-foreground">Initializing secure payment...</p>
+      <div className="space-y-6">
+        <div className="text-center pb-4 border-b">
+          <p className="text-2xl font-bold text-foreground">${amount.toFixed(2)} USD</p>
+          <p className="text-sm text-muted-foreground">Secure card payment</p>
+        </div>
+
+        <Card className="border-2">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="w-5 h-5 text-primary" />
+              <span className="font-medium">Card Details</span>
+              <Lock className="w-4 h-4 text-green-600 ml-auto" />
+            </div>
+            
+            <div className="space-y-4 animate-pulse">
+              <div>
+                <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
+                <div className="h-12 bg-gray-100 rounded-lg border"></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="h-4 w-16 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg border"></div>
+                </div>
+                <div>
+                  <div className="h-4 w-12 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg border"></div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Loading secure payment form...
+            </p>
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onCancel} className="flex-1">
+            Cancel
+          </Button>
+          <Button disabled className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 opacity-50">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            Loading...
+          </Button>
+        </div>
       </div>
     );
   }
