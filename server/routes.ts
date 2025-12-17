@@ -8502,6 +8502,33 @@ export async function registerRoutes(
                 await storage.updateNgeniusTransaction(transaction.id, {
                   walletTransactionId: walletTx.id,
                 });
+
+                // Generate certificate number and send receipt email
+                const user = await storage.getUser(transaction.userId);
+                if (user?.email) {
+                  const certificateNumber = `FT-DOC-${orderReference.substring(0, 12).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                  const updatedWallet = await storage.getWallet(transaction.userId);
+                  const totalGold = parseFloat(updatedWallet?.goldGrams || '0');
+                  const totalValue = totalGold * goldPricePerGram;
+
+                  await sendEmail(user.email, EMAIL_TEMPLATES.CARD_PAYMENT_RECEIPT, {
+                    user_name: user.firstName || user.email,
+                    amount: depositAmount.toFixed(2),
+                    reference_id: orderReference,
+                    transaction_date: new Date().toLocaleString('en-US', { 
+                      dateStyle: 'medium', 
+                      timeStyle: 'short' 
+                    }),
+                    card_last4: orderStatus._embedded?.payment?.[0]?.paymentMethod?.pan?.slice(-4) || '****',
+                    certificate_number: certificateNumber,
+                    gold_grams: goldGrams.toFixed(4),
+                    gold_price: goldPricePerGram.toFixed(2),
+                    total_gold_grams: totalGold.toFixed(4),
+                    total_value_usd: totalValue.toFixed(2),
+                    dashboard_url: `${process.env.REPLIT_DOMAINS || 'https://finatrades.com'}/dashboard`,
+                  });
+                  console.log(`[NGenius] Receipt email sent to ${user.email} for ${orderReference}`);
+                }
               }
             }
           }
