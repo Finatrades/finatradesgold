@@ -852,7 +852,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'card-embedded' ? (
           <div className="py-4">
-            <IframeCardPayment
+            <EmbeddedCardForm
               amount={parseFloat(amount) || 0}
               onSuccess={handleCardSuccess}
               onError={handleCardError}
