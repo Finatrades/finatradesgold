@@ -1242,6 +1242,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(certificates).where(eq(certificates.userId, userId)).orderBy(desc(certificates.issuedAt));
   }
 
+  async getCertificateByTransactionId(transactionId: string): Promise<Certificate | undefined> {
+    const [certificate] = await db.select().from(certificates).where(eq(certificates.transactionId, transactionId));
+    return certificate || undefined;
+  }
+
   async getUserActiveCertificates(userId: string): Promise<Certificate[]> {
     return await db.select().from(certificates).where(and(eq(certificates.userId, userId), eq(certificates.status, 'Active'))).orderBy(desc(certificates.issuedAt));
   }

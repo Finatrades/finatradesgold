@@ -8503,10 +8503,26 @@ export async function registerRoutes(
                   walletTransactionId: walletTx.id,
                 });
 
-                // Generate certificate number and send receipt email
+                // Create Digital Ownership Certificate for card payment
+                const certificateNumber = `FT-DOC-${orderReference.substring(0, 12).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                await storage.createCertificate({
+                  certificateNumber,
+                  userId: transaction.userId,
+                  transactionId: walletTx.id,
+                  type: 'Digital Ownership',
+                  status: 'Active',
+                  goldGrams: goldGrams.toFixed(6),
+                  goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+                  totalValueUsd: depositAmount.toFixed(2),
+                  issuer: 'Finatrades',
+                  vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                  issuedAt: new Date(),
+                });
+                console.log(`[NGenius] Certificate ${certificateNumber} created for card payment ${orderReference}`);
+
+                // Send receipt email
                 const user = await storage.getUser(transaction.userId);
                 if (user?.email) {
-                  const certificateNumber = `FT-DOC-${orderReference.substring(0, 12).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
                   const updatedWallet = await storage.getWallet(transaction.userId);
                   const totalGold = parseFloat(updatedWallet?.goldGrams || '0');
                   const totalValue = totalGold * goldPricePerGram;
@@ -8546,6 +8562,78 @@ export async function registerRoutes(
       res.json(transaction);
     } catch (error) {
       res.status(400).json({ message: "Failed to get order status" });
+    }
+  });
+
+  // Admin: Resend card payment receipt email
+  app.post("/api/admin/ngenius/resend-receipt/:orderReference", async (req, res) => {
+    try {
+      const { orderReference } = req.params;
+      
+      // Get the NGenius transaction
+      const ngTransaction = await storage.getNgeniusTransactionByOrderReference(orderReference);
+      if (!ngTransaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      if (ngTransaction.status !== 'Captured') {
+        return res.status(400).json({ message: "Can only resend receipts for captured payments" });
+      }
+
+      const user = await storage.getUser(ngTransaction.userId);
+      if (!user?.email) {
+        return res.status(400).json({ message: "User email not found" });
+      }
+
+      const wallet = await storage.getWallet(ngTransaction.userId);
+      const depositAmount = parseFloat(ngTransaction.amountUsd || '0');
+      
+      let goldPricePerGram: number;
+      try {
+        goldPricePerGram = await getGoldPricePerGram();
+      } catch {
+        goldPricePerGram = 139.44;
+      }
+      
+      const goldGrams = depositAmount / goldPricePerGram;
+      const totalGold = parseFloat(wallet?.goldGrams || '0');
+      const totalValue = totalGold * goldPricePerGram;
+
+      // Get certificate for this transaction (use transaction ID if available)
+      let certificateNumber = `FT-DOC-${orderReference.substring(0, 12).toUpperCase()}`;
+      if (ngTransaction.walletTransactionId) {
+        const cert = await storage.getCertificateByTransactionId(ngTransaction.walletTransactionId);
+        if (cert) {
+          certificateNumber = cert.certificateNumber;
+        }
+      }
+
+      await sendEmail(user.email, EMAIL_TEMPLATES.CARD_PAYMENT_RECEIPT, {
+        user_name: user.firstName || user.email,
+        amount: depositAmount.toFixed(2),
+        reference_id: orderReference,
+        transaction_date: new Date(ngTransaction.createdAt!).toLocaleString('en-US', { 
+          dateStyle: 'medium', 
+          timeStyle: 'short' 
+        }),
+        card_last4: ngTransaction.cardLast4 || '****',
+        certificate_number: certificateNumber,
+        gold_grams: goldGrams.toFixed(4),
+        gold_price: goldPricePerGram.toFixed(2),
+        total_gold_grams: totalGold.toFixed(4),
+        total_value_usd: totalValue.toFixed(2),
+        dashboard_url: `${process.env.REPLIT_DOMAINS || 'https://finatrades.com'}/dashboard`,
+      });
+
+      res.json({ 
+        success: true, 
+        message: `Receipt email sent to ${user.email}`,
+        orderReference,
+        certificateNumber 
+      });
+    } catch (error: any) {
+      console.error('Resend receipt error:', error);
+      res.status(500).json({ message: error.message || "Failed to resend receipt" });
     }
   });
 
