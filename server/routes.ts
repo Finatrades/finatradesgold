@@ -12683,8 +12683,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get QA config (limits)
-  app.get("/api/qa/config", ensureQaAccess, async (req, res) => {
+  // Get QA config (limits) - allows any authenticated user to see config
+  app.get("/api/qa/config", ensureAuthenticated, async (req, res) => {
     try {
       const configRows = await db.select().from(require('@shared/schema').platformConfig);
       const config: Record<string, any> = {};
