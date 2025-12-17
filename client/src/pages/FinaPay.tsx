@@ -395,7 +395,7 @@ export default function FinaPay() {
               </Button>
             </div>
           ) : (
-            <TransactionHistory transactions={transactions} />
+            <TransactionHistory transactions={transactions} goldPrice={currentGoldPriceUsdPerGram} />
           )}
         </div>
 

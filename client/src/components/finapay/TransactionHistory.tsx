@@ -12,9 +12,10 @@ import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
+  goldPrice?: number;
 }
 
-export default function TransactionHistory({ transactions }: TransactionHistoryProps) {
+export default function TransactionHistory({ transactions, goldPrice = 85 }: TransactionHistoryProps) {
   const [filter, setFilter] = useState('All');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   
@@ -185,6 +186,11 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                          <>
                            <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
                            <p className="text-[10px] text-amber-600 font-medium">{tx.amountGrams.toFixed(4)}g gold</p>
+                         </>
+                      ) : goldPrice > 0 ? (
+                         <>
+                           <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
+                           <p className="text-[10px] text-amber-600 font-medium">~{(tx.amountUsd / goldPrice).toFixed(2)}g gold</p>
                          </>
                       ) : (
                          <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
