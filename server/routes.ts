@@ -8808,6 +8808,27 @@ export async function registerRoutes(
         orderReference,
       });
 
+      // Handle 3DS redirect if required
+      if (result.status === 'AWAIT_3DS' && result.threeDSUrl) {
+        // Update transaction status
+        await storage.updateNgeniusTransaction(txRecord.id, {
+          ngeniusOrderId: result.orderId,
+          status: 'Awaiting3DS',
+        });
+        
+        console.log(`[NGenius] Payment requires 3DS authentication: ${result.threeDSUrl}`);
+        
+        return res.json({
+          success: false,
+          status: 'AWAIT_3DS',
+          requires3DS: true,
+          threeDSUrl: result.threeDSUrl,
+          orderId: result.orderId,
+          orderReference,
+          message: 'Please complete 3D Secure authentication',
+        });
+      }
+
       if (result.success) {
         // Update transaction with NGenius order ID
         await storage.updateNgeniusTransaction(txRecord.id, {

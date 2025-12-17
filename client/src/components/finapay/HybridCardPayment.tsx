@@ -279,6 +279,21 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
             amountUsd: result.amountUsd,
           });
         }, 1500);
+      } else if (result.requires3DS && result.threeDSUrl) {
+        // Handle 3DS authentication - open in new window
+        console.log('[NGenius] 3DS authentication required, redirecting...');
+        toast.info('Please complete 3D Secure verification in the new window');
+        
+        // Open 3DS page in popup
+        const popup = window.open(result.threeDSUrl, '_blank', 'width=500,height=600,scrollbars=yes');
+        
+        if (!popup) {
+          // Popup blocked - redirect in same window
+          window.location.href = result.threeDSUrl;
+        }
+        
+        // Note: After 3DS completes, user will be redirected back or webhook will process
+        setError('Please complete 3D Secure verification in the popup window. Once completed, your payment will be processed.');
       } else {
         throw new Error(result.message || 'Payment failed');
       }
