@@ -14,6 +14,7 @@ import {
   RefreshCw, Loader2, ChevronRight, Database
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 interface PlatformConfig {
   id: string;
@@ -93,6 +94,7 @@ const CATEGORY_INFO: Record<string, { label: string; icon: React.ReactNode; desc
 const CATEGORIES = Object.keys(CATEGORY_INFO);
 
 export default function PlatformConfiguration() {
+  const { user } = useAuth();
   const [configs, setConfigs] = useState<PlatformConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,8 +105,10 @@ export default function PlatformConfiguration() {
   const fetchConfigs = async () => {
     setLoading(true);
     try {
-      const { apiRequest } = await import('@/lib/queryClient');
-      const res = await apiRequest('GET', '/api/admin/platform-config');
+      const res = await fetch('/api/admin/platform-config', {
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setConfigs(data.configs || []);
       
@@ -122,8 +126,11 @@ export default function PlatformConfiguration() {
 
   const seedDefaults = async () => {
     try {
-      const { apiRequest } = await import('@/lib/queryClient');
-      await apiRequest('POST', '/api/admin/platform-config/seed');
+      const res = await fetch('/api/admin/platform-config/seed', {
+        method: 'POST',
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (!res.ok) throw new Error('Failed to seed');
       toast.success('Default configuration seeded successfully');
       fetchConfigs();
     } catch (err) {
@@ -132,8 +139,10 @@ export default function PlatformConfiguration() {
   };
 
   useEffect(() => {
-    fetchConfigs();
-  }, []);
+    if (user?.id) {
+      fetchConfigs();
+    }
+  }, [user?.id]);
 
   const handleValueChange = (configId: string, value: string) => {
     setEditedValues(prev => ({ ...prev, [configId]: value }));
@@ -162,8 +171,15 @@ export default function PlatformConfiguration() {
         return;
       }
 
-      const { apiRequest } = await import('@/lib/queryClient');
-      await apiRequest('POST', '/api/admin/platform-config/bulk-update', { updates });
+      const res = await fetch('/api/admin/platform-config/bulk-update', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-User-Id': user?.id || '' 
+        },
+        body: JSON.stringify({ updates })
+      });
+      if (!res.ok) throw new Error('Failed to save');
       toast.success(`Updated ${updates.length} configuration(s)`);
       setHasChanges(false);
       fetchConfigs();
