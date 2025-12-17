@@ -1,0 +1,156 @@
+You are a senior full-stack engineer. Build a FAST Finatrades MVP web app in Replit.
+
+GOAL (Very important)
+- No manual refresh anywhere.
+- After ANY button click (Add Funds / Send Gold / Lock for BNSL / Lock for FinaBridge / Approve / Release), the UI must update instantly.
+- Auth must be solid: sign-in, sign-out, session expiry, auto refresh token, show sign-in time + last sign-out time.
+- Dashboard must feel “snappy”: optimistic UI, caching, minimal re-renders, fast endpoints.
+
+STACK (use this)
+- Next.js (App Router) + React + TypeScript
+- Tailwind CSS
+- TanStack Query (React Query) for all reads/mutations
+- Auth: custom JWT access + refresh token stored in httpOnly cookies (recommended for speed + control)
+- Backend: Next.js Route Handlers (/api/*)
+- DB: SQLite + Prisma (preferred). If DB setup fails, use an in-memory store but keep same interfaces.
+
+MODULES (stubs but wired end-to-end)
+1) FinaPay (Digital gold wallet)
+2) FinaVault (Gold ownership ledger view)
+3) BNSL (Lock gold plan)
+4) FinaBridge (Trade wallet lock + case)
+5) Control Tower (Admin view)
+6) User 360 (single user profile view)
+
+DATA LOGIC (must implement as consistent rules)
+- Users interact in USD, but ownership is in Gold Grams (g).
+- A single “used_price_usd_per_gram” is captured on each action event and stored with the transaction.
+- For MVP: price can be a fallback static value (config), but the API must support returning it.
+
+Core Entities
+- User: id, email, passwordHash
+- Session: id, userId, expiresAt, createdAt
+- AuthAudit: id, userId, loginAt, logoutAt, ip, userAgent
+- PriceSnapshot: id, usdPerGram, source, capturedAt
+- WalletBalances:
+  - finapayGrams
+  - finavaultGrams
+  - bnslLockedGrams
+  - finabridgeLockedGrams
+- Transactions (append-only):
+  id, userId, module, type, grams, usd, usdPerGram, status, refId, createdAt
+- TradeCase (FinaBridge):
+  id, importerUserId, exporterName, goodsSummary, lockGrams, status, createdAt
+
+AUTH REQUIREMENTS
+- /login: email + password
+- On login: create session, set httpOnly cookies, record AuthAudit.loginAt
+- Show on UI:
+  - Signed in at: <timestamp>
+  - Last sign out: <timestamp> (from audit table)
+- /logout: clear cookies + record AuthAudit.logoutAt
+- Auto refresh token:
+  - access token short-lived (e.g., 15m), refresh token longer (e.g., 7d)
+  - silently refresh in background when token is near expiry
+  - if refresh fails -> force logout and redirect to /login
+- Idle timeout: after X minutes of inactivity -> auto logout (configurable)
+
+FAST AUTO-UPDATE RULES (non-negotiable)
+- All reads use React Query with good defaults:
+  staleTime 10-30s, refetchOnWindowFocus true
+- Every action button uses a mutation with:
+  1) optimistic update (immediately reflect change in UI)
+  2) API call
+  3) onSuccess: invalidateQueries for all impacted dashboards + User360 + ControlTower
+  4) onError: rollback optimistic update + show toast error
+- Add “Refresh Now” button that triggers manual query invalidation (optional), but app should not require it.
+
+PAGES / ROUTES (build these)
+- /login
+- /dashboard (User)
+  Tabs: FinaPay | FinaVault | BNSL | FinaBridge
+  Header: user email + signed-in time + logout button + sync status
+  Tiles:
+    - FinaPay balance (USD reference + grams)
+    - FinaVault ownership grams
+    - BNSL locked grams
+    - FinaBridge locked grams
+  Recent Activity table: module, type, grams, usd, status, time
+- /admin/control-tower (Admin stub)
+  - list all users
+  - list last 50 transactions
+  - list trade cases + status
+- /admin/user-360/[userId]
+  - show full balances + last actions + audit logs
+
+BUTTONS (must exist and work end-to-end)
+A) FinaPay
+- Add Funds (USD input -> converts to grams using price snapshot; increases finapayGrams and finavaultGrams)
+- Send Gold (to another user email; decreases sender finapayGrams & finavaultGrams, increases receiver)
+B) BNSL
+- Create Plan / Lock Gold (moves grams from finapayGrams to bnslLockedGrams; status LOCKED)
+- Unlock (moves back; status UNLOCKED)
+C) FinaBridge
+- Create Trade Case (importer locks grams -> finabridgeLockedGrams; tradeCase status OPEN)
+- Approve Docs (admin action: sets status APPROVED)
+- Release Settlement (moves locked grams from importer to exporter ledger entry; marks tradeCase SETTLED)
+D) FinaVault
+- Ownership view is derived from balances + ledger transactions (read-only page, but must auto-update)
+
+API ENDPOINTS (must implement)
+Auth
+- POST /api/auth/login
+- POST /api/auth/logout
+- POST /api/auth/refresh
+- GET  /api/me
+
+Price
+- GET /api/price (returns latest fallback or snapshot)
+
+User Dashboard Data
+- GET /api/balances
+- GET /api/activity?limit=50
+Actions (mutations)
+- POST /api/finapay/add-funds
+- POST /api/finapay/send
+- POST /api/bnsl/lock
+- POST /api/bnsl/unlock
+- POST /api/finabridge/create-case
+- POST /api/finabridge/approve
+- POST /api/finabridge/release
+
+Admin
+- GET /api/admin/users
+- GET /api/admin/transactions
+- GET /api/admin/trade-cases
+- GET /api/admin/user-360?userId=...
+
+SYNC STATUS + SPEED UX
+- Show a small indicator:
+  ✅ Up to date (no in-flight requests)
+  🔄 Syncing (any query/mutation pending)
+  ⚠️ Offline (fetch error)
+- Use toast notifications for success/fail.
+- No full page reloads on actions.
+- Keep API responses small and consistent.
+
+SEED DATA
+- Seed 2 users:
+  1) admin@finatrades.test / Password123! (admin)
+  2) user@finatrades.test / Password123! (normal)
+- Seed fallback price:
+  usdPerGram = 70 (configurable)
+
+DELIVERABLES
+- Working app in Replit
+- README: how to run, how to login, how to test “auto-update”:
+  - add funds -> see balances + activity instantly
+  - lock in BNSL -> see tiles update instantly
+  - create trade case -> see lock instantly
+  - sign out -> shows last logout time
+- Clean folder structure + readable code comments.
+- If Prisma migrations fail in Replit, fall back to an in-memory store but keep the same API signatures.
+
+IMPORTANT
+- Focus on correctness + speed + auto-refresh behavior.
+- Wire all modules as stubs, but every button must update UI instantly and reliably.
