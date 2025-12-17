@@ -230,7 +230,7 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
                    <div className="flex items-end gap-2">
                      <div className="space-y-2 flex-1">
                        <Label className="text-xs">Total Weight</Label>
-                       <div className="h-9 px-3 flex items-center bg-white border border-border rounded-md text-sm text-secondary font-bold">
+                       <div className="h-9 px-3 flex items-center bg-gray-50 border border-border rounded-md text-sm text-foreground font-bold">
                          {item.totalWeightGrams} g
                        </div>
                      </div>
@@ -458,9 +458,9 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
       {/* Right Sidebar - Summary */}
       <div className="hidden lg:block">
         <div className="sticky top-24 space-y-6">
-          <Card className="bg-secondary/5 border-secondary/20 backdrop-blur-sm">
+          <Card className="bg-white border-border shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-medium text-secondary">Deposit Summary</CardTitle>
+              <CardTitle className="text-lg font-medium text-foreground">Deposit Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
@@ -471,13 +471,13 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
                 <span className="text-muted-foreground">Total Weight</span>
                 <span className="text-foreground font-bold">{totalWeight} g</span>
               </div>
-              <Separator className="bg-secondary/20" />
+              <Separator className="bg-border" />
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Est. Value (USD)</span>
-                <span className="text-secondary font-bold">~${(totalWeight * 85.22).toFixed(2)}</span>
+                <span className="text-primary font-bold">~${(totalWeight * 85.22).toFixed(2)}</span>
               </div>
-              <div className="mt-4 p-3 bg-secondary/10 rounded border border-secondary/20">
-                <p className="text-xs text-secondary flex gap-2">
+              <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
+                <p className="text-xs text-amber-800 flex gap-2">
                   <Info className="w-4 h-4 flex-shrink-0" />
                   <span>Upon verification at the vault, <strong>{totalWeight}g</strong> of Gold will be credited to your FinaPay Wallet.</span>
                 </p>
