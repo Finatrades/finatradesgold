@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -169,6 +170,7 @@ export default function AllTransactions() {
   };
 
   return (
+    <DashboardLayout>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -439,5 +441,6 @@ export default function AllTransactions() {
         </DialogContent>
       </Dialog>
     </div>
+    </DashboardLayout>
   );
 }
