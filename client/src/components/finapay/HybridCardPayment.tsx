@@ -377,70 +377,102 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center pb-4 border-b">
-        <p className="text-2xl font-bold text-foreground">${amount.toFixed(2)} USD</p>
-        <p className="text-sm text-muted-foreground">Secure card payment</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Left Panel - Order Summary */}
+      <div className="space-y-4">
+        <Card className="border-2 bg-gradient-to-br from-orange-50 to-amber-50">
+          <CardContent className="pt-6">
+            <h3 className="font-semibold text-lg mb-4">Order Summary</h3>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount</span>
+                <span className="font-medium">${amount.toFixed(2)} USD</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Payment Method</span>
+                <span className="font-medium flex items-center gap-1">
+                  <CreditCard className="w-4 h-4" />
+                  Card
+                </span>
+              </div>
+              <div className="border-t pt-3 mt-3">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span className="text-primary">${amount.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Lock className="w-4 h-4 text-green-600" />
+          <span>256-bit SSL Encrypted</span>
+        </div>
       </div>
 
-      <Card className="border-2">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <CreditCard className="w-5 h-5 text-primary" />
-            <span className="font-medium">Card Details</span>
-            <Lock className="w-4 h-4 text-green-600 ml-auto" />
-          </div>
-          
-          <div 
-            ref={containerRef}
-            id="hybrid-card-input" 
-            className="border rounded-lg bg-white overflow-hidden"
-            style={{ minHeight: cardMounted ? 'auto' : '120px' }}
-          >
-            {!cardMounted && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
+      {/* Right Panel - Card Form */}
+      <div className="space-y-4">
+        <Card className="border-2">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="w-5 h-5 text-primary" />
+              <span className="font-medium">Card Details</span>
+              <Lock className="w-4 h-4 text-green-600 ml-auto" />
+            </div>
+            
+            <div 
+              ref={containerRef}
+              id="hybrid-card-input" 
+              className="border rounded-lg bg-white overflow-hidden"
+              style={{ minHeight: cardMounted ? 'auto' : '120px' }}
+            >
+              {!cardMounted && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+
+            {error && cardMounted && (
+              <p className="text-sm text-destructive mt-2">{error}</p>
             )}
-          </div>
 
-          {error && cardMounted && (
-            <p className="text-sm text-destructive mt-2">{error}</p>
-          )}
+            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              Your card details are encrypted and processed securely
+            </p>
+          </CardContent>
+        </Card>
 
-          <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
-            <Lock className="w-3 h-3" />
-            Your card details are encrypted and processed securely
-          </p>
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-3">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          disabled={processing}
-          className="flex-1"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={!formValid || processing}
-          className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600"
-        >
-          {processing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <CreditCard className="w-4 h-4 mr-2" />
-              Pay ${amount.toFixed(2)}
-            </>
-          )}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={processing}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!formValid || processing}
+            className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4 mr-2" />
+                Pay ${amount.toFixed(2)}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
