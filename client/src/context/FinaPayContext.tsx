@@ -83,10 +83,11 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      // Fetch both regular transactions and deposit requests
-      const [txResponse, depositResponse] = await Promise.all([
+      // Fetch regular transactions, deposit requests, and crypto payments
+      const [txResponse, depositResponse, cryptoResponse] = await Promise.all([
         fetch(`/api/transactions/${user.id}`),
-        fetch(`/api/deposit-requests/${user.id}`)
+        fetch(`/api/deposit-requests/${user.id}`),
+        fetch(`/api/crypto-payments/user/${user.id}`)
       ]);
       
       let allTransactions: any[] = [];
@@ -112,6 +113,26 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
           isDepositRequest: true,
         }));
         allTransactions = [...allTransactions, ...depositTransactions];
+      }
+      
+      // Convert crypto payment requests to transaction-like format
+      if (cryptoResponse.ok) {
+        const cryptoData = await cryptoResponse.json();
+        const cryptoTransactions = (cryptoData.requests || [])
+          .filter((cp: any) => cp.status !== 'Approved') // Only show non-approved
+          .map((cp: any) => ({
+            id: cp.id,
+            userId: cp.userId,
+            type: 'Deposit',
+            status: cp.status === 'Approved' ? 'Completed' : cp.status,
+            amountUsd: cp.amountUsd,
+            amountGold: cp.goldGrams,
+            createdAt: cp.createdAt,
+            referenceId: cp.transactionHash ? cp.transactionHash.substring(0, 10) : null,
+            description: `Crypto Deposit - ${cp.status}`,
+            isCryptoPayment: true,
+          }));
+        allTransactions = [...allTransactions, ...cryptoTransactions];
       }
       
       // Sort by date (newest first)
