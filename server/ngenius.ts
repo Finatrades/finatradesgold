@@ -332,12 +332,14 @@ export class NgeniusService {
     orderId?: string;
     transactionId?: string;
     message?: string;
+    threeDSUrl?: string;
   }> {
     try {
       const amountInMinorUnits = Math.round(params.amount * 100);
 
-      // Step 1: Create an order
-      const orderRequest = {
+      // For hosted sessions, POST directly to payment/hosted-session endpoint
+      // No need to create order first - send order data in request body
+      const paymentRequest = {
         action: 'SALE',
         amount: {
           currencyCode: params.currency,
@@ -346,36 +348,38 @@ export class NgeniusService {
         merchantOrderReference: params.orderReference,
       };
 
-      console.log('[NGenius] Creating order for session payment:', orderRequest);
+      console.log('[NGenius] Processing hosted session payment:', {
+        sessionId: params.sessionId,
+        ...paymentRequest
+      });
 
-      const order = await this.makeRequest<NgeniusOrderResponse>(
-        'POST',
-        `/transactions/outlets/${this.config.outletRef}/orders`,
-        orderRequest
-      );
-
-      const orderId = order._id;
-      console.log('[NGenius] Order created:', orderId);
-
-      // Step 2: Complete payment with session ID
-      // PUT /transactions/outlets/{outletRef}/orders/{orderId}/payments/session/{sessionId}
+      // POST /transactions/outlets/{outletRef}/payment/hosted-session/{sessionId}
       const paymentResult = await this.makeRequest<any>(
-        'PUT',
-        `/transactions/outlets/${this.config.outletRef}/orders/${orderId}/payments/session/${params.sessionId}`,
-        {}
+        'POST',
+        `/transactions/outlets/${this.config.outletRef}/payment/hosted-session/${params.sessionId}`,
+        paymentRequest
       );
 
-      console.log('[NGenius] Payment result:', paymentResult);
+      console.log('[NGenius] Payment result:', JSON.stringify(paymentResult, null, 2));
 
       // Check payment status
-      const status = paymentResult.state || paymentResult._embedded?.payment?.[0]?.state;
+      const status = paymentResult.state || paymentResult._embedded?.payment?.[0]?.state || 'UNKNOWN';
       const success = ['CAPTURED', 'AUTHORISED', 'PURCHASED'].includes(status);
+      
+      // Check for 3DS redirect URL
+      let threeDSUrl: string | undefined;
+      if (paymentResult._links?.['cnp:3ds']?.href) {
+        threeDSUrl = paymentResult._links['cnp:3ds'].href;
+      } else if (paymentResult._links?.['payment:3ds']?.href) {
+        threeDSUrl = paymentResult._links['payment:3ds'].href;
+      }
 
       return {
         success,
-        status: status || 'UNKNOWN',
-        orderId,
-        transactionId: paymentResult._id,
+        status,
+        orderId: paymentResult._id,
+        transactionId: paymentResult._embedded?.payment?.[0]?._id || paymentResult._id,
+        threeDSUrl,
       };
     } catch (error: any) {
       console.error('[NGenius] Error processing session payment:', error);
