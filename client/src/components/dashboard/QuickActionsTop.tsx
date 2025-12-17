@@ -22,7 +22,7 @@ const actions = [
   },
   {
     title: 'Buy Gold',
-    path: '/finapay',
+    path: '/finapay?highlight=buy',
     icon: <ShoppingCart className="w-4 h-4" />,
     gradient: 'from-amber-400 to-yellow-500',
     hoverGradient: 'hover:from-amber-500 hover:to-yellow-600',
@@ -31,7 +31,7 @@ const actions = [
   },
   {
     title: 'Deposit Gold',
-    path: '/finavault?tab=new-request',
+    path: '/finavault?tab=new-request&highlight=deposit',
     icon: <Database className="w-4 h-4" />,
     gradient: 'from-teal-500 to-cyan-600',
     hoverGradient: 'hover:from-teal-600 hover:to-cyan-700',

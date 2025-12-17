@@ -276,12 +276,28 @@ export default function FinaVault() {
   // Use ledger entries if available, otherwise show combined records
   const displayRecords = ledgerEntries.length > 0 ? ledgerEntries : allRecords;
 
-  // Check query params for initial tab
+  const [highlightSection, setHighlightSection] = useState(false);
+  
+  // Check query params for initial tab and highlight
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
+    const highlight = searchParams.get('highlight');
+    
     if (tabParam === 'new-request') {
       setActiveTab('new-request');
+    }
+    
+    if (highlight === 'deposit') {
+      setHighlightSection(true);
+      setTimeout(() => {
+        const depositSection = document.getElementById('finavault-deposit-section');
+        if (depositSection) {
+          depositSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      setTimeout(() => setHighlightSection(false), 1500);
+      window.history.replaceState({}, '', '/finavault?tab=new-request');
     }
   }, [location]);
 
@@ -555,7 +571,7 @@ export default function FinaVault() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="new-request">
+                <TabsContent value="new-request" id="finavault-deposit-section" className={`transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-orange-50' : ''}`}>
                   <NewDepositForm 
                     onSubmit={handleNewRequest}
                     onCancel={() => setActiveTab('my-deposits')}

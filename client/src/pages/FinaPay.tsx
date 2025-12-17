@@ -33,6 +33,24 @@ export default function FinaPay() {
   
   const [depositCallbackStatus, setDepositCallbackStatus] = useState<'success' | 'cancelled' | 'checking' | null>(null);
   const [depositCallbackDetails, setDepositCallbackDetails] = useState<{ amount?: string; orderRef?: string } | null>(null);
+  const [highlightSection, setHighlightSection] = useState(false);
+
+  // Handle highlight from dashboard navigation
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const highlight = params.get('highlight');
+    if (highlight === 'buy') {
+      setHighlightSection(true);
+      setTimeout(() => {
+        const walletSection = document.getElementById('finapay-wallet-section');
+        if (walletSection) {
+          walletSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      setTimeout(() => setHighlightSection(false), 1500);
+      window.history.replaceState({}, '', '/finapay');
+    }
+  }, [searchString]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchString);
@@ -246,7 +264,7 @@ export default function FinaPay() {
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
         {/* FinaPay Wallet Card */}
-        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+        <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-orange-50' : ''}`}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg">
