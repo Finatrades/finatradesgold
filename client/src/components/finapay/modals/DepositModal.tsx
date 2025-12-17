@@ -829,7 +829,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Based on ${goldPrice.pricePerGram.toFixed(2)}/gram
+                    Gold Price: ${goldPrice.pricePerGram.toFixed(2)}/gram
                   </p>
                 </div>
               )}
@@ -886,7 +886,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Based on ${goldPrice.pricePerGram.toFixed(2)}/gram
+                  Gold Price: ${goldPrice.pricePerGram.toFixed(2)}/gram
                 </p>
               </div>
             )}
