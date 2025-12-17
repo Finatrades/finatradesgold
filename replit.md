@@ -111,6 +111,27 @@ All platform fees, limits, and system settings are managed through a centralized
 
 **Context Integration**: `PlatformContext` fetches settings from database API on app load
 
+### Email Notification Management
+Comprehensive email notification system with admin controls and audit logging:
+
+**Database Tables**:
+- `email_notification_settings`: Toggleable notification types by category (auth, transactions, KYC, BNSL, trade finance, documents, system)
+- `email_logs`: Complete audit trail of all sent emails with status, recipient, template, and error tracking
+
+**Admin Interface**: `/admin/email-notifications` provides:
+- Toggle switches for each notification type by category
+- Seed button to populate default notification settings
+- Searchable/filterable sent email history with status badges
+- Email statistics (total sent, failed, pending)
+
+**API Endpoints**:
+- `GET /api/admin/email-notifications`: List all notification settings
+- `PATCH /api/admin/email-notifications/:type/toggle`: Enable/disable specific notification
+- `POST /api/admin/email-notifications/seed`: Populate default settings
+- `GET /api/admin/email-logs`: Retrieve sent email history
+
+**Email Flow**: `sendEmail` function checks notification settings before sending and logs all attempts (success/failure) for audit purposes
+
 ### Project Structure
 ```
 ├── client/src/          # React frontend
