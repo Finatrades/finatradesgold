@@ -156,6 +156,16 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Fetch current gold price
+  const { data: goldPriceData } = useQuery({
+    queryKey: ['gold-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-price');
+      if (!res.ok) return { pricePerGram: 85 };
+      return res.json();
+    }
+  });
+
   // Transform API deposit requests to match frontend type
   const apiRequests = (depositData?.requests || []).map((req: any) => ({
     id: req.referenceNumber,
@@ -174,7 +184,7 @@ export default function FinaVault() {
     rejectionReason: req.rejectionReason,
   }));
 
-  const goldPricePerGram = 85.22;
+  const goldPricePerGram = goldPriceData?.pricePerGram || 85;
   
   // Safe parse function to handle null/undefined values
   const safeParseFloat = (val: any) => {
