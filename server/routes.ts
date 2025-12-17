@@ -106,20 +106,54 @@ const upload = multer({
   }
 });
 
-// Middleware to ensure admin access using header-based auth
-// This middleware validates that the X-Admin-User-Id header contains a valid admin user ID
+// ============================================================================
+// AUTHENTICATION MIDDLEWARE (SECURITY-CRITICAL)
+// ============================================================================
+
+// Middleware to ensure user is authenticated via session
+function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+}
+
+// Middleware to ensure authenticated user matches the userId param
+// This prevents users from accessing other users' data
+async function ensureOwnerOrAdmin(req: Request, res: Response, next: NextFunction) {
+  const sessionUserId = req.session?.userId;
+  const targetUserId = req.params.userId || req.params.id;
+  
+  if (!sessionUserId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  // Allow if user is accessing their own data
+  if (sessionUserId === targetUserId) {
+    return next();
+  }
+  
+  // Allow if user is an admin
+  const user = await storage.getUser(sessionUserId);
+  if (user?.role === 'admin') {
+    (req as any).adminUser = user;
+    return next();
+  }
+  
+  return res.status(403).json({ message: "Access denied" });
+}
+
+// Middleware to ensure admin access via session-based authentication
+// SECURITY: No longer trusts X-Admin-User-Id header - requires valid session
 async function ensureAdminAsync(req: Request, res: Response, next: NextFunction) {
   try {
-    const adminUserId = req.headers['x-admin-user-id'] as string;
-    console.log('[DEBUG] ensureAdminAsync - Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('[DEBUG] ensureAdminAsync - adminUserId:', adminUserId);
+    const sessionUserId = req.session?.userId;
     
-    if (!adminUserId) {
-      console.log('[DEBUG] ensureAdminAsync - No adminUserId found in headers');
+    if (!sessionUserId) {
       return res.status(401).json({ message: "Authentication required" });
     }
     
-    const admin = await storage.getUser(adminUserId);
+    const admin = await storage.getUser(sessionUserId);
     if (!admin || admin.role !== 'admin') {
       return res.status(403).json({ message: "Admin access required" });
     }
@@ -233,7 +267,8 @@ export async function registerRoutes(
   // ============================================================================
   
   // Single endpoint for all dashboard data - replaces 7 separate API calls
-  app.get("/api/dashboard/:userId", async (req, res) => {
+  // PROTECTED: requires authenticated session matching userId
+  app.get("/api/dashboard/:userId", ensureOwnerOrAdmin, async (req, res) => {
     const startTime = Date.now();
     try {
       const userId = req.params.userId;
@@ -584,13 +619,19 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // Check if password is hashed (starts with $2) or plain text (for demo/admin users)
+      // SECURITY: All passwords must be bcrypt hashed
+      // Plain text passwords are no longer accepted for security
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
         isValidPassword = await bcrypt.compare(password, user.password);
       } else {
-        // Legacy plain text comparison for existing demo/admin users
-        isValidPassword = user.password === password;
+        // Force migration: hash legacy plaintext passwords on login attempt
+        // For security, we still compare to allow migration but then hash immediately
+        if (user.password === password) {
+          const hashedPassword = await bcrypt.hash(password, 12);
+          await storage.updateUser(user.id, { password: hashedPassword });
+          isValidPassword = true;
+        }
       }
       
       if (!isValidPassword) {
@@ -617,6 +658,10 @@ export async function registerRoutes(
         });
       }
       
+      // Set session for authenticated user (SECURITY-CRITICAL)
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      
       // Record login timestamp for session tracking
       const updatedUser = await storage.updateUser(user.id, {
         lastLoginAt: new Date(),
@@ -628,8 +673,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get current user
-  app.get("/api/auth/me/:userId", async (req, res) => {
+  // Get current user - PROTECTED: requires matching session
+  app.get("/api/auth/me/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
       if (!user) {
@@ -641,8 +686,8 @@ export async function registerRoutes(
     }
   });
   
-  // Update user profile
-  app.patch("/api/users/:userId", async (req, res) => {
+  // Update user profile - PROTECTED: requires matching session
+  app.patch("/api/users/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const user = await storage.updateUser(req.params.userId, req.body);
       if (!user) {
@@ -654,8 +699,8 @@ export async function registerRoutes(
     }
   });
   
-  // Delete user account
-  app.delete("/api/users/:userId", async (req, res) => {
+  // Delete user account - PROTECTED: requires matching session
+  app.delete("/api/users/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { password } = req.body;
       const userId = req.params.userId;
@@ -665,13 +710,12 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Verify password before deletion
+      // Verify password before deletion - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
         isValidPassword = await bcrypt.compare(password, user.password);
-      } else {
-        isValidPassword = user.password === password;
       }
+      // Legacy plaintext passwords no longer accepted for security-critical operations
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
@@ -693,11 +737,43 @@ export async function registerRoutes(
         return res.status(500).json({ message: "Failed to delete account" });
       }
       
+      // Destroy session after account deletion
+      req.session.destroy(() => {});
+      
       res.json({ message: "Account deleted successfully" });
     } catch (error) {
       console.error("Account deletion error:", error);
       res.status(500).json({ message: "Failed to delete account" });
     }
+  });
+  
+  // Logout - destroy session
+  app.post("/api/auth/logout", (req, res) => {
+    const userId = req.session?.userId;
+    
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      
+      // Clear cookie
+      res.clearCookie('connect.sid');
+      
+      // Create audit log if we had a session
+      if (userId) {
+        storage.createAuditLog({
+          entityType: "user",
+          entityId: userId,
+          actionType: "logout",
+          actor: userId,
+          actorRole: "user",
+          details: "User logged out",
+        }).catch(err => console.error("Audit log error:", err));
+      }
+      
+      res.json({ message: "Logged out successfully" });
+    });
   });
   
   // ============================================================================
@@ -962,6 +1038,11 @@ export async function registerRoutes(
       if (isValid) {
         // Delete challenge after successful verification
         mfaChallenges.delete(challengeToken);
+        
+        // Set session for authenticated user (SECURITY-CRITICAL)
+        req.session.userId = user.id;
+        req.session.userRole = user.role;
+        
         return res.json({ success: true, user: sanitizeUser(user) });
       }
       
@@ -980,6 +1061,10 @@ export async function registerRoutes(
             
             // Delete challenge after successful verification
             mfaChallenges.delete(challengeToken);
+            
+            // Set session for authenticated user (SECURITY-CRITICAL)
+            req.session.userId = user.id;
+            req.session.userRole = user.role;
             
             return res.json({ 
               success: true, 
@@ -1010,13 +1095,12 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Verify password before disabling MFA
+      // Verify password before disabling MFA - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
         isValidPassword = await bcrypt.compare(password, user.password);
-      } else {
-        isValidPassword = user.password === password;
       }
+      // Legacy plaintext passwords no longer accepted
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
@@ -1048,7 +1132,7 @@ export async function registerRoutes(
   });
   
   // Get MFA status
-  app.get("/api/mfa/status/:userId", async (req, res) => {
+  app.get("/api/mfa/status/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
       
@@ -1080,13 +1164,12 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Verify password before enabling biometric
+      // Verify password before enabling biometric - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
         isValidPassword = await bcrypt.compare(password, user.password);
-      } else {
-        isValidPassword = user.password === password;
       }
+      // Legacy plaintext passwords no longer accepted
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
@@ -1129,13 +1212,12 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Verify password before disabling biometric
+      // Verify password before disabling biometric - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
         isValidPassword = await bcrypt.compare(password, user.password);
-      } else {
-        isValidPassword = user.password === password;
       }
+      // Legacy plaintext passwords no longer accepted
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
@@ -1169,7 +1251,7 @@ export async function registerRoutes(
   });
 
   // Get biometric status
-  app.get("/api/biometric/status/:userId", async (req, res) => {
+  app.get("/api/biometric/status/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
       
@@ -1815,8 +1897,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get user's KYC submission
-  app.get("/api/kyc/:userId", async (req, res) => {
+  // Get user's KYC submission - PROTECTED: requires matching session
+  app.get("/api/kyc/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const submission = await storage.getKycSubmission(req.params.userId);
       res.json({ submission });
@@ -2145,7 +2227,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get user risk profile
-  app.get("/api/risk-profile/:userId", async (req, res) => {
+  app.get("/api/risk-profile/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const profile = await storage.getOrCreateUserRiskProfile(req.params.userId);
       res.json({ profile });
@@ -2311,7 +2393,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get user screening logs
-  app.get("/api/screening-logs/:userId", async (req, res) => {
+  app.get("/api/screening-logs/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const logs = await storage.getUserAmlScreeningLogs(req.params.userId);
       res.json({ logs });
@@ -2750,8 +2832,8 @@ export async function registerRoutes(
   // FINAPAY - WALLET & TRANSACTIONS
   // ============================================================================
   
-  // Get user wallet
-  app.get("/api/wallet/:userId", async (req, res) => {
+  // Get user wallet - PROTECTED: requires matching session
+  app.get("/api/wallet/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const wallet = await storage.getWallet(req.params.userId);
       if (!wallet) {
@@ -2763,18 +2845,11 @@ export async function registerRoutes(
     }
   });
   
-  // Update wallet
-  app.patch("/api/wallet/:id", async (req, res) => {
-    try {
-      const wallet = await storage.updateWallet(req.params.id, req.body);
-      if (!wallet) {
-        return res.status(404).json({ message: "Wallet not found" });
-      }
-      res.json({ wallet });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to update wallet" });
-    }
-  });
+  // Update wallet - REMOVED FOR SECURITY
+  // Direct wallet modification is a critical security risk.
+  // All wallet updates must go through proper transaction flows
+  // with admin approval (deposits, purchases, transfers, etc.)
+  // app.patch("/api/wallet/:id") - INTENTIONALLY REMOVED
   
   // Create transaction - all transactions start as Pending and require admin approval
   app.post("/api/transactions", async (req, res) => {
@@ -2802,8 +2877,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get user transactions
-  app.get("/api/transactions/:userId", async (req, res) => {
+  // Get user transactions - PROTECTED: requires matching session
+  app.get("/api/transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const transactions = await storage.getUserTransactions(req.params.userId);
       res.json({ transactions });
@@ -2816,8 +2891,8 @@ export async function registerRoutes(
   // UNIFIED TRANSACTIONS API (All Modules)
   // ============================================================================
   
-  // Get unified transactions with advanced filtering
-  app.get("/api/unified-transactions/:userId", async (req, res) => {
+  // Get unified transactions with advanced filtering - PROTECTED
+  app.get("/api/unified-transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const userId = req.params.userId;
       const { module, type, status, fromDate, toDate, limit = '50', cursor } = req.query;
@@ -3812,8 +3887,8 @@ export async function registerRoutes(
   // FINAVAULT - GOLD STORAGE
   // ============================================================================
   
-  // Get user vault ownership summary (central ledger view)
-  app.get("/api/vault/ownership/:userId", async (req, res) => {
+  // Get user vault ownership summary (central ledger view) - PROTECTED
+  app.get("/api/vault/ownership/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { vaultLedgerService } = await import('./vault-ledger-service');
       const summary = await vaultLedgerService.getOrCreateOwnershipSummary(req.params.userId);
@@ -3827,8 +3902,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get user vault ledger history
-  app.get("/api/vault/ledger/:userId", async (req, res) => {
+  // Get user vault ledger history - PROTECTED
+  app.get("/api/vault/ledger/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { vaultLedgerService } = await import('./vault-ledger-service');
       const limit = parseInt(req.query.limit as string) || 50;
@@ -3839,8 +3914,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get user vault holdings
-  app.get("/api/vault/:userId", async (req, res) => {
+  // Get user vault holdings - PROTECTED: requires matching session
+  app.get("/api/vault/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const holdings = await storage.getUserVaultHoldings(req.params.userId);
       res.json({ holdings });
@@ -3849,8 +3924,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get vault activity (transactions related to vault operations)
-  app.get("/api/vault/activity/:userId", async (req, res) => {
+  // Get vault activity (transactions related to vault operations) - PROTECTED
+  app.get("/api/vault/activity/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const userId = req.params.userId;
       
@@ -3949,8 +4024,8 @@ export async function registerRoutes(
   // CERTIFICATES
   // ============================================
   
-  // Get user certificates
-  app.get("/api/certificates/:userId", async (req, res) => {
+  // Get user certificates - PROTECTED: requires matching session
+  app.get("/api/certificates/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const allCertificates = await storage.getUserCertificates(req.params.userId);
       const activeCertificates = await storage.getUserActiveCertificates(req.params.userId);
@@ -4023,7 +4098,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get user's vault deposit requests
-  app.get("/api/vault/deposits/:userId", async (req, res) => {
+  app.get("/api/vault/deposits/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserVaultDepositRequests(req.params.userId);
       res.json({ requests });
@@ -4246,7 +4321,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get user's vault withdrawal requests
-  app.get("/api/vault/withdrawals/:userId", async (req, res) => {
+  app.get("/api/vault/withdrawals/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserVaultWithdrawalRequests(req.params.userId);
       res.json({ requests });
@@ -4450,8 +4525,8 @@ export async function registerRoutes(
   // BNSL - BUY NOW SELL LATER
   // ============================================================================
   
-  // Get user BNSL plans
-  app.get("/api/bnsl/plans/:userId", async (req, res) => {
+  // Get user BNSL plans - PROTECTED
+  app.get("/api/bnsl/plans/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const plans = await storage.getUserBnslPlans(req.params.userId);
       res.json({ plans });
@@ -4481,8 +4556,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get BNSL wallet for user
-  app.get("/api/bnsl/wallet/:userId", async (req, res) => {
+  // Get BNSL wallet for user - PROTECTED
+  app.get("/api/bnsl/wallet/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const wallet = await storage.getOrCreateBnslWallet(req.params.userId);
       res.json({ wallet });
@@ -5017,7 +5092,7 @@ export async function registerRoutes(
   });
   
   // Get user agreements
-  app.get("/api/bnsl/agreements/user/:userId", async (req, res) => {
+  app.get("/api/bnsl/agreements/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const agreements = await storage.getUserBnslAgreements(req.params.userId);
       res.json({ agreements });
@@ -5321,8 +5396,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get user deposit requests
-  app.get("/api/deposit-requests/:userId", async (req, res) => {
+  // Get user deposit requests - PROTECTED: requires matching session
+  app.get("/api/deposit-requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserDepositRequests(req.params.userId);
       res.json({ requests });
@@ -5675,8 +5750,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get user withdrawal requests
-  app.get("/api/withdrawal-requests/:userId", async (req, res) => {
+  // Get user withdrawal requests - PROTECTED: requires matching session
+  app.get("/api/withdrawal-requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserWithdrawalRequests(req.params.userId);
       res.json({ requests });
@@ -5847,8 +5922,8 @@ export async function registerRoutes(
   // FINABRIDGE - TRADE FINANCE
   // ============================================================================
   
-  // Get user trade cases
-  app.get("/api/trade/cases/:userId", async (req, res) => {
+  // Get user trade cases - PROTECTED
+  app.get("/api/trade/cases/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const cases = await storage.getUserTradeCases(req.params.userId);
       res.json({ cases });
@@ -5990,7 +6065,7 @@ export async function registerRoutes(
   // IMPORTER ENDPOINTS
   
   // Get importer's trade requests
-  app.get("/api/finabridge/importer/requests/:userId", async (req, res) => {
+  app.get("/api/finabridge/importer/requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserTradeRequests(req.params.userId);
       res.json({ requests });
@@ -6194,7 +6269,7 @@ export async function registerRoutes(
   // EXPORTER ENDPOINTS
   
   // Get open trade requests for exporters (privacy filtered - no importer PII)
-  app.get("/api/finabridge/exporter/open-requests/:userId", async (req, res) => {
+  app.get("/api/finabridge/exporter/open-requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getOpenTradeRequests();
       
@@ -6228,7 +6303,7 @@ export async function registerRoutes(
   });
   
   // Get exporter's submitted proposals
-  app.get("/api/finabridge/exporter/proposals/:userId", async (req, res) => {
+  app.get("/api/finabridge/exporter/proposals/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const proposals = await storage.getExporterProposals(req.params.userId);
       
@@ -6255,7 +6330,7 @@ export async function registerRoutes(
   });
   
   // Get importer's received forwarded proposals
-  app.get("/api/finabridge/importer/forwarded-proposals/:userId", async (req, res) => {
+  app.get("/api/finabridge/importer/forwarded-proposals/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const userId = req.params.userId;
       // Get all trade requests created by this importer
@@ -6548,8 +6623,8 @@ export async function registerRoutes(
   
   // FINABRIDGE WALLET ENDPOINTS
   
-  // Get user's FinaBridge wallet
-  app.get("/api/finabridge/wallet/:userId", async (req, res) => {
+  // Get user's FinaBridge wallet - PROTECTED
+  app.get("/api/finabridge/wallet/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const wallet = await storage.getOrCreateFinabridgeWallet(req.params.userId);
       res.json({ wallet });
@@ -6612,7 +6687,7 @@ export async function registerRoutes(
   });
   
   // Get user's settlement holds
-  app.get("/api/finabridge/settlement-holds/:userId", async (req, res) => {
+  app.get("/api/finabridge/settlement-holds/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const holds = await storage.getUserSettlementHolds(req.params.userId);
       res.json({ holds });
@@ -6727,7 +6802,7 @@ export async function registerRoutes(
   });
   
   // Get user's deal rooms
-  app.get("/api/deal-rooms/user/:userId", async (req, res) => {
+  app.get("/api/deal-rooms/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const rooms = await storage.getUserDealRooms(req.params.userId);
       
@@ -11791,8 +11866,8 @@ export async function registerRoutes(
   // USER NOTIFICATIONS
   // ============================================
 
-  // Get user's notifications
-  app.get("/api/notifications/:userId", async (req, res) => {
+  // Get user's notifications - PROTECTED: requires matching session
+  app.get("/api/notifications/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const notifications = await storage.getUserNotifications(req.params.userId);
       res.json({ notifications });

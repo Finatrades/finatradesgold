@@ -1,0 +1,113 @@
+You are a senior security engineer and application auditor.
+
+TASK
+Audit this entire Replit codebase for hacking, security vulnerabilities, and bad practices.
+Assume the app is a financial platform (Finatrades-style) handling users, balances, transactions, and certificates.
+
+OBJECTIVE
+- Identify ALL security risks
+- Explain WHY each issue is dangerous
+- Show HOW an attacker could exploit it (brief)
+- Provide SAFE, correct fixes with code examples
+
+CHECK THESE AREAS (MANDATORY)
+
+1️⃣ AUTHENTICATION & SESSIONS
+- Check if passwords are:
+  - hashed properly (bcrypt/argon2)
+  - never stored or logged in plain text
+- Check JWT/session handling:
+  - access tokens expiration
+  - refresh token security
+  - httpOnly + secure cookies
+- Check sign-in / sign-out logic:
+  - session invalidation on logout
+  - token reuse issues
+- Look for:
+  ❌ tokens in localStorage
+  ❌ missing auth middleware
+  ❌ routes accessible without login
+
+2️⃣ API SECURITY
+- Review all /api/* routes
+- Verify:
+  - auth validation exists on every sensitive endpoint
+  - role checks for admin routes
+- Check for:
+  ❌ trusting client input
+  ❌ missing userId validation
+  ❌ ability to modify another user’s data
+- Test:
+  - Can user A fetch user B’s balances?
+  - Can transactions be forged?
+
+3️⃣ INPUT VALIDATION & INJECTION
+- Scan for:
+  ❌ SQL injection risks
+  ❌ raw queries without parameters
+  ❌ unsafe JSON parsing
+- Validate:
+  - amounts (USD, grams)
+  - IDs
+  - email inputs
+- Check for XSS:
+  ❌ dangerouslySetInnerHTML
+  ❌ rendering raw user input in UI
+
+4️⃣ BUSINESS LOGIC ATTACKS (VERY IMPORTANT)
+- Check if attacker can:
+  - add funds without payment
+  - send negative amounts
+  - unlock BNSL without lock
+  - release FinaBridge settlement without approval
+- Ensure:
+  - balances never go negative
+  - all state transitions are validated server-side
+  - price snapshot cannot be manipulated by client
+
+5️⃣ TRANSACTIONS & LEDGER SAFETY
+- Verify transactions are:
+  - append-only
+  - never editable or deletable
+- Check race conditions:
+  - double spend
+  - parallel requests
+- Ensure DB operations are atomic (transactions)
+
+6️⃣ CERTIFICATE SECURITY
+- Check certificate generation:
+  - cannot be forged via API
+  - tied to transaction/ledger ID
+- Ensure users cannot:
+  - view others’ certificates
+  - download fake certificates
+
+7️⃣ ENVIRONMENT & SECRETS
+- Check for:
+  ❌ secrets hardcoded in repo
+  ❌ exposed API keys
+- Verify:
+  - .env is used correctly
+  - secrets never sent to frontend
+- Check Replit exposure risks
+
+8️⃣ RATE LIMITING & DOS
+- Identify missing protections:
+  - login brute-force
+  - transaction spam
+- Recommend:
+  - rate limits
+  - request throttling
+
+OUTPUT FORMAT (IMPORTANT)
+For EACH issue:
+- 🔴 Severity: Critical / High / Medium / Low
+- 📍 Location: file + function
+- 💥 Risk: what can go wrong
+- 🧠 Exploit example (short)
+- ✅ Fix: exact code or config change
+
+FINAL DELIVERABLE
+- A clear SECURITY REPORT
+- A “Top 10 Critical Fixes” summary
+- A checklist to make the app production-ready

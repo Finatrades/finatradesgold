@@ -5,8 +5,40 @@ import { createServer } from "http";
 import { setupSocketIO } from "./socket";
 import path from "path";
 import { storage } from "./storage";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
+
+// Extend express-session types
+declare module "express-session" {
+  interface SessionData {
+    userId: string;
+    userRole: "user" | "admin";
+  }
+}
 
 const app = express();
+
+// Session configuration with PostgreSQL store
+const PgSession = connectPgSimple(session);
+app.use(
+  session({
+    store: new PgSession({
+      pool: pool,
+      tableName: "user_sessions",
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || "finatrades-secure-session-secret-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: "lax",
+    },
+  })
+);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
