@@ -5316,6 +5316,20 @@ export async function registerRoutes(
       
       const updates = req.body;
       
+      // Prevent double-approval
+      if (updates.status === 'Confirmed' && request.status === 'Confirmed') {
+        return res.status(400).json({ 
+          message: "This deposit has already been confirmed. Please refresh the page to see the updated status." 
+        });
+      }
+      
+      // Prevent approving rejected deposits
+      if (updates.status === 'Confirmed' && request.status === 'Rejected') {
+        return res.status(400).json({ 
+          message: "Cannot approve a rejected deposit. Please create a new deposit request." 
+        });
+      }
+      
       // If confirming deposit, credit the user's wallet with USD and calculate gold backing
       if (updates.status === 'Confirmed' && request.status === 'Pending') {
         const wallet = await storage.getWallet(request.userId);
