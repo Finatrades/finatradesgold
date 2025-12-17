@@ -392,7 +392,21 @@ export default function FinaPayManagement() {
         ? { reviewNotes: cryptoReviewNotes }
         : { rejectionReason: cryptoRejectionReason, reviewNotes: cryptoReviewNotes };
       
-      await apiRequest('PATCH', endpoint, body);
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-User-Id': currentUser.id
+        },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Request failed');
+      }
+      
       toast.success(`Crypto payment ${action === 'Credited' ? 'approved and credited' : 'rejected'}`);
       setCryptoDialogOpen(false);
       setSelectedCrypto(null);
