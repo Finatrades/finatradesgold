@@ -9822,6 +9822,19 @@ export async function registerRoutes(
     try {
       const GOLD_PRICE_USD = 93.50; // Price per gram in USD
 
+      // Get platform config for accurate fee calculations
+      const platformConfigs = await storage.getAllPlatformConfigs();
+      const configMap = new Map<string, string>();
+      for (const config of platformConfigs) {
+        configMap.set(config.configKey, config.configValue);
+      }
+      
+      // Get fee percentages from platform config
+      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '1.5');
+      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '1.04');
+      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '1.0');
+      const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
+
       // Get all wallets to calculate AUM
       const allUsers = await storage.getAllUsers();
       const allWallets = await Promise.all(
@@ -9865,23 +9878,30 @@ export async function registerRoutes(
         }
       }
 
-      // Get all transactions to estimate revenue
+      // Get all transactions to estimate revenue using platform config spreads
       const allTransactions = await storage.getAllTransactions();
       let totalRevenue = 0;
       for (const tx of allTransactions) {
         if (tx.status === 'Completed') {
-          // Estimate 1% fee on each transaction
           const txValue = parseFloat(tx.amountUsd || '0') || 
             (parseFloat(tx.amountGold || '0') * parseFloat(tx.goldPriceUsdPerGram || GOLD_PRICE_USD.toString()));
-          totalRevenue += Math.abs(txValue) * 0.01;
+          
+          // Use appropriate spread based on transaction type
+          let feePercent = avgSpreadPercent / 100; // Convert from percent to decimal
+          if (tx.type === 'Buy') {
+            feePercent = buySpreadPercent / 100;
+          } else if (tx.type === 'Sell') {
+            feePercent = sellSpreadPercent / 100;
+          }
+          totalRevenue += Math.abs(txValue) * feePercent;
         }
       }
 
       // Add BNSL interest to revenue
       totalRevenue += bnslInterestUsd;
       
-      // Add storage fees (0.5% annual on vault holdings)
-      const storageFeeRevenue = vaultGoldGrams * GOLD_PRICE_USD * 0.005;
+      // Add storage fees from platform config (annual % on vault holdings)
+      const storageFeeRevenue = vaultGoldGrams * GOLD_PRICE_USD * (storageFeePercent / 100);
       totalRevenue += storageFeeRevenue;
 
       // Calculate totals
@@ -9919,6 +9939,19 @@ export async function registerRoutes(
     try {
       const GOLD_PRICE_USD = 93.50;
 
+      // Get platform config for accurate fee calculations
+      const platformConfigs = await storage.getAllPlatformConfigs();
+      const configMap = new Map<string, string>();
+      for (const config of platformConfigs) {
+        configMap.set(config.configKey, config.configValue);
+      }
+      
+      // Get fee percentages from platform config
+      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '1.5');
+      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '1.04');
+      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '1.0');
+      const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
+
       // FinaPay Metrics
       const allUsers = await storage.getAllUsers();
       const allWallets = await Promise.all(
@@ -9928,12 +9961,23 @@ export async function registerRoutes(
 
       const allTransactions = await storage.getAllTransactions();
       let volumeUsd = 0;
+      let feesCollectedUsd = 0;
       for (const tx of allTransactions) {
         const txValue = parseFloat(tx.amountUsd || '0') || 
           (parseFloat(tx.amountGold || '0') * parseFloat(tx.goldPriceUsdPerGram || GOLD_PRICE_USD.toString()));
         volumeUsd += Math.abs(txValue);
+        
+        // Calculate fees based on transaction type using platform config
+        if (tx.status === 'Completed') {
+          let feePercent = avgSpreadPercent / 100;
+          if (tx.type === 'Buy') {
+            feePercent = buySpreadPercent / 100;
+          } else if (tx.type === 'Sell') {
+            feePercent = sellSpreadPercent / 100;
+          }
+          feesCollectedUsd += Math.abs(txValue) * feePercent;
+        }
       }
-      const feesCollectedUsd = volumeUsd * 0.01; // 1% fee
 
       // FinaVault Metrics
       const vaultHoldings = await storage.getAllVaultHoldings();
@@ -9943,7 +9987,7 @@ export async function registerRoutes(
         goldStoredGrams += parseFloat(holding.goldGrams || '0');
         vaultUserIds.add(holding.userId);
       }
-      const storageFeesUsd = goldStoredGrams * GOLD_PRICE_USD * 0.005; // 0.5% annual
+      const storageFeesUsd = goldStoredGrams * GOLD_PRICE_USD * (storageFeePercent / 100); // From platform config
 
       // BNSL Metrics
       const bnslPlans = await storage.getAllBnslPlans();
