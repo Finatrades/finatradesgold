@@ -826,10 +826,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </span>
                     <div className="text-right">
                       <p className="font-bold text-primary text-lg">
-                        {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
+                        ${parseFloat(amount).toFixed(2)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        ≈ ${parseFloat(amount).toFixed(2)} USD
+                      <p className="text-xs text-amber-600 font-medium">
+                        ~{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g gold
                       </p>
                     </div>
                   </div>
@@ -885,10 +885,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   </span>
                   <div className="text-right">
                     <p className="font-bold text-primary text-lg">
-                      {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
+                      ${parseFloat(amount).toFixed(2)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      ≈ ${parseFloat(amount).toFixed(2)} USD
+                    <p className="text-xs text-amber-600 font-medium">
+                      ~{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g gold
                     </p>
                   </div>
                 </div>
