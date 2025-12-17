@@ -9714,42 +9714,41 @@ export async function registerRoutes(
         sourceModule: 'finapay',
       });
       
-      const goldGrams = parseFloat(paymentRequest.goldGrams);
+      const goldGrams = paymentRequest.goldGrams ? parseFloat(paymentRequest.goldGrams) : 0;
       const goldPrice = paymentRequest.goldPriceAtTime ? parseFloat(paymentRequest.goldPriceAtTime) : 0;
-      const usdAmount = parseFloat(paymentRequest.amountUsd);
+      const usdAmount = paymentRequest.amountUsd ? parseFloat(paymentRequest.amountUsd) : 0;
+      
+      console.log('[DEBUG] Crypto approval values:', { goldGrams, goldPrice, usdAmount });
       
       // SPECIFICATION REQUIREMENT: Record LedgerEntry for FinaVault system-of-record
       const { vaultLedgerService } = await import('./vault-ledger-service');
       await vaultLedgerService.recordLedgerEntry({
         userId: paymentRequest.userId,
         action: 'Deposit',
-        eventType: 'ADD_FUNDS_APPROVED',
-        direction: 'CREDIT',
-        gramsDelta: goldGrams,
-        fromStatus: null,
+        goldGrams: goldGrams,
+        goldPriceUsdPerGram: goldPrice > 0 ? goldPrice : undefined,
+        fromWallet: 'External',
+        toWallet: 'FinaPay',
         toStatus: 'Available',
         transactionId: transaction.id,
-        notes: `Crypto payment ADD_FUNDS approved: ${goldGrams.toFixed(4)}g${goldPrice > 0 ? ` at $${goldPrice.toFixed(2)}/g` : ''} (USD $${usdAmount.toFixed(2)})`,
-        createdBy: adminUser.id,
+        notes: `Crypto payment approved: ${(goldGrams || 0).toFixed(4)}g${goldPrice > 0 ? ` at $${(goldPrice || 0).toFixed(2)}/g` : ''} (USD $${(usdAmount || 0).toFixed(2)})`,
+        createdBy: adminUser?.id || 'system',
       });
       
       // SPECIFICATION REQUIREMENT: Generate DOC + SSC certificates
       const generatedCertificates: any[] = [];
       
       // Get or create vault holding
-      let vaultHoldings = await storage.getVaultHoldings(paymentRequest.userId);
-      let holding = vaultHoldings.find(h => h.status === 'active');
+      let holding = await storage.getVaultHolding(paymentRequest.userId);
       
       if (!holding) {
         // Create new vault holding
         holding = await storage.createVaultHolding({
           userId: paymentRequest.userId,
           goldGrams: goldGrams.toString(),
-          purity: '999.9',
-          status: 'active',
-          wingoldReference: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          storageLocation: 'Dubai Free Zone Vault',
-          entryDate: new Date(),
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          purchasePriceUsdPerGram: goldPrice.toString(),
         });
       } else {
         // Update existing holding
@@ -9766,13 +9765,11 @@ export async function registerRoutes(
         issuer: 'Finatrades',
         userId: paymentRequest.userId,
         transactionId: transaction.id,
-        holdingId: holding.id,
+        vaultHoldingId: holding.id,
         certificateNumber: docCertNum,
-        gramsCovered: goldGrams.toString(),
-        purity: '999.9',
-        vaultLocation: 'Dubai Free Zone Vault',
-        status: 'Active',
-        goldPriceAtIssue: goldPrice.toString(),
+        goldGrams: goldGrams.toString(),
+        vaultLocation: 'Dubai - Wingold & Metals DMCC',
+        goldPriceUsdPerGram: goldPrice.toString(),
       });
       generatedCertificates.push(digitalCert);
       
@@ -9783,13 +9780,11 @@ export async function registerRoutes(
         issuer: 'Wingold & Metals DMCC',
         userId: paymentRequest.userId,
         transactionId: transaction.id,
-        holdingId: holding.id,
+        vaultHoldingId: holding.id,
         certificateNumber: sscCertNum,
-        gramsCovered: goldGrams.toString(),
-        purity: '999.9',
-        vaultLocation: 'Dubai Free Zone Vault',
-        status: 'Active',
-        goldPriceAtIssue: goldPrice.toString(),
+        goldGrams: goldGrams.toString(),
+        vaultLocation: 'Dubai - Wingold & Metals DMCC',
+        goldPriceUsdPerGram: goldPrice.toString(),
       });
       generatedCertificates.push(storageCert);
       
