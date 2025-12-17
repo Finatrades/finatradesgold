@@ -197,6 +197,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           onSuccess: () => setCardMounted(true),
           onFail: () => switchToIframe(),
           onChangeValidStatus: (status: any) => {
+            console.log('[NGenius] Validation status:', status);
             setFormValid(status.isPanValid && status.isExpiryValid && status.isCVVValid);
           },
         });
@@ -228,11 +229,26 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     try {
       let sessionId;
       try {
+        console.log('[NGenius] Generating session ID...');
         sessionId = await NI.generateSessionId();
+        console.log('[NGenius] Session ID generated:', sessionId ? 'success' : 'empty');
       } catch (sessionError: any) {
-        const errorMsg = sessionError?.message || 'Card validation failed';
-        if (errorMsg.includes('invalid values') || errorMsg.includes('validation')) {
-          throw new Error('Please check your card details - card number, expiry date, and CVV must all be valid');
+        console.error('[NGenius] Session generation failed:', sessionError);
+        const errorMsg = sessionError?.message || sessionError?.toString() || 'Card validation failed';
+        console.error('[NGenius] Error message:', errorMsg);
+        
+        // Try to get more info from the SDK
+        if (NI.getCardInfo) {
+          try {
+            const cardInfo = NI.getCardInfo();
+            console.log('[NGenius] Card info:', cardInfo);
+          } catch (e) {
+            console.log('[NGenius] Could not get card info');
+          }
+        }
+        
+        if (errorMsg.includes('invalid values') || errorMsg.includes('validation') || errorMsg.includes('Invalid')) {
+          throw new Error('Card validation failed. Please ensure all fields are filled correctly.');
         }
         throw new Error(errorMsg);
       }
