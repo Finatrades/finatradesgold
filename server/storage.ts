@@ -2339,7 +2339,7 @@ export class DatabaseStorage implements IStorage {
     if (existing) return existing;
     
     const [settings] = await db.insert(complianceSettings).values({
-      activeKycMode: 'kycAml',
+      activeKycMode: 'finatrades',
       finatradesPersonalConfig: {
         enableBankingVerification: true,
         enableLivenessCapture: true
