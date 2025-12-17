@@ -205,13 +205,13 @@ export default function FinaPayManagement() {
     setIsLoading(true);
     try {
       const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes] = await Promise.all([
-        fetch('/api/admin/transactions'),
-        fetch('/api/admin/users'),
-        fetch('/api/admin/deposit-requests'),
-        fetch('/api/admin/withdrawal-requests'),
-        fetch('/api/admin/finapay/peer-transfers'),
-        fetch('/api/admin/finapay/peer-requests'),
-        fetch('/api/admin/crypto-payments')
+        fetch('/api/admin/transactions', { credentials: 'include' }),
+        fetch('/api/admin/users', { credentials: 'include' }),
+        fetch('/api/admin/deposit-requests', { credentials: 'include' }),
+        fetch('/api/admin/withdrawal-requests', { credentials: 'include' }),
+        fetch('/api/admin/finapay/peer-transfers', { credentials: 'include' }),
+        fetch('/api/admin/finapay/peer-requests', { credentials: 'include' }),
+        fetch('/api/admin/crypto-payments', { credentials: 'include' })
       ]);
       
       const txData = await txResponse.json();
