@@ -33,6 +33,14 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
+      // Cleanup NGenius SDK on unmount
+      if ((window as any).NI?.unmountCardInput) {
+        try {
+          (window as any).NI.unmountCardInput();
+        } catch (e) {
+          // Ignore unmount errors
+        }
+      }
     };
   }, []);
 
@@ -149,15 +157,25 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     if (mode !== 'embedded' || !sdkConfig || mountAttempted.current || !containerRef.current) return;
 
     const mountCardForm = () => {
-      if (!window.NI) {
+      const NI = (window as any).NI;
+      if (!NI) {
         setTimeout(mountCardForm, 100);
         return;
       }
 
       mountAttempted.current = true;
 
+      // Unmount any existing card input first
+      if (NI.unmountCardInput) {
+        try {
+          NI.unmountCardInput();
+        } catch (e) {
+          // Ignore unmount errors
+        }
+      }
+
       try {
-        window.NI.mountCardInput('hybrid-card-input', {
+        NI.mountCardInput('hybrid-card-input', {
           apiKey: sdkConfig.apiKey,
           outletRef: sdkConfig.outletRef,
           style: {
@@ -191,13 +209,14 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
   }, [mode, sdkConfig]);
 
   const handleSubmit = useCallback(async () => {
-    if (!formValid || processing || !window.NI) return;
+    const NI = (window as any).NI;
+    if (!formValid || processing || !NI) return;
 
     setProcessing(true);
     setError(null);
 
     try {
-      const sessionId = await window.NI.generateSessionId();
+      const sessionId = await NI.generateSessionId();
       
       const res = await fetch('/api/ngenius/process-hosted-payment', {
         method: 'POST',
