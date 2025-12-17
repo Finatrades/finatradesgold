@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import AdminLayout from './AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -754,7 +755,12 @@ function BlockDialog({
         return (
           <div 
             className="prose prose-sm max-w-none" 
-            dangerouslySetInnerHTML={{ __html: displayContent }}
+            dangerouslySetInnerHTML={{ 
+              __html: DOMPurify.sanitize(displayContent, {
+                ADD_TAGS: ['style'],
+                ADD_ATTR: ['style', 'target']
+              }) 
+            }}
           />
         );
       case 'image':
@@ -775,11 +781,15 @@ function BlockDialog({
         }
       case 'rich_text':
         return (
-          <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-            {displayContent.split('\n').map((line, i) => (
-              <p key={i} className={line.startsWith('#') ? 'font-bold text-lg' : ''}>{line}</p>
-            ))}
-          </div>
+          <div 
+            className="prose prose-sm max-w-none" 
+            dangerouslySetInnerHTML={{ 
+              __html: DOMPurify.sanitize(displayContent, {
+                ADD_TAGS: ['style'],
+                ADD_ATTR: ['style', 'target']
+              }) 
+            }}
+          />
         );
       default:
         return <p className="text-gray-800">{displayContent}</p>;
@@ -1252,9 +1262,21 @@ function TemplateDialog({
                     <div className="text-lg font-bold text-gray-800 mt-2">FINANCIAL REPORT</div>
                   </div>
                 )}
-                <div className="whitespace-pre-wrap text-sm">
-                  {previewBody || 'Enter template body to see preview...'}
-                </div>
+                {previewBody ? (
+                  <div 
+                    className="text-sm prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: DOMPurify.sanitize(previewBody, {
+                        ADD_TAGS: ['style'],
+                        ADD_ATTR: ['style', 'target']
+                      }) 
+                    }}
+                  />
+                ) : (
+                  <div className="text-sm text-gray-400 italic">
+                    Enter template body to see preview...
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>
