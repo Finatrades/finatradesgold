@@ -249,6 +249,86 @@ export class NgeniusService {
   static getInstance(config: NgeniusConfig): NgeniusService {
     return new NgeniusService(config);
   }
+
+  // Create a hosted session for embedded card form
+  async createHostedSession(params: {
+    orderReference: string;
+    amount: number;
+    currency: string;
+  }): Promise<{
+    sessionId: string;
+    paymentRef: string;
+    amount: { currencyCode: string; value: number };
+  }> {
+    const amountInMinorUnits = Math.round(params.amount * 100);
+
+    // First create an order
+    const orderRequest = {
+      action: 'SALE',
+      amount: {
+        currencyCode: params.currency,
+        value: amountInMinorUnits,
+      },
+      merchantOrderReference: params.orderReference,
+    };
+
+    const order = await this.makeRequest<NgeniusOrderResponse>(
+      'POST',
+      `/transactions/outlets/${this.config.outletRef}/orders`,
+      orderRequest
+    );
+
+    // Extract the payment link which contains session info
+    const paymentHref = order._links?.payment?.href;
+    if (!paymentHref) {
+      throw new Error('No payment link in order response');
+    }
+
+    // Parse the session from payment URL or order ID
+    const orderId = order._id;
+    
+    return {
+      sessionId: orderId,
+      paymentRef: order.reference,
+      amount: order.amount,
+    };
+  }
+
+  // Complete payment for hosted session (after card is entered)
+  async completeHostedPayment(orderId: string): Promise<{
+    success: boolean;
+    status: string;
+    transactionId?: string;
+  }> {
+    try {
+      const order = await this.getOrder(orderId);
+      
+      const status = order.state;
+      const success = ['CAPTURED', 'AUTHORISED', 'PURCHASED'].includes(status);
+
+      return {
+        success,
+        status,
+        transactionId: order._id,
+      };
+    } catch (error) {
+      console.error('[NGenius] Error completing payment:', error);
+      return {
+        success: false,
+        status: 'ERROR',
+      };
+    }
+  }
+
+  // Get outlet ref for frontend SDK (this is safe to expose)
+  getOutletRef(): string {
+    return this.config.outletRef;
+  }
+
+  // Get mode for frontend SDK
+  getMode(): 'sandbox' | 'live' {
+    return this.config.mode;
+  }
 }
 
 export function generateOrderReference(): string {
