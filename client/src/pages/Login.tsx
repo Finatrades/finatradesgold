@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, ArrowRight, Lock, Shield, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Lock, Shield, ArrowLeft, Fingerprint } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import BiometricService from '@/lib/biometric-service';
 
 export default function Login() {
-  const { login, verifyMfa, user, loading } = useAuth();
+  const { login, verifyMfa, user, loading, setUser } = useAuth();
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -23,6 +24,12 @@ export default function Login() {
   const [mfaChallengeToken, setMfaChallengeToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
 
+  // Biometric state
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometryType, setBiometryType] = useState('');
+  const [savedBiometricEmail, setSavedBiometricEmail] = useState<string | null>(null);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
   useEffect(() => {
     if (user) {
       // Regular login page always goes to user dashboard
@@ -30,6 +37,77 @@ export default function Login() {
       setLocation('/dashboard');
     }
   }, [user, setLocation]);
+
+  // Check biometric availability on mount
+  useEffect(() => {
+    const checkBiometric = async () => {
+      const status = await BiometricService.checkAvailability();
+      setBiometricAvailable(status.isAvailable);
+      setBiometryType(status.biometryType);
+      
+      if (status.isAvailable) {
+        const savedEmail = await BiometricService.getSavedUserEmail();
+        setSavedBiometricEmail(savedEmail);
+      }
+    };
+    checkBiometric();
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    if (!savedBiometricEmail) {
+      toast.error("No biometric credentials found", {
+        description: "Please log in with your password first, then enable biometric login in your profile settings."
+      });
+      return;
+    }
+
+    setBiometricLoading(true);
+    try {
+      const authenticated = await BiometricService.authenticate(
+        `Sign in as ${savedBiometricEmail}`
+      );
+
+      if (!authenticated) {
+        toast.error("Biometric authentication failed");
+        setBiometricLoading(false);
+        return;
+      }
+
+      // Get stored credentials
+      const credentials = await BiometricService.getCredentials();
+      if (!credentials) {
+        toast.error("Could not retrieve credentials");
+        setBiometricLoading(false);
+        return;
+      }
+
+      // Call biometric login API
+      const response = await fetch('/api/biometric/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: credentials.email }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (setUser) {
+          setUser(data.user);
+        }
+        localStorage.setItem('fina_user_id', data.user.id);
+        toast.success("Welcome back!", {
+          description: `Signed in with ${biometryType}`
+        });
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Biometric login failed");
+      }
+    } catch (error) {
+      console.error("Biometric login error:", error);
+      toast.error("An error occurred during biometric login");
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
 
   // Show loading while auth is being checked
   if (loading) {
@@ -249,6 +327,35 @@ export default function Login() {
                   <>Sign In <ArrowRight className="w-5 h-5 ml-2" /></>
                 )}
               </Button>
+
+              {/* Biometric Login Button */}
+              {biometricAvailable && savedBiometricEmail && (
+                <>
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={handleBiometricLogin}
+                    disabled={biometricLoading}
+                    className="w-full h-12 text-lg font-medium border-2"
+                    data-testid="button-biometric-login"
+                  >
+                    <Fingerprint className="w-5 h-5 mr-2" />
+                    {biometricLoading ? "Authenticating..." : `Sign in with ${biometryType}`}
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Quick login as {savedBiometricEmail}
+                  </p>
+                </>
+              )}
             </form>
 
             <div className="mt-8 text-center text-sm">

@@ -67,6 +67,9 @@ export const users = pgTable("users", {
   mfaMethod: mfaMethodEnum("mfa_method"),
   mfaSecret: varchar("mfa_secret", { length: 255 }),
   mfaBackupCodes: text("mfa_backup_codes"), // JSON array of hashed backup codes
+  // Biometric authentication fields
+  biometricEnabled: boolean("biometric_enabled").notNull().default(false),
+  biometricDeviceId: varchar("biometric_device_id", { length: 255 }), // Device identifier for biometric auth
   // Profile photo (selfie)
   profilePhoto: text("profile_photo"), // Base64 encoded image or URL
   // Business fields (for business accounts)
@@ -103,6 +106,9 @@ export const insertUserSchema = createInsertSchema(users)
     mfaMethod: z.enum(['totp', 'email']).nullable().optional(),
     mfaSecret: z.string().nullable().optional(),
     mfaBackupCodes: z.string().nullable().optional(),
+    // Biometric fields
+    biometricEnabled: z.boolean().optional(),
+    biometricDeviceId: z.string().nullable().optional(),
   });
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = z.infer<typeof insertUserSchema>;

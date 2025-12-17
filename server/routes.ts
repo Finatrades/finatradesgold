@@ -895,6 +895,176 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to get MFA status" });
     }
   });
+
+  // ============================================================================
+  // BIOMETRIC AUTHENTICATION
+  // ============================================================================
+  
+  // Enable biometric authentication
+  app.post("/api/biometric/enable", async (req, res) => {
+    try {
+      const { userId, deviceId, password } = req.body;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify password before enabling biometric
+      let isValidPassword = false;
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await bcrypt.compare(password, user.password);
+      } else {
+        isValidPassword = user.password === password;
+      }
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+      
+      // Enable biometric authentication
+      await storage.updateUser(userId, { 
+        biometricEnabled: true,
+        biometricDeviceId: deviceId || `device-${Date.now()}`
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: userId,
+        actionType: "update",
+        actor: userId,
+        actorRole: "user",
+        details: "Biometric authentication enabled",
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Biometric authentication enabled successfully",
+        biometricEnabled: true
+      });
+    } catch (error) {
+      console.error("Biometric enable error:", error);
+      res.status(400).json({ message: "Failed to enable biometric authentication" });
+    }
+  });
+
+  // Disable biometric authentication
+  app.post("/api/biometric/disable", async (req, res) => {
+    try {
+      const { userId, password } = req.body;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify password before disabling biometric
+      let isValidPassword = false;
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await bcrypt.compare(password, user.password);
+      } else {
+        isValidPassword = user.password === password;
+      }
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+      
+      // Disable biometric authentication
+      await storage.updateUser(userId, { 
+        biometricEnabled: false,
+        biometricDeviceId: null
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: userId,
+        actionType: "update",
+        actor: userId,
+        actorRole: "user",
+        details: "Biometric authentication disabled",
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Biometric authentication disabled successfully",
+        biometricEnabled: false
+      });
+    } catch (error) {
+      console.error("Biometric disable error:", error);
+      res.status(400).json({ message: "Failed to disable biometric authentication" });
+    }
+  });
+
+  // Get biometric status
+  app.get("/api/biometric/status/:userId", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ 
+        biometricEnabled: user.biometricEnabled || false,
+        hasDeviceId: !!user.biometricDeviceId
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get biometric status" });
+    }
+  });
+
+  // Biometric login - verify user has biometric enabled and return auth token
+  app.post("/api/biometric/login", async (req, res) => {
+    try {
+      const { email, deviceId } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!user.biometricEnabled) {
+        return res.status(403).json({ message: "Biometric authentication not enabled for this account" });
+      }
+      
+      // Optional: verify device ID matches if stored
+      if (user.biometricDeviceId && deviceId && user.biometricDeviceId !== deviceId) {
+        return res.status(403).json({ message: "Device not authorized for biometric login" });
+      }
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        actionType: "login",
+        actor: user.id,
+        actorRole: user.role,
+        details: "Logged in via biometric authentication",
+      });
+      
+      // Return user without password
+      const { password: _, ...safeUser } = user;
+      res.json({ 
+        success: true, 
+        user: safeUser,
+        message: "Biometric login successful"
+      });
+    } catch (error) {
+      console.error("Biometric login error:", error);
+      res.status(400).json({ message: "Biometric login failed" });
+    }
+  });
   
   // ============================================================================
   // USER CHECK AND INVITE

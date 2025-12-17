@@ -9,7 +9,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText, Loader2, Trash2 } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText, Loader2, Trash2, Fingerprint } from 'lucide-react';
+import BiometricSettings from '@/components/BiometricSettings';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
@@ -366,6 +367,11 @@ export default function Profile() {
                     <Button>Update Password</Button>
                   </CardFooter>
                 </Card>
+
+                {/* Biometric Authentication */}
+                <div className="mt-6">
+                  <BiometricSettings />
+                </div>
 
                 {/* Danger Zone */}
                 <Card className="border-red-200 mt-6">
