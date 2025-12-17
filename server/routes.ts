@@ -12367,8 +12367,20 @@ export async function registerRoutes(
 
   const QA_MODE = process.env.QA_MODE === 'true' || process.env.NODE_ENV === 'development';
 
+  // QA access middleware - allows admin OR authenticated user when QA mode is active
+  async function ensureQaAccess(req: Request, res: Response, next: NextFunction) {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const user = req.user as User | undefined;
+    if (user?.role === 'admin' || QA_MODE) {
+      return next();
+    }
+    return res.status(403).json({ message: "QA access requires admin role or QA mode" });
+  }
+
   // QA Deposit Run API
-  app.post("/api/qa/deposit/run", ensureAdminAsync, async (req, res) => {
+  app.post("/api/qa/deposit/run", ensureQaAccess, async (req, res) => {
     const requestId = `qa-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     const logs: any[] = [];
     
@@ -12672,7 +12684,7 @@ export async function registerRoutes(
   });
 
   // Get QA config (limits)
-  app.get("/api/qa/config", ensureAdminAsync, async (req, res) => {
+  app.get("/api/qa/config", ensureQaAccess, async (req, res) => {
     try {
       const configRows = await db.select().from(require('@shared/schema').platformConfig);
       const config: Record<string, any> = {};

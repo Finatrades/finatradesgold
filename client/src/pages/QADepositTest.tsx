@@ -163,14 +163,17 @@ export default function QADepositTest() {
     setStep('approve');
   };
 
-  if (user?.role !== 'admin') {
+  const isQaMode = config?.qaMode === true;
+  const hasAccess = user?.role === 'admin' || isQaMode;
+
+  if (!hasAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3 text-red-500">
               <AlertCircle className="h-6 w-6" />
-              <p>Admin access required for QA testing</p>
+              <p>Admin access or QA Mode required for testing</p>
             </div>
           </CardContent>
         </Card>
