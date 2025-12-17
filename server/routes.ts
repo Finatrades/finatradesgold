@@ -9684,8 +9684,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Payment request cannot be approved in current status" });
       }
       
-      // Get user's FinaPay wallet
-      const wallet = await storage.getUserWallet(paymentRequest.userId, 'finapay');
+      // Get user's wallet
+      const wallet = await storage.getWallet(paymentRequest.userId);
       if (!wallet) {
         return res.status(400).json({ message: "User wallet not found" });
       }
