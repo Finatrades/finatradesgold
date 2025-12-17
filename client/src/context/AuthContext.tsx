@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import type { User } from '@shared/schema';
 import { prefetchDashboardData, clearQueryCache } from '@/lib/queryClient';
+import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 
 interface MfaChallenge {
   requiresMfa: boolean;
@@ -44,6 +45,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        // Preload NGenius SDK in background for faster card payments
+        if (data.user?.role !== 'admin') {
+          preloadNGeniusSDK().catch(() => {});
+        }
       } else {
         localStorage.removeItem('fina_user_id');
         setUser(null);
@@ -94,6 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLocation('/admin');
       } else {
         prefetchDashboardData(data.user.id);
+        // Preload NGenius SDK in background for faster card payments
+        preloadNGeniusSDK().catch(() => {});
         setLocation('/dashboard');
       }
       
@@ -124,6 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLocation('/admin');
       } else {
         prefetchDashboardData(data.user.id);
+        // Preload NGenius SDK in background for faster card payments
+        preloadNGeniusSDK().catch(() => {});
         setLocation('/dashboard');
       }
     } catch (error) {
