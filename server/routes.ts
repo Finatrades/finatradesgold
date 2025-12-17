@@ -10060,5 +10060,161 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // EMAIL NOTIFICATION SETTINGS ROUTES
+  // ============================================
+
+  // Get all email notification settings
+  app.get("/api/admin/email-notifications", ensureAdminAsync, async (req, res) => {
+    try {
+      const settings = await storage.getAllEmailNotificationSettings();
+      res.json({ settings });
+    } catch (error) {
+      console.error("Failed to get email notification settings:", error);
+      res.status(500).json({ message: "Failed to get email notification settings" });
+    }
+  });
+
+  // Get email notification settings by category
+  app.get("/api/admin/email-notifications/category/:category", ensureAdminAsync, async (req, res) => {
+    try {
+      const { category } = req.params;
+      const settings = await storage.getEmailNotificationSettingsByCategory(category);
+      res.json({ settings });
+    } catch (error) {
+      console.error("Failed to get email notification settings by category:", error);
+      res.status(500).json({ message: "Failed to get email notification settings" });
+    }
+  });
+
+  // Toggle email notification
+  app.patch("/api/admin/email-notifications/:type/toggle", ensureAdminAsync, async (req, res) => {
+    try {
+      const { type } = req.params;
+      const { isEnabled } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const setting = await storage.toggleEmailNotification(type, isEnabled, adminUser.id);
+      
+      if (!setting) {
+        return res.status(404).json({ message: "Notification setting not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "email_notification_setting",
+        entityId: setting.id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `${isEnabled ? 'Enabled' : 'Disabled'} email notification: ${type}`,
+      });
+      
+      res.json({ setting });
+    } catch (error) {
+      console.error("Failed to toggle email notification:", error);
+      res.status(500).json({ message: "Failed to toggle email notification" });
+    }
+  });
+
+  // Update email notification setting
+  app.patch("/api/admin/email-notifications/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const setting = await storage.updateEmailNotificationSetting(id, {
+        ...updates,
+        updatedBy: adminUser.id,
+      });
+      
+      if (!setting) {
+        return res.status(404).json({ message: "Notification setting not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "email_notification_setting",
+        entityId: id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Updated email notification setting: ${setting.notificationType}`,
+      });
+      
+      res.json({ setting });
+    } catch (error) {
+      console.error("Failed to update email notification setting:", error);
+      res.status(500).json({ message: "Failed to update email notification setting" });
+    }
+  });
+
+  // Seed default email notification settings
+  app.post("/api/admin/email-notifications/seed", ensureAdminAsync, async (req, res) => {
+    try {
+      await storage.seedDefaultEmailNotificationSettings();
+      const settings = await storage.getAllEmailNotificationSettings();
+      res.json({ success: true, count: settings.length });
+    } catch (error) {
+      console.error("Failed to seed email notification settings:", error);
+      res.status(500).json({ message: "Failed to seed email notification settings" });
+    }
+  });
+
+  // ============================================
+  // EMAIL LOGS ROUTES
+  // ============================================
+
+  // Get all email logs
+  app.get("/api/admin/email-logs", ensureAdminAsync, async (req, res) => {
+    try {
+      const logs = await storage.getAllEmailLogs();
+      res.json({ logs });
+    } catch (error) {
+      console.error("Failed to get email logs:", error);
+      res.status(500).json({ message: "Failed to get email logs" });
+    }
+  });
+
+  // Get email logs by user
+  app.get("/api/admin/email-logs/user/:userId", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const logs = await storage.getEmailLogsByUser(userId);
+      res.json({ logs });
+    } catch (error) {
+      console.error("Failed to get user email logs:", error);
+      res.status(500).json({ message: "Failed to get user email logs" });
+    }
+  });
+
+  // Get email logs by notification type
+  app.get("/api/admin/email-logs/type/:type", ensureAdminAsync, async (req, res) => {
+    try {
+      const { type } = req.params;
+      const logs = await storage.getEmailLogsByType(type);
+      res.json({ logs });
+    } catch (error) {
+      console.error("Failed to get email logs by type:", error);
+      res.status(500).json({ message: "Failed to get email logs by type" });
+    }
+  });
+
+  // Get single email log
+  app.get("/api/admin/email-logs/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const log = await storage.getEmailLog(id);
+      
+      if (!log) {
+        return res.status(404).json({ message: "Email log not found" });
+      }
+      
+      res.json({ log });
+    } catch (error) {
+      console.error("Failed to get email log:", error);
+      res.status(500).json({ message: "Failed to get email log" });
+    }
+  });
+
   return httpServer;
 }
