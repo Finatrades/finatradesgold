@@ -929,24 +929,77 @@ function TemplateDialog({
 
   const getSampleValue = (varName: string) => {
     const samples: Record<string, string> = {
+      // User & Auth
       user_name: 'John Smith',
       verification_code: '847293',
+      email: 'john.smith@example.com',
+      dashboard_url: 'https://finatrades.com/dashboard',
+      
+      // Gold & Transactions
       amount: '50.00',
+      gold_amount: '15.5000',
       gold_weight: '100',
       usd_value: '7,500.00',
+      total_value: '12,500.00',
+      price_per_gram: '75.50',
       reference_id: 'TXN-2024-001234',
-      date: new Date().toLocaleDateString(),
-      certificate_number: 'CERT-2024-FT-001234',
-      owner_name: 'John Smith',
-      issue_date: new Date().toLocaleDateString(),
-      valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      bar_serial: 'AU-999-2024-56789',
       transaction_type: 'Buy',
       status: 'Completed',
       price: '75.50',
+      
+      // Certificates
+      certificate_number: 'CERT-2024-FT-001234',
+      owner_name: 'John Smith',
+      issuer: 'Finatrades',
+      issue_date: new Date().toLocaleDateString(),
+      valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      bar_serial: 'AU-999-2024-56789',
+      vault_location: 'Dubai Secure Vault',
+      storage_date: new Date().toLocaleDateString(),
+      
+      // Transfer
+      from_name: 'Alice Johnson',
+      to_name: 'Bob Williams',
+      transfer_date: new Date().toLocaleDateString(),
+      
+      // BNSL
+      lock_price: '75.50',
+      lock_date: new Date().toLocaleDateString(),
+      maturity_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toLocaleDateString(),
       duration: '12',
+      
+      // Trade Finance
       case_id: 'TC-2024-0042',
+      trade_case_id: 'TC-2024-0042',
       credit_limit: '250,000.00',
+      collateral_value: '50,000.00',
+      released_value: '50,000.00',
+      release_date: new Date().toLocaleDateString(),
+      completion_date: new Date().toLocaleDateString(),
+      
+      // Invoice
+      invoice_number: 'INV-2024-001234',
+      invoice_date: new Date().toLocaleDateString(),
+      customer_name: 'John Smith',
+      customer_email: 'john.smith@example.com',
+      subtotal: '1,165.25',
+      fees: '11.65',
+      total: '1,176.90',
+      
+      // Statement
+      statement_month: 'December',
+      statement_year: '2024',
+      account_holder: 'John Smith',
+      account_id: 'FT-2024-001234',
+      period_start: 'Dec 1, 2024',
+      period_end: 'Dec 31, 2024',
+      opening_balance: '5,000.00',
+      total_deposits: '2,500.00',
+      total_withdrawals: '1,000.00',
+      closing_balance: '6,500.00',
+      gold_balance: '85.7500',
+      gold_value_usd: '6,500.00',
+      generated_date: new Date().toLocaleDateString(),
     };
     return previewData[varName] || samples[varName] || `[${varName}]`;
   };
