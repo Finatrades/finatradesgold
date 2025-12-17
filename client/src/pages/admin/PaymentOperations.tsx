@@ -203,15 +203,18 @@ export default function FinaPayManagement() {
 
   const fetchData = async () => {
     setIsLoading(true);
+    const adminHeaders = { 
+      'X-Admin-User-Id': user?.id || '' 
+    };
     try {
       const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes] = await Promise.all([
-        fetch('/api/admin/transactions', { credentials: 'include' }),
-        fetch('/api/admin/users', { credentials: 'include' }),
-        fetch('/api/admin/deposit-requests', { credentials: 'include' }),
-        fetch('/api/admin/withdrawal-requests', { credentials: 'include' }),
-        fetch('/api/admin/finapay/peer-transfers', { credentials: 'include' }),
-        fetch('/api/admin/finapay/peer-requests', { credentials: 'include' }),
-        fetch('/api/admin/crypto-payments', { credentials: 'include' })
+        fetch('/api/admin/transactions', { credentials: 'include', headers: adminHeaders }),
+        fetch('/api/admin/users', { credentials: 'include', headers: adminHeaders }),
+        fetch('/api/admin/deposit-requests', { credentials: 'include', headers: adminHeaders }),
+        fetch('/api/admin/withdrawal-requests', { credentials: 'include', headers: adminHeaders }),
+        fetch('/api/admin/finapay/peer-transfers', { credentials: 'include', headers: adminHeaders }),
+        fetch('/api/admin/finapay/peer-requests', { credentials: 'include', headers: adminHeaders }),
+        fetch('/api/admin/crypto-payments', { credentials: 'include', headers: adminHeaders })
       ]);
       
       const txData = await txResponse.json();
