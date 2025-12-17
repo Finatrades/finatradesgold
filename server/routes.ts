@@ -9715,7 +9715,7 @@ export async function registerRoutes(
       });
       
       const goldGrams = parseFloat(paymentRequest.goldGrams);
-      const goldPrice = parseFloat(paymentRequest.goldPriceAtTime);
+      const goldPrice = paymentRequest.goldPriceAtTime ? parseFloat(paymentRequest.goldPriceAtTime) : 0;
       const usdAmount = parseFloat(paymentRequest.amountUsd);
       
       // SPECIFICATION REQUIREMENT: Record LedgerEntry for FinaVault system-of-record
@@ -9729,7 +9729,7 @@ export async function registerRoutes(
         fromStatus: null,
         toStatus: 'Available',
         transactionId: transaction.id,
-        notes: `Crypto payment ADD_FUNDS approved: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g (USD $${usdAmount.toFixed(2)})`,
+        notes: `Crypto payment ADD_FUNDS approved: ${goldGrams.toFixed(4)}g${goldPrice > 0 ? ` at $${goldPrice.toFixed(2)}/g` : ''} (USD $${usdAmount.toFixed(2)})`,
         createdBy: adminUser.id,
       });
       
