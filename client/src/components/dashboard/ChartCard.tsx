@@ -180,7 +180,7 @@ export default function ChartCard() {
           </div>
           {currentPrice && (
             <p className="text-xs text-muted-foreground mt-1">
-              Per gram: ${currentPrice.pricePerGram.toFixed(2)} | Source: {currentPrice.source}
+              Per gram: ${currentPrice.pricePerGram.toFixed(2)} | Live Market Data
             </p>
           )}
         </div>

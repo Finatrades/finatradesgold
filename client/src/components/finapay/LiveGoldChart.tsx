@@ -153,7 +153,7 @@ export default function LiveGoldChart() {
             </div>
             <div className="flex items-center gap-2 mt-1">
               <p className="text-xs text-muted-foreground">
-                {currentPrice?.source ? `Source: ${currentPrice.source}` : 'Global Spot Price'} • 
+                Global Spot Price • 
                 {lastUpdate ? ` Updated ${lastUpdate.toLocaleTimeString()}` : ' Loading...'}
               </p>
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Live"></span>
