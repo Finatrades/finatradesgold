@@ -106,28 +106,23 @@ async function fetchFromMetalsApi(apiKey: string): Promise<GoldPriceData> {
   }
 }
 
-async function fetchFromGoldApi(apiKey: string): Promise<GoldPriceData> {
+async function fetchFromGoldApiCom(): Promise<GoldPriceData> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
   
   try {
     const response = await fetch(
-      `https://www.goldapi.io/api/XAU/USD`,
-      {
-        headers: {
-          'x-access-token': apiKey,
-          'Content-Type': 'application/json'
-        },
-        signal: controller.signal
-      }
+      `https://api.gold-api.com/price/XAU`,
+      { signal: controller.signal }
     );
     clearTimeout(timeout);
   
     if (!response.ok) {
-      throw new Error(`Gold-API returned status ${response.status}`);
+      throw new Error(`gold-api.com returned status ${response.status}`);
     }
     
     const data = await response.json();
+    console.log('[GoldPrice] gold-api.com response:', JSON.stringify(data));
     
     if (data.price) {
       const pricePerOunce = data.price;
@@ -137,15 +132,15 @@ async function fetchFromGoldApi(apiKey: string): Promise<GoldPriceData> {
         pricePerOunce,
         currency: 'USD',
         timestamp: new Date(),
-        source: 'goldapi.io'
+        source: 'gold-api.com'
       };
     }
     
     if (data.error) {
-      throw new Error(data.error || 'Unknown Gold-API error');
+      throw new Error(data.error || 'Unknown gold-api.com error');
     }
     
-    throw new Error('Invalid response from Gold-API');
+    throw new Error('Invalid response from gold-api.com');
   } finally {
     clearTimeout(timeout);
   }
@@ -208,6 +203,27 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
     return priceData;
   } catch (error) {
     console.error('[GoldPrice] Error fetching gold price:', error);
+    
+    // Try gold-api.com as backup (free API)
+    try {
+      console.log('[GoldPrice] Trying gold-api.com as backup...');
+      let priceData = await fetchFromGoldApiCom();
+      priceData = applyMarkup(priceData, config.markupPercent);
+      
+      cachedPrice = {
+        data: priceData,
+        expiresAt: new Date(Date.now() + cacheDurationMs)
+      };
+      
+      lastKnownPrice = priceData;
+      
+      const markupInfo = config.markupPercent > 0 ? ` (with ${config.markupPercent}% markup)` : '';
+      console.log(`[GoldPrice] Fetched from ${priceData.source}${markupInfo}: $${priceData.pricePerGram.toFixed(2)}/gram, $${priceData.pricePerOunce.toFixed(2)}/oz`);
+      
+      return priceData;
+    } catch (backupError) {
+      console.error('[GoldPrice] Backup gold-api.com also failed:', backupError);
+    }
     
     // Try to use last known price as fallback
     if (lastKnownPrice) {
