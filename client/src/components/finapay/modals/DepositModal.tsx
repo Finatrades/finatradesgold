@@ -404,8 +404,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       return;
     }
 
-    if (amountNum > 10000) {
-      toast.error("Maximum card deposit is $10,000. For larger amounts, please use bank transfer.");
+    const maxCardDeposit = Math.min(platformSettings.maxDepositSingle || 100000, 10000);
+    if (amountNum > maxCardDeposit) {
+      toast.error(`Maximum card deposit is $${maxCardDeposit.toLocaleString()}. For larger amounts, please use bank transfer.`);
       return;
     }
 
@@ -808,12 +809,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
                     className="pl-9 bg-white"
-                    min="10"
-                    max="10000"
+                    min={platformSettings.minDeposit || 50}
+                    max={Math.min(platformSettings.maxDepositSingle || 100000, 10000)}
                     data-testid="input-card-amount"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Min: $10 | Max: $10,000</p>
+                <p className="text-xs text-muted-foreground mt-1">Min: ${platformSettings.minDeposit || 50} | Max: ${Math.min(platformSettings.maxDepositSingle || 100000, 10000).toLocaleString()}</p>
               </div>
 
               {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
@@ -894,11 +895,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="pl-10"
-                  min="10"
+                  min={platformSettings.minDeposit || 50}
                   data-testid="input-crypto-amount"
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Minimum: $10</p>
+              <p className="text-xs text-muted-foreground mt-1">Minimum: ${platformSettings.minDeposit || 50}</p>
             </div>
 
             {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
@@ -945,8 +946,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     setSelectedCryptoWallet(wallet);
                     if (!user || !amount) return;
                     const amountNum = parseFloat(amount);
-                    if (isNaN(amountNum) || amountNum < 10) {
-                      toast.error("Minimum deposit amount is $10");
+                    const minDepositForCrypto = platformSettings.minDeposit || 50;
+                    if (isNaN(amountNum) || amountNum < minDepositForCrypto) {
+                      toast.error(`Minimum deposit amount is $${minDepositForCrypto}`);
                       return;
                     }
                     setSubmitting(true);
@@ -1224,7 +1226,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
                 onClick={() => setStep('crypto-select-wallet')} 
-                disabled={!amount || parseFloat(amount) < 10}
+                disabled={!amount || parseFloat(amount) < (platformSettings.minDeposit || 50)}
                 data-testid="button-proceed-crypto-select"
               >
                 <Bitcoin className="w-4 h-4 mr-2" />
