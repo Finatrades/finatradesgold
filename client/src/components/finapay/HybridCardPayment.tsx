@@ -26,6 +26,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
   const [sdkConfig, setSdkConfig] = useState<any>(null);
   const [awaiting3DS, setAwaiting3DS] = useState(false);
   const [threeDSOrderRef, setThreeDSOrderRef] = useState<string | null>(null);
+  const [pendingPaymentResponse, setPendingPaymentResponse] = useState<any>(null);
   const mountAttempted = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -211,6 +212,75 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     setTimeout(mountCardForm, 50);
   }, [mode, sdkConfig]);
 
+  useEffect(() => {
+    if (!awaiting3DS || !pendingPaymentResponse) return;
+
+    const handle3DSChallenge = async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const container = document.getElementById('threeds-challenge-container');
+      if (!container) {
+        console.error('[NGenius] 3DS container not found');
+        setError('3D Secure setup failed. Please try again.');
+        setAwaiting3DS(false);
+        setPendingPaymentResponse(null);
+        return;
+      }
+
+      const NI = (window as any).NI;
+      if (!NI?.handlePaymentResponse) {
+        console.error('[NGenius] handlePaymentResponse not available');
+        setError('3D Secure not supported. Please try again.');
+        setAwaiting3DS(false);
+        setPendingPaymentResponse(null);
+        return;
+      }
+
+      try {
+        console.log('[NGenius] Calling handlePaymentResponse...');
+        const outcomePromise = NI.handlePaymentResponse(
+          pendingPaymentResponse,
+          {
+            mountId: 'threeds-challenge-container',
+            style: {
+              width: 400,
+              height: 500
+            }
+          }
+        );
+
+        const outcome = await outcomePromise;
+        console.log('[NGenius] 3DS outcome:', outcome);
+
+        if (outcome?.status === 'SUCCESS' || outcome?.status === 'CAPTURED' || outcome?.status === 'AUTHORISED') {
+          setSuccess(true);
+          setTimeout(() => {
+            onSuccess({
+              goldGrams: '0',
+              amountUsd: amount,
+            });
+          }, 1500);
+        } else if (outcome?.status === 'FAILED' || outcome?.status === 'CANCELLED' || outcome?.status === 'ERROR') {
+          setError('3D Secure verification failed. Please try again.');
+          setAwaiting3DS(false);
+          setPendingPaymentResponse(null);
+        } else {
+          if (threeDSOrderRef) {
+            startPolling(threeDSOrderRef);
+          }
+          setError('Please wait while we confirm your payment...');
+        }
+      } catch (err: any) {
+        console.error('[NGenius] 3DS error:', err);
+        setError(err?.message || '3D Secure verification failed');
+        setAwaiting3DS(false);
+        setPendingPaymentResponse(null);
+      }
+    };
+
+    handle3DSChallenge();
+  }, [awaiting3DS, pendingPaymentResponse]);
+
   const handleSubmit = useCallback(async () => {
     const NI = (window as any).NI;
     if (!NI) {
@@ -282,50 +352,12 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           });
         }, 1500);
       } else if (result.requires3DS && result.paymentResponse) {
-        console.log('[NGenius] 3DS authentication required, using SDK handler...');
-        setAwaiting3DS(true);
+        console.log('[NGenius] 3DS authentication required, setting up SDK handler...');
         setThreeDSOrderRef(result.orderReference);
-        toast.info('Please complete 3D Secure verification in the popup window');
-        
-        try {
-          const NI = (window as any).NI;
-          if (!NI?.handlePaymentResponse) {
-            throw new Error('3DS handler not available');
-          }
-          
-          const outcomePromise = NI.handlePaymentResponse(
-            result.paymentResponse,
-            {
-              mountId: 'threeds-challenge-container',
-              style: {
-                width: 400,
-                height: 500
-              }
-            }
-          );
-          
-          const outcome = await outcomePromise;
-          console.log('[NGenius] 3DS outcome:', outcome);
-          
-          if (outcome?.status === 'SUCCESS' || outcome?.status === 'CAPTURED' || outcome?.status === 'AUTHORISED') {
-            setSuccess(true);
-            setTimeout(() => {
-              onSuccess({
-                goldGrams: result.goldGrams || '0',
-                amountUsd: amount,
-              });
-            }, 1500);
-          } else if (outcome?.status === 'FAILED' || outcome?.status === 'CANCELLED') {
-            throw new Error('3D Secure verification failed');
-          } else {
-            startPolling(result.orderReference);
-            setError('Please wait while we confirm your payment...');
-          }
-        } catch (threeDSError: any) {
-          console.error('[NGenius] 3DS error:', threeDSError);
-          setAwaiting3DS(false);
-          throw new Error(threeDSError?.message || '3D Secure verification failed');
-        }
+        setPendingPaymentResponse(result.paymentResponse);
+        setAwaiting3DS(true);
+        toast.info('Please complete 3D Secure verification');
+        return;
       } else if (result.requires3DS && result.threeDSUrl) {
         console.log('[NGenius] 3DS URL fallback...');
         toast.info('Please complete 3D Secure verification in the new window');
