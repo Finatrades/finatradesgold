@@ -61,8 +61,9 @@ export default function BNSL() {
   
   // State - default to 'create' tab if step=configure is in URL
   const [activeTab, setActiveTab] = useState(stepParam === 'configure' ? 'create' : 'plans');
+  const [highlightCreate, setHighlightCreate] = useState(false);
   
-  // Auto-scroll to create section when coming from dashboard with step=configure
+  // Auto-scroll and highlight create section when coming from dashboard with step=configure
   useEffect(() => {
     if (stepParam === 'configure') {
       // Small delay to ensure the tab content is rendered
@@ -70,8 +71,10 @@ export default function BNSL() {
         const createSection = document.getElementById('bnsl-create-section');
         if (createSection) {
           createSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Highlight effect
+          setHighlightCreate(true);
+          setTimeout(() => setHighlightCreate(false), 1500);
         } else {
-          // Fallback: scroll to top of main content
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }, 100);
@@ -508,7 +511,7 @@ export default function BNSL() {
                </div>
             </TabsContent>
 
-            <TabsContent value="create" id="bnsl-create-section" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+            <TabsContent value="create" id="bnsl-create-section" className={`mt-0 animate-in fade-in slide-in-from-bottom-2 transition-all duration-500 ${highlightCreate ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-orange-50' : ''}`}>
                <CreateBnslPlan 
                  bnslWalletBalance={bnslWalletBalance} 
                  currentGoldPrice={currentGoldPrice}
