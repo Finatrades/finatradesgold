@@ -78,6 +78,9 @@ export const users = pgTable("users", {
   // FinaBridge disclaimer acceptance and role
   finabridgeDisclaimerAcceptedAt: timestamp("finabridge_disclaimer_accepted_at"),
   finabridgeRole: finabridgeRoleEnum("finabridge_role"), // importer, exporter, or both
+  // Session tracking for auth timestamps display
+  lastLoginAt: timestamp("last_login_at"),
+  lastLogoutAt: timestamp("last_logout_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -101,6 +104,9 @@ export const insertUserSchema = createInsertSchema(users)
     profilePhoto: z.string().nullable().optional(),
     finabridgeDisclaimerAcceptedAt: z.date().nullable().optional(),
     finabridgeRole: z.enum(['importer', 'exporter', 'both']).nullable().optional(),
+    // Session tracking fields
+    lastLoginAt: z.date().nullable().optional(),
+    lastLogoutAt: z.date().nullable().optional(),
     // MFA fields
     mfaEnabled: z.boolean().optional(),
     mfaMethod: z.enum(['totp', 'email']).nullable().optional(),

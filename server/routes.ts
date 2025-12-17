@@ -455,7 +455,12 @@ export async function registerRoutes(
         });
       }
       
-      res.json({ user: sanitizeUser(user) });
+      // Record login timestamp for session tracking
+      const updatedUser = await storage.updateUser(user.id, {
+        lastLoginAt: new Date(),
+      });
+      
+      res.json({ user: sanitizeUser(updatedUser || user) });
     } catch (error) {
       res.status(400).json({ message: "Login failed" });
     }

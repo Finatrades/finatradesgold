@@ -4,6 +4,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
+import SyncStatusIndicator from '@/components/SyncStatusIndicator';
+import IdleTimeoutWarning from '@/components/IdleTimeoutWarning';
+import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Menu, AlertTriangle, ArrowRight, Clock, LogOut, User, Settings } from 'lucide-react';
@@ -13,6 +16,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'wouter';
+import { format } from 'date-fns';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -20,6 +24,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [, setLocation] = useLocation();
+  
+  const { showWarning, remainingSeconds, stayActive, logout: idleLogout } = useIdleTimeout({
+    timeoutMinutes: 30,
+    warningMinutes: 2,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -96,6 +105,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             <div className="flex items-center gap-3">
+              
+              <SyncStatusIndicator />
 
               <div className="hidden md:block">
                 <LanguageSwitcher />
@@ -120,11 +131,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </Avatar>
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
+                      {user.lastLoginAt && (
+                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-1">
+                          <Clock className="w-3 h-3" />
+                          Signed in: {format(new Date(user.lastLoginAt), 'MMM d, h:mm a')}
+                        </p>
+                      )}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -177,6 +194,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
         
         <FloatingAgentChat />
+        
+        <IdleTimeoutWarning
+          open={showWarning}
+          remainingSeconds={remainingSeconds}
+          onStayActive={stayActive}
+          onLogout={idleLogout}
+        />
 
       </div>
     </div>
