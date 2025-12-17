@@ -63,6 +63,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('method');
+  const [cardFormKey, setCardFormKey] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<PlatformBankAccount | null>(null);
   const [amount, setAmount] = useState('');
@@ -405,6 +406,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     }
 
     // Use embedded card form (SDK is preloaded when modal opened)
+    setCardFormKey(prev => prev + 1); // Force remount to clear NGenius SDK state
     setStep('card-embedded');
   };
   
@@ -853,6 +855,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : step === 'card-embedded' ? (
           <div className="py-4">
             <HybridCardPayment
+              key={`card-form-${cardFormKey}`}
               amount={parseFloat(amount) || 0}
               onSuccess={handleCardSuccess}
               onError={handleCardError}

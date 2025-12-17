@@ -210,13 +210,32 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
 
   const handleSubmit = useCallback(async () => {
     const NI = (window as any).NI;
-    if (!formValid || processing || !NI) return;
+    if (!NI) {
+      toast.error('Payment system not ready. Please wait...');
+      return;
+    }
+    
+    if (!formValid) {
+      toast.error('Please complete all card fields correctly');
+      return;
+    }
+    
+    if (processing) return;
 
     setProcessing(true);
     setError(null);
 
     try {
-      const sessionId = await NI.generateSessionId();
+      let sessionId;
+      try {
+        sessionId = await NI.generateSessionId();
+      } catch (sessionError: any) {
+        const errorMsg = sessionError?.message || 'Card validation failed';
+        if (errorMsg.includes('invalid values') || errorMsg.includes('validation')) {
+          throw new Error('Please check your card details - card number, expiry date, and CVV must all be valid');
+        }
+        throw new Error(errorMsg);
+      }
       
       const res = await fetch('/api/ngenius/process-hosted-payment', {
         method: 'POST',
@@ -242,8 +261,9 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
         throw new Error(result.message || 'Payment failed');
       }
     } catch (err: any) {
-      setError(err?.message || 'Payment failed. Please try again.');
-      onError(err?.message || 'Payment failed');
+      const errorMessage = err?.message || 'Payment failed. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setProcessing(false);
     }
