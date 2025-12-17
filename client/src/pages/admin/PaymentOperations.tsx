@@ -381,7 +381,10 @@ export default function FinaPayManagement() {
   };
 
   const handleCryptoAction = async (action: 'Credited' | 'Rejected') => {
-    if (!selectedCrypto || !currentUser) return;
+    if (!selectedCrypto || !currentUser) {
+      console.error('[handleCryptoAction] Missing selectedCrypto or currentUser', { selectedCrypto, currentUser });
+      return;
+    }
     
     try {
       const endpoint = action === 'Credited' 
@@ -391,6 +394,8 @@ export default function FinaPayManagement() {
       const body = action === 'Credited'
         ? { reviewNotes: cryptoReviewNotes }
         : { rejectionReason: cryptoRejectionReason, reviewNotes: cryptoReviewNotes };
+      
+      console.log('[handleCryptoAction] Sending request:', { endpoint, userId: currentUser.id, body });
       
       const response = await fetch(endpoint, {
         method: 'PATCH',
@@ -402,8 +407,11 @@ export default function FinaPayManagement() {
         body: JSON.stringify(body)
       });
       
+      console.log('[handleCryptoAction] Response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('[handleCryptoAction] Error response:', errorData);
         throw new Error(errorData.message || 'Request failed');
       }
       
@@ -412,6 +420,7 @@ export default function FinaPayManagement() {
       setSelectedCrypto(null);
       fetchData();
     } catch (error) {
+      console.error('[handleCryptoAction] Caught error:', error);
       toast.error(`Failed to ${action === 'Credited' ? 'approve' : 'reject'} crypto payment`);
     }
   };
