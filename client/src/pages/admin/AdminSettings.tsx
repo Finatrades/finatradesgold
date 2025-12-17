@@ -28,7 +28,7 @@ interface CryptoWalletConfig {
 
 interface ComplianceSettings {
   id: string;
-  activeKycMode: 'kycAml' | 'finatrades';
+  activeKycMode: 'finatrades';
   finatradesPersonalConfig?: {
     enableBankingVerification: boolean;
     enableLivenessCapture: boolean;
@@ -95,31 +95,7 @@ export default function AdminSettings() {
     }
   };
 
-  const handleKycModeChange = async (mode: 'kycAml' | 'finatrades') => {
-    try {
-      const response = await fetch('/api/admin/compliance-settings', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-User-Id': user?.id || '' 
-        },
-        body: JSON.stringify({ activeKycMode: mode })
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setComplianceSettings(data);
-        toast.success('KYC Mode Updated', {
-          description: `Switched to ${mode === 'kycAml' ? 'KYC/AML Compliance' : 'Finatrades KYC'} mode.`
-        });
-      } else {
-        toast.error('Failed to update KYC mode');
-      }
-    } catch (error) {
-      toast.error('Failed to update KYC mode');
-    }
-  };
-
+  
   const fetchCryptoWallets = async () => {
     try {
       const response = await fetch('/api/admin/crypto-wallets', {

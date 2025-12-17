@@ -16,7 +16,7 @@ import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 
 type KycTier = 'tier_1_basic' | 'tier_2_enhanced' | 'tier_3_corporate';
-type KycModeType = 'kycAml' | 'finatrades';
+type KycModeType = 'finatrades';
 
 interface TierConfig {
   id: KycTier;
@@ -174,7 +174,7 @@ export default function KYC() {
     }
   });
   
-  const kycMode: KycModeType = kycModeData?.activeKycMode || 'kycAml';
+  const kycMode: KycModeType = 'finatrades';
   
   // === KYCAML MODE STATE (Existing Tiered KYC) ===
   const [activeStep, setActiveStep] = useState('tier_select');
