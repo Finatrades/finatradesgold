@@ -8522,6 +8522,232 @@ export async function registerRoutes(
     }
   });
 
+  // NGenius SDK configuration for embedded card form
+  app.get("/api/ngenius/sdk-config", async (req, res) => {
+    try {
+      const settings = await storage.getPaymentGatewaySettings();
+      const ngeniusOutletRef = process.env.NGENIUS_OUTLET_REF;
+      const ngeniusHostedSessionKey = process.env.NGENIUS_HOSTED_SESSION_KEY;
+
+      if (!settings?.ngeniusEnabled || !ngeniusOutletRef || !ngeniusHostedSessionKey) {
+        return res.status(400).json({ 
+          enabled: false,
+          message: "Embedded card payments not configured" 
+        });
+      }
+
+      const mode = settings.ngeniusMode || 'live';
+      const sdkUrl = mode === 'live' 
+        ? 'https://paypage.ngenius-payments.com/hosted-sessions/sdk.js'
+        : 'https://paypage-uat.ngenius-payments.com/hosted-sessions/sdk.js';
+
+      res.json({
+        enabled: true,
+        apiKey: ngeniusHostedSessionKey,
+        outletRef: ngeniusOutletRef,
+        sdkUrl,
+        mode,
+      });
+    } catch (error) {
+      res.status(500).json({ enabled: false, message: "Failed to get SDK config" });
+    }
+  });
+
+  // Create hosted session for embedded card form
+  app.post("/api/ngenius/create-session", async (req, res) => {
+    try {
+      const { userId, amount } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized - userId required" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      const settings = await storage.getPaymentGatewaySettings();
+      const ngeniusApiKey = process.env.NGENIUS_API_KEY;
+      const ngeniusOutletRef = process.env.NGENIUS_OUTLET_REF;
+      const ngeniusRealmName = process.env.NGENIUS_REALM_NAME;
+
+      if (!settings?.ngeniusEnabled || !ngeniusApiKey || !ngeniusOutletRef) {
+        return res.status(400).json({ message: "Card payments not configured" });
+      }
+
+      const ngeniusService = NgeniusService.getInstance({
+        apiKey: ngeniusApiKey,
+        outletRef: ngeniusOutletRef,
+        realmName: ngeniusRealmName || undefined,
+        mode: (settings.ngeniusMode || 'live') as 'sandbox' | 'live',
+      });
+
+      const orderReference = generateOrderReference();
+      
+      // Convert USD to AED for NGenius
+      const USD_TO_AED_RATE = 3.6725;
+      const amountUsd = parseFloat(amount);
+      const amountAed = Math.round(amountUsd * USD_TO_AED_RATE * 100) / 100;
+
+      const session = await ngeniusService.createHostedSession({
+        orderReference,
+        amount: amountAed,
+        currency: 'AED',
+      });
+
+      // Store transaction record
+      await storage.createNgeniusTransaction({
+        userId: user.id,
+        orderReference,
+        ngeniusOrderId: session.sessionId,
+        status: 'Created',
+        amountUsd: amountUsd.toString(),
+        currency: 'AED',
+        description: `Card deposit - $${amountUsd} USD`,
+      });
+
+      res.json({
+        success: true,
+        sessionId: session.sessionId,
+        orderReference,
+        amount: {
+          usd: amountUsd,
+          aed: amountAed,
+        },
+      });
+    } catch (error: any) {
+      console.error('NGenius create session error:', error);
+      res.status(500).json({ 
+        message: "Failed to create payment session",
+        error: error.message 
+      });
+    }
+  });
+
+  // Complete payment after card entry
+  app.post("/api/ngenius/complete-session", async (req, res) => {
+    try {
+      const { userId, orderReference } = req.body;
+      
+      if (!userId || !orderReference) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const transaction = await storage.getNgeniusTransactionByOrderReference(orderReference);
+      if (!transaction || transaction.userId !== userId) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      const settings = await storage.getPaymentGatewaySettings();
+      const ngeniusApiKey = process.env.NGENIUS_API_KEY;
+      const ngeniusOutletRef = process.env.NGENIUS_OUTLET_REF;
+      const ngeniusRealmName = process.env.NGENIUS_REALM_NAME;
+
+      if (!ngeniusApiKey || !ngeniusOutletRef) {
+        return res.status(400).json({ message: "Card payments not configured" });
+      }
+
+      const ngeniusService = NgeniusService.getInstance({
+        apiKey: ngeniusApiKey,
+        outletRef: ngeniusOutletRef,
+        realmName: ngeniusRealmName || undefined,
+        mode: (settings?.ngeniusMode || 'live') as 'sandbox' | 'live',
+      });
+
+      // Check order status
+      const result = await ngeniusService.completeHostedPayment(transaction.ngeniusOrderId!);
+
+      if (result.success) {
+        // Update transaction status
+        await storage.updateNgeniusTransaction(transaction.id, {
+          status: result.status as any,
+        });
+
+        // Credit wallet with gold
+        const wallet = await storage.getWallet(userId);
+        if (wallet && ['CAPTURED', 'AUTHORISED', 'PURCHASED'].includes(result.status)) {
+          const depositAmount = parseFloat(transaction.amountUsd || '0');
+          let goldPricePerGram: number;
+          try {
+            goldPricePerGram = await getGoldPricePerGram();
+          } catch {
+            goldPricePerGram = 140;
+          }
+          
+          const goldGrams = depositAmount / goldPricePerGram;
+          
+          await storage.updateWallet(wallet.id, {
+            goldGrams: (parseFloat(wallet.goldGrams || '0') + goldGrams).toString(),
+          });
+
+          const walletTx = await storage.createTransaction({
+            userId,
+            type: 'Deposit',
+            status: 'Completed',
+            amountUsd: transaction.amountUsd,
+            amountGold: goldGrams.toFixed(6),
+            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            description: `Card deposit - ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+            referenceId: orderReference,
+            sourceModule: 'finapay',
+            completedAt: new Date(),
+          });
+
+          await storage.updateNgeniusTransaction(transaction.id, {
+            walletTransactionId: walletTx.id,
+            status: 'Captured',
+          });
+
+          // Create certificate
+          await storage.createCertificate({
+            userId,
+            transactionId: walletTx.id,
+            type: 'Digital Ownership',
+            status: 'Active',
+            goldGrams: goldGrams.toFixed(6),
+            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            issuer: 'Finatrades',
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            issuedAt: new Date(),
+          });
+
+          res.json({
+            success: true,
+            status: 'completed',
+            goldGrams: goldGrams.toFixed(6),
+            amountUsd: depositAmount,
+          });
+        } else {
+          res.json({
+            success: true,
+            status: result.status,
+          });
+        }
+      } else {
+        await storage.updateNgeniusTransaction(transaction.id, {
+          status: 'Failed',
+        });
+        
+        res.json({
+          success: false,
+          status: result.status,
+          message: "Payment not completed",
+        });
+      }
+    } catch (error: any) {
+      console.error('NGenius complete session error:', error);
+      res.status(500).json({ 
+        message: "Failed to complete payment",
+        error: error.message 
+      });
+    }
+  });
+
   // NGenius webhook handler
   app.post("/api/ngenius/webhook", async (req, res) => {
     try {

@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
+import EmbeddedCardForm from '../EmbeddedCardForm';
 
 interface FeeInfo {
   feeKey: string;
@@ -54,7 +55,7 @@ interface DepositModalProps {
 }
 
 type PaymentMethod = 'bank' | 'card' | 'crypto';
-type Step = 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing' | 'crypto-amount' | 'crypto-select-wallet' | 'crypto-address' | 'crypto-submit-proof' | 'crypto-submitted';
+type Step = 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing' | 'card-embedded' | 'card-success' | 'crypto-amount' | 'crypto-select-wallet' | 'crypto-address' | 'crypto-submit-proof' | 'crypto-submitted';
 
 export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const { user } = useAuth();
@@ -397,35 +398,18 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       return;
     }
 
-    setSubmitting(true);
-    setStep('card-processing');
-    
-    try {
-      const returnUrl = `${window.location.origin}/finapay?deposit_callback=1`;
-      const cancelUrl = `${window.location.origin}/finapay?deposit_cancelled=1`;
-      
-      const res = await apiRequest('POST', '/api/ngenius/create-order', {
-        userId: user.id,
-        amount: amountNum,
-        currency: 'USD',
-        returnUrl,
-        cancelUrl,
-        description: `FinaPay wallet deposit - $${amountNum.toFixed(2)}`,
-      });
-      
-      const data = await res.json();
-      
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error("No payment URL received");
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to initiate card payment");
-      setStep('card-amount');
-    } finally {
-      setSubmitting(false);
-    }
+    // Use embedded card form instead of redirect
+    setStep('card-embedded');
+  };
+  
+  const handleCardSuccess = (result: { goldGrams: string; amountUsd: number }) => {
+    toast.success(`Successfully deposited $${result.amountUsd.toFixed(2)} (${result.goldGrams}g gold)`);
+    setStep('card-success');
+  };
+  
+  const handleCardError = (error: string) => {
+    toast.error(error || "Card payment failed");
+    setStep('card-amount');
   };
 
   const handleClose = () => {
@@ -465,6 +449,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             {step === 'submitted' && "Deposit request submitted successfully"}
             {step === 'card-amount' && "Enter the amount to deposit via card"}
             {step === 'card-processing' && "Redirecting to secure payment..."}
+            {step === 'card-embedded' && "Enter your card details securely"}
+            {step === 'card-success' && "Payment completed successfully"}
             {step === 'crypto-amount' && "Enter the amount to deposit via crypto"}
             {step === 'crypto-select-wallet' && "Select a cryptocurrency network"}
             {step === 'crypto-address' && "Send crypto to the wallet address below"}
@@ -840,7 +826,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             
             <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex items-start gap-2">
                <div className="mt-0.5">ℹ️</div>
-               <p>You will be redirected to a secure payment page to complete your card payment. Your wallet will be credited instantly upon successful payment.</p>
+               <p>Enter your card details securely on the next screen. Your wallet will be credited instantly upon successful payment.</p>
             </div>
             
             <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
@@ -857,6 +843,31 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 Redirecting you to secure payment page
               </p>
             </div>
+          </div>
+        ) : step === 'card-embedded' ? (
+          <div className="py-4">
+            <EmbeddedCardForm
+              amount={parseFloat(amount) || 0}
+              onSuccess={handleCardSuccess}
+              onError={handleCardError}
+              onCancel={() => setStep('card-amount')}
+            />
+          </div>
+        ) : step === 'card-success' ? (
+          <div className="py-12 text-center space-y-6">
+            <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto" />
+            <div>
+              <h3 className="text-2xl font-bold text-foreground">Payment Successful!</h3>
+              <p className="text-muted-foreground mt-2">
+                Your gold has been credited to your FinaPay wallet.
+              </p>
+            </div>
+            <Button 
+              onClick={handleClose}
+              className="bg-gradient-to-r from-orange-500 to-orange-600"
+            >
+              Done
+            </Button>
           </div>
         ) : step === 'crypto-amount' ? (
           <div className="space-y-4 py-4">
