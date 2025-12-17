@@ -2837,45 +2837,49 @@ export async function registerRoutes(
         });
       });
       
-      // Deposit requests
-      depositRequests.forEach(dep => {
-        unifiedTransactions.push({
-          id: dep.id,
-          userId: dep.userId,
-          module: 'finapay',
-          actionType: 'ADD_FUNDS',
-          grams: null,
-          usd: dep.amountUsd,
-          usdPerGram: null,
-          status: dep.status === 'Confirmed' ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
-          referenceId: dep.referenceNumber,
-          description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
-          counterpartyUserId: null,
-          createdAt: dep.createdAt,
-          completedAt: dep.processedAt,
-          sourceType: 'deposit_request'
+      // Deposit requests (exclude approved/confirmed - they already have a transaction record)
+      depositRequests
+        .filter(dep => dep.status !== 'Confirmed' && dep.status !== 'Approved')
+        .forEach(dep => {
+          unifiedTransactions.push({
+            id: dep.id,
+            userId: dep.userId,
+            module: 'finapay',
+            actionType: 'ADD_FUNDS',
+            grams: null,
+            usd: dep.amountUsd,
+            usdPerGram: null,
+            status: dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
+            referenceId: dep.referenceNumber,
+            description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
+            counterpartyUserId: null,
+            createdAt: dep.createdAt,
+            completedAt: dep.processedAt,
+            sourceType: 'deposit_request'
+          });
         });
-      });
       
-      // Crypto payments
-      cryptoPayments.forEach(cp => {
-        unifiedTransactions.push({
-          id: cp.id,
-          userId: cp.userId,
-          module: 'finapay',
-          actionType: 'ADD_FUNDS',
-          grams: cp.goldGrams,
-          usd: cp.amountUsd,
-          usdPerGram: cp.goldPriceUsdPerGram,
-          status: cp.status === 'Approved' ? 'COMPLETED' : cp.status === 'Rejected' ? 'FAILED' : 'PENDING',
-          referenceId: cp.transactionHash,
-          description: `Crypto Deposit - ${cp.cryptoCurrency}`,
-          counterpartyUserId: null,
-          createdAt: cp.createdAt,
-          completedAt: cp.verifiedAt,
-          sourceType: 'crypto_payment'
+      // Crypto payments (exclude approved - they already have a transaction record)
+      cryptoPayments
+        .filter(cp => cp.status !== 'Approved')
+        .forEach(cp => {
+          unifiedTransactions.push({
+            id: cp.id,
+            userId: cp.userId,
+            module: 'finapay',
+            actionType: 'ADD_FUNDS',
+            grams: cp.goldGrams,
+            usd: cp.amountUsd,
+            usdPerGram: cp.goldPriceUsdPerGram,
+            status: cp.status === 'Rejected' ? 'FAILED' : 'PENDING',
+            referenceId: cp.transactionHash,
+            description: `Crypto Deposit - ${cp.cryptoCurrency}`,
+            counterpartyUserId: null,
+            createdAt: cp.createdAt,
+            completedAt: cp.verifiedAt,
+            sourceType: 'crypto_payment'
+          });
         });
-      });
       
       // BNSL plans
       bnslPlans.forEach(plan => {
