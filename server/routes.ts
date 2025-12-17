@@ -16,7 +16,7 @@ import {
   insertTradeConfirmationSchema, insertSettlementHoldSchema, insertFinabridgeWalletSchema,
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
-  vaultLedgerEntries, vaultOwnershipSummary,
+  vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings,
   wallets, transactions, auditLogs, certificates
 } from "@shared/schema";
 import { z } from "zod";
@@ -5365,15 +5365,15 @@ export async function registerRoutes(
               })
               .where(eq(wallets.id, wallet.id));
             
-            // Create transaction record with gold backing metadata
+            // Create transaction record with gold backing metadata (type: 'Buy' to match crypto)
             const [transaction] = await tx.insert(transactions).values({
               userId: request.userId,
-              type: 'Deposit',
+              type: 'Buy',
               status: 'Completed',
               amountUsd: depositAmountUsd.toString(),
               amountGold: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              description: `Deposit confirmed - Ref: ${request.referenceNumber} | Gold backing: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+              description: `Bank deposit confirmed - Ref: ${request.referenceNumber} | Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: request.referenceNumber,
               sourceModule: 'finapay',
               approvedBy: updates.processedBy,
@@ -5434,12 +5434,38 @@ export async function registerRoutes(
               details: `Deposit approved: $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
             });
             
-            // Create Digital Ownership certificate for the deposited gold
-            const certNumber = await storage.generateCertificateNumber('Digital Ownership');
-            const [createdCert] = await tx.insert(certificates).values({
-              certificateNumber: certNumber,
+            // Get or create vault holding (matching crypto flow)
+            const existingHoldings = await tx.select().from(vaultHoldings)
+              .where(eq(vaultHoldings.userId, request.userId)).limit(1);
+            
+            let vaultHoldingId: string;
+            if (existingHoldings.length > 0) {
+              // Update existing holding
+              const existingHolding = existingHoldings[0];
+              const newTotalGrams = parseFloat(existingHolding.goldGrams) + goldGrams;
+              await tx.update(vaultHoldings)
+                .set({ goldGrams: newTotalGrams.toFixed(6), updatedAt: new Date() })
+                .where(eq(vaultHoldings.id, existingHolding.id));
+              vaultHoldingId = existingHolding.id;
+            } else {
+              // Create new vault holding
+              const [newHolding] = await tx.insert(vaultHoldings).values({
+                userId: request.userId,
+                goldGrams: goldGrams.toFixed(6),
+                vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+              }).returning();
+              vaultHoldingId = newHolding.id;
+            }
+            
+            // Create Digital Ownership certificate (from Finatrades)
+            const docCertNumber = await storage.generateCertificateNumber('Digital Ownership');
+            const [digitalCert] = await tx.insert(certificates).values({
+              certificateNumber: docCertNumber,
               userId: request.userId,
               transactionId: transaction.id,
+              vaultHoldingId: vaultHoldingId,
               type: 'Digital Ownership',
               status: 'Active',
               goldGrams: goldGrams.toFixed(6),
@@ -5450,23 +5476,48 @@ export async function registerRoutes(
               issuedAt: new Date(),
             }).returning();
             
-            return { createdCert };
+            // Create Physical Storage certificate (from Wingold & Metals DMCC) - matching crypto flow
+            const sscCertNumber = await storage.generateCertificateNumber('Physical Storage');
+            const [storageCert] = await tx.insert(certificates).values({
+              certificateNumber: sscCertNumber,
+              userId: request.userId,
+              transactionId: transaction.id,
+              vaultHoldingId: vaultHoldingId,
+              type: 'Physical Storage',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              issuer: 'Wingold & Metals DMCC',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              issuedAt: new Date(),
+            }).returning();
+            
+            return { digitalCert, storageCert, vaultHoldingId };
           });
           
           // Send email notification for deposit confirmation with PDF attachments
           const depositUser = await storage.getUser(request.userId);
           
-          // Get the most recently created certificate for this user (the one we just created)
+          // Get both certificates (Digital Ownership + Physical Storage) for this transaction
           const userCerts = await storage.getUserCertificates(request.userId);
-          const freshCert = userCerts
-            .filter(c => c.type === 'Digital Ownership')
-            .sort((a, b) => new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime())[0];
+          const transactionCerts = userCerts
+            .sort((a, b) => new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime())
+            .slice(0, 2); // Get the 2 most recent certificates (DOC + SSC)
+          
+          // Create in-app notification (matching crypto flow)
+          await storage.createNotification({
+            userId: request.userId,
+            title: 'Deposit Confirmed',
+            message: `Your bank deposit of $${depositAmountUsd.toFixed(2)} has been confirmed. ${goldGrams.toFixed(4)}g gold has been credited to your wallet.`,
+            type: 'success',
+            read: false,
+          });
           
           if (depositUser && depositUser.email) {
             // Generate transaction receipt PDF
             const receiptPdf = await generateTransactionReceiptPDF({
               referenceNumber: request.referenceNumber,
-              transactionType: 'Deposit',
+              transactionType: 'Bank Deposit',
               amountUsd: depositAmountUsd,
               goldGrams: goldGrams,
               goldPricePerGram: goldPricePerGram,
@@ -5474,7 +5525,7 @@ export async function registerRoutes(
               userEmail: depositUser.email,
               transactionDate: new Date(),
               status: 'Completed',
-              description: `Bank deposit confirmed - Gold backing: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+              description: `Bank deposit confirmed - Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             });
             
             const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
@@ -5485,11 +5536,11 @@ export async function registerRoutes(
               }
             ];
             
-            // Generate and add certificate PDF using the freshly created certificate
-            if (freshCert) {
-              const certPdf = await generateCertificatePDF(freshCert, depositUser);
+            // Generate and add BOTH certificate PDFs (matching crypto flow)
+            for (const cert of transactionCerts) {
+              const certPdf = await generateCertificatePDF(cert, depositUser);
               attachments.push({
-                filename: `Certificate_${freshCert.certificateNumber}.pdf`,
+                filename: `Certificate_${cert.certificateNumber}.pdf`,
                 content: certPdf,
                 contentType: 'application/pdf',
               });
@@ -5502,18 +5553,18 @@ export async function registerRoutes(
                 </div>
                 <div style="padding: 30px; background: #ffffff;">
                   <p>Hello ${depositUser.firstName},</p>
-                  <p>Your bank deposit has been confirmed and credited to your FinaPay wallet.</p>
+                  <p>Your bank deposit has been verified and gold has been credited to your wallet.</p>
                   <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                     <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${depositAmountUsd.toFixed(2)}</p>
-                    <p style="font-size: 18px; font-weight: bold; color: #92400e; margin: 10px 0;">Gold Backing: ${goldGrams.toFixed(4)}g</p>
+                    <p style="font-size: 18px; font-weight: bold; color: #92400e; margin: 10px 0;">Gold Credited: ${goldGrams.toFixed(4)}g</p>
                     <p style="color: #6b7280; margin: 5px 0;">Price: $${goldPricePerGram.toFixed(2)}/gram</p>
                     <p style="color: #6b7280; margin: 5px 0;">Reference: ${request.referenceNumber}</p>
                   </div>
-                  <p>Your gold-backed balance is now available in your FinaPay wallet.</p>
                   <p><strong>Attached Documents:</strong></p>
                   <ul>
                     <li>Transaction Receipt (PDF)</li>
-                    ${latestCert ? '<li>Digital Ownership Certificate (PDF)</li>' : ''}
+                    <li>Digital Ownership Certificate (PDF)</li>
+                    <li>Physical Storage Certificate (PDF)</li>
                   </ul>
                   <p style="text-align: center; margin-top: 30px;">
                     <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
