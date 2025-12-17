@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2, TrendingUp, Copy, Check, Edit } from 'lucide-react';
+import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2, TrendingUp, Copy, Check, Edit, Upload, X, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
@@ -33,6 +33,7 @@ interface CryptoWalletConfig {
   walletAddress: string;
   memo?: string | null;
   instructions?: string | null;
+  qrCodeImage?: string | null;
   isActive: boolean;
   displayOrder: number;
 }
@@ -145,6 +146,7 @@ export default function PaymentGatewayManagement() {
     walletAddress: '',
     memo: '',
     instructions: '',
+    qrCodeImage: '',
     isActive: true,
     displayOrder: 0,
   });
@@ -276,6 +278,7 @@ export default function PaymentGatewayManagement() {
       walletAddress: '',
       memo: '',
       instructions: '',
+      qrCodeImage: '',
       isActive: true,
       displayOrder: cryptoWallets.length,
     });
@@ -290,10 +293,37 @@ export default function PaymentGatewayManagement() {
       walletAddress: wallet.walletAddress,
       memo: wallet.memo || '',
       instructions: wallet.instructions || '',
+      qrCodeImage: wallet.qrCodeImage || '',
       isActive: wallet.isActive,
       displayOrder: wallet.displayOrder,
     });
     setShowWalletDialog(true);
+  };
+
+  const handleQrCodeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setWalletForm(prev => ({ ...prev, qrCodeImage: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeQrCode = () => {
+    setWalletForm(prev => ({ ...prev, qrCodeImage: '' }));
   };
 
   const handleSaveWallet = async () => {
@@ -853,6 +883,11 @@ export default function PaymentGatewayManagement() {
                         <div className="flex items-center gap-2">
                           <Bitcoin className="w-5 h-5 text-orange-500" />
                           <h4 className="font-medium text-gray-900">{wallet.networkLabel}</h4>
+                          {wallet.qrCodeImage && (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-600 rounded-full flex items-center gap-1">
+                              <QrCode className="w-3 h-3" /> QR
+                            </span>
+                          )}
                           {!wallet.isActive && (
                             <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full">Disabled</span>
                           )}
@@ -1170,6 +1205,42 @@ export default function PaymentGatewayManagement() {
                 placeholder="Additional instructions for users"
                 data-testid="input-wallet-instructions"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>QR Code Image (Optional)</Label>
+              {walletForm.qrCodeImage ? (
+                <div className="relative inline-block">
+                  <img 
+                    src={walletForm.qrCodeImage} 
+                    alt="Wallet QR Code" 
+                    className="w-32 h-32 object-contain border rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={removeQrCode}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4">
+                  <label className="cursor-pointer flex flex-col items-center gap-2">
+                    <Upload className="w-8 h-8 text-gray-400" />
+                    <span className="text-sm text-gray-500">Click to upload QR code</span>
+                    <span className="text-xs text-gray-400">Max 2MB, PNG/JPG</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleQrCodeUpload}
+                      className="hidden"
+                      data-testid="input-qr-code-upload"
+                    />
+                  </label>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Switch 

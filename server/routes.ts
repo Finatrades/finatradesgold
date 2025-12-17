@@ -9190,7 +9190,7 @@ export async function registerRoutes(
   // Create crypto wallet config (admin)
   app.post("/api/admin/crypto-wallets", ensureAdminAsync, async (req, res) => {
     try {
-      const { network, networkLabel, walletAddress, memo, instructions, isActive, displayOrder } = req.body;
+      const { network, networkLabel, walletAddress, memo, instructions, qrCodeImage, isActive, displayOrder } = req.body;
       const adminUser = (req as any).adminUser;
       
       const wallet = await storage.createCryptoWalletConfig({
@@ -9199,6 +9199,7 @@ export async function registerRoutes(
         walletAddress,
         memo: memo || null,
         instructions: instructions || null,
+        qrCodeImage: qrCodeImage || null,
         isActive: isActive !== false,
         displayOrder: displayOrder || 0,
       });

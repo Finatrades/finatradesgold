@@ -2369,6 +2369,7 @@ export const cryptoWalletConfigs = pgTable("crypto_wallet_configs", {
   walletAddress: text("wallet_address").notNull(),
   memo: varchar("memo", { length: 255 }), // Optional memo/tag for some networks
   instructions: text("instructions"), // Optional instructions for users
+  qrCodeImage: text("qr_code_image"), // Base64 encoded QR code image for users to scan
   isActive: boolean("is_active").notNull().default(true),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
