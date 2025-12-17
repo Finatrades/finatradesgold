@@ -439,6 +439,7 @@ export const EMAIL_TEMPLATES = {
   // Transactions
   GOLD_PURCHASE: 'gold_purchase',
   GOLD_SALE: 'gold_sale',
+  CARD_PAYMENT_RECEIPT: 'card_payment_receipt',
   DEPOSIT_RECEIVED: 'deposit_received',
   DEPOSIT_PROCESSING: 'deposit_processing',
   WITHDRAWAL_REQUESTED: 'withdrawal_requested',
@@ -1170,6 +1171,86 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'gold_amount', description: 'Amount of gold sold' },
       { name: 'price_per_gram', description: 'Price per gram' },
       { name: 'total_amount', description: 'Total amount received' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.CARD_PAYMENT_RECEIPT,
+    name: 'Card Payment Receipt',
+    type: 'email' as const,
+    module: 'transactions',
+    subject: 'Card Payment Receipt - ${{amount}} | Certificate {{certificate_number}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Payment Receipt</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Card Transaction Successful</p>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Dear {{user_name}},</p>
+          <p>Your card payment has been successfully processed. Below are the transaction details and your gold ownership certificate.</p>
+          
+          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
+            <h3 style="margin: 0 0 15px 0; color: #16a34a;">Transaction Summary</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; color: #6b7280;">Transaction ID:</td><td style="text-align: right; font-weight: bold;">{{reference_id}}</td></tr>
+              <tr><td style="padding: 8px 0; color: #6b7280;">Date & Time:</td><td style="text-align: right; font-weight: bold;">{{transaction_date}}</td></tr>
+              <tr><td style="padding: 8px 0; color: #6b7280;">Payment Method:</td><td style="text-align: right; font-weight: bold;">Card ending {{card_last4}}</td></tr>
+              <tr><td style="padding: 8px 0; color: #6b7280;">Amount Paid:</td><td style="text-align: right; font-weight: bold; font-size: 18px; color: #22c55e;">\${{amount}} USD</td></tr>
+            </table>
+          </div>
+
+          <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 25px; border-radius: 8px; margin: 20px 0; border: 2px solid #f59e0b;">
+            <div style="text-align: center; margin-bottom: 15px;">
+              <span style="font-size: 12px; color: #92400e; text-transform: uppercase; letter-spacing: 2px;">Certificate of Gold Ownership</span>
+            </div>
+            <h2 style="margin: 0 0 20px 0; color: #92400e; text-align: center; font-size: 20px;">Digital Gold Certificate</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Certificate Number:</td><td style="text-align: right; font-weight: bold; color: #92400e; border-bottom: 1px dashed #d97706;">{{certificate_number}}</td></tr>
+              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Gold Amount:</td><td style="text-align: right; font-weight: bold; color: #92400e; font-size: 18px; border-bottom: 1px dashed #d97706;">{{gold_grams}}g</td></tr>
+              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Gold Price:</td><td style="text-align: right; font-weight: bold; color: #92400e; border-bottom: 1px dashed #d97706;">\${{gold_price}}/gram</td></tr>
+              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Storage Location:</td><td style="text-align: right; font-weight: bold; color: #92400e; border-bottom: 1px dashed #d97706;">Dubai, UAE</td></tr>
+              <tr><td style="padding: 10px 0; color: #78350f;">Custodian:</td><td style="text-align: right; font-weight: bold; color: #92400e;">Wingold & Metals DMCC</td></tr>
+            </table>
+            <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #d97706;">
+              <p style="font-size: 11px; color: #92400e; margin: 0;">This certificate confirms your ownership of physical gold securely stored in insured vaults.</p>
+            </div>
+          </div>
+
+          <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #374151;">Your Updated Wallet Balance</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 5px 0; color: #6b7280;">Total Gold Holdings:</td><td style="text-align: right; font-weight: bold;">{{total_gold_grams}}g</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280;">Estimated Value:</td><td style="text-align: right; font-weight: bold;">\${{total_value_usd}} USD</td></tr>
+            </table>
+          </div>
+
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="{{dashboard_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in Dashboard</a>
+          </p>
+          
+          <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+            If you did not authorize this transaction, please contact our support team immediately.
+          </p>
+        </div>
+        <div style="padding: 20px; background: #1f2937; text-align: center; color: #9ca3af; font-size: 12px;">
+          <p style="margin: 0 0 10px 0;">Finatrades - Gold-Backed Digital Finance</p>
+          <p style="margin: 0; font-size: 10px;">This is an automated receipt. Please keep this email for your records.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'amount', description: 'Payment amount in USD' },
+      { name: 'reference_id', description: 'Transaction reference' },
+      { name: 'transaction_date', description: 'Date and time of transaction' },
+      { name: 'card_last4', description: 'Last 4 digits of card' },
+      { name: 'certificate_number', description: 'Certificate number' },
+      { name: 'gold_grams', description: 'Gold amount purchased' },
+      { name: 'gold_price', description: 'Gold price per gram' },
+      { name: 'total_gold_grams', description: 'Total gold in wallet' },
+      { name: 'total_value_usd', description: 'Total wallet value in USD' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
     ],
     status: 'published' as const,
   },
