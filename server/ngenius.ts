@@ -333,6 +333,7 @@ export class NgeniusService {
     transactionId?: string;
     message?: string;
     threeDSUrl?: string;
+    paymentResponse?: any;
   }> {
     try {
       const amountInMinorUnits = Math.round(params.amount * 100);
@@ -380,6 +381,7 @@ export class NgeniusService {
         orderId: paymentResult._id,
         transactionId: paymentResult._embedded?.payment?.[0]?._id || paymentResult._id,
         threeDSUrl,
+        paymentResponse: status === 'AWAIT_3DS' ? paymentResult : undefined,
       };
     } catch (error: any) {
       console.error('[NGenius] Error processing session payment:', error);

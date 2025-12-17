@@ -8823,6 +8823,7 @@ export async function registerRoutes(
           status: 'AWAIT_3DS',
           requires3DS: true,
           threeDSUrl: result.threeDSUrl,
+          paymentResponse: result.paymentResponse,
           orderId: result.orderId,
           orderReference,
           message: 'Please complete 3D Secure authentication',

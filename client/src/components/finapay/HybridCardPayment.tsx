@@ -24,6 +24,8 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [sdkConfig, setSdkConfig] = useState<any>(null);
+  const [awaiting3DS, setAwaiting3DS] = useState(false);
+  const [threeDSOrderRef, setThreeDSOrderRef] = useState<string | null>(null);
   const mountAttempted = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -279,20 +281,60 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
             amountUsd: result.amountUsd,
           });
         }, 1500);
+      } else if (result.requires3DS && result.paymentResponse) {
+        console.log('[NGenius] 3DS authentication required, using SDK handler...');
+        setAwaiting3DS(true);
+        setThreeDSOrderRef(result.orderReference);
+        toast.info('Please complete 3D Secure verification in the popup window');
+        
+        try {
+          const NI = (window as any).NI;
+          if (!NI?.handlePaymentResponse) {
+            throw new Error('3DS handler not available');
+          }
+          
+          const outcomePromise = NI.handlePaymentResponse(
+            result.paymentResponse,
+            {
+              mountId: 'threeds-challenge-container',
+              style: {
+                width: 400,
+                height: 500
+              }
+            }
+          );
+          
+          const outcome = await outcomePromise;
+          console.log('[NGenius] 3DS outcome:', outcome);
+          
+          if (outcome?.status === 'SUCCESS' || outcome?.status === 'CAPTURED' || outcome?.status === 'AUTHORISED') {
+            setSuccess(true);
+            setTimeout(() => {
+              onSuccess({
+                goldGrams: result.goldGrams || '0',
+                amountUsd: amount,
+              });
+            }, 1500);
+          } else if (outcome?.status === 'FAILED' || outcome?.status === 'CANCELLED') {
+            throw new Error('3D Secure verification failed');
+          } else {
+            startPolling(result.orderReference);
+            setError('Please wait while we confirm your payment...');
+          }
+        } catch (threeDSError: any) {
+          console.error('[NGenius] 3DS error:', threeDSError);
+          setAwaiting3DS(false);
+          throw new Error(threeDSError?.message || '3D Secure verification failed');
+        }
       } else if (result.requires3DS && result.threeDSUrl) {
-        // Handle 3DS authentication - open in new window
-        console.log('[NGenius] 3DS authentication required, redirecting...');
+        console.log('[NGenius] 3DS URL fallback...');
         toast.info('Please complete 3D Secure verification in the new window');
-        
-        // Open 3DS page in popup
+        setThreeDSOrderRef(result.orderReference);
         const popup = window.open(result.threeDSUrl, '_blank', 'width=500,height=600,scrollbars=yes');
-        
         if (!popup) {
-          // Popup blocked - redirect in same window
           window.location.href = result.threeDSUrl;
         }
-        
-        // Note: After 3DS completes, user will be redirected back or webhook will process
+        startPolling(result.orderReference);
         setError('Please complete 3D Secure verification in the popup window. Once completed, your payment will be processed.');
       } else {
         throw new Error(result.message || 'Payment failed');
@@ -429,6 +471,51 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
         <p className="text-xs text-center text-muted-foreground">
           Complete the payment above. Your wallet will be credited automatically.
         </p>
+      </div>
+    );
+  }
+
+  if (awaiting3DS) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center pb-2">
+          <p className="text-xl font-bold text-foreground">${amount.toFixed(2)} USD</p>
+          <p className="text-sm text-muted-foreground">Complete 3D Secure verification</p>
+        </div>
+
+        <Card className="border-2">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Lock className="w-5 h-5 text-primary" />
+              <span className="font-medium">3D Secure Verification</span>
+            </div>
+            
+            <div 
+              id="threeds-challenge-container" 
+              className="border rounded-lg bg-white overflow-hidden flex items-center justify-center"
+              style={{ minHeight: '500px' }}
+            >
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+
+            {error && (
+              <p className="text-sm text-amber-600 mt-2">{error}</p>
+            )}
+
+            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              Complete the verification in the window above
+            </p>
+          </CardContent>
+        </Card>
+
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          className="w-full"
+        >
+          Cancel
+        </Button>
       </div>
     );
   }
