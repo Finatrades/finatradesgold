@@ -457,7 +457,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <Wallet className="w-5 h-5 text-primary" />
             <span>Deposit Funds</span>
           </DialogTitle>
-          <p className="font-bold text-foreground text-sm">Fund your account through buying equivalent amount of gold</p>
+          <p className="font-bold text-foreground text-sm">(Fund your account through buying equivalent amount of gold)</p>
           <DialogDescription className="text-muted-foreground">
             {step === 'method' && "Choose your preferred deposit method"}
             {step === 'select' && "Select a bank account to deposit to"}
