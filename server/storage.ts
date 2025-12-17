@@ -96,7 +96,7 @@ import {
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, desc, and, or, sql } from "drizzle-orm";
+import { eq, desc, and, or, sql, inArray } from "drizzle-orm";
 import * as schema from "@shared/schema";
 
 export type DbClient = typeof db;
@@ -746,7 +746,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserBnslPayouts(userId: string): Promise<BnslPayout[]> {
-    return await db.select().from(bnslPayouts).where(eq(bnslPayouts.userId, userId)).orderBy(desc(bnslPayouts.createdAt));
+    // Get payouts for plans belonging to this user
+    const userPlans = await db.select({ id: bnslPlans.id }).from(bnslPlans).where(eq(bnslPlans.userId, userId));
+    const planIds = userPlans.map(p => p.id);
+    if (planIds.length === 0) return [];
+    return await db.select().from(bnslPayouts).where(inArray(bnslPayouts.planId, planIds)).orderBy(desc(bnslPayouts.createdAt));
   }
 
   async getAllBnslPayouts(): Promise<BnslPayout[]> {
@@ -755,7 +759,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPeerTransfers(userId: string): Promise<PeerTransfer[]> {
     return await db.select().from(peerTransfers).where(
-      or(eq(peerTransfers.senderUserId, userId), eq(peerTransfers.recipientUserId, userId))
+      or(eq(peerTransfers.senderId, userId), eq(peerTransfers.recipientId, userId))
     ).orderBy(desc(peerTransfers.createdAt));
   }
 
