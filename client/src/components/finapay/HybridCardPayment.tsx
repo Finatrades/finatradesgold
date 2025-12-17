@@ -227,11 +227,17 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     setError(null);
 
     try {
-      let sessionId;
+      let sessionId: string;
       try {
         console.log('[NGenius] Generating session ID...');
-        sessionId = await NI.generateSessionId();
-        console.log('[NGenius] Session ID generated:', sessionId ? 'success' : 'empty');
+        const sessionResult = await NI.generateSessionId();
+        console.log('[NGenius] Session result:', sessionResult);
+        // NGenius SDK returns an object with sessionId property
+        sessionId = typeof sessionResult === 'string' ? sessionResult : sessionResult?.sessionId || sessionResult?.session_id || sessionResult;
+        console.log('[NGenius] Session ID extracted:', sessionId);
+        if (!sessionId || typeof sessionId !== 'string') {
+          throw new Error('Invalid session ID received from payment system');
+        }
       } catch (sessionError: any) {
         console.error('[NGenius] Session generation failed:', sessionError);
         const errorMsg = sessionError?.message || sessionError?.toString() || 'Card validation failed';
