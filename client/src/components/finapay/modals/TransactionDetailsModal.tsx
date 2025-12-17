@@ -57,7 +57,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
     const amount = transaction.assetType === 'GOLD' 
       ? `${transaction.amountGrams?.toFixed(4)} g` 
       : `$${transaction.amountUsd.toFixed(2)}`;
-    const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive') ? '+' : '-';
+    const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit') ? '+' : '-';
     pdf.text(`${prefix} ${amount}`, pageWidth / 2, 55, { align: 'center' });
     
     if (transaction.assetType === 'GOLD') {
@@ -107,6 +107,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
       case 'Sell': return <Banknote className="w-6 h-6" />;
       case 'Send': return asset === 'GOLD' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />;
       case 'Receive': return <ArrowDownLeft className="w-6 h-6" />;
+      case 'Deposit': return <ArrowDownLeft className="w-6 h-6" />;
       case 'Request': return <RefreshCcw className="w-6 h-6" />;
       default: return <Clock className="w-6 h-6" />;
     }
@@ -118,6 +119,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
       case 'Sell': return 'text-red-500 bg-red-500/10 border-red-500/20';
       case 'Send': return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
       case 'Receive': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+      case 'Deposit': return 'text-green-500 bg-green-500/10 border-green-500/20';
       case 'Request': return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
       default: return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
     }
@@ -142,8 +144,8 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                {getIcon(transaction.type, transaction.assetType)}
             </div>
             <div className="text-center">
-              <h2 className={`text-2xl font-bold ${transaction.type === 'Buy' || transaction.type === 'Receive' ? 'text-green-600' : 'text-foreground'}`}>
-                {transaction.type === 'Buy' || transaction.type === 'Receive' ? '+' : '-'} 
+              <h2 className={`text-2xl font-bold ${transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit' ? 'text-green-600' : 'text-foreground'}`}>
+                {transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit' ? '+' : '-'} 
                 {transaction.assetType === 'GOLD' 
                   ? `${transaction.amountGrams?.toFixed(4)} g` 
                   : `$${transaction.amountUsd.toFixed(2)}`
