@@ -9668,10 +9668,12 @@ export async function registerRoutes(
 
   // Admin: Approve crypto payment
   app.patch("/api/admin/crypto-payments/:id/approve", ensureAdminAsync, async (req, res) => {
+    console.log('[DEBUG] Approve crypto payment - Route entered, id:', req.params.id);
     try {
       const { id } = req.params;
       const { reviewNotes } = req.body;
       const adminUser = (req as any).adminUser;
+      console.log('[DEBUG] Approve crypto payment - adminUser:', adminUser?.id, 'reviewNotes:', reviewNotes);
       
       const paymentRequest = await storage.getCryptoPaymentRequest(id);
       if (!paymentRequest) {
@@ -9740,9 +9742,12 @@ export async function registerRoutes(
       });
       
       res.json({ paymentRequest: updated, transaction });
-    } catch (error) {
-      console.error("Failed to approve crypto payment:", error);
-      res.status(500).json({ message: "Failed to approve payment" });
+    } catch (error: any) {
+      console.error("[DEBUG] Failed to approve crypto payment - Full error:", error);
+      console.error("[DEBUG] Error name:", error?.name);
+      console.error("[DEBUG] Error message:", error?.message);
+      console.error("[DEBUG] Error stack:", error?.stack);
+      res.status(500).json({ message: "Failed to approve payment", error: error?.message });
     }
   });
 
