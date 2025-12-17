@@ -404,6 +404,16 @@ export default function AllTransactions() {
                 {getStatusBadge(selectedTx.status)}
               </div>
 
+              {selectedTx.status === 'Pending' && !selectedTx.grams && selectedTx.usd && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-sm">
+                  <p className="font-medium text-amber-800 dark:text-amber-300 mb-1">Important Notice:</p>
+                  <p className="text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+                    Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
+                    After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 {selectedTx.grams ? (
                   <div>
