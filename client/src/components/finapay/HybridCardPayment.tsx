@@ -253,6 +253,14 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
         console.log('[NGenius] 3DS outcome:', outcome);
 
         if (outcome?.status === 'SUCCESS' || outcome?.status === 'CAPTURED' || outcome?.status === 'AUTHORISED') {
+          try {
+            const finalizeRes = await fetch(`/api/ngenius/order/${threeDSOrderRef}`);
+            const finalData = await finalizeRes.json();
+            console.log('[NGenius] Payment finalized:', finalData);
+          } catch (err) {
+            console.error('[NGenius] Finalize call failed:', err);
+          }
+          
           setSuccess(true);
           setTimeout(() => {
             onSuccess({
