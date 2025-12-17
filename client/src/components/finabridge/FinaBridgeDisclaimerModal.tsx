@@ -178,8 +178,8 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 flex flex-col [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-        <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 overflow-hidden [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <Shield className="w-6 h-6" />
@@ -193,7 +193,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 px-6 py-4">
+        <div className="overflow-y-auto max-h-[40vh] px-6 py-4">
           <div className="space-y-4 text-sm text-gray-700">
             <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -277,9 +277,9 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="p-6 pt-4 border-t bg-gray-50 space-y-4">
+        <div className="p-6 pt-4 border-t bg-gray-50 space-y-4 flex-shrink-0 overflow-y-auto max-h-[40vh]">
           <Button
             variant="outline"
             onClick={() => setShowFullTerms(true)}
