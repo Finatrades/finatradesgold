@@ -221,7 +221,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
       <TransactionDetailsModal 
         isOpen={!!selectedTx} 
         transaction={selectedTx} 
-        onClose={() => setSelectedTx(null)} 
+        onClose={() => setSelectedTx(null)}
+        goldPrice={goldPrice}
       />
     </>
   );

@@ -12,9 +12,10 @@ interface TransactionDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | null;
+  goldPrice?: number;
 }
 
-export default function TransactionDetailsModal({ isOpen, onClose, transaction }: TransactionDetailsModalProps) {
+export default function TransactionDetailsModal({ isOpen, onClose, transaction, goldPrice = 85 }: TransactionDetailsModalProps) {
   const { toast } = useToast();
   
   if (!transaction) return null;
@@ -151,9 +152,13 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                   : `$${transaction.amountUsd.toFixed(2)}`
                 }
               </h2>
-              {transaction.assetType === 'GOLD' && (
+              {transaction.assetType === 'GOLD' ? (
                 <p className="text-sm text-muted-foreground mt-1">
                   ≈ ${transaction.amountUsd.toFixed(2)} USD
+                </p>
+              ) : goldPrice > 0 && (
+                <p className="text-sm text-amber-600 font-medium mt-1">
+                  ~{(transaction.amountUsd / goldPrice).toFixed(2)}g gold
                 </p>
               )}
               <div className="flex items-center justify-center gap-2 mt-2">
