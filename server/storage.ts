@@ -6,7 +6,7 @@ import {
   tradeRequests, tradeProposals, forwardedProposals, tradeConfirmations,
   finabridgeWallets, settlementHolds, dealRooms, dealRoomMessages,
   chatSessions, chatMessages, auditLogs, certificates,
-  contentPages, contentBlocks, templates, mediaAssets,
+  contentPages, contentBlocks, templates, mediaAssets, cmsLabels,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
   vaultDepositRequests, vaultWithdrawalRequests,
@@ -49,6 +49,7 @@ import {
   type ContentBlock, type InsertContentBlock,
   type Template, type InsertTemplate,
   type MediaAsset, type InsertMediaAsset,
+  type CmsLabel, type InsertCmsLabel,
   type PlatformBankAccount, type InsertPlatformBankAccount,
   type PlatformFee, type InsertPlatformFee,
   type DepositRequest, type InsertDepositRequest,
@@ -429,6 +430,11 @@ export interface IStorage {
   createTemplate(template: InsertTemplate): Promise<Template>;
   updateTemplate(id: string, updates: Partial<Template>): Promise<Template | undefined>;
   deleteTemplate(id: string): Promise<boolean>;
+  
+  // CMS - Labels
+  getAllCmsLabels(): Promise<CmsLabel[]>;
+  getCmsLabel(key: string): Promise<CmsLabel | undefined>;
+  upsertCmsLabel(label: InsertCmsLabel): Promise<CmsLabel>;
   
   // CMS - Media Assets
   getMediaAsset(id: string): Promise<MediaAsset | undefined>;
@@ -1392,6 +1398,29 @@ export class DatabaseStorage implements IStorage {
   async deleteMediaAsset(id: string): Promise<boolean> {
     await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
     return true;
+  }
+
+  // CMS - Labels
+  async getAllCmsLabels(): Promise<CmsLabel[]> {
+    return await db.select().from(cmsLabels).orderBy(cmsLabels.category, cmsLabels.key);
+  }
+
+  async getCmsLabel(key: string): Promise<CmsLabel | undefined> {
+    const [label] = await db.select().from(cmsLabels).where(eq(cmsLabels.key, key));
+    return label || undefined;
+  }
+
+  async upsertCmsLabel(insertLabel: InsertCmsLabel): Promise<CmsLabel> {
+    const existing = await this.getCmsLabel(insertLabel.key);
+    if (existing) {
+      const [updated] = await db.update(cmsLabels)
+        .set({ ...insertLabel, updatedAt: new Date() })
+        .where(eq(cmsLabels.key, insertLabel.key))
+        .returning();
+      return updated;
+    }
+    const [label] = await db.insert(cmsLabels).values(insertLabel).returning();
+    return label;
   }
 
   // FinaPay - Platform Bank Accounts

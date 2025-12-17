@@ -6445,6 +6445,29 @@ export async function registerRoutes(
     }
   });
   
+  // === CMS Labels ===
+  
+  // Get all labels
+  app.get("/api/admin/cms/labels", async (req, res) => {
+    try {
+      const labels = await storage.getAllCmsLabels();
+      res.json({ labels });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get labels" });
+    }
+  });
+  
+  // Create or update label
+  app.post("/api/admin/cms/labels", async (req, res) => {
+    try {
+      const { key, value, category, description } = req.body;
+      const label = await storage.upsertCmsLabel({ key, value, category, description, defaultValue: value });
+      res.json({ label });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to save label" });
+    }
+  });
+  
   // === Media Assets ===
   
   // Get all media assets (Admin)

@@ -1769,6 +1769,23 @@ export const insertTemplateSchema = createInsertSchema(templates).omit({ id: tru
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 export type Template = typeof templates.$inferSelect;
 
+// CMS Labels - Editable UI labels for buttons, cards, etc.
+export const cmsLabels = pgTable("cms_labels", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 255 }).notNull().unique(),
+  value: text("value").notNull(),
+  defaultValue: text("default_value"),
+  category: varchar("category", { length: 100 }).notNull(),
+  description: text("description"),
+  updatedBy: varchar("updated_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCmsLabelSchema = createInsertSchema(cmsLabels).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCmsLabel = z.infer<typeof insertCmsLabelSchema>;
+export type CmsLabel = typeof cmsLabels.$inferSelect;
+
 // ============================================
 // EMAIL NOTIFICATION SETTINGS
 // ============================================

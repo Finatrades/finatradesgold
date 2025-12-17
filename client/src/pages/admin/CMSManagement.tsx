@@ -276,7 +276,7 @@ export default function CMSManagement() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 max-w-xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
             <TabsTrigger value="pages" className="flex gap-2" data-testid="tab-pages">
               <FileText className="w-4 h-4" />
               Pages
@@ -288,6 +288,10 @@ export default function CMSManagement() {
             <TabsTrigger value="templates" className="flex gap-2" data-testid="tab-templates">
               <Layout className="w-4 h-4" />
               Templates
+            </TabsTrigger>
+            <TabsTrigger value="labels" className="flex gap-2" data-testid="tab-labels">
+              <Tag className="w-4 h-4" />
+              Labels
             </TabsTrigger>
             <TabsTrigger value="branding" className="flex gap-2" data-testid="tab-branding">
               <Settings className="w-4 h-4" />
@@ -504,6 +508,10 @@ export default function CMSManagement() {
               onDeleteTemplate={(id) => deleteTemplateMutation.mutate(id)}
               isPending={createTemplateMutation.isPending || updateTemplateMutation.isPending}
             />
+          </TabsContent>
+
+          <TabsContent value="labels" className="mt-6">
+            <LabelsTab />
           </TabsContent>
 
           <TabsContent value="branding" className="mt-6">
@@ -1988,6 +1996,224 @@ function TemplatesTab({
             </Card>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function LabelsTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: labelsData, isLoading } = useQuery({
+    queryKey: ['/api/admin/cms/labels'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/cms/labels');
+      if (!res.ok) return { labels: [] };
+      return res.json();
+    }
+  });
+
+  const saveLabelMutation = useMutation({
+    mutationFn: async (data: { key: string; value: string; category: string; description: string }) => {
+      const res = await fetch('/api/admin/cms/labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/cms/labels'] });
+      toast({ title: 'Label saved successfully' });
+    }
+  });
+
+  const labelCategories = [
+    {
+      name: 'Buttons',
+      icon: MousePointer,
+      color: 'bg-blue-100 text-blue-700',
+      labels: [
+        { key: 'btn_buy_gold', defaultValue: 'Buy Gold', description: 'Buy gold button text' },
+        { key: 'btn_sell_gold', defaultValue: 'Sell Gold', description: 'Sell gold button text' },
+        { key: 'btn_transfer', defaultValue: 'Transfer', description: 'Transfer button text' },
+        { key: 'btn_deposit', defaultValue: 'Deposit', description: 'Deposit button text' },
+        { key: 'btn_withdraw', defaultValue: 'Withdraw', description: 'Withdraw button text' },
+        { key: 'btn_submit', defaultValue: 'Submit', description: 'Submit button text' },
+        { key: 'btn_save', defaultValue: 'Save', description: 'Save button text' },
+        { key: 'btn_cancel', defaultValue: 'Cancel', description: 'Cancel button text' },
+        { key: 'btn_confirm', defaultValue: 'Confirm', description: 'Confirm button text' },
+        { key: 'btn_get_started', defaultValue: 'Get Started', description: 'Get started button text' },
+        { key: 'btn_learn_more', defaultValue: 'Learn More', description: 'Learn more button text' },
+        { key: 'btn_sign_up', defaultValue: 'Sign Up', description: 'Sign up button text' },
+        { key: 'btn_login', defaultValue: 'Login', description: 'Login button text' },
+        { key: 'btn_logout', defaultValue: 'Logout', description: 'Logout button text' },
+      ]
+    },
+    {
+      name: 'Card Titles',
+      icon: CreditCard,
+      color: 'bg-purple-100 text-purple-700',
+      labels: [
+        { key: 'card_wallet_balance', defaultValue: 'Wallet Balance', description: 'Wallet balance card title' },
+        { key: 'card_gold_holdings', defaultValue: 'Gold Holdings', description: 'Gold holdings card title' },
+        { key: 'card_recent_transactions', defaultValue: 'Recent Transactions', description: 'Recent transactions card title' },
+        { key: 'card_quick_actions', defaultValue: 'Quick Actions', description: 'Quick actions card title' },
+        { key: 'card_vault_summary', defaultValue: 'Vault Summary', description: 'Vault summary card title' },
+        { key: 'card_bnsl_plans', defaultValue: 'BNSL Plans', description: 'BNSL plans card title' },
+        { key: 'card_kyc_status', defaultValue: 'Verification Status', description: 'KYC status card title' },
+        { key: 'card_price_chart', defaultValue: 'Gold Price', description: 'Price chart card title' },
+      ]
+    },
+    {
+      name: 'Navigation',
+      icon: LayoutDashboard,
+      color: 'bg-green-100 text-green-700',
+      labels: [
+        { key: 'nav_dashboard', defaultValue: 'Dashboard', description: 'Dashboard navigation link' },
+        { key: 'nav_wallet', defaultValue: 'FinaPay', description: 'Wallet navigation link' },
+        { key: 'nav_vault', defaultValue: 'FinaVault', description: 'Vault navigation link' },
+        { key: 'nav_bnsl', defaultValue: 'BNSL', description: 'BNSL navigation link' },
+        { key: 'nav_bridge', defaultValue: 'FinaBridge', description: 'FinaBridge navigation link' },
+        { key: 'nav_settings', defaultValue: 'Settings', description: 'Settings navigation link' },
+        { key: 'nav_profile', defaultValue: 'Profile', description: 'Profile navigation link' },
+        { key: 'nav_support', defaultValue: 'Support', description: 'Support navigation link' },
+      ]
+    },
+    {
+      name: 'Section Headers',
+      icon: Type,
+      color: 'bg-orange-100 text-orange-700',
+      labels: [
+        { key: 'header_welcome', defaultValue: 'Welcome to Finatrades', description: 'Welcome header text' },
+        { key: 'header_your_portfolio', defaultValue: 'Your Portfolio', description: 'Portfolio section header' },
+        { key: 'header_transaction_history', defaultValue: 'Transaction History', description: 'Transaction history header' },
+        { key: 'header_account_settings', defaultValue: 'Account Settings', description: 'Account settings header' },
+        { key: 'header_security', defaultValue: 'Security', description: 'Security section header' },
+        { key: 'header_notifications', defaultValue: 'Notifications', description: 'Notifications header' },
+      ]
+    },
+    {
+      name: 'Status Messages',
+      icon: Bell,
+      color: 'bg-red-100 text-red-700',
+      labels: [
+        { key: 'status_pending', defaultValue: 'Pending', description: 'Pending status text' },
+        { key: 'status_completed', defaultValue: 'Completed', description: 'Completed status text' },
+        { key: 'status_failed', defaultValue: 'Failed', description: 'Failed status text' },
+        { key: 'status_processing', defaultValue: 'Processing', description: 'Processing status text' },
+        { key: 'status_approved', defaultValue: 'Approved', description: 'Approved status text' },
+        { key: 'status_rejected', defaultValue: 'Rejected', description: 'Rejected status text' },
+      ]
+    },
+  ];
+
+  const [editingLabel, setEditingLabel] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const getStoredValue = (key: string, defaultValue: string) => {
+    const stored = labelsData?.labels?.find((l: any) => l.key === key);
+    return stored?.value || defaultValue;
+  };
+
+  const handleEdit = (key: string, currentValue: string) => {
+    setEditingLabel(key);
+    setEditValue(currentValue);
+  };
+
+  const handleSave = (key: string, category: string, description: string) => {
+    saveLabelMutation.mutate({ key, value: editValue, category, description });
+    setEditingLabel(null);
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-gray-500">Loading labels...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-semibold">UI Labels</h2>
+          <p className="text-sm text-gray-500">Customize button text, card titles, and other UI labels</p>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {labelCategories.map((category) => (
+          <Card key={category.name}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${category.color}`}>
+                  <category.icon className="w-5 h-5" />
+                </div>
+                <CardTitle className="text-lg">{category.name}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3">
+                {category.labels.map((label) => {
+                  const currentValue = getStoredValue(label.key, label.defaultValue);
+                  const isEditing = editingLabel === label.key;
+                  
+                  return (
+                    <div 
+                      key={label.key} 
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-gray-400">{label.key}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">{label.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2 min-w-[200px]">
+                        {isEditing ? (
+                          <>
+                            <Input
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="h-8 text-sm"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleSave(label.key, category.name, label.description)}
+                              disabled={saveLabelMutation.isPending}
+                            >
+                              <Save className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditingLabel(null)}
+                            >
+                              ✕
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm font-medium text-gray-700 flex-1 text-right">
+                              {currentValue}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEdit(label.key, currentValue)}
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
