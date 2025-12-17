@@ -181,9 +181,9 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     
                     {/* Live Conversion Preview */}
                     {grams > 0 && (
-                      <div className="p-4 bg-secondary/5 border border-secondary/20 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                      <div className="p-4 bg-muted/30 border border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-2">
                          <span className="text-muted-foreground text-sm">Estimated Value</span>
-                         <span className="text-xl font-bold text-secondary">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                         <span className="text-xl font-bold text-primary">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
                   </div>
@@ -202,22 +202,22 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                         <RadioGroupItem value="Bank Transfer" id="bank" className="peer sr-only" />
                         <Label
                           htmlFor="bank"
-                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary text-foreground transition-all"
+                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 text-foreground transition-all"
                         >
                           <Building className="w-6 h-6 mb-2" />
                           <span className="font-semibold">Bank Transfer</span>
-                          <span className="text-xs opacity-60 mt-1">2-3 Business Days</span>
+                          <span className="text-xs text-muted-foreground mt-1">2-3 Business Days</span>
                         </Label>
                       </div>
                       <div>
                         <RadioGroupItem value="Crypto" id="crypto" className="peer sr-only" />
                         <Label
                           htmlFor="crypto"
-                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary text-foreground transition-all"
+                          className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-border bg-muted/10 hover:bg-muted/30 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 text-foreground transition-all"
                         >
                           <Bitcoin className="w-6 h-6 mb-2" />
                           <span className="font-semibold">Crypto</span>
-                          <span className="text-xs opacity-60 mt-1">1-24 Hours</span>
+                          <span className="text-xs text-muted-foreground mt-1">1-24 Hours</span>
                         </Label>
                       </div>
                     </RadioGroup>

@@ -295,33 +295,33 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
                 <RadioGroupItem value="Walk-in" id="walk-in" className="peer sr-only" />
                 <Label
                   htmlFor="walk-in"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-border bg-muted/10 p-4 hover:bg-muted/30 hover:text-foreground peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary cursor-pointer h-full text-center text-muted-foreground"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-border bg-muted/10 p-4 hover:bg-muted/30 hover:text-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer h-full text-center text-foreground"
                 >
                   <span className="mb-2 text-lg">🚶</span>
                   <span className="font-semibold">I will bring it</span>
-                  <span className="text-xs text-muted-foreground/80 mt-1">Personal drop-off</span>
+                  <span className="text-xs text-muted-foreground mt-1">Personal drop-off</span>
                 </Label>
               </div>
               <div>
                 <RadioGroupItem value="Courier" id="courier" className="peer sr-only" />
                 <Label
                   htmlFor="courier"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-border bg-muted/10 p-4 hover:bg-muted/30 hover:text-foreground peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary cursor-pointer h-full text-center text-muted-foreground"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-border bg-muted/10 p-4 hover:bg-muted/30 hover:text-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer h-full text-center text-foreground"
                 >
                   <span className="mb-2 text-lg">📦</span>
                   <span className="font-semibold">Courier</span>
-                  <span className="text-xs text-muted-foreground/80 mt-1">Logistics arranged by me</span>
+                  <span className="text-xs text-muted-foreground mt-1">Logistics arranged by me</span>
                 </Label>
               </div>
               <div>
                 <RadioGroupItem value="Pickup" id="pickup" className="peer sr-only" />
                 <Label
                   htmlFor="pickup"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-border bg-muted/10 p-4 hover:bg-muted/30 hover:text-foreground peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary cursor-pointer h-full text-center text-muted-foreground"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-border bg-muted/10 p-4 hover:bg-muted/30 hover:text-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer h-full text-center text-foreground"
                 >
                   <span className="mb-2 text-lg">🚚</span>
                   <span className="font-semibold">Request Pickup</span>
-                  <span className="text-xs text-muted-foreground/80 mt-1">Armored transport</span>
+                  <span className="text-xs text-muted-foreground mt-1">Armored transport</span>
                 </Label>
               </div>
             </RadioGroup>

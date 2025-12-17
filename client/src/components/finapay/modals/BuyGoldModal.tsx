@@ -452,7 +452,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                     {paymentMethods?.stripe?.enabled && (
                       <div>
                         <RadioGroupItem value="card" id="card" className="peer sr-only" />
-                        <Label htmlFor="card" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary transition-all text-xs text-center h-20 text-muted-foreground">
+                        <Label htmlFor="card" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 transition-all text-xs text-center h-20 text-foreground">
                           <CreditCard className="w-5 h-5 mb-1" />
                           Card
                         </Label>
@@ -461,7 +461,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                     {hasCryptoWallets && (
                       <div>
                         <RadioGroupItem value="crypto" id="crypto" className="peer sr-only" />
-                        <Label htmlFor="crypto" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary transition-all text-xs text-center h-20 text-muted-foreground relative">
+                        <Label htmlFor="crypto" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 transition-all text-xs text-center h-20 text-foreground relative">
                           <Wallet className="w-5 h-5 mb-1" />
                           Crypto
                         </Label>
@@ -470,7 +470,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                     {paymentMethods?.bankTransfer?.enabled && (
                       <div>
                         <RadioGroupItem value="bank" id="bank" className="peer sr-only" />
-                        <Label htmlFor="bank" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-secondary peer-data-[state=checked]:text-secondary transition-all text-xs text-center h-20 text-muted-foreground">
+                        <Label htmlFor="bank" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 transition-all text-xs text-center h-20 text-foreground">
                           <Building className="w-5 h-5 mb-1" />
                           Bank
                         </Label>
