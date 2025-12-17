@@ -82,7 +82,10 @@ import {
   type FinatradesPersonalKyc, type InsertFinatradesPersonalKyc,
   type FinatradesCorporateKyc, type InsertFinatradesCorporateKyc,
   notifications,
-  type Notification, type InsertNotification
+  type Notification, type InsertNotification,
+  cryptoWalletConfigs, cryptoPaymentRequests,
+  type CryptoWalletConfig, type InsertCryptoWalletConfig,
+  type CryptoPaymentRequest, type InsertCryptoPaymentRequest
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -2441,6 +2444,75 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAllNotifications(userId: string): Promise<void> {
     await db.delete(notifications).where(eq(notifications.userId, userId));
+  }
+
+  // ============================================
+  // CRYPTO WALLET CONFIGURATIONS
+  // ============================================
+
+  async getCryptoWalletConfig(id: string): Promise<CryptoWalletConfig | undefined> {
+    const [config] = await db.select().from(cryptoWalletConfigs).where(eq(cryptoWalletConfigs.id, id));
+    return config || undefined;
+  }
+
+  async getAllCryptoWalletConfigs(): Promise<CryptoWalletConfig[]> {
+    return await db.select().from(cryptoWalletConfigs).orderBy(cryptoWalletConfigs.displayOrder);
+  }
+
+  async getActiveCryptoWalletConfigs(): Promise<CryptoWalletConfig[]> {
+    return await db.select().from(cryptoWalletConfigs)
+      .where(eq(cryptoWalletConfigs.isActive, true))
+      .orderBy(cryptoWalletConfigs.displayOrder);
+  }
+
+  async createCryptoWalletConfig(config: InsertCryptoWalletConfig): Promise<CryptoWalletConfig> {
+    const [newConfig] = await db.insert(cryptoWalletConfigs).values(config).returning();
+    return newConfig;
+  }
+
+  async updateCryptoWalletConfig(id: string, updates: Partial<CryptoWalletConfig>): Promise<CryptoWalletConfig | undefined> {
+    const [config] = await db.update(cryptoWalletConfigs).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoWalletConfigs.id, id)).returning();
+    return config || undefined;
+  }
+
+  async deleteCryptoWalletConfig(id: string): Promise<boolean> {
+    const result = await db.delete(cryptoWalletConfigs).where(eq(cryptoWalletConfigs.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // ============================================
+  // CRYPTO PAYMENT REQUESTS
+  // ============================================
+
+  async getCryptoPaymentRequest(id: string): Promise<CryptoPaymentRequest | undefined> {
+    const [request] = await db.select().from(cryptoPaymentRequests).where(eq(cryptoPaymentRequests.id, id));
+    return request || undefined;
+  }
+
+  async getUserCryptoPaymentRequests(userId: string): Promise<CryptoPaymentRequest[]> {
+    return await db.select().from(cryptoPaymentRequests)
+      .where(eq(cryptoPaymentRequests.userId, userId))
+      .orderBy(desc(cryptoPaymentRequests.createdAt));
+  }
+
+  async getAllCryptoPaymentRequests(): Promise<CryptoPaymentRequest[]> {
+    return await db.select().from(cryptoPaymentRequests).orderBy(desc(cryptoPaymentRequests.createdAt));
+  }
+
+  async getCryptoPaymentRequestsByStatus(status: string): Promise<CryptoPaymentRequest[]> {
+    return await db.select().from(cryptoPaymentRequests)
+      .where(eq(cryptoPaymentRequests.status, status as any))
+      .orderBy(desc(cryptoPaymentRequests.createdAt));
+  }
+
+  async createCryptoPaymentRequest(request: InsertCryptoPaymentRequest): Promise<CryptoPaymentRequest> {
+    const [newRequest] = await db.insert(cryptoPaymentRequests).values(request).returning();
+    return newRequest;
+  }
+
+  async updateCryptoPaymentRequest(id: string, updates: Partial<CryptoPaymentRequest>): Promise<CryptoPaymentRequest | undefined> {
+    const [request] = await db.update(cryptoPaymentRequests).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoPaymentRequests.id, id)).returning();
+    return request || undefined;
   }
 }
 

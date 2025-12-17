@@ -2353,3 +2353,61 @@ export const notifications = pgTable("notifications", {
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// ============================================
+// CRYPTO WALLET CONFIGURATIONS (Admin managed)
+// ============================================
+
+export const cryptoNetworkEnum = pgEnum('crypto_network', [
+  'Bitcoin', 'Ethereum', 'USDT_TRC20', 'USDT_ERC20', 'USDC', 'BNB', 'Solana', 'Polygon', 'Other'
+]);
+
+export const cryptoWalletConfigs = pgTable("crypto_wallet_configs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  network: cryptoNetworkEnum("network").notNull(),
+  networkLabel: varchar("network_label", { length: 100 }).notNull(), // Display name like "Bitcoin (BTC)"
+  walletAddress: text("wallet_address").notNull(),
+  memo: varchar("memo", { length: 255 }), // Optional memo/tag for some networks
+  instructions: text("instructions"), // Optional instructions for users
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCryptoWalletConfigSchema = createInsertSchema(cryptoWalletConfigs).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCryptoWalletConfig = z.infer<typeof insertCryptoWalletConfigSchema>;
+export type CryptoWalletConfig = typeof cryptoWalletConfigs.$inferSelect;
+
+// ============================================
+// CRYPTO PAYMENT REQUESTS (Manual payments)
+// ============================================
+
+export const cryptoPaymentStatusEnum = pgEnum('crypto_payment_status', [
+  'Pending', 'Under Review', 'Approved', 'Rejected', 'Credited', 'Expired', 'Cancelled'
+]);
+
+export const cryptoPaymentRequests = pgTable("crypto_payment_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  walletConfigId: varchar("wallet_config_id", { length: 255 }).notNull().references(() => cryptoWalletConfigs.id),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 8 }).notNull(),
+  goldPriceAtTime: decimal("gold_price_at_time", { precision: 18, scale: 2 }).notNull(), // Lock the price at time of request
+  cryptoAmount: varchar("crypto_amount", { length: 100 }), // Expected crypto amount (optional)
+  transactionHash: varchar("transaction_hash", { length: 255 }), // User submits their tx hash
+  proofImageUrl: text("proof_image_url"), // Screenshot/proof upload
+  status: cryptoPaymentStatusEnum("status").notNull().default('Pending'),
+  reviewerId: varchar("reviewer_id", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  rejectionReason: text("rejection_reason"),
+  creditedTransactionId: varchar("credited_transaction_id", { length: 255 }), // Reference to transaction when credited
+  expiresAt: timestamp("expires_at"), // Optional expiry for pending payments
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCryptoPaymentRequestSchema = createInsertSchema(cryptoPaymentRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCryptoPaymentRequest = z.infer<typeof insertCryptoPaymentRequestSchema>;
+export type CryptoPaymentRequest = typeof cryptoPaymentRequests.$inferSelect;

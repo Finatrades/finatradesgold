@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, RefreshCw, TrendingUp, Coins, Send, Eye, Building2, Plus, Edit2, Trash2, CreditCard, Banknote } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, RefreshCw, TrendingUp, Coins, Send, Eye, Building2, Plus, Edit2, Trash2, CreditCard, Banknote, Bitcoin, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
@@ -102,6 +102,30 @@ interface PeerRequest {
   expiresAt: string;
 }
 
+interface CryptoPaymentRequest {
+  id: string;
+  userId: string;
+  walletConfigId: string;
+  amountUsd: string;
+  goldGrams: string;
+  goldPriceAtTime: string;
+  cryptoAmount: string | null;
+  transactionHash: string | null;
+  proofImageUrl: string | null;
+  status: 'Pending' | 'Under Review' | 'Approved' | 'Rejected' | 'Credited' | 'Expired' | 'Cancelled';
+  reviewerId: string | null;
+  reviewedAt: string | null;
+  reviewNotes: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  user?: UserInfo | null;
+  walletConfig?: {
+    id: string;
+    networkLabel: string;
+    walletAddress: string;
+  } | null;
+}
+
 export default function FinaPayManagement() {
   const { user: currentUser } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -110,6 +134,7 @@ export default function FinaPayManagement() {
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [peerTransfers, setPeerTransfers] = useState<PeerTransfer[]>([]);
   const [peerRequests, setPeerRequests] = useState<PeerRequest[]>([]);
+  const [cryptoPayments, setCryptoPayments] = useState<CryptoPaymentRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -125,6 +150,11 @@ export default function FinaPayManagement() {
   const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null);
   const [withdrawalAdminNotes, setWithdrawalAdminNotes] = useState('');
+  
+  const [cryptoDialogOpen, setCryptoDialogOpen] = useState(false);
+  const [selectedCrypto, setSelectedCrypto] = useState<CryptoPaymentRequest | null>(null);
+  const [cryptoReviewNotes, setCryptoReviewNotes] = useState('');
+  const [cryptoRejectionReason, setCryptoRejectionReason] = useState('');
   
   const [otpModalOpen, setOtpModalOpen] = useState(false);
   const [otpActionType, setOtpActionType] = useState<AdminActionType>('deposit_approval');
@@ -174,13 +204,14 @@ export default function FinaPayManagement() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes] = await Promise.all([
+      const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes] = await Promise.all([
         fetch('/api/admin/transactions'),
         fetch('/api/admin/users'),
         fetch('/api/admin/deposit-requests'),
         fetch('/api/admin/withdrawal-requests'),
         fetch('/api/admin/finapay/peer-transfers'),
-        fetch('/api/admin/finapay/peer-requests')
+        fetch('/api/admin/finapay/peer-requests'),
+        fetch('/api/admin/crypto-payments')
       ]);
       
       const txData = await txResponse.json();
@@ -189,12 +220,14 @@ export default function FinaPayManagement() {
       const withdrawalData = await withdrawalsRes.json();
       const peerTransfersData = await peerTransfersRes.json();
       const peerRequestsData = await peerRequestsRes.json();
+      const cryptoData = cryptoRes.ok ? await cryptoRes.json() : { requests: [] };
       
       setTransactions(txData.transactions || []);
       setDepositRequests(depositData.requests || []);
       setWithdrawalRequests(withdrawalData.requests || []);
       setPeerTransfers(peerTransfersData.transfers || []);
       setPeerRequests(peerRequestsData.requests || []);
+      setCryptoPayments(cryptoData.requests || []);
       
       const userMap: Record<string, UserInfo> = {};
       (usersData.users || []).forEach((u: UserInfo) => {
@@ -335,6 +368,35 @@ export default function FinaPayManagement() {
       setPendingAction(null);
     }
     setOtpModalOpen(false);
+  };
+
+  const openCryptoDialog = (payment: CryptoPaymentRequest) => {
+    setSelectedCrypto(payment);
+    setCryptoReviewNotes(payment.reviewNotes || '');
+    setCryptoRejectionReason('');
+    setCryptoDialogOpen(true);
+  };
+
+  const handleCryptoAction = async (action: 'Credited' | 'Rejected') => {
+    if (!selectedCrypto || !currentUser) return;
+    
+    try {
+      const endpoint = action === 'Credited' 
+        ? `/api/admin/crypto-payments/${selectedCrypto.id}/approve`
+        : `/api/admin/crypto-payments/${selectedCrypto.id}/reject`;
+      
+      const body = action === 'Credited'
+        ? { reviewNotes: cryptoReviewNotes }
+        : { rejectionReason: cryptoRejectionReason, reviewNotes: cryptoReviewNotes };
+      
+      await apiRequest('PATCH', endpoint, body);
+      toast.success(`Crypto payment ${action === 'Credited' ? 'approved and credited' : 'rejected'}`);
+      setCryptoDialogOpen(false);
+      setSelectedCrypto(null);
+      fetchData();
+    } catch (error) {
+      toast.error(`Failed to ${action === 'Credited' ? 'approve' : 'reject'} crypto payment`);
+    }
   };
 
   const pendingDeposits = depositRequests.filter(d => d.status === 'Pending');
@@ -508,6 +570,10 @@ export default function FinaPayManagement() {
             <TabsTrigger value="peer-requests" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
               <CreditCard className="w-4 h-4 mr-2" />
               Peer Requests ({peerRequests.length})
+            </TabsTrigger>
+            <TabsTrigger value="crypto" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <Bitcoin className="w-4 h-4 mr-2" />
+              Crypto ({cryptoPayments.length})
             </TabsTrigger>
           </TabsList>
 
@@ -755,8 +821,210 @@ export default function FinaPayManagement() {
                 </div>
               )}
             </TabsContent>
+
+            <TabsContent value="crypto">
+              <h2 className="text-lg font-semibold mb-4">Crypto Payment Requests</h2>
+              {cryptoPayments.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    <Bitcoin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No crypto payment requests</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {cryptoPayments.map(payment => (
+                    <Card key={payment.id} data-testid={`card-crypto-${payment.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-orange-100 text-orange-700 rounded-lg">
+                              <Bitcoin className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900 text-lg">${parseFloat(payment.amountUsd).toFixed(2)}</span>
+                                <Badge variant={
+                                  payment.status === 'Credited' ? 'default' :
+                                  payment.status === 'Approved' ? 'default' :
+                                  payment.status === 'Rejected' ? 'destructive' :
+                                  payment.status === 'Under Review' ? 'secondary' : 'outline'
+                                } className={
+                                  payment.status === 'Credited' ? 'bg-green-100 text-green-800' :
+                                  payment.status === 'Approved' ? 'bg-blue-100 text-blue-800' : ''
+                                }>
+                                  {payment.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : getUserName(payment.userId)} 
+                                {' '}({payment.user?.email || getUserEmail(payment.userId)})
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {payment.walletConfig?.networkLabel || 'Unknown Network'} • {parseFloat(payment.goldGrams).toFixed(4)}g Gold
+                              </p>
+                              {payment.transactionHash && (
+                                <p className="text-xs text-blue-600 font-mono truncate max-w-xs">
+                                  TX: {payment.transactionHash.slice(0, 20)}...
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">{new Date(payment.createdAt).toLocaleString()}</p>
+                              {payment.reviewedAt && (
+                                <p className="text-xs text-gray-400">Reviewed: {new Date(payment.reviewedAt).toLocaleString()}</p>
+                              )}
+                            </div>
+                            <Button size="sm" onClick={() => openCryptoDialog(payment)} data-testid={`button-review-crypto-${payment.id}`}>
+                              {payment.status === 'Pending' || payment.status === 'Under Review' ? 'Review' : <Eye className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
           </div>
         </Tabs>
+
+        <Dialog open={cryptoDialogOpen} onOpenChange={setCryptoDialogOpen}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Crypto Payment Details</DialogTitle>
+              <DialogDescription>Review and process this crypto payment request</DialogDescription>
+            </DialogHeader>
+            {selectedCrypto && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Amount (USD)</p>
+                    <p className="font-bold text-xl">${parseFloat(selectedCrypto.amountUsd).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Gold to Credit</p>
+                    <p className="font-bold text-xl text-secondary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Network</p>
+                    <p className="font-medium">{selectedCrypto.walletConfig?.networkLabel || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Status</p>
+                    <Badge variant={
+                      selectedCrypto.status === 'Credited' ? 'default' :
+                      selectedCrypto.status === 'Rejected' ? 'destructive' : 'secondary'
+                    }>
+                      {selectedCrypto.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Gold Price at Time</p>
+                    <p className="font-medium">${parseFloat(selectedCrypto.goldPriceAtTime).toFixed(2)}/g</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">User</p>
+                    <p className="font-medium">{selectedCrypto.user ? `${selectedCrypto.user.firstName} ${selectedCrypto.user.lastName}` : getUserName(selectedCrypto.userId)}</p>
+                    <p className="text-xs text-gray-400">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
+                  </div>
+                </div>
+
+                {selectedCrypto.transactionHash && (
+                  <div className="p-3 bg-gray-50 rounded-lg border">
+                    <p className="text-gray-500 text-xs mb-1">Transaction Hash</p>
+                    <p className="font-mono text-sm break-all">{selectedCrypto.transactionHash}</p>
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="p-0 h-auto mt-1 text-blue-600"
+                      onClick={() => {
+                        const explorerUrls: Record<string, string> = {
+                          'Bitcoin': 'https://blockchair.com/bitcoin/transaction/',
+                          'Ethereum': 'https://etherscan.io/tx/',
+                          'USDT (TRC20)': 'https://tronscan.org/#/transaction/',
+                          'USDT (ERC20)': 'https://etherscan.io/tx/',
+                        };
+                        const network = selectedCrypto.walletConfig?.networkLabel || '';
+                        const baseUrl = explorerUrls[network] || 'https://blockchair.com/search?q=';
+                        window.open(`${baseUrl}${selectedCrypto.transactionHash}`, '_blank');
+                      }}
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" /> View on Explorer
+                    </Button>
+                  </div>
+                )}
+
+                {selectedCrypto.walletConfig && (
+                  <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <p className="text-orange-700 text-xs mb-1">Receiving Wallet</p>
+                    <p className="font-mono text-sm break-all">{selectedCrypto.walletConfig.walletAddress}</p>
+                  </div>
+                )}
+
+                {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
+                  <div>
+                    <Label>Review Notes</Label>
+                    <Textarea 
+                      value={cryptoReviewNotes}
+                      onChange={e => setCryptoReviewNotes(e.target.value)}
+                      placeholder="Add notes about this payment..."
+                      data-testid="input-crypto-review-notes"
+                    />
+                  </div>
+                )}
+
+                {selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review' ? (
+                  <div>
+                    <Label>Rejection Reason (if rejecting)</Label>
+                    <Textarea 
+                      value={cryptoRejectionReason}
+                      onChange={e => setCryptoRejectionReason(e.target.value)}
+                      placeholder="Required if rejecting..."
+                      data-testid="input-crypto-rejection-reason"
+                    />
+                  </div>
+                ) : selectedCrypto.rejectionReason && (
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-red-700 text-xs mb-1">Rejection Reason</p>
+                    <p className="text-sm">{selectedCrypto.rejectionReason}</p>
+                  </div>
+                )}
+
+                {selectedCrypto.reviewNotes && (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-blue-700 text-xs mb-1">Admin Notes</p>
+                    <p className="text-sm">{selectedCrypto.reviewNotes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCryptoDialogOpen(false)}>Close</Button>
+              {(selectedCrypto?.status === 'Pending' || selectedCrypto?.status === 'Under Review') && (
+                <>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleCryptoAction('Rejected')}
+                    disabled={!cryptoRejectionReason.trim()}
+                    data-testid="button-reject-crypto"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" /> Reject
+                  </Button>
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700" 
+                    onClick={() => handleCryptoAction('Credited')}
+                    data-testid="button-credit-crypto"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> Approve & Credit Gold
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={bankAccountDialogOpen} onOpenChange={setBankAccountDialogOpen}>
           <DialogContent className="max-w-lg">

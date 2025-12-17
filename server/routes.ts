@@ -9173,6 +9173,424 @@ export async function registerRoutes(
   });
 
   // ============================================
+  // CRYPTO WALLET CONFIGURATIONS (Admin managed)
+  // ============================================
+
+  // Get all crypto wallet configs (admin)
+  app.get("/api/admin/crypto-wallets", ensureAdminAsync, async (req, res) => {
+    try {
+      const wallets = await storage.getAllCryptoWalletConfigs();
+      res.json({ wallets });
+    } catch (error) {
+      console.error("Failed to get crypto wallets:", error);
+      res.status(500).json({ message: "Failed to get crypto wallets" });
+    }
+  });
+
+  // Create crypto wallet config (admin)
+  app.post("/api/admin/crypto-wallets", ensureAdminAsync, async (req, res) => {
+    try {
+      const { network, networkLabel, walletAddress, memo, instructions, isActive, displayOrder } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const wallet = await storage.createCryptoWalletConfig({
+        network,
+        networkLabel,
+        walletAddress,
+        memo: memo || null,
+        instructions: instructions || null,
+        isActive: isActive !== false,
+        displayOrder: displayOrder || 0,
+      });
+      
+      await storage.createAuditLog({
+        entityType: "crypto_wallet_config",
+        entityId: wallet.id,
+        actionType: "create",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Created crypto wallet config: ${networkLabel}`,
+      });
+      
+      res.json({ wallet });
+    } catch (error) {
+      console.error("Failed to create crypto wallet:", error);
+      res.status(500).json({ message: "Failed to create crypto wallet" });
+    }
+  });
+
+  // Update crypto wallet config (admin)
+  app.patch("/api/admin/crypto-wallets/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const wallet = await storage.updateCryptoWalletConfig(id, updates);
+      if (!wallet) {
+        return res.status(404).json({ message: "Crypto wallet not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "crypto_wallet_config",
+        entityId: wallet.id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Updated crypto wallet config: ${wallet.networkLabel}`,
+      });
+      
+      res.json({ wallet });
+    } catch (error) {
+      console.error("Failed to update crypto wallet:", error);
+      res.status(500).json({ message: "Failed to update crypto wallet" });
+    }
+  });
+
+  // Delete crypto wallet config (admin)
+  app.delete("/api/admin/crypto-wallets/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const adminUser = (req as any).adminUser;
+      
+      const wallet = await storage.getCryptoWalletConfig(id);
+      if (!wallet) {
+        return res.status(404).json({ message: "Crypto wallet not found" });
+      }
+      
+      const success = await storage.deleteCryptoWalletConfig(id);
+      if (!success) {
+        return res.status(400).json({ message: "Failed to delete crypto wallet" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "crypto_wallet_config",
+        entityId: id,
+        actionType: "delete",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Deleted crypto wallet config: ${wallet.networkLabel}`,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete crypto wallet:", error);
+      res.status(500).json({ message: "Failed to delete crypto wallet" });
+    }
+  });
+
+  // Get active crypto wallets (public - for payment options)
+  app.get("/api/crypto-wallets/active", async (req, res) => {
+    try {
+      const wallets = await storage.getActiveCryptoWalletConfigs();
+      res.json({ wallets });
+    } catch (error) {
+      console.error("Failed to get active crypto wallets:", error);
+      res.status(500).json({ message: "Failed to get crypto wallets" });
+    }
+  });
+
+  // ============================================
+  // CRYPTO PAYMENT REQUESTS (Manual payments)
+  // ============================================
+
+  // Create crypto payment request (user initiates payment)
+  app.post("/api/crypto-payments", async (req, res) => {
+    try {
+      const { userId, walletConfigId, amountUsd, goldGrams, goldPriceAtTime, cryptoAmount } = req.body;
+      
+      if (!userId || !walletConfigId || !amountUsd || !goldGrams || !goldPriceAtTime) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const walletConfig = await storage.getCryptoWalletConfig(walletConfigId);
+      if (!walletConfig || !walletConfig.isActive) {
+        return res.status(400).json({ message: "Invalid or inactive crypto wallet" });
+      }
+      
+      // Set expiry to 24 hours from now
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      
+      const paymentRequest = await storage.createCryptoPaymentRequest({
+        userId,
+        walletConfigId,
+        amountUsd,
+        goldGrams,
+        goldPriceAtTime,
+        cryptoAmount: cryptoAmount || null,
+        status: 'Pending',
+        expiresAt,
+      });
+      
+      await storage.createAuditLog({
+        entityType: "crypto_payment_request",
+        entityId: paymentRequest.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: `Created crypto payment request for $${amountUsd} (${goldGrams}g gold)`,
+      });
+      
+      // Send notification to user
+      await storage.createNotification({
+        userId,
+        title: "Payment Request Created",
+        message: `Your crypto payment request for $${amountUsd} has been created. Please complete the transfer within 24 hours.`,
+        type: "transaction",
+        read: false,
+      });
+      
+      res.json({ paymentRequest, walletConfig });
+    } catch (error) {
+      console.error("Failed to create crypto payment request:", error);
+      res.status(500).json({ message: "Failed to create payment request" });
+    }
+  });
+
+  // Submit payment proof (user uploads tx hash or screenshot)
+  app.patch("/api/crypto-payments/:id/submit-proof", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { transactionHash, proofImageUrl } = req.body;
+      
+      const paymentRequest = await storage.getCryptoPaymentRequest(id);
+      if (!paymentRequest) {
+        return res.status(404).json({ message: "Payment request not found" });
+      }
+      
+      if (paymentRequest.status !== 'Pending') {
+        return res.status(400).json({ message: "Payment request is not pending" });
+      }
+      
+      const updated = await storage.updateCryptoPaymentRequest(id, {
+        transactionHash: transactionHash || paymentRequest.transactionHash,
+        proofImageUrl: proofImageUrl || paymentRequest.proofImageUrl,
+        status: 'Under Review',
+      });
+      
+      await storage.createAuditLog({
+        entityType: "crypto_payment_request",
+        entityId: id,
+        actionType: "update",
+        actor: paymentRequest.userId,
+        actorRole: "user",
+        details: `Submitted payment proof: ${transactionHash || 'screenshot'}`,
+      });
+      
+      // Notify user
+      await storage.createNotification({
+        userId: paymentRequest.userId,
+        title: "Payment Proof Submitted",
+        message: "Your payment proof has been submitted and is under review.",
+        type: "transaction",
+        read: false,
+      });
+      
+      res.json({ paymentRequest: updated });
+    } catch (error) {
+      console.error("Failed to submit payment proof:", error);
+      res.status(500).json({ message: "Failed to submit payment proof" });
+    }
+  });
+
+  // Get user's crypto payment requests
+  app.get("/api/crypto-payments/user/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserCryptoPaymentRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      console.error("Failed to get user crypto payments:", error);
+      res.status(500).json({ message: "Failed to get payment requests" });
+    }
+  });
+
+  // Get single crypto payment request
+  app.get("/api/crypto-payments/:id", async (req, res) => {
+    try {
+      const request = await storage.getCryptoPaymentRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Payment request not found" });
+      }
+      
+      // Get wallet config details
+      const walletConfig = await storage.getCryptoWalletConfig(request.walletConfigId);
+      
+      res.json({ request, walletConfig });
+    } catch (error) {
+      console.error("Failed to get crypto payment:", error);
+      res.status(500).json({ message: "Failed to get payment request" });
+    }
+  });
+
+  // Admin: Get all crypto payment requests
+  app.get("/api/admin/crypto-payments", ensureAdminAsync, async (req, res) => {
+    try {
+      const { status } = req.query;
+      let requests;
+      
+      if (status && typeof status === 'string') {
+        requests = await storage.getCryptoPaymentRequestsByStatus(status);
+      } else {
+        requests = await storage.getAllCryptoPaymentRequests();
+      }
+      
+      // Enrich with user and wallet info
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        const user = await storage.getUser(request.userId);
+        const walletConfig = await storage.getCryptoWalletConfig(request.walletConfigId);
+        return {
+          ...request,
+          user: user ? { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } : null,
+          walletConfig,
+        };
+      }));
+      
+      res.json({ requests: enrichedRequests });
+    } catch (error) {
+      console.error("Failed to get admin crypto payments:", error);
+      res.status(500).json({ message: "Failed to get payment requests" });
+    }
+  });
+
+  // Admin: Approve crypto payment
+  app.patch("/api/admin/crypto-payments/:id/approve", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reviewNotes } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const paymentRequest = await storage.getCryptoPaymentRequest(id);
+      if (!paymentRequest) {
+        return res.status(404).json({ message: "Payment request not found" });
+      }
+      
+      if (!['Pending', 'Under Review'].includes(paymentRequest.status)) {
+        return res.status(400).json({ message: "Payment request cannot be approved in current status" });
+      }
+      
+      // Get user's FinaPay wallet
+      const wallet = await storage.getUserWallet(paymentRequest.userId, 'finapay');
+      if (!wallet) {
+        return res.status(400).json({ message: "User wallet not found" });
+      }
+      
+      // Credit the gold to user's wallet
+      const newBalance = parseFloat(wallet.goldBalance) + parseFloat(paymentRequest.goldGrams);
+      await storage.updateWallet(wallet.id, {
+        goldBalance: newBalance.toString(),
+        totalDeposited: (parseFloat(wallet.totalDeposited) + parseFloat(paymentRequest.amountUsd)).toString(),
+      });
+      
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId: paymentRequest.userId,
+        walletId: wallet.id,
+        type: 'Buy',
+        status: 'Completed',
+        amount: paymentRequest.amountUsd,
+        goldGrams: paymentRequest.goldGrams,
+        goldPrice: paymentRequest.goldPriceAtTime,
+        currency: 'USD',
+        description: `Crypto payment approved - ${paymentRequest.transactionHash || 'Manual verification'}`,
+        metadata: {
+          cryptoPaymentId: paymentRequest.id,
+          walletConfigId: paymentRequest.walletConfigId,
+        },
+      });
+      
+      // Update payment request
+      const updated = await storage.updateCryptoPaymentRequest(id, {
+        status: 'Credited',
+        reviewerId: adminUser.id,
+        reviewedAt: new Date(),
+        reviewNotes: reviewNotes || null,
+        creditedTransactionId: transaction.id,
+      });
+      
+      await storage.createAuditLog({
+        entityType: "crypto_payment_request",
+        entityId: id,
+        actionType: "approve",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Approved and credited crypto payment: $${paymentRequest.amountUsd} (${paymentRequest.goldGrams}g gold)`,
+      });
+      
+      // Notify user
+      await storage.createNotification({
+        userId: paymentRequest.userId,
+        title: "Payment Approved",
+        message: `Your crypto payment of $${paymentRequest.amountUsd} has been approved. ${paymentRequest.goldGrams}g gold has been credited to your wallet.`,
+        type: "success",
+        read: false,
+      });
+      
+      res.json({ paymentRequest: updated, transaction });
+    } catch (error) {
+      console.error("Failed to approve crypto payment:", error);
+      res.status(500).json({ message: "Failed to approve payment" });
+    }
+  });
+
+  // Admin: Reject crypto payment
+  app.patch("/api/admin/crypto-payments/:id/reject", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { rejectionReason } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      if (!rejectionReason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
+      const paymentRequest = await storage.getCryptoPaymentRequest(id);
+      if (!paymentRequest) {
+        return res.status(404).json({ message: "Payment request not found" });
+      }
+      
+      if (!['Pending', 'Under Review'].includes(paymentRequest.status)) {
+        return res.status(400).json({ message: "Payment request cannot be rejected in current status" });
+      }
+      
+      const updated = await storage.updateCryptoPaymentRequest(id, {
+        status: 'Rejected',
+        reviewerId: adminUser.id,
+        reviewedAt: new Date(),
+        rejectionReason,
+      });
+      
+      await storage.createAuditLog({
+        entityType: "crypto_payment_request",
+        entityId: id,
+        actionType: "reject",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Rejected crypto payment: ${rejectionReason}`,
+      });
+      
+      // Notify user
+      await storage.createNotification({
+        userId: paymentRequest.userId,
+        title: "Payment Rejected",
+        message: `Your crypto payment request has been rejected. Reason: ${rejectionReason}`,
+        type: "error",
+        read: false,
+      });
+      
+      res.json({ paymentRequest: updated });
+    } catch (error) {
+      console.error("Failed to reject crypto payment:", error);
+      res.status(500).json({ message: "Failed to reject payment" });
+    }
+  });
+
+  // ============================================
   // USER NOTIFICATIONS
   // ============================================
 
