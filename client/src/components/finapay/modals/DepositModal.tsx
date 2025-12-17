@@ -778,6 +778,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                    <div className="mt-0.5">⚠️</div>
                    <p>Your deposit will be reviewed and credited within 1-3 business days after verification.</p>
                 </div>
+                
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+                   <p className="font-semibold mb-1">Important Notice</p>
+                   <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -834,6 +839,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                <div className="mt-0.5">ℹ️</div>
                <p>You will be redirected to a secure payment page to complete your card payment. Your wallet will be credited instantly upon successful payment.</p>
             </div>
+            
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+               <p className="font-semibold mb-1">Important Notice</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
+            </div>
           </div>
         ) : step === 'card-processing' ? (
           <div className="py-12 text-center space-y-4">
@@ -884,6 +894,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <div className="bg-orange-50 text-orange-800 text-xs p-3 rounded-lg flex items-start gap-2">
               <div className="mt-0.5">ℹ️</div>
               <p>After entering the amount, you'll select a crypto network and send payment to our wallet address.</p>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+               <p className="font-semibold mb-1">Important Notice</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
             </div>
           </div>
         ) : step === 'crypto-select-wallet' ? (
