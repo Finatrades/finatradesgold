@@ -11,8 +11,40 @@ import { Textarea } from '@/components/ui/textarea';
 import { 
   Settings, DollarSign, Percent, Shield, Users, CreditCard, 
   TrendingUp, Wallet, Building, Gift, AlertCircle, Save, 
-  RefreshCw, Loader2, ChevronRight, Database
+  RefreshCw, Loader2, ChevronRight, Database, X, Plus, Globe
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+const COUNTRIES = [
+  { code: 'AF', name: 'Afghanistan' },
+  { code: 'BY', name: 'Belarus' },
+  { code: 'CF', name: 'Central African Republic' },
+  { code: 'CN', name: 'China' },
+  { code: 'CU', name: 'Cuba' },
+  { code: 'CD', name: 'Democratic Republic of Congo' },
+  { code: 'ER', name: 'Eritrea' },
+  { code: 'ET', name: 'Ethiopia' },
+  { code: 'IR', name: 'Iran' },
+  { code: 'IQ', name: 'Iraq' },
+  { code: 'LB', name: 'Lebanon' },
+  { code: 'LY', name: 'Libya' },
+  { code: 'ML', name: 'Mali' },
+  { code: 'MM', name: 'Myanmar' },
+  { code: 'NI', name: 'Nicaragua' },
+  { code: 'KP', name: 'North Korea' },
+  { code: 'PK', name: 'Pakistan' },
+  { code: 'RU', name: 'Russia' },
+  { code: 'SO', name: 'Somalia' },
+  { code: 'SS', name: 'South Sudan' },
+  { code: 'SD', name: 'Sudan' },
+  { code: 'SY', name: 'Syria' },
+  { code: 'VE', name: 'Venezuela' },
+  { code: 'YE', name: 'Yemen' },
+  { code: 'ZW', name: 'Zimbabwe' },
+];
+
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
@@ -211,6 +243,100 @@ export default function PlatformConfiguration() {
           <Label htmlFor={config.id} className="cursor-pointer">
             {value === 'true' ? 'Enabled' : 'Disabled'}
           </Label>
+        </div>
+      );
+    }
+
+    // Special handler for blocked_countries
+    if (config.configKey === 'blocked_countries') {
+      let blockedList: string[] = [];
+      try {
+        blockedList = JSON.parse(value || '[]');
+      } catch {
+        blockedList = [];
+      }
+
+      const toggleCountry = (countryCode: string) => {
+        const newList = blockedList.includes(countryCode)
+          ? blockedList.filter(c => c !== countryCode)
+          : [...blockedList, countryCode];
+        handleValueChange(config.id, JSON.stringify(newList));
+      };
+
+      const removeCountry = (countryCode: string) => {
+        const newList = blockedList.filter(c => c !== countryCode);
+        handleValueChange(config.id, JSON.stringify(newList));
+      };
+
+      return (
+        <div className="space-y-3">
+          {/* Selected countries */}
+          <div className="flex flex-wrap gap-2">
+            {blockedList.length === 0 ? (
+              <span className="text-sm text-gray-500">No countries blocked</span>
+            ) : (
+              blockedList.map(code => {
+                const country = COUNTRIES.find(c => c.code === code);
+                return (
+                  <Badge 
+                    key={code} 
+                    variant="secondary"
+                    className="flex items-center gap-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                  >
+                    {country?.name || code}
+                    <button
+                      type="button"
+                      onClick={() => removeCountry(code)}
+                      className="ml-1 hover:bg-red-200 dark:hover:bg-red-800 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                );
+              })
+            )}
+          </div>
+
+          {/* Country selector */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Country
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start">
+              <div className="p-3 border-b">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium text-sm">Select Countries to Block</span>
+                </div>
+              </div>
+              <ScrollArea className="h-64">
+                <div className="p-2 space-y-1">
+                  {COUNTRIES.map(country => {
+                    const isBlocked = blockedList.includes(country.code);
+                    return (
+                      <div
+                        key={country.code}
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                          isBlocked ? 'bg-red-50 dark:bg-red-900/20' : ''
+                        }`}
+                        onClick={() => toggleCountry(country.code)}
+                      >
+                        <Checkbox 
+                          checked={isBlocked}
+                          onCheckedChange={() => toggleCountry(country.code)}
+                        />
+                        <span className="text-sm">{country.name}</span>
+                        <span className="text-xs text-gray-400 ml-auto">{country.code}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
         </div>
       );
     }
