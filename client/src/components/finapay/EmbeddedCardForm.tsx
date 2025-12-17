@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, CreditCard, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { preloadNGeniusSDK, getCachedConfig, isSDKReady } from '@/lib/ngenius-sdk-loader';
 
 interface EmbeddedCardFormProps {
   amount: number;
@@ -40,13 +41,13 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [sdkLoaded, setSdkLoaded] = useState(isSDKReady());
   const [cardMounted, setCardMounted] = useState(false);
   const [sdkConfig, setSdkConfig] = useState<{
     apiKey: string;
     outletRef: string;
     sdkUrl: string;
-  } | null>(null);
+  } | null>(getCachedConfig());
   const [formValid, setFormValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -54,30 +55,17 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchConfig = async () => {
+    const initSDK = async () => {
       try {
-        const configRes = await fetch('/api/ngenius/sdk-config');
-        const config = await configRes.json();
-
+        // Use preloaded SDK if available, otherwise load now
+        const { config, ready } = await preloadNGeniusSDK();
+        
         if (!config.enabled) {
           throw new Error('Card payments not available');
         }
 
         setSdkConfig(config);
-
-        if (!document.querySelector(`script[src="${config.sdkUrl}"]`)) {
-          const script = document.createElement('script');
-          script.src = config.sdkUrl;
-          script.async = true;
-          script.onload = () => {
-            setSdkLoaded(true);
-          };
-          script.onerror = () => setError('Failed to load payment SDK');
-          document.body.appendChild(script);
-        } else {
-          setSdkLoaded(true);
-        }
-
+        setSdkLoaded(ready);
         setLoading(false);
       } catch (err: any) {
         setError(err.message || 'Failed to initialize payment');
@@ -85,7 +73,7 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
       }
     };
 
-    fetchConfig();
+    initSDK();
   }, []);
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
+import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 import EmbeddedCardForm from '../EmbeddedCardForm';
 
 interface FeeInfo {
@@ -95,6 +96,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       fetchFees();
       fetchGoldPrice();
       resetForm();
+      
+      // Preload NGenius SDK in background when modal opens
+      preloadNGeniusSDK().catch(() => {
+        // Silently fail - SDK will be loaded when needed
+      });
     }
   }, [isOpen]);
 
@@ -398,35 +404,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       return;
     }
 
-    setSubmitting(true);
-    setStep('card-processing');
-    
-    try {
-      const returnUrl = `${window.location.origin}/finapay?deposit_callback=1`;
-      const cancelUrl = `${window.location.origin}/finapay?deposit_cancelled=1`;
-      
-      const res = await apiRequest('POST', '/api/ngenius/create-order', {
-        userId: user.id,
-        amount: amountNum,
-        currency: 'USD',
-        returnUrl,
-        cancelUrl,
-        description: `FinaPay wallet deposit - $${amountNum.toFixed(2)}`,
-      });
-      
-      const data = await res.json();
-      
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error("No payment URL received");
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to initiate card payment");
-      setStep('card-amount');
-    } finally {
-      setSubmitting(false);
-    }
+    // Use embedded card form (SDK is preloaded when modal opened)
+    setStep('card-embedded');
   };
   
   const handleCardSuccess = (result: { goldGrams: string; amountUsd: number }) => {
