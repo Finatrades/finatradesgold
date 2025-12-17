@@ -682,7 +682,7 @@ export default function BNSLManagement() {
 
         {/* Detail Modal */}
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-          <DialogContent className="max-w-[95vw] w-[1200px] h-[90vh] p-0 overflow-hidden">
+          <DialogContent className="w-[95vw] max-w-6xl h-[85vh] p-0 overflow-hidden">
              {selectedPlan ? (
                <BnslPlanDetailAdmin 
                  plan={selectedPlan}

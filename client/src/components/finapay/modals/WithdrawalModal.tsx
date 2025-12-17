@@ -85,7 +85,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground sm:max-w-[800px]">
+      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <ArrowUpRight className="w-5 h-5 text-orange-500" />

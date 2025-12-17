@@ -209,7 +209,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={`bg-white border-border text-foreground ${foundUser && step === 'search' ? 'sm:max-w-[800px]' : 'sm:max-w-[480px]'}`}>
+      <DialogContent className={`bg-white border-border text-foreground w-[95vw] max-h-[85vh] overflow-y-auto ${foundUser && step === 'search' ? 'max-w-2xl' : 'max-w-md'}`}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />

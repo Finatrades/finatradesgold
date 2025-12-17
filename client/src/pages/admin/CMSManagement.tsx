@@ -728,7 +728,7 @@ function BlockDialog({
   };
 
   return (
-    <DialogContent className="sm:max-w-[900px]">
+    <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-hidden">
       <DialogHeader>
         <DialogTitle>{block ? 'Edit Block' : 'Create Block'}</DialogTitle>
         <DialogDescription>
@@ -1087,7 +1087,7 @@ function TemplateDialog({
   };
 
   return (
-    <DialogContent className="sm:max-w-[1000px] max-h-[90vh]">
+    <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] overflow-hidden">
       <DialogHeader>
         <DialogTitle>{template ? 'Edit Template' : 'Create Template'}</DialogTitle>
         <DialogDescription>
