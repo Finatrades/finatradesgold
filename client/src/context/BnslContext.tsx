@@ -105,9 +105,28 @@ export function BnslProvider({ children }: { children: ReactNode }) {
   const [plans, setPlans] = useState<BnslPlan[]>([]);
   const [allPlans, setAllPlans] = useState<BnslPlan[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
-  const [currentGoldPrice, setCurrentGoldPrice] = useState(71.55);
+  const [currentGoldPrice, setCurrentGoldPrice] = useState(85.00);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch live gold price on mount
+  useEffect(() => {
+    const fetchGoldPrice = async () => {
+      try {
+        const response = await apiRequest('GET', '/api/gold-price');
+        const data = await response.json();
+        if (data.pricePerGram) {
+          setCurrentGoldPrice(data.pricePerGram);
+        }
+      } catch (err) {
+        console.error('Failed to fetch gold price for BNSL:', err);
+      }
+    };
+    fetchGoldPrice();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchGoldPrice, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const refreshPlans = useCallback(async () => {
     if (!user?.id) return;
