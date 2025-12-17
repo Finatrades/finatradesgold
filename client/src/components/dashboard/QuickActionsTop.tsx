@@ -58,7 +58,7 @@ const actions = [
   },
   {
     title: 'BNSL',
-    path: '/bnsl',
+    path: '/bnsl?step=configure',
     icon: <TrendingUp className="w-4 h-4" />,
     gradient: 'from-violet-500 to-purple-600',
     hoverGradient: 'hover:from-violet-600 hover:to-purple-700',

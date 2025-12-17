@@ -38,7 +38,7 @@ import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
 import CreateBnslPlan from '@/components/bnsl/CreateBnslPlan';
 import { Card, CardContent } from '@/components/ui/card';
 
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 
 export default function BNSL() {
   const { user } = useAuth();
@@ -46,6 +46,7 @@ export default function BNSL() {
   const { getContent } = useCMSPage('bnsl');
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
 
   // Use Context with real data
   const { plans, currentGoldPrice, addPlan, updatePayout, updatePlanStatus, refreshPlans, isLoading } = useBnsl();
@@ -54,8 +55,12 @@ export default function BNSL() {
     refreshPlans();
   }, [refreshPlans]);
 
-  // State
-  const [activeTab, setActiveTab] = useState('plans');
+  // Check URL for step parameter to auto-navigate to create tab
+  const urlParams = new URLSearchParams(searchString);
+  const stepParam = urlParams.get('step');
+  
+  // State - default to 'create' tab if step=configure is in URL
+  const [activeTab, setActiveTab] = useState(stepParam === 'configure' ? 'create' : 'plans');
   const [selectedPlan, setSelectedPlan] = useState<BnslPlan | null>(null);
   
   // Real Wallet State from API
