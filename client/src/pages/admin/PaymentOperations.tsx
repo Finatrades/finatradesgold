@@ -396,7 +396,7 @@ export default function FinaPayManagement() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-User-Id': currentUser.id
+          'X-Admin-User-Id': String(currentUser.id)
         },
         credentials: 'include',
         body: JSON.stringify(body)
