@@ -458,7 +458,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <span>Deposit Funds</span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {step === 'method' && "Choose your preferred deposit method"}
+            {step === 'method' && (
+              <>
+                <span>Choose your preferred deposit method</span>
+                <p className="font-bold text-foreground mt-1">Fund your account through buying equivalent amount of gold</p>
+              </>
+            )}
             {step === 'select' && "Select a bank account to deposit to"}
             {step === 'details' && "Enter deposit details and make your transfer"}
             {step === 'submitted' && "Deposit request submitted successfully"}
