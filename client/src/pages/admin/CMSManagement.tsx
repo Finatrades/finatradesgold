@@ -890,7 +890,52 @@ function TemplateDialog({
   const [module, setModule] = useState(template?.module || '');
   const [status, setStatus] = useState<'draft' | 'published'>(template?.status || 'draft');
   const [showPreview, setShowPreview] = useState(true);
+  const [showHtmlEditor, setShowHtmlEditor] = useState(false);
   const [previewData, setPreviewData] = useState<Record<string, string>>({});
+  const [textContentCache, setTextContentCache] = useState<Array<{label: string, value: string, multiline: boolean, originalIndex: number}>>([]);
+
+  const extractTextContent = (html: string): Array<{label: string, value: string, multiline: boolean, originalIndex: number}> => {
+    if (!html) return [];
+    const items: Array<{label: string, value: string, multiline: boolean, originalIndex: number}> = [];
+    
+    const labelPatterns = [
+      { regex: /<h1[^>]*>([^<]+)<\/h1>/gi, label: 'Main Title' },
+      { regex: /<h2[^>]*>([^<]+)<\/h2>/gi, label: 'Section Title' },
+      { regex: /<h3[^>]*>([^<]+)<\/h3>/gi, label: 'Subsection' },
+      { regex: /<p[^>]*>([^<]+)<\/p>/gi, label: 'Paragraph' },
+      { regex: /<div[^>]*>([^<]{10,})<\/div>/gi, label: 'Text Block' },
+      { regex: /<td[^>]*style="text-align: right[^"]*"[^>]*>([^<]+)<\/td>/gi, label: 'Value' },
+    ];
+    
+    let index = 0;
+    labelPatterns.forEach(pattern => {
+      let match;
+      const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
+      while ((match = regex.exec(html)) !== null) {
+        const text = match[1].trim();
+        if (text && !text.startsWith('<') && text.length > 2 && !text.includes('{{')) {
+          items.push({
+            label: `${pattern.label}`,
+            value: text,
+            multiline: text.length > 50,
+            originalIndex: index++
+          });
+        }
+      }
+    });
+    
+    return items.slice(0, 15);
+  };
+
+  const updateTextContent = (itemIndex: number, newValue: string) => {
+    const items = extractTextContent(body);
+    if (itemIndex >= 0 && itemIndex < items.length) {
+      const item = items[itemIndex];
+      const escaped = item.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const newBody = body.replace(new RegExp(escaped, 'g'), newValue);
+      setBody(newBody);
+    }
+  };
 
   React.useEffect(() => {
     setName(template?.name || '');
@@ -1127,16 +1172,69 @@ function TemplateDialog({
                 <p className="text-xs text-gray-500">Use &#123;&#123;variable_name&#125;&#125; in the body to insert values</p>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="body">Body</Label>
-                <Textarea 
-                  id="body" 
-                  value={body} 
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="Template body content..."
-                  rows={8}
-                  required
-                  data-testid="input-template-body"
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="body">Body</Label>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={!showHtmlEditor ? "default" : "outline"}
+                      onClick={() => setShowHtmlEditor(false)}
+                      className="h-6 text-xs px-2"
+                    >
+                      Simple
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={showHtmlEditor ? "default" : "outline"}
+                      onClick={() => setShowHtmlEditor(true)}
+                      className="h-6 text-xs px-2"
+                    >
+                      HTML
+                    </Button>
+                  </div>
+                </div>
+                {showHtmlEditor ? (
+                  <Textarea 
+                    id="body" 
+                    value={body} 
+                    onChange={(e) => setBody(e.target.value)}
+                    placeholder="Template body content..."
+                    rows={8}
+                    required
+                    data-testid="input-template-body"
+                    className="font-mono text-xs"
+                  />
+                ) : (
+                  <div className="border rounded-lg p-3 bg-gray-50 space-y-3">
+                    <p className="text-xs text-gray-500 mb-2">
+                      Edit the text values below. The template design is preserved.
+                    </p>
+                    {extractTextContent(body).map((item, index) => (
+                      <div key={index} className="grid gap-1">
+                        <Label className="text-xs text-gray-600">{item.label}</Label>
+                        {item.multiline ? (
+                          <Textarea
+                            value={item.value}
+                            onChange={(e) => updateTextContent(index, e.target.value)}
+                            rows={2}
+                            className="text-sm"
+                          />
+                        ) : (
+                          <Input
+                            value={item.value}
+                            onChange={(e) => updateTextContent(index, e.target.value)}
+                            className="text-sm"
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {extractTextContent(body).length === 0 && (
+                      <p className="text-sm text-gray-400 italic">No editable text found. Use HTML mode to edit.</p>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label>Status</Label>
