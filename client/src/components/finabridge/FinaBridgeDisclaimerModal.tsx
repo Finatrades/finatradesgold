@@ -178,8 +178,9 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 overflow-hidden [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-        <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white flex-shrink-0">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] p-0 overflow-hidden [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        {/* Header */}
+        <DialogHeader className="p-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <Shield className="w-6 h-6" />
@@ -193,171 +194,168 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
           </div>
         </DialogHeader>
 
-        <div className="overflow-y-auto max-h-[40vh] px-6 py-4">
-          <div className="space-y-4 text-sm text-gray-700">
-            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="font-medium text-red-800">
-                The trading of illegal, prohibited, or restricted products and commodities is strictly forbidden on this platform.
+        {/* Two Panel Layout */}
+        <div className="flex flex-col md:flex-row h-[70vh]">
+          {/* Left Panel - Disclaimer Content */}
+          <div className="flex-1 overflow-y-auto border-r border-gray-200 p-4 bg-white">
+            <div className="space-y-3 text-sm text-gray-700">
+              <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="font-medium text-red-800 text-sm">
+                  The trading of illegal, prohibited, or restricted products and commodities is strictly forbidden.
+                </p>
+              </div>
+
+              <p className="text-sm">
+                By accessing FinaBridge, you confirm and acknowledge:
               </p>
-            </div>
 
-            <p>
-              By accessing or using FinaBridge or any Finatrades services, you confirm and acknowledge the following:
-            </p>
-
-            <div className="space-y-3">
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Sanctions & Trade Restrictions</h4>
-                <p>
-                  You will not trade, sell, source, receive, or distribute any product, commodity, or asset originating from, or linked to, any country, entity, individual, or organization that is subject to international sanctions, trade restrictions, embargoes, or AML/CFT measures, including but not limited to those imposed by the UN, EU, OFAC, FINMA, SECO, FATF, or any other competent authority.
-                </p>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Restricted Jurisdictions</h4>
-                <p className="mb-2">
-                  You will not engage with any sanctioned persons, banned companies, blacklisted suppliers, restricted geographical origins, or high-risk jurisdictions identified as non-cooperative or subject to financial crime risks, including but not limited to:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    'Iran', 'North Korea (DPRK)', 'Syria', 'Cuba', 'Sudan', 'South Sudan', 
-                    'Yemen', 'Afghanistan', 'Russia', 'Belarus', 'Myanmar (Burma)', 
-                    'Venezuela', 'Crimea', 'Donetsk', 'Luhansk', 'Zaporizhzhia', 'Kherson'
-                  ].map((country) => (
-                    <span key={country} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-medium">
-                      {country}
-                    </span>
-                  ))}
+              <div className="space-y-2">
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">Sanctions & Trade Restrictions</h4>
+                  <p className="text-xs text-gray-600">
+                    You will not trade any product originating from countries, entities, or organizations subject to international sanctions, trade restrictions, or AML/CFT measures.
+                  </p>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  ...and any other region or jurisdiction designated under UN, EU, OFAC, UK HMT, SECO, FATF, or any other competent regulatory authority as sanctioned, embargoed, or high-risk.
-                </p>
+
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">Restricted Jurisdictions</h4>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {[
+                      'Iran', 'North Korea', 'Syria', 'Cuba', 'Sudan', 'Russia', 'Belarus', 'Venezuela', 'Crimea'
+                    ].map((country) => (
+                      <span key={country} className="px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] rounded-full font-medium">
+                        {country}
+                      </span>
+                    ))}
+                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-full">+more</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <h4 className="font-semibold text-amber-900 mb-1 text-sm">Dynamic Updates</h4>
+                  <p className="text-xs text-amber-800">
+                    Finatrades may expand or modify the restricted jurisdictions list without notice.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">Violations & Consequences</h4>
+                  <p className="text-xs text-gray-600">
+                    Prohibited transactions will result in immediate suspension without refund and may be reported to authorities.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">Your Responsibility</h4>
+                  <p className="text-xs text-gray-600">
+                    You are solely responsible for compliance with all applicable laws, including sanctions and anti-money laundering obligations.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">Liability Exclusion</h4>
+                  <p className="text-xs text-gray-600">
+                    Finatrades and partners bear no liability for consequences arising from prohibited activities, platform termination, or regulatory actions.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">Right to Reject</h4>
+                  <p className="text-xs text-gray-600">
+                    We reserve the right to reject, suspend, or block any transaction if compliance risk is identified.
+                  </p>
+                </div>
               </div>
 
-              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <h4 className="font-semibold text-amber-900 mb-2">Dynamic Updates</h4>
-                <p className="text-amber-800">
-                  Finatrades may, at its discretion, expand or modify the list of restricted jurisdictions without notice.
-                </p>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Violations & Consequences</h4>
-                <p>
-                  Any attempt to conduct a transaction involving prohibited, restricted, or suspicious goods, origins, or counterparties will result in immediate suspension or termination of access, without refund, and may be reported to the relevant regulatory or law-enforcement authorities.
-                </p>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Your Responsibility</h4>
-                <p>
-                  It is solely your responsibility to ensure full compliance with all applicable local, national, and international laws, including sanctions, export-control restrictions, anti-money laundering laws, and counter-terrorism financing obligations.
-                </p>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Liability Exclusion</h4>
-                <p className="mb-2">
-                  Finatrades Finance SA, Wingold & Metals DMCC, and all associated partners, affiliates, service providers, and settlement entities bear no liability for any consequences arising from:
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-gray-600">
-                  <li>Your engagement in prohibited or high-risk activities</li>
-                  <li>Termination of platform access due to violations</li>
-                  <li>Regulatory or enforcement actions taken against you</li>
-                  <li>Losses arising from seizure, blocking, freezing, or cancellation of any transaction due to sanctions or compliance issues</li>
-                </ul>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Right to Reject</h4>
-                <p>
-                  Finatrades and its partners reserve the absolute right to reject, suspend, or block any transaction, customer, shipment, or settlement if any compliance risk, sanctions match, or suspicious activity is identified, without any obligation to disclose the reasoning.
-                </p>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowFullTerms(true)}
+                className="w-full border-orange-300 text-orange-600 hover:bg-orange-50 mt-2"
+                data-testid="button-view-full-terms"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                View Full Terms & Conditions
+              </Button>
             </div>
           </div>
-        </div>
 
-        <div className="p-6 pt-4 border-t bg-gray-50 space-y-4 flex-shrink-0 overflow-y-auto max-h-[40vh]">
-          <Button
-            variant="outline"
-            onClick={() => setShowFullTerms(true)}
-            className="w-full border-orange-300 text-orange-600 hover:bg-orange-50"
-            data-testid="button-view-full-terms"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            View Full Terms & Conditions
-          </Button>
-          
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-              <Ship className="w-5 h-5" />
-              Select Your Role
-            </h4>
-            <p className="text-sm text-blue-700 mb-3">
-              Please indicate your primary role in trade operations:
-            </p>
-            <RadioGroup 
-              value={selectedRole || ''} 
-              onValueChange={(value) => setSelectedRole(value as FinaBridgeRole)}
-              className="space-y-2"
-            >
-              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
-                <RadioGroupItem value="importer" id="role-importer" data-testid="radio-role-importer" />
-                <Label htmlFor="role-importer" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium text-gray-900">Importer</span>
+          {/* Right Panel - Role Selection & Accept */}
+          <div className="w-full md:w-[380px] flex-shrink-0 overflow-y-auto p-4 bg-gray-50 flex flex-col">
+            <div className="space-y-4 flex-1">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <Ship className="w-5 h-5" />
+                  Select Your Role
+                </h4>
+                <p className="text-xs text-blue-700 mb-3">
+                  Indicate your primary role in trade operations:
+                </p>
+                <RadioGroup 
+                  value={selectedRole || ''} 
+                  onValueChange={(value) => setSelectedRole(value as FinaBridgeRole)}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
+                    <RadioGroupItem value="importer" id="role-importer" data-testid="radio-role-importer" />
+                    <Label htmlFor="role-importer" className="flex-1 cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-blue-600" />
+                        <span className="font-medium text-gray-900">Importer</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">Buy goods and pay suppliers</p>
+                    </Label>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">I buy goods/commodities and need to pay suppliers</p>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
-                <RadioGroupItem value="exporter" id="role-exporter" data-testid="radio-role-exporter" />
-                <Label htmlFor="role-exporter" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <Ship className="w-4 h-4 text-green-600" />
-                    <span className="font-medium text-gray-900">Exporter</span>
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
+                    <RadioGroupItem value="exporter" id="role-exporter" data-testid="radio-role-exporter" />
+                    <Label htmlFor="role-exporter" className="flex-1 cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <Ship className="w-4 h-4 text-green-600" />
+                        <span className="font-medium text-gray-900">Exporter</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">Sell goods and receive payments</p>
+                    </Label>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">I sell goods/commodities and receive payments</p>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
-                <RadioGroupItem value="both" id="role-both" data-testid="radio-role-both" />
-                <Label htmlFor="role-both" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <ArrowLeftRight className="w-4 h-4 text-purple-600" />
-                    <span className="font-medium text-gray-900">Both</span>
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
+                    <RadioGroupItem value="both" id="role-both" data-testid="radio-role-both" />
+                    <Label htmlFor="role-both" className="flex-1 cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                        <span className="font-medium text-gray-900">Both</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">Operate as importer and exporter</p>
+                    </Label>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">I operate as both importer and exporter</p>
-                </Label>
+                </RadioGroup>
               </div>
-            </RadioGroup>
+            </div>
+            
+            {/* Bottom section - Checkbox and Button */}
+            <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                <Checkbox 
+                  id="accept-terms" 
+                  checked={accepted} 
+                  onCheckedChange={(checked) => setAccepted(checked === true)}
+                  className="mt-0.5"
+                  data-testid="checkbox-accept-disclaimer"
+                />
+                <label htmlFor="accept-terms" className="text-xs text-gray-700 cursor-pointer leading-relaxed">
+                  I have read and understood the disclaimer and Terms & Conditions. I confirm compliance with all applicable sanctions and legal requirements.
+                </label>
+              </div>
+              
+              <Button 
+                onClick={handleAccept}
+                disabled={!accepted || !selectedRole}
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold disabled:opacity-50"
+                data-testid="button-accept-disclaimer"
+              >
+                <Scale className="w-4 h-4 mr-2" />
+                Accept & Continue
+              </Button>
+            </div>
           </div>
-          
-          <div className="flex items-start gap-3">
-            <Checkbox 
-              id="accept-terms" 
-              checked={accepted} 
-              onCheckedChange={(checked) => setAccepted(checked === true)}
-              className="mt-1"
-              data-testid="checkbox-accept-disclaimer"
-            />
-            <label htmlFor="accept-terms" className="text-sm text-gray-700 cursor-pointer">
-              I have read and understood the above disclaimer and the full Terms & Conditions. I confirm that I will comply with all applicable sanctions, trade restrictions, and legal requirements when using FinaBridge.
-            </label>
-          </div>
-          
-          <Button 
-            onClick={handleAccept}
-            disabled={!accepted || !selectedRole}
-            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold disabled:opacity-50"
-            data-testid="button-accept-disclaimer"
-          >
-            <Scale className="w-4 h-4 mr-2" />
-            Accept & Continue to FinaBridge
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
