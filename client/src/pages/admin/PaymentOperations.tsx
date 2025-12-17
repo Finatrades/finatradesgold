@@ -204,7 +204,7 @@ export default function FinaPayManagement() {
   const fetchData = async () => {
     setIsLoading(true);
     const adminHeaders = { 
-      'X-Admin-User-Id': user?.id || '' 
+      'X-Admin-User-Id': currentUser?.id || '' 
     };
     try {
       const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes] = await Promise.all([
