@@ -76,6 +76,7 @@ import AuditLogs from "@/pages/admin/AuditLogs";
 import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
+import QADepositTest from "@/pages/QADepositTest";
 
 function Router() {
   return (
@@ -140,6 +141,9 @@ function Router() {
       <Route path="/admin/referrals" component={ReferralManagement} />
       <Route path="/admin/audit-logs" component={AuditLogs} />
       <Route path="/admin/compliance" component={ComplianceDashboard} />
+      
+      {/* QA Routes */}
+      <Route path="/qa/deposit-test" component={QADepositTest} />
 
       <Route component={NotFound} />
     </Switch>

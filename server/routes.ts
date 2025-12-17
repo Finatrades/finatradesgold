@@ -12361,5 +12361,337 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // QA DEPOSIT TEST RUNNER
+  // ============================================
+
+  const QA_MODE = process.env.QA_MODE === 'true' || process.env.NODE_ENV === 'development';
+
+  // QA Deposit Run API
+  app.post("/api/qa/deposit/run", ensureAdminAsync, async (req, res) => {
+    const requestId = `qa-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const logs: any[] = [];
+    
+    const log = (event: string, details: any = {}) => {
+      const entry = {
+        ts: new Date().toISOString(),
+        level: 'info',
+        requestId,
+        event,
+        ...details
+      };
+      logs.push(entry);
+      console.log(`[QA] ${JSON.stringify(entry)}`);
+    };
+
+    try {
+      const { email, method, amountUsd, approve } = req.body;
+      
+      log('QA_RUN_START', { email, method, amountUsd, approve });
+
+      // Validate inputs
+      if (!email || !method || !amountUsd) {
+        log('VALIDATION_FAIL', { reason: 'missing_fields' });
+        return res.status(400).json({ 
+          code: 'INVALID_INPUT', 
+          message: 'Email, method, and amount are required',
+          requestId,
+          logs 
+        });
+      }
+
+      // Get user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        log('VALIDATION_FAIL', { reason: 'user_not_found', email });
+        return res.status(404).json({ 
+          code: 'USER_NOT_FOUND', 
+          message: `User not found: ${email}`,
+          requestId,
+          logs 
+        });
+      }
+
+      // Get platform config for limits
+      const configRows = await db.select().from(require('@shared/schema').platformConfig);
+      const config: Record<string, number> = {};
+      configRows.forEach((row: any) => {
+        config[row.configKey] = parseFloat(row.configValue) || 0;
+      });
+
+      const minDeposit = config['min_deposit'] || 50;
+      const maxDeposit = config['max_deposit_single'] || 100000;
+      const amount = parseFloat(amountUsd);
+
+      log('CONFIG_LOADED', { minDeposit, maxDeposit, amount });
+
+      // Validate limits
+      if (amount < minDeposit) {
+        log('VALIDATION_FAIL', { reason: 'below_minimum', amount, minDeposit });
+        return res.status(400).json({ 
+          code: 'LIMIT_MIN', 
+          message: `Minimum deposit amount is $${minDeposit}`,
+          meta: { min: minDeposit },
+          requestId,
+          logs 
+        });
+      }
+
+      if (amount > maxDeposit) {
+        log('VALIDATION_FAIL', { reason: 'above_maximum', amount, maxDeposit });
+        return res.status(400).json({ 
+          code: 'LIMIT_MAX', 
+          message: `Maximum deposit amount is $${maxDeposit.toLocaleString()}`,
+          meta: { max: maxDeposit },
+          requestId,
+          logs 
+        });
+      }
+
+      log('VALIDATION_PASS', { amount, method });
+
+      // If not approved, just log and return
+      if (!approve) {
+        log('APPROVAL_DECLINED', { email, amount, method });
+        return res.json({
+          status: 'DECLINED',
+          message: 'Deposit was not approved',
+          requestId,
+          logs
+        });
+      }
+
+      log('APPROVAL_ACCEPTED', { email, amount, method });
+
+      // Get gold price
+      const goldPrice = await getGoldPricePerGram();
+      const goldGrams = amount / goldPrice;
+      
+      log('GOLD_PRICE_FETCHED', { goldPrice, goldGrams: goldGrams.toFixed(6) });
+
+      // Create transaction
+      const transaction = await storage.createTransaction({
+        userId: user.id,
+        type: 'Deposit',
+        amount: amount.toFixed(2),
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceAtTime: goldPrice.toFixed(2),
+        status: 'Pending',
+        description: `QA ${method.toUpperCase()} deposit - $${amount.toFixed(2)} (${goldGrams.toFixed(4)}g gold)`,
+        paymentMethod: method.toLowerCase(),
+        reference: `QA-${requestId}`,
+      });
+
+      log('TX_CREATED', { transactionId: transaction.id, status: 'Pending' });
+
+      // In QA mode, auto-confirm after 2 seconds
+      if (QA_MODE) {
+        log('QA_MODE_AUTO_CONFIRM', { delayMs: 2000 });
+        
+        // Immediately update status
+        await storage.updateTransaction(transaction.id, { status: 'Completed' });
+        
+        // Update wallet balance
+        const wallet = await storage.getWalletByUserId(user.id);
+        if (wallet) {
+          const newGoldBalance = (parseFloat(wallet.goldGrams) + goldGrams).toFixed(6);
+          await storage.updateWallet(wallet.id, { goldGrams: newGoldBalance });
+          log('WALLET_UPDATED', { walletId: wallet.id, newGoldBalance });
+        }
+
+        // Create vault holding
+        const vaultHolding = await storage.createVaultHolding({
+          userId: user.id,
+          transactionId: transaction.id,
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceAtPurchase: goldPrice.toFixed(2),
+          purchaseValue: amount.toFixed(2),
+          purity: '99.99%',
+          status: 'Active',
+          allocationType: 'Allocated',
+          storageLocation: 'FinaVault Dubai',
+          vaultOperator: 'FinaVault',
+          vaultFacilitator: 'Wingold & Metals DMCC',
+        });
+
+        log('VAULT_HOLDING_CREATED', { holdingId: vaultHolding.id });
+
+        // Generate certificates
+        const certData = {
+          userId: user.id,
+          transactionId: transaction.id,
+          vaultHoldingId: vaultHolding.id,
+          fullName: `${user.firstName} ${user.lastName}`,
+          goldGrams: goldGrams.toFixed(6),
+          amountUsd: amount.toFixed(2),
+          purity: '99.99%',
+          isQaMode: true,
+        };
+
+        // Create ownership certificate
+        const ownershipCert = await db.insert(certificates).values({
+          id: `cert-own-${Date.now()}`,
+          transactionId: transaction.id,
+          vaultHoldingId: vaultHolding.id,
+          certificateType: 'ownership',
+          certificateNumber: `OWN-QA-${Date.now()}`,
+          issuer: 'Finatrades',
+          issuedAt: new Date(),
+          goldGrams: goldGrams.toFixed(6),
+          purity: '99.99%',
+          storageLocation: 'FinaVault Dubai',
+          holderName: certData.fullName,
+          status: 'Active',
+          metadata: JSON.stringify({ qaMode: true, method, requestId }),
+        }).returning();
+
+        // Create storage certificate
+        const storageCert = await db.insert(certificates).values({
+          id: `cert-stor-${Date.now()}`,
+          transactionId: transaction.id,
+          vaultHoldingId: vaultHolding.id,
+          certificateType: 'storage',
+          certificateNumber: `STOR-QA-${Date.now()}`,
+          issuer: 'Wingold & Metals DMCC',
+          issuedAt: new Date(),
+          goldGrams: goldGrams.toFixed(6),
+          purity: '99.99%',
+          storageLocation: 'FinaVault Dubai',
+          holderName: certData.fullName,
+          status: 'Active',
+          metadata: JSON.stringify({ qaMode: true, method, requestId }),
+        }).returning();
+
+        // Create invoice certificate
+        const invoiceCert = await db.insert(certificates).values({
+          id: `cert-inv-${Date.now()}`,
+          transactionId: transaction.id,
+          vaultHoldingId: vaultHolding.id,
+          certificateType: 'invoice',
+          certificateNumber: `INV-QA-${Date.now()}`,
+          issuer: 'Wingold & Metals DMCC',
+          issuedAt: new Date(),
+          goldGrams: goldGrams.toFixed(6),
+          purity: '99.99%',
+          storageLocation: 'FinaVault Dubai',
+          holderName: certData.fullName,
+          status: 'Active',
+          metadata: JSON.stringify({ 
+            qaMode: true, 
+            method, 
+            requestId,
+            amountUsd: amount.toFixed(2),
+            goldPricePerGram: goldPrice.toFixed(2),
+          }),
+        }).returning();
+
+        log('CERTS_GENERATED', { 
+          ownershipCertId: ownershipCert[0]?.id,
+          storageCertId: storageCert[0]?.id,
+          invoiceCertId: invoiceCert[0]?.id
+        });
+
+        // Queue email notification
+        try {
+          await sendEmail({
+            to: email,
+            subject: `Deposit Confirmed — $${amount.toFixed(2)} via ${method.toUpperCase()}`,
+            template: 'transaction_notification',
+            templateData: {
+              firstName: user.firstName,
+              transactionType: 'Deposit',
+              amount: `$${amount.toFixed(2)}`,
+              goldGrams: `${goldGrams.toFixed(4)}g`,
+              method: method.toUpperCase(),
+              transactionId: transaction.id,
+              status: 'Completed',
+              qaMode: true,
+            }
+          });
+          log('EMAIL_SENT', { to: email });
+        } catch (emailError) {
+          log('EMAIL_QUEUED', { to: email, error: 'SMTP not configured - email saved to logs' });
+        }
+
+        // Emit real-time update
+        emitLedgerEvent(user.id, 'balance_update', {
+          transactionId: transaction.id,
+          type: 'deposit',
+          amount,
+          goldGrams,
+          status: 'Completed',
+        });
+
+        log('STATUS_CONFIRMED', { transactionId: transaction.id });
+
+        // Get updated wallet balance
+        const updatedWallet = await storage.getWalletByUserId(user.id);
+
+        return res.json({
+          status: 'CONFIRMED',
+          requestId,
+          transactionId: transaction.id,
+          vaultHoldingId: vaultHolding.id,
+          certificates: {
+            ownership: ownershipCert[0]?.id,
+            storage: storageCert[0]?.id,
+            invoice: invoiceCert[0]?.id,
+          },
+          balances: {
+            goldGrams: updatedWallet?.goldGrams || '0',
+            usdBalance: updatedWallet?.usdBalance || '0',
+          },
+          goldReceived: goldGrams.toFixed(6),
+          goldPrice: goldPrice.toFixed(2),
+          method,
+          email,
+          logs
+        });
+      }
+
+      // Non-QA mode - keep as pending
+      log('STATUS_PENDING', { transactionId: transaction.id });
+      return res.json({
+        status: 'PENDING',
+        requestId,
+        transactionId: transaction.id,
+        message: 'Deposit pending provider confirmation',
+        logs
+      });
+
+    } catch (error) {
+      log('ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('[QA] Deposit run error:', error);
+      res.status(500).json({ 
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to process QA deposit',
+        requestId,
+        logs 
+      });
+    }
+  });
+
+  // Get QA config (limits)
+  app.get("/api/qa/config", ensureAdminAsync, async (req, res) => {
+    try {
+      const configRows = await db.select().from(require('@shared/schema').platformConfig);
+      const config: Record<string, any> = {};
+      configRows.forEach((row: any) => {
+        config[row.configKey] = row.configValue;
+      });
+
+      res.json({
+        qaMode: QA_MODE,
+        limits: {
+          minDeposit: parseFloat(config['min_deposit'] || '50'),
+          maxDeposit: parseFloat(config['max_deposit_single'] || '100000'),
+          minTradeAmount: parseFloat(config['min_trade_amount'] || '10'),
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to get QA config' });
+    }
+  });
+
   return httpServer;
 }
