@@ -7,7 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2, TrendingUp } from 'lucide-react';
+import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2, TrendingUp, Copy, Check, Edit } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
@@ -24,6 +25,29 @@ interface BankAccount {
   currency: string;
   isActive: boolean;
 }
+
+interface CryptoWalletConfig {
+  id: string;
+  network: string;
+  networkLabel: string;
+  walletAddress: string;
+  memo?: string | null;
+  instructions?: string | null;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+const CRYPTO_NETWORKS = [
+  { value: 'Bitcoin', label: 'Bitcoin (BTC)' },
+  { value: 'Ethereum', label: 'Ethereum (ETH)' },
+  { value: 'USDT_TRC20', label: 'USDT (TRC20)' },
+  { value: 'USDT_ERC20', label: 'USDT (ERC20)' },
+  { value: 'USDC', label: 'USDC' },
+  { value: 'BNB', label: 'BNB (BSC)' },
+  { value: 'Solana', label: 'Solana (SOL)' },
+  { value: 'Polygon', label: 'Polygon (MATIC)' },
+  { value: 'Other', label: 'Other' },
+];
 
 const SUPPORTED_CURRENCIES = [
   { code: 'USD', name: 'US Dollar' },
@@ -109,9 +133,27 @@ export default function PaymentGatewayManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  
+  // Crypto wallet state
+  const [cryptoWallets, setCryptoWallets] = useState<CryptoWalletConfig[]>([]);
+  const [loadingWallets, setLoadingWallets] = useState(true);
+  const [showWalletDialog, setShowWalletDialog] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<CryptoWalletConfig | null>(null);
+  const [walletForm, setWalletForm] = useState({
+    network: 'Bitcoin',
+    networkLabel: 'Bitcoin (BTC)',
+    walletAddress: '',
+    memo: '',
+    instructions: '',
+    isActive: true,
+    displayOrder: 0,
+  });
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const [manualCryptoEnabled, setManualCryptoEnabled] = useState(false);
 
   useEffect(() => {
     fetchSettings();
+    fetchCryptoWallets();
   }, []);
 
   const fetchSettings = async () => {
@@ -212,6 +254,99 @@ export default function PaymentGatewayManagement() {
     }));
   };
 
+  // Crypto wallet functions
+  const fetchCryptoWallets = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/admin/crypto-wallets');
+      const data = await response.json();
+      setCryptoWallets(data.wallets || []);
+      setManualCryptoEnabled(data.wallets?.some((w: CryptoWalletConfig) => w.isActive) || false);
+    } catch (error) {
+      console.error('Failed to fetch crypto wallets:', error);
+    } finally {
+      setLoadingWallets(false);
+    }
+  };
+
+  const handleAddWallet = () => {
+    setEditingWallet(null);
+    setWalletForm({
+      network: 'Bitcoin',
+      networkLabel: 'Bitcoin (BTC)',
+      walletAddress: '',
+      memo: '',
+      instructions: '',
+      isActive: true,
+      displayOrder: cryptoWallets.length,
+    });
+    setShowWalletDialog(true);
+  };
+
+  const handleEditWallet = (wallet: CryptoWalletConfig) => {
+    setEditingWallet(wallet);
+    setWalletForm({
+      network: wallet.network,
+      networkLabel: wallet.networkLabel,
+      walletAddress: wallet.walletAddress,
+      memo: wallet.memo || '',
+      instructions: wallet.instructions || '',
+      isActive: wallet.isActive,
+      displayOrder: wallet.displayOrder,
+    });
+    setShowWalletDialog(true);
+  };
+
+  const handleSaveWallet = async () => {
+    if (!walletForm.walletAddress.trim()) {
+      toast.error('Wallet address is required');
+      return;
+    }
+    
+    try {
+      const url = editingWallet 
+        ? `/api/admin/crypto-wallets/${editingWallet.id}`
+        : '/api/admin/crypto-wallets';
+      const method = editingWallet ? 'PATCH' : 'POST';
+      
+      await apiRequest(method, url, walletForm);
+      toast.success(editingWallet ? 'Wallet updated' : 'Wallet added');
+      setShowWalletDialog(false);
+      fetchCryptoWallets();
+    } catch (error) {
+      toast.error('Failed to save wallet');
+    }
+  };
+
+  const handleDeleteWallet = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this wallet?')) return;
+    
+    try {
+      await apiRequest('DELETE', `/api/admin/crypto-wallets/${id}`);
+      toast.success('Wallet deleted');
+      fetchCryptoWallets();
+    } catch (error) {
+      toast.error('Failed to delete wallet');
+    }
+  };
+
+  const handleToggleWalletActive = async (wallet: CryptoWalletConfig) => {
+    try {
+      await apiRequest('PATCH', `/api/admin/crypto-wallets/${wallet.id}`, {
+        isActive: !wallet.isActive
+      });
+      fetchCryptoWallets();
+    } catch (error) {
+      toast.error('Failed to update wallet');
+    }
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedAddress(id);
+    setTimeout(() => setCopiedAddress(null), 2000);
+    toast.success('Address copied');
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -264,12 +399,12 @@ export default function PaymentGatewayManagement() {
             </p>
           </CardContent>
         </Card>
-        <Card className={settings.binancePayEnabled ? 'border-yellow-500' : ''}>
+        <Card className={manualCryptoEnabled ? 'border-orange-500' : ''}>
           <CardContent className="pt-6 text-center">
-            <Bitcoin className={`w-8 h-8 mx-auto mb-2 ${settings.binancePayEnabled ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-            <p className="font-semibold">Binance Pay</p>
-            <p className={`text-sm ${settings.binancePayEnabled ? 'text-yellow-500' : 'text-muted-foreground'}`}>
-              {settings.binancePayEnabled ? 'Enabled' : 'Disabled'}
+            <Bitcoin className={`w-8 h-8 mx-auto mb-2 ${manualCryptoEnabled ? 'text-orange-500' : 'text-muted-foreground'}`} />
+            <p className="font-semibold">Manual Crypto</p>
+            <p className={`text-sm ${manualCryptoEnabled ? 'text-orange-500' : 'text-muted-foreground'}`}>
+              {cryptoWallets.filter(w => w.isActive).length} wallet(s)
             </p>
           </CardContent>
         </Card>
@@ -677,26 +812,88 @@ export default function PaymentGatewayManagement() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Crypto Payment Configuration</CardTitle>
-                  <CardDescription>Accept cryptocurrency payments via Binance Pay</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bitcoin className="w-5 h-5 text-orange-500" /> Manual Crypto Payments
+                  </CardTitle>
+                  <CardDescription>Configure wallet addresses for receiving cryptocurrency payments</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Label>Enable Binance Pay</Label>
-                  <Switch
-                    checked={settings.binancePayEnabled}
-                    onCheckedChange={(checked) => setSettings(prev => ({ ...prev, binancePayEnabled: checked }))}
-                    data-testid="switch-binance-enabled"
-                  />
-                </div>
+                <Button onClick={handleAddWallet} data-testid="button-add-crypto-wallet">
+                  <Plus className="w-4 h-4 mr-2" /> Add Wallet
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <p className="text-sm text-amber-800">
-                  Binance Pay credentials are configured via environment variables (BINANCE_PAY_API_KEY, BINANCE_PAY_SECRET_KEY, BINANCE_PAY_MERCHANT_ID). 
-                  Toggle the switch above to enable/disable this payment method.
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-orange-800">
+                  Users will see these wallet addresses when choosing crypto payment. After sending crypto, users submit their transaction hash for admin verification in Payment Operations.
                 </p>
               </div>
+              
+              {loadingWallets ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+                </div>
+              ) : cryptoWallets.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                  <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-500 mb-3">No crypto wallets configured</p>
+                  <Button onClick={handleAddWallet} variant="outline">
+                    <Plus className="w-4 h-4 mr-2" /> Add Your First Wallet
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cryptoWallets.map((wallet) => (
+                    <div 
+                      key={wallet.id} 
+                      className={`space-y-3 border rounded-lg p-4 ${wallet.isActive ? 'border-gray-200' : 'border-red-200 bg-red-50/50'}`}
+                      data-testid={`crypto-wallet-${wallet.id}`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2">
+                          <Bitcoin className="w-5 h-5 text-orange-500" />
+                          <h4 className="font-medium text-gray-900">{wallet.networkLabel}</h4>
+                          {!wallet.isActive && (
+                            <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full">Disabled</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch 
+                            checked={wallet.isActive}
+                            onCheckedChange={() => handleToggleWalletActive(wallet)}
+                          />
+                          <Button variant="ghost" size="sm" onClick={() => handleEditWallet(wallet)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteWallet(wallet.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
+                        <code className="text-sm font-mono flex-1 break-all text-gray-700">{wallet.walletAddress}</code>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => copyToClipboard(wallet.walletAddress, wallet.id)}
+                        >
+                          {copiedAddress === wallet.id ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                      {wallet.memo && (
+                        <p className="text-sm text-gray-500"><strong>Memo/Tag:</strong> {wallet.memo}</p>
+                      )}
+                      {wallet.instructions && (
+                        <p className="text-sm text-gray-500">{wallet.instructions}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -915,6 +1112,84 @@ export default function PaymentGatewayManagement() {
         </CardContent>
       </Card>
       </div>
+
+      {/* Crypto Wallet Add/Edit Dialog */}
+      <Dialog open={showWalletDialog} onOpenChange={setShowWalletDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingWallet ? 'Edit Crypto Wallet' : 'Add Crypto Wallet'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Network</Label>
+              <Select 
+                value={walletForm.network} 
+                onValueChange={(value) => {
+                  const network = CRYPTO_NETWORKS.find(n => n.value === value);
+                  setWalletForm({
+                    ...walletForm, 
+                    network: value,
+                    networkLabel: network?.label || value
+                  });
+                }}
+              >
+                <SelectTrigger data-testid="select-crypto-network">
+                  <SelectValue placeholder="Select network" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CRYPTO_NETWORKS.map(n => (
+                    <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Wallet Address</Label>
+              <Input 
+                value={walletForm.walletAddress}
+                onChange={(e) => setWalletForm({...walletForm, walletAddress: e.target.value})}
+                placeholder="Enter wallet address"
+                className="font-mono"
+                data-testid="input-wallet-address"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Memo / Tag (Optional)</Label>
+              <Input 
+                value={walletForm.memo}
+                onChange={(e) => setWalletForm({...walletForm, memo: e.target.value})}
+                placeholder="For networks that require memo/tag"
+                data-testid="input-wallet-memo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Instructions (Optional)</Label>
+              <Textarea 
+                value={walletForm.instructions}
+                onChange={(e) => setWalletForm({...walletForm, instructions: e.target.value})}
+                placeholder="Additional instructions for users"
+                data-testid="input-wallet-instructions"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch 
+                checked={walletForm.isActive}
+                onCheckedChange={(checked) => setWalletForm({...walletForm, isActive: checked})}
+                data-testid="switch-wallet-active"
+              />
+              <Label>Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWalletDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveWallet} data-testid="button-save-wallet">
+              {editingWallet ? 'Update Wallet' : 'Add Wallet'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
