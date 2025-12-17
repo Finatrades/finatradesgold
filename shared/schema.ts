@@ -1769,6 +1769,54 @@ export const insertTemplateSchema = createInsertSchema(templates).omit({ id: tru
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 export type Template = typeof templates.$inferSelect;
 
+// ============================================
+// EMAIL NOTIFICATION SETTINGS
+// ============================================
+
+export const emailNotificationSettings = pgTable("email_notification_settings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  notificationType: varchar("notification_type", { length: 100 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }).notNull(), // auth, transactions, kyc, bnsl, trade_finance, system
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  templateSlug: varchar("template_slug", { length: 255 }), // Reference to email template
+  displayOrder: integer("display_order").notNull().default(0),
+  updatedBy: varchar("updated_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertEmailNotificationSettingSchema = createInsertSchema(emailNotificationSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEmailNotificationSetting = z.infer<typeof insertEmailNotificationSettingSchema>;
+export type EmailNotificationSetting = typeof emailNotificationSettings.$inferSelect;
+
+// ============================================
+// EMAIL LOGS (Sent Email History)
+// ============================================
+
+export const emailLogStatusEnum = pgEnum('email_log_status', ['Queued', 'Sending', 'Sent', 'Failed', 'Bounced']);
+
+export const emailLogs = pgTable("email_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  recipientName: varchar("recipient_name", { length: 255 }),
+  notificationType: varchar("notification_type", { length: 100 }).notNull(),
+  templateSlug: varchar("template_slug", { length: 255 }),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  status: emailLogStatusEnum("status").notNull().default('Queued'),
+  messageId: varchar("message_id", { length: 255 }), // SMTP message ID
+  errorMessage: text("error_message"),
+  metadata: json("metadata").$type<Record<string, any>>(), // Additional context like transaction ID, etc.
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, createdAt: true });
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+export type EmailLog = typeof emailLogs.$inferSelect;
+
 // Media Assets - For managing uploaded images
 export const mediaAssets = pgTable("media_assets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
