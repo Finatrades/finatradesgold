@@ -312,11 +312,12 @@ export async function registerRoutes(
       const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
+      // Include both 'Pending' and 'Under Review' statuses as pending
       const pendingDepositUsd = (depositRequests || [])
         .filter((d: any) => d.status === 'Pending')
         .reduce((sum: number, d: any) => sum + parseFloat(d.amountUsd || '0'), 0)
         + (cryptoPayments || [])
-          .filter((c: any) => c.status === 'Pending')
+          .filter((c: any) => c.status === 'Pending' || c.status === 'Under Review')
           .reduce((sum: number, c: any) => sum + parseFloat(c.amountUsd || '0'), 0);
       
       // Convert pending USD to gold grams
