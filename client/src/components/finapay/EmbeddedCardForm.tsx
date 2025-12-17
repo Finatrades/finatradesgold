@@ -246,10 +246,11 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
           <div 
             ref={containerRef}
             id="ngenius-card-input" 
-            className="min-h-[200px] border rounded-lg p-4 bg-background"
+            className="border rounded-lg bg-white overflow-hidden"
+            style={{ minHeight: cardMounted ? 'auto' : '120px' }}
           >
             {!cardMounted && sdkLoaded && (
-              <div className="flex items-center justify-center h-full min-h-[180px]">
+              <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             )}
