@@ -1207,32 +1207,34 @@ function TemplateDialog({
                     className="font-mono text-xs"
                   />
                 ) : (
-                  <div className="border rounded-lg p-3 bg-gray-50 space-y-3">
+                  <div className="border rounded-lg p-3 bg-gray-50 max-h-[200px] overflow-y-auto">
                     <p className="text-xs text-gray-500 mb-2">
                       Edit the text values below. The template design is preserved.
                     </p>
-                    {extractTextContent(body).map((item, index) => (
-                      <div key={index} className="grid gap-1">
-                        <Label className="text-xs text-gray-600">{item.label}</Label>
-                        {item.multiline ? (
-                          <Textarea
-                            value={item.value}
-                            onChange={(e) => updateTextContent(index, e.target.value)}
-                            rows={2}
-                            className="text-sm"
-                          />
-                        ) : (
-                          <Input
-                            value={item.value}
-                            onChange={(e) => updateTextContent(index, e.target.value)}
-                            className="text-sm"
-                          />
-                        )}
-                      </div>
-                    ))}
-                    {extractTextContent(body).length === 0 && (
-                      <p className="text-sm text-gray-400 italic">No editable text found. Use HTML mode to edit.</p>
-                    )}
+                    <div className="space-y-3">
+                      {extractTextContent(body).map((item, index) => (
+                        <div key={index} className="grid gap-1">
+                          <Label className="text-xs text-gray-600">{item.label}</Label>
+                          {item.multiline ? (
+                            <Textarea
+                              value={item.value}
+                              onChange={(e) => updateTextContent(index, e.target.value)}
+                              rows={2}
+                              className="text-sm"
+                            />
+                          ) : (
+                            <Input
+                              value={item.value}
+                              onChange={(e) => updateTextContent(index, e.target.value)}
+                              className="text-sm"
+                            />
+                          )}
+                        </div>
+                      ))}
+                      {extractTextContent(body).length === 0 && (
+                        <p className="text-sm text-gray-400 italic">No editable text found. Use HTML mode to edit.</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
