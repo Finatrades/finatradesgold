@@ -59,7 +59,244 @@ export default function VaultActivityList() {
   const [certTab, setCertTab] = useState('ownership');
 
   const handlePrint = () => {
-    window.print();
+    const printContent = document.getElementById('certificate-print-area');
+    if (!printContent) return;
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print the certificate');
+      return;
+    }
+    
+    const isOwnership = certTab === 'ownership';
+    const bgColor = isOwnership ? '#0D0515' : '#ffffff';
+    const textColor = isOwnership ? '#ffffff' : '#000000';
+    const accentColor = isOwnership ? '#D4AF37' : '#000000';
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Certificate - Finatrades</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;700&display=swap');
+            
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            
+            @page {
+              size: A4 portrait;
+              margin: 0.5in;
+            }
+            
+            body {
+              font-family: 'Inter', sans-serif;
+              background: ${bgColor};
+              color: ${textColor};
+              padding: 40px;
+              min-height: 100vh;
+            }
+            
+            .certificate-container {
+              max-width: 700px;
+              margin: 0 auto;
+              border: ${isOwnership ? '8px double rgba(212, 175, 55, 0.3)' : '1px solid rgba(0,0,0,0.2)'};
+              padding: 48px;
+              position: relative;
+            }
+            
+            .header {
+              text-align: center;
+              margin-bottom: 48px;
+            }
+            
+            .icon-circle {
+              width: 64px;
+              height: 64px;
+              border-radius: 50%;
+              background: ${isOwnership ? 'rgba(212, 175, 55, 0.1)' : '#000'};
+              border: 1px solid ${accentColor};
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 16px;
+              color: ${isOwnership ? '#D4AF37' : '#fff'};
+              font-size: 24px;
+            }
+            
+            .title {
+              font-family: 'Playfair Display', serif;
+              font-size: 36px;
+              color: ${accentColor};
+              text-transform: uppercase;
+              letter-spacing: 4px;
+              margin-bottom: 8px;
+            }
+            
+            .subtitle {
+              font-size: 16px;
+              color: ${isOwnership ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)'};
+              text-transform: uppercase;
+              letter-spacing: 3px;
+            }
+            
+            .cert-id {
+              font-family: monospace;
+              font-size: 12px;
+              color: ${isOwnership ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)'};
+              margin-top: 8px;
+            }
+            
+            .description {
+              font-size: 14px;
+              line-height: 1.8;
+              text-align: center;
+              margin-bottom: 32px;
+              color: ${isOwnership ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)'};
+            }
+            
+            .details-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 24px;
+              border-top: 1px solid ${isOwnership ? 'rgba(212, 175, 55, 0.2)' : 'rgba(0,0,0,0.2)'};
+              border-bottom: 1px solid ${isOwnership ? 'rgba(212, 175, 55, 0.2)' : 'rgba(0,0,0,0.2)'};
+              padding: 24px 0;
+              margin-bottom: 32px;
+            }
+            
+            .detail-item {
+              text-align: center;
+            }
+            
+            .detail-label {
+              font-size: 10px;
+              color: ${accentColor};
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin-bottom: 4px;
+            }
+            
+            .detail-value {
+              font-size: 18px;
+              font-weight: bold;
+            }
+            
+            .footer {
+              display: flex;
+              justify-content: space-between;
+              margin-top: 48px;
+              padding-top: 24px;
+            }
+            
+            .footer-item {
+              text-align: center;
+            }
+            
+            .footer-label {
+              font-size: 10px;
+              color: ${accentColor};
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            
+            .footer-value {
+              font-weight: 500;
+              margin-bottom: 8px;
+            }
+            
+            .divider {
+              width: 150px;
+              height: 1px;
+              background: ${isOwnership ? 'rgba(212, 175, 55, 0.4)' : 'rgba(0,0,0,0.4)'};
+              margin: 8px auto;
+            }
+            
+            .disclaimer {
+              font-size: 9px;
+              color: ${isOwnership ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)'};
+              text-align: justify;
+              margin-top: 32px;
+              line-height: 1.6;
+            }
+            
+            /* Storage certificate specific */
+            .storage-header {
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 2px solid #000;
+              padding-bottom: 24px;
+              margin-bottom: 24px;
+            }
+            
+            .storage-logo {
+              display: flex;
+              align-items: center;
+              gap: 16px;
+            }
+            
+            .storage-icon {
+              width: 64px;
+              height: 64px;
+              background: #000;
+              color: #fff;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 24px;
+            }
+            
+            .storage-title {
+              font-size: 20px;
+              font-weight: bold;
+              text-transform: uppercase;
+            }
+            
+            .storage-subtitle {
+              font-size: 11px;
+              color: rgba(0,0,0,0.6);
+              text-transform: uppercase;
+              letter-spacing: 2px;
+            }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 24px 0;
+            }
+            
+            th {
+              background: #000;
+              color: #fff;
+              padding: 12px;
+              text-align: left;
+              font-size: 11px;
+              text-transform: uppercase;
+            }
+            
+            td {
+              padding: 12px;
+              border: 1px solid #000;
+            }
+            
+            .total-row {
+              background: rgba(0,0,0,0.05);
+              font-weight: bold;
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const handleShare = async (certs: typeof viewingCerts) => {
@@ -433,10 +670,10 @@ export default function VaultActivityList() {
               const issueDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
               return (
-                <>
+                <div id="certificate-print-area">
                   {/* DIGITAL OWNERSHIP CERTIFICATE */}
                   {certTab === 'ownership' && (
-                    <div className="relative p-8 md:p-12 border-8 border-double border-[#D4AF37]/30 m-2 bg-[#0D0515] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                    <div className="certificate-container relative p-8 md:p-12 border-8 border-double border-[#D4AF37]/30 m-2 bg-[#0D0515] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                       
                       {/* Watermark Background */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
@@ -510,7 +747,7 @@ export default function VaultActivityList() {
 
                   {/* STORAGE CERTIFICATE (WinGold Style) */}
                   {certTab === 'storage' && (
-                    <div className="relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-white text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                    <div className="certificate-container relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-white text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                       
                       {/* Watermark Background */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none select-none">
@@ -600,7 +837,7 @@ export default function VaultActivityList() {
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               );
             })()}
           </div>
