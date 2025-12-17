@@ -1,9 +1,57 @@
 import nodemailer from 'nodemailer';
 import { db } from './db';
-import { templates } from '@shared/schema';
+import { templates, emailLogs, emailNotificationSettings } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { lookup } from 'dns/promises';
 import net from 'net';
+
+// Email logging helper
+async function logEmail(params: {
+  userId?: string;
+  recipientEmail: string;
+  recipientName?: string;
+  notificationType: string;
+  templateSlug?: string;
+  subject: string;
+  status: 'Queued' | 'Sending' | 'Sent' | 'Failed' | 'Bounced';
+  messageId?: string;
+  errorMessage?: string;
+  metadata?: Record<string, any>;
+  sentAt?: Date;
+}) {
+  try {
+    const [log] = await db.insert(emailLogs).values({
+      userId: params.userId || null,
+      recipientEmail: params.recipientEmail,
+      recipientName: params.recipientName || null,
+      notificationType: params.notificationType,
+      templateSlug: params.templateSlug || null,
+      subject: params.subject,
+      status: params.status,
+      messageId: params.messageId || null,
+      errorMessage: params.errorMessage || null,
+      metadata: params.metadata || null,
+      sentAt: params.sentAt || null,
+    }).returning();
+    return log;
+  } catch (error) {
+    console.error('[Email] Failed to log email:', error);
+    return null;
+  }
+}
+
+// Check if notification type is enabled
+async function isNotificationEnabled(notificationType: string): Promise<boolean> {
+  try {
+    const [setting] = await db.select()
+      .from(emailNotificationSettings)
+      .where(eq(emailNotificationSettings.notificationType, notificationType));
+    return setting?.isEnabled ?? true; // Default to enabled if setting not found
+  } catch (error) {
+    console.error('[Email] Failed to check notification setting:', error);
+    return true; // Default to enabled on error
+  }
+}
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
@@ -131,13 +179,32 @@ export async function getEmailTemplate(slug: string): Promise<{ subject: string;
 export async function sendEmail(
   to: string,
   templateSlug: string,
-  data: EmailData
+  data: EmailData,
+  options?: { userId?: string; recipientName?: string; metadata?: Record<string, any> }
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  // Check if this notification type is enabled
+  const isEnabled = await isNotificationEnabled(templateSlug);
+  if (!isEnabled) {
+    console.log(`[Email] Notification type ${templateSlug} is disabled, skipping email to ${to}`);
+    return { success: true, messageId: 'notification-disabled' };
+  }
+
   try {
     const template = await getEmailTemplate(templateSlug);
     
     if (!template) {
       console.error(`[Email] Template not found: ${templateSlug}`);
+      await logEmail({
+        userId: options?.userId,
+        recipientEmail: to,
+        recipientName: options?.recipientName,
+        notificationType: templateSlug,
+        templateSlug,
+        subject: `Template: ${templateSlug}`,
+        status: 'Failed',
+        errorMessage: `Template not found: ${templateSlug}`,
+        metadata: options?.metadata,
+      });
       return { success: false, error: `Template not found: ${templateSlug}` };
     }
 
@@ -149,6 +216,18 @@ export async function sendEmail(
       console.log(`[Email Preview] Subject: ${subject}`);
       console.log(`[Email Preview] Body: ${htmlBody.substring(0, 200)}...`);
       console.log(`[Email] SMTP not configured - email logged only`);
+      await logEmail({
+        userId: options?.userId,
+        recipientEmail: to,
+        recipientName: options?.recipientName,
+        notificationType: templateSlug,
+        templateSlug,
+        subject,
+        status: 'Sent',
+        messageId: 'preview-mode',
+        sentAt: new Date(),
+        metadata: { ...options?.metadata, previewMode: true },
+      });
       return { success: true, messageId: 'preview-mode' };
     }
 
@@ -160,10 +239,34 @@ export async function sendEmail(
     });
 
     console.log(`[Email] Sent to ${to}: ${info.messageId}`);
+    await logEmail({
+      userId: options?.userId,
+      recipientEmail: to,
+      recipientName: options?.recipientName,
+      notificationType: templateSlug,
+      templateSlug,
+      subject,
+      status: 'Sent',
+      messageId: info.messageId,
+      sentAt: new Date(),
+      metadata: options?.metadata,
+    });
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error(`[Email] Failed to send to ${to}:`, error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await logEmail({
+      userId: options?.userId,
+      recipientEmail: to,
+      recipientName: options?.recipientName,
+      notificationType: templateSlug,
+      templateSlug,
+      subject: templateSlug,
+      status: 'Failed',
+      errorMessage,
+      metadata: options?.metadata,
+    });
+    return { success: false, error: errorMessage };
   }
 }
 
