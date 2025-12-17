@@ -27,18 +27,22 @@ interface KpiBoxProps {
   title: string;
   value: string;
   subtitle: string;
+  secondaryValue?: string;
   icon: React.ReactNode;
   iconBg?: string;
   valueColor?: string;
 }
 
-function KpiBox({ title, value, subtitle, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
+function KpiBox({ title, value, subtitle, secondaryValue, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
   return (
     <Card className="p-4 bg-white border border-orange-200 shadow-sm rounded-lg">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs text-gray-500 mb-2">{title}</p>
           <p className={`text-xl font-bold ${valueColor} mb-1`}>{value}</p>
+          {secondaryValue && (
+            <p className="text-sm font-medium text-gray-600 mb-1">{secondaryValue}</p>
+          )}
           <p className="text-xs text-gray-400">{subtitle}</p>
         </div>
         <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center`}>
@@ -113,6 +117,7 @@ export default function Dashboard() {
                 <KpiBox
                   title="FinaVault Storage"
                   value={formatGrams(totals.vaultGoldGrams)}
+                  secondaryValue={`$${formatNumber(totals.vaultGoldGrams * goldPrice)}`}
                   subtitle="Physical gold in vault"
                   icon={<Database className="w-5 h-5 text-orange-600" />}
                   iconBg="bg-orange-50"
@@ -121,6 +126,7 @@ export default function Dashboard() {
                 <KpiBox
                   title="FinaPay Wallet"
                   value={formatGrams(totals.walletGoldGrams)}
+                  secondaryValue={`$${formatNumber(totals.walletGoldGrams * goldPrice)}`}
                   subtitle="Digital gold balance"
                   icon={<Wallet className="w-5 h-5 text-emerald-600" />}
                   iconBg="bg-emerald-50"
