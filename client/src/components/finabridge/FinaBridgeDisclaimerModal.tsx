@@ -12,10 +12,9 @@ type FinaBridgeRole = 'importer' | 'exporter' | 'both';
 interface FinaBridgeDisclaimerModalProps {
   open: boolean;
   onAccept: (role: FinaBridgeRole) => void;
-  onClose?: () => void;
 }
 
-export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: FinaBridgeDisclaimerModalProps) {
+export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridgeDisclaimerModalProps) {
   const [accepted, setAccepted] = useState(false);
   const [showFullTerms, setShowFullTerms] = useState(false);
   const [selectedRole, setSelectedRole] = useState<FinaBridgeRole | null>(null);
@@ -28,8 +27,8 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
 
   if (showFullTerms) {
     return (
-      <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && onClose) onClose(); }}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-0 flex flex-col">
+      <Dialog open={open} onOpenChange={() => {}}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-0 flex flex-col [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-slate-800 to-slate-700 text-white">
             <div className="flex items-center gap-3">
               <Button 
@@ -178,8 +177,8 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && onClose) onClose(); }}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 flex flex-col">
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 flex flex-col [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">

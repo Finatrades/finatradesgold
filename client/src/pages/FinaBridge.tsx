@@ -595,7 +595,6 @@ export default function FinaBridge() {
       <FinaBridgeDisclaimerModal 
         open={showDisclaimer} 
         onAccept={handleDisclaimerAccept}
-        onClose={() => setShowDisclaimer(false)}
       />
       
       <div className="max-w-6xl mx-auto space-y-8 pb-12">
