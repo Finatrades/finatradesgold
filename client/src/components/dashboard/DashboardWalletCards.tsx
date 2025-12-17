@@ -53,9 +53,9 @@ export default function DashboardWalletCards({
           <div>
             <p className="text-xs text-gray-500 mb-1">Available Balance</p>
             <p className="text-2xl font-bold text-gray-900">
-              {finaPayWallet.goldGrams.toFixed(2)} <span className="text-lg text-gray-500">g</span>
+              ${finaPayWallet.usdValue.toFixed(2)}
             </p>
-            <p className="text-xs text-gray-400">≈ ${finaPayWallet.usdValue.toFixed(2)} USD</p>
+            <p className="text-xs text-amber-600 font-medium">~{finaPayWallet.goldGrams.toFixed(2)}g gold</p>
           </div>
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
@@ -92,9 +92,9 @@ export default function DashboardWalletCards({
             <div>
               <p className="text-xs text-gray-500 mb-1">Available Balance</p>
               <p className="text-2xl font-bold text-gray-900">
-                0.00 <span className="text-lg text-gray-500">g</span>
+                $0.00
               </p>
-              <p className="text-xs text-gray-400">≈ $0.00 USD</p>
+              <p className="text-xs text-amber-600 font-medium">~0.00g gold</p>
             </div>
             
             <div className="flex justify-between pt-3 border-t border-gray-100">
@@ -127,9 +127,9 @@ export default function DashboardWalletCards({
             <div>
               <p className="text-xs text-gray-500 mb-1">Available Balance</p>
               <p className="text-2xl font-bold text-gray-900">
-                0.00 <span className="text-lg text-gray-500">g</span>
+                $0.00
               </p>
-              <p className="text-xs text-gray-400">≈ $0.00 USD</p>
+              <p className="text-xs text-amber-600 font-medium">~0.00g gold</p>
             </div>
             
             <div className="flex justify-between pt-3 border-t border-gray-100">
@@ -166,9 +166,9 @@ export default function DashboardWalletCards({
           <div>
             <p className="text-xs text-gray-500 mb-1">Available Balance</p>
             <p className="text-2xl font-bold text-gray-900">
-              {bnslData.goldGrams.toFixed(2)} <span className="text-lg text-gray-500">g</span>
+              ${bnslData.usdValue.toFixed(2)}
             </p>
-            <p className="text-xs text-gray-400">≈ ${bnslData.usdValue.toFixed(2)} USD</p>
+            <p className="text-xs text-amber-600 font-medium">~{bnslData.goldGrams.toFixed(2)}g gold</p>
           </div>
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
