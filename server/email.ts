@@ -1964,6 +1964,399 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     ],
     status: 'published' as const,
   },
+  // Certificate Templates
+  {
+    slug: 'certificate_digital_ownership',
+    name: 'Digital Ownership Certificate',
+    type: 'certificate' as const,
+    module: 'finavault',
+    subject: 'Digital Ownership Certificate - {{certificate_number}}',
+    body: `
+      <div style="font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #f97316; padding: 40px; background: linear-gradient(135deg, #fffbeb, #fef3c7);">
+        <div style="text-align: center; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="font-size: 14px; color: #92400e; letter-spacing: 2px; margin-bottom: 10px;">FINATRADES</div>
+          <h1 style="color: #92400e; font-size: 32px; margin: 0; letter-spacing: 3px;">DIGITAL OWNERSHIP CERTIFICATE</h1>
+          <p style="color: #78350f; font-size: 14px; margin-top: 10px;">Certificate of Gold Ownership</p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="font-size: 16px; color: #44403c;">This certifies that</p>
+          <p style="font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;">{{owner_name}}</p>
+          <p style="font-size: 16px; color: #44403c;">is the rightful owner of</p>
+          <p style="font-size: 36px; font-weight: bold; color: #f97316; margin: 15px 0;">{{gold_amount}} grams</p>
+          <p style="font-size: 16px; color: #44403c;">of 999.9 Fine Gold</p>
+        </div>
+        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #78350f;">Certificate Number:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #78350f;">Issue Date:</td><td style="text-align: right;">{{issue_date}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #78350f;">Value (USD):</td><td style="text-align: right;">${'$'}{{usd_value}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #78350f;">Issuer:</td><td style="text-align: right;">{{issuer}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #d97706;">
+          <p style="font-size: 12px; color: #78350f;">This certificate is digitally issued and verified by Finatrades.</p>
+          <p style="font-size: 12px; color: #78350f;">Gold is stored in secure allocated vaults in partnership with LBMA-accredited refiners.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'owner_name', description: 'Certificate owner name' },
+      { name: 'gold_amount', description: 'Gold amount in grams' },
+      { name: 'certificate_number', description: 'Certificate number' },
+      { name: 'issue_date', description: 'Issue date' },
+      { name: 'usd_value', description: 'USD value' },
+      { name: 'issuer', description: 'Certificate issuer' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: 'certificate_physical_storage',
+    name: 'Physical Storage Certificate',
+    type: 'certificate' as const,
+    module: 'finavault',
+    subject: 'Physical Storage Certificate - {{certificate_number}}',
+    body: `
+      <div style="font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #1e40af; padding: 40px; background: linear-gradient(135deg, #eff6ff, #dbeafe);">
+        <div style="text-align: center; border-bottom: 2px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="font-size: 14px; color: #1e3a8a; letter-spacing: 2px; margin-bottom: 10px;">FINATRADES VAULT</div>
+          <h1 style="color: #1e3a8a; font-size: 32px; margin: 0; letter-spacing: 3px;">PHYSICAL STORAGE CERTIFICATE</h1>
+          <p style="color: #1e40af; font-size: 14px; margin-top: 10px;">Certificate of Secure Gold Storage</p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="font-size: 16px; color: #44403c;">This certifies that</p>
+          <p style="font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;">{{owner_name}}</p>
+          <p style="font-size: 16px; color: #44403c;">has the following gold securely stored</p>
+          <p style="font-size: 36px; font-weight: bold; color: #1e40af; margin: 15px 0;">{{gold_amount}} grams</p>
+          <p style="font-size: 16px; color: #44403c;">999.9 Fine Gold Bar</p>
+        </div>
+        <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #1e3a8a;">Certificate Number:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #1e3a8a;">Bar Serial:</td><td style="text-align: right;">{{bar_serial}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #1e3a8a;">Vault Location:</td><td style="text-align: right;">{{vault_location}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #1e3a8a;">Storage Date:</td><td style="text-align: right;">{{storage_date}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #1e3a8a;">Value (USD):</td><td style="text-align: right;">${'$'}{{usd_value}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #3b82f6;">
+          <p style="font-size: 12px; color: #1e3a8a;">Physical gold is stored in LBMA-accredited secure vault facilities.</p>
+          <p style="font-size: 12px; color: #1e3a8a;">Fully insured and audited quarterly.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'owner_name', description: 'Certificate owner name' },
+      { name: 'gold_amount', description: 'Gold amount in grams' },
+      { name: 'certificate_number', description: 'Certificate number' },
+      { name: 'bar_serial', description: 'Gold bar serial number' },
+      { name: 'vault_location', description: 'Vault location' },
+      { name: 'storage_date', description: 'Storage start date' },
+      { name: 'usd_value', description: 'USD value' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: 'certificate_transfer',
+    name: 'Transfer Certificate',
+    type: 'certificate' as const,
+    module: 'finapay',
+    subject: 'Gold Transfer Certificate - {{certificate_number}}',
+    body: `
+      <div style="font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #059669; padding: 40px; background: linear-gradient(135deg, #ecfdf5, #d1fae5);">
+        <div style="text-align: center; border-bottom: 2px solid #059669; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="font-size: 14px; color: #065f46; letter-spacing: 2px; margin-bottom: 10px;">FINATRADES</div>
+          <h1 style="color: #065f46; font-size: 32px; margin: 0; letter-spacing: 3px;">TRANSFER CERTIFICATE</h1>
+          <p style="color: #059669; font-size: 14px; margin-top: 10px;">Certificate of Gold Ownership Transfer</p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="font-size: 16px; color: #44403c;">This certifies the transfer of</p>
+          <p style="font-size: 36px; font-weight: bold; color: #059669; margin: 15px 0;">{{gold_amount}} grams</p>
+          <p style="font-size: 16px; color: #44403c;">of 999.9 Fine Gold</p>
+        </div>
+        <div style="background: #d1fae5; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #065f46;">Certificate Number:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #065f46;">From:</td><td style="text-align: right;">{{from_name}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #065f46;">To:</td><td style="text-align: right; font-weight: bold;">{{to_name}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #065f46;">Transfer Date:</td><td style="text-align: right;">{{transfer_date}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #065f46;">Value (USD):</td><td style="text-align: right;">${'$'}{{usd_value}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #10b981;">
+          <p style="font-size: 12px; color: #065f46;">This transfer is recorded on the Finatrades blockchain-verified ledger.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'gold_amount', description: 'Gold amount transferred' },
+      { name: 'certificate_number', description: 'Certificate number' },
+      { name: 'from_name', description: 'Sender name' },
+      { name: 'to_name', description: 'Recipient name' },
+      { name: 'transfer_date', description: 'Transfer date' },
+      { name: 'usd_value', description: 'USD value' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: 'certificate_bnsl_lock',
+    name: 'BNSL Lock Certificate',
+    type: 'certificate' as const,
+    module: 'bnsl',
+    subject: 'BNSL Lock Certificate - {{certificate_number}}',
+    body: `
+      <div style="font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #7c3aed; padding: 40px; background: linear-gradient(135deg, #faf5ff, #ede9fe);">
+        <div style="text-align: center; border-bottom: 2px solid #7c3aed; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="font-size: 14px; color: #5b21b6; letter-spacing: 2px; margin-bottom: 10px;">FINATRADES BNSL</div>
+          <h1 style="color: #5b21b6; font-size: 32px; margin: 0; letter-spacing: 3px;">PRICE LOCK CERTIFICATE</h1>
+          <p style="color: #7c3aed; font-size: 14px; margin-top: 10px;">Buy Now Sell Later Agreement</p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="font-size: 16px; color: #44403c;">This certifies that</p>
+          <p style="font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;">{{owner_name}}</p>
+          <p style="font-size: 16px; color: #44403c;">has locked the following gold under BNSL agreement</p>
+          <p style="font-size: 36px; font-weight: bold; color: #7c3aed; margin: 15px 0;">{{gold_amount}} grams</p>
+        </div>
+        <div style="background: #ede9fe; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #5b21b6;">Certificate Number:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #5b21b6;">Lock Price (per gram):</td><td style="text-align: right;">${'$'}{{lock_price}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #5b21b6;">Lock Date:</td><td style="text-align: right;">{{lock_date}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #5b21b6;">Maturity Date:</td><td style="text-align: right;">{{maturity_date}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #5b21b6;">Total Value:</td><td style="text-align: right; font-weight: bold;">${'$'}{{total_value}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #8b5cf6;">
+          <p style="font-size: 12px; color: #5b21b6;">Gold is locked at the specified price until the maturity date.</p>
+          <p style="font-size: 12px; color: #5b21b6;">Early exit may incur penalties as per agreement terms.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'owner_name', description: 'Certificate owner name' },
+      { name: 'gold_amount', description: 'Gold amount locked' },
+      { name: 'certificate_number', description: 'Certificate number' },
+      { name: 'lock_price', description: 'Locked price per gram' },
+      { name: 'lock_date', description: 'Lock date' },
+      { name: 'maturity_date', description: 'Maturity date' },
+      { name: 'total_value', description: 'Total locked value' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: 'certificate_trade_lock',
+    name: 'Trade Lock Certificate',
+    type: 'certificate' as const,
+    module: 'finabridge',
+    subject: 'Trade Lock Certificate - {{certificate_number}}',
+    body: `
+      <div style="font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #dc2626; padding: 40px; background: linear-gradient(135deg, #fef2f2, #fee2e2);">
+        <div style="text-align: center; border-bottom: 2px solid #dc2626; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="font-size: 14px; color: #991b1b; letter-spacing: 2px; margin-bottom: 10px;">FINABRIDGE</div>
+          <h1 style="color: #991b1b; font-size: 32px; margin: 0; letter-spacing: 3px;">TRADE LOCK CERTIFICATE</h1>
+          <p style="color: #dc2626; font-size: 14px; margin-top: 10px;">Trade Finance Collateral Lock</p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="font-size: 16px; color: #44403c;">This certifies that</p>
+          <p style="font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;">{{owner_name}}</p>
+          <p style="font-size: 16px; color: #44403c;">has locked the following gold as trade collateral</p>
+          <p style="font-size: 36px; font-weight: bold; color: #dc2626; margin: 15px 0;">{{gold_amount}} grams</p>
+        </div>
+        <div style="background: #fee2e2; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #991b1b;">Certificate Number:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #991b1b;">Trade Case ID:</td><td style="text-align: right;">{{trade_case_id}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #991b1b;">Lock Date:</td><td style="text-align: right;">{{lock_date}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #991b1b;">Collateral Value:</td><td style="text-align: right; font-weight: bold;">${'$'}{{collateral_value}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ef4444;">
+          <p style="font-size: 12px; color: #991b1b;">Gold is locked as collateral for the associated trade finance case.</p>
+          <p style="font-size: 12px; color: #991b1b;">Release subject to successful trade completion.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'owner_name', description: 'Certificate owner name' },
+      { name: 'gold_amount', description: 'Gold amount locked' },
+      { name: 'certificate_number', description: 'Certificate number' },
+      { name: 'trade_case_id', description: 'Trade case ID' },
+      { name: 'lock_date', description: 'Lock date' },
+      { name: 'collateral_value', description: 'Collateral value in USD' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: 'certificate_trade_release',
+    name: 'Trade Release Certificate',
+    type: 'certificate' as const,
+    module: 'finabridge',
+    subject: 'Trade Release Certificate - {{certificate_number}}',
+    body: `
+      <div style="font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #16a34a; padding: 40px; background: linear-gradient(135deg, #f0fdf4, #dcfce7);">
+        <div style="text-align: center; border-bottom: 2px solid #16a34a; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="font-size: 14px; color: #166534; letter-spacing: 2px; margin-bottom: 10px;">FINABRIDGE</div>
+          <h1 style="color: #166534; font-size: 32px; margin: 0; letter-spacing: 3px;">TRADE RELEASE CERTIFICATE</h1>
+          <p style="color: #16a34a; font-size: 14px; margin-top: 10px;">Trade Finance Collateral Release</p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="font-size: 16px; color: #44403c;">This certifies that</p>
+          <p style="font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;">{{owner_name}}</p>
+          <p style="font-size: 16px; color: #44403c;">has successfully released the following gold from trade collateral</p>
+          <p style="font-size: 36px; font-weight: bold; color: #16a34a; margin: 15px 0;">{{gold_amount}} grams</p>
+        </div>
+        <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #166534;">Certificate Number:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #166534;">Trade Case ID:</td><td style="text-align: right;">{{trade_case_id}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #166534;">Release Date:</td><td style="text-align: right;">{{release_date}}</td></tr>
+            <tr><td style="padding: 8px 0; color: #166534;">Released Value:</td><td style="text-align: right; font-weight: bold;">${'$'}{{released_value}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #22c55e;">
+          <p style="font-size: 12px; color: #166534;">Trade completed successfully. Gold collateral has been released.</p>
+          <p style="font-size: 12px; color: #166534;">Funds are now available in your Finatrades wallet.</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'owner_name', description: 'Certificate owner name' },
+      { name: 'gold_amount', description: 'Gold amount released' },
+      { name: 'certificate_number', description: 'Certificate number' },
+      { name: 'trade_case_id', description: 'Trade case ID' },
+      { name: 'release_date', description: 'Release date' },
+      { name: 'released_value', description: 'Released value in USD' },
+    ],
+    status: 'published' as const,
+  },
+  // Invoice Template
+  {
+    slug: 'invoice_gold_purchase',
+    name: 'Gold Purchase Invoice',
+    type: 'invoice' as const,
+    module: 'finapay',
+    subject: 'Invoice #{{invoice_number}} - Gold Purchase',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; background: #ffffff; border: 1px solid #e5e7eb;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px;">
+          <div>
+            <h1 style="color: #f97316; font-size: 28px; margin: 0;">INVOICE</h1>
+            <p style="color: #6b7280; margin: 5px 0;">{{invoice_number}}</p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: bold; color: #1f2937;">Finatrades</div>
+            <p style="color: #6b7280; margin: 5px 0; font-size: 14px;">Gold-Backed Digital Finance</p>
+          </div>
+        </div>
+        <div style="margin-bottom: 30px;">
+          <div style="background: #f9fafb; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0 0 5px 0;"><strong>Bill To:</strong></p>
+            <p style="margin: 0; color: #1f2937;">{{customer_name}}</p>
+            <p style="margin: 0; color: #6b7280;">{{customer_email}}</p>
+          </div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <thead>
+            <tr style="background: #f3f4f6;">
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb;">Description</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">Quantity</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">Price</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">999.9 Fine Gold</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">{{gold_amount}}g</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${'$'}{{price_per_gram}}/g</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${'$'}{{subtotal}}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold;">Fees:</td>
+              <td style="padding: 12px; text-align: right;">${'$'}{{fees}}</td>
+            </tr>
+            <tr style="background: #fef3c7;">
+              <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px;">Total:</td>
+              <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px; color: #f97316;">${'$'}{{total}}</td>
+            </tr>
+          </tfoot>
+        </table>
+        <div style="text-align: center; color: #6b7280; font-size: 12px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p>Thank you for your purchase. | Invoice Date: {{invoice_date}}</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'invoice_number', description: 'Invoice number' },
+      { name: 'customer_name', description: 'Customer name' },
+      { name: 'customer_email', description: 'Customer email' },
+      { name: 'gold_amount', description: 'Gold amount purchased' },
+      { name: 'price_per_gram', description: 'Price per gram' },
+      { name: 'subtotal', description: 'Subtotal amount' },
+      { name: 'fees', description: 'Transaction fees' },
+      { name: 'total', description: 'Total amount' },
+      { name: 'invoice_date', description: 'Invoice date' },
+    ],
+    status: 'published' as const,
+  },
+  // Financial Statement Template
+  {
+    slug: 'monthly_account_statement',
+    name: 'Monthly Account Statement',
+    type: 'financial_report' as const,
+    module: 'finapay',
+    subject: 'Monthly Statement - {{statement_month}} {{statement_year}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; background: #ffffff;">
+        <div style="border-bottom: 2px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
+          <h1 style="color: #1e40af; font-size: 24px; margin: 0;">ACCOUNT STATEMENT</h1>
+          <p style="color: #6b7280; margin: 5px 0;">{{statement_month}} {{statement_year}}</p>
+        </div>
+        <div style="margin-bottom: 30px;">
+          <p><strong>Account Holder:</strong> {{account_holder}}</p>
+          <p><strong>Account ID:</strong> {{account_id}}</p>
+          <p><strong>Statement Period:</strong> {{period_start}} - {{period_end}}</p>
+        </div>
+        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+          <h3 style="color: #1e40af; margin: 0 0 15px 0;">Account Summary</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0;">Opening Balance:</td><td style="text-align: right;">${'$'}{{opening_balance}}</td></tr>
+            <tr><td style="padding: 8px 0;">Total Deposits:</td><td style="text-align: right; color: #16a34a;">+${'$'}{{total_deposits}}</td></tr>
+            <tr><td style="padding: 8px 0;">Total Withdrawals:</td><td style="text-align: right; color: #dc2626;">-${'$'}{{total_withdrawals}}</td></tr>
+            <tr style="font-weight: bold; border-top: 2px solid #1e40af;"><td style="padding: 12px 0;">Closing Balance:</td><td style="text-align: right; font-size: 18px;">${'$'}{{closing_balance}}</td></tr>
+          </table>
+        </div>
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #1e40af;">Gold Holdings</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0;">Gold Balance:</td><td style="text-align: right; font-weight: bold;">{{gold_balance}} grams</td></tr>
+            <tr><td style="padding: 8px 0;">Gold Value (USD):</td><td style="text-align: right;">${'$'}{{gold_value_usd}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; color: #6b7280; font-size: 12px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+          <p>Generated on: {{generated_date}}</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'statement_month', description: 'Statement month' },
+      { name: 'statement_year', description: 'Statement year' },
+      { name: 'account_holder', description: 'Account holder name' },
+      { name: 'account_id', description: 'Account ID' },
+      { name: 'period_start', description: 'Period start date' },
+      { name: 'period_end', description: 'Period end date' },
+      { name: 'opening_balance', description: 'Opening balance' },
+      { name: 'total_deposits', description: 'Total deposits' },
+      { name: 'total_withdrawals', description: 'Total withdrawals' },
+      { name: 'closing_balance', description: 'Closing balance' },
+      { name: 'gold_balance', description: 'Gold balance in grams' },
+      { name: 'gold_value_usd', description: 'Gold value in USD' },
+      { name: 'generated_date', description: 'Statement generation date' },
+    ],
+    status: 'published' as const,
+  },
 ];
 
 // Seed email templates to database
