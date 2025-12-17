@@ -1,7 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, CreditCard, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -22,11 +20,18 @@ declare global {
           style?: any;
           apiKey: string;
           outletRef: string;
-          onSuccess: (data: any) => void;
-          onFail: (error: any) => void;
-          onChangeValidStatus?: (status: any) => void;
+          onSuccess?: () => void;
+          onFail?: (error: any) => void;
+          onChangeValidStatus?: (status: {
+            isCVVValid: boolean;
+            isExpiryValid: boolean;
+            isNameValid: boolean;
+            isPanValid: boolean;
+          }) => void;
         }
       ) => void;
+      generateSessionId: () => Promise<string>;
+      unmountCardInput?: () => void;
     };
   }
 }
@@ -36,22 +41,21 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [cardMounted, setCardMounted] = useState(false);
   const [sdkConfig, setSdkConfig] = useState<{
     apiKey: string;
     outletRef: string;
     sdkUrl: string;
   } | null>(null);
-  const [orderReference, setOrderReference] = useState<string | null>(null);
   const [formValid, setFormValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const mountedRef = useRef(false);
+  const mountAttempted = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch SDK config and create session
   useEffect(() => {
-    const initPayment = async () => {
+    const fetchConfig = async () => {
       try {
-        // Get SDK configuration
         const configRes = await fetch('/api/ngenius/sdk-config');
         const config = await configRes.json();
 
@@ -61,27 +65,13 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
 
         setSdkConfig(config);
 
-        // Create payment session
-        const sessionRes = await fetch('/api/ngenius/create-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user?.id, amount }),
-        });
-
-        const session = await sessionRes.json();
-
-        if (!session.success) {
-          throw new Error(session.message || 'Failed to create payment session');
-        }
-
-        setOrderReference(session.orderReference);
-
-        // Load SDK script
         if (!document.querySelector(`script[src="${config.sdkUrl}"]`)) {
           const script = document.createElement('script');
           script.src = config.sdkUrl;
           script.async = true;
-          script.onload = () => setSdkLoaded(true);
+          script.onload = () => {
+            setSdkLoaded(true);
+          };
           script.onerror = () => setError('Failed to load payment SDK');
           document.body.appendChild(script);
         } else {
@@ -95,84 +85,110 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
       }
     };
 
-    initPayment();
-  }, [user?.id, amount]);
+    fetchConfig();
+  }, []);
 
-  // Mount card input when SDK is loaded
   useEffect(() => {
-    if (!sdkLoaded || !sdkConfig || mountedRef.current) return;
+    if (!sdkLoaded || !sdkConfig || mountAttempted.current || !containerRef.current) return;
 
     const mountCardForm = () => {
       if (!window.NI) {
-        setTimeout(mountCardForm, 100);
+        setTimeout(mountCardForm, 200);
         return;
       }
 
-      mountedRef.current = true;
+      mountAttempted.current = true;
 
-      window.NI.mountCardInput('ngenius-card-input', {
-        apiKey: sdkConfig.apiKey,
-        outletRef: sdkConfig.outletRef,
-        style: {
-          base: {
-            color: '#1f2937',
-            fontSize: '16px',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            '::placeholder': {
-              color: '#9ca3af',
+      try {
+        window.NI.mountCardInput('ngenius-card-input', {
+          apiKey: sdkConfig.apiKey,
+          outletRef: sdkConfig.outletRef,
+          style: {
+            main: {
+              margin: '0',
+              padding: '0',
+            },
+            base: {
+              color: '#1f2937',
+              fontSize: '16px',
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              '::placeholder': {
+                color: '#9ca3af',
+              },
+            },
+            invalid: {
+              color: '#dc2626',
+            },
+            input: {
+              padding: '12px',
+              borderRadius: '8px',
+              borderColor: '#e5e7eb',
+              backgroundColor: '#ffffff',
             },
           },
-          invalid: {
-            color: '#dc2626',
+          onSuccess: () => {
+            setCardMounted(true);
           },
-        },
-        onSuccess: async (data: any) => {
-          setProcessing(true);
-          try {
-            // Complete the payment on backend
-            const res = await fetch('/api/ngenius/complete-session', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId: user?.id,
-                orderReference,
-              }),
-            });
-
-            const result = await res.json();
-
-            if (result.success && result.status === 'completed') {
-              setSuccess(true);
-              setTimeout(() => {
-                onSuccess({
-                  goldGrams: result.goldGrams,
-                  amountUsd: result.amountUsd,
-                });
-              }, 1500);
-            } else {
-              throw new Error(result.message || 'Payment not completed');
+          onFail: (err: any) => {
+            console.error('Card mount failed:', err);
+            if (!cardMounted) {
+              setError('Failed to load card form. Please try again.');
             }
-          } catch (err: any) {
-            setError(err.message);
-            onError(err.message);
-          } finally {
-            setProcessing(false);
-          }
-        },
-        onFail: (err: any) => {
-          const errorMsg = err?.message || 'Payment failed';
-          setError(errorMsg);
-          onError(errorMsg);
-        },
-        onChangeValidStatus: (status: any) => {
-          const isValid = status.isPanValid && status.isExpiryValid && status.isCVVValid;
-          setFormValid(isValid);
-        },
-      });
+          },
+          onChangeValidStatus: (status) => {
+            const isValid = status.isPanValid && status.isExpiryValid && status.isCVVValid;
+            setFormValid(isValid);
+          },
+        });
+      } catch (err: any) {
+        console.error('Mount error:', err);
+      }
     };
 
-    mountCardForm();
-  }, [sdkLoaded, sdkConfig, orderReference, user?.id, onSuccess, onError]);
+    const timer = setTimeout(mountCardForm, 100);
+    return () => clearTimeout(timer);
+  }, [sdkLoaded, sdkConfig, cardMounted]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!formValid || processing || !window.NI) return;
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const sessionId = await window.NI.generateSessionId();
+      
+      const res = await fetch('/api/ngenius/process-hosted-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          sessionId,
+          amount,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          onSuccess({
+            goldGrams: result.goldGrams,
+            amountUsd: result.amountUsd,
+          });
+        }, 1500);
+      } else {
+        throw new Error(result.message || 'Payment failed');
+      }
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Payment failed. Please try again.';
+      setError(errorMsg);
+      onError(errorMsg);
+    } finally {
+      setProcessing(false);
+    }
+  }, [formValid, processing, user?.id, amount, onSuccess, onError]);
 
   if (loading) {
     return (
@@ -183,7 +199,7 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
     );
   }
 
-  if (error && !processing) {
+  if (error && !processing && !cardMounted) {
     return (
       <div className="py-8 text-center space-y-4">
         <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
@@ -227,13 +243,21 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
             <Lock className="w-4 h-4 text-green-600 ml-auto" />
           </div>
           
-          <div id="ngenius-card-input" className="min-h-[200px] border rounded-lg p-4 bg-background">
-            {!sdkLoaded && (
-              <div className="flex items-center justify-center h-full">
+          <div 
+            ref={containerRef}
+            id="ngenius-card-input" 
+            className="min-h-[200px] border rounded-lg p-4 bg-background"
+          >
+            {!cardMounted && sdkLoaded && (
+              <div className="flex items-center justify-center h-full min-h-[180px]">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             )}
           </div>
+
+          {error && cardMounted && (
+            <p className="text-sm text-destructive mt-2">{error}</p>
+          )}
 
           <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
             <Lock className="w-3 h-3" />
@@ -252,10 +276,7 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
           Cancel
         </Button>
         <Button
-          onClick={() => {
-            // The SDK handles form submission via onSuccess callback
-            // This button can trigger form validation if needed
-          }}
+          onClick={handleSubmit}
           disabled={!formValid || processing}
           className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600"
         >

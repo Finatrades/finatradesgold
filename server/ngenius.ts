@@ -320,6 +320,73 @@ export class NgeniusService {
     }
   }
 
+  // Process payment with session ID from frontend SDK
+  async processPaymentWithSessionId(params: {
+    sessionId: string;
+    amount: number;
+    currency: string;
+    orderReference: string;
+  }): Promise<{
+    success: boolean;
+    status: string;
+    orderId?: string;
+    transactionId?: string;
+    message?: string;
+  }> {
+    try {
+      const amountInMinorUnits = Math.round(params.amount * 100);
+
+      // Step 1: Create an order
+      const orderRequest = {
+        action: 'SALE',
+        amount: {
+          currencyCode: params.currency,
+          value: amountInMinorUnits,
+        },
+        merchantOrderReference: params.orderReference,
+      };
+
+      console.log('[NGenius] Creating order for session payment:', orderRequest);
+
+      const order = await this.makeRequest<NgeniusOrderResponse>(
+        'POST',
+        `/transactions/outlets/${this.config.outletRef}/orders`,
+        orderRequest
+      );
+
+      const orderId = order._id;
+      console.log('[NGenius] Order created:', orderId);
+
+      // Step 2: Complete payment with session ID
+      // PUT /transactions/outlets/{outletRef}/orders/{orderId}/payments/session/{sessionId}
+      const paymentResult = await this.makeRequest<any>(
+        'PUT',
+        `/transactions/outlets/${this.config.outletRef}/orders/${orderId}/payments/session/${params.sessionId}`,
+        {}
+      );
+
+      console.log('[NGenius] Payment result:', paymentResult);
+
+      // Check payment status
+      const status = paymentResult.state || paymentResult._embedded?.payment?.[0]?.state;
+      const success = ['CAPTURED', 'AUTHORISED', 'PURCHASED'].includes(status);
+
+      return {
+        success,
+        status: status || 'UNKNOWN',
+        orderId,
+        transactionId: paymentResult._id,
+      };
+    } catch (error: any) {
+      console.error('[NGenius] Error processing session payment:', error);
+      return {
+        success: false,
+        status: 'ERROR',
+        message: error.message || 'Payment processing failed',
+      };
+    }
+  }
+
   // Get outlet ref for frontend SDK (this is safe to expose)
   getOutletRef(): string {
     return this.config.outletRef;

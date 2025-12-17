@@ -8748,6 +8748,165 @@ export async function registerRoutes(
     }
   });
 
+  // Process payment with session ID from frontend SDK (NGenius Hosted Sessions)
+  app.post("/api/ngenius/process-hosted-payment", async (req, res) => {
+    try {
+      const { userId, sessionId, amount } = req.body;
+      
+      if (!userId || !sessionId || !amount) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Missing required fields (userId, sessionId, amount)" 
+        });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ success: false, message: "User not found" });
+      }
+
+      const settings = await storage.getPaymentGatewaySettings();
+      const ngeniusApiKey = process.env.NGENIUS_API_KEY;
+      const ngeniusOutletRef = process.env.NGENIUS_OUTLET_REF;
+      const ngeniusRealmName = process.env.NGENIUS_REALM_NAME;
+
+      if (!settings?.ngeniusEnabled || !ngeniusApiKey || !ngeniusOutletRef) {
+        return res.status(400).json({ success: false, message: "Card payments not configured" });
+      }
+
+      const ngeniusService = NgeniusService.getInstance({
+        apiKey: ngeniusApiKey,
+        outletRef: ngeniusOutletRef,
+        realmName: ngeniusRealmName || undefined,
+        mode: (settings.ngeniusMode || 'live') as 'sandbox' | 'live',
+      });
+
+      const orderReference = generateOrderReference();
+      
+      // Convert USD to AED for NGenius
+      const USD_TO_AED_RATE = 3.6725;
+      const amountUsd = parseFloat(amount);
+      const amountAed = Math.round(amountUsd * USD_TO_AED_RATE * 100) / 100;
+
+      console.log(`[NGenius] Processing hosted payment: $${amountUsd} USD = ${amountAed} AED, sessionId: ${sessionId}`);
+
+      // Store pending transaction
+      const txRecord = await storage.createNgeniusTransaction({
+        userId: user.id,
+        orderReference,
+        status: 'Processing',
+        amountUsd: amountUsd.toString(),
+        currency: 'AED',
+        description: `Card deposit - $${amountUsd} USD`,
+      });
+
+      // Process payment with session ID
+      const result = await ngeniusService.processPaymentWithSessionId({
+        sessionId,
+        amount: amountAed,
+        currency: 'AED',
+        orderReference,
+      });
+
+      if (result.success) {
+        // Update transaction with NGenius order ID
+        await storage.updateNgeniusTransaction(txRecord.id, {
+          ngeniusOrderId: result.orderId,
+          status: 'Captured',
+        });
+
+        // Credit wallet with gold
+        const wallet = await storage.getWallet(userId);
+        if (wallet) {
+          let goldPricePerGram: number;
+          try {
+            goldPricePerGram = await getGoldPricePerGram();
+          } catch {
+            goldPricePerGram = 140;
+          }
+          
+          const goldGrams = amountUsd / goldPricePerGram;
+          const currentGold = parseFloat(wallet.goldGrams || '0');
+          
+          await storage.updateWallet(wallet.id, {
+            goldGrams: (currentGold + goldGrams).toFixed(6),
+          });
+
+          // Create transaction record
+          const walletTx = await storage.createTransaction({
+            userId,
+            type: 'Deposit',
+            status: 'Completed',
+            amountUsd: amountUsd.toString(),
+            amountGold: goldGrams.toFixed(6),
+            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            description: `Card deposit - ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+            referenceId: orderReference,
+            sourceModule: 'finapay',
+            completedAt: new Date(),
+          });
+
+          await storage.updateNgeniusTransaction(txRecord.id, {
+            walletTransactionId: walletTx.id,
+          });
+
+          // Create certificate
+          await storage.createCertificate({
+            userId,
+            transactionId: walletTx.id,
+            type: 'Digital Ownership',
+            status: 'Active',
+            goldGrams: goldGrams.toFixed(6),
+            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            issuer: 'Finatrades',
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            issuedAt: new Date(),
+          });
+
+          // Send notification
+          await storage.createNotification({
+            userId,
+            title: 'Card Deposit Successful',
+            message: `Your card deposit of $${amountUsd.toFixed(2)} has been completed. ${goldGrams.toFixed(4)}g gold credited to your wallet.`,
+            type: 'success',
+          });
+
+          console.log(`[NGenius] Payment successful: ${goldGrams.toFixed(4)}g gold credited`);
+
+          res.json({
+            success: true,
+            status: 'completed',
+            goldGrams: goldGrams.toFixed(6),
+            amountUsd,
+          });
+        } else {
+          res.json({
+            success: false,
+            message: "Wallet not found",
+          });
+        }
+      } else {
+        await storage.updateNgeniusTransaction(txRecord.id, {
+          status: 'Failed',
+        });
+        
+        console.log(`[NGenius] Payment failed: ${result.message}`);
+        
+        res.json({
+          success: false,
+          status: result.status,
+          message: result.message || "Payment failed",
+        });
+      }
+    } catch (error: any) {
+      console.error('NGenius process hosted payment error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Failed to process payment",
+      });
+    }
+  });
+
   // NGenius webhook handler
   app.post("/api/ngenius/webhook", async (req, res) => {
     try {
