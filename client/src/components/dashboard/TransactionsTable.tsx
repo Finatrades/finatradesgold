@@ -97,9 +97,11 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                     <p className={`text-sm font-bold ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                       {isPositive ? '+' : '-'}${Math.abs(usdAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
-                    {goldAmount > 0 && (
+                    {goldAmount > 0 ? (
                       <p className="text-xs text-muted-foreground">{goldAmount.toFixed(3)} g</p>
-                    )}
+                    ) : usdAmount > 0 && goldPrice > 0 ? (
+                      <p className="text-xs text-muted-foreground">~{(usdAmount / goldPrice).toFixed(2)} g</p>
+                    ) : null}
                   </div>
                 </div>
               </Link>
