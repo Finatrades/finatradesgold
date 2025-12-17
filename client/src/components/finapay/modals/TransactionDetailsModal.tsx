@@ -134,7 +134,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border-border text-foreground sm:max-w-[450px] p-0 overflow-hidden gap-0">
+      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto p-0 gap-0">
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="sr-only">Transaction Details</DialogTitle>
           <div className="flex flex-col items-center justify-center space-y-4 pt-2">

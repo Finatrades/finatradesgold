@@ -146,7 +146,7 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl bg-[#0D0515] border-white/10 p-0 overflow-hidden flex flex-col max-h-[90vh]">
+      <DialogContent className="w-[95vw] max-w-4xl bg-[#0D0515] border-white/10 p-0 overflow-hidden flex flex-col max-h-[85vh]">
         
         {/* Tabs for switching certificates */}
         <div className="bg-black/40 border-b border-white/10 p-4 flex justify-center sticky top-0 z-20">

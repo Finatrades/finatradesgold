@@ -821,7 +821,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
 
       {/* Transfer Modal */}
       <Dialog open={isTransferModalOpen} onOpenChange={setIsTransferModalOpen}>
-        <DialogContent className="bg-[#1A0A2E] border-white/10 text-white sm:max-w-[425px]">
+        <DialogContent className="bg-[#1A0A2E] border-white/10 text-white w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Transfer Gold from FinaPay</DialogTitle>
             <DialogDescription className="text-white/60">

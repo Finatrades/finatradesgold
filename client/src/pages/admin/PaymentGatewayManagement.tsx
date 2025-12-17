@@ -485,7 +485,7 @@ export default function PaymentGatewayManagement() {
       </div>
 
       <Tabs defaultValue="stripe" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           <TabsTrigger value="stripe" data-testid="tab-stripe">
             <CreditCard className="w-4 h-4 mr-2" /> Stripe
           </TabsTrigger>

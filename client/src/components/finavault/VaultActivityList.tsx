@@ -291,7 +291,7 @@ export default function VaultActivityList() {
       </CardContent>
 
       <Dialog open={!!selectedTx} onOpenChange={() => setSelectedTx(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
           </DialogHeader>
@@ -407,7 +407,7 @@ export default function VaultActivityList() {
 
       {/* Certificate Viewing Modal - Both Certificates with Tabs */}
       <Dialog open={!!viewingCerts && viewingCerts.length > 0} onOpenChange={() => setViewingCerts(null)}>
-        <DialogContent className="max-w-4xl bg-[#0D0515] border-white/10 p-0 overflow-hidden flex flex-col max-h-[90vh]">
+        <DialogContent className="w-[95vw] max-w-4xl bg-[#0D0515] border-white/10 p-0 overflow-hidden flex flex-col max-h-[85vh]">
           
           {/* Tabs for switching certificates */}
           <div className="bg-black/40 border-b border-white/10 p-4 flex justify-center sticky top-0 z-20">

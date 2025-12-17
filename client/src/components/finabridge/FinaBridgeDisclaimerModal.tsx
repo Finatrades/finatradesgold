@@ -28,7 +28,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
   if (showFullTerms) {
     return (
       <Dialog open={open} onOpenChange={() => {}}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-0 overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-slate-800 to-slate-700 text-white">
             <div className="flex items-center gap-3">
               <Button 
@@ -178,7 +178,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] p-0 overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">

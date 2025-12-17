@@ -263,7 +263,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border-border text-foreground sm:max-w-[480px]">
+      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             {method === 'crypto' && cryptoStep !== 'select_wallet' && (

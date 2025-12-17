@@ -439,7 +439,7 @@ export default function FinaPay() {
 
         {/* Deposit Callback Modal */}
         <Dialog open={depositCallbackStatus !== null} onOpenChange={closeDepositCallback}>
-          <DialogContent className="bg-white border-border text-foreground sm:max-w-[450px]">
+          <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 {depositCallbackStatus === 'success' && (

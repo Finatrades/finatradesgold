@@ -59,7 +59,7 @@ export default function EarlyTerminationSimulator({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-white border-border text-foreground max-w-2xl">
+      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-red-600">
             <AlertTriangle className="w-6 h-6" />

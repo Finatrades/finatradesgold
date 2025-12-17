@@ -202,7 +202,7 @@ export default function TradeFinance() {
 
         {/* Trade Case Detail Modal */}
         <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Trade Case Review: {selectedCase?.id}</DialogTitle>
               <DialogDescription>Review details and approve financing.</DialogDescription>

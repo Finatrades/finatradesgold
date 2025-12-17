@@ -135,7 +135,7 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
 
       {/* Transfer Modal */}
       <Dialog open={isTransferModalOpen} onOpenChange={setIsTransferModalOpen}>
-        <DialogContent className="bg-white border-border text-foreground sm:max-w-[425px]">
+        <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Transfer Gold from FinaPay</DialogTitle>
             <DialogDescription className="text-muted-foreground">

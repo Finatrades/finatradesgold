@@ -142,7 +142,7 @@ export default function SecuritySettings() {
         </div>
 
         <Tabs defaultValue="otp" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-[600px]">
             <TabsTrigger value="otp" data-testid="tab-otp">User OTP</TabsTrigger>
             <TabsTrigger value="admin" data-testid="tab-admin">Admin Approval</TabsTrigger>
             <TabsTrigger value="passkey" data-testid="tab-passkey">Passkeys</TabsTrigger>

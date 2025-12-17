@@ -48,7 +48,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl bg-[#0D0515] border-white/10 p-0 overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] bg-[#0D0515] border-white/10 p-0 overflow-y-auto">
         <div className={`relative p-8 md:p-12 border-8 border-double m-2 shadow-2xl ${
           isDigitalOwnership 
             ? 'border-[#D4AF37]/30' 

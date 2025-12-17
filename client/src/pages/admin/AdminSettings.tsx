@@ -112,7 +112,7 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="pricing" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-[500px]">
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
             <TabsTrigger value="limits">Limits</TabsTrigger>
             <TabsTrigger value="bank">Bank</TabsTrigger>

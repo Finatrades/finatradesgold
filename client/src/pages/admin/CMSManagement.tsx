@@ -276,7 +276,7 @@ export default function CMSManagement() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 max-w-2xl">
             <TabsTrigger value="pages" className="flex gap-2" data-testid="tab-pages">
               <FileText className="w-4 h-4" />
               Pages
