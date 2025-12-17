@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 import IframeCardPayment from '../IframeCardPayment';
+import EmbeddedCardForm from '../EmbeddedCardForm';
 
 interface FeeInfo {
   feeKey: string;
