@@ -819,18 +819,20 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
               {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
                 <div className="border border-green-200 rounded-lg p-3 bg-green-50/50 mt-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-1 text-muted-foreground">
+                  <div className="flex justify-between items-start">
+                    <span className="flex items-center gap-1 text-muted-foreground text-sm">
                       <Coins className="w-4 h-4 text-primary" />
                       Gold Equivalent:
                     </span>
-                    <span className="font-bold text-primary">
-                      {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
-                    </span>
+                    <div className="text-right">
+                      <p className="font-bold text-primary text-lg">
+                        {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ≈ ${parseFloat(amount).toFixed(2)} USD
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Gold Price: ${goldPrice.pricePerGram.toFixed(2)}/gram
-                  </p>
                 </div>
               )}
             </div>
@@ -876,18 +878,20 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
             {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
               <div className="border border-green-200 rounded-lg p-3 bg-green-50/50">
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center gap-1 text-muted-foreground">
+                <div className="flex justify-between items-start">
+                  <span className="flex items-center gap-1 text-muted-foreground text-sm">
                     <Coins className="w-4 h-4 text-primary" />
                     Gold Equivalent:
                   </span>
-                  <span className="font-bold text-primary">
-                    {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
-                  </span>
+                  <div className="text-right">
+                    <p className="font-bold text-primary text-lg">
+                      {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      ≈ ${parseFloat(amount).toFixed(2)} USD
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Gold Price: ${goldPrice.pricePerGram.toFixed(2)}/gram
-                </p>
               </div>
             )}
             
