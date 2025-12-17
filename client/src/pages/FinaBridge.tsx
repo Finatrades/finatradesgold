@@ -606,31 +606,54 @@ export default function FinaBridge() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground" data-testid="text-finabridge-title">{getContent('hero', 'title', 'FinaBridge Trade Finance')}</h1>
-              <p className="text-muted-foreground text-sm">Gold-backed trade matching for importers and exporters.</p>
+              <p className="text-muted-foreground text-sm">
+                {user?.finabridgeRole === 'importer' 
+                  ? 'Gold-backed trade finance for importers.'
+                  : user?.finabridgeRole === 'exporter'
+                  ? 'Gold-backed trade finance for exporters.'
+                  : 'Gold-backed trade matching for importers and exporters.'}
+              </p>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
-              <Button
-                variant={role === 'importer' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setRole('importer')}
-                data-testid="button-role-importer"
-              >
-                <Package className="w-4 h-4 mr-2" />
-                Importer
-              </Button>
-              <Button
-                variant={role === 'exporter' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setRole('exporter')}
-                data-testid="button-role-exporter"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Exporter
-              </Button>
-            </div>
+            {/* Only show role toggle if user has "both" roles */}
+            {user?.finabridgeRole === 'both' ? (
+              <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
+                <Button
+                  variant={role === 'importer' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setRole('importer')}
+                  data-testid="button-role-importer"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Importer
+                </Button>
+                <Button
+                  variant={role === 'exporter' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setRole('exporter')}
+                  data-testid="button-role-exporter"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Exporter
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+                {user?.finabridgeRole === 'importer' ? (
+                  <>
+                    <Package className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Importer</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Exporter</span>
+                  </>
+                )}
+              </div>
+            )}
             <Button variant="outline" size="sm" onClick={() => role === 'importer' ? fetchImporterData() : fetchExporterData()} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
