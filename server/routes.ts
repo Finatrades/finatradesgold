@@ -278,12 +278,13 @@ export async function registerRoutes(
         }));
 
       // Convert crypto payments to transaction format
+      // Exclude 'Approved' and 'Credited' since those have real transaction records
       const cryptoTransactions = (cryptoPayments || [])
-        .filter((cp: any) => cp.status !== 'Approved')
+        .filter((cp: any) => cp.status !== 'Approved' && cp.status !== 'Credited')
         .map((cp: any) => ({
           id: cp.id,
           type: 'Deposit',
-          status: cp.status === 'Approved' ? 'Completed' : cp.status,
+          status: cp.status,
           amountUsd: cp.amountUsd,
           amountGold: cp.goldGrams,
           createdAt: cp.createdAt,

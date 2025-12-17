@@ -118,15 +118,16 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Convert crypto payment requests to transaction-like format
+      // Exclude 'Approved' and 'Credited' since they have real transaction records
       if (cryptoResponse.ok) {
         const cryptoData = await cryptoResponse.json();
         const cryptoTransactions = (cryptoData.requests || [])
-          .filter((cp: any) => cp.status !== 'Approved') // Only show non-approved
+          .filter((cp: any) => cp.status !== 'Approved' && cp.status !== 'Credited')
           .map((cp: any) => ({
             id: cp.id,
             userId: cp.userId,
             type: 'Deposit',
-            status: cp.status === 'Approved' ? 'Completed' : cp.status,
+            status: cp.status,
             amountUsd: cp.amountUsd,
             amountGold: cp.goldGrams,
             createdAt: cp.createdAt,
