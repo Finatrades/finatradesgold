@@ -9700,18 +9700,13 @@ export async function registerRoutes(
       // Create transaction record
       const transaction = await storage.createTransaction({
         userId: paymentRequest.userId,
-        walletId: wallet.id,
         type: 'Buy',
         status: 'Completed',
-        amount: paymentRequest.amountUsd,
-        goldGrams: paymentRequest.goldGrams,
-        goldPrice: paymentRequest.goldPriceAtTime,
-        currency: 'USD',
+        amountGold: paymentRequest.goldGrams,
+        amountUsd: paymentRequest.amountUsd,
+        goldPriceUsdPerGram: paymentRequest.goldPriceAtTime,
         description: `Crypto payment approved - ${paymentRequest.transactionHash || 'Manual verification'}`,
-        metadata: {
-          cryptoPaymentId: paymentRequest.id,
-          walletConfigId: paymentRequest.walletConfigId,
-        },
+        sourceModule: 'finapay',
       });
       
       // Update payment request
