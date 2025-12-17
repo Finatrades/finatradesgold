@@ -645,7 +645,7 @@ function BlockDialog({
   const [content, setContent] = useState(block?.content || '');
   const [defaultContent, setDefaultContent] = useState(block?.defaultContent || '');
   const [status, setStatus] = useState<'draft' | 'published'>(block?.status || 'draft');
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
 
   React.useEffect(() => {
     setPageId(block?.pageId || '');
@@ -889,7 +889,7 @@ function TemplateDialog({
   );
   const [module, setModule] = useState(template?.module || '');
   const [status, setStatus] = useState<'draft' | 'published'>(template?.status || 'draft');
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const [previewData, setPreviewData] = useState<Record<string, string>>({});
 
   React.useEffect(() => {
