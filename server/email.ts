@@ -1,9 +1,44 @@
 import nodemailer from 'nodemailer';
 import { db } from './db';
-import { templates, emailLogs, emailNotificationSettings } from '@shared/schema';
+import { templates, emailLogs, emailNotificationSettings, brandingSettings } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { lookup } from 'dns/promises';
 import net from 'net';
+
+// Cache branding settings to avoid repeated DB calls
+let brandingCache: { logoUrl?: string; companyName?: string; primaryColor?: string } | null = null;
+let brandingCacheTime = 0;
+const BRANDING_CACHE_TTL = 60000; // 1 minute
+
+async function getBrandingForEmail(): Promise<{ logoUrl: string; companyName: string; primaryColor: string }> {
+  const now = Date.now();
+  if (brandingCache && (now - brandingCacheTime) < BRANDING_CACHE_TTL) {
+    return {
+      logoUrl: brandingCache.logoUrl || '',
+      companyName: brandingCache.companyName || 'Finatrades',
+      primaryColor: brandingCache.primaryColor || '#f97316'
+    };
+  }
+  
+  try {
+    const [settings] = await db.select().from(brandingSettings).where(eq(brandingSettings.isActive, true)).limit(1);
+    brandingCache = {
+      logoUrl: settings?.logoUrl || '',
+      companyName: settings?.companyName || 'Finatrades',
+      primaryColor: settings?.primaryColor || '#f97316'
+    };
+    brandingCacheTime = now;
+  } catch (error) {
+    console.error('[Email] Failed to get branding:', error);
+    brandingCache = { logoUrl: '', companyName: 'Finatrades', primaryColor: '#f97316' };
+  }
+  
+  return {
+    logoUrl: brandingCache.logoUrl || '',
+    companyName: brandingCache.companyName || 'Finatrades',
+    primaryColor: brandingCache.primaryColor || '#f97316'
+  };
+}
 
 // Email logging helper
 async function logEmail(params: {
@@ -167,6 +202,27 @@ function replaceVariables(template: string, data: EmailData): string {
   });
 }
 
+// Wrap email body with professional header including logo
+function wrapEmailWithBranding(body: string, branding: { logoUrl: string; companyName: string; primaryColor: string }): string {
+  const logoSection = branding.logoUrl 
+    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 50px; max-width: 200px; margin-bottom: 15px;" />`
+    : `<div style="font-size: 28px; font-weight: bold; color: white; letter-spacing: 1px;">${branding.companyName}</div>`;
+
+  // Check if body already has the full wrapper structure
+  if (body.includes('max-width: 600px') && body.includes('font-family:')) {
+    // Extract the inner content and wrap it properly with logo
+    // Replace the existing header to add logo
+    return body.replace(
+      /(<div style="background: linear-gradient[^>]+>)\s*(<h1[^>]*>[^<]+<\/h1>)/gi,
+      `$1
+        ${branding.logoUrl ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 40px; max-width: 180px; margin-bottom: 10px;" /><br/>` : ''}
+        $2`
+    );
+  }
+  
+  return body;
+}
+
 export async function getEmailTemplate(slug: string): Promise<{ subject: string; body: string } | null> {
   const [template] = await db.select().from(templates).where(eq(templates.slug, slug)).limit(1);
   if (!template) return null;
@@ -190,6 +246,17 @@ export async function sendEmail(
   }
 
   try {
+    // Get branding for email
+    const branding = await getBrandingForEmail();
+    
+    // Inject branding variables into data
+    const enrichedData: EmailData = {
+      ...data,
+      company_name: branding.companyName,
+      company_logo: branding.logoUrl,
+      primary_color: branding.primaryColor,
+    };
+    
     const template = await getEmailTemplate(templateSlug);
     
     if (!template) {
@@ -208,8 +275,11 @@ export async function sendEmail(
       return { success: false, error: `Template not found: ${templateSlug}` };
     }
 
-    const subject = replaceVariables(template.subject, data);
-    const htmlBody = replaceVariables(template.body, data);
+    const subject = replaceVariables(template.subject, enrichedData);
+    let htmlBody = replaceVariables(template.body, enrichedData);
+    
+    // Add logo and branding to email
+    htmlBody = wrapEmailWithBranding(htmlBody, branding);
 
     if (!SMTP_USER || !SMTP_PASS) {
       console.log(`[Email Preview] To: ${to}`);
