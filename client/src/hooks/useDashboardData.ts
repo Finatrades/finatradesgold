@@ -55,6 +55,8 @@ interface DashboardResponse {
     bnslLockedGrams: number;
     bnslTotalProfit: number;
     activeBnslPlans: number;
+    pendingGoldGrams: number;
+    pendingDepositUsd: number;
   };
   _meta: { loadTimeMs: number };
 }
@@ -79,6 +81,8 @@ interface DashboardData {
     bnslLockedGrams: number;
     bnslTotalProfit: number;
     activeBnslPlans: number;
+    pendingGoldGrams: number;
+    pendingDepositUsd: number;
   };
   refetch: () => void;
 }
@@ -123,6 +127,8 @@ export function useDashboardData(): DashboardData {
     bnslLockedGrams: 0,
     bnslTotalProfit: 0,
     activeBnslPlans: 0,
+    pendingGoldGrams: 0,
+    pendingDepositUsd: 0,
   };
 
   return {

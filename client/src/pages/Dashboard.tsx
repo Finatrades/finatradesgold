@@ -179,7 +179,7 @@ export default function Dashboard() {
               finaPayWallet={{
                 goldGrams: totals.walletGoldGrams || 0,
                 usdValue: (totals.walletGoldGrams || 0) * goldPrice,
-                pending: 0,
+                pending: totals.pendingGoldGrams || 0,
                 transactions: transactions?.length || 0
               }}
               bnslData={{

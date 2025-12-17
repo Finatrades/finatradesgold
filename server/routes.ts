@@ -308,6 +308,17 @@ export async function registerRoutes(
       const bnslTotalProfit = activeBnslPlans.reduce((sum: number, p: any) => 
         sum + parseFloat(p.paidMarginUsd || '0'), 0);
       const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance;
+      
+      // Calculate pending deposits (bank transfers + crypto) as USD
+      const pendingDepositUsd = (depositRequests || [])
+        .filter((d: any) => d.status === 'Pending')
+        .reduce((sum: number, d: any) => sum + parseFloat(d.amountUsd || '0'), 0)
+        + (cryptoPayments || [])
+          .filter((c: any) => c.status === 'Pending')
+          .reduce((sum: number, c: any) => sum + parseFloat(c.amountUsd || '0'), 0);
+      
+      // Convert pending USD to gold grams
+      const pendingGoldGrams = pendingDepositUsd / goldPrice;
 
       const loadTime = Date.now() - startTime;
       console.log(`[Dashboard] Loaded for user ${userId} in ${loadTime}ms`);
@@ -333,7 +344,9 @@ export async function registerRoutes(
           totalPortfolioUsd,
           bnslLockedGrams,
           bnslTotalProfit,
-          activeBnslPlans: activeBnslPlans.length
+          activeBnslPlans: activeBnslPlans.length,
+          pendingGoldGrams,
+          pendingDepositUsd
         },
         _meta: { loadTimeMs: loadTime }
       });
