@@ -398,8 +398,35 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       return;
     }
 
-    // Use embedded card form instead of redirect
-    setStep('card-embedded');
+    setSubmitting(true);
+    setStep('card-processing');
+    
+    try {
+      const returnUrl = `${window.location.origin}/finapay?deposit_callback=1`;
+      const cancelUrl = `${window.location.origin}/finapay?deposit_cancelled=1`;
+      
+      const res = await apiRequest('POST', '/api/ngenius/create-order', {
+        userId: user.id,
+        amount: amountNum,
+        currency: 'USD',
+        returnUrl,
+        cancelUrl,
+        description: `FinaPay wallet deposit - $${amountNum.toFixed(2)}`,
+      });
+      
+      const data = await res.json();
+      
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initiate card payment");
+      setStep('card-amount');
+    } finally {
+      setSubmitting(false);
+    }
   };
   
   const handleCardSuccess = (result: { goldGrams: string; amountUsd: number }) => {
