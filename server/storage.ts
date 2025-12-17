@@ -85,7 +85,9 @@ import {
   type Notification, type InsertNotification,
   cryptoWalletConfigs, cryptoPaymentRequests,
   type CryptoWalletConfig, type InsertCryptoWalletConfig,
-  type CryptoPaymentRequest, type InsertCryptoPaymentRequest
+  type CryptoPaymentRequest, type InsertCryptoPaymentRequest,
+  platformConfig,
+  type PlatformConfig, type InsertPlatformConfig
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -567,6 +569,16 @@ export interface IStorage {
   markAllNotificationsRead(userId: string): Promise<void>;
   deleteNotification(id: string): Promise<boolean>;
   deleteAllNotifications(userId: string): Promise<void>;
+  
+  // Platform Configuration
+  getPlatformConfig(key: string): Promise<PlatformConfig | undefined>;
+  getPlatformConfigsByCategory(category: string): Promise<PlatformConfig[]>;
+  getAllPlatformConfigs(): Promise<PlatformConfig[]>;
+  createPlatformConfig(config: InsertPlatformConfig): Promise<PlatformConfig>;
+  updatePlatformConfig(id: string, updates: Partial<PlatformConfig>): Promise<PlatformConfig | undefined>;
+  upsertPlatformConfig(config: InsertPlatformConfig): Promise<PlatformConfig>;
+  deletePlatformConfig(id: string): Promise<boolean>;
+  seedDefaultPlatformConfig(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2513,6 +2525,150 @@ export class DatabaseStorage implements IStorage {
   async updateCryptoPaymentRequest(id: string, updates: Partial<CryptoPaymentRequest>): Promise<CryptoPaymentRequest | undefined> {
     const [request] = await db.update(cryptoPaymentRequests).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoPaymentRequests.id, id)).returning();
     return request || undefined;
+  }
+
+  // ============================================
+  // PLATFORM CONFIGURATION
+  // ============================================
+
+  async getPlatformConfig(key: string): Promise<PlatformConfig | undefined> {
+    const [config] = await db.select().from(platformConfig).where(eq(platformConfig.configKey, key));
+    return config || undefined;
+  }
+
+  async getPlatformConfigsByCategory(category: string): Promise<PlatformConfig[]> {
+    return await db.select().from(platformConfig)
+      .where(eq(platformConfig.category, category as any))
+      .orderBy(platformConfig.displayOrder);
+  }
+
+  async getAllPlatformConfigs(): Promise<PlatformConfig[]> {
+    return await db.select().from(platformConfig).orderBy(platformConfig.category, platformConfig.displayOrder);
+  }
+
+  async createPlatformConfig(config: InsertPlatformConfig): Promise<PlatformConfig> {
+    const [newConfig] = await db.insert(platformConfig).values(config).returning();
+    return newConfig;
+  }
+
+  async updatePlatformConfig(id: string, updates: Partial<PlatformConfig>): Promise<PlatformConfig | undefined> {
+    const [config] = await db.update(platformConfig).set({ ...updates, updatedAt: new Date() }).where(eq(platformConfig.id, id)).returning();
+    return config || undefined;
+  }
+
+  async upsertPlatformConfig(config: InsertPlatformConfig): Promise<PlatformConfig> {
+    const existing = await this.getPlatformConfig(config.configKey);
+    if (existing) {
+      const [updated] = await db.update(platformConfig)
+        .set({ ...config, updatedAt: new Date() })
+        .where(eq(platformConfig.configKey, config.configKey))
+        .returning();
+      return updated;
+    }
+    return await this.createPlatformConfig(config);
+  }
+
+  async deletePlatformConfig(id: string): Promise<boolean> {
+    const result = await db.delete(platformConfig).where(eq(platformConfig.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async seedDefaultPlatformConfig(): Promise<void> {
+    const existingConfigs = await this.getAllPlatformConfigs();
+    if (existingConfigs.length > 0) return;
+
+    const defaultConfigs: InsertPlatformConfig[] = [
+      // Gold Pricing
+      { category: 'gold_pricing', configKey: 'buy_spread_percent', configValue: '1.5', configType: 'number', displayName: 'Buy Spread %', description: 'Markup on spot gold price for purchases', displayOrder: 1 },
+      { category: 'gold_pricing', configKey: 'sell_spread_percent', configValue: '1.0', configType: 'number', displayName: 'Sell Spread %', description: 'Markdown on spot gold price for sales', displayOrder: 2 },
+      { category: 'gold_pricing', configKey: 'storage_fee_percent', configValue: '0.5', configType: 'number', displayName: 'Storage Fee (Annual %)', description: 'Annual custody fee for vault holdings', displayOrder: 3 },
+      { category: 'gold_pricing', configKey: 'gold_price_cache_minutes', configValue: '5', configType: 'number', displayName: 'Price Cache Duration (min)', description: 'How long to cache API gold price', displayOrder: 4 },
+
+      // Transaction Limits - Tier 1
+      { category: 'transaction_limits', configKey: 'tier1_daily_limit', configValue: '5000', configType: 'number', displayName: 'Tier 1 Daily Limit (USD)', description: 'Maximum daily transactions for Tier 1 users', displayOrder: 1 },
+      { category: 'transaction_limits', configKey: 'tier1_monthly_limit', configValue: '20000', configType: 'number', displayName: 'Tier 1 Monthly Limit (USD)', description: 'Maximum monthly transactions for Tier 1 users', displayOrder: 2 },
+      { category: 'transaction_limits', configKey: 'tier1_single_max', configValue: '2000', configType: 'number', displayName: 'Tier 1 Single Transaction Max (USD)', description: 'Maximum single transaction for Tier 1 users', displayOrder: 3 },
+      // Transaction Limits - Tier 2
+      { category: 'transaction_limits', configKey: 'tier2_daily_limit', configValue: '50000', configType: 'number', displayName: 'Tier 2 Daily Limit (USD)', description: 'Maximum daily transactions for Tier 2 users', displayOrder: 4 },
+      { category: 'transaction_limits', configKey: 'tier2_monthly_limit', configValue: '250000', configType: 'number', displayName: 'Tier 2 Monthly Limit (USD)', description: 'Maximum monthly transactions for Tier 2 users', displayOrder: 5 },
+      { category: 'transaction_limits', configKey: 'tier2_single_max', configValue: '25000', configType: 'number', displayName: 'Tier 2 Single Transaction Max (USD)', description: 'Maximum single transaction for Tier 2 users', displayOrder: 6 },
+      // Transaction Limits - Tier 3
+      { category: 'transaction_limits', configKey: 'tier3_daily_limit', configValue: '500000', configType: 'number', displayName: 'Tier 3 Daily Limit (USD)', description: 'Maximum daily transactions for Tier 3 users', displayOrder: 7 },
+      { category: 'transaction_limits', configKey: 'tier3_monthly_limit', configValue: '0', configType: 'number', displayName: 'Tier 3 Monthly Limit (USD)', description: '0 means unlimited', displayOrder: 8 },
+      { category: 'transaction_limits', configKey: 'tier3_single_max', configValue: '500000', configType: 'number', displayName: 'Tier 3 Single Transaction Max (USD)', description: 'Maximum single transaction for Tier 3 users', displayOrder: 9 },
+      { category: 'transaction_limits', configKey: 'min_trade_amount', configValue: '50', configType: 'number', displayName: 'Minimum Trade Amount (USD)', description: 'Minimum amount for any buy/sell transaction', displayOrder: 10 },
+
+      // Deposit Limits
+      { category: 'deposit_limits', configKey: 'min_deposit', configValue: '50', configType: 'number', displayName: 'Minimum Deposit (USD)', description: 'Minimum allowed deposit amount', displayOrder: 1 },
+      { category: 'deposit_limits', configKey: 'max_deposit_single', configValue: '100000', configType: 'number', displayName: 'Maximum Single Deposit (USD)', description: 'Maximum amount per deposit', displayOrder: 2 },
+      { category: 'deposit_limits', configKey: 'daily_deposit_limit', configValue: '250000', configType: 'number', displayName: 'Daily Deposit Limit (USD)', description: 'Maximum total deposits per day', displayOrder: 3 },
+      { category: 'deposit_limits', configKey: 'monthly_deposit_limit', configValue: '1000000', configType: 'number', displayName: 'Monthly Deposit Limit (USD)', description: 'Maximum total deposits per month', displayOrder: 4 },
+
+      // Withdrawal Limits
+      { category: 'withdrawal_limits', configKey: 'min_withdrawal', configValue: '100', configType: 'number', displayName: 'Minimum Withdrawal (USD)', description: 'Minimum allowed withdrawal amount', displayOrder: 1 },
+      { category: 'withdrawal_limits', configKey: 'max_withdrawal_single', configValue: '50000', configType: 'number', displayName: 'Maximum Single Withdrawal (USD)', description: 'Maximum amount per withdrawal', displayOrder: 2 },
+      { category: 'withdrawal_limits', configKey: 'daily_withdrawal_limit', configValue: '100000', configType: 'number', displayName: 'Daily Withdrawal Limit (USD)', description: 'Maximum total withdrawals per day', displayOrder: 3 },
+      { category: 'withdrawal_limits', configKey: 'withdrawal_pending_hours', configValue: '24', configType: 'number', displayName: 'Withdrawal Pending Period (hours)', description: 'Security hold before processing', displayOrder: 4 },
+      { category: 'withdrawal_limits', configKey: 'withdrawal_fee_percent', configValue: '0', configType: 'number', displayName: 'Withdrawal Fee (%)', description: 'Percentage fee for withdrawals', displayOrder: 5 },
+      { category: 'withdrawal_limits', configKey: 'withdrawal_fee_fixed', configValue: '0', configType: 'number', displayName: 'Withdrawal Fee (Fixed USD)', description: 'Fixed fee for withdrawals', displayOrder: 6 },
+
+      // P2P Limits
+      { category: 'p2p_limits', configKey: 'min_p2p_transfer', configValue: '10', configType: 'number', displayName: 'Minimum P2P Transfer (USD)', description: 'Minimum amount for peer-to-peer transfers', displayOrder: 1 },
+      { category: 'p2p_limits', configKey: 'max_p2p_transfer', configValue: '10000', configType: 'number', displayName: 'Maximum P2P Transfer (USD)', description: 'Maximum single P2P transfer', displayOrder: 2 },
+      { category: 'p2p_limits', configKey: 'daily_p2p_limit', configValue: '25000', configType: 'number', displayName: 'Daily P2P Limit (USD)', description: 'Maximum total P2P transfers per day', displayOrder: 3 },
+      { category: 'p2p_limits', configKey: 'monthly_p2p_limit', configValue: '100000', configType: 'number', displayName: 'Monthly P2P Limit (USD)', description: 'Maximum total P2P transfers per month', displayOrder: 4 },
+      { category: 'p2p_limits', configKey: 'p2p_fee_percent', configValue: '0', configType: 'number', displayName: 'P2P Fee (%)', description: 'Percentage fee for P2P transfers', displayOrder: 5 },
+
+      // BNSL Settings
+      { category: 'bnsl_settings', configKey: 'bnsl_agreement_fee_percent', configValue: '1.0', configType: 'number', displayName: 'BNSL Agreement Fee (%)', description: 'Fee charged when creating BNSL agreement', displayOrder: 1 },
+      { category: 'bnsl_settings', configKey: 'bnsl_max_term_months', configValue: '24', configType: 'number', displayName: 'Max BNSL Term (months)', description: 'Maximum contract duration', displayOrder: 2 },
+      { category: 'bnsl_settings', configKey: 'bnsl_min_amount', configValue: '500', configType: 'number', displayName: 'Minimum BNSL Amount (USD)', description: 'Minimum value for BNSL agreement', displayOrder: 3 },
+      { category: 'bnsl_settings', configKey: 'bnsl_early_exit_penalty', configValue: '5.0', configType: 'number', displayName: 'Early Exit Penalty (%)', description: 'Penalty for early termination', displayOrder: 4 },
+
+      // FinaBridge Settings
+      { category: 'finabridge_settings', configKey: 'trade_finance_fee_percent', configValue: '1.5', configType: 'number', displayName: 'Trade Finance Fee (%)', description: 'Fee for trade finance services', displayOrder: 1 },
+      { category: 'finabridge_settings', configKey: 'max_trade_case_value', configValue: '1000000', configType: 'number', displayName: 'Max Trade Case Value (USD)', description: 'Maximum value for single trade case', displayOrder: 2 },
+      { category: 'finabridge_settings', configKey: 'lc_issuance_fee', configValue: '250', configType: 'number', displayName: 'LC Issuance Fee (USD)', description: 'Letter of Credit issuance fee', displayOrder: 3 },
+      { category: 'finabridge_settings', configKey: 'document_processing_fee', configValue: '25', configType: 'number', displayName: 'Document Processing Fee (USD)', description: 'Fee per document processed', displayOrder: 4 },
+
+      // Payment Fees
+      { category: 'payment_fees', configKey: 'bank_transfer_fee_percent', configValue: '0', configType: 'number', displayName: 'Bank Transfer Fee (%)', description: 'Fee for bank transfer payments', displayOrder: 1 },
+      { category: 'payment_fees', configKey: 'bank_transfer_fee_fixed', configValue: '0', configType: 'number', displayName: 'Bank Transfer Fee (Fixed USD)', description: 'Fixed fee for bank transfers', displayOrder: 2 },
+      { category: 'payment_fees', configKey: 'card_fee_percent', configValue: '2.9', configType: 'number', displayName: 'Card Payment Fee (%)', description: 'Fee for card payments (Stripe/NGenius)', displayOrder: 3 },
+      { category: 'payment_fees', configKey: 'card_fee_fixed', configValue: '0.30', configType: 'number', displayName: 'Card Payment Fee (Fixed USD)', description: 'Fixed fee for card payments', displayOrder: 4 },
+      { category: 'payment_fees', configKey: 'crypto_fee_percent', configValue: '0.5', configType: 'number', displayName: 'Crypto Payment Fee (%)', description: 'Fee for cryptocurrency payments', displayOrder: 5 },
+
+      // KYC Settings
+      { category: 'kyc_settings', configKey: 'auto_approve_low_risk', configValue: 'false', configType: 'boolean', displayName: 'Auto-approve Low Risk KYC', description: 'Automatically approve low-risk KYC submissions', displayOrder: 1 },
+      { category: 'kyc_settings', configKey: 'kyc_expiry_days', configValue: '365', configType: 'number', displayName: 'KYC Expiry (days)', description: 'When to request re-verification', displayOrder: 2 },
+      { category: 'kyc_settings', configKey: 'document_expiry_warning_days', configValue: '30', configType: 'number', displayName: 'Document Expiry Warning (days)', description: 'Days before document expiry to warn user', displayOrder: 3 },
+      { category: 'kyc_settings', configKey: 'blocked_countries', configValue: '[]', configType: 'json', displayName: 'Blocked Countries', description: 'List of restricted countries (JSON array)', displayOrder: 4 },
+
+      // System Settings
+      { category: 'system_settings', configKey: 'maintenance_mode', configValue: 'false', configType: 'boolean', displayName: 'Maintenance Mode', description: 'Disable platform for maintenance', displayOrder: 1 },
+      { category: 'system_settings', configKey: 'registrations_enabled', configValue: 'true', configType: 'boolean', displayName: 'Registration Enabled', description: 'Allow new user signups', displayOrder: 2 },
+      { category: 'system_settings', configKey: 'email_notifications_enabled', configValue: 'true', configType: 'boolean', displayName: 'Email Notifications', description: 'Enable email alerts', displayOrder: 3 },
+      { category: 'system_settings', configKey: 'sms_notifications_enabled', configValue: 'false', configType: 'boolean', displayName: 'SMS Notifications', description: 'Enable SMS alerts', displayOrder: 4 },
+      { category: 'system_settings', configKey: 'session_timeout_minutes', configValue: '30', configType: 'number', displayName: 'Session Timeout (minutes)', description: 'Auto-logout after inactivity', displayOrder: 5 },
+      { category: 'system_settings', configKey: 'require_2fa', configValue: 'false', configType: 'boolean', displayName: '2FA Required', description: 'Force 2FA for all users', displayOrder: 6 },
+
+      // Vault Settings
+      { category: 'vault_settings', configKey: 'vault_inventory_grams', configValue: '125000', configType: 'number', displayName: 'Vault Inventory (grams)', description: 'Total physical gold in vault', displayOrder: 1 },
+      { category: 'vault_settings', configKey: 'reserved_gold_grams', configValue: '118450', configType: 'number', displayName: 'Reserved Gold (grams)', description: 'Gold allocated to users', displayOrder: 2 },
+      { category: 'vault_settings', configKey: 'low_stock_alert_grams', configValue: '1000', configType: 'number', displayName: 'Low Stock Alert (grams)', description: 'Alert when available stock is below this', displayOrder: 3 },
+      { category: 'vault_settings', configKey: 'min_physical_redemption_grams', configValue: '10', configType: 'number', displayName: 'Min Physical Redemption (grams)', description: 'Minimum gold for physical delivery', displayOrder: 4 },
+
+      // Referral Settings
+      { category: 'referral_settings', configKey: 'referrer_bonus_usd', configValue: '10', configType: 'number', displayName: 'Referrer Bonus (USD)', description: 'Bonus for existing user who refers', displayOrder: 1 },
+      { category: 'referral_settings', configKey: 'referee_bonus_usd', configValue: '5', configType: 'number', displayName: 'Referee Bonus (USD)', description: 'Bonus for new referred user', displayOrder: 2 },
+      { category: 'referral_settings', configKey: 'max_referrals_per_user', configValue: '50', configType: 'number', displayName: 'Max Referrals per User', description: 'Limit on referrals per user', displayOrder: 3 },
+      { category: 'referral_settings', configKey: 'referral_validity_days', configValue: '30', configType: 'number', displayName: 'Referral Validity (days)', description: 'How long referral code is valid', displayOrder: 4 },
+      { category: 'referral_settings', configKey: 'min_deposit_for_bonus', configValue: '100', configType: 'number', displayName: 'Min Deposit for Bonus (USD)', description: 'Minimum first deposit to earn referral bonus', displayOrder: 5 },
+    ];
+
+    for (const config of defaultConfigs) {
+      await this.createPlatformConfig(config);
+    }
   }
 }
 

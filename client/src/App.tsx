@@ -67,6 +67,7 @@ import AdminChat from "@/pages/admin/AdminChat";
 import CMSManagement from "@/pages/admin/CMSManagement";
 import EmployeeManagement from "@/pages/admin/EmployeeManagement";
 import PaymentGatewayManagement from "@/pages/admin/PaymentGatewayManagement";
+import PlatformConfiguration from "@/pages/admin/PlatformConfiguration";
 import SecuritySettings from "@/pages/admin/SecuritySettings";
 import DocumentsManagement from "@/pages/admin/DocumentsManagement";
 import ReferralManagement from "@/pages/admin/ReferralManagement";
@@ -116,6 +117,7 @@ function Router() {
       <Route path="/admin/cms" component={CMSManagement} />
       <Route path="/admin/employees" component={EmployeeManagement} />
       <Route path="/admin/payment-gateways" component={PaymentGatewayManagement} />
+      <Route path="/admin/platform-config" component={PlatformConfiguration} />
       <Route path="/admin/security" component={SecuritySettings} />
       <Route path="/admin/documents" component={DocumentsManagement} />
       

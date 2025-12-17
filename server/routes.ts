@@ -9669,5 +9669,226 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // PLATFORM CONFIGURATION
+  // ============================================
+
+  // Get all platform configs
+  app.get("/api/admin/platform-config", ensureAdminAsync, async (req, res) => {
+    try {
+      const configs = await storage.getAllPlatformConfigs();
+      res.json({ configs });
+    } catch (error) {
+      console.error("Failed to get platform configs:", error);
+      res.status(500).json({ message: "Failed to get platform configuration" });
+    }
+  });
+
+  // Get platform configs by category
+  app.get("/api/admin/platform-config/category/:category", ensureAdminAsync, async (req, res) => {
+    try {
+      const configs = await storage.getPlatformConfigsByCategory(req.params.category);
+      res.json({ configs });
+    } catch (error) {
+      console.error("Failed to get platform configs by category:", error);
+      res.status(500).json({ message: "Failed to get platform configuration" });
+    }
+  });
+
+  // Get single platform config by key
+  app.get("/api/admin/platform-config/key/:key", ensureAdminAsync, async (req, res) => {
+    try {
+      const config = await storage.getPlatformConfig(req.params.key);
+      if (!config) {
+        return res.status(404).json({ message: "Configuration not found" });
+      }
+      res.json({ config });
+    } catch (error) {
+      console.error("Failed to get platform config:", error);
+      res.status(500).json({ message: "Failed to get platform configuration" });
+    }
+  });
+
+  // Public endpoint to get specific configs (for frontend use)
+  app.get("/api/platform-config/public", async (req, res) => {
+    try {
+      const allConfigs = await storage.getAllPlatformConfigs();
+      // Filter to only include non-sensitive configs needed by frontend
+      const publicKeys = [
+        'buy_spread_percent', 'sell_spread_percent', 'storage_fee_percent', 'min_trade_amount',
+        'tier1_daily_limit', 'tier1_monthly_limit', 'tier1_single_max',
+        'tier2_daily_limit', 'tier2_monthly_limit', 'tier2_single_max',
+        'tier3_daily_limit', 'tier3_monthly_limit', 'tier3_single_max',
+        'min_deposit', 'max_deposit_single',
+        'min_withdrawal', 'max_withdrawal_single',
+        'min_p2p_transfer', 'max_p2p_transfer',
+        'maintenance_mode', 'registrations_enabled',
+        'referrer_bonus_usd', 'referee_bonus_usd'
+      ];
+      const publicConfigs = allConfigs.filter(c => publicKeys.includes(c.configKey));
+      
+      // Convert to key-value object for easier frontend use
+      const configMap: Record<string, any> = {};
+      for (const config of publicConfigs) {
+        let value: any = config.configValue;
+        if (config.configType === 'number') {
+          value = parseFloat(config.configValue);
+        } else if (config.configType === 'boolean') {
+          value = config.configValue === 'true';
+        } else if (config.configType === 'json') {
+          try { value = JSON.parse(config.configValue); } catch { value = config.configValue; }
+        }
+        configMap[config.configKey] = value;
+      }
+      
+      res.json({ configs: configMap });
+    } catch (error) {
+      console.error("Failed to get public platform configs:", error);
+      res.status(500).json({ message: "Failed to get platform configuration" });
+    }
+  });
+
+  // Update platform config
+  app.patch("/api/admin/platform-config/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { configValue } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const updated = await storage.updatePlatformConfig(id, {
+        configValue: String(configValue),
+        updatedBy: adminUser.id,
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Configuration not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "platform_config",
+        entityId: id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Updated ${updated.configKey} to ${configValue}`,
+      });
+      
+      res.json({ config: updated });
+    } catch (error) {
+      console.error("Failed to update platform config:", error);
+      res.status(500).json({ message: "Failed to update platform configuration" });
+    }
+  });
+
+  // Bulk update platform configs
+  app.post("/api/admin/platform-config/bulk-update", ensureAdminAsync, async (req, res) => {
+    try {
+      const { updates } = req.body; // Array of { id, configValue }
+      const adminUser = (req as any).adminUser;
+      
+      if (!Array.isArray(updates)) {
+        return res.status(400).json({ message: "Updates must be an array" });
+      }
+      
+      const results: any[] = [];
+      for (const update of updates) {
+        const updated = await storage.updatePlatformConfig(update.id, {
+          configValue: String(update.configValue),
+          updatedBy: adminUser.id,
+        });
+        if (updated) {
+          results.push(updated);
+          await storage.createAuditLog({
+            entityType: "platform_config",
+            entityId: update.id,
+            actionType: "update",
+            actor: adminUser.id,
+            actorRole: "admin",
+            details: `Updated ${updated.configKey} to ${update.configValue}`,
+          });
+        }
+      }
+      
+      res.json({ configs: results, updated: results.length });
+    } catch (error) {
+      console.error("Failed to bulk update platform configs:", error);
+      res.status(500).json({ message: "Failed to update platform configuration" });
+    }
+  });
+
+  // Seed default platform configs
+  app.post("/api/admin/platform-config/seed", ensureAdminAsync, async (req, res) => {
+    try {
+      await storage.seedDefaultPlatformConfig();
+      const configs = await storage.getAllPlatformConfigs();
+      res.json({ message: "Default platform configuration seeded", configs });
+    } catch (error) {
+      console.error("Failed to seed platform configs:", error);
+      res.status(500).json({ message: "Failed to seed platform configuration" });
+    }
+  });
+
+  // Create new platform config (admin use)
+  app.post("/api/admin/platform-config", ensureAdminAsync, async (req, res) => {
+    try {
+      const { category, configKey, configValue, configType, displayName, description, displayOrder } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const config = await storage.createPlatformConfig({
+        category,
+        configKey,
+        configValue: String(configValue),
+        configType: configType || 'string',
+        displayName,
+        description,
+        displayOrder: displayOrder || 0,
+        updatedBy: adminUser.id,
+      });
+      
+      await storage.createAuditLog({
+        entityType: "platform_config",
+        entityId: config.id,
+        actionType: "create",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Created platform config: ${configKey}`,
+      });
+      
+      res.json({ config });
+    } catch (error) {
+      console.error("Failed to create platform config:", error);
+      res.status(500).json({ message: "Failed to create platform configuration" });
+    }
+  });
+
+  // Delete platform config
+  app.delete("/api/admin/platform-config/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const adminUser = (req as any).adminUser;
+      
+      const config = await storage.getAllPlatformConfigs().then(configs => configs.find(c => c.id === id));
+      
+      const success = await storage.deletePlatformConfig(id);
+      if (!success) {
+        return res.status(404).json({ message: "Configuration not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "platform_config",
+        entityId: id,
+        actionType: "delete",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Deleted platform config: ${config?.configKey || id}`,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete platform config:", error);
+      res.status(500).json({ message: "Failed to delete platform configuration" });
+    }
+  });
+
   return httpServer;
 }

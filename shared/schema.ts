@@ -2412,3 +2412,32 @@ export const cryptoPaymentRequests = pgTable("crypto_payment_requests", {
 export const insertCryptoPaymentRequestSchema = createInsertSchema(cryptoPaymentRequests).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertCryptoPaymentRequest = z.infer<typeof insertCryptoPaymentRequestSchema>;
 export type CryptoPaymentRequest = typeof cryptoPaymentRequests.$inferSelect;
+
+// ============================================
+// CENTRALIZED PLATFORM CONFIGURATION
+// ============================================
+
+export const platformConfigCategoryEnum = pgEnum('platform_config_category', [
+  'gold_pricing', 'transaction_limits', 'deposit_limits', 'withdrawal_limits',
+  'p2p_limits', 'bnsl_settings', 'finabridge_settings', 'payment_fees',
+  'kyc_settings', 'system_settings', 'vault_settings', 'referral_settings'
+]);
+
+export const platformConfig = pgTable("platform_config", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  category: platformConfigCategoryEnum("category").notNull(),
+  configKey: varchar("config_key", { length: 100 }).notNull().unique(),
+  configValue: text("config_value").notNull(),
+  configType: varchar("config_type", { length: 50 }).notNull().default('string'), // 'string', 'number', 'boolean', 'json'
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  description: text("description"),
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  updatedBy: varchar("updated_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPlatformConfigSchema = createInsertSchema(platformConfig).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlatformConfig = z.infer<typeof insertPlatformConfigSchema>;
+export type PlatformConfig = typeof platformConfig.$inferSelect;
