@@ -10,6 +10,40 @@ interface ConnectedUser {
 
 const connectedUsers = new Map<string, ConnectedUser>();
 
+// Export io instance for use in routes
+let ioInstance: Server | null = null;
+
+export function getIO(): Server | null {
+  return ioInstance;
+}
+
+// Emit ledger sync event to a specific user
+export function emitLedgerEvent(userId: string, event: {
+  type: 'balance_update' | 'transaction' | 'certificate' | 'notification';
+  module: 'finapay' | 'finavault' | 'bnsl' | 'finabridge' | 'system';
+  action: string;
+  data?: any;
+}) {
+  if (ioInstance) {
+    ioInstance.to(userId).emit('ledger:sync', {
+      ...event,
+      timestamp: new Date().toISOString(),
+      syncVersion: Date.now(),
+    });
+    console.log(`[Socket] Emitted ledger:sync to user ${userId}: ${event.type}/${event.action}`);
+  }
+}
+
+// Emit to multiple users (e.g., sender and recipient in transfers)
+export function emitLedgerEventToUsers(userIds: string[], event: {
+  type: 'balance_update' | 'transaction' | 'certificate' | 'notification';
+  module: 'finapay' | 'finavault' | 'bnsl' | 'finabridge' | 'system';
+  action: string;
+  data?: any;
+}) {
+  userIds.forEach(userId => emitLedgerEvent(userId, event));
+}
+
 export function setupSocketIO(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
@@ -17,6 +51,9 @@ export function setupSocketIO(httpServer: HttpServer) {
       methods: ["GET", "POST"]
     }
   });
+
+  // Store io instance for external access
+  ioInstance = io;
 
   io.on("connection", (socket: Socket) => {
     console.log(`Socket connected: ${socket.id}`);

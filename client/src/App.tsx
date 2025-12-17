@@ -150,6 +150,7 @@ import { BnslProvider } from "@/context/BnslContext";
 import { FeeProvider } from "@/context/FeeContext";
 import { BrandingProvider } from "@/context/BrandingContext";
 import { CMSProvider } from "@/context/CMSContext";
+import { SocketProvider } from "@/context/SocketContext";
 
 function App() {
   return (
@@ -159,27 +160,29 @@ function App() {
           <CMSProvider>
             <UserProvider>
               <AuthProvider>
-                <FeeProvider>
-                  <PlatformProvider>
-                    <TradeFinanceProvider>
-                      <BnslProvider>
-                        <FinaPayProvider>
-                          <LanguageProvider>
-                            <AccountTypeProvider>
-                              <NotificationProvider>
-                                <TooltipProvider>
-                                  <Toaster />
-                                  <SonnerToaster position="top-right" richColors />
-                                  <Router />
-                                </TooltipProvider>
-                              </NotificationProvider>
-                            </AccountTypeProvider>
-                          </LanguageProvider>
-                        </FinaPayProvider>
-                      </BnslProvider>
-                    </TradeFinanceProvider>
-                  </PlatformProvider>
-                </FeeProvider>
+                <SocketProvider>
+                  <FeeProvider>
+                    <PlatformProvider>
+                      <TradeFinanceProvider>
+                        <BnslProvider>
+                          <FinaPayProvider>
+                            <LanguageProvider>
+                              <AccountTypeProvider>
+                                <NotificationProvider>
+                                  <TooltipProvider>
+                                    <Toaster />
+                                    <SonnerToaster position="top-right" richColors />
+                                    <Router />
+                                  </TooltipProvider>
+                                </NotificationProvider>
+                              </AccountTypeProvider>
+                            </LanguageProvider>
+                          </FinaPayProvider>
+                        </BnslProvider>
+                      </TradeFinanceProvider>
+                    </PlatformProvider>
+                  </FeeProvider>
+                </SocketProvider>
               </AuthProvider>
             </UserProvider>
           </CMSProvider>

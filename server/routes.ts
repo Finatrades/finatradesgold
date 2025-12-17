@@ -60,6 +60,7 @@ import PDFDocument from "pdfkit";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { emitLedgerEvent, emitLedgerEventToUsers } from "./socket";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -237,7 +238,7 @@ export async function registerRoutes(
     try {
       const userId = req.params.userId;
       
-      // Parallel fetch all data sources
+      // Parallel fetch all data sources including certificates
       const [
         wallet,
         vaultHoldings,
@@ -247,7 +248,8 @@ export async function registerRoutes(
         bnslPlans,
         priceData,
         notifications,
-        tradeCases
+        tradeCases,
+        certificates
       ] = await Promise.all([
         storage.getWallet(userId).catch(() => null),
         storage.getUserVaultHoldings(userId).catch(() => []),
@@ -257,7 +259,8 @@ export async function registerRoutes(
         storage.getUserBnslPlans(userId).catch(() => []),
         getGoldPrice().catch(() => ({ pricePerGram: 85, source: 'fallback' })),
         storage.getUserNotifications(userId).catch(() => []),
-        storage.getUserTradeCases(userId).catch(() => [])
+        storage.getUserTradeCases(userId).catch(() => []),
+        storage.getUserCertificates(userId).catch(() => [])
       ]);
 
       const goldPrice = priceData.pricePerGram || 85;
@@ -327,6 +330,18 @@ export async function registerRoutes(
       const loadTime = Date.now() - startTime;
       console.log(`[Dashboard] Loaded for user ${userId} in ${loadTime}ms`);
 
+      // Process certificates for summary
+      const activeCerts = (certificates || []).filter((c: any) => c.status === 'Active');
+      const recentCerts = [...(certificates || [])]
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 10);
+
+      // Get latest transaction ID for sync versioning (authoritative source)
+      const latestTransaction = allTransactions.find((t: any) => t.status === 'Completed');
+      const syncVersion = latestTransaction?.createdAt 
+        ? new Date(latestTransaction.createdAt).getTime() 
+        : Date.now();
+
       res.json({
         wallet: wallet || { goldGrams: '0', usdBalance: '0', eurBalance: '0' },
         vaultHoldings: vaultHoldings || [],
@@ -338,6 +353,15 @@ export async function registerRoutes(
         tradeCounts: {
           active: (tradeCases || []).filter((tc: any) => !['Completed', 'Cancelled', 'Rejected'].includes(tc.status)).length,
           total: (tradeCases || []).length
+        },
+        certificates: {
+          recent: recentCerts,
+          summary: {
+            total: (certificates || []).length,
+            active: activeCerts.length,
+            digitalOwnership: activeCerts.filter((c: any) => c.type === 'Digital Ownership').length,
+            physicalStorage: activeCerts.filter((c: any) => c.type === 'Physical Storage').length,
+          }
         },
         totals: {
           vaultGoldGrams,
@@ -352,7 +376,12 @@ export async function registerRoutes(
           pendingGoldGrams,
           pendingDepositUsd
         },
-        _meta: { loadTimeMs: loadTime }
+        _meta: { 
+          loadTimeMs: loadTime,
+          syncVersion,
+          serverTime: new Date().toISOString(),
+          lastTransactionId: latestTransaction?.id || null
+        }
       });
     } catch (error) {
       console.error('[Dashboard] Error:', error);
@@ -4178,6 +4207,14 @@ export async function registerRoutes(
             notes: `FinaVault physical deposit: ${finalWeightGrams}g gold stored at ${request.vaultLocation}`,
             createdBy: adminId,
           });
+          
+          // Emit real-time sync event for auto-update
+          emitLedgerEvent(request.userId, {
+            type: 'balance_update',
+            module: 'finavault',
+            action: 'vault_deposit_stored',
+            data: { goldGrams: finalWeightGrams, amountUsd: totalValue },
+          });
         }
 
         updates.vaultHoldingId = holding.id;
@@ -4378,6 +4415,14 @@ export async function registerRoutes(
             sourceModule: 'finavault',
             referenceId: request.referenceNumber,
           });
+          
+          // Emit real-time sync event for auto-update
+          emitLedgerEvent(request.userId, {
+            type: 'balance_update',
+            module: 'finavault',
+            action: 'withdrawal_completed',
+            data: { goldGrams, amountUsd: parseFloat(request.totalValueUsd) },
+          });
         }
 
         updates.processedAt = new Date();
@@ -4515,6 +4560,14 @@ export async function registerRoutes(
       // Get updated wallets
       const updatedFinapay = await storage.getWallet(userId);
       const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
+      
+      // Emit real-time sync event for auto-update
+      emitLedgerEvent(userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'finapay_to_bnsl_transfer',
+        data: { goldGrams: amountGrams, amountUsd: usdValue },
+      });
       
       res.json({ 
         success: true, 
@@ -4858,6 +4911,14 @@ export async function registerRoutes(
         actor: planData.userId,
         actorRole: "user",
         details: `BNSL plan created: ${goldGrams.toFixed(3)}g locked, contract ${plan.contractId}`,
+      });
+      
+      // Emit real-time sync event for auto-update
+      emitLedgerEvent(planData.userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'plan_created',
+        data: { goldGrams, planId: plan.id },
       });
       
       res.json({ plan });
@@ -5511,6 +5572,14 @@ export async function registerRoutes(
             message: `Your bank deposit of $${depositAmountUsd.toFixed(2)} has been confirmed. ${goldGrams.toFixed(4)}g gold has been credited to your wallet.`,
             type: 'success',
             read: false,
+          });
+          
+          // Emit real-time sync event for auto-update
+          emitLedgerEvent(request.userId, {
+            type: 'balance_update',
+            module: 'finapay',
+            action: 'bank_deposit_confirmed',
+            data: { goldGrams, amountUsd: depositAmountUsd },
           });
           
           if (depositUser && depositUser.email) {
@@ -7645,6 +7714,20 @@ export async function registerRoutes(
           goldPrice
         ).catch(err => console.error('[Routes] Failed to generate transfer certificates:', err));
 
+        // Emit real-time sync events for both sender and recipient
+        emitLedgerEvent(sender.id, {
+          type: 'balance_update',
+          module: 'finapay',
+          action: 'gold_sent',
+          data: { goldGrams: goldAmount, recipientId: recipient.id },
+        });
+        emitLedgerEvent(recipient.id, {
+          type: 'balance_update',
+          module: 'finapay',
+          action: 'gold_received',
+          data: { goldGrams: goldAmount, senderId: sender.id },
+        });
+
         // Send email notification to recipient for gold transfer
         if (recipient.email) {
           sendEmailDirect(
@@ -7744,6 +7827,20 @@ export async function registerRoutes(
           recipientTransactionId: recipientTx.id,
         });
         
+        // Emit real-time sync events for both sender and recipient
+        emitLedgerEvent(sender.id, {
+          type: 'balance_update',
+          module: 'finapay',
+          action: 'usd_sent',
+          data: { amountUsd: amount, recipientId: recipient.id },
+        });
+        emitLedgerEvent(recipient.id, {
+          type: 'balance_update',
+          module: 'finapay',
+          action: 'usd_received',
+          data: { amountUsd: amount, senderId: sender.id },
+        });
+
         // Send email notification to recipient for USD transfer
         if (recipient.email) {
           sendEmailDirect(
@@ -9019,6 +9116,14 @@ export async function registerRoutes(
             read: false,
           });
 
+          // Emit real-time sync event for auto-update
+          emitLedgerEvent(userId, {
+            type: 'balance_update',
+            module: 'finapay',
+            action: 'card_payment_credited',
+            data: { goldGrams, amountUsd: depositAmount },
+          });
+
           res.json({
             success: true,
             status: 'completed',
@@ -9251,6 +9356,14 @@ export async function registerRoutes(
             read: false,
           });
 
+          // Emit real-time sync event for auto-update
+          emitLedgerEvent(userId, {
+            type: 'balance_update',
+            module: 'finapay',
+            action: 'card_payment_credited',
+            data: { goldGrams, amountUsd },
+          });
+
           console.log(`[NGenius] Payment successful: ${goldGrams.toFixed(4)}g gold credited with dual certificates`);
 
           res.json({
@@ -9437,6 +9550,14 @@ export async function registerRoutes(
               message: `Your card payment of $${depositAmount.toFixed(2)} has been credited. ${goldGrams.toFixed(4)}g gold has been added to your wallet.`,
               type: 'success',
               read: false,
+            });
+
+            // Emit real-time sync event for auto-update
+            emitLedgerEvent(transaction.userId, {
+              type: 'balance_update',
+              module: 'finapay',
+              action: 'card_payment_credited',
+              data: { goldGrams, amountUsd: depositAmount },
             });
 
             console.log(`[NGenius Webhook] Dual certificates created for ${transaction.orderReference}`);
@@ -11522,6 +11643,14 @@ export async function registerRoutes(
         message: `Your crypto payment of $${paymentRequest.amountUsd} has been approved. ${paymentRequest.goldGrams}g gold has been credited to your wallet.`,
         type: "success",
         read: false,
+      });
+      
+      // Emit real-time sync event for auto-update
+      emitLedgerEvent(paymentRequest.userId, {
+        type: 'balance_update',
+        module: 'finapay',
+        action: 'crypto_payment_approved',
+        data: { goldGrams, amountUsd: usdAmount },
       });
       
       // Send email with PDF attachments

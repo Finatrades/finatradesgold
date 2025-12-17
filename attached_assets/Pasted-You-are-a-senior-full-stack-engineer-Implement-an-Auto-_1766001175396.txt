@@ -1,0 +1,124 @@
+You are a senior full-stack engineer. Implement an “Auto-Sync Strategy” for the Finatrades app in Replit so ALL systems update automatically (NO manual refresh) for balances, transactions, and certificates.
+
+STACK (use this)
+- Next.js (App Router) + React + TypeScript
+- Tailwind
+- TanStack Query (React Query)
+- Next.js Route Handlers (/api/*)
+- DB: Prisma + SQLite (fallback in-memory, same interfaces)
+
+PRIMARY GOAL (non-negotiable)
+- User never clicks refresh.
+- After ANY action (Add Funds, Send Gold, BNSL Lock/Unlock, FinaBridge Case/Approve/Release, Vault Deposit/Withdraw), UI updates instantly and stays consistent across:
+  1) balances (FinaPay/FinaVault/BNSL/FinaBridge)
+  2) transaction records (unified ledger)
+  3) certificates (Digital Ownership + Storage Certificate + Invoice)
+
+CORE STRATEGY (must implement all 4 layers)
+LAYER 1 — SINGLE DASHBOARD SNAPSHOT ENDPOINT
+- Create: GET /api/snapshot
+Return in one response:
+  - balances (all modules)
+  - latestTransactions (limit 30)
+  - certificates summary (latest 10 + statuses)
+  - priceSnapshot (usdPerGram used)
+  - syncMeta: serverTime, version, lastLedgerId
+This endpoint must be FAST and minimal payload.
+
+LAYER 2 — EVENT-DRIVEN INVALIDATION (AUTO UPDATE)
+- Use ONE unified “ledger event” system.
+Every mutation must:
+  - write a LedgerEvent row (id, userId, module, actionType, refId, createdAt)
+  - write a Transaction row (append-only)
+  - update balances atomically in the same server transaction
+Then on frontend:
+  - use optimistic updates for instant UI
+  - onSuccess invalidateQueries:
+      ["snapshot"]
+      ["balances"]
+      ["transactions"]
+      ["certificates"]
+      ["user360"] (admin)
+No manual refresh button required.
+
+LAYER 3 — BACKGROUND AUTO REFRESH (SILENT)
+- Add auto refetch rules:
+  - snapshot refetch every 10s when dashboard is visible
+  - refetchOnWindowFocus = true
+  - refetchOnReconnect = true
+  - staleTime 15–30s
+- Add “sync status indicator”:
+  ✅ Updated | 🔄 Syncing | ⚠️ Error (but never block UI)
+
+LAYER 4 — REALTIME PUSH (choose SSE; websocket optional)
+- Implement Server-Sent Events:
+  - GET /api/events/stream (SSE)
+  - server emits events when LedgerEvent is created for that user
+- Frontend subscribes to SSE after login:
+  - on event received: invalidateQueries(["snapshot","transactions","certificates"])
+This makes updates near-instant without polling.
+
+DATA MODEL (minimum)
+- User(id,email,passwordHash)
+- Balances(userId, finapayGrams, finavaultGrams, bnslLockedGrams, finabridgeLockedGrams, updatedAt)
+- Transaction(id,userId,module,actionType,grams,usd,usdPerGram,status,refId,description,createdAt)
+- Certificate(id,userId,certificateType: OWNERSHIP|STORAGE|INVOICE, refId, status: ACTIVE|UPDATED|VOID, fileUrl(optional), createdAt, updatedAt)
+- LedgerEvent(id,userId,module,actionType,refId,createdAt)
+
+CERTIFICATE AUTO-CHECK RULES (must implement)
+- After any action that changes ownership/lock/release:
+  - create/update Certificate records automatically:
+    - OWNERSHIP certificate updates when finavault ownership changes
+    - STORAGE certificate updates when physical allocation changes (stub ok)
+    - INVOICE generated for Add Funds / Sell / Fees (stub ok)
+- Provide: GET /api/certificates?limit=20
+- In snapshot include certificate summary and last update time.
+
+PAGES
+- /dashboard (tabs: FinaPay, FinaVault, BNSL, FinaBridge)
+  - uses only useSnapshotQuery() calling /api/snapshot
+  - shows balances tiles, latest transactions, latest certificates
+  - shows sync status
+- /transactions (full ledger with filters, pagination)
+- /certificates (list + status + details)
+- /admin/control-tower (optional stub)
+
+MUTATIONS (must exist)
+- POST /api/finapay/add-funds
+- POST /api/finapay/send
+- POST /api/bnsl/lock
+- POST /api/bnsl/unlock
+- POST /api/finabridge/create-case
+- POST /api/finabridge/approve
+- POST /api/finabridge/release
+Each mutation must:
+  - write Transaction + LedgerEvent
+  - update Balances
+  - update Certificates when needed
+
+FRONTEND IMPLEMENTATION DETAILS (mandatory)
+- Create hooks:
+  - useSnapshotQuery()
+  - useTransactionsQuery(filters)
+  - useCertificatesQuery()
+- Create mutations with optimistic update + rollback:
+  - update snapshot cache immediately
+  - then confirm with server
+- On logout:
+  - close SSE connection
+  - clear React Query cache
+
+PERFORMANCE RULES
+- Dashboard loads from ONE API call (/api/snapshot)
+- Keep payload small (no heavy certificate PDFs; only metadata)
+- Add DB indexes on:
+  Transaction(userId,createdAt), LedgerEvent(userId,createdAt), Certificate(userId,updatedAt)
+
+DELIVERABLES
+- Working auto-sync system with SSE + query invalidation + snapshot endpoint
+- Demonstrate:
+  1) Add Funds -> balances + transactions + certificates update instantly
+  2) Send Gold -> both users update (sender instantly, receiver after event)
+  3) Lock/Unlock BNSL -> balances + certificates update instantly
+  4) Create/Release trade -> transactions + balances + certificates update instantly
+- README explaining the auto-update strategy and where to add new actions in future.

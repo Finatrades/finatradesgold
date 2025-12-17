@@ -48,7 +48,29 @@ This rule applies universally across:
 - **Styling**: Tailwind CSS v4 with custom theme (orange gradient aesthetic for light mode)
 - **Data Fetching**: TanStack React Query for server state management
 - **Animations**: Framer Motion for UI transitions
-- **Real-time**: Socket.IO client for live chat functionality
+- **Real-time**: Socket.IO client for live chat and auto-sync functionality
+
+### Real-Time Auto-Sync System
+The platform implements a 4-layer auto-sync strategy for real-time data synchronization:
+
+**Layer 1 - Snapshot API**: Dashboard endpoint (`/api/dashboard/:userId`) returns all user data with sync metadata (`_meta.syncVersion`, `_meta.lastTransactionId`) keyed off the latest completed transaction
+
+**Layer 2 - Ledger Events**: Server emits `ledger:sync` events via Socket.IO after successful balance mutations. Covered routes include:
+- Bank deposit approval
+- Card payment (complete-session, process-hosted-payment, webhook)
+- Crypto payment approval
+- FinaPay transfers (gold and USD, sender + recipient)
+- BNSL wallet transfers and plan creation
+- FinaVault deposit/withdrawal completion
+
+**Layer 3 - Background Auto-Refresh**: `useDashboardData` hook implements 15-second background polling via React Query's `refetchInterval`
+
+**Layer 4 - Real-time Push**: Centralized `SocketProvider` context manages a single Socket.IO connection per user session. Dashboard hook listens for `ledger:sync` events and invalidates relevant query cache
+
+**Key Files**:
+- `client/src/context/SocketContext.tsx` - Centralized socket management
+- `client/src/hooks/useDashboardData.ts` - Dashboard data fetching with sync status
+- `server/socket.ts` - Socket.IO server with `emitLedgerEvent` function
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express
