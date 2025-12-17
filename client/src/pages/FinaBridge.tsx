@@ -2256,12 +2256,18 @@ export default function FinaBridge() {
                   max={parseFloat(mainWallet?.goldGrams || '0')}
                   value={fundAmount}
                   onChange={(e) => setFundAmount(e.target.value)}
-                  className="w-full p-3 border rounded-lg"
+                  className={`w-full p-3 border rounded-lg ${parseFloat(fundAmount || '0') > parseFloat(mainWallet?.goldGrams || '0') ? 'border-red-500 bg-red-50' : ''}`}
                   placeholder="0.000"
                   required
                   data-testid="input-fund-amount"
                 />
-                <p className="text-xs text-muted-foreground">Maximum: {parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
+                {parseFloat(fundAmount || '0') > parseFloat(mainWallet?.goldGrams || '0') ? (
+                  <p className="text-xs text-red-600 font-medium">
+                    Insufficient balance. You only have {parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g available in your FinaPay wallet.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Maximum: {parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
+                )}
               </div>
               <div className="flex justify-end gap-4">
                 <Button type="button" variant="outline" onClick={() => setShowFundDialog(false)}>
