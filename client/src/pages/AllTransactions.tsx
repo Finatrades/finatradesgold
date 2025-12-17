@@ -73,6 +73,17 @@ export default function AllTransactions() {
     refetchInterval: 30000,
   });
 
+  const { data: goldPriceData } = useQuery<{ pricePerGram: number }>({
+    queryKey: ['gold-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-price');
+      if (!res.ok) throw new Error('Failed to fetch gold price');
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+  const currentGoldPrice = goldPriceData?.pricePerGram || 85;
+
   useEffect(() => {
     if (isFetching) {
       setSyncStatus('syncing');
@@ -342,9 +353,11 @@ export default function AllTransactions() {
 
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        {tx.grams && (
+                        {tx.grams ? (
                           <p className="font-semibold text-foreground">{parseFloat(tx.grams).toFixed(4)}g</p>
-                        )}
+                        ) : tx.usd && currentGoldPrice > 0 ? (
+                          <p className="font-semibold text-foreground">~{(parseFloat(tx.usd) / currentGoldPrice).toFixed(2)}g</p>
+                        ) : null}
                         {tx.usd && (
                           <p className="text-sm text-muted-foreground">${parseFloat(tx.usd).toFixed(2)}</p>
                         )}
@@ -392,12 +405,17 @@ export default function AllTransactions() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {selectedTx.grams && (
+                {selectedTx.grams ? (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Gold Amount</p>
                     <p className="font-semibold text-amber-600">{parseFloat(selectedTx.grams).toFixed(6)}g</p>
                   </div>
-                )}
+                ) : selectedTx.usd && currentGoldPrice > 0 ? (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Gold Amount (Est.)</p>
+                    <p className="font-semibold text-amber-600">~{(parseFloat(selectedTx.usd) / currentGoldPrice).toFixed(4)}g</p>
+                  </div>
+                ) : null}
                 {selectedTx.usd && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">USD Value</p>
