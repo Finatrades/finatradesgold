@@ -8466,17 +8466,16 @@ export async function registerRoutes(
           if (newStatus !== transaction.status) {
             await storage.updateNgeniusTransaction(transaction.id, { status: newStatus as any });
             
-            // If captured, credit the wallet with gold (not USD cash)
+            // If captured, credit the wallet with gold (matching crypto flow exactly)
             if (newStatus === 'Captured' && transaction.status !== 'Captured') {
               const wallet = await storage.getWallet(transaction.userId);
               if (wallet) {
                 const depositAmount = parseFloat(transaction.amountUsd || '0');
-                // Convert USD to gold at current price
                 let goldPricePerGram: number;
                 try {
                   goldPricePerGram = await getGoldPricePerGram();
                 } catch {
-                  goldPricePerGram = 85; // Fallback price
+                  goldPricePerGram = 140;
                 }
                 const goldGrams = depositAmount / goldPricePerGram;
                 const currentGold = parseFloat(wallet.goldGrams || '0');
@@ -8485,15 +8484,15 @@ export async function registerRoutes(
                   goldGrams: (currentGold + goldGrams).toFixed(6),
                 });
 
-                // Create transaction record
+                // Create transaction record (type='Buy' like crypto)
                 const walletTx = await storage.createTransaction({
                   userId: transaction.userId,
-                  type: 'Deposit',
+                  type: 'Buy',
                   status: 'Completed',
                   amountUsd: transaction.amountUsd,
                   amountGold: goldGrams.toFixed(6),
                   goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-                  description: `Card deposit via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+                  description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
                   referenceId: orderReference,
                   sourceModule: 'finapay',
                   completedAt: new Date(),
@@ -8503,12 +8502,46 @@ export async function registerRoutes(
                   walletTransactionId: walletTx.id,
                 });
 
-                // Create Digital Ownership Certificate for card payment
-                const certificateNumber = `FT-DOC-${orderReference.substring(0, 12).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                // Record vault ledger entry (like crypto)
+                const { vaultLedgerService } = await import('./vault-ledger-service');
+                await vaultLedgerService.recordLedgerEntry({
+                  userId: transaction.userId,
+                  action: 'Deposit',
+                  goldGrams: goldGrams,
+                  goldPriceUsdPerGram: goldPricePerGram,
+                  fromWallet: 'External',
+                  toWallet: 'FinaPay',
+                  toStatus: 'Available',
+                  transactionId: walletTx.id,
+                  notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
+                  createdBy: 'system',
+                });
+
+                // Get or create vault holding (like crypto) - use getUserVaultHoldings
+                const userHoldings = await storage.getUserVaultHoldings(transaction.userId);
+                let holding = userHoldings[0];
+                if (!holding) {
+                  holding = await storage.createVaultHolding({
+                    userId: transaction.userId,
+                    goldGrams: goldGrams.toFixed(6),
+                    vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                    wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                    purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+                  });
+                } else {
+                  const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
+                  await storage.updateVaultHolding(holding.id, {
+                    goldGrams: newTotalGrams.toFixed(6),
+                  });
+                }
+
+                // Digital Ownership Certificate (DOC) from Finatrades
+                const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
                 await storage.createCertificate({
-                  certificateNumber,
+                  certificateNumber: docCertNum,
                   userId: transaction.userId,
                   transactionId: walletTx.id,
+                  vaultHoldingId: holding.id,
                   type: 'Digital Ownership',
                   status: 'Active',
                   goldGrams: goldGrams.toFixed(6),
@@ -8518,7 +8551,25 @@ export async function registerRoutes(
                   vaultLocation: 'Dubai - Wingold & Metals DMCC',
                   issuedAt: new Date(),
                 });
-                console.log(`[NGenius] Certificate ${certificateNumber} created for card payment ${orderReference}`);
+
+                // Physical Storage Certificate (SSC) from Wingold & Metals DMCC
+                const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
+                await storage.createCertificate({
+                  certificateNumber: sscCertNum,
+                  userId: transaction.userId,
+                  transactionId: walletTx.id,
+                  vaultHoldingId: holding.id,
+                  type: 'Physical Storage',
+                  status: 'Active',
+                  goldGrams: goldGrams.toFixed(6),
+                  goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+                  totalValueUsd: depositAmount.toFixed(2),
+                  issuer: 'Wingold & Metals DMCC',
+                  vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                  issuedAt: new Date(),
+                });
+
+                console.log(`[NGenius] Certificates ${docCertNum} + ${sscCertNum} created for card payment ${orderReference}`);
 
                 // Send receipt email
                 const user = await storage.getUser(transaction.userId);
@@ -8536,7 +8587,7 @@ export async function registerRoutes(
                       timeStyle: 'short' 
                     }),
                     card_last4: orderStatus._embedded?.payment?.[0]?.paymentMethod?.pan?.slice(-4) || '****',
-                    certificate_number: certificateNumber,
+                    certificate_number: docCertNum,
                     gold_grams: goldGrams.toFixed(4),
                     gold_price: goldPricePerGram.toFixed(2),
                     total_gold_grams: totalGold.toFixed(4),
@@ -8545,6 +8596,15 @@ export async function registerRoutes(
                   });
                   console.log(`[NGenius] Receipt email sent to ${user.email} for ${orderReference}`);
                 }
+
+                // Create notification
+                await storage.createNotification({
+                  userId: transaction.userId,
+                  title: 'Card Payment Credited',
+                  message: `Your card payment of $${depositAmount.toFixed(2)} has been credited. ${goldGrams.toFixed(4)}g gold has been added to your wallet.`,
+                  type: 'success',
+                  read: false,
+                });
               }
             }
           }
@@ -8783,7 +8843,7 @@ export async function registerRoutes(
           status: result.status as any,
         });
 
-        // Credit wallet with gold
+        // Credit wallet with gold (matching crypto flow)
         const wallet = await storage.getWallet(userId);
         if (wallet && ['CAPTURED', 'AUTHORISED', 'PURCHASED'].includes(result.status)) {
           const depositAmount = parseFloat(transaction.amountUsd || '0');
@@ -8802,12 +8862,12 @@ export async function registerRoutes(
 
           const walletTx = await storage.createTransaction({
             userId,
-            type: 'Deposit',
+            type: 'Buy',
             status: 'Completed',
             amountUsd: transaction.amountUsd,
             amountGold: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-            description: `Card deposit - ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+            description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
             completedAt: new Date(),
@@ -8818,17 +8878,80 @@ export async function registerRoutes(
             status: 'Captured',
           });
 
-          // Create certificate
+          // Record vault ledger entry
+          const { vaultLedgerService } = await import('./vault-ledger-service');
+          await vaultLedgerService.recordLedgerEntry({
+            userId,
+            action: 'Deposit',
+            goldGrams: goldGrams,
+            goldPriceUsdPerGram: goldPricePerGram,
+            fromWallet: 'External',
+            toWallet: 'FinaPay',
+            toStatus: 'Available',
+            transactionId: walletTx.id,
+            notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
+            createdBy: 'system',
+          });
+
+          // Get or create vault holding - use getUserVaultHoldings
+          const userHoldings = await storage.getUserVaultHoldings(userId);
+          let holding = userHoldings[0];
+          if (!holding) {
+            holding = await storage.createVaultHolding({
+              userId,
+              goldGrams: goldGrams.toFixed(6),
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+              purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+            });
+          } else {
+            const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
+            await storage.updateVaultHolding(holding.id, {
+              goldGrams: newTotalGrams.toFixed(6),
+            });
+          }
+
+          // Digital Ownership Certificate
+          const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
           await storage.createCertificate({
+            certificateNumber: docCertNum,
             userId,
             transactionId: walletTx.id,
+            vaultHoldingId: holding.id,
             type: 'Digital Ownership',
             status: 'Active',
             goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            totalValueUsd: depositAmount.toFixed(2),
             issuer: 'Finatrades',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             issuedAt: new Date(),
+          });
+
+          // Physical Storage Certificate
+          const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
+          await storage.createCertificate({
+            certificateNumber: sscCertNum,
+            userId,
+            transactionId: walletTx.id,
+            vaultHoldingId: holding.id,
+            type: 'Physical Storage',
+            status: 'Active',
+            goldGrams: goldGrams.toFixed(6),
+            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            totalValueUsd: depositAmount.toFixed(2),
+            issuer: 'Wingold & Metals DMCC',
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            issuedAt: new Date(),
+          });
+
+          // Create notification
+          await storage.createNotification({
+            userId,
+            title: 'Card Payment Credited',
+            message: `Your card payment of $${depositAmount.toFixed(2)} has been credited. ${goldGrams.toFixed(4)}g gold has been added to your wallet.`,
+            type: 'success',
+            read: false,
           });
 
           res.json({
@@ -8952,7 +9075,7 @@ export async function registerRoutes(
           status: 'Captured',
         });
 
-        // Credit wallet with gold
+        // Credit wallet with gold (matching crypto flow)
         const wallet = await storage.getWallet(userId);
         if (wallet) {
           let goldPricePerGram: number;
@@ -8969,15 +9092,15 @@ export async function registerRoutes(
             goldGrams: (currentGold + goldGrams).toFixed(6),
           });
 
-          // Create transaction record
+          // Create transaction record (type='Buy' like crypto)
           const walletTx = await storage.createTransaction({
             userId,
-            type: 'Deposit',
+            type: 'Buy',
             status: 'Completed',
             amountUsd: amountUsd.toString(),
             amountGold: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-            description: `Card deposit - ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+            description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
             completedAt: new Date(),
@@ -8987,15 +9110,69 @@ export async function registerRoutes(
             walletTransactionId: walletTx.id,
           });
 
-          // Create certificate
+          // Record vault ledger entry
+          const { vaultLedgerService } = await import('./vault-ledger-service');
+          await vaultLedgerService.recordLedgerEntry({
+            userId,
+            action: 'Deposit',
+            goldGrams: goldGrams,
+            goldPriceUsdPerGram: goldPricePerGram,
+            fromWallet: 'External',
+            toWallet: 'FinaPay',
+            toStatus: 'Available',
+            transactionId: walletTx.id,
+            notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${amountUsd.toFixed(2)})`,
+            createdBy: 'system',
+          });
+
+          // Get or create vault holding - use getUserVaultHoldings
+          const userHoldings = await storage.getUserVaultHoldings(userId);
+          let holding = userHoldings[0];
+          if (!holding) {
+            holding = await storage.createVaultHolding({
+              userId,
+              goldGrams: goldGrams.toFixed(6),
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+              purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+            });
+          } else {
+            const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
+            await storage.updateVaultHolding(holding.id, {
+              goldGrams: newTotalGrams.toFixed(6),
+            });
+          }
+
+          // Digital Ownership Certificate
+          const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
           await storage.createCertificate({
+            certificateNumber: docCertNum,
             userId,
             transactionId: walletTx.id,
+            vaultHoldingId: holding.id,
             type: 'Digital Ownership',
             status: 'Active',
             goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            totalValueUsd: amountUsd.toFixed(2),
             issuer: 'Finatrades',
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            issuedAt: new Date(),
+          });
+
+          // Physical Storage Certificate
+          const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
+          await storage.createCertificate({
+            certificateNumber: sscCertNum,
+            userId,
+            transactionId: walletTx.id,
+            vaultHoldingId: holding.id,
+            type: 'Physical Storage',
+            status: 'Active',
+            goldGrams: goldGrams.toFixed(6),
+            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+            totalValueUsd: amountUsd.toFixed(2),
+            issuer: 'Wingold & Metals DMCC',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             issuedAt: new Date(),
           });
@@ -9003,12 +9180,13 @@ export async function registerRoutes(
           // Send notification
           await storage.createNotification({
             userId,
-            title: 'Card Deposit Successful',
-            message: `Your card deposit of $${amountUsd.toFixed(2)} has been completed. ${goldGrams.toFixed(4)}g gold credited to your wallet.`,
+            title: 'Card Payment Credited',
+            message: `Your card payment of $${amountUsd.toFixed(2)} has been credited. ${goldGrams.toFixed(4)}g gold has been added to your wallet.`,
             type: 'success',
+            read: false,
           });
 
-          console.log(`[NGenius] Payment successful: ${goldGrams.toFixed(4)}g gold credited`);
+          console.log(`[NGenius] Payment successful: ${goldGrams.toFixed(4)}g gold credited with dual certificates`);
 
           res.json({
             success: true,
@@ -9084,17 +9262,16 @@ export async function registerRoutes(
 
         await storage.updateNgeniusTransaction(transaction.id, updates);
 
-        // If payment captured, credit wallet with gold (not USD cash)
+        // If payment captured, credit wallet with gold (matching crypto flow)
         if (webhookData.status === 'Captured' && transaction.status !== 'Captured') {
           const wallet = await storage.getWallet(transaction.userId);
           if (wallet) {
             const depositAmount = parseFloat(transaction.amountUsd || '0');
-            // Convert USD to gold at current price
             let goldPricePerGram: number;
             try {
               goldPricePerGram = await getGoldPricePerGram();
             } catch {
-              goldPricePerGram = 85; // Fallback price
+              goldPricePerGram = 140;
             }
             const goldGrams = depositAmount / goldPricePerGram;
             const currentGold = parseFloat(wallet.goldGrams || '0');
@@ -9103,15 +9280,15 @@ export async function registerRoutes(
               goldGrams: (currentGold + goldGrams).toFixed(6),
             });
 
-            // Create transaction record
+            // Create transaction record (type='Buy' like crypto)
             const walletTx = await storage.createTransaction({
               userId: transaction.userId,
-              type: 'Deposit',
+              type: 'Buy',
               status: 'Completed',
               amountUsd: transaction.amountUsd,
               amountGold: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              description: `Card deposit via NGenius - ${transaction.orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+              description: `Card payment via NGenius webhook - ${transaction.orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: transaction.orderReference,
               sourceModule: 'finapay',
               completedAt: new Date(),
@@ -9120,6 +9297,84 @@ export async function registerRoutes(
             await storage.updateNgeniusTransaction(transaction.id, {
               walletTransactionId: walletTx.id,
             });
+
+            // Record vault ledger entry
+            const { vaultLedgerService } = await import('./vault-ledger-service');
+            await vaultLedgerService.recordLedgerEntry({
+              userId: transaction.userId,
+              action: 'Deposit',
+              goldGrams: goldGrams,
+              goldPriceUsdPerGram: goldPricePerGram,
+              fromWallet: 'External',
+              toWallet: 'FinaPay',
+              toStatus: 'Available',
+              transactionId: walletTx.id,
+              notes: `Card payment (webhook): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
+              createdBy: 'system',
+            });
+
+            // Get or create vault holding - use getUserVaultHoldings
+            const userHoldings = await storage.getUserVaultHoldings(transaction.userId);
+            let holding = userHoldings[0];
+            if (!holding) {
+              holding = await storage.createVaultHolding({
+                userId: transaction.userId,
+                goldGrams: goldGrams.toFixed(6),
+                vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+              });
+            } else {
+              const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
+              await storage.updateVaultHolding(holding.id, {
+                goldGrams: newTotalGrams.toFixed(6),
+              });
+            }
+
+            // Digital Ownership Certificate
+            const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
+            await storage.createCertificate({
+              certificateNumber: docCertNum,
+              userId: transaction.userId,
+              transactionId: walletTx.id,
+              vaultHoldingId: holding.id,
+              type: 'Digital Ownership',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              totalValueUsd: depositAmount.toFixed(2),
+              issuer: 'Finatrades',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              issuedAt: new Date(),
+            });
+
+            // Physical Storage Certificate
+            const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
+            await storage.createCertificate({
+              certificateNumber: sscCertNum,
+              userId: transaction.userId,
+              transactionId: walletTx.id,
+              vaultHoldingId: holding.id,
+              type: 'Physical Storage',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              totalValueUsd: depositAmount.toFixed(2),
+              issuer: 'Wingold & Metals DMCC',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              issuedAt: new Date(),
+            });
+
+            // Create notification
+            await storage.createNotification({
+              userId: transaction.userId,
+              title: 'Card Payment Credited',
+              message: `Your card payment of $${depositAmount.toFixed(2)} has been credited. ${goldGrams.toFixed(4)}g gold has been added to your wallet.`,
+              type: 'success',
+              read: false,
+            });
+
+            console.log(`[NGenius Webhook] Dual certificates created for ${transaction.orderReference}`);
           }
         }
 
@@ -9163,6 +9418,137 @@ export async function registerRoutes(
       res.json({ transactions: enrichedTransactions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+
+  // Admin: Fix card payment records missing vault holding and Physical Storage certificate
+  app.post("/api/admin/ngenius/fix-card-payment/:transactionId", ensureAdminAsync, async (req, res) => {
+    try {
+      const { transactionId } = req.params;
+      const adminUser = (req as any).adminUser;
+      
+      // Get the transaction
+      const transaction = await storage.getTransaction(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      // Check if it's a card payment transaction
+      if (!transaction.description?.includes('NGenius') && !transaction.description?.includes('Card')) {
+        return res.status(400).json({ message: "This is not a card payment transaction" });
+      }
+
+      // Get existing certificates for this transaction
+      const existingCerts = await storage.getCertificatesByTransactionId(transactionId);
+      const hasDigitalOwnership = existingCerts.some(c => c.type === 'Digital Ownership');
+      const hasPhysicalStorage = existingCerts.some(c => c.type === 'Physical Storage');
+
+      // Get or create vault holding - use getUserVaultHoldings
+      const userHoldings = await storage.getUserVaultHoldings(transaction.userId);
+      let holding = userHoldings[0];
+      const goldGrams = parseFloat(transaction.amountGold || '0');
+      const goldPricePerGram = parseFloat(transaction.goldPriceUsdPerGram || '140');
+      const depositAmount = parseFloat(transaction.amountUsd || '0');
+
+      if (!holding) {
+        holding = await storage.createVaultHolding({
+          userId: transaction.userId,
+          goldGrams: goldGrams.toFixed(6),
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+        });
+        console.log(`[Fix Card Payment] Created vault holding for user ${transaction.userId}`);
+      }
+
+      const createdCerts: any[] = [];
+
+      // Create Digital Ownership Certificate if missing
+      if (!hasDigitalOwnership) {
+        const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
+        const docCert = await storage.createCertificate({
+          certificateNumber: docCertNum,
+          userId: transaction.userId,
+          transactionId: transactionId,
+          vaultHoldingId: holding.id,
+          type: 'Digital Ownership',
+          status: 'Active',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+          totalValueUsd: depositAmount.toFixed(2),
+          issuer: 'Finatrades',
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          issuedAt: transaction.createdAt || new Date(),
+        });
+        createdCerts.push(docCert);
+        console.log(`[Fix Card Payment] Created Digital Ownership Certificate ${docCertNum}`);
+      }
+
+      // Create Physical Storage Certificate if missing
+      if (!hasPhysicalStorage) {
+        const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
+        const sscCert = await storage.createCertificate({
+          certificateNumber: sscCertNum,
+          userId: transaction.userId,
+          transactionId: transactionId,
+          vaultHoldingId: holding.id,
+          type: 'Physical Storage',
+          status: 'Active',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+          totalValueUsd: depositAmount.toFixed(2),
+          issuer: 'Wingold & Metals DMCC',
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          issuedAt: transaction.createdAt || new Date(),
+        });
+        createdCerts.push(sscCert);
+        console.log(`[Fix Card Payment] Created Physical Storage Certificate ${sscCertNum}`);
+      }
+
+      // Update existing DOC certificates to include vaultHoldingId and totalValueUsd if missing
+      for (const cert of existingCerts) {
+        if (cert.type === 'Digital Ownership' && (!cert.vaultHoldingId || !cert.totalValueUsd)) {
+          await storage.updateCertificate(cert.id, {
+            vaultHoldingId: holding.id,
+            totalValueUsd: depositAmount.toFixed(2),
+          });
+          console.log(`[Fix Card Payment] Updated existing DOC ${cert.certificateNumber} with vault holding reference`);
+        }
+      }
+
+      // Create vault ledger entry if needed
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: transaction.userId,
+        action: 'Deposit',
+        goldGrams: goldGrams,
+        goldPriceUsdPerGram: goldPricePerGram,
+        fromWallet: 'External',
+        toWallet: 'FinaPay',
+        toStatus: 'Available',
+        transactionId: transactionId,
+        notes: `[Fix] Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
+        createdBy: adminUser?.id || 'system',
+      });
+
+      await storage.createAuditLog({
+        entityType: 'transaction',
+        entityId: transactionId,
+        actionType: 'fix_card_payment',
+        actor: adminUser?.id || 'admin',
+        actorRole: 'admin',
+        details: `Fixed card payment: created ${createdCerts.length} certificates and vault ledger entry`,
+      });
+
+      res.json({
+        success: true,
+        message: `Fixed card payment: created ${createdCerts.length} certificates`,
+        createdCertificates: createdCerts.map(c => ({ number: c.certificateNumber, type: c.type })),
+        vaultHoldingId: holding.id,
+      });
+    } catch (error: any) {
+      console.error('Fix card payment error:', error);
+      res.status(500).json({ message: error.message || "Failed to fix card payment" });
     }
   });
 

@@ -373,6 +373,7 @@ export interface IStorage {
   // Certificates
   createCertificate(certificate: InsertCertificate): Promise<Certificate>;
   getCertificate(id: string): Promise<Certificate | undefined>;
+  getCertificatesByTransactionId(transactionId: string): Promise<Certificate[]>;
   getUserCertificates(userId: string): Promise<Certificate[]>;
   getUserActiveCertificates(userId: string): Promise<Certificate[]>;
   getAllCertificates(): Promise<Certificate[]>;
@@ -1245,6 +1246,10 @@ export class DatabaseStorage implements IStorage {
   async getCertificateByTransactionId(transactionId: string): Promise<Certificate | undefined> {
     const [certificate] = await db.select().from(certificates).where(eq(certificates.transactionId, transactionId));
     return certificate || undefined;
+  }
+
+  async getCertificatesByTransactionId(transactionId: string): Promise<Certificate[]> {
+    return await db.select().from(certificates).where(eq(certificates.transactionId, transactionId)).orderBy(desc(certificates.issuedAt));
   }
 
   async getUserActiveCertificates(userId: string): Promise<Certificate[]> {
