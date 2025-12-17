@@ -143,7 +143,7 @@ export default function BnslWalletCard({
                <div className="space-y-1">
                  <div className="flex items-baseline gap-2">
                    <span className="text-xs text-muted-foreground">USD Value:</span>
-                   <span className="text-xl font-bold text-secondary">
+                   <span className="text-xl font-bold text-green-600">
                      ${((bnslBalanceGold + lockedBalanceGold) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                    </span>
                  </div>
@@ -177,7 +177,7 @@ export default function BnslWalletCard({
              <div className="p-4 bg-muted rounded-lg border border-border space-y-2">
                <div className="flex justify-between text-sm">
                  <span className="text-muted-foreground">Available in FinaPay:</span>
-                 <span className="text-secondary font-bold">{finaPayBalanceGold.toFixed(3)} g</span>
+                 <span className="text-primary font-bold">{finaPayBalanceGold.toFixed(3)} g</span>
                </div>
                <div className="flex justify-between text-sm">
                  <span className="text-muted-foreground">Current BNSL Wallet:</span>
@@ -192,7 +192,7 @@ export default function BnslWalletCard({
                    size="sm" 
                    variant={currency === 'Grams' ? 'default' : 'outline'} 
                    onClick={() => setCurrency('Grams')}
-                   className={`flex-1 ${currency === 'Grams' ? 'bg-secondary hover:bg-secondary/90' : ''}`}
+                   className="flex-1"
                  >
                    Grams (g)
                  </Button>
@@ -200,7 +200,7 @@ export default function BnslWalletCard({
                    size="sm" 
                    variant={currency === 'USD' ? 'default' : 'outline'} 
                    onClick={() => setCurrency('USD')}
-                   className={`flex-1 ${currency === 'USD' ? 'bg-secondary hover:bg-secondary/90' : ''}`}
+                   className="flex-1"
                  >
                    USD ($)
                  </Button>
@@ -218,7 +218,7 @@ export default function BnslWalletCard({
                    <Button 
                      size="sm" 
                      variant="ghost" 
-                     className="h-7 px-2 text-xs font-bold text-secondary hover:text-secondary/80 hover:bg-secondary/10"
+                     className="h-7 px-2 text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/10"
                      onClick={() => setTransferAmount(getMaxAmount())}
                    >
                      MAX
@@ -236,7 +236,7 @@ export default function BnslWalletCard({
              </div>
 
              <Button 
-               className="w-full bg-secondary text-white hover:bg-secondary/90 font-bold"
+               className="w-full bg-primary text-white hover:bg-primary/90 font-bold"
                onClick={handleTransfer}
                disabled={isTransferring}
              >
