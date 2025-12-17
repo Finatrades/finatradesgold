@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CreditCard, Wallet, Building, Loader2, CheckCircle2, ArrowRightLeft, AlertCircle, Copy, Check, Bitcoin, ArrowLeft, Clock, Upload } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/AuthContext';
+import { usePlatform } from '@/context/PlatformContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface PaymentMethods {
@@ -65,6 +66,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
   const [paymentRequestId, setPaymentRequestId] = useState<string | null>(null);
   
   const { user } = useAuth();
+  const { settings: platformSettings } = usePlatform();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -126,6 +128,8 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
   const numericUsd = parseFloat(usd) || 0;
   const fee = numericUsd * (spreadPercent / 100);
   const totalCost = numericUsd + fee;
+  const minTradeAmount = platformSettings.minTradeAmount || 10;
+  const isBelowMinimum = numericUsd > 0 && numericUsd < minTradeAmount;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -139,7 +143,16 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
   };
 
   const handleProceedToAddress = async () => {
-    if (!selectedWallet || numericGrams <= 0) return;
+    if (!selectedWallet || numericGrams <= 0 || isBelowMinimum) {
+      if (isBelowMinimum) {
+        toast({
+          title: "Minimum Not Met",
+          description: `Minimum trade amount is $${minTradeAmount}`,
+          variant: "destructive",
+        });
+      }
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -600,6 +613,14 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                 </div>
               </div>
 
+              {/* Below Minimum Warning */}
+              {isBelowMinimum && (
+                <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-50 p-2 rounded-md">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>Minimum trade amount is ${minTradeAmount}</span>
+                </div>
+              )}
+
               {/* Summary Section */}
               {numericGrams > 0 && (
                  <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-2 text-sm">
@@ -624,7 +645,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
               {/* Confirm Button */}
               <Button 
                 className="w-full h-12 bg-primary text-white hover:bg-primary/90 font-bold"
-                disabled={numericGrams <= 0 || isLoading || isLoadingMethods || !method || enabledMethodsCount === 0 || (method === 'crypto' && !selectedWallet)}
+                disabled={numericGrams <= 0 || isBelowMinimum || isLoading || isLoadingMethods || !method || enabledMethodsCount === 0 || (method === 'crypto' && !selectedWallet)}
                 onClick={handleConfirm}
                 data-testid="button-confirm-purchase"
               >

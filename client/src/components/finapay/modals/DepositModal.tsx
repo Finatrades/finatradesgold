@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
+import { usePlatform } from '@/context/PlatformContext';
 import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
@@ -60,6 +61,7 @@ type Step = 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'car
 
 export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const { user } = useAuth();
+  const { settings: platformSettings } = usePlatform();
   const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('method');
@@ -202,8 +204,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     if (!user || !selectedCryptoWallet || !amount) return;
     
     const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum < 10) {
-      toast.error("Minimum deposit amount is $10");
+    const minDeposit = platformSettings.minDeposit || 50;
+    if (isNaN(amountNum) || amountNum < minDeposit) {
+      toast.error(`Minimum deposit amount is $${minDeposit}`);
       return;
     }
     
@@ -395,8 +398,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     if (!user || !amount) return;
     
     const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum < 10) {
-      toast.error("Minimum deposit amount is $10");
+    const minDeposit = platformSettings.minDeposit || 50;
+    if (isNaN(amountNum) || amountNum < minDeposit) {
+      toast.error(`Minimum deposit amount is $${minDeposit}`);
       return;
     }
 

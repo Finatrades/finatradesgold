@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, CheckCircle2, Building, Wallet, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { usePlatform } from '@/context/PlatformContext';
 
 interface SellGoldModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface SellGoldModalProps {
 }
 
 export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalance, spreadPercent, onConfirm }: SellGoldModalProps) {
+  const { settings: platformSettings } = usePlatform();
   const [method, setMethod] = useState('bank');
   
   // Dual inputs
@@ -64,6 +66,8 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
   const grossPayout = numericGrams * goldPrice;
   const fee = grossPayout * (spreadPercent / 100); 
   const netPayout = grossPayout - fee;
+  const minTradeAmount = platformSettings.minTradeAmount || 10;
+  const isBelowMinimum = grossPayout > 0 && grossPayout < minTradeAmount;
 
   const handleConfirm = () => {
     setIsLoading(true);
@@ -140,6 +144,13 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
                 <span>Insufficient gold balance. You only have {safeBalance.toFixed(4)}g available.</span>
               </div>
             )}
+
+            {isBelowMinimum && (
+              <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-50 p-2 rounded-md">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Minimum trade amount is ${minTradeAmount}</span>
+              </div>
+            )}
           </div>
 
           {/* Method Selection */}
@@ -186,7 +197,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
           <Button 
             className="w-full h-12 bg-red-500 text-white hover:bg-red-600 font-bold"
-            disabled={numericGrams <= 0 || numericGrams > safeBalance || isLoading}
+            disabled={numericGrams <= 0 || numericGrams > safeBalance || isBelowMinimum || isLoading}
             onClick={handleConfirm}
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
