@@ -77,6 +77,7 @@ import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
 import QADepositTest from "@/pages/QADepositTest";
+import QATests from "@/pages/QATests";
 
 function Router() {
   return (
@@ -143,6 +144,7 @@ function Router() {
       <Route path="/admin/compliance" component={ComplianceDashboard} />
       
       {/* QA Routes */}
+      <Route path="/qa/tests" component={QATests} />
       <Route path="/qa/deposit-test" component={QADepositTest} />
 
       <Route component={NotFound} />

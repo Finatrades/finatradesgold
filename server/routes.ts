@@ -12837,5 +12837,139 @@ export async function registerRoutes(
     }
   });
 
+  // QA Test Harness Routes
+  const qaTestRunner = await import('./qa-test-runner');
+  const qaSeed = await import('./qa-seed');
+  const qaLoggerModule = await import('./qa-logger');
+
+  app.post("/api/qa/tests/seed", ensureQaAccess, async (req, res) => {
+    try {
+      const result = await qaSeed.seedTestUsers();
+      res.json({ success: true, ...result });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/qa/tests/reset", ensureQaAccess, async (req, res) => {
+    try {
+      const result = await qaSeed.resetTestData();
+      res.json({ success: true, ...result });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get("/api/qa/tests/accounts", ensureQaAccess, async (req, res) => {
+    try {
+      const accounts = await qaSeed.getTestAccounts();
+      res.json({ accounts, password: qaSeed.TEST_PASSWORD });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/qa/tests/run/smoke", ensureQaAccess, async (req, res) => {
+    try {
+      const results = await qaTestRunner.runSmokeTests();
+      const report = qaTestRunner.generateReport(results);
+      res.json({ success: true, ...report.summary });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/qa/tests/run/full", ensureQaAccess, async (req, res) => {
+    try {
+      const results = await qaTestRunner.runFullRegression();
+      const report = qaTestRunner.generateReport(results);
+      res.json({ success: true, ...report.summary });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/qa/tests/run/auth", ensureQaAccess, async (req, res) => {
+    try {
+      const results = await qaTestRunner.runAuthTests();
+      res.json({ success: true, ...results });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/qa/tests/run/roles", ensureQaAccess, async (req, res) => {
+    try {
+      const results = await qaTestRunner.runRolePermissionTests();
+      res.json({ success: true, ...results });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/qa/tests/run/kyc", ensureQaAccess, async (req, res) => {
+    try {
+      const results = await qaTestRunner.runKYCGateTests();
+      res.json({ success: true, ...results });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/qa/tests/run/deposits", ensureQaAccess, async (req, res) => {
+    try {
+      const results = await qaTestRunner.runDepositTests();
+      res.json({ success: true, ...results });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get("/api/qa/logs", ensureQaAccess, async (req, res) => {
+    try {
+      const { level, suite, testName, actorEmail, count } = req.query;
+      const logs = qaLoggerModule.qaLogger.getRecentLogs(
+        parseInt(count as string) || 200,
+        {
+          level: level as any,
+          suite: suite as string,
+          testName: testName as string,
+          actorEmail: actorEmail as string,
+        }
+      );
+      res.json({ logs });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get("/api/qa/logs/export", ensureQaAccess, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const logs = qaLoggerModule.qaLogger.exportLogs(startDate as string, endDate as string);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename=qa-logs-${new Date().toISOString().split('T')[0]}.json`);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get("/api/qa/report", ensureQaAccess, async (req, res) => {
+    try {
+      const results = await qaTestRunner.runFullRegression();
+      const report = qaTestRunner.generateReport(results);
+      
+      if (req.query.format === 'html') {
+        res.setHeader('Content-Type', 'text/html');
+        res.send(report.html);
+      } else {
+        res.json(report.summary);
+      }
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
   return httpServer;
 }
