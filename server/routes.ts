@@ -8341,15 +8341,24 @@ export async function registerRoutes(
 
       // Get payment gateway settings
       const settings = await storage.getPaymentGatewaySettings();
-      if (!settings?.ngeniusEnabled || !settings.ngeniusApiKey || !settings.ngeniusOutletRef) {
-        return res.status(400).json({ message: "Card payments are not configured" });
+      if (!settings?.ngeniusEnabled) {
+        return res.status(400).json({ message: "Card payments are not enabled" });
       }
 
-      // Create NGenius service
+      // Use environment variables for NGenius credentials (secure)
+      const ngeniusApiKey = process.env.NGENIUS_API_KEY;
+      const ngeniusOutletRef = process.env.NGENIUS_OUTLET_REF;
+      const ngeniusRealmName = process.env.NGENIUS_REALM_NAME;
+
+      if (!ngeniusApiKey || !ngeniusOutletRef) {
+        return res.status(400).json({ message: "Card payments are not configured - missing credentials" });
+      }
+
+      // Create NGenius service using environment variables
       const ngeniusService = NgeniusService.getInstance({
-        apiKey: settings.ngeniusApiKey,
-        outletRef: settings.ngeniusOutletRef,
-        realmName: settings.ngeniusRealmName || undefined,
+        apiKey: ngeniusApiKey,
+        outletRef: ngeniusOutletRef,
+        realmName: ngeniusRealmName || undefined,
         mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
       });
 
@@ -8425,12 +8434,16 @@ export async function registerRoutes(
 
       // Optionally fetch latest status from NGenius API
       const settings = await storage.getPaymentGatewaySettings();
-      if (settings?.ngeniusEnabled && settings.ngeniusApiKey && settings.ngeniusOutletRef && transaction.ngeniusOrderId) {
+      const ngeniusApiKey = process.env.NGENIUS_API_KEY;
+      const ngeniusOutletRef = process.env.NGENIUS_OUTLET_REF;
+      const ngeniusRealmName = process.env.NGENIUS_REALM_NAME;
+      
+      if (settings?.ngeniusEnabled && ngeniusApiKey && ngeniusOutletRef && transaction.ngeniusOrderId) {
         try {
           const ngeniusService = NgeniusService.getInstance({
-            apiKey: settings.ngeniusApiKey,
-            outletRef: settings.ngeniusOutletRef,
-            realmName: settings.ngeniusRealmName || undefined,
+            apiKey: ngeniusApiKey,
+            outletRef: ngeniusOutletRef,
+            realmName: ngeniusRealmName || undefined,
             mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
           });
 
@@ -8508,14 +8521,18 @@ export async function registerRoutes(
       console.log('NGenius webhook received:', JSON.stringify(req.body, null, 2));
 
       const settings = await storage.getPaymentGatewaySettings();
-      if (!settings?.ngeniusEnabled || !settings.ngeniusApiKey || !settings.ngeniusOutletRef) {
+      const ngeniusApiKey = process.env.NGENIUS_API_KEY;
+      const ngeniusOutletRef = process.env.NGENIUS_OUTLET_REF;
+      const ngeniusRealmName = process.env.NGENIUS_REALM_NAME;
+
+      if (!settings?.ngeniusEnabled || !ngeniusApiKey || !ngeniusOutletRef) {
         return res.status(400).json({ message: "NGenius not configured" });
       }
 
       const ngeniusService = NgeniusService.getInstance({
-        apiKey: settings.ngeniusApiKey,
-        outletRef: settings.ngeniusOutletRef,
-        realmName: settings.ngeniusRealmName || undefined,
+        apiKey: ngeniusApiKey,
+        outletRef: ngeniusOutletRef,
+        realmName: ngeniusRealmName || undefined,
         mode: (settings.ngeniusMode || 'sandbox') as 'sandbox' | 'live',
       });
 
