@@ -8794,7 +8794,7 @@ export async function registerRoutes(
       const txRecord = await storage.createNgeniusTransaction({
         userId: user.id,
         orderReference,
-        status: 'Processing',
+        status: 'Pending',
         amountUsd: amountUsd.toString(),
         currency: 'AED',
         description: `Card deposit - $${amountUsd} USD`,
