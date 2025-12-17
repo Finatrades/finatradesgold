@@ -9709,6 +9709,87 @@ export async function registerRoutes(
         sourceModule: 'finapay',
       });
       
+      const goldGrams = parseFloat(paymentRequest.goldGrams);
+      const goldPrice = parseFloat(paymentRequest.goldPriceAtTime);
+      const usdAmount = parseFloat(paymentRequest.amountUsd);
+      
+      // SPECIFICATION REQUIREMENT: Record LedgerEntry for FinaVault system-of-record
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: paymentRequest.userId,
+        action: 'Deposit',
+        eventType: 'ADD_FUNDS_APPROVED',
+        direction: 'CREDIT',
+        gramsDelta: goldGrams,
+        fromStatus: null,
+        toStatus: 'Available',
+        transactionId: transaction.id,
+        notes: `Crypto payment ADD_FUNDS approved: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g (USD $${usdAmount.toFixed(2)})`,
+        createdBy: adminUser.id,
+      });
+      
+      // SPECIFICATION REQUIREMENT: Generate DOC + SSC certificates
+      const generatedCertificates: any[] = [];
+      
+      // Get or create vault holding
+      let vaultHoldings = await storage.getVaultHoldings(paymentRequest.userId);
+      let holding = vaultHoldings.find(h => h.status === 'active');
+      
+      if (!holding) {
+        // Create new vault holding
+        holding = await storage.createVaultHolding({
+          userId: paymentRequest.userId,
+          goldGrams: goldGrams.toString(),
+          purity: '999.9',
+          status: 'active',
+          wingoldReference: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          storageLocation: 'Dubai Free Zone Vault',
+          entryDate: new Date(),
+        });
+      } else {
+        // Update existing holding
+        const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
+        await storage.updateVaultHolding(holding.id, {
+          goldGrams: newTotalGrams.toString(),
+        });
+      }
+      
+      // Digital Ownership Certificate (DOC) from Finatrades
+      const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
+      const digitalCert = await storage.createCertificate({
+        type: 'Digital Ownership',
+        issuer: 'Finatrades',
+        userId: paymentRequest.userId,
+        transactionId: transaction.id,
+        holdingId: holding.id,
+        certificateNumber: docCertNum,
+        gramsCovered: goldGrams.toString(),
+        purity: '999.9',
+        vaultLocation: 'Dubai Free Zone Vault',
+        status: 'Active',
+        goldPriceAtIssue: goldPrice.toString(),
+      });
+      generatedCertificates.push(digitalCert);
+      
+      // Physical Storage Certificate (SSC) from Wingold & Metals DMCC
+      const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
+      const storageCert = await storage.createCertificate({
+        type: 'Physical Storage',
+        issuer: 'Wingold & Metals DMCC',
+        userId: paymentRequest.userId,
+        transactionId: transaction.id,
+        holdingId: holding.id,
+        certificateNumber: sscCertNum,
+        gramsCovered: goldGrams.toString(),
+        purity: '999.9',
+        vaultLocation: 'Dubai Free Zone Vault',
+        status: 'Active',
+        goldPriceAtIssue: goldPrice.toString(),
+      });
+      generatedCertificates.push(storageCert);
+      
+      console.log(`[Crypto Approval] Issued ${generatedCertificates.length} certificates for user ${paymentRequest.userId}`);
+      
       // Update payment request
       const updated = await storage.updateCryptoPaymentRequest(id, {
         status: 'Credited',

@@ -1,0 +1,425 @@
+You are a senior full-stack engineer. Build a working MVP backend + minimal UI stubs for the **Finatrades gold-backed platform**.
+
+========================
+STACK (REQUIRED)
+========================
+- Node.js + TypeScript
+- Express API
+- PostgreSQL
+- Prisma ORM
+- Auth: JWT (email + password)
+- PDF generation for certificates: PDFKit (preferred) OR pdf-lib
+- Background jobs: in-process queue using node-cron + DB polling (no external infra)
+- Price feed: METAL-API (XAU/USD) via env vars:
+  - METAL_API_URL
+  - METAL_API_KEY
+
+Project must run in Replit with simple commands:
+- npm install
+- npx prisma migrate dev
+- npm run dev
+
+========================
+GLOBAL BUSINESS RULES (NON-NEGOTIABLE)
+========================
+1) All user interactions are USD-based, but **every balance is backed by gold grams**.
+2) Every wallet view (FinaPay, FinaVault, BNSL, FinaBridge) MUST show:
+   - USD Value (reference)
+   - Gold Backing (grams) (truth)
+3) FinaVault is the **system-of-record ledger**. Any approved/committed change MUST write ledger entries.
+4) Certificates MUST be auto-generated for every completed/verified/approved case:
+   - Finatrades issues Digital Ownership Certificate (DOC)
+   - Wingold & Metals DMCC issues Physical Storage Certificate (SSC)
+   - Required for: Add Funds APPROVED, Send, Request COMPLETED, Physical Deposit VERIFIED,
+     Withdraw RELEASE, BNSL transfer+lock+unlock, FinaBridge transfer+reserve+release.
+   - Special rule for Send/Request completion:
+     - User A (sender/payer) gets UPDATED DOC + UPDATED SSC (mark previous ACTIVE -> REPLACED)
+     - User B (receiver/requester) gets NEW DOC + NEW SSC
+
+========================
+WALLETS / MODULES
+========================
+- FinaPay Wallet: add funds, send, request
+- FinaVault Wallet: ownership ledger + buckets (available / lockedBnsl / reservedTrade)
+- BNSL Wallet: user must TRANSFER from FinaPay -> BNSL first, then LOCK inside BNSL
+- FinaBridge Wallet: user must TRANSFER from FinaPay -> Trade wallet, then RESERVE, then RELEASE to exporter
+- Physical Deposit directly into FinaVault: user submits, admin verifies, then credit ledger
+
+========================
+PRICE SERVICE (METAL-API)
+========================
+Implement PriceService:
+- getGoldPriceUsdPerGram():
+  - fetch XAU/USD from METAL_API_URL using METAL_API_KEY
+  - convert to USD per gram:
+    - 1 troy oz = 31.1034768 grams
+    - usdPerGram = (usdPerTroyOz / 31.1034768)
+  - cache in memory for 30 seconds
+- Every committed transaction MUST store usedPriceUsdPerGram (audit requirement)
+- Conversions:
+  - grams = usd_amount / usedPriceUsdPerGram
+  - usd_value_display = grams * currentUsdPerGram (UI only)
+- Store grams with minimum 4 decimals
+
+IMPORTANT PRICE LOCK RULE:
+- For ADD_FUNDS approval and PHYSICAL_DEPOSIT verification: lock usedPriceUsdPerGram at approval/verification time.
+- For SEND and REQUEST acceptance: lock usedPriceUsdPerGram at commit time.
+
+========================
+DATA MODELS (PRISMA) — MUST IMPLEMENT
+========================
+User:
+- id, name, email, passwordHash, role (USER/ADMIN), kycStatus (PENDING/APPROVED/REJECTED), createdAt
+
+Wallet:
+- id, userId, type (FINAPAY, BNSL, FINABRIDGE), createdAt
+
+VaultAccount:
+- id, userId, availableGrams, lockedBnslGrams, reservedTradeGrams, createdAt
+NOTE: these are convenience fields; ledger is source-of-truth. Keep them in sync.
+
+LedgerEntry (FinaVault):
+- id, userId
+- eventType (
+    ADD_FUNDS_APPROVED,
+    SEND_DEBIT, SEND_CREDIT,
+    REQUEST_DEBIT, REQUEST_CREDIT,
+    TRANSFER_TO_BNSL,
+    BNSL_LOCK, BNSL_UNLOCK,
+    TRANSFER_TO_FINABRIDGE,
+    TRADE_RESERVE, TRADE_RELEASE_DEBIT, TRADE_RELEASE_CREDIT,
+    PHYSICAL_DEPOSIT_VERIFIED,
+    WITHDRAW_RELEASE
+  )
+- direction (DEBIT/CREDIT/STATUS_MOVE)
+- gramsDelta (can be negative)
+- fromBucket (AVAILABLE/LOCKED_BNSL/RESERVED_TRADE/NA)
+- toBucket (AVAILABLE/LOCKED_BNSL/RESERVED_TRADE/NA)
+- usdReferenceAmount (nullable)
+- usedPriceUsdPerGram
+- refId (transaction id)
+- createdAt
+
+Transaction:
+- id
+- type (ADD_FUNDS, SEND, REQUEST, PHYSICAL_DEPOSIT, WITHDRAW, BNSL, FINABRIDGE)
+- subtype (ADD_FUNDS_CARD, ADD_FUNDS_BANK, ADD_FUNDS_CRYPTO, SEND_USD, SEND_GRAMS, REQUEST_USD, REQUEST_GRAMS,
+          PHYSICAL_DEPOSIT_BAR, PHYSICAL_DEPOSIT_COIN,
+          BNSL_TRANSFER, BNSL_LOCK, BNSL_UNLOCK,
+          FINABRIDGE_TRANSFER, FINABRIDGE_RESERVE, FINABRIDGE_RELEASE,
+          WITHDRAW_REQUEST)
+- status:
+  - ADD_FUNDS: PENDING, APPROVED, REJECTED
+  - SEND: COMPLETED, FAILED
+  - REQUEST: OPEN, ACCEPTED, REJECTED, EXPIRED, COMPLETED
+  - PHYSICAL_DEPOSIT: SUBMITTED, VERIFIED, REJECTED
+  - WITHDRAW: SUBMITTED, APPROVED, RELEASED, REJECTED
+  - BNSL: TRANSFERRED, LOCKED, UNLOCKED
+  - FINABRIDGE: TRANSFERRED, RESERVED, RELEASED
+- senderUserId (nullable)
+- receiverUserId (nullable)
+- usdAmount (nullable)
+- gramsAmount (nullable)
+- usedPriceUsdPerGram (nullable until commit)
+- paymentMethod (nullable: CARD/BANK/CRYPTO)
+- paymentRef (nullable, for bank/crypto txn hash/reference)
+- notes, createdAt, updatedAt
+
+Certificate:
+- id
+- type (DIGITAL_OWNERSHIP, PHYSICAL_STORAGE)
+- issuer (FINATRADES, WINGOLD)
+- userId
+- relatedTransactionId
+- certificateNumber (FT-DOC-YYYYMMDD-XXXX or WM-SSC-YYYYMMDD-XXXX)
+- gramsCovered
+- purity (default 99.99)
+- vaultLocation (default Dubai)
+- status (ACTIVE, REPLACED)
+- pdfPath (store file path under /tmp or /public/certificates) OR base64
+- createdAt
+
+AdminAction:
+- id, adminUserId, transactionId, action (APPROVE/REJECT/VERIFY/RELEASE), reason, createdAt
+
+Notification:
+- id, userId, title, message, createdAt, readAt
+
+PaymentRequestMeta (optional table or fields in Transaction for REQUEST):
+- expiresAt (nullable)
+- requesterUserId (same as receiverUserId)
+- payerUserId (same as senderUserId)
+
+========================
+REQUIRED FLOWS (IMPLEMENT FULLY)
+========================
+
+A) ADD FUNDS (ADMIN APPROVAL) — USD 10,000 EXAMPLE
+User flow:
+1) User creates Add Funds request with method (CARD/BANK/CRYPTO) and amountUsd = 10000.
+2) Create Transaction:
+   - type=ADD_FUNDS
+   - subtype=ADD_FUNDS_CARD or ADD_FUNDS_BANK or ADD_FUNDS_CRYPTO
+   - status=PENDING
+   - usdAmount=10000
+   - paymentMethod set
+   - paymentRef optional (bank reference / crypto txn hash)
+3) Show in history as pending.
+
+Admin flow:
+4) Admin approves/rejects:
+   - If APPROVE (atomic commit):
+     a) lock usedPriceUsdPerGram = PriceService.getGoldPriceUsdPerGram()
+     b) grams = 10000 / usedPriceUsdPerGram
+     c) Write LedgerEntry CREDIT to AVAILABLE:
+        - eventType=ADD_FUNDS_APPROVED
+        - direction=CREDIT
+        - gramsDelta=+grams
+        - toBucket=AVAILABLE
+        - usdReferenceAmount=10000
+        - usedPriceUsdPerGram=locked
+        - refId=transactionId
+     d) Update VaultAccount.availableGrams += grams
+     e) Transaction.status -> APPROVED and store gramsAmount + usedPriceUsdPerGram
+     f) Generate TWO certificates for the user:
+        - DOC (Finatrades) gramsCovered=grams status ACTIVE (replace previous ACTIVE certs -> REPLACED)
+        - SSC (Wingold) gramsCovered=grams status ACTIVE (replace previous ACTIVE certs -> REPLACED)
+     g) Notification to user
+   - If REJECT:
+     - status=REJECTED
+     - AdminAction with reason
+     - Notification
+
+DISPLAY REQUIREMENT after approval:
+- FinaPay GET /me/wallets/finapay shows:
+  USD Value: 10,000
+  Gold Backing: computed grams (e.g. 156.2500g example only)
+- FinaVault GET /me/wallets/finavault shows mirrored:
+  Available Gold: same grams
+  USD Reference: 10,000
+
+B) SEND (NO ADMIN APPROVAL)
+User A sends to User B either 5g OR USD equivalent.
+1) Validate User A has enough AVAILABLE grams (exclude lockedBnsl and reservedTrade)
+2) Determine grams:
+   - if grams provided: use it
+   - else grams = usdAmount / PriceService.getGoldPriceUsdPerGram() (lock usedPriceUsdPerGram at commit)
+3) Create Transaction(SEND) status=COMPLETED with usedPriceUsdPerGram and gramsAmount.
+4) Ledger entries (atomic):
+   - A: DEBIT grams from AVAILABLE (eventType=SEND_DEBIT, direction=DEBIT, gramsDelta=-grams, fromBucket=AVAILABLE)
+   - B: CREDIT grams to AVAILABLE (eventType=SEND_CREDIT, direction=CREDIT, gramsDelta=+grams, toBucket=AVAILABLE)
+5) Update both VaultAccounts convenience fields.
+6) Certificates:
+   - User A: generate UPDATED DOC + UPDATED SSC (replace previous ACTIVE -> REPLACED)
+   - User B: generate NEW DOC + NEW SSC (replace previous ACTIVE -> REPLACED for B as well, because B’s balance changed)
+7) Notifications for both. Transaction history in both accounts.
+
+C) PAYMENT REQUEST (NO ADMIN APPROVAL)
+User B requests from User A either USD or grams.
+1) Create Transaction(REQUEST) status=OPEN:
+   - senderUserId = payer (UserA)
+   - receiverUserId = requester (UserB)
+   - store usdAmount or gramsAmount requested
+   - expiresAt = now + configurable (e.g., 48h)
+2) User A can ACCEPT or REJECT:
+   - If ACCEPT:
+     a) Validate A has enough AVAILABLE grams
+     b) Determine grams (if USD request, convert using locked price at accept time)
+     c) Ledger atomic:
+        - A: DEBIT AVAILABLE (eventType=REQUEST_DEBIT)
+        - B: CREDIT AVAILABLE (eventType=REQUEST_CREDIT)
+     d) Status transitions: OPEN -> ACCEPTED -> COMPLETED (persist both timestamps)
+     e) Certificates exactly like SEND (A updated, B new/updated)
+     f) Notifications + history
+   - If REJECT:
+     - status=REJECTED, notification
+3) Background job: mark OPEN requests past expiresAt as EXPIRED and notify both.
+
+D) PHYSICAL DEPOSIT DIRECT TO FINAVAULT (ADMIN VERIFY)
+1) User submits deposit request:
+   - declaredGrams, purity, form (BAR/COIN), notes, photo metadata
+2) Create Transaction(PHYSICAL_DEPOSIT) status=SUBMITTED.
+3) Admin/VaultOps verifies/rejects:
+   - If VERIFIED (atomic):
+     a) lock usedPriceUsdPerGram at verification time
+     b) LedgerEntry CREDIT grams to AVAILABLE (eventType=PHYSICAL_DEPOSIT_VERIFIED)
+     c) Update VaultAccount.availableGrams
+     d) Transaction.status=VERIFIED, gramsAmount set, usedPriceUsdPerGram set
+     e) Generate DOC + SSC (replace previous ACTIVE -> REPLACED)
+     f) Show in FinaVault and FinaPay instantly:
+        - FinaVault shows grams increased
+        - FinaPay shows USD value derived from grams * current price
+   - If REJECTED: status=REJECTED, reason, notification
+
+E) BNSL (WIRED STUBS BUT FUNCTIONAL)
+Rule: must TRANSFER FinaPay -> BNSL wallet first, then LOCK.
+- Transfer:
+  - Create Transaction(BNSL) subtype=BNSL_TRANSFER status=TRANSFERRED
+  - LedgerEntry eventType=TRANSFER_TO_BNSL direction=STATUS_MOVE gramsDelta=0 fromBucket=AVAILABLE toBucket=AVAILABLE
+  - (Use transaction metadata to tag wallet ownership under BNSL wallet)
+  - Certificates updated (DOC+SSC replaced)
+- Lock:
+  - Transaction subtype=BNSL_LOCK status=LOCKED
+  - LedgerEntry eventType=BNSL_LOCK direction=STATUS_MOVE gramsDelta=0 fromBucket=AVAILABLE toBucket=LOCKED_BNSL
+  - Update VaultAccount: availableGrams -= grams; lockedBnslGrams += grams
+  - Certificates updated (replace)
+- Unlock:
+  - Transaction subtype=BNSL_UNLOCK status=UNLOCKED
+  - LedgerEntry eventType=BNSL_UNLOCK direction=STATUS_MOVE gramsDelta=0 fromBucket=LOCKED_BNSL toBucket=AVAILABLE
+  - Update VaultAccount accordingly
+  - Certificates updated
+
+F) FINABRIDGE (WIRED STUBS BUT FUNCTIONAL)
+- Transfer to Trade wallet:
+  - Transaction subtype=FINABRIDGE_TRANSFER status=TRANSFERRED
+  - LedgerEntry eventType=TRANSFER_TO_FINABRIDGE direction=STATUS_MOVE gramsDelta=0 fromBucket=AVAILABLE toBucket=AVAILABLE
+  - Certificates updated
+- Reserve:
+  - Transaction subtype=FINABRIDGE_RESERVE status=RESERVED
+  - LedgerEntry eventType=TRADE_RESERVE direction=STATUS_MOVE gramsDelta=0 fromBucket=AVAILABLE toBucket=RESERVED_TRADE
+  - Update VaultAccount: availableGrams -= grams; reservedTradeGrams += grams
+  - Certificates updated
+- Release (to exporter):
+  - Transaction subtype=FINABRIDGE_RELEASE status=RELEASED
+  - Ledger:
+    - Importer: DEBIT reserved grams (eventType=TRADE_RELEASE_DEBIT, fromBucket=RESERVED_TRADE, gramsDelta=-grams)
+    - Exporter: CREDIT available grams (eventType=TRADE_RELEASE_CREDIT, toBucket=AVAILABLE, gramsDelta=+grams)
+  - Update both VaultAccounts
+  - Certificates updated for both parties
+
+G) WITHDRAW (STUB OK, WIRED)
+- User submits withdraw request (grams)
+- Admin approves and then releases:
+  - LedgerEntry WITHDRAW_RELEASE DEBIT AVAILABLE
+  - Certificates updated
+  - Status RELEASED
+
+========================
+CRYPTO ADD FUNDS SUPPORT (ADD THIS)
+========================
+- Add funds supports paymentMethod=CRYPTO
+- User provides paymentRef as crypto tx hash
+- Admin approves exactly like bank/card (same ledger + certificates)
+- NO on-chain integration required for MVP; just record reference and approval.
+
+========================
+API ENDPOINTS (MUST IMPLEMENT)
+========================
+Auth:
+- POST /auth/register
+- POST /auth/login
+
+Wallet views:
+- GET /me/wallets/finapay
+- GET /me/wallets/finavault
+- GET /me/wallets/bnsl
+- GET /me/wallets/finabridge
+
+Transactions (User):
+- POST /transactions/add-funds  (amountUsd, method=CARD|BANK|CRYPTO, paymentRef?) -> PENDING
+- GET /transactions  (filters by type/status)
+- POST /transactions/send  (toUserId, amountUsd OR grams)
+- POST /transactions/request  (toUserId, amountUsd OR grams) -> OPEN
+- POST /transactions/request/:id/accept
+- POST /transactions/request/:id/reject
+- POST /transactions/physical-deposit  (declaredGrams, purity, form, notes) -> SUBMITTED
+- POST /transactions/bnsl/transfer (grams OR amountUsd)
+- POST /transactions/bnsl/lock (transactionId or grams)
+- POST /transactions/bnsl/unlock (transactionId or grams)
+- POST /transactions/finabridge/transfer (grams OR amountUsd, tradeMeta)
+- POST /transactions/finabridge/reserve (transactionId or grams)
+- POST /transactions/finabridge/release (transactionId, exporterUserId)
+
+Admin:
+- GET /admin/transactions?status=PENDING|SUBMITTED|OPEN
+- POST /admin/transactions/:id/approve
+- POST /admin/transactions/:id/reject
+- POST /admin/transactions/:id/verify   (for physical deposits)
+- POST /admin/transactions/:id/release  (for withdraw or trade)
+
+Certificates:
+- GET /certificates
+- GET /certificates/:id/download
+
+Ledger / Audit:
+- GET /ledger  (current user)
+- GET /ledger/:refId  (by transaction)
+- Admin: GET /admin/ledger/user/:userId
+
+========================
+UI STUBS (MINIMAL BUT REQUIRED)
+========================
+Use simple server-rendered pages (ejs) or minimal React/Vite; choose simplest.
+Pages:
+- /login, /register
+- /dashboard: show all wallet cards with USD+grams
+- /transactions: history with filters and statuses
+- /add-funds: form + pending display
+- /send: send form
+- /request: request form + list open requests + accept/reject
+- /finavault/deposit: physical deposit form
+- /admin: pending approvals (add funds + physical deposit)
+- /certificates: list with download links
+
+========================
+CERTIFICATE PDF REQUIREMENTS
+========================
+Generate 2 PDF templates:
+1) Digital Ownership Certificate (Finatrades)
+   - Certificate No, User name, Wallet ID
+   - Gold grams covered, purity, status (Available/Locked/Reserved)
+   - Ledger ref, issue date, issuer seal text "Finatrades"
+2) Physical Storage Certificate (Wingold & Metals DMCC)
+   - Certificate No, vault location, grams, purity, form
+   - Storage status (Allocated/Locked/Released)
+   - Ledger ref reference, issue date, issuer seal text "Wingold & Metals DMCC"
+
+Versioning:
+- When a user balance changes, create NEW certificates and mark previous ACTIVE -> REPLACED.
+
+Store PDFs under /public/certificates and persist pdfPath.
+
+========================
+IMPORTANT VALIDATIONS
+========================
+- Prevent negative balances
+- Disallow send/accept request if grams are Locked or Reserved
+- Every committed action must write ledger entries
+- Every transaction stores usedPriceUsdPerGram at commit/approval time
+- Idempotency: accept optional clientRequestId; reject duplicates per user+endpoint
+- Always store grams to 4 decimals
+
+========================
+SEED DATA (MUST PROVIDE)
+========================
+- Create admin user: admin@finatrades.test / password: Admin1234 (role=ADMIN)
+- Create sample users:
+  - usera@finatrades.test / password: User1234
+  - userb@finatrades.test / password: User1234
+- Seed a PENDING Add Funds transaction for usera with USD 10,000 for demo.
+
+========================
+DELIVERABLES
+========================
+- Full Prisma schema + migrations
+- Express server with routes, services, and middleware
+- Minimal UI stubs working end-to-end
+- PDF certificate generation and download working
+- Background job for expiring payment requests
+- README with setup steps, env vars, and example curl calls
+- Ensure the USD 10,000 Add Funds scenario works:
+  - pending before approval
+  - after admin approval: FinaPay shows USD 10,000 + grams; FinaVault shows available grams + USD reference; certificates generated.
+
+Build it now with clean folder structure:
+- src/
+  - app.ts
+  - server.ts
+  - routes/
+  - middleware/
+  - services/ (PriceService, LedgerService, WalletService, CertificateService, NotificationService, JobService)
+  - prisma/
+  - ui/
+- public/certificates/
+
+Do not skip any flows listed above. Keep code readable, commented, and runnable.
