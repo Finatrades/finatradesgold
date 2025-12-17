@@ -97,22 +97,24 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
         allTransactions = [...(txData.transactions || [])];
       }
       
-      // Convert deposit requests to transaction-like format
+      // Convert pending deposit requests to transaction-like format (exclude confirmed ones since they have real transactions)
       if (depositResponse.ok) {
         const depositData = await depositResponse.json();
-        const depositTransactions = (depositData.requests || []).map((dep: any) => ({
-          id: dep.id,
-          userId: dep.userId,
-          type: 'Deposit',
-          status: dep.status === 'Approved' ? 'Completed' : dep.status,
-          amountUsd: dep.amountUsd,
-          amountGold: null,
-          createdAt: dep.createdAt,
-          referenceId: dep.referenceNumber,
-          description: `Bank Transfer - ${dep.senderBankName || 'Bank Deposit'}`,
-          isDepositRequest: true,
-        }));
-        allTransactions = [...allTransactions, ...depositTransactions];
+        const pendingDepositTransactions = (depositData.requests || [])
+          .filter((dep: any) => dep.status !== 'Confirmed' && dep.status !== 'Approved')
+          .map((dep: any) => ({
+            id: dep.id,
+            userId: dep.userId,
+            type: 'Deposit',
+            status: dep.status,
+            amountUsd: dep.amountUsd,
+            amountGold: null,
+            createdAt: dep.createdAt,
+            referenceId: dep.referenceNumber,
+            description: `Bank Transfer - ${dep.senderBankName || 'Bank Deposit'}`,
+            isDepositRequest: true,
+          }));
+        allTransactions = [...allTransactions, ...pendingDepositTransactions];
       }
       
       // Convert crypto payment requests to transaction-like format
