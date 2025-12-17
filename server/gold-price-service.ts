@@ -69,6 +69,7 @@ async function fetchFromMetalsApi(apiKey: string): Promise<GoldPriceData> {
     }
     
     const data = await response.json();
+    console.log('[GoldPrice] Metals-API response:', JSON.stringify(data));
     
     if (data.success && data.rates?.XAU) {
       const pricePerOunce = 1 / data.rates.XAU;
@@ -82,11 +83,24 @@ async function fetchFromMetalsApi(apiKey: string): Promise<GoldPriceData> {
       };
     }
     
-    if (data.error) {
-      throw new Error(data.error.info || data.error.type || 'Unknown Metals-API error');
+    // Check for USDXAU which is the USD price directly (when base=USD)
+    if (data.success && data.rates?.USDXAU) {
+      const pricePerOunce = data.rates.USDXAU;
+      const pricePerGram = pricePerOunce / 31.1035;
+      return {
+        pricePerGram,
+        pricePerOunce,
+        currency: 'USD',
+        timestamp: new Date(),
+        source: 'metals-api.com'
+      };
     }
     
-    throw new Error('Invalid response from Metals-API');
+    if (data.error) {
+      throw new Error(data.error.info || data.error.type || JSON.stringify(data.error));
+    }
+    
+    throw new Error('Invalid response from Metals-API: ' + JSON.stringify(data));
   } finally {
     clearTimeout(timeout);
   }
@@ -152,12 +166,12 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   const config = await getGoldApiConfig();
   cacheDurationMs = config.cacheDuration * 60 * 1000;
   
-  if (!config.enabled) {
-    throw new Error('Gold Price API is not enabled. Please enable it in admin panel under Payment Gateway > Gold API.');
-  }
+  // Check for METALS_API_KEY environment variable first (primary source)
+  const metalsApiKey = process.env.METALS_API_KEY;
   
-  if (!config.apiKey) {
-    throw new Error('Gold Price API key is not configured. Please add your API key in admin panel under Payment Gateway > Gold API.');
+  // If no API key available from either source, throw error
+  if (!metalsApiKey && !config.apiKey) {
+    throw new Error('Gold Price API key is not configured. Please add METALS_API_KEY secret or configure in admin panel.');
   }
   
   if (cachedPrice && cachedPrice.expiresAt > new Date()) {
@@ -167,25 +181,14 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   try {
     let priceData: GoldPriceData;
     
-    // Fetch from the configured provider (GoldAPI.io)
-    if (config.provider === 'gold-api') {
-      try {
-        priceData = await fetchFromGoldApi(config.apiKey);
-      } catch (goldApiError) {
-        console.error('[GoldPrice] GoldAPI.io failed, trying Metals-API.com backup:', goldApiError);
-        
-        // Try Metals-API.com as backup using the METALS_API_KEY secret
-        const metalsApiKey = process.env.METALS_API_KEY;
-        if (metalsApiKey) {
-          console.log('[GoldPrice] Attempting Metals-API.com as backup...');
-          priceData = await fetchFromMetalsApi(metalsApiKey);
-        } else {
-          throw goldApiError; // Re-throw if no backup available
-        }
-      }
-    } else {
-      // Use metals-api as primary
+    // Always use Metals-API.com with METALS_API_KEY secret as primary
+    if (metalsApiKey) {
+      priceData = await fetchFromMetalsApi(metalsApiKey);
+    } else if (config.apiKey) {
+      // Fallback to admin configured key
       priceData = await fetchFromMetalsApi(config.apiKey);
+    } else {
+      throw new Error('No API key available');
     }
     
     // Apply markup if configured
