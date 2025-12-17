@@ -492,95 +492,18 @@ export default function CMSManagement() {
           </TabsContent>
 
           <TabsContent value="templates" className="mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Templates</h2>
-              <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => setEditingTemplate(null)} data-testid="button-add-template">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Template
-                  </Button>
-                </DialogTrigger>
-                <TemplateDialog 
-                  template={editingTemplate}
-                  onSave={(data) => {
-                    if (editingTemplate) {
-                      updateTemplateMutation.mutate({ id: editingTemplate.id, data });
-                    } else {
-                      createTemplateMutation.mutate(data);
-                    }
-                  }}
-                  isPending={createTemplateMutation.isPending || updateTemplateMutation.isPending}
-                />
-              </Dialog>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {templatesLoading ? (
-                <div className="text-center py-8 text-gray-500 col-span-2">Loading templates...</div>
-              ) : templates.length === 0 ? (
-                <Card className="col-span-2">
-                  <CardContent className="py-8 text-center text-gray-500">
-                    No templates yet. Create templates for emails, certificates, and notifications.
-                  </CardContent>
-                </Card>
-              ) : (
-                templates.map((template) => (
-                  <Card key={template.id} data-testid={`card-template-${template.id}`}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          {getTemplateIcon(template.type)}
-                          <div>
-                            <CardTitle className="text-lg">{template.name}</CardTitle>
-                            <CardDescription>{template.slug}</CardDescription>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={template.status === 'published' ? "default" : "secondary"}>
-                            {template.status}
-                          </Badge>
-                          <Badge variant="outline">{template.type}</Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-500">
-                          {template.module && <span>Module: {template.module}</span>}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => {
-                              setEditingTemplate(template);
-                              setTemplateDialogOpen(true);
-                            }}
-                            data-testid={`button-edit-template-${template.id}`}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="text-red-500 hover:text-red-700"
-                            onClick={() => {
-                              if (confirm('Delete this template?')) {
-                                deleteTemplateMutation.mutate(template.id);
-                              }
-                            }}
-                            data-testid={`button-delete-template-${template.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
+            <TemplatesTab 
+              templates={templates}
+              isLoading={templatesLoading}
+              templateDialogOpen={templateDialogOpen}
+              setTemplateDialogOpen={setTemplateDialogOpen}
+              editingTemplate={editingTemplate}
+              setEditingTemplate={setEditingTemplate}
+              onCreateTemplate={(data) => createTemplateMutation.mutate(data)}
+              onUpdateTemplate={(id, data) => updateTemplateMutation.mutate({ id, data })}
+              onDeleteTemplate={(id) => deleteTemplateMutation.mutate(id)}
+              isPending={createTemplateMutation.isPending || updateTemplateMutation.isPending}
+            />
           </TabsContent>
 
           <TabsContent value="branding" className="mt-6">
@@ -945,15 +868,17 @@ function BlockDialog({
 function TemplateDialog({ 
   template, 
   onSave, 
-  isPending 
+  isPending,
+  defaultType
 }: { 
   template: Template | null; 
   onSave: (data: Partial<Template>) => void;
   isPending: boolean;
+  defaultType?: string;
 }) {
   const [name, setName] = useState(template?.name || '');
   const [slug, setSlug] = useState(template?.slug || '');
-  const [type, setType] = useState<'email' | 'certificate' | 'notification' | 'page_section' | 'invoice' | 'financial_report'>(template?.type || 'email');
+  const [type, setType] = useState<'email' | 'certificate' | 'notification' | 'page_section' | 'invoice' | 'financial_report'>(template?.type || (defaultType as any) || 'email');
   const [subject, setSubject] = useState(template?.subject || '');
   const [body, setBody] = useState(template?.body || '');
   const [variablesText, setVariablesText] = useState(
@@ -970,7 +895,7 @@ function TemplateDialog({
   React.useEffect(() => {
     setName(template?.name || '');
     setSlug(template?.slug || '');
-    setType(template?.type || 'email');
+    setType(template?.type || (defaultType as any) || 'email');
     setSubject(template?.subject || '');
     setBody(template?.body || '');
     setVariablesText(template?.variables?.map(v => v.name).join(', ') || '');
@@ -979,7 +904,7 @@ function TemplateDialog({
     setStatus(template?.status || 'draft');
     setShowPreview(false);
     setPreviewData({});
-  }, [template]);
+  }, [template, defaultType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1653,6 +1578,265 @@ function QuickAddTemplates({
         </CollapsibleContent>
       </Card>
     </Collapsible>
+  );
+}
+
+const templateCategories = [
+  {
+    type: 'email',
+    name: 'Email Templates',
+    description: 'Notification and transactional emails',
+    icon: Mail,
+    color: 'bg-blue-100 text-blue-600',
+    borderColor: 'border-blue-200'
+  },
+  {
+    type: 'certificate',
+    name: 'Certificate Templates',
+    description: 'Ownership and storage certificates',
+    icon: Award,
+    color: 'bg-amber-100 text-amber-600',
+    borderColor: 'border-amber-200'
+  },
+  {
+    type: 'notification',
+    name: 'Notification Templates',
+    description: 'In-app and push notifications',
+    icon: Bell,
+    color: 'bg-purple-100 text-purple-600',
+    borderColor: 'border-purple-200'
+  },
+  {
+    type: 'page_section',
+    name: 'Page Sections',
+    description: 'Reusable page components',
+    icon: Layout,
+    color: 'bg-green-100 text-green-600',
+    borderColor: 'border-green-200'
+  },
+  {
+    type: 'invoice',
+    name: 'Invoice Templates',
+    description: 'Payment and billing invoices',
+    icon: FileText,
+    color: 'bg-gray-100 text-gray-600',
+    borderColor: 'border-gray-200'
+  },
+  {
+    type: 'financial_report',
+    name: 'Financial Reports',
+    description: 'Statements and reports',
+    icon: BarChart3,
+    color: 'bg-rose-100 text-rose-600',
+    borderColor: 'border-rose-200'
+  }
+];
+
+function TemplatesTab({
+  templates,
+  isLoading,
+  templateDialogOpen,
+  setTemplateDialogOpen,
+  editingTemplate,
+  setEditingTemplate,
+  onCreateTemplate,
+  onUpdateTemplate,
+  onDeleteTemplate,
+  isPending
+}: {
+  templates: Template[];
+  isLoading: boolean;
+  templateDialogOpen: boolean;
+  setTemplateDialogOpen: (open: boolean) => void;
+  editingTemplate: Template | null;
+  setEditingTemplate: (template: Template | null) => void;
+  onCreateTemplate: (data: Partial<Template>) => void;
+  onUpdateTemplate: (id: string, data: Partial<Template>) => void;
+  onDeleteTemplate: (id: string) => void;
+  isPending: boolean;
+}) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const getTemplatesByType = (type: string) => {
+    return templates.filter(t => t.type === type);
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-gray-500">Loading templates...</div>;
+  }
+
+  if (selectedCategory) {
+    const category = templateCategories.find(c => c.type === selectedCategory);
+    const categoryTemplates = getTemplatesByType(selectedCategory);
+    const IconComponent = category?.icon || FileText;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => setSelectedCategory(null)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            data-testid="button-back-to-categories"
+          >
+            <ChevronDown className="w-4 h-4 rotate-90" />
+            <span>Back to Categories</span>
+          </button>
+          <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                onClick={() => setEditingTemplate(null)} 
+                data-testid="button-add-template"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add {category?.name.replace('Templates', 'Template').replace('Sections', 'Section')}
+              </Button>
+            </DialogTrigger>
+            <TemplateDialog 
+              template={editingTemplate}
+              defaultType={selectedCategory}
+              onSave={(data) => {
+                if (editingTemplate) {
+                  onUpdateTemplate(editingTemplate.id, data);
+                } else {
+                  onCreateTemplate(data);
+                }
+              }}
+              isPending={isPending}
+            />
+          </Dialog>
+        </div>
+
+        <Card className={`${category?.borderColor}`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${category?.color}`}>
+                <IconComponent className="w-5 h-5" />
+              </div>
+              <div>
+                <CardTitle>{category?.name}</CardTitle>
+                <CardDescription>{category?.description}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {categoryTemplates.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <div className={`inline-flex p-3 rounded-full ${category?.color} mb-3`}>
+                <IconComponent className="w-6 h-6" />
+              </div>
+              <h3 className="font-medium text-gray-900 mb-1">No {category?.name} Yet</h3>
+              <p className="text-sm text-gray-500 mb-4">Create your first template to get started.</p>
+              <Button 
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setTemplateDialogOpen(true);
+                }}
+                data-testid="button-create-first-template"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Template
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-3">
+            {categoryTemplates.map((template) => (
+              <Card key={template.id} className="hover:shadow-sm transition-shadow" data-testid={`card-template-${template.id}`}>
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded ${category?.color}`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{template.name}</h4>
+                        <p className="text-sm text-gray-500">{template.slug}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {template.module && (
+                        <Badge variant="outline" className="text-xs">{template.module}</Badge>
+                      )}
+                      <Badge variant={template.status === 'published' ? 'default' : 'secondary'}>
+                        {template.status}
+                      </Badge>
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            setEditingTemplate(template);
+                            setTemplateDialogOpen(true);
+                          }}
+                          data-testid={`button-edit-template-${template.id}`}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => {
+                            if (confirm('Delete this template?')) {
+                              onDeleteTemplate(template.id);
+                            }
+                          }}
+                          data-testid={`button-delete-template-${template.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Template Categories</h2>
+          <p className="text-sm text-gray-500">Select a category to manage templates</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {templateCategories.map((category) => {
+          const count = getTemplatesByType(category.type).length;
+          const IconComponent = category.icon;
+
+          return (
+            <Card 
+              key={category.type} 
+              className={`cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] ${category.borderColor}`}
+              onClick={() => setSelectedCategory(category.type)}
+              data-testid={`card-category-${category.type}`}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div className={`p-3 rounded-lg ${category.color}`}>
+                    <IconComponent className="w-6 h-6" />
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {count} {count === 1 ? 'template' : 'templates'}
+                  </Badge>
+                </div>
+                <h3 className="font-semibold text-gray-900 mt-4">{category.name}</h3>
+                <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
