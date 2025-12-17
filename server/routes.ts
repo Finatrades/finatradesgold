@@ -263,17 +263,19 @@ export async function registerRoutes(
       const goldPrice = priceData.pricePerGram || 85;
       const goldPriceSource = priceData.source || 'fallback';
       
-      // Convert deposit requests to transaction format
-      const depositTransactions = (depositRequests || []).map((dep: any) => ({
-        id: dep.id,
-        type: 'Deposit',
-        status: dep.status === 'Approved' || dep.status === 'Confirmed' ? 'Completed' : dep.status,
-        amountUsd: dep.amountUsd,
-        amountGold: null,
-        createdAt: dep.createdAt,
-        description: `Bank Transfer - ${dep.senderBankName || 'Pending'}`,
-        sourceModule: 'FinaPay',
-      }));
+      // Convert deposit requests to transaction format (exclude approved ones - they already have a transaction record)
+      const depositTransactions = (depositRequests || [])
+        .filter((dep: any) => dep.status !== 'Approved' && dep.status !== 'Confirmed')
+        .map((dep: any) => ({
+          id: dep.id,
+          type: 'Deposit',
+          status: dep.status,
+          amountUsd: dep.amountUsd,
+          amountGold: null,
+          createdAt: dep.createdAt,
+          description: `Bank Transfer - ${dep.senderBankName || 'Pending'}`,
+          sourceModule: 'FinaPay',
+        }));
 
       // Convert crypto payments to transaction format
       const cryptoTransactions = (cryptoPayments || [])
