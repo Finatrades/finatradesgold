@@ -105,6 +105,17 @@ export function useDashboardData(): DashboardData {
     enabled: !!userId,
   });
 
+  // Fetch crypto payment requests (pending crypto deposits)
+  const { data: cryptoData, isLoading: cryptoLoading } = useQuery({
+    queryKey: ['cryptoPayments', userId],
+    queryFn: async () => {
+      if (!userId) return { requests: [] };
+      const res = await apiRequest('GET', `/api/crypto-payments/user/${userId}`);
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+
   const { data: bnslData, isLoading: bnslLoading, error: bnslError } = useQuery({
     queryKey: ['bnslPlans', userId],
     queryFn: async () => {
@@ -139,6 +150,7 @@ export function useDashboardData(): DashboardData {
   const vaultHoldings = vaultData?.holdings || [];
   const rawTransactions = txData?.transactions || [];
   const depositRequests = depositData?.requests || [];
+  const cryptoPayments = cryptoData?.requests || [];
   const bnslPlans = bnslData?.plans || [];
   const goldPrice = priceData?.pricePerGram || 0;
   const goldPriceSource = priceData?.source || null;
@@ -156,8 +168,23 @@ export function useDashboardData(): DashboardData {
     isDepositRequest: true,
   }));
 
+  // Convert crypto payment requests to transaction-like format
+  const cryptoTransactions = cryptoPayments
+    .filter((cp: any) => cp.status !== 'Approved') // Only show non-approved (pending/under review)
+    .map((cp: any) => ({
+      id: cp.id,
+      type: 'Deposit',
+      status: cp.status === 'Approved' ? 'Completed' : cp.status,
+      amountUsd: cp.amountUsd,
+      amountGold: cp.goldGrams,
+      createdAt: cp.createdAt,
+      description: `Crypto Deposit - ${cp.status}`,
+      sourceModule: 'FinaPay',
+      isCryptoPayment: true,
+    }));
+
   // Combine and sort by date (newest first)
-  const transactions = [...rawTransactions, ...depositTransactions].sort((a, b) =>
+  const transactions = [...rawTransactions, ...depositTransactions, ...cryptoTransactions].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -188,7 +215,7 @@ export function useDashboardData(): DashboardData {
     bnslPlans,
     goldPrice,
     goldPriceSource,
-    isLoading: walletLoading || vaultLoading || txLoading || depositLoading || bnslLoading,
+    isLoading: walletLoading || vaultLoading || txLoading || depositLoading || cryptoLoading || bnslLoading,
     error: errorMessage,
     totals: {
       vaultGoldGrams,
