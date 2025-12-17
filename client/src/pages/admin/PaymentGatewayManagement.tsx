@@ -10,8 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditCard, Landmark, Wallet, Bitcoin, Save, Loader2, Eye, EyeOff, CheckCircle2, Plus, Trash2, TrendingUp, Copy, Check, Edit, Upload, X, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
+import { useAuth } from '@/context/AuthContext';
 
 interface BankAccount {
   id: string;
@@ -97,6 +97,7 @@ interface PaymentGatewaySettings {
 }
 
 export default function PaymentGatewayManagement() {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<PaymentGatewaySettings>({
     stripeEnabled: false,
     stripePublishableKey: '',
@@ -154,13 +155,18 @@ export default function PaymentGatewayManagement() {
   const [manualCryptoEnabled, setManualCryptoEnabled] = useState(false);
 
   useEffect(() => {
-    fetchSettings();
-    fetchCryptoWallets();
-  }, []);
+    if (user?.id) {
+      fetchSettings();
+      fetchCryptoWallets();
+    }
+  }, [user?.id]);
 
   const fetchSettings = async () => {
     try {
-      const res = await apiRequest('GET', '/api/admin/payment-gateways');
+      const res = await fetch('/api/admin/payment-gateways', {
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       if (data) {
         setSettings({
@@ -208,7 +214,15 @@ export default function PaymentGatewayManagement() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await apiRequest('PUT', '/api/admin/payment-gateways', settings);
+      const res = await fetch('/api/admin/payment-gateways', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-User-Id': user?.id || '' 
+        },
+        body: JSON.stringify(settings)
+      });
+      if (!res.ok) throw new Error('Failed to save');
       toast.success('Payment gateway settings saved successfully');
     } catch (error) {
       toast.error('Failed to save settings');
@@ -259,7 +273,10 @@ export default function PaymentGatewayManagement() {
   // Crypto wallet functions
   const fetchCryptoWallets = async () => {
     try {
-      const response = await apiRequest('GET', '/api/admin/crypto-wallets');
+      const response = await fetch('/api/admin/crypto-wallets', {
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setCryptoWallets(data.wallets || []);
       setManualCryptoEnabled(data.wallets?.some((w: CryptoWalletConfig) => w.isActive) || false);
@@ -338,7 +355,15 @@ export default function PaymentGatewayManagement() {
         : '/api/admin/crypto-wallets';
       const method = editingWallet ? 'PATCH' : 'POST';
       
-      await apiRequest(method, url, walletForm);
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-User-Id': user?.id || ''
+        },
+        body: JSON.stringify(walletForm)
+      });
+      if (!res.ok) throw new Error('Failed to save');
       toast.success(editingWallet ? 'Wallet updated' : 'Wallet added');
       setShowWalletDialog(false);
       fetchCryptoWallets();
@@ -351,7 +376,11 @@ export default function PaymentGatewayManagement() {
     if (!confirm('Are you sure you want to delete this wallet?')) return;
     
     try {
-      await apiRequest('DELETE', `/api/admin/crypto-wallets/${id}`);
+      const res = await fetch(`/api/admin/crypto-wallets/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (!res.ok) throw new Error('Failed to delete');
       toast.success('Wallet deleted');
       fetchCryptoWallets();
     } catch (error) {
@@ -361,9 +390,15 @@ export default function PaymentGatewayManagement() {
 
   const handleToggleWalletActive = async (wallet: CryptoWalletConfig) => {
     try {
-      await apiRequest('PATCH', `/api/admin/crypto-wallets/${wallet.id}`, {
-        isActive: !wallet.isActive
+      const res = await fetch(`/api/admin/crypto-wallets/${wallet.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-User-Id': user?.id || ''
+        },
+        body: JSON.stringify({ isActive: !wallet.isActive })
       });
+      if (!res.ok) throw new Error('Failed to update');
       fetchCryptoWallets();
     } catch (error) {
       toast.error('Failed to update wallet');
