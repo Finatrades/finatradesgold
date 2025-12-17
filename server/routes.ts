@@ -9696,10 +9696,10 @@ export async function registerRoutes(
       }
       
       // Credit the gold to user's wallet
-      const newBalance = parseFloat(wallet.goldBalance) + parseFloat(paymentRequest.goldGrams);
+      const currentGoldGrams = parseFloat(wallet.goldGrams || '0');
+      const newGoldGrams = currentGoldGrams + parseFloat(paymentRequest.goldGrams);
       await storage.updateWallet(wallet.id, {
-        goldBalance: newBalance.toString(),
-        totalDeposited: (parseFloat(wallet.totalDeposited) + parseFloat(paymentRequest.amountUsd)).toString(),
+        goldGrams: newGoldGrams.toString(),
       });
       
       // Create transaction record
