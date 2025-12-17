@@ -4698,15 +4698,12 @@ export async function registerRoutes(
           // Wrap all database operations in a transaction for atomicity
           await db.transaction(async (tx) => {
             // Get current wallet balances
-            const currentUsdBalance = parseFloat(wallet.usdBalance.toString());
             const currentGoldGrams = parseFloat(wallet.goldGrams.toString());
-            const newUsdBalance = currentUsdBalance + depositAmountUsd;
             const newGoldBalance = currentGoldGrams + goldGrams;
             
-            // Update wallet: add both USD and gold grams
+            // Update wallet: add gold grams only (no USD cash balance)
             await tx.update(wallets)
               .set({
-                usdBalance: newUsdBalance.toString(),
                 goldGrams: newGoldBalance.toFixed(6),
                 updatedAt: new Date(),
               })
@@ -7758,14 +7755,23 @@ export async function registerRoutes(
           if (newStatus !== transaction.status) {
             await storage.updateNgeniusTransaction(transaction.id, { status: newStatus as any });
             
-            // If captured, credit the wallet
+            // If captured, credit the wallet with gold (not USD cash)
             if (newStatus === 'Captured' && transaction.status !== 'Captured') {
               const wallet = await storage.getWallet(transaction.userId);
               if (wallet) {
-                const currentBalance = parseFloat(wallet.usdBalance || '0');
                 const depositAmount = parseFloat(transaction.amountUsd || '0');
+                // Convert USD to gold at current price
+                let goldPricePerGram: number;
+                try {
+                  goldPricePerGram = await getGoldPricePerGram();
+                } catch {
+                  goldPricePerGram = 85; // Fallback price
+                }
+                const goldGrams = depositAmount / goldPricePerGram;
+                const currentGold = parseFloat(wallet.goldGrams || '0');
+                
                 await storage.updateWallet(wallet.id, {
-                  usdBalance: (currentBalance + depositAmount).toString(),
+                  goldGrams: (currentGold + goldGrams).toFixed(6),
                 });
 
                 // Create transaction record
@@ -7774,7 +7780,9 @@ export async function registerRoutes(
                   type: 'Deposit',
                   status: 'Completed',
                   amountUsd: transaction.amountUsd,
-                  description: `Card deposit via NGenius - ${orderReference}`,
+                  amountGold: goldGrams.toFixed(6),
+                  goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+                  description: `Card deposit via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
                   referenceId: orderReference,
                   sourceModule: 'finapay',
                   completedAt: new Date(),
@@ -7839,14 +7847,23 @@ export async function registerRoutes(
 
         await storage.updateNgeniusTransaction(transaction.id, updates);
 
-        // If payment captured, credit wallet
+        // If payment captured, credit wallet with gold (not USD cash)
         if (webhookData.status === 'Captured' && transaction.status !== 'Captured') {
           const wallet = await storage.getWallet(transaction.userId);
           if (wallet) {
-            const currentBalance = parseFloat(wallet.usdBalance || '0');
             const depositAmount = parseFloat(transaction.amountUsd || '0');
+            // Convert USD to gold at current price
+            let goldPricePerGram: number;
+            try {
+              goldPricePerGram = await getGoldPricePerGram();
+            } catch {
+              goldPricePerGram = 85; // Fallback price
+            }
+            const goldGrams = depositAmount / goldPricePerGram;
+            const currentGold = parseFloat(wallet.goldGrams || '0');
+            
             await storage.updateWallet(wallet.id, {
-              usdBalance: (currentBalance + depositAmount).toString(),
+              goldGrams: (currentGold + goldGrams).toFixed(6),
             });
 
             // Create transaction record
@@ -7855,7 +7872,9 @@ export async function registerRoutes(
               type: 'Deposit',
               status: 'Completed',
               amountUsd: transaction.amountUsd,
-              description: `Card deposit via NGenius - ${transaction.orderReference}`,
+              amountGold: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              description: `Card deposit via NGenius - ${transaction.orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: transaction.orderReference,
               sourceModule: 'finapay',
               completedAt: new Date(),

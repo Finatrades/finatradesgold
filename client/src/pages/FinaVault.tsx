@@ -373,12 +373,11 @@ export default function FinaVault() {
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
                 <p className="text-3xl font-bold text-green-600 mb-1">
-                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${availableGoldValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <div className="text-sm text-green-600/70 space-y-0.5">
-                  <p>${usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cash</p>
-                  <p>{availableGold.toFixed(4)}g Gold (${availableGoldValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</p>
-                </div>
+                <p className="text-sm text-green-600/70">
+                  {availableGold.toFixed(4)}g Gold
+                </p>
                 <p className="text-xs text-muted-foreground mt-2">
                   Available for withdrawal or transfer.
                 </p>
@@ -433,12 +432,11 @@ export default function FinaVault() {
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Vault Value</p>
                 <p className="text-3xl font-bold text-foreground mb-1">
-                  ${totalVaultValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <div className="text-sm text-muted-foreground space-y-0.5">
-                  <p>${usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cash</p>
-                  <p>{totalVaultGold.toFixed(4)}g Gold</p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {totalVaultGold.toFixed(4)}g Gold
+                </p>
               </div>
             </div>
 
