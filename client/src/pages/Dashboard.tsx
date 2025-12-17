@@ -82,12 +82,12 @@ export default function Dashboard() {
             {isGoldPriceLive ? (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong> - Live from {goldPriceSource}</span>
+                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong></span>
               </>
             ) : (
               <>
                 <AlertTriangle className="w-4 h-4" />
-                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong> - Using estimated price (live feed temporarily unavailable)</span>
+                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong> - Using estimated price</span>
               </>
             )}
           </div>
