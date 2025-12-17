@@ -1981,6 +1981,7 @@ export type BinanceTransaction = typeof binanceTransactions.$inferSelect;
 export const ngeniusOrderStatusEnum = pgEnum('ngenius_order_status', [
   'Created',      // Order created, awaiting payment
   'Pending',      // Payment pending
+  'Awaiting3DS',  // Awaiting 3D Secure authentication
   'Authorised',   // Payment authorized
   'Captured',     // Payment captured/completed
   'Failed',       // Payment failed
