@@ -61,6 +61,7 @@ import FinaBridgeRequests from "@/pages/FinaBridgeRequests";
 import FinaBridgeProposals from "@/pages/FinaBridgeProposals";
 
 import FinaPayTransactions from "@/pages/FinaPayTransactions";
+import AllTransactions from "@/pages/AllTransactions";
 import { FinaPayProvider } from "@/context/FinaPayContext";
 
 import AdminChat from "@/pages/admin/AdminChat";
@@ -90,6 +91,7 @@ function Router() {
       
       {/* User Dashboard Routes */}
       <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/transactions" component={AllTransactions} />
       <ProtectedRoute path="/finapay/transactions" component={FinaPayTransactions} />
       <ProtectedRoute path="/finapay" component={FinaPay} />
       <ProtectedRoute path="/finavault/history" component={FinaVaultHistory} />

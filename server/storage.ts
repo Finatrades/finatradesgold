@@ -243,6 +243,13 @@ export interface IStorage {
   updateBnslPlan(id: string, updates: Partial<BnslPlan>): Promise<BnslPlan | undefined>;
   
   // BNSL Payouts
+  getUserBnslPayouts(userId: string): Promise<BnslPayout[]>;
+  getAllBnslPayouts(): Promise<BnslPayout[]>;
+  
+  // Peer Transfers
+  getPeerTransfers(userId: string): Promise<PeerTransfer[]>;
+  
+  // BNSL Payouts
   getBnslPayout(id: string): Promise<BnslPayout | undefined>;
   getPlanPayouts(planId: string): Promise<BnslPayout[]>;
   createBnslPayout(payout: InsertBnslPayout): Promise<BnslPayout>;
@@ -736,6 +743,24 @@ export class DatabaseStorage implements IStorage {
 
   async getAllBnslPlans(): Promise<BnslPlan[]> {
     return await db.select().from(bnslPlans).orderBy(desc(bnslPlans.createdAt));
+  }
+
+  async getUserBnslPayouts(userId: string): Promise<BnslPayout[]> {
+    return await db.select().from(bnslPayouts).where(eq(bnslPayouts.userId, userId)).orderBy(desc(bnslPayouts.createdAt));
+  }
+
+  async getAllBnslPayouts(): Promise<BnslPayout[]> {
+    return await db.select().from(bnslPayouts).orderBy(desc(bnslPayouts.createdAt));
+  }
+
+  async getPeerTransfers(userId: string): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers).where(
+      or(eq(peerTransfers.senderUserId, userId), eq(peerTransfers.recipientUserId, userId))
+    ).orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async getAllPeerTransfers(): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers).orderBy(desc(peerTransfers.createdAt));
   }
 
   async createBnslPlan(insertPlan: InsertBnslPlan): Promise<BnslPlan> {

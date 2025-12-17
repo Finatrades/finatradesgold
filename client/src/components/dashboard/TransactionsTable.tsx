@@ -62,7 +62,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
     <Card className="p-6 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 border border-white/50 dark:border-zinc-800/50 min-h-[300px] max-h-[450px] flex flex-col rounded-2xl">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
-        <Link href="/finapay">
+        <Link href="/transactions">
           <Button variant="link" className="text-[#D4AF37] h-auto p-0 hover:text-[#D4AF37]/80" data-testid="link-view-all-transactions">
             View all
           </Button>
@@ -82,7 +82,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
             const isPositive = tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit';
             
             return (
-              <Link key={tx.id} href="/finapay">
+              <Link key={tx.id} href="/transactions">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/60 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/60 transition-all duration-200 group hover:scale-[1.01] border border-transparent hover:border-border/50 cursor-pointer" data-testid={`transaction-row-${tx.id}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getBgColor(tx.type)} ring-2 ring-white/50 dark:ring-zinc-800/50`}>

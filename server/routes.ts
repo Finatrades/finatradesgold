@@ -2649,6 +2649,511 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to get transactions" });
     }
   });
+
+  // ============================================================================
+  // UNIFIED TRANSACTIONS API (All Modules)
+  // ============================================================================
+  
+  // Get unified transactions with advanced filtering
+  app.get("/api/unified-transactions/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const { module, type, status, fromDate, toDate, limit = '50', cursor } = req.query;
+      
+      // Fetch all transaction types from all modules
+      const [
+        regularTransactions,
+        depositRequests,
+        cryptoPayments,
+        bnslPlans,
+        bnslPayouts,
+        peerTransfers,
+        vaultDepositReqs,
+        vaultWithdrawalReqs,
+        tradeCases
+      ] = await Promise.all([
+        storage.getUserTransactions(userId),
+        storage.getUserDepositRequests(userId),
+        storage.getUserCryptoPaymentRequests(userId),
+        storage.getUserBnslPlans(userId),
+        storage.getUserBnslPayouts(userId),
+        storage.getPeerTransfers(userId),
+        storage.getUserVaultDepositRequests(userId),
+        storage.getUserVaultWithdrawalRequests(userId),
+        storage.getUserTradeCases(userId)
+      ]);
+      
+      // Normalize all transactions to unified format
+      let unifiedTransactions: any[] = [];
+      
+      // Regular transactions (FinaPay)
+      regularTransactions.forEach(tx => {
+        unifiedTransactions.push({
+          id: tx.id,
+          userId: tx.userId,
+          module: tx.sourceModule || 'finapay',
+          actionType: tx.type,
+          grams: tx.amountGold,
+          usd: tx.amountUsd,
+          usdPerGram: tx.goldPriceUsdPerGram,
+          status: tx.status,
+          referenceId: tx.referenceId,
+          description: tx.description,
+          counterpartyUserId: tx.recipientUserId,
+          createdAt: tx.createdAt,
+          completedAt: tx.completedAt,
+          sourceType: 'transaction'
+        });
+      });
+      
+      // Deposit requests
+      depositRequests.forEach(dep => {
+        unifiedTransactions.push({
+          id: dep.id,
+          userId: dep.userId,
+          module: 'finapay',
+          actionType: 'ADD_FUNDS',
+          grams: null,
+          usd: dep.amountUsd,
+          usdPerGram: null,
+          status: dep.status === 'Confirmed' ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
+          referenceId: dep.referenceNumber,
+          description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
+          counterpartyUserId: null,
+          createdAt: dep.createdAt,
+          completedAt: dep.processedAt,
+          sourceType: 'deposit_request'
+        });
+      });
+      
+      // Crypto payments
+      cryptoPayments.forEach(cp => {
+        unifiedTransactions.push({
+          id: cp.id,
+          userId: cp.userId,
+          module: 'finapay',
+          actionType: 'ADD_FUNDS',
+          grams: cp.goldGrams,
+          usd: cp.amountUsd,
+          usdPerGram: cp.goldPriceUsdPerGram,
+          status: cp.status === 'Approved' ? 'COMPLETED' : cp.status === 'Rejected' ? 'FAILED' : 'PENDING',
+          referenceId: cp.transactionHash,
+          description: `Crypto Deposit - ${cp.cryptoCurrency}`,
+          counterpartyUserId: null,
+          createdAt: cp.createdAt,
+          completedAt: cp.verifiedAt,
+          sourceType: 'crypto_payment'
+        });
+      });
+      
+      // BNSL plans
+      bnslPlans.forEach(plan => {
+        unifiedTransactions.push({
+          id: plan.id,
+          userId: plan.userId,
+          module: 'bnsl',
+          actionType: 'LOCK',
+          grams: plan.goldGrams,
+          usd: plan.purchaseValueUsd,
+          usdPerGram: plan.purchasePriceUsdPerGram,
+          status: plan.status === 'Completed' ? 'COMPLETED' : plan.status === 'Active' ? 'LOCKED' : 'PENDING',
+          referenceId: plan.planNumber,
+          description: `BNSL Plan - ${plan.termMonths} months`,
+          counterpartyUserId: null,
+          createdAt: plan.createdAt,
+          completedAt: plan.maturityDate,
+          sourceType: 'bnsl_plan'
+        });
+      });
+      
+      // BNSL payouts
+      bnslPayouts.forEach(payout => {
+        unifiedTransactions.push({
+          id: payout.id,
+          userId: payout.userId,
+          module: 'bnsl',
+          actionType: 'UNLOCK',
+          grams: payout.goldGrams,
+          usd: payout.payoutAmountUsd,
+          usdPerGram: null,
+          status: payout.status === 'Paid' ? 'COMPLETED' : payout.status === 'Failed' ? 'FAILED' : 'PENDING',
+          referenceId: payout.planId,
+          description: `BNSL Payout - ${payout.payoutType}`,
+          counterpartyUserId: null,
+          createdAt: payout.createdAt,
+          completedAt: payout.paidAt,
+          sourceType: 'bnsl_payout'
+        });
+      });
+      
+      // P2P transfers
+      peerTransfers.forEach(transfer => {
+        const isSender = transfer.senderUserId === userId;
+        unifiedTransactions.push({
+          id: transfer.id,
+          userId: userId,
+          module: 'finapay',
+          actionType: isSender ? 'SEND' : 'RECEIVE',
+          grams: transfer.goldGrams,
+          usd: transfer.amountUsd,
+          usdPerGram: transfer.goldPriceUsdPerGram,
+          status: transfer.status === 'Completed' ? 'COMPLETED' : transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
+          referenceId: transfer.referenceNumber,
+          description: transfer.description || (isSender ? `Sent to ${transfer.recipientEmail}` : `Received from ${transfer.senderEmail}`),
+          counterpartyUserId: isSender ? transfer.recipientUserId : transfer.senderUserId,
+          createdAt: transfer.createdAt,
+          completedAt: transfer.completedAt,
+          sourceType: 'peer_transfer'
+        });
+      });
+      
+      // Vault deposits
+      vaultDepositReqs.forEach(dep => {
+        unifiedTransactions.push({
+          id: dep.id,
+          userId: dep.userId,
+          module: 'finavault',
+          actionType: 'ADD_FUNDS',
+          grams: dep.goldGrams,
+          usd: null,
+          usdPerGram: null,
+          status: dep.status === 'Stored' || dep.status === 'Approved' ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
+          referenceId: dep.referenceNumber,
+          description: 'Vault Deposit',
+          counterpartyUserId: null,
+          createdAt: dep.createdAt,
+          completedAt: dep.processedAt,
+          sourceType: 'vault_deposit'
+        });
+      });
+      
+      // Vault withdrawals
+      vaultWithdrawalReqs.forEach(wd => {
+        unifiedTransactions.push({
+          id: wd.id,
+          userId: wd.userId,
+          module: 'finavault',
+          actionType: 'UNLOCK',
+          grams: wd.goldGrams,
+          usd: null,
+          usdPerGram: null,
+          status: wd.status === 'Completed' || wd.status === 'Approved' ? 'COMPLETED' : wd.status === 'Rejected' ? 'FAILED' : 'PENDING',
+          referenceId: wd.referenceNumber,
+          description: `Vault Withdrawal - ${wd.deliveryMethod}`,
+          counterpartyUserId: null,
+          createdAt: wd.createdAt,
+          completedAt: wd.processedAt,
+          sourceType: 'vault_withdrawal'
+        });
+      });
+      
+      // FinaBridge trade cases
+      tradeCases.forEach(tc => {
+        const statusMap: Record<string, string> = {
+          'Completed': 'COMPLETED',
+          'Approved': 'COMPLETED',
+          'Rejected': 'FAILED',
+          'Cancelled': 'FAILED'
+        };
+        unifiedTransactions.push({
+          id: tc.id,
+          userId: tc.userId,
+          module: 'finabridge',
+          actionType: tc.tradeType?.toUpperCase() || 'TRADE',
+          grams: null,
+          usd: tc.amount,
+          usdPerGram: null,
+          status: statusMap[tc.status] || 'PENDING',
+          referenceId: tc.referenceNumber,
+          description: `Trade Finance - ${tc.tradeType || 'Trade'} (${tc.productCategory || 'General'})`,
+          counterpartyUserId: null,
+          createdAt: tc.createdAt,
+          completedAt: tc.updatedAt,
+          sourceType: 'trade_case'
+        });
+      });
+      
+      // Apply filters
+      if (module && module !== 'all') {
+        unifiedTransactions = unifiedTransactions.filter(tx => tx.module === module);
+      }
+      if (type && type !== 'all') {
+        unifiedTransactions = unifiedTransactions.filter(tx => tx.actionType === type);
+      }
+      if (status && status !== 'all') {
+        unifiedTransactions = unifiedTransactions.filter(tx => tx.status === status);
+      }
+      if (fromDate) {
+        const from = new Date(fromDate as string);
+        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) >= from);
+      }
+      if (toDate) {
+        const to = new Date(toDate as string);
+        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) <= to);
+      }
+      
+      // Sort by date descending
+      unifiedTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      // Calculate totals
+      const totals = {
+        totalGrams: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.grams) || 0), 0),
+        totalUSD: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.usd) || 0), 0),
+        count: unifiedTransactions.length
+      };
+      
+      // Apply pagination
+      const limitNum = parseInt(limit as string) || 50;
+      const startIndex = cursor ? parseInt(cursor as string) : 0;
+      const paginatedTransactions = unifiedTransactions.slice(startIndex, startIndex + limitNum);
+      const nextCursor = startIndex + limitNum < unifiedTransactions.length ? (startIndex + limitNum).toString() : null;
+      
+      res.json({
+        transactions: paginatedTransactions,
+        nextCursor,
+        totals
+      });
+    } catch (error) {
+      console.error('Unified transactions error:', error);
+      res.status(400).json({ message: "Failed to get unified transactions" });
+    }
+  });
+  
+  // Admin: Get all unified transactions
+  app.get("/api/admin/unified-transactions", async (req, res) => {
+    try {
+      const { module, type, status, userId, fromDate, toDate, limit = '100', cursor } = req.query;
+      
+      // Get all users for enrichment
+      const allUsers = await storage.getAllUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+      
+      // Fetch all transaction sources
+      const [
+        allTransactions,
+        allDepositRequests,
+        allCryptoPayments,
+        allBnslPlans,
+        allBnslPayouts,
+        allPeerTransfers,
+        allTradeCases
+      ] = await Promise.all([
+        storage.getAllTransactions(),
+        storage.getAllDepositRequests(),
+        storage.getAllCryptoPaymentRequests(),
+        storage.getAllBnslPlans(),
+        storage.getAllBnslPayouts(),
+        storage.getAllPeerTransfers(),
+        storage.getAllTradeCases()
+      ]);
+      
+      let unifiedTransactions: any[] = [];
+      
+      // Process all transactions similar to user endpoint
+      allTransactions.forEach(tx => {
+        const user = userMap.get(tx.userId);
+        unifiedTransactions.push({
+          id: tx.id,
+          userId: tx.userId,
+          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+          userEmail: user?.email || 'Unknown',
+          module: tx.sourceModule || 'finapay',
+          actionType: tx.type,
+          grams: tx.amountGold,
+          usd: tx.amountUsd,
+          usdPerGram: tx.goldPriceUsdPerGram,
+          status: tx.status,
+          referenceId: tx.referenceId,
+          description: tx.description,
+          createdAt: tx.createdAt,
+          completedAt: tx.completedAt,
+          sourceType: 'transaction'
+        });
+      });
+      
+      allDepositRequests.forEach(dep => {
+        const user = userMap.get(dep.userId);
+        unifiedTransactions.push({
+          id: dep.id,
+          userId: dep.userId,
+          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+          userEmail: user?.email || 'Unknown',
+          module: 'finapay',
+          actionType: 'ADD_FUNDS',
+          grams: null,
+          usd: dep.amountUsd,
+          usdPerGram: null,
+          status: dep.status === 'Confirmed' ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
+          referenceId: dep.referenceNumber,
+          description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
+          createdAt: dep.createdAt,
+          completedAt: dep.processedAt,
+          sourceType: 'deposit_request'
+        });
+      });
+      
+      allCryptoPayments.forEach(cp => {
+        const user = userMap.get(cp.userId);
+        unifiedTransactions.push({
+          id: cp.id,
+          userId: cp.userId,
+          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+          userEmail: user?.email || 'Unknown',
+          module: 'finapay',
+          actionType: 'ADD_FUNDS',
+          grams: cp.goldGrams,
+          usd: cp.amountUsd,
+          usdPerGram: cp.goldPriceUsdPerGram,
+          status: cp.status === 'Approved' ? 'COMPLETED' : cp.status === 'Rejected' ? 'FAILED' : 'PENDING',
+          referenceId: cp.transactionHash,
+          description: `Crypto Deposit - ${cp.cryptoCurrency}`,
+          createdAt: cp.createdAt,
+          completedAt: cp.verifiedAt,
+          sourceType: 'crypto_payment'
+        });
+      });
+      
+      allBnslPlans.forEach(plan => {
+        const user = userMap.get(plan.userId);
+        unifiedTransactions.push({
+          id: plan.id,
+          userId: plan.userId,
+          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+          userEmail: user?.email || 'Unknown',
+          module: 'bnsl',
+          actionType: 'LOCK',
+          grams: plan.goldGrams,
+          usd: plan.purchaseValueUsd,
+          usdPerGram: plan.purchasePriceUsdPerGram,
+          status: plan.status === 'Completed' ? 'COMPLETED' : plan.status === 'Active' ? 'LOCKED' : 'PENDING',
+          referenceId: plan.planNumber,
+          description: `BNSL Plan - ${plan.termMonths} months`,
+          createdAt: plan.createdAt,
+          completedAt: plan.maturityDate,
+          sourceType: 'bnsl_plan'
+        });
+      });
+      
+      allBnslPayouts.forEach(payout => {
+        const user = userMap.get(payout.userId);
+        unifiedTransactions.push({
+          id: payout.id,
+          userId: payout.userId,
+          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+          userEmail: user?.email || 'Unknown',
+          module: 'bnsl',
+          actionType: 'UNLOCK',
+          grams: payout.goldGrams,
+          usd: payout.payoutAmountUsd,
+          usdPerGram: null,
+          status: payout.status === 'Paid' ? 'COMPLETED' : payout.status === 'Failed' ? 'FAILED' : 'PENDING',
+          referenceId: payout.planId,
+          description: `BNSL Payout - ${payout.payoutType}`,
+          createdAt: payout.createdAt,
+          completedAt: payout.paidAt,
+          sourceType: 'bnsl_payout'
+        });
+      });
+      
+      allPeerTransfers.forEach(transfer => {
+        const sender = userMap.get(transfer.senderUserId);
+        const recipient = userMap.get(transfer.recipientUserId || '');
+        unifiedTransactions.push({
+          id: transfer.id,
+          userId: transfer.senderUserId,
+          userName: sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown',
+          userEmail: sender?.email || 'Unknown',
+          recipientName: recipient ? `${recipient.firstName} ${recipient.lastName}` : transfer.recipientEmail,
+          module: 'finapay',
+          actionType: 'SEND',
+          grams: transfer.goldGrams,
+          usd: transfer.amountUsd,
+          usdPerGram: transfer.goldPriceUsdPerGram,
+          status: transfer.status === 'Completed' ? 'COMPLETED' : transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
+          referenceId: transfer.referenceNumber,
+          description: transfer.description || `Transfer to ${transfer.recipientEmail}`,
+          createdAt: transfer.createdAt,
+          completedAt: transfer.completedAt,
+          sourceType: 'peer_transfer'
+        });
+      });
+      
+      // FinaBridge trade cases
+      allTradeCases.forEach(tc => {
+        const user = userMap.get(tc.userId);
+        const statusMap: Record<string, string> = {
+          'Completed': 'COMPLETED',
+          'Approved': 'COMPLETED',
+          'Rejected': 'FAILED',
+          'Cancelled': 'FAILED'
+        };
+        unifiedTransactions.push({
+          id: tc.id,
+          userId: tc.userId,
+          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+          userEmail: user?.email || 'Unknown',
+          module: 'finabridge',
+          actionType: tc.tradeType?.toUpperCase() || 'TRADE',
+          grams: null,
+          usd: tc.amount,
+          usdPerGram: null,
+          status: statusMap[tc.status] || 'PENDING',
+          referenceId: tc.referenceNumber,
+          description: `Trade Finance - ${tc.tradeType || 'Trade'} (${tc.productCategory || 'General'})`,
+          createdAt: tc.createdAt,
+          completedAt: tc.updatedAt,
+          sourceType: 'trade_case'
+        });
+      });
+      
+      // Apply filters
+      if (module && module !== 'all') {
+        unifiedTransactions = unifiedTransactions.filter(tx => tx.module === module);
+      }
+      if (type && type !== 'all') {
+        unifiedTransactions = unifiedTransactions.filter(tx => tx.actionType === type);
+      }
+      if (status && status !== 'all') {
+        unifiedTransactions = unifiedTransactions.filter(tx => tx.status === status);
+      }
+      if (userId && userId !== 'all') {
+        unifiedTransactions = unifiedTransactions.filter(tx => tx.userId === userId);
+      }
+      if (fromDate) {
+        const from = new Date(fromDate as string);
+        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) >= from);
+      }
+      if (toDate) {
+        const to = new Date(toDate as string);
+        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) <= to);
+      }
+      
+      // Sort by date descending
+      unifiedTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      // Calculate totals
+      const totals = {
+        totalGrams: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.grams) || 0), 0),
+        totalUSD: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.usd) || 0), 0),
+        count: unifiedTransactions.length
+      };
+      
+      // Apply pagination
+      const limitNum = parseInt(limit as string) || 100;
+      const startIndex = cursor ? parseInt(cursor as string) : 0;
+      const paginatedTransactions = unifiedTransactions.slice(startIndex, startIndex + limitNum);
+      const nextCursor = startIndex + limitNum < unifiedTransactions.length ? (startIndex + limitNum).toString() : null;
+      
+      res.json({
+        transactions: paginatedTransactions,
+        nextCursor,
+        totals
+      });
+    } catch (error) {
+      console.error('Admin unified transactions error:', error);
+      res.status(400).json({ message: "Failed to get admin unified transactions" });
+    }
+  });
   
   // Update transaction status (basic update without processing)
   app.patch("/api/transactions/:id", async (req, res) => {
