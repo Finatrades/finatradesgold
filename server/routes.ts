@@ -110,8 +110,11 @@ const upload = multer({
 async function ensureAdminAsync(req: Request, res: Response, next: NextFunction) {
   try {
     const adminUserId = req.headers['x-admin-user-id'] as string;
+    console.log('[DEBUG] ensureAdminAsync - Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('[DEBUG] ensureAdminAsync - adminUserId:', adminUserId);
     
     if (!adminUserId) {
+      console.log('[DEBUG] ensureAdminAsync - No adminUserId found in headers');
       return res.status(401).json({ message: "Authentication required" });
     }
     
