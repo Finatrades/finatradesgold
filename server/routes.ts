@@ -9035,7 +9035,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get user chat session
-  app.get("/api/chat/session/:userId", async (req, res) => {
+  app.get("/api/chat/session/:userId", ensureAuthenticated, async (req, res) => {
     try {
       let session = await storage.getChatSession(req.params.userId);
       
@@ -9055,7 +9055,7 @@ export async function registerRoutes(
   });
   
   // Get all chat sessions (Admin)
-  app.get("/api/admin/chat/sessions", async (req, res) => {
+  app.get("/api/admin/chat/sessions", ensureAdminAsync, async (req, res) => {
     try {
       const sessions = await storage.getAllChatSessions();
       
@@ -9087,7 +9087,7 @@ export async function registerRoutes(
   });
   
   // Get session messages
-  app.get("/api/chat/messages/:sessionId", async (req, res) => {
+  app.get("/api/chat/messages/:sessionId", ensureAuthenticated, async (req, res) => {
     try {
       const messages = await storage.getSessionMessages(req.params.sessionId);
       res.json({ messages });
@@ -9097,7 +9097,7 @@ export async function registerRoutes(
   });
   
   // Send message
-  app.post("/api/chat/messages", async (req, res) => {
+  app.post("/api/chat/messages", ensureAuthenticated, async (req, res) => {
     try {
       const messageData = insertChatMessageSchema.parse(req.body);
       const message = await storage.createChatMessage(messageData);
@@ -9114,7 +9114,7 @@ export async function registerRoutes(
   });
   
   // Mark messages as read
-  app.patch("/api/chat/messages/:sessionId/read", async (req, res) => {
+  app.patch("/api/chat/messages/:sessionId/read", ensureAuthenticated, async (req, res) => {
     try {
       await storage.markMessagesAsRead(req.params.sessionId);
       res.json({ success: true });
@@ -9124,7 +9124,7 @@ export async function registerRoutes(
   });
   
   // Update chat session
-  app.patch("/api/chat/session/:id", async (req, res) => {
+  app.patch("/api/chat/session/:id", ensureAuthenticated, async (req, res) => {
     try {
       const session = await storage.updateChatSession(req.params.id, req.body);
       if (!session) {
