@@ -5,12 +5,287 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from '@/components/ui/badge';
-import { Search, Send, MoreVertical, Phone, Video, Clock, CheckCheck, User, PhoneOff, PhoneIncoming } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Search, Send, MoreVertical, Phone, Video, Clock, CheckCheck, User, PhoneOff, PhoneIncoming, Bot, Settings, MessageSquare, Activity, Edit2, Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useChat, ChatProvider } from '@/context/ChatContext';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
-function AdminChatContent() {
+interface ChatAgent {
+  id: string;
+  name: string;
+  displayName: string;
+  type: 'general' | 'juris' | 'support' | 'custom';
+  description: string | null;
+  avatar: string | null;
+  welcomeMessage: string | null;
+  capabilities: string[];
+  status: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function parseCapabilities(capabilities: string | string[] | null): string[] {
+  if (!capabilities) return [];
+  if (Array.isArray(capabilities)) return capabilities;
+  try {
+    return JSON.parse(capabilities);
+  } catch {
+    return [];
+  }
+}
+
+function AgentManagement() {
+  const { toast } = useToast();
+  const [agents, setAgents] = useState<ChatAgent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingAgent, setEditingAgent] = useState<ChatAgent | null>(null);
+  const [editForm, setEditForm] = useState({
+    displayName: '',
+    description: '',
+    welcomeMessage: '',
+    status: 'active'
+  });
+
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch('/api/chat-agents');
+      if (!response.ok) throw new Error('Failed to fetch agents');
+      const data = await response.json();
+      setAgents(data.agents || []);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+      toast({ title: 'Error', description: 'Failed to load chat agents', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleAgentStatus = async (agent: ChatAgent) => {
+    const newStatus = agent.status === 'active' ? 'inactive' : 'active';
+    try {
+      const response = await fetch(`/api/chat-agents/${agent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!response.ok) throw new Error('Failed to update agent');
+      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus } : a));
+      toast({ title: 'Success', description: `${agent.displayName} is now ${newStatus}` });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to update agent status', variant: 'destructive' });
+    }
+  };
+
+  const openEditDialog = (agent: ChatAgent) => {
+    setEditingAgent(agent);
+    setEditForm({
+      displayName: agent.displayName,
+      description: agent.description || '',
+      welcomeMessage: agent.welcomeMessage || '',
+      status: agent.status
+    });
+  };
+
+  const saveAgentChanges = async () => {
+    if (!editingAgent) return;
+    try {
+      const response = await fetch(`/api/chat-agents/${editingAgent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+      if (!response.ok) throw new Error('Failed to update agent');
+      const updatedAgent = await response.json();
+      setAgents(prev => prev.map(a => a.id === editingAgent.id ? updatedAgent.agent : a));
+      setEditingAgent(null);
+      toast({ title: 'Success', description: 'Agent updated successfully' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to update agent', variant: 'destructive' });
+    }
+  };
+
+  const getAgentTypeColor = (type: string) => {
+    switch (type) {
+      case 'general': return 'bg-blue-100 text-blue-700';
+      case 'juris': return 'bg-purple-100 text-purple-700';
+      case 'support': return 'bg-green-100 text-green-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Bot className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{agents.length}</p>
+                <p className="text-sm text-muted-foreground">Total Agents</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Activity className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{agents.filter(a => a.status === 'active').length}</p>
+                <p className="text-sm text-muted-foreground">Active Agents</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <MessageSquare className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{agents.filter(a => a.isDefault).length}</p>
+                <p className="text-sm text-muted-foreground">Default Agents</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-5 h-5" />
+            AI Chat Agents
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {agents.map(agent => (
+              <div key={agent.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors" data-testid={`agent-row-${agent.id}`}>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-orange-400 rounded-full flex items-center justify-center text-white font-bold">
+                    {agent.displayName.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{agent.displayName}</h3>
+                      <Badge className={getAgentTypeColor(agent.type)} variant="outline">
+                        {agent.type}
+                      </Badge>
+                      {agent.isDefault && (
+                        <Badge variant="secondary" className="text-xs">Default</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{agent.description || 'No description'}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {parseCapabilities(agent.capabilities as any).slice(0, 3).map((cap, idx) => (
+                        <span key={idx} className="text-xs bg-muted px-2 py-0.5 rounded">{cap}</span>
+                      ))}
+                      {parseCapabilities(agent.capabilities as any).length > 3 && (
+                        <span className="text-xs text-muted-foreground">+{parseCapabilities(agent.capabilities as any).length - 3} more</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={`status-${agent.id}`} className="text-sm text-muted-foreground">
+                      {agent.status === 'active' ? 'Active' : 'Inactive'}
+                    </Label>
+                    <Switch
+                      id={`status-${agent.id}`}
+                      checked={agent.status === 'active'}
+                      onCheckedChange={() => toggleAgentStatus(agent)}
+                      data-testid={`switch-agent-status-${agent.id}`}
+                    />
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => openEditDialog(agent)} data-testid={`button-edit-agent-${agent.id}`}>
+                    <Edit2 className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {agents.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No chat agents configured
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editingAgent} onOpenChange={() => setEditingAgent(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit {editingAgent?.displayName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="displayName">Display Name</Label>
+              <Input
+                id="displayName"
+                value={editForm.displayName}
+                onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
+                data-testid="input-agent-display-name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editForm.description}
+                onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                rows={2}
+                data-testid="input-agent-description"
+              />
+            </div>
+            <div>
+              <Label htmlFor="welcomeMessage">Welcome Message</Label>
+              <Textarea
+                id="welcomeMessage"
+                value={editForm.welcomeMessage}
+                onChange={(e) => setEditForm(prev => ({ ...prev, welcomeMessage: e.target.value }))}
+                rows={3}
+                data-testid="input-agent-welcome-message"
+              />
+            </div>
+            <Button onClick={saveAgentChanges} className="w-full" data-testid="button-save-agent">
+              <Save className="w-4 h-4 mr-2" />
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function ConversationsPanel() {
   const { sessions, currentSession, selectSession, sendMessage, initiateCall, activeCall, endCall, isConnected, isTyping, incomingCall, acceptCall, rejectCall } = useChat();
   const [messageInput, setMessageInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,7 +311,7 @@ function AdminChatContent() {
   };
 
   return (
-    <AdminLayout>
+    <>
       {/* Incoming Call Modal */}
       <Dialog open={!!incomingCall} onOpenChange={() => rejectCall()}>
         <DialogContent className="sm:max-w-md">
@@ -282,6 +557,33 @@ function AdminChatContent() {
           )}
         </div>
       </div>
+    </>
+  );
+}
+
+function AdminChatContent() {
+  return (
+    <AdminLayout>
+      <Tabs defaultValue="agents" className="space-y-4">
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="agents" className="flex items-center gap-2" data-testid="tab-agents">
+            <Bot className="w-4 h-4" />
+            AI Agents
+          </TabsTrigger>
+          <TabsTrigger value="conversations" className="flex items-center gap-2" data-testid="tab-conversations">
+            <MessageSquare className="w-4 h-4" />
+            Conversations
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="agents">
+          <AgentManagement />
+        </TabsContent>
+        
+        <TabsContent value="conversations">
+          <ConversationsPanel />
+        </TabsContent>
+      </Tabs>
     </AdminLayout>
   );
 }

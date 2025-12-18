@@ -9245,6 +9245,31 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to fetch default agent" });
     }
   });
+
+  // Update chat agent (admin only)
+  app.put("/api/chat-agents/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const agentId = req.params.id;
+      
+      const existingAgent = await storage.getChatAgent(agentId);
+      if (!existingAgent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      const { displayName, description, welcomeMessage, status } = req.body;
+      const updates: any = {};
+      if (displayName !== undefined) updates.displayName = displayName;
+      if (description !== undefined) updates.description = description;
+      if (welcomeMessage !== undefined) updates.welcomeMessage = welcomeMessage;
+      if (status !== undefined) updates.status = status;
+      
+      const updatedAgent = await storage.updateChatAgent(agentId, updates);
+      res.json({ agent: updatedAgent });
+    } catch (error) {
+      console.error("Failed to update chat agent:", error);
+      res.status(500).json({ message: "Failed to update chat agent" });
+    }
+  });
   
   // ============================================================================
   // CHATBOT - AI-POWERED INSTANT SUPPORT
