@@ -2,8 +2,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useSocket } from '@/context/SocketContext';
+import { useSmartPolling } from './useSmartPolling';
 
 interface Wallet {
   goldGrams: string;
@@ -106,6 +107,7 @@ interface DashboardData {
   isFetching: boolean;
   error: string | null;
   syncStatus: SyncStatus;
+  syncMode: 'active' | 'idle' | 'paused';
   lastSynced: Date | null;
   totals: {
     vaultGoldGrams: number;
@@ -124,7 +126,6 @@ interface DashboardData {
   invalidateAll: () => void;
 }
 
-const AUTO_REFRESH_INTERVAL = 15000;
 const STALE_TIME = 30000;
 
 export function useDashboardData(): DashboardData {
@@ -132,6 +133,14 @@ export function useDashboardData(): DashboardData {
   const userId = user?.id;
   const queryClient = useQueryClient();
   const { socket } = useSocket();
+  
+  // Smart polling: adjusts refresh rate based on user activity
+  const { interval: smartInterval, isIdle, isVisible } = useSmartPolling({
+    activeInterval: 15000,   // 15 seconds when user is active
+    idleInterval: 60000,     // 60 seconds when user is idle (1 min)
+    idleThreshold: 60000,    // Consider idle after 1 minute of no activity
+    pauseInBackground: true, // Don't poll when tab is hidden
+  });
 
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery<DashboardResponse>({
     queryKey: ['dashboard', userId],
@@ -141,15 +150,16 @@ export function useDashboardData(): DashboardData {
       const res = await apiRequest('GET', `/api/dashboard/${userId}`);
       const data = await res.json();
       const clientTime = (performance.now() - startTime).toFixed(0);
-      console.log(`[Dashboard] Client fetch: ${clientTime}ms, Server: ${data._meta?.loadTimeMs}ms`);
+      const mode = isIdle ? 'idle' : 'active';
+      console.log(`[Dashboard] Client fetch: ${clientTime}ms, Server: ${data._meta?.loadTimeMs}ms, Mode: ${mode}`);
       return data;
     },
-    enabled: !!userId,
+    enabled: !!userId && isVisible, // Only fetch when user is authenticated AND tab is visible
     staleTime: STALE_TIME,
     gcTime: 300000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    refetchInterval: AUTO_REFRESH_INTERVAL,
+    refetchInterval: smartInterval, // Smart interval (15s active, 60s idle, false when hidden)
     refetchIntervalInBackground: false,
     retry: 1,
   });
@@ -184,6 +194,7 @@ export function useDashboardData(): DashboardData {
   const lastSynced = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
   const isStale = lastSynced && (Date.now() - lastSynced.getTime() > STALE_TIME);
   const syncStatus: SyncStatus = error ? 'error' : isFetching ? 'syncing' : isStale ? 'stale' : 'synced';
+  const syncMode: 'active' | 'idle' | 'paused' = !isVisible ? 'paused' : isIdle ? 'idle' : 'active';
 
   const invalidateAll = useCallback(() => {
     if (!userId) return;
@@ -222,6 +233,7 @@ export function useDashboardData(): DashboardData {
     isFetching,
     error: error ? 'Failed to load dashboard data' : null,
     syncStatus,
+    syncMode,
     lastSynced,
     totals: data?.totals || defaultTotals,
     refetch,
