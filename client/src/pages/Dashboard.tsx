@@ -130,14 +130,14 @@ export default function Dashboard() {
                 />
                                 <KpiBox
                   title="Total Gold Value (USD)"
-                  value={`$${formatNumber(totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice))}`}
+                  value={`$${formatNumber(totals.vaultGoldGrams * goldPrice)}`}
                   subtitle="Worth in USD"
                   icon={<DollarSign className="w-5 h-5 text-green-600" />}
                   iconBg="bg-green-50"
                 />
                 <KpiBox
                   title="Total Gold Value (AED)"
-                  value={`د.إ ${formatNumber((totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice)) * 3.67)}`}
+                  value={`د.إ ${formatNumber((totals.vaultGoldGrams * goldPrice) * 3.67)}`}
                   subtitle="Worth in AED"
                   icon={<DollarSign className="w-5 h-5 text-blue-600" />}
                   iconBg="bg-blue-50"
