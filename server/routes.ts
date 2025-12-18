@@ -2022,6 +2022,39 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to get users" });
     }
   });
+
+  // Get user list for account statements dropdown (with server-side search)
+  // NOTE: This route MUST be defined before /api/admin/users/:userId to avoid route matching conflict
+  app.get("/api/admin/users/list", ensureAdminAsync, async (req, res) => {
+    try {
+      const search = (req.query.search as string || '').toLowerCase().trim();
+      const allUsers = await storage.getAllUsers();
+      
+      let filteredUsers = allUsers.filter(u => u.role !== 'admin');
+      
+      if (search) {
+        filteredUsers = filteredUsers.filter(u => 
+          u.firstName?.toLowerCase().includes(search) ||
+          u.lastName?.toLowerCase().includes(search) ||
+          u.email?.toLowerCase().includes(search) ||
+          u.finatradesId?.toLowerCase().includes(search)
+        );
+      }
+      
+      const userList = filteredUsers.slice(0, 50).map(u => ({
+        id: u.id,
+        finatradesId: u.finatradesId || `FT-${u.id.slice(0, 8).toUpperCase()}`,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        email: u.email,
+        accountType: u.accountType || 'Personal'
+      }));
+      res.json(userList);
+    } catch (error) {
+      console.error("Failed to get users list:", error);
+      res.status(400).json({ message: "Failed to get users list" });
+    }
+  });
   
   // Get single user details with wallet and transactions (Admin)
   app.get("/api/admin/users/:userId", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
@@ -12124,38 +12157,6 @@ export async function registerRoutes(
   // ============================================================================
   // ACCOUNT STATEMENTS (Admin)
   // ============================================================================
-
-  // Get user list for account statements dropdown (with server-side search)
-  app.get("/api/admin/users/list", ensureAdminAsync, async (req, res) => {
-    try {
-      const search = (req.query.search as string || '').toLowerCase().trim();
-      const allUsers = await storage.getAllUsers();
-      
-      let filteredUsers = allUsers.filter(u => u.role !== 'admin');
-      
-      if (search) {
-        filteredUsers = filteredUsers.filter(u => 
-          u.firstName?.toLowerCase().includes(search) ||
-          u.lastName?.toLowerCase().includes(search) ||
-          u.email?.toLowerCase().includes(search) ||
-          u.finatradesId?.toLowerCase().includes(search)
-        );
-      }
-      
-      const userList = filteredUsers.slice(0, 50).map(u => ({
-        id: u.id,
-        finatradesId: u.finatradesId || `FT-${u.id.slice(0, 8).toUpperCase()}`,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        email: u.email,
-        accountType: u.accountType || 'Personal'
-      }));
-      res.json(userList);
-    } catch (error) {
-      console.error("Failed to get users list:", error);
-      res.status(400).json({ message: "Failed to get users list" });
-    }
-  });
 
   // Get account statement data for a user
   app.get("/api/admin/account-statement/:userId", ensureAdminAsync, async (req, res) => {
