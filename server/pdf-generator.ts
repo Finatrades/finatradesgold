@@ -1407,13 +1407,24 @@ export function generateAdminManualPDF(): Promise<Buffer> {
 
       tocItems.forEach(item => {
         const startX = 50;
-        const endX = pageWidth + 30;
+        const currentY = doc.y;
+        const numWidth = 30;
+        const pageNumWidth = 30;
+        const titleWidth = 200;
+        const dotStartX = startX + numWidth + titleWidth;
+        const dotEndX = pageWidth + 20;
+        
         doc.fillColor(FINATRADES_ORANGE).fontSize(11).font('Helvetica-Bold')
-           .text(item.num + '.', startX, doc.y, { continued: true, width: 25 });
-        doc.fillColor('#374151').font('Helvetica').text(' ' + item.title, { continued: true });
-        doc.fillColor('#9ca3af').text(' ' + '.'.repeat(80), { continued: true, width: 300 });
-        doc.fillColor('#374151').text(item.page);
-        doc.moveDown(0.4);
+           .text(item.num + '.', startX, currentY);
+        doc.fillColor('#374151').font('Helvetica')
+           .text(item.title, startX + numWidth, currentY);
+        doc.fillColor('#374151').font('Helvetica')
+           .text(item.page, dotEndX, currentY, { align: 'right', width: pageNumWidth });
+        
+        doc.strokeColor('#d1d5db').lineWidth(0.5)
+           .moveTo(dotStartX, currentY + 6).lineTo(dotEndX - 5, currentY + 6).dash(2, { space: 2 }).stroke().undash();
+        
+        doc.moveDown(0.6);
       });
 
       // ============================================
