@@ -450,7 +450,7 @@ Version 1.0 - Effective Date: January 2025
             </AlertDialogDescription>
           </AlertDialogHeader>
           
-          <ScrollArea className="flex-1 max-h-[50vh] border rounded-md p-4 my-4">
+          <ScrollArea className="h-[300px] border rounded-md p-4 my-4">
             <pre className="whitespace-pre-wrap text-sm font-sans">{termsContent}</pre>
           </ScrollArea>
           
