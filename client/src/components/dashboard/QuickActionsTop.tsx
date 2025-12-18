@@ -9,6 +9,7 @@ import { apiRequest } from '@/lib/queryClient';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
+import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 
 const actions = [
   {
@@ -22,12 +23,12 @@ const actions = [
   },
   {
     title: 'Buy Gold',
-    path: '/finapay?highlight=buy',
+    path: '',
     icon: <ShoppingCart className="w-4 h-4" />,
     gradient: 'from-amber-400 to-yellow-500',
     hoverGradient: 'hover:from-amber-500 hover:to-yellow-600',
     requiresKyc: true,
-    isModal: false
+    isModal: true
   },
   {
     title: 'Deposit Gold',
@@ -73,6 +74,7 @@ export default function QuickActionsTop() {
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [buyGoldModalOpen, setBuyGoldModalOpen] = useState(false);
   
   const isKycApproved = user?.kycStatus === 'Approved';
   const kycPending = user?.kycStatus === 'In Progress';
@@ -111,6 +113,10 @@ export default function QuickActionsTop() {
     if (action.isModal) {
       if (action.title === 'Add Fund') {
         setDepositModalOpen(true);
+        return;
+      }
+      if (action.title === 'Buy Gold') {
+        setBuyGoldModalOpen(true);
         return;
       }
       if (action.title === 'Send Payment') {
@@ -177,6 +183,12 @@ export default function QuickActionsTop() {
         isOpen={requestModalOpen} 
         onClose={() => setRequestModalOpen(false)}
         onConfirm={() => setRequestModalOpen(false)}
+      />
+      
+      <BuyGoldWingoldModal
+        isOpen={buyGoldModalOpen}
+        onClose={() => setBuyGoldModalOpen(false)}
+        onSuccess={() => setBuyGoldModalOpen(false)}
       />
     </>
   );
