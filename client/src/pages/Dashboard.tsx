@@ -118,30 +118,38 @@ export default function Dashboard() {
               {/* KPI Cards - 3x2 grid */}
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Row 1 */}
-                <KpiBox
-                  title="Gold Storage"
-                  value={`${formatNumber(totals.vaultGoldGrams, 4)} g`}
-                  secondaryValue={`${formatNumber(totals.vaultGoldGrams / 1000, 6)} KG`}
-                  tertiaryValue={`${formatNumber(totals.vaultGoldGrams / 31.1035, 4)} OZ`}
-                  subtitle="Physical gold in vault"
-                  icon={<Database className="w-5 h-5 text-orange-600" />}
-                  iconBg="bg-orange-50"
-                  valueColor="text-orange-600"
-                />
-                                <KpiBox
-                  title="Total Gold Value (USD)"
-                  value={`$${formatNumber(totals.vaultGoldGrams * goldPrice)}`}
-                  subtitle="Worth in USD"
-                  icon={<DollarSign className="w-5 h-5 text-green-600" />}
-                  iconBg="bg-green-50"
-                />
-                <KpiBox
-                  title="Total Gold Value (AED)"
-                  value={`د.إ ${formatNumber((totals.vaultGoldGrams * goldPrice) * 3.67)}`}
-                  subtitle="Worth in AED"
-                  icon={<DollarSign className="w-5 h-5 text-blue-600" />}
-                  iconBg="bg-blue-50"
-                />
+                {(() => {
+                  const totalGoldGrams = totals.vaultGoldGrams + totals.walletGoldGrams + (finaBridge?.goldGrams || 0);
+                  const totalGoldValueUsd = totalGoldGrams * goldPrice;
+                  return (
+                    <>
+                      <KpiBox
+                        title="Total Gold"
+                        value={`${formatNumber(totalGoldGrams, 4)} g`}
+                        secondaryValue={`${formatNumber(totalGoldGrams / 1000, 6)} KG`}
+                        tertiaryValue={`${formatNumber(totalGoldGrams / 31.1035, 4)} OZ`}
+                        subtitle="All wallets combined"
+                        icon={<Database className="w-5 h-5 text-orange-600" />}
+                        iconBg="bg-orange-50"
+                        valueColor="text-orange-600"
+                      />
+                      <KpiBox
+                        title="Total Gold Value (USD)"
+                        value={`$${formatNumber(totalGoldValueUsd)}`}
+                        subtitle="Worth in USD"
+                        icon={<DollarSign className="w-5 h-5 text-green-600" />}
+                        iconBg="bg-green-50"
+                      />
+                      <KpiBox
+                        title="Total Gold Value (AED)"
+                        value={`د.إ ${formatNumber(totalGoldValueUsd * 3.67)}`}
+                        subtitle="Worth in AED"
+                        icon={<DollarSign className="w-5 h-5 text-blue-600" />}
+                        iconBg="bg-blue-50"
+                      />
+                    </>
+                  );
+                })()}
                 
                 {/* Row 2 */}
                 <KpiBox
