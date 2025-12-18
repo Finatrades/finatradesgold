@@ -102,7 +102,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       formData.append('uploadType', 'buy_gold_receipt');
       formData.append('userId', user.id);
       
-      const uploadResponse = await fetch('/api/upload', {
+      const uploadResponse = await fetch('/api/documents/upload', {
         method: 'POST',
         body: formData,
       });
@@ -111,7 +111,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
         throw new Error('Failed to upload receipt');
       }
       
-      const { url: receiptFileUrl, fileName: receiptFileName } = await uploadResponse.json();
+      const { url: receiptFileUrl, filename: receiptFileName } = await uploadResponse.json();
       
       const submitResponse = await fetch('/api/buy-gold/submit', {
         method: 'POST',
