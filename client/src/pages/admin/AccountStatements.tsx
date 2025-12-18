@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,15 @@ import {
   Filter, Eye
 } from 'lucide-react';
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
 import {
   Dialog,
   DialogContent,
@@ -88,15 +97,18 @@ function formatGrams(grams: number): string {
 export default function AccountStatements() {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [dateFrom, setDateFrom] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { data: users, isLoading: loadingUsers } = useQuery<UserOption[]>({
-    queryKey: ['/api/admin/users/list'],
+  const { data: users, isLoading: loadingUsers, isFetching: fetchingUsers } = useQuery<UserOption[]>({
+    queryKey: ['/api/admin/users/list', debouncedSearch],
     queryFn: async () => {
-      const res = await fetch('/api/admin/users/list');
+      const params = new URLSearchParams();
+      if (debouncedSearch) params.append('search', debouncedSearch);
+      const res = await fetch(`/api/admin/users/list?${params}`);
       if (!res.ok) throw new Error('Failed to fetch users');
       return res.json();
     }
@@ -111,13 +123,6 @@ export default function AccountStatements() {
     },
     enabled: !!selectedUserId && !!dateFrom && !!dateTo
   });
-
-  const filteredUsers = users?.filter(u => 
-    u.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.finatradesId?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
 
   const handleDownloadPDF = async () => {
     if (!selectedUserId) {
@@ -234,17 +239,17 @@ export default function AccountStatements() {
               </div>
 
               <div className="max-h-80 overflow-y-auto border rounded-lg divide-y">
-                {loadingUsers ? (
+                {loadingUsers || fetchingUsers ? (
                   <div className="p-4 text-center text-gray-500">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-                    Loading users...
+                    {searchQuery ? 'Searching...' : 'Loading users...'}
                   </div>
-                ) : filteredUsers.length === 0 ? (
+                ) : !users || users.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">
-                    No users found
+                    {searchQuery ? `No users found for "${searchQuery}"` : 'No users found'}
                   </div>
                 ) : (
-                  filteredUsers.slice(0, 50).map((user) => (
+                  users.map((user) => (
                     <div
                       key={user.id}
                       className={`p-3 cursor-pointer hover:bg-orange-50 transition-colors ${

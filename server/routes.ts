@@ -12125,11 +12125,24 @@ export async function registerRoutes(
   // ACCOUNT STATEMENTS (Admin)
   // ============================================================================
 
-  // Get user list for account statements dropdown
+  // Get user list for account statements dropdown (with server-side search)
   app.get("/api/admin/users/list", ensureAdminAsync, async (req, res) => {
     try {
+      const search = (req.query.search as string || '').toLowerCase().trim();
       const allUsers = await storage.getAllUsers();
-      const userList = allUsers.map(u => ({
+      
+      let filteredUsers = allUsers.filter(u => u.role !== 'admin');
+      
+      if (search) {
+        filteredUsers = filteredUsers.filter(u => 
+          u.firstName?.toLowerCase().includes(search) ||
+          u.lastName?.toLowerCase().includes(search) ||
+          u.email?.toLowerCase().includes(search) ||
+          u.finatradesId?.toLowerCase().includes(search)
+        );
+      }
+      
+      const userList = filteredUsers.slice(0, 50).map(u => ({
         id: u.id,
         finatradesId: u.finatradesId || `FT-${u.id.slice(0, 8).toUpperCase()}`,
         firstName: u.firstName,
