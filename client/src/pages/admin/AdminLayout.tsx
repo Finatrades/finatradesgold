@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation, Link, Redirect } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { 
   LayoutDashboard, 
   Users, 
@@ -36,11 +37,56 @@ import {
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import ThemeToggle from '@/components/ThemeToggle';
 
+const MENU_PERMISSION_MAP: Record<string, string[]> = {
+  '/admin': [],
+  '/admin/financial-reports': ['view_reports', 'generate_reports'],
+  '/admin/users': ['view_users', 'manage_users'],
+  '/admin/employees': ['manage_employees'],
+  '/admin/kyc': ['view_kyc', 'manage_kyc'],
+  '/admin/compliance': ['view_kyc', 'manage_kyc'],
+  '/admin/transactions': ['view_transactions', 'manage_transactions'],
+  '/admin/payment-gateways': ['manage_deposits', 'manage_withdrawals'],
+  '/admin/fees': ['manage_fees'],
+  '/admin/finapay': ['view_transactions', 'manage_deposits', 'manage_withdrawals'],
+  '/admin/vault': ['view_vault', 'manage_vault'],
+  '/admin/finabridge': ['view_finabridge', 'manage_finabridge'],
+  '/admin/bnsl': ['view_bnsl', 'manage_bnsl'],
+  '/admin/documents': ['view_reports'],
+  '/admin/chat': ['view_support', 'manage_support'],
+  '/admin/email-notifications': ['manage_settings'],
+  '/admin/cms': ['view_cms', 'manage_cms'],
+  '/admin/security': ['manage_settings'],
+  '/admin/platform-config': ['manage_settings'],
+  '/admin/settings': ['manage_settings'],
+};
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
+
+  const { data: employeeData } = useQuery({
+    queryKey: ['/api/admin/employee/me', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const res = await fetch(`/api/admin/employees/by-user/${user.id}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const employeePermissions: string[] = employeeData?.employee?.permissions || [];
+  const isSuperAdmin = employeeData?.employee?.role === 'super_admin';
+
+  const hasMenuPermission = (menuPath: string): boolean => {
+    if (isSuperAdmin) return true;
+    const requiredPermissions = MENU_PERMISSION_MAP[menuPath];
+    if (!requiredPermissions || requiredPermissions.length === 0) return true;
+    return requiredPermissions.some(perm => employeePermissions.includes(perm));
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -144,31 +190,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-6 custom-scrollbar">
-            {menuSections.map((section) => (
-              <div key={section.title} className="space-y-1">
-                <p className="px-4 text-xs font-semibold text-primary uppercase tracking-wider mb-3">
-                  {section.title}
-                </p>
-                {section.items.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <div 
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                        isActive(item.href) 
-                          ? 'bg-primary text-primary-foreground shadow-md' 
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      }`}
-                      onClick={() => setSidebarOpen(false)}
-                      data-testid={`admin-sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
-                    >
-                      <div className={isActive(item.href) ? 'text-primary-foreground' : ''}>
-                        {item.icon}
+            {menuSections.map((section) => {
+              const visibleItems = section.items.filter(item => hasMenuPermission(item.href));
+              if (visibleItems.length === 0) return null;
+              
+              return (
+                <div key={section.title} className="space-y-1">
+                  <p className="px-4 text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                    {section.title}
+                  </p>
+                  {visibleItems.map((item) => (
+                    <Link key={item.href} href={item.href}>
+                      <div 
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
+                          isActive(item.href) 
+                            ? 'bg-primary text-primary-foreground shadow-md' 
+                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        }`}
+                        onClick={() => setSidebarOpen(false)}
+                        data-testid={`admin-sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
+                      >
+                        <div className={isActive(item.href) ? 'text-primary-foreground' : ''}>
+                          {item.icon}
+                        </div>
+                        <span className="font-medium text-sm">{item.label}</span>
                       </div>
-                      <span className="font-medium text-sm">{item.label}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ))}
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
           </nav>
 
           <div className="p-4 border-t border-border">

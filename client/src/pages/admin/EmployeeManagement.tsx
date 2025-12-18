@@ -215,14 +215,39 @@ export default function EmployeeManagement() {
     setShowEditDialog(true);
   };
 
-  const togglePermission = (permission: string) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(permission)
-        ? prev.permissions.filter(p => p !== permission)
-        : [...prev.permissions, permission]
-    }));
+  const MANAGE_VIEW_PAIRS: Record<string, string> = {
+    'manage_users': 'view_users',
+    'manage_kyc': 'view_kyc',
+    'manage_transactions': 'view_transactions',
+    'manage_vault': 'view_vault',
+    'manage_bnsl': 'view_bnsl',
+    'manage_finabridge': 'view_finabridge',
+    'manage_support': 'view_support',
+    'manage_cms': 'view_cms',
   };
+
+  const togglePermission = (permission: string) => {
+    setFormData(prev => {
+      let newPermissions: string[];
+      
+      if (prev.permissions.includes(permission)) {
+        newPermissions = prev.permissions.filter(p => p !== permission);
+      } else {
+        newPermissions = [...prev.permissions, permission];
+        
+        if (permission.startsWith('manage_')) {
+          const viewPermission = MANAGE_VIEW_PAIRS[permission];
+          if (viewPermission && !newPermissions.includes(viewPermission)) {
+            newPermissions.push(viewPermission);
+          }
+        }
+      }
+      
+      return { ...prev, permissions: newPermissions };
+    });
+  };
+
+  const isFormValid = formData.permissions.length > 0;
 
   const employees: Employee[] = employeesData?.employees || [];
   const availableUsers = usersData?.users?.filter((u: any) => 
@@ -360,6 +385,10 @@ export default function EmployeeManagement() {
                 </div>
               </div>
 
+              {!isFormValid && (
+                <p className="text-sm text-destructive">At least one permission is required</p>
+              )}
+              
               <DialogFooter>
                 <Button variant="outline" onClick={() => { setShowAddDialog(false); resetForm(); }}>
                   Cancel
@@ -367,7 +396,7 @@ export default function EmployeeManagement() {
                 <Button 
                   data-testid="button-create-employee"
                   onClick={() => createMutation.mutate(formData)}
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || !isFormValid}
                 >
                   {createMutation.isPending ? 'Creating...' : 'Create Employee'}
                 </Button>
@@ -587,6 +616,10 @@ export default function EmployeeManagement() {
               </div>
             </div>
 
+            {!isFormValid && (
+              <p className="text-sm text-destructive">At least one permission is required</p>
+            )}
+
             <DialogFooter>
               <Button variant="outline" onClick={() => { setShowEditDialog(false); setSelectedEmployee(null); }}>
                 Cancel
@@ -597,7 +630,7 @@ export default function EmployeeManagement() {
                   id: selectedEmployee.id, 
                   data: formData 
                 })}
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || !isFormValid}
               >
                 {updateMutation.isPending ? 'Updating...' : 'Update Employee'}
               </Button>

@@ -167,6 +167,45 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
   }
 }
 
+// Middleware to require specific employee permissions
+// Must be used AFTER ensureAdminAsync as it relies on adminUser being set
+function requirePermission(...requiredPermissions: string[]) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      if (!adminUser) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Get employee record for this admin user
+      const employee = await storage.getEmployeeByUserId(adminUser.id);
+      
+      // If no employee record, allow access (original admin accounts)
+      // Super admins have all permissions
+      if (!employee || employee.role === 'super_admin') {
+        (req as any).employeePermissions = employee?.permissions || [];
+        return next();
+      }
+
+      // Check if employee has at least one of the required permissions
+      const employeePermissions = employee.permissions || [];
+      const hasPermission = requiredPermissions.length === 0 || 
+        requiredPermissions.some(perm => employeePermissions.includes(perm));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ 
+          message: "Permission denied. Required: " + requiredPermissions.join(' or ')
+        });
+      }
+
+      (req as any).employeePermissions = employeePermissions;
+      next();
+    } catch (error) {
+      return res.status(500).json({ message: "Permission check failed" });
+    }
+  };
+}
+
 // Helper to notify all admin users
 async function notifyAllAdmins(notification: { title: string; message: string; type: 'info' | 'success' | 'warning' | 'error' | 'transaction'; link?: string }) {
   try {
@@ -2006,7 +2045,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get all employees
-  app.get("/api/admin/employees", async (req, res) => {
+  app.get("/api/admin/employees", ensureAdminAsync, requirePermission('manage_employees', 'view_users'), async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
       
@@ -2035,7 +2074,7 @@ export async function registerRoutes(
   });
   
   // Get single employee
-  app.get("/api/admin/employees/:id", async (req, res) => {
+  app.get("/api/admin/employees/:id", ensureAdminAsync, requirePermission('manage_employees', 'view_users'), async (req, res) => {
     try {
       const employee = await storage.getEmployee(req.params.id);
       if (!employee) {
@@ -2061,10 +2100,31 @@ export async function registerRoutes(
     }
   });
   
-  // Create new employee
-  app.post("/api/admin/employees", async (req, res) => {
+  // Get employee by user ID (for current admin's permissions)
+  // No permission required - admins need to fetch their own permissions
+  app.get("/api/admin/employees/by-user/:userId", ensureAdminAsync, async (req, res) => {
     try {
-      const { userId, role, department, jobTitle, permissions, createdBy } = req.body;
+      const employee = await storage.getEmployeeByUserId(req.params.userId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found for this user" });
+      }
+      
+      res.json({ employee });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get employee" });
+    }
+  });
+  
+  // Create new employee
+  app.post("/api/admin/employees", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
+    try {
+      const { userId, role, department, jobTitle, permissions } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      // Validate permissions - require at least one permission
+      if (!permissions || permissions.length === 0) {
+        return res.status(400).json({ message: "At least one permission is required" });
+      }
       
       // Check if user is already an employee
       if (userId) {
@@ -2088,17 +2148,18 @@ export async function registerRoutes(
         jobTitle,
         permissions: permissions || [],
         status: 'active',
-        createdBy
+        createdBy: adminUser.id
       });
       
-      // Create audit log
+      // Create audit log with detailed data
       await storage.createAuditLog({
         entityType: "employee",
         entityId: employee.id,
         actionType: "create",
-        actor: createdBy || "admin",
+        actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${employeeId} created with role ${role}`,
+        newData: JSON.stringify({ role, department, jobTitle, permissions }),
       });
       
       res.json({ employee });
@@ -2109,13 +2170,19 @@ export async function registerRoutes(
   });
   
   // Update employee
-  app.patch("/api/admin/employees/:id", async (req, res) => {
+  app.patch("/api/admin/employees/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const { role, department, jobTitle, status, permissions, updatedBy } = req.body;
+      const { role, department, jobTitle, status, permissions } = req.body;
+      const adminUser = (req as any).adminUser;
       
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Validate permissions if being updated
+      if (permissions !== undefined && permissions.length === 0) {
+        return res.status(400).json({ message: "At least one permission is required" });
       }
       
       const updates: any = {};
@@ -2127,14 +2194,21 @@ export async function registerRoutes(
       
       const employee = await storage.updateEmployee(req.params.id, updates);
       
-      // Create audit log
+      // Create audit log with before/after data
       await storage.createAuditLog({
         entityType: "employee",
         entityId: req.params.id,
         actionType: "update",
-        actor: updatedBy || "admin",
+        actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${existingEmployee.employeeId} updated`,
+        previousData: JSON.stringify({
+          role: existingEmployee.role,
+          department: existingEmployee.department,
+          jobTitle: existingEmployee.jobTitle,
+          permissions: existingEmployee.permissions,
+        }),
+        newData: JSON.stringify(updates),
       });
       
       res.json({ employee });
@@ -2144,9 +2218,10 @@ export async function registerRoutes(
   });
   
   // Deactivate employee (soft delete)
-  app.post("/api/admin/employees/:id/deactivate", async (req, res) => {
+  app.post("/api/admin/employees/:id/deactivate", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const { adminId, reason } = req.body;
+      const { reason } = req.body;
+      const adminUser = (req as any).adminUser;
       
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
@@ -2160,14 +2235,16 @@ export async function registerRoutes(
         await storage.updateUser(existingEmployee.userId, { role: 'user' });
       }
       
-      // Create audit log
+      // Create audit log with before/after data
       await storage.createAuditLog({
         entityType: "employee",
         entityId: req.params.id,
         actionType: "update",
-        actor: adminId || "admin",
+        actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${existingEmployee.employeeId} deactivated. Reason: ${reason || 'Not specified'}`,
+        previousData: JSON.stringify({ status: existingEmployee.status }),
+        newData: JSON.stringify({ status: 'inactive' }),
       });
       
       res.json({ message: "Employee deactivated", employee });
@@ -2177,9 +2254,9 @@ export async function registerRoutes(
   });
   
   // Reactivate employee
-  app.post("/api/admin/employees/:id/activate", async (req, res) => {
+  app.post("/api/admin/employees/:id/activate", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const { adminId } = req.body;
+      const adminUser = (req as any).adminUser;
       
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
@@ -2193,14 +2270,16 @@ export async function registerRoutes(
         await storage.updateUser(existingEmployee.userId, { role: 'admin' });
       }
       
-      // Create audit log
+      // Create audit log with before/after data
       await storage.createAuditLog({
         entityType: "employee",
         entityId: req.params.id,
         actionType: "update",
-        actor: adminId || "admin",
+        actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${existingEmployee.employeeId} activated`,
+        previousData: JSON.stringify({ status: existingEmployee.status }),
+        newData: JSON.stringify({ status: 'active' }),
       });
       
       res.json({ message: "Employee activated", employee });
@@ -2210,7 +2289,7 @@ export async function registerRoutes(
   });
   
   // Get role permissions
-  app.get("/api/admin/role-permissions", async (req, res) => {
+  app.get("/api/admin/role-permissions", ensureAdminAsync, requirePermission('manage_employees', 'manage_settings'), async (req, res) => {
     try {
       const permissions = await storage.getAllRolePermissions();
       res.json({ permissions });
@@ -2220,21 +2299,22 @@ export async function registerRoutes(
   });
   
   // Update role permissions
-  app.patch("/api/admin/role-permissions/:role", async (req, res) => {
+  app.patch("/api/admin/role-permissions/:role", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
-      const { permissions, updatedBy } = req.body;
+      const { permissions } = req.body;
       const role = req.params.role;
+      const adminUser = (req as any).adminUser;
       
       // Check if role permission exists
       let rolePermission = await storage.getRolePermission(role);
       
       if (rolePermission) {
-        rolePermission = await storage.updateRolePermission(rolePermission.id, { permissions, updatedBy });
+        rolePermission = await storage.updateRolePermission(rolePermission.id, { permissions, updatedBy: adminUser.id });
       } else {
         rolePermission = await storage.createRolePermission({
           role: role as any,
           permissions,
-          updatedBy
+          updatedBy: adminUser.id
         });
       }
       
@@ -2243,7 +2323,7 @@ export async function registerRoutes(
         entityType: "role_permission",
         entityId: rolePermission?.id || role,
         actionType: "update",
-        actor: updatedBy || "admin",
+        actor: adminUser.id,
         actorRole: "admin",
         details: `Role ${role} permissions updated`,
       });
