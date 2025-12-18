@@ -8679,7 +8679,8 @@ export async function registerRoutes(
 
       res.json({ room: closedRoom, message: "Deal room closed successfully" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to close deal room" });
+      console.error("Failed to close deal room:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to close deal room" });
     }
   });
   
