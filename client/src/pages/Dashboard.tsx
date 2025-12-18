@@ -28,12 +28,13 @@ interface KpiBoxProps {
   value: string;
   subtitle: string;
   secondaryValue?: string;
+  tertiaryValue?: string;
   icon: React.ReactNode;
   iconBg?: string;
   valueColor?: string;
 }
 
-function KpiBox({ title, value, subtitle, secondaryValue, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
+function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
   return (
     <Card className="p-4 bg-white border border-orange-200 shadow-sm rounded-lg">
       <div className="flex items-start justify-between">
@@ -42,6 +43,9 @@ function KpiBox({ title, value, subtitle, secondaryValue, icon, iconBg = 'bg-gra
           <p className={`text-xl font-bold ${valueColor} mb-1`}>{value}</p>
           {secondaryValue && (
             <p className="text-sm font-medium text-gray-600 mb-1">{secondaryValue}</p>
+          )}
+          {tertiaryValue && (
+            <p className="text-sm font-medium text-gray-600 mb-1">{tertiaryValue}</p>
           )}
           <p className="text-xs text-gray-400">{subtitle}</p>
         </div>
@@ -115,9 +119,10 @@ export default function Dashboard() {
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Row 1 */}
                 <KpiBox
-                  title="FinaVault Storage"
-                  value={formatGrams(totals.vaultGoldGrams)}
-                  secondaryValue={`$${formatNumber(totals.vaultGoldGrams * goldPrice)}`}
+                  title="Gold Storage"
+                  value={`${formatNumber(totals.vaultGoldGrams, 4)} g`}
+                  secondaryValue={`${formatNumber(totals.vaultGoldGrams / 1000, 6)} KG`}
+                  tertiaryValue={`${formatNumber(totals.vaultGoldGrams / 31.1035, 4)} OZ`}
                   subtitle="Physical gold in vault"
                   icon={<Database className="w-5 h-5 text-orange-600" />}
                   iconBg="bg-orange-50"
@@ -133,11 +138,18 @@ export default function Dashboard() {
                   valueColor="text-emerald-600"
                 />
                 <KpiBox
-                  title="Total Gold Value"
+                  title="Total Gold Value (USD)"
                   value={`$${formatNumber(totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice))}`}
                   subtitle="Worth in USD"
                   icon={<DollarSign className="w-5 h-5 text-green-600" />}
                   iconBg="bg-green-50"
+                />
+                <KpiBox
+                  title="Total Gold Value (AED)"
+                  value={`د.إ ${formatNumber((totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice)) * 3.67)}`}
+                  subtitle="Worth in AED"
+                  icon={<DollarSign className="w-5 h-5 text-blue-600" />}
+                  iconBg="bg-blue-50"
                 />
                 
                 {/* Row 2 */}
