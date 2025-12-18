@@ -156,6 +156,18 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
+  // Fetch user certificates for history display
+  const { data: certificatesData } = useQuery({
+    queryKey: ['certificates', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { certificates: [] };
+      const res = await fetch(`/api/certificates/${user.id}`);
+      if (!res.ok) return { certificates: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Fetch current gold price
   const { data: goldPriceData } = useQuery({
     queryKey: ['gold-price'],
@@ -267,9 +279,29 @@ export default function FinaVault() {
     isDepositRequest: true,
     referenceNumber: dep.referenceNumber,
   }));
+
+  // Convert certificates to ledger-like format
+  const certificates = certificatesData?.certificates || [];
+  const certificateRecords = certificates
+    .filter((cert: any) => ['Trade Release', 'Physical Storage', 'Digital Ownership'].includes(cert.type))
+    .map((cert: any) => ({
+      id: cert.id,
+      createdAt: cert.issuedAt,
+      action: cert.type === 'Trade Release' ? 'Trade Release Received' : cert.type,
+      status: cert.status === 'Active' ? 'Completed' : cert.status,
+      fromWallet: cert.type === 'Trade Release' ? 'FinaBridge Trade' : 'Vault Deposit',
+      toWallet: cert.type === 'Trade Release' ? 'FinaBridge Wallet' : 'FinaVault',
+      fromStatus: null,
+      toStatus: 'Available',
+      goldGrams: cert.goldGrams || '0',
+      valueUsd: cert.totalValueUsd || '0',
+      balanceAfterGrams: '0',
+      isCertificate: true,
+      certificateNumber: cert.certificateNumber,
+    }));
   
   // Combine all records and sort by date (newest first)
-  const allRecords = [...transactionRecords, ...depositRecords].sort((a, b) => 
+  const allRecords = [...transactionRecords, ...depositRecords, ...certificateRecords].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
