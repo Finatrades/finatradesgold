@@ -79,7 +79,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   const employeePermissions: string[] = employeeData?.employee?.permissions || [];
-  const isSuperAdmin = employeeData?.employee?.role === 'super_admin';
+  // If no employee record exists, this is an original admin account with full access
+  // Also grant full access if the employee role is super_admin
+  const hasNoEmployeeRecord = employeeData === null || (employeeData && !employeeData.employee);
+  const isSuperAdmin = hasNoEmployeeRecord || employeeData?.employee?.role === 'super_admin';
 
   const hasMenuPermission = (menuPath: string): boolean => {
     if (isSuperAdmin) return true;
