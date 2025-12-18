@@ -1023,7 +1023,7 @@ export default function FinaPayManagement() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-gray-900 text-lg">
-                                  {request.amountUsd ? `$${parseFloat(request.amountUsd).toFixed(2)}` : 'Amount TBD'}
+                                  {request.amountUsd ? `$${parseFloat(request.amountUsd).toFixed(2)}` : 'Awaiting Review'}
                                 </span>
                                 <Badge variant={
                                   request.status === 'Credited' ? 'default' :
@@ -1040,7 +1040,7 @@ export default function FinaPayManagement() {
                                 {' '}({request.user?.email || getUserEmail(request.userId)})
                               </p>
                               <p className="text-xs text-gray-400">
-                                Ref: {request.referenceNumber}
+                                {request.referenceNumber ? `Ref: ${request.referenceNumber}` : `Submitted: ${new Date(request.createdAt).toLocaleDateString()}`}
                                 {request.wingoldReferenceId && ` • Wingold: ${request.wingoldReferenceId}`}
                               </p>
                               {request.goldGrams && (
