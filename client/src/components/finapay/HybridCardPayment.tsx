@@ -564,18 +564,18 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     <div className="flex flex-col gap-5">
       {/* Card Form - Enlarged with Modern Styling */}
       <Card className="border-2 shadow-xl bg-card">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-primary" />
+        <CardContent className="p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <CreditCard className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <span className="font-semibold text-lg">Card Details</span>
-              <p className="text-xs text-muted-foreground">Enter your payment information</p>
+              <span className="font-semibold text-xl">Card Details</span>
+              <p className="text-sm text-muted-foreground">Enter your payment information</p>
             </div>
-            <div className="ml-auto flex items-center gap-1.5 bg-success-muted px-2.5 py-1 rounded-full">
-              <Lock className="w-3.5 h-3.5 text-success" />
-              <span className="text-xs font-medium text-success">Secure</span>
+            <div className="ml-auto flex items-center gap-1.5 bg-success-muted px-3 py-1.5 rounded-full">
+              <Lock className="w-4 h-4 text-success" />
+              <span className="text-sm font-medium text-success">Secure</span>
             </div>
           </div>
           
@@ -583,21 +583,27 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
             ref={containerRef}
             id="hybrid-card-input" 
             className="border-2 border-border rounded-xl bg-white overflow-hidden shadow-sm"
-            style={{ minHeight: cardMounted ? '140px' : '140px' }}
+            style={{ minHeight: '200px' }}
           >
             {!cardMounted && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-medium text-foreground">Loading secure payment form...</p>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Please wait while we set up your secure payment. Do not refresh or leave this page.
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           {error && cardMounted && (
-            <p className="text-sm text-destructive mt-3">{error}</p>
+            <p className="text-sm text-destructive mt-4">{error}</p>
           )}
 
-          <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5" />
+          <p className="text-sm text-muted-foreground mt-5 flex items-center gap-2">
+            <Lock className="w-4 h-4" />
             Your card details are encrypted with 256-bit SSL and processed securely
           </p>
         </CardContent>
