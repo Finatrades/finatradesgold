@@ -3426,7 +3426,7 @@ export async function registerRoutes(
             id: bg.id,
             userId: bg.userId,
             module: 'finapay',
-            actionType: 'BUY',
+            actionType: 'BUY_GOLD_BAR',
             grams: bg.goldGrams,
             usd: bg.amountUsd,
             usdPerGram: bg.goldPriceAtTime,

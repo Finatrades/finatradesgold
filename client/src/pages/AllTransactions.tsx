@@ -140,6 +140,7 @@ export default function AllTransactions() {
       case 'Buy': return <Lock className="w-4 h-4 text-amber-500" />;
       case 'UNLOCK':
       case 'Sell': return <Unlock className="w-4 h-4 text-blue-500" />;
+      case 'BUY_GOLD_BAR': return <Plus className="w-4 h-4 text-amber-500" />;
       default: return <Wallet className="w-4 h-4 text-gray-500" />;
     }
   };
