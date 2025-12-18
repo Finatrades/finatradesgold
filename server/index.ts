@@ -21,6 +21,9 @@ declare module "express-session" {
 
 const app = express();
 
+// Trust proxy for production (required for secure cookies behind Replit's reverse proxy)
+app.set('trust proxy', 1);
+
 // Session configuration with PostgreSQL store
 const PgSession = connectPgSimple(session);
 app.use(
