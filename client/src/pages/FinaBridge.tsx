@@ -773,16 +773,16 @@ export default function FinaBridge() {
         {role === 'importer' ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-muted border border-border p-1 mb-6 w-full md:w-auto flex">
-              <TabsTrigger value="requests" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="requests" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <Briefcase className="w-4 h-4 mr-2" /> My Trade Requests
               </TabsTrigger>
-              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <PlusCircle className="w-4 h-4 mr-2" /> Create Request
               </TabsTrigger>
-              <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <Eye className="w-4 h-4 mr-2" /> Forwarded Proposals
               </TabsTrigger>
-              <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <MessageCircle className="w-4 h-4 mr-2" /> Deal Rooms
               </TabsTrigger>
             </TabsList>
@@ -1508,13 +1508,13 @@ export default function FinaBridge() {
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-muted border border-border p-1 mb-6 w-full md:w-auto flex">
-              <TabsTrigger value="requests" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="requests" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <Briefcase className="w-4 h-4 mr-2" /> Open Trade Requests
               </TabsTrigger>
-              <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="proposals" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <Send className="w-4 h-4 mr-2" /> My Proposals
               </TabsTrigger>
-              <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <MessageCircle className="w-4 h-4 mr-2" /> Deal Rooms
               </TabsTrigger>
             </TabsList>
