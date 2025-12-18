@@ -9302,7 +9302,7 @@ export async function registerRoutes(
       const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
       if (isGoldTransfer) {
-        // GOLD TRANSFER
+        // GOLD TRANSFER - Uses wallet goldGrams balance
         const goldAmount = parseFloat(amountGold);
         const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
         
@@ -9310,17 +9310,33 @@ export async function registerRoutes(
           return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
         }
         
-        // Check sender vault holdings
-        const senderHoldings = await storage.getUserVaultHoldings(sender.id);
+        // Get sender vault holdings (create if needed for tracking)
+        let senderHoldings = await storage.getUserVaultHoldings(sender.id);
+        let senderHolding;
+        
         if (senderHoldings.length === 0) {
-          return res.status(400).json({ message: "Sender has no vault holdings" });
+          // Create a vault holding record to track the transfer
+          senderHolding = await storage.createVaultHolding({
+            userId: sender.id,
+            goldGrams: senderGoldBalance.toFixed(6),
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            wingoldStorageRef: `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+            purchasePriceUsdPerGram: goldPrice.toFixed(2),
+            isPhysicallyDeposited: false
+          });
+        } else {
+          senderHolding = senderHoldings[0];
+          // Sync vault holding with wallet balance if they're out of sync
+          const senderHoldingGold = parseFloat(senderHolding.goldGrams?.toString() || '0');
+          if (senderHoldingGold < goldAmount && senderGoldBalance >= goldAmount) {
+            await storage.updateVaultHolding(senderHolding.id, {
+              goldGrams: senderGoldBalance.toFixed(6)
+            });
+            senderHolding.goldGrams = senderGoldBalance.toFixed(6);
+          }
         }
         
-        const senderHolding = senderHoldings[0];
         const senderHoldingGold = parseFloat(senderHolding.goldGrams?.toString() || '0');
-        if (senderHoldingGold < goldAmount) {
-          return res.status(400).json({ message: `Insufficient vault holdings. You have ${senderHoldingGold.toFixed(4)}g in vault` });
-        }
         
         // Execute gold transfer atomically
         const result = await storage.withTransaction(async (txStorage) => {
