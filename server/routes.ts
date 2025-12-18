@@ -12186,89 +12186,68 @@ export async function registerRoutes(
         return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
       }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
       
-      // Calculate opening balance (sum of all transactions before fromDate)
+      // GOLD-CENTRIC STATEMENT: Gold is the only real asset, USD is for reference only
+      // Calculate opening gold balance (sum of all transactions before fromDate)
       const priorTransactions = allTransactions.filter(tx => {
         const txDate = new Date(tx.createdAt!);
         return txDate < fromDate && tx.status === 'Completed';
       });
       
-      let openingUsd = 0;
       let openingGold = 0;
       
       for (const tx of priorTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
         
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          openingUsd += amountUsd;
+        // All transaction types affect gold balance
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+          // Credits: gold comes in
           openingGold += amountGold;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          openingUsd -= amountUsd;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
+          // Debits: gold goes out
           openingGold -= amountGold;
-        } else if (tx.type === 'Buy') {
-          openingUsd -= amountUsd;
+        } else if (tx.type === 'Swap') {
+          // Swaps can be positive or negative
           openingGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          openingUsd += amountUsd;
-          openingGold -= amountGold;
         }
       }
       
-      // Calculate running balances and categorize debits/credits
-      let runningUsd = openingUsd;
+      // Calculate running gold balance and categorize debits/credits
       let runningGold = openingGold;
-      let totalCreditsUsd = 0;
-      let totalDebitsUsd = 0;
       let totalCreditsGold = 0;
       let totalDebitsGold = 0;
       
       console.log('[Statement] Period transactions count:', periodTransactions.length);
       const statementTransactions = periodTransactions.map(tx => {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
-        console.log(`[Statement] TX ${tx.type}: USD=${amountUsd}, Gold=${amountGold}, raw amountGold=${tx.amountGold}`);
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const goldPrice = parseFloat(tx.goldPriceUsdPerGram || '0');
+        console.log(`[Statement] TX ${tx.type}: Gold=${amountGold}g, USD=${amountUsd} (reference), Price=${goldPrice}`);
         
-        let debitUsd: number | null = null;
-        let creditUsd: number | null = null;
         let debitGold: number | null = null;
         let creditGold: number | null = null;
         
-        // Determine if credit or debit based on transaction type
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          creditUsd = amountUsd > 0 ? amountUsd : null;
+        // All transactions affect GOLD balance only
+        // USD is shown for reference (the value at time of transaction)
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+          // Credits: gold comes in
           creditGold = amountGold > 0 ? amountGold : null;
-          runningUsd += amountUsd;
           runningGold += amountGold;
-          totalCreditsUsd += amountUsd;
           totalCreditsGold += amountGold;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          debitUsd = amountUsd > 0 ? amountUsd : null;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
+          // Debits: gold goes out
           debitGold = amountGold > 0 ? amountGold : null;
-          runningUsd -= amountUsd;
           runningGold -= amountGold;
-          totalDebitsUsd += amountUsd;
-          totalDebitsGold += amountGold;
-        } else if (tx.type === 'Buy') {
-          // Buying gold: USD debited, gold credited
-          debitUsd = amountUsd > 0 ? amountUsd : null;
-          creditGold = amountGold > 0 ? amountGold : null;
-          runningUsd -= amountUsd;
-          runningGold += amountGold;
-          totalDebitsUsd += amountUsd;
-          totalCreditsGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          // Selling gold: gold debited, USD credited
-          creditUsd = amountUsd > 0 ? amountUsd : null;
-          debitGold = amountGold > 0 ? amountGold : null;
-          runningUsd += amountUsd;
-          runningGold -= amountGold;
-          totalCreditsUsd += amountUsd;
           totalDebitsGold += amountGold;
         } else if (tx.type === 'Swap') {
-          // For swaps, treat based on description
-          creditGold = amountGold > 0 ? amountGold : null;
+          // Swaps: can be credit or debit depending on sign
+          if (amountGold > 0) {
+            creditGold = amountGold;
+            totalCreditsGold += amountGold;
+          } else if (amountGold < 0) {
+            debitGold = Math.abs(amountGold);
+            totalDebitsGold += Math.abs(amountGold);
+          }
           runningGold += amountGold;
-          totalCreditsGold += amountGold;
         }
         
         return {
@@ -12276,12 +12255,11 @@ export async function registerRoutes(
           date: tx.createdAt,
           reference: `TXN-${tx.id.slice(0, 8).toUpperCase()}`,
           description: tx.description || `${tx.type} Transaction`,
-          debitUsd,
-          creditUsd,
           debitGold,
           creditGold,
-          balanceUsd: runningUsd,
           balanceGold: runningGold,
+          usdValue: amountUsd,
+          goldPriceAtTime: goldPrice,
           type: tx.type,
           status: tx.status
         };
@@ -12290,7 +12268,7 @@ export async function registerRoutes(
       console.log(`[Statement] Final: runningGold=${runningGold}, totalCreditsGold=${totalCreditsGold}, totalDebitsGold=${totalDebitsGold}`);
       const reportId = `STMT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${userId.slice(0, 6).toUpperCase()}`;
       
-      // Fetch current gold price for equivalent calculation
+      // Fetch current gold price for USD equivalent calculation
       const { getGoldPricePerGram } = await import('./gold-price-service');
       let currentGoldPrice = 139.50; // Default fallback
       try {
@@ -12299,8 +12277,9 @@ export async function registerRoutes(
         console.error('[Statement] Failed to fetch gold price, using fallback:', e);
       }
       
-      // Calculate gold equivalent of USD closing balance
-      const closingUsdGoldEquivalent = runningUsd / currentGoldPrice;
+      // Calculate USD equivalent of gold balances at current price
+      const openingGoldUsdValue = openingGold * currentGoldPrice;
+      const closingGoldUsdValue = runningGold * currentGoldPrice;
       
       res.json({
         user: {
@@ -12318,15 +12297,12 @@ export async function registerRoutes(
         generatedAt: new Date().toISOString(),
         currentGoldPrice,
         balances: {
-          openingUsd,
           openingGold,
-          totalCreditsUsd,
-          totalDebitsUsd,
+          openingGoldUsdValue,
           totalCreditsGold,
           totalDebitsGold,
-          closingUsd: runningUsd,
           closingGold: runningGold,
-          closingUsdGoldEquivalent
+          closingGoldUsdValue
         },
         transactions: statementTransactions
       });
@@ -12363,39 +12339,55 @@ export async function registerRoutes(
         return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
       }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
       
+      // GOLD-CENTRIC STATEMENT: Gold is the only real asset
       const priorTransactions = allTransactions.filter(tx => {
         const txDate = new Date(tx.createdAt!);
         return txDate < fromDate && tx.status === 'Completed';
       });
       
-      let openingUsd = 0;
       let openingGold = 0;
       
       for (const tx of priorTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          openingUsd += amountUsd;
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
           openingGold += amountGold;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          openingUsd -= amountUsd;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           openingGold -= amountGold;
-        } else if (tx.type === 'Buy') {
-          openingUsd -= amountUsd;
+        } else if (tx.type === 'Swap') {
           openingGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          openingUsd += amountUsd;
-          openingGold -= amountGold;
         }
       }
       
-      // Fetch current gold price for equivalent calculation
+      // Fetch current gold price for USD equivalent calculation
       const { getGoldPricePerGram } = await import('./gold-price-service');
       let currentGoldPrice = 139.50; // Default fallback
       try {
         currentGoldPrice = await getGoldPricePerGram();
       } catch (e) {
         console.error('[PDF Statement] Failed to fetch gold price, using fallback:', e);
+      }
+      
+      // Calculate running gold balance
+      let runningGold = openingGold;
+      let totalCreditsGold = 0;
+      let totalDebitsGold = 0;
+      
+      for (const tx of periodTransactions) {
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+          runningGold += amountGold;
+          totalCreditsGold += amountGold;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
+          runningGold -= amountGold;
+          totalDebitsGold += amountGold;
+        } else if (tx.type === 'Swap') {
+          if (amountGold > 0) {
+            totalCreditsGold += amountGold;
+          } else {
+            totalDebitsGold += Math.abs(amountGold);
+          }
+          runningGold += amountGold;
+        }
       }
       
       // Generate PDF
@@ -12408,7 +12400,7 @@ export async function registerRoutes(
       
       // Header
       doc.fillColor('#f97316').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
-      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Account Statement', { align: 'center' });
+      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Gold Account Statement', { align: 'center' });
       doc.moveDown(1.5);
       
       // Account details box
@@ -12425,69 +12417,41 @@ export async function registerRoutes(
       doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, 400, boxY);
       doc.fillColor('#6b7280').font('Helvetica').text('Generated:', 300, boxY + 15);
       doc.fillColor('#1f2937').font('Helvetica-Bold').text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' (GST)', 400, boxY + 15);
+      doc.fillColor('#6b7280').font('Helvetica').text('Gold Price:', 300, boxY + 30);
+      doc.fillColor('#f97316').font('Helvetica-Bold').text(`$${currentGoldPrice.toFixed(2)}/g`, 400, boxY + 30);
       
       doc.y = boxY + 85;
       
-      // Balance summary
-      let runningUsd = openingUsd;
-      let runningGold = openingGold;
-      let totalCreditsUsd = 0;
-      let totalDebitsUsd = 0;
-      
-      for (const tx of periodTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          runningUsd += amountUsd;
-          totalCreditsUsd += amountUsd;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          runningUsd -= amountUsd;
-          totalDebitsUsd += amountUsd;
-        } else if (tx.type === 'Buy') {
-          runningUsd -= amountUsd;
-          runningGold += amountGold;
-          totalDebitsUsd += amountUsd;
-        } else if (tx.type === 'Sell') {
-          runningUsd += amountUsd;
-          runningGold -= amountGold;
-          totalCreditsUsd += amountUsd;
-        }
-      }
-      
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('BALANCE SUMMARY', { align: 'center' });
+      // Balance summary - GOLD ONLY
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('GOLD BALANCE SUMMARY', { align: 'center' });
       doc.moveDown(0.5);
       
       // Summary table
       const summaryY = doc.y;
-      doc.rect(50, summaryY, 515, 60).fill('#f9fafb').stroke('#e5e7eb');
+      doc.rect(50, summaryY, 515, 70).fill('#f9fafb').stroke('#e5e7eb');
       doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
-      doc.text('', 60, summaryY + 10).text('Opening Balance', 60, summaryY + 10);
+      doc.text('Opening Balance', 60, summaryY + 10);
       doc.text('Total Credits (+)', 180, summaryY + 10);
       doc.text('Total Debits (-)', 300, summaryY + 10);
       doc.text('Closing Balance', 420, summaryY + 10);
       
-      doc.fillColor('#1f2937').fontSize(11).font('Helvetica-Bold');
-      doc.text(`$${openingUsd.toFixed(2)}`, 60, summaryY + 25);
-      doc.fillColor('#16a34a').text(`$${totalCreditsUsd.toFixed(2)}`, 180, summaryY + 25);
-      doc.fillColor('#dc2626').text(`$${totalDebitsUsd.toFixed(2)}`, 300, summaryY + 25);
-      doc.fillColor('#1f2937').text(`$${runningUsd.toFixed(2)}`, 420, summaryY + 25);
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold');
+      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 28);
+      doc.fillColor('#16a34a').text(`${totalCreditsGold.toFixed(4)}g`, 180, summaryY + 28);
+      doc.fillColor('#dc2626').text(`${totalDebitsGold.toFixed(4)}g`, 300, summaryY + 28);
+      doc.fillColor('#1f2937').text(`${runningGold.toFixed(4)}g`, 420, summaryY + 28);
       
-      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
-      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 40);
-      doc.text('', 180, summaryY + 40);
-      doc.text('', 300, summaryY + 40);
-      doc.text(`${runningGold.toFixed(4)}g`, 420, summaryY + 40);
+      // USD equivalent row
+      doc.fillColor('#6b7280').fontSize(8).font('Helvetica');
+      doc.text(`≈ $${(openingGold * currentGoldPrice).toFixed(2)}`, 60, summaryY + 48);
+      doc.text(`≈ $${(totalCreditsGold * currentGoldPrice).toFixed(2)}`, 180, summaryY + 48);
+      doc.text(`≈ $${(totalDebitsGold * currentGoldPrice).toFixed(2)}`, 300, summaryY + 48);
+      doc.fillColor('#f97316').font('Helvetica-Bold');
+      doc.text(`≈ $${(runningGold * currentGoldPrice).toFixed(2)}`, 420, summaryY + 48);
       
-      // Show gold equivalent of USD closing balance
-      const closingUsdGoldEquivalent = runningUsd / currentGoldPrice;
-      if (closingUsdGoldEquivalent > 0) {
-        doc.fillColor('#f97316').fontSize(8).font('Helvetica');
-        doc.text(`≈ ${closingUsdGoldEquivalent.toFixed(4)}g @ $${currentGoldPrice.toFixed(2)}/g`, 420, summaryY + 50);
-      }
+      doc.y = summaryY + 85;
       
-      doc.y = summaryY + 75;
-      
-      // Transactions table header
+      // Transactions table header - GOLD CENTRIC
       doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('TRANSACTION DETAILS');
       doc.moveDown(0.5);
       
@@ -12495,14 +12459,14 @@ export async function registerRoutes(
       doc.rect(50, tableTop, 515, 20).fill('#f3f4f6');
       doc.fillColor('#374151').fontSize(8).font('Helvetica-Bold');
       doc.text('Date', 55, tableTop + 6);
-      doc.text('Reference', 110, tableTop + 6);
-      doc.text('Description', 180, tableTop + 6);
-      doc.text('Debit (-)', 340, tableTop + 6, { width: 60, align: 'right' });
-      doc.text('Credit (+)', 410, tableTop + 6, { width: 60, align: 'right' });
-      doc.text('Balance', 480, tableTop + 6, { width: 70, align: 'right' });
+      doc.text('Reference', 105, tableTop + 6);
+      doc.text('Description', 165, tableTop + 6);
+      doc.text('Debit (g)', 310, tableTop + 6, { width: 55, align: 'right' });
+      doc.text('Credit (g)', 370, tableTop + 6, { width: 55, align: 'right' });
+      doc.text('Balance (g)', 430, tableTop + 6, { width: 60, align: 'right' });
+      doc.text('USD Value', 495, tableTop + 6, { width: 55, align: 'right' });
       
       let y = tableTop + 25;
-      runningUsd = openingUsd;
       runningGold = openingGold;
       
       doc.font('Helvetica').fontSize(8);
@@ -12513,36 +12477,35 @@ export async function registerRoutes(
           y = 50;
         }
         
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
+        const amountUsd = parseFloat(tx.amountUsd || '0');
         let debit = '';
         let credit = '';
         
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          credit = `$${amountUsd.toFixed(2)}`;
-          runningUsd += amountUsd;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          debit = `$${amountUsd.toFixed(2)}`;
-          runningUsd -= amountUsd;
-        } else if (tx.type === 'Buy') {
-          debit = `$${amountUsd.toFixed(2)}`;
-          runningUsd -= amountUsd;
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+          credit = amountGold.toFixed(4);
           runningGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          credit = `$${amountUsd.toFixed(2)}`;
-          runningUsd += amountUsd;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
+          debit = amountGold.toFixed(4);
           runningGold -= amountGold;
+        } else if (tx.type === 'Swap') {
+          if (amountGold > 0) {
+            credit = amountGold.toFixed(4);
+          } else {
+            debit = Math.abs(amountGold).toFixed(4);
+          }
+          runningGold += amountGold;
         }
         
         const txDate = new Date(tx.createdAt!);
         doc.fillColor('#374151');
         doc.text(txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }), 55, y);
-        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 110, y);
-        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 30), 180, y);
-        doc.fillColor('#dc2626').text(debit, 340, y, { width: 60, align: 'right' });
-        doc.fillColor('#16a34a').text(credit, 410, y, { width: 60, align: 'right' });
-        doc.fillColor('#1f2937').font('Helvetica-Bold').text(`$${runningUsd.toFixed(2)}`, 480, y, { width: 70, align: 'right' });
-        doc.font('Helvetica');
+        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 105, y);
+        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 25), 165, y);
+        doc.fillColor('#dc2626').text(debit, 310, y, { width: 55, align: 'right' });
+        doc.fillColor('#16a34a').text(credit, 370, y, { width: 55, align: 'right' });
+        doc.fillColor('#1f2937').font('Helvetica-Bold').text(runningGold.toFixed(4), 430, y, { width: 60, align: 'right' });
+        doc.font('Helvetica').fillColor('#6b7280').text(`$${amountUsd.toFixed(2)}`, 495, y, { width: 55, align: 'right' });
         
         y += 15;
       }
@@ -12554,8 +12517,8 @@ export async function registerRoutes(
       // Footer
       doc.y = 750;
       doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
-      doc.text('This statement is generated by Finatrades and is for informational purposes only.', 50, doc.y, { align: 'center', width: 515 });
-      doc.text('Gold values are calculated at transaction time rates. For questions, contact support@finatrades.com', 50, doc.y + 10, { align: 'center', width: 515 });
+      doc.text('This statement is generated by Finatrades. Gold is the primary asset held in your account.', 50, doc.y, { align: 'center', width: 515 });
+      doc.text(`USD values shown for reference at current gold price ($${currentGoldPrice.toFixed(2)}/g). For questions, contact support@finatrades.com`, 50, doc.y + 10, { align: 'center', width: 515 });
       
       doc.end();
     } catch (error) {
@@ -12564,7 +12527,7 @@ export async function registerRoutes(
     }
   });
 
-  // Generate CSV account statement
+  // Generate CSV account statement - GOLD CENTRIC
   app.get("/api/admin/account-statement/:userId/csv", ensureAdminAsync, async (req, res) => {
     try {
       const { userId } = req.params;
@@ -12595,58 +12558,45 @@ export async function registerRoutes(
         return txDate < fromDate && tx.status === 'Completed';
       });
       
-      let runningUsd = 0;
       let runningGold = 0;
       
       for (const tx of priorTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          runningUsd += amountUsd;
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
           runningGold += amountGold;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          runningUsd -= amountUsd;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           runningGold -= amountGold;
-        } else if (tx.type === 'Buy') {
-          runningUsd -= amountUsd;
+        } else if (tx.type === 'Swap') {
           runningGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          runningUsd += amountUsd;
-          runningGold -= amountGold;
         }
       }
       
-      let csv = 'Date,Reference,Type,Description,Debit (USD),Credit (USD),Debit (Gold),Credit (Gold),Balance (USD),Balance (Gold)\n';
+      let csv = 'Date,Reference,Type,Description,Debit (Gold),Credit (Gold),Balance (Gold),USD Value (Reference)\n';
       
       for (const tx of periodTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
-        let debitUsd = '';
-        let creditUsd = '';
+        const amountUsd = parseFloat(tx.amountUsd || '0');
         let debitGold = '';
         let creditGold = '';
         
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          creditUsd = amountUsd.toFixed(2);
-          runningUsd += amountUsd;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          debitUsd = amountUsd.toFixed(2);
-          runningUsd -= amountUsd;
-        } else if (tx.type === 'Buy') {
-          debitUsd = amountUsd.toFixed(2);
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
           creditGold = amountGold.toFixed(4);
-          runningUsd -= amountUsd;
           runningGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          creditUsd = amountUsd.toFixed(2);
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           debitGold = amountGold.toFixed(4);
-          runningUsd += amountUsd;
           runningGold -= amountGold;
+        } else if (tx.type === 'Swap') {
+          if (amountGold > 0) {
+            creditGold = amountGold.toFixed(4);
+          } else {
+            debitGold = Math.abs(amountGold).toFixed(4);
+          }
+          runningGold += amountGold;
         }
         
         const txDate = new Date(tx.createdAt!);
         const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
-        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitUsd},${creditUsd},${debitGold},${creditGold},${runningUsd.toFixed(2)},${runningGold.toFixed(4)}\n`;
+        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitGold},${creditGold},${runningGold.toFixed(4)},${amountUsd.toFixed(2)}\n`;
       }
       
       res.setHeader('Content-Type', 'text/csv');
@@ -12662,7 +12612,7 @@ export async function registerRoutes(
   // USER ACCOUNT STATEMENTS (Authenticated User)
   // ============================================================================
 
-  // User downloads their own PDF statement
+  // User downloads their own PDF statement - GOLD CENTRIC
   app.get("/api/my-statement/pdf", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -12696,34 +12646,49 @@ export async function registerRoutes(
         return txDate < fromDate && tx.status === 'Completed';
       });
       
-      let openingUsd = 0;
       let openingGold = 0;
       
       for (const tx of priorTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          openingUsd += amountUsd;
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
           openingGold += amountGold;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          openingUsd -= amountUsd;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           openingGold -= amountGold;
-        } else if (tx.type === 'Buy') {
-          openingUsd -= amountUsd;
+        } else if (tx.type === 'Swap') {
           openingGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          openingUsd += amountUsd;
-          openingGold -= amountGold;
         }
       }
       
-      // Fetch current gold price for equivalent calculation
+      // Fetch current gold price for USD equivalent calculation
       const { getGoldPricePerGram } = await import('./gold-price-service');
-      let currentGoldPrice = 139.50; // Default fallback
+      let currentGoldPrice = 139.50;
       try {
         currentGoldPrice = await getGoldPricePerGram();
       } catch (e) {
         console.error('[User Statement PDF] Failed to fetch gold price, using fallback:', e);
+      }
+      
+      // Calculate running gold balance
+      let runningGold = openingGold;
+      let totalCreditsGold = 0;
+      let totalDebitsGold = 0;
+      
+      for (const tx of periodTransactions) {
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+          runningGold += amountGold;
+          totalCreditsGold += amountGold;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
+          runningGold -= amountGold;
+          totalDebitsGold += amountGold;
+        } else if (tx.type === 'Swap') {
+          if (amountGold > 0) {
+            totalCreditsGold += amountGold;
+          } else {
+            totalDebitsGold += Math.abs(amountGold);
+          }
+          runningGold += amountGold;
+        }
       }
       
       const doc = new PDFDocument({ margin: 50 });
@@ -12734,7 +12699,7 @@ export async function registerRoutes(
       doc.pipe(res);
       
       doc.fillColor('#f97316').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
-      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Account Statement', { align: 'center' });
+      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Gold Account Statement', { align: 'center' });
       doc.moveDown(1.5);
       
       doc.rect(50, doc.y, 515, 80).stroke('#e5e7eb');
@@ -12750,65 +12715,38 @@ export async function registerRoutes(
       doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, 400, boxY);
       doc.fillColor('#6b7280').font('Helvetica').text('Generated:', 300, boxY + 15);
       doc.fillColor('#1f2937').font('Helvetica-Bold').text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' (GST)', 400, boxY + 15);
+      doc.fillColor('#6b7280').font('Helvetica').text('Gold Price:', 300, boxY + 30);
+      doc.fillColor('#f97316').font('Helvetica-Bold').text(`$${currentGoldPrice.toFixed(2)}/g`, 400, boxY + 30);
       
       doc.y = boxY + 85;
       
-      let runningUsd = openingUsd;
-      let runningGold = openingGold;
-      let totalCreditsUsd = 0;
-      let totalDebitsUsd = 0;
-      
-      for (const tx of periodTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          runningUsd += amountUsd;
-          totalCreditsUsd += amountUsd;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          runningUsd -= amountUsd;
-          totalDebitsUsd += amountUsd;
-        } else if (tx.type === 'Buy') {
-          runningUsd -= amountUsd;
-          runningGold += amountGold;
-          totalDebitsUsd += amountUsd;
-        } else if (tx.type === 'Sell') {
-          runningUsd += amountUsd;
-          runningGold -= amountGold;
-          totalCreditsUsd += amountUsd;
-        }
-      }
-      
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('BALANCE SUMMARY', { align: 'center' });
+      // Balance summary - GOLD ONLY
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('GOLD BALANCE SUMMARY', { align: 'center' });
       doc.moveDown(0.5);
       
       const summaryY = doc.y;
-      doc.rect(50, summaryY, 515, 60).fill('#f9fafb').stroke('#e5e7eb');
+      doc.rect(50, summaryY, 515, 70).fill('#f9fafb').stroke('#e5e7eb');
       doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
-      doc.text('', 60, summaryY + 10).text('Opening Balance', 60, summaryY + 10);
+      doc.text('Opening Balance', 60, summaryY + 10);
       doc.text('Total Credits (+)', 180, summaryY + 10);
       doc.text('Total Debits (-)', 300, summaryY + 10);
       doc.text('Closing Balance', 420, summaryY + 10);
       
-      doc.fillColor('#1f2937').fontSize(11).font('Helvetica-Bold');
-      doc.text(`$${openingUsd.toFixed(2)}`, 60, summaryY + 25);
-      doc.fillColor('#16a34a').text(`$${totalCreditsUsd.toFixed(2)}`, 180, summaryY + 25);
-      doc.fillColor('#dc2626').text(`$${totalDebitsUsd.toFixed(2)}`, 300, summaryY + 25);
-      doc.fillColor('#1f2937').text(`$${runningUsd.toFixed(2)}`, 420, summaryY + 25);
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold');
+      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 28);
+      doc.fillColor('#16a34a').text(`${totalCreditsGold.toFixed(4)}g`, 180, summaryY + 28);
+      doc.fillColor('#dc2626').text(`${totalDebitsGold.toFixed(4)}g`, 300, summaryY + 28);
+      doc.fillColor('#1f2937').text(`${runningGold.toFixed(4)}g`, 420, summaryY + 28);
       
-      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
-      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 40);
-      doc.text('', 180, summaryY + 40);
-      doc.text('', 300, summaryY + 40);
-      doc.text(`${runningGold.toFixed(4)}g`, 420, summaryY + 40);
+      // USD equivalent row
+      doc.fillColor('#6b7280').fontSize(8).font('Helvetica');
+      doc.text(`≈ $${(openingGold * currentGoldPrice).toFixed(2)}`, 60, summaryY + 48);
+      doc.text(`≈ $${(totalCreditsGold * currentGoldPrice).toFixed(2)}`, 180, summaryY + 48);
+      doc.text(`≈ $${(totalDebitsGold * currentGoldPrice).toFixed(2)}`, 300, summaryY + 48);
+      doc.fillColor('#f97316').font('Helvetica-Bold');
+      doc.text(`≈ $${(runningGold * currentGoldPrice).toFixed(2)}`, 420, summaryY + 48);
       
-      // Show gold equivalent of USD closing balance
-      const closingUsdGoldEquivalent = runningUsd / currentGoldPrice;
-      if (closingUsdGoldEquivalent > 0) {
-        doc.fillColor('#f97316').fontSize(8).font('Helvetica');
-        doc.text(`≈ ${closingUsdGoldEquivalent.toFixed(4)}g @ $${currentGoldPrice.toFixed(2)}/g`, 420, summaryY + 50);
-      }
-      
-      doc.y = summaryY + 75;
+      doc.y = summaryY + 85;
       
       doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('TRANSACTION DETAILS');
       doc.moveDown(0.5);
@@ -12817,14 +12755,14 @@ export async function registerRoutes(
       doc.rect(50, tableTop, 515, 20).fill('#f3f4f6');
       doc.fillColor('#374151').fontSize(8).font('Helvetica-Bold');
       doc.text('Date', 55, tableTop + 6);
-      doc.text('Reference', 110, tableTop + 6);
-      doc.text('Description', 180, tableTop + 6);
-      doc.text('Debit (-)', 340, tableTop + 6, { width: 60, align: 'right' });
-      doc.text('Credit (+)', 410, tableTop + 6, { width: 60, align: 'right' });
-      doc.text('Balance', 480, tableTop + 6, { width: 70, align: 'right' });
+      doc.text('Reference', 105, tableTop + 6);
+      doc.text('Description', 165, tableTop + 6);
+      doc.text('Debit (g)', 310, tableTop + 6, { width: 55, align: 'right' });
+      doc.text('Credit (g)', 370, tableTop + 6, { width: 55, align: 'right' });
+      doc.text('Balance (g)', 430, tableTop + 6, { width: 60, align: 'right' });
+      doc.text('USD Value', 495, tableTop + 6, { width: 55, align: 'right' });
       
       let y = tableTop + 25;
-      runningUsd = openingUsd;
       runningGold = openingGold;
       
       doc.font('Helvetica').fontSize(8);
@@ -12835,36 +12773,35 @@ export async function registerRoutes(
           y = 50;
         }
         
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
+        const amountUsd = parseFloat(tx.amountUsd || '0');
         let debit = '';
         let credit = '';
         
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          credit = `$${amountUsd.toFixed(2)}`;
-          runningUsd += amountUsd;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          debit = `$${amountUsd.toFixed(2)}`;
-          runningUsd -= amountUsd;
-        } else if (tx.type === 'Buy') {
-          debit = `$${amountUsd.toFixed(2)}`;
-          runningUsd -= amountUsd;
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+          credit = amountGold.toFixed(4);
           runningGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          credit = `$${amountUsd.toFixed(2)}`;
-          runningUsd += amountUsd;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
+          debit = amountGold.toFixed(4);
           runningGold -= amountGold;
+        } else if (tx.type === 'Swap') {
+          if (amountGold > 0) {
+            credit = amountGold.toFixed(4);
+          } else {
+            debit = Math.abs(amountGold).toFixed(4);
+          }
+          runningGold += amountGold;
         }
         
         const txDate = new Date(tx.createdAt!);
         doc.fillColor('#374151');
         doc.text(txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }), 55, y);
-        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 110, y);
-        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 30), 180, y);
-        doc.fillColor('#dc2626').text(debit, 340, y, { width: 60, align: 'right' });
-        doc.fillColor('#16a34a').text(credit, 410, y, { width: 60, align: 'right' });
-        doc.fillColor('#1f2937').font('Helvetica-Bold').text(`$${runningUsd.toFixed(2)}`, 480, y, { width: 70, align: 'right' });
-        doc.font('Helvetica');
+        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 105, y);
+        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 25), 165, y);
+        doc.fillColor('#dc2626').text(debit, 310, y, { width: 55, align: 'right' });
+        doc.fillColor('#16a34a').text(credit, 370, y, { width: 55, align: 'right' });
+        doc.fillColor('#1f2937').font('Helvetica-Bold').text(runningGold.toFixed(4), 430, y, { width: 60, align: 'right' });
+        doc.font('Helvetica').fillColor('#6b7280').text(`$${amountUsd.toFixed(2)}`, 495, y, { width: 55, align: 'right' });
         
         y += 15;
       }
@@ -12875,8 +12812,8 @@ export async function registerRoutes(
       
       doc.y = 750;
       doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
-      doc.text('This statement is generated by Finatrades and is for informational purposes only.', 50, doc.y, { align: 'center', width: 515 });
-      doc.text('Gold values are calculated at transaction time rates. For questions, contact support@finatrades.com', 50, doc.y + 10, { align: 'center', width: 515 });
+      doc.text('This statement is generated by Finatrades. Gold is the primary asset held in your account.', 50, doc.y, { align: 'center', width: 515 });
+      doc.text(`USD values shown for reference at current gold price ($${currentGoldPrice.toFixed(2)}/g). For questions, contact support@finatrades.com`, 50, doc.y + 10, { align: 'center', width: 515 });
       
       doc.end();
     } catch (error) {
@@ -12885,7 +12822,7 @@ export async function registerRoutes(
     }
   });
 
-  // User downloads their own CSV statement
+  // User downloads their own CSV statement - GOLD CENTRIC
   app.get("/api/my-statement/csv", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -12919,58 +12856,45 @@ export async function registerRoutes(
         return txDate < fromDate && tx.status === 'Completed';
       });
       
-      let runningUsd = 0;
       let runningGold = 0;
       
       for (const tx of priorTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          runningUsd += amountUsd;
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
           runningGold += amountGold;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          runningUsd -= amountUsd;
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           runningGold -= amountGold;
-        } else if (tx.type === 'Buy') {
-          runningUsd -= amountUsd;
+        } else if (tx.type === 'Swap') {
           runningGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          runningUsd += amountUsd;
-          runningGold -= amountGold;
         }
       }
       
-      let csv = 'Date,Reference,Type,Description,Debit (USD),Credit (USD),Debit (Gold),Credit (Gold),Balance (USD),Balance (Gold)\n';
+      let csv = 'Date,Reference,Type,Description,Debit (Gold),Credit (Gold),Balance (Gold),USD Value (Reference)\n';
       
       for (const tx of periodTransactions) {
-        const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
-        let debitUsd = '';
-        let creditUsd = '';
+        const amountUsd = parseFloat(tx.amountUsd || '0');
         let debitGold = '';
         let creditGold = '';
         
-        if (['Deposit', 'Receive'].includes(tx.type)) {
-          creditUsd = amountUsd.toFixed(2);
-          runningUsd += amountUsd;
-        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
-          debitUsd = amountUsd.toFixed(2);
-          runningUsd -= amountUsd;
-        } else if (tx.type === 'Buy') {
-          debitUsd = amountUsd.toFixed(2);
+        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
           creditGold = amountGold.toFixed(4);
-          runningUsd -= amountUsd;
           runningGold += amountGold;
-        } else if (tx.type === 'Sell') {
-          creditUsd = amountUsd.toFixed(2);
+        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           debitGold = amountGold.toFixed(4);
-          runningUsd += amountUsd;
           runningGold -= amountGold;
+        } else if (tx.type === 'Swap') {
+          if (amountGold > 0) {
+            creditGold = amountGold.toFixed(4);
+          } else {
+            debitGold = Math.abs(amountGold).toFixed(4);
+          }
+          runningGold += amountGold;
         }
         
         const txDate = new Date(tx.createdAt!);
         const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
-        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitUsd},${creditUsd},${debitGold},${creditGold},${runningUsd.toFixed(2)},${runningGold.toFixed(4)}\n`;
+        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitGold},${creditGold},${runningGold.toFixed(4)},${amountUsd.toFixed(2)}\n`;
       }
       
       res.setHeader('Content-Type', 'text/csv');
