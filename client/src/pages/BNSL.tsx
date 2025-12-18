@@ -470,14 +470,14 @@ export default function BNSL() {
            />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex">
-              <TabsTrigger value="plans" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+            <TabsList className="bg-muted border border-border p-1.5 mb-8 w-full md:w-auto flex">
+              <TabsTrigger value="plans" className="flex-1 md:flex-none font-semibold text-foreground data-[state=active]:bg-primary data-[state=active]:text-white px-4 py-2">
                 <Briefcase className="w-4 h-4 mr-2" /> My BNSL Plans
               </TabsTrigger>
-              <TabsTrigger value="create" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="create" className="flex-1 md:flex-none font-semibold text-foreground data-[state=active]:bg-primary data-[state=active]:text-white px-4 py-2">
                 <PlusCircle className="w-4 h-4 mr-2" /> Start New Plan
               </TabsTrigger>
-              <TabsTrigger value="terms" className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <TabsTrigger value="terms" className="flex-1 md:flex-none font-semibold text-foreground data-[state=active]:bg-primary data-[state=active]:text-white px-4 py-2">
                 <Info className="w-4 h-4 mr-2" /> Terms & Info
               </TabsTrigger>
             </TabsList>
