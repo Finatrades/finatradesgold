@@ -9241,6 +9241,56 @@ export async function registerRoutes(
         });
       }
       
+      // Fetch platform config and gold price for dynamic responses
+      const { getGoldPrice } = await import('./gold-price-service.js');
+      let goldPrice: { pricePerGram: number; pricePerOz: number; currency: string } | undefined;
+      let platformConfig: any | undefined;
+      
+      try {
+        goldPrice = await getGoldPrice();
+      } catch (err) {
+        console.error("Error fetching gold price for chatbot:", err);
+      }
+      
+      // Build platform config from database
+      try {
+        const configs = await storage.getAllPlatformConfigs();
+        const configMap: Record<string, string> = {};
+        configs.forEach(c => { configMap[c.configKey] = c.configValue; });
+        
+        platformConfig = {
+          buySpreadPercent: parseFloat(configMap['buy_spread_percent'] || '2'),
+          sellSpreadPercent: parseFloat(configMap['sell_spread_percent'] || '2'),
+          storageFeePercent: parseFloat(configMap['storage_fee_percent'] || '0.5'),
+          minTradeAmount: parseFloat(configMap['min_trade_amount'] || '10'),
+          tier1DailyLimit: parseFloat(configMap['tier1_daily_limit'] || '1000'),
+          tier1MonthlyLimit: parseFloat(configMap['tier1_monthly_limit'] || '5000'),
+          tier2DailyLimit: parseFloat(configMap['tier2_daily_limit'] || '5000'),
+          tier2MonthlyLimit: parseFloat(configMap['tier2_monthly_limit'] || '20000'),
+          tier3DailyLimit: parseFloat(configMap['tier3_daily_limit'] || '50000'),
+          tier3MonthlyLimit: parseFloat(configMap['tier3_monthly_limit'] || '250000'),
+          minDeposit: parseFloat(configMap['min_deposit'] || '10'),
+          maxDepositSingle: parseFloat(configMap['max_deposit_single'] || '50000'),
+          dailyDepositLimit: parseFloat(configMap['daily_deposit_limit'] || '100000'),
+          minWithdrawal: parseFloat(configMap['min_withdrawal'] || '50'),
+          maxWithdrawalSingle: parseFloat(configMap['max_withdrawal_single'] || '50000'),
+          withdrawalFeePercent: parseFloat(configMap['withdrawal_fee_percent'] || '0.5'),
+          withdrawalFeeFixed: parseFloat(configMap['withdrawal_fee_fixed'] || '5'),
+          minP2pTransfer: parseFloat(configMap['min_p2p_transfer'] || '10'),
+          maxP2pTransfer: parseFloat(configMap['max_p2p_transfer'] || '10000'),
+          p2pFeePercent: parseFloat(configMap['p2p_fee_percent'] || '0'),
+          bnslMinAmount: parseFloat(configMap['bnsl_min_amount'] || '100'),
+          bnslMaxTermMonths: parseFloat(configMap['bnsl_max_term_months'] || '12'),
+          bnslEarlyExitPenalty: parseFloat(configMap['bnsl_early_exit_penalty'] || '5'),
+          cardFeePercent: parseFloat(configMap['card_fee_percent'] || '2.9'),
+          cardFeeFixed: parseFloat(configMap['card_fee_fixed'] || '0.30'),
+          bankTransferFeePercent: parseFloat(configMap['bank_transfer_fee_percent'] || '0'),
+          cryptoFeePercent: parseFloat(configMap['crypto_fee_percent'] || '1'),
+        };
+      } catch (err) {
+        console.error("Error fetching platform config for chatbot:", err);
+      }
+      
       // Build user context if authenticated (for personalized responses)
       let userContext: { userId: string; userName: string; goldBalance: number; usdValue: number; vaultGold: number; kycStatus: string } | undefined;
       const sessionUserId = req.session?.userId;
@@ -9250,14 +9300,12 @@ export async function registerRoutes(
           if (user) {
             const wallet = await storage.getWallet(sessionUserId);
             const vaultHoldings = await storage.getUserVaultHoldings(sessionUserId);
-            const { getGoldPrice } = await import('./gold-price-service.js');
-            const goldPrice = await getGoldPrice();
             
             // Use goldGrams field (correct schema field name)
             const walletGold = wallet?.goldGrams ? parseFloat(wallet.goldGrams) : 0;
             const vaultGoldTotal = vaultHoldings.reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
             const totalGold = walletGold + vaultGoldTotal;
-            const usdValue = totalGold * goldPrice.pricePerGram;
+            const usdValue = goldPrice ? totalGold * goldPrice.pricePerGram : 0;
             
             userContext = {
               userId: sessionUserId,
@@ -9274,7 +9322,7 @@ export async function registerRoutes(
         }
       }
       
-      const response = processUserMessage(sanitizedMessage, userContext);
+      const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
       
       // Sanitize output - ensure no script tags or dangerous content
       const sanitizedReply = response.message.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');

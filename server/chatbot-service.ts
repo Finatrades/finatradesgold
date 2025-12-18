@@ -16,6 +16,48 @@ export interface UserContext {
   kycStatus: string;
 }
 
+// Platform configuration for dynamic knowledge base
+export interface PlatformConfig {
+  // Gold Pricing
+  buySpreadPercent: number;
+  sellSpreadPercent: number;
+  storageFeePercent: number;
+  minTradeAmount: number;
+  
+  // Transaction Limits by Tier
+  tier1DailyLimit: number;
+  tier1MonthlyLimit: number;
+  tier2DailyLimit: number;
+  tier2MonthlyLimit: number;
+  tier3DailyLimit: number;
+  tier3MonthlyLimit: number;
+  
+  // Deposit/Withdrawal
+  minDeposit: number;
+  maxDepositSingle: number;
+  dailyDepositLimit: number;
+  minWithdrawal: number;
+  maxWithdrawalSingle: number;
+  withdrawalFeePercent: number;
+  withdrawalFeeFixed: number;
+  
+  // P2P
+  minP2pTransfer: number;
+  maxP2pTransfer: number;
+  p2pFeePercent: number;
+  
+  // BNSL
+  bnslMinAmount: number;
+  bnslMaxTermMonths: number;
+  bnslEarlyExitPenalty: number;
+  
+  // Payment Fees
+  cardFeePercent: number;
+  cardFeeFixed: number;
+  bankTransferFeePercent: number;
+  cryptoFeePercent: number;
+}
+
 interface FAQEntry {
   keywords: string[];
   patterns: RegExp[];
@@ -258,6 +300,54 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'account',
     actions: ['View Profile']
   },
+  // Dynamic Fee Queries
+  {
+    keywords: ['fee', 'fees', 'cost', 'charges', 'commission', 'spread'],
+    patterns: [/what (are|is) the fee/i, /fee(s)? for/i, /how much (do you|is the) (charge|fee)/i, /trading fee/i, /spread/i, /commission/i],
+    response: '__FEE_INFO__', // Dynamic - uses platform config
+    category: 'fees',
+    actions: ['View Fee Schedule']
+  },
+  // Dynamic Limit Queries
+  {
+    keywords: ['limit', 'limits', 'maximum', 'minimum', 'daily limit', 'monthly limit'],
+    patterns: [/what (are|is) (the |my )?limit/i, /daily limit/i, /monthly limit/i, /max(imum)? (deposit|withdrawal|transfer)/i, /min(imum)? (deposit|withdrawal|amount)/i],
+    response: '__LIMIT_INFO__', // Dynamic - uses platform config
+    category: 'limits',
+    actions: ['View My Limits', 'Start KYC']
+  },
+  // Dynamic Deposit Info
+  {
+    keywords: ['deposit info', 'deposit fee', 'deposit limit', 'deposit minimum'],
+    patterns: [/deposit (fee|limit|min|max)/i, /how to deposit/i, /minimum deposit/i],
+    response: '__DEPOSIT_INFO__', // Dynamic - uses platform config
+    category: 'deposits',
+    actions: ['Deposit Funds']
+  },
+  // Dynamic Withdrawal Info
+  {
+    keywords: ['withdrawal info', 'withdrawal fee', 'withdrawal limit', 'withdraw minimum'],
+    patterns: [/withdrawal? (fee|limit|min|max)/i, /how to withdraw/i, /minimum withdrawal/i],
+    response: '__WITHDRAWAL_INFO__', // Dynamic - uses platform config
+    category: 'withdrawals',
+    actions: ['Withdraw Funds']
+  },
+  // Dynamic BNSL Info
+  {
+    keywords: ['bnsl info', 'bnsl fee', 'bnsl limit', 'bnsl terms'],
+    patterns: [/bnsl (fee|limit|term|min|max|penalty)/i, /early exit/i, /lock period/i],
+    response: '__BNSL_INFO__', // Dynamic - uses platform config
+    category: 'bnsl',
+    actions: ['Start BNSL Plan']
+  },
+  // Current Gold Price
+  {
+    keywords: ['gold price', 'current price', 'price today', 'gold rate'],
+    patterns: [/gold price/i, /current price/i, /price (today|now)/i, /gold rate/i, /what('s| is) the price/i],
+    response: '__GOLD_PRICE__', // Dynamic - uses live gold price
+    category: 'pricing',
+    actions: ['Buy Gold', 'Sell Gold']
+  },
   // Greeting
   {
     keywords: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening'],
@@ -313,6 +403,88 @@ function shouldEscalate(message: string): boolean {
   );
 }
 
+// Helper to format currency
+function formatUsd(amount: number): string {
+  return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+// Dynamic response generators using platform config
+// Safe number formatting helper
+function formatSafeNum(val: number, suffix: string = ''): string {
+  return isNaN(val) ? 'N/A' : `${val}${suffix}`;
+}
+
+function formatSafeUsd(val: number): string {
+  return isNaN(val) ? 'N/A' : formatUsd(val);
+}
+
+function generateFeeInfoResponse(config?: PlatformConfig): string {
+  if (!config) {
+    return "Our fee structure includes:\n\n• Trading spread on buy/sell\n• Annual vault storage fee\n• Payment processing fees\n• Withdrawal fees\n\nFor exact current rates, please check your dashboard or contact support.";
+  }
+  
+  return `Here are our current fees:\n\n**Trading:**\n• Buy spread: ${formatSafeNum(config.buySpreadPercent, '%')}\n• Sell spread: ${formatSafeNum(config.sellSpreadPercent, '%')}\n• Min trade: ${formatSafeUsd(config.minTradeAmount)}\n\n**Vault Storage:**\n• Annual fee: ${formatSafeNum(config.storageFeePercent, '%')}\n\n**Payment Fees:**\n• Card: ${formatSafeNum(config.cardFeePercent, '%')} + ${formatSafeUsd(config.cardFeeFixed)}\n• Bank transfer: ${formatSafeNum(config.bankTransferFeePercent, '%')}\n• Crypto: ${formatSafeNum(config.cryptoFeePercent, '%')}\n\n**Withdrawals:**\n• Fee: ${formatSafeNum(config.withdrawalFeePercent, '%')} + ${formatSafeUsd(config.withdrawalFeeFixed)}`;
+}
+
+function generateLimitInfoResponse(config?: PlatformConfig, kycStatus?: string): string {
+  if (!config) {
+    return "Transaction limits depend on your KYC verification level. Complete KYC to unlock higher limits.\n\nTier 1: Basic limits\nTier 2: Increased limits\nTier 3: Maximum limits\n\nCheck your dashboard to see your current limits.";
+  }
+  
+  // Map kycStatus to tier - approved status means higher tier based on verification level
+  // For now, we use a simplified mapping based on approval status
+  let userTierLabel = 'Tier 1 (Basic)';
+  let userDailyLimit = config.tier1DailyLimit;
+  let userMonthlyLimit = config.tier1MonthlyLimit;
+  
+  if (kycStatus === 'approved') {
+    userTierLabel = 'Tier 2 (Enhanced)';
+    userDailyLimit = config.tier2DailyLimit;
+    userMonthlyLimit = config.tier2MonthlyLimit;
+  } else if (kycStatus === 'tier3' || kycStatus === 'corporate_approved') {
+    userTierLabel = 'Tier 3 (Maximum)';
+    userDailyLimit = config.tier3DailyLimit;
+    userMonthlyLimit = config.tier3MonthlyLimit;
+  }
+  
+  // Validate numbers before formatting
+  const formatSafe = (val: number) => isNaN(val) ? 'Contact support' : formatUsd(val);
+  
+  return `**Your Current Tier:** ${userTierLabel}\n**Your Limits:** Daily: ${formatSafe(userDailyLimit)}, Monthly: ${formatSafe(userMonthlyLimit)}\n\n**All Tier Limits:**\n\n**Tier 1 (Basic):**\n• Daily: ${formatSafe(config.tier1DailyLimit)}\n• Monthly: ${formatSafe(config.tier1MonthlyLimit)}\n\n**Tier 2 (Enhanced):**\n• Daily: ${formatSafe(config.tier2DailyLimit)}\n• Monthly: ${formatSafe(config.tier2MonthlyLimit)}\n\n**Tier 3 (Maximum):**\n• Daily: ${formatSafe(config.tier3DailyLimit)}\n• Monthly: ${formatSafe(config.tier3MonthlyLimit)}\n\nComplete KYC verification to unlock higher limits.`;
+}
+
+function generateDepositInfoResponse(config?: PlatformConfig): string {
+  if (!config) {
+    return "To deposit funds:\n\n1. Go to FinaPay > Deposit\n2. Choose your payment method\n3. Enter amount and confirm\n\nCheck your dashboard for current limits and fees.";
+  }
+  
+  return `**Deposit Information:**\n\n• Minimum deposit: ${formatUsd(config.minDeposit)}\n• Maximum single deposit: ${formatUsd(config.maxDepositSingle)}\n• Daily limit: ${formatUsd(config.dailyDepositLimit)}\n\n**Payment Methods:**\n• Bank transfer: ${config.bankTransferFeePercent}% fee\n• Card: ${config.cardFeePercent}% + ${formatUsd(config.cardFeeFixed)}\n• Crypto: ${config.cryptoFeePercent}% fee\n\nGo to FinaPay > Deposit to add funds.`;
+}
+
+function generateWithdrawalInfoResponse(config?: PlatformConfig): string {
+  if (!config) {
+    return "To withdraw funds:\n\n1. Go to FinaPay > Withdraw\n2. Enter bank details\n3. Confirm withdrawal\n\nProcessing typically takes 1-3 business days.";
+  }
+  
+  return `**Withdrawal Information:**\n\n• Minimum withdrawal: ${formatUsd(config.minWithdrawal)}\n• Maximum single withdrawal: ${formatUsd(config.maxWithdrawalSingle)}\n• Fee: ${config.withdrawalFeePercent}% + ${formatUsd(config.withdrawalFeeFixed)}\n\nWithdrawals are processed within 1-3 business days. Go to FinaPay > Withdraw to cash out.`;
+}
+
+function generateBnslInfoResponse(config?: PlatformConfig): string {
+  if (!config) {
+    return "BNSL (Buy Now Sell Later) lets you lock gold at today's price and sell later with guaranteed minimum returns.\n\nContact support for current terms and rates.";
+  }
+  
+  return `**BNSL (Buy Now Sell Later):**\n\n• Minimum amount: ${formatUsd(config.bnslMinAmount)}\n• Maximum lock period: ${config.bnslMaxTermMonths} months\n• Early exit penalty: ${config.bnslEarlyExitPenalty}%\n\n**How it works:**\n1. Lock your gold at current price\n2. Choose lock period (longer = higher returns)\n3. Receive guaranteed minimum return at maturity\n4. Option to exit early (penalty applies)\n\nGo to BNSL to start a new plan.`;
+}
+
+function generateGoldPriceResponse(goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string }): string {
+  if (!goldPrice) {
+    return "Gold prices update in real-time. Check the Buy Gold or Sell Gold section for current rates.";
+  }
+  
+  return `**Current Gold Price:**\n\n• Per gram: ${formatUsd(goldPrice.pricePerGram)}\n• Per ounce: ${formatUsd(goldPrice.pricePerOz)}\n\nPrices update every 15 seconds during market hours. The actual buy/sell price includes our spread.`;
+}
+
 // Helper to generate balance response
 function generateBalanceResponse(userContext?: UserContext): string {
   if (!userContext) {
@@ -349,7 +521,14 @@ function generateAccountStatusResponse(userContext?: UserContext): string {
   }`;
 }
 
-export function processUserMessage(message: string, userContext?: UserContext): ChatbotResponse {
+// Context for dynamic chatbot responses
+export interface ChatbotContext {
+  userContext?: UserContext;
+  platformConfig?: PlatformConfig;
+  goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string };
+}
+
+export function processUserMessage(message: string, userContext?: UserContext, platformConfig?: PlatformConfig, goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string }): ChatbotResponse {
   // Check for escalation request
   if (shouldEscalate(message)) {
     return {
@@ -375,10 +554,31 @@ export function processUserMessage(message: string, userContext?: UserContext): 
     
     // Handle special dynamic responses
     let responseMessage = best.entry.response;
-    if (responseMessage === '__BALANCE_QUERY__') {
-      responseMessage = generateBalanceResponse(userContext);
-    } else if (responseMessage === '__ACCOUNT_STATUS__') {
-      responseMessage = generateAccountStatusResponse(userContext);
+    switch (responseMessage) {
+      case '__BALANCE_QUERY__':
+        responseMessage = generateBalanceResponse(userContext);
+        break;
+      case '__ACCOUNT_STATUS__':
+        responseMessage = generateAccountStatusResponse(userContext);
+        break;
+      case '__FEE_INFO__':
+        responseMessage = generateFeeInfoResponse(platformConfig);
+        break;
+      case '__LIMIT_INFO__':
+        responseMessage = generateLimitInfoResponse(platformConfig, userContext?.kycStatus);
+        break;
+      case '__DEPOSIT_INFO__':
+        responseMessage = generateDepositInfoResponse(platformConfig);
+        break;
+      case '__WITHDRAWAL_INFO__':
+        responseMessage = generateWithdrawalInfoResponse(platformConfig);
+        break;
+      case '__BNSL_INFO__':
+        responseMessage = generateBnslInfoResponse(platformConfig);
+        break;
+      case '__GOLD_PRICE__':
+        responseMessage = generateGoldPriceResponse(goldPrice);
+        break;
     }
     
     return {
@@ -392,7 +592,7 @@ export function processUserMessage(message: string, userContext?: UserContext): 
   
   // Default fallback response
   return {
-    message: "I'm not sure I understand your question. Here are some topics I can help with:\n\n• How to buy or sell gold\n• Deposits and withdrawals\n• FinaVault storage\n• BNSL investment plans\n• Fees and limits\n• Account verification (KYC)\n• Your balance (when logged in)\n\nCould you please rephrase your question, or would you like to speak with a human agent?",
+    message: "I'm not sure I understand your question. Here are some topics I can help with:\n\n• How to buy or sell gold\n• Current gold price\n• Deposits and withdrawals\n• FinaVault storage\n• BNSL investment plans\n• Fees and limits\n• Account verification (KYC)\n• Your balance (when logged in)\n\nCould you please rephrase your question, or would you like to speak with a human agent?",
     category: 'unknown',
     confidence: 0,
     suggestedActions: ['Speak to Agent'],
