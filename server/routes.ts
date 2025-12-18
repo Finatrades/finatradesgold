@@ -7059,6 +7059,21 @@ export async function registerRoutes(
         incomingLockedGoldGrams: Math.max(0, parseFloat(exporterWallet.incomingLockedGoldGrams || '0') - lockedAmount).toFixed(6),
       });
       
+      // Get trade request for transaction details
+      const tradeRequest = await storage.getTradeRequest(hold.tradeRequestId);
+      const tradeValue = tradeRequest ? parseFloat(tradeRequest.tradeValueUsd) : 0;
+      
+      // Create transaction record for exporter (receiving gold from trade settlement)
+      await storage.createTransaction({
+        userId: hold.exporterUserId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: lockedAmount.toFixed(6),
+        amountUsd: tradeValue.toFixed(2),
+        description: `Trade Settlement - ${tradeRequest?.tradeRefId || 'FinaBridge'}`,
+        sourceModule: 'FinaBridge',
+      });
+      
       // Update hold status
       await storage.updateSettlementHold(req.params.id, { status: 'Released' });
       
@@ -7066,10 +7081,7 @@ export async function registerRoutes(
       await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Completed' });
       
       // Generate Trade Release Certificates for both importer and exporter (non-blocking)
-      const releasedGoldAmount = parseFloat(hold.lockedGoldGrams);
-      // Get the trade request to calculate price per gram
-      const tradeRequest = await storage.getTradeRequest(hold.tradeRequestId);
-      const tradeValue = tradeRequest ? parseFloat(tradeRequest.tradeValueUsd) : 0;
+      const releasedGoldAmount = lockedAmount;
       const releasePrice = tradeValue > 0 ? tradeValue / releasedGoldAmount : 0;
       
       // Find the lock certificate to link as related
