@@ -543,7 +543,15 @@ Version 1.0 - Effective Date: January 2025
         {room?.isClosed && (
           <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3 flex items-center gap-2 text-destructive">
             <Lock className="w-4 h-4" />
-            <span className="font-medium">This Deal Room is closed</span>
+            <span className="font-medium">
+              {room.tradeRequest?.status === 'Completed' 
+                ? 'Trade Completed - Deal Room Closed'
+                : room.tradeRequest?.status === 'Cancelled'
+                ? 'Trade Cancelled - Deal Room Closed'
+                : room.tradeRequest?.status === 'Settled'
+                ? 'Trade Settled - Deal Room Closed'
+                : 'This Deal Room is closed'}
+            </span>
             {room.closedAt && (
               <span className="text-sm opacity-75">
                 - Closed on {format(new Date(room.closedAt), 'MMM d, yyyy h:mm a')}
@@ -721,7 +729,15 @@ Version 1.0 - Effective Date: January 2025
           <div className="p-4 bg-muted/50 text-center">
             <div className="flex items-center justify-center gap-2 text-muted-foreground">
               <Lock className="w-4 h-4" />
-              <span>This deal room is closed. No new messages can be sent.</span>
+              <span>
+                {room.tradeRequest?.status === 'Completed' 
+                  ? 'This trade has been completed successfully. The deal room is now closed.'
+                  : room.tradeRequest?.status === 'Cancelled'
+                  ? 'This trade was cancelled. The deal room is now closed.'
+                  : room.tradeRequest?.status === 'Settled'
+                  ? 'This trade has been settled. The deal room is now closed.'
+                  : 'This deal room is closed. No new messages can be sent.'}
+              </span>
             </div>
             {room.closureNotes && (
               <p className="text-sm text-muted-foreground mt-2 italic">
