@@ -843,9 +843,10 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "user",
         entityId: user.id,
-        action: "admin_login",
-        performedBy: user.id,
-        details: { loginType: "admin_portal" }
+        actionType: "admin_login",
+        actor: user.id,
+        actorRole: "admin",
+        details: "Admin portal login"
       });
       
       res.json({ user: sanitizeUser(updatedUser || user), adminPortal: true });
