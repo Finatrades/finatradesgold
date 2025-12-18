@@ -5524,6 +5524,66 @@ export async function registerRoutes(
     }
   });
   
+  // PUBLIC: Verify certificate authenticity
+  app.post("/api/certificates/verify", async (req, res) => {
+    try {
+      const { certificateNumber } = req.body;
+      
+      if (!certificateNumber || typeof certificateNumber !== 'string') {
+        return res.status(400).json({ 
+          message: "Certificate number is required",
+          verificationResult: "invalid"
+        });
+      }
+      
+      // Clean and normalize the certificate number
+      const cleanedNumber = certificateNumber.trim().toUpperCase();
+      
+      const certificate = await storage.getCertificateByNumber(cleanedNumber);
+      
+      if (!certificate) {
+        return res.json({
+          verificationResult: "invalid",
+          message: "Certificate not found in our system. This certificate may be counterfeit or the number may be incorrect.",
+          certificateNumber: cleanedNumber
+        });
+      }
+      
+      // Determine if certificate is expired
+      const now = new Date();
+      const isExpired = certificate.expiresAt ? new Date(certificate.expiresAt) < now : false;
+      const isStatusExpired = certificate.status === 'Expired' || certificate.status === 'Revoked';
+      
+      // Build response with sanitized certificate info (no PII)
+      const verificationResult = (isExpired || isStatusExpired) ? "genuine_expired" : "genuine_active";
+      
+      res.json({
+        verificationResult,
+        message: verificationResult === "genuine_active" 
+          ? "This certificate is genuine and currently active."
+          : "This certificate is genuine but has expired or been revoked.",
+        certificate: {
+          certificateNumber: certificate.certificateNumber,
+          type: certificate.type,
+          goldGrams: certificate.goldGrams,
+          goldPriceUsdPerGram: certificate.goldPriceUsdPerGram,
+          totalValueUsd: certificate.totalValueUsd,
+          issuer: certificate.issuer,
+          vaultLocation: certificate.vaultLocation,
+          status: certificate.status,
+          issuedAt: certificate.issuedAt,
+          expiresAt: certificate.expiresAt
+        }
+      });
+    } catch (error) {
+      console.error("Certificate verification error:", error);
+      res.status(500).json({ 
+        message: "Failed to verify certificate",
+        verificationResult: "error"
+      });
+    }
+  });
+  
   // Create vault holding
   app.post("/api/vault", async (req, res) => {
     try {
