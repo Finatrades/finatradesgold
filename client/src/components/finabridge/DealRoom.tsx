@@ -135,14 +135,15 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         const data = await response.json();
         setHasAcceptedTerms(data.hasAccepted);
         setAllAcceptances(data.allAcceptances || []);
-        if (!data.hasAccepted) {
+        // Only show terms dialog if room is NOT closed and user hasn't accepted
+        if (!data.hasAccepted && !room?.isClosed) {
           setShowTermsDialog(true);
         }
       }
     } catch (error) {
       console.error('Failed to fetch agreement status:', error);
     }
-  }, [dealRoomId, user]);
+  }, [dealRoomId, user, room?.isClosed]);
 
   const acceptTerms = async () => {
     if (!termsAgreed) return;
@@ -438,7 +439,7 @@ Version 1.0 - Effective Date: January 2025
 
   return (
     <>
-      <AlertDialog open={showTermsDialog && !hasAcceptedTerms} onOpenChange={setShowTermsDialog}>
+      <AlertDialog open={showTermsDialog && !hasAcceptedTerms && !room?.isClosed} onOpenChange={setShowTermsDialog}>
         <AlertDialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -745,7 +746,7 @@ Version 1.0 - Effective Date: January 2025
               </p>
             )}
           </div>
-        ) : !hasAcceptedTerms ? (
+        ) : !hasAcceptedTerms && !room?.isClosed ? (
           <div className="p-4 bg-warning-muted text-center">
             <div className="flex items-center justify-center gap-2 text-warning">
               <AlertTriangle className="w-4 h-4" />
