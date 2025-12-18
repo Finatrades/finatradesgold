@@ -250,9 +250,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             return {
               id: session.id,
               userId: session.userId || '',
-              userName: session.guestName || session.userId || 'Guest',
+              userName: session.userName || session.guestName || 'Guest',
               guestName: session.guestName,
-              guestEmail: session.guestEmail,
+              guestEmail: session.guestEmail || session.userEmail,
               messages: messagesData.messages.map((m: any) => ({
                 id: m.id,
                 sender: m.sender,

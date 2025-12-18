@@ -9025,7 +9025,29 @@ export async function registerRoutes(
   app.get("/api/admin/chat/sessions", async (req, res) => {
     try {
       const sessions = await storage.getAllChatSessions();
-      res.json({ sessions });
+      
+      // Enrich sessions with user details
+      const enrichedSessions = await Promise.all(
+        sessions.map(async (session) => {
+          if (session.userId) {
+            const user = await storage.getUser(session.userId);
+            if (user) {
+              return {
+                ...session,
+                userName: `${user.firstName} ${user.lastName}`.trim(),
+                userEmail: user.email,
+              };
+            }
+          }
+          return {
+            ...session,
+            userName: session.guestName || 'Guest',
+            userEmail: session.guestEmail || null,
+          };
+        })
+      );
+      
+      res.json({ sessions: enrichedSessions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get chat sessions" });
     }
