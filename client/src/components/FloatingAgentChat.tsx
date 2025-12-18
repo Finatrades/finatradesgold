@@ -13,18 +13,37 @@ interface ChatbotMessage {
   content: string;
   timestamp: Date;
   suggestedActions?: string[];
+  collectData?: {
+    field: string;
+    type: 'text' | 'email' | 'phone' | 'select' | 'file';
+    options?: string[];
+    required?: boolean;
+  };
 }
 
-async function getChatbotResponse(message: string): Promise<{
+interface ChatAgent {
+  id: string;
+  name: string;
+  displayName: string;
+  type: 'general' | 'juris' | 'support' | 'custom';
+  description?: string;
+  avatar?: string;
+  welcomeMessage?: string;
+  status: string;
+}
+
+async function getChatbotResponse(message: string, agentType?: string): Promise<{
   reply: string;
   suggestedActions?: string[];
   escalateToHuman?: boolean;
+  collectData?: ChatbotMessage['collectData'];
+  agent?: { id: string; name: string; type: string };
 }> {
   try {
     const response = await fetch('/api/chatbot/message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, agentType }),
     });
     if (!response.ok) throw new Error('Failed to get response');
     return await response.json();
@@ -37,14 +56,26 @@ async function getChatbotResponse(message: string): Promise<{
   }
 }
 
+async function fetchChatAgents(): Promise<ChatAgent[]> {
+  try {
+    const response = await fetch('/api/chat-agents');
+    if (!response.ok) throw new Error('Failed to fetch agents');
+    const data = await response.json();
+    return data.agents || [];
+  } catch (error) {
+    console.error('Failed to fetch chat agents:', error);
+    return [];
+  }
+}
+
 const agents = [
-  { name: "General", role: "General Assistant", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/a3b38c132_General.png", greeting: "Hi! I'm your General Assistant. Ask me anything about Finatrades, or select a specialist agent below!", active: true },
-  { name: "Vaultis", role: "Vault Management", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/3c982361e_QC.png", greeting: "Hello! I'm Vaultis, your Vault Management specialist.", active: false },
-  { name: "Payis", role: "Payments & Wallet", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/f37044cf5_Payis.png", greeting: "Hi! I'm Payis, your Payments & Wallet specialist.", active: false },
-  { name: "Tradis", role: "Trade Finance", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/848368285_tradis.png", greeting: "Hello! I'm Tradis, your Trade Finance specialist.", active: false },
-  { name: "Juris", role: "Compliance & Legal", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/14133f560_Juris.png", greeting: "Welcome! I'm Juris, your Compliance & Legal advisor.", active: false },
-  { name: "Logis", role: "Logistics & Documentation", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/f58a17b2a_Logis.png", greeting: "Hello! I'm Logis, handling Logistics & Documentation.", active: false },
-  { name: "Markis", role: "Market Intelligence", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/643f01b2a_Markis.png", greeting: "Greetings! I'm Markis, your Market Intelligence expert.", active: false }
+  { name: "General", role: "General Assistant", type: "general", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/a3b38c132_General.png", greeting: "Hi! I'm your General Assistant. Ask me anything about Finatrades, or select a specialist agent below!", active: true },
+  { name: "Juris", role: "Registration & KYC", type: "juris", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/14133f560_Juris.png", greeting: "Welcome! I'm Juris, your registration and verification assistant. I can help you create an account or complete KYC verification.", active: true },
+  { name: "Vaultis", role: "Vault Management", type: "support", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/3c982361e_QC.png", greeting: "Hello! I'm Vaultis, your Vault Management specialist.", active: false },
+  { name: "Payis", role: "Payments & Wallet", type: "support", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/f37044cf5_Payis.png", greeting: "Hi! I'm Payis, your Payments & Wallet specialist.", active: false },
+  { name: "Tradis", role: "Trade Finance", type: "support", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/848368285_tradis.png", greeting: "Hello! I'm Tradis, your Trade Finance specialist.", active: false },
+  { name: "Logis", role: "Logistics & Documentation", type: "support", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/f58a17b2a_Logis.png", greeting: "Hello! I'm Logis, handling Logistics & Documentation.", active: false },
+  { name: "Markis", role: "Market Intelligence", type: "support", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/643f01b2a_Markis.png", greeting: "Greetings! I'm Markis, your Market Intelligence expert.", active: false }
 ];
 
 interface GuestInfo {
@@ -154,7 +185,19 @@ function FloatingAgentChatContent() {
   const switchAgent = (agent: typeof agents[0]) => {
     setCurrentAgent(agent);
     setShowAgentList(false);
-    sendMessage(`System: Switched to ${agent.name} (${agent.role})`, 'agent');
+    
+    // Clear chatbot messages and show new agent's greeting
+    const greeting: ChatbotMessage = {
+      id: `bot-${Date.now()}`,
+      sender: 'bot',
+      content: agent.greeting,
+      timestamp: new Date(),
+      suggestedActions: agent.type === 'juris' 
+        ? ['Create Account', 'Start KYC', 'Check Requirements']
+        : ['How to buy gold?', 'What are the fees?', 'Tell me about BNSL']
+    };
+    setChatbotMessages([greeting]);
+    setUseHumanAgent(false);
   };
   
   const escalateToHuman = useCallback(() => {
@@ -202,8 +245,8 @@ function FloatingAgentChatContent() {
     setChatbotMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     
-    // Get chatbot response
-    const response = await getChatbotResponse(userMessage);
+    // Get chatbot response - pass current agent type for routing
+    const response = await getChatbotResponse(userMessage, currentAgent.type);
     
     // Add bot response
     const botMsg: ChatbotMessage = {

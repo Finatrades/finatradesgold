@@ -118,6 +118,14 @@ app.use((req, res, next) => {
     console.error('[Platform Config] Failed to seed defaults:', error);
   }
   
+  // Seed default chat agents
+  try {
+    await storage.seedDefaultChatAgents();
+    console.log('[Chat Agents] Default agents seeded successfully');
+  } catch (error) {
+    console.error('[Chat Agents] Failed to seed defaults:', error);
+  }
+  
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   

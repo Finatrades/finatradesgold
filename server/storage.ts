@@ -43,8 +43,11 @@ import {
   type DealRoomMessage, type InsertDealRoomMessage,
   type DealRoomAgreementAcceptance, type InsertDealRoomAgreementAcceptance,
   dealRoomAgreementAcceptances,
+  type ChatAgent, type InsertChatAgent,
+  type ChatAgentWorkflow, type InsertChatAgentWorkflow,
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
+  chatAgents, chatAgentWorkflows,
   type AuditLog, type InsertAuditLog,
   type Certificate, type InsertCertificate,
   type ContentPage, type InsertContentPage,
@@ -366,8 +369,26 @@ export interface IStorage {
   createDealRoomAgreementAcceptance(acceptance: InsertDealRoomAgreementAcceptance): Promise<DealRoomAgreementAcceptance>;
   closeDealRoom(id: string, closedBy: string, closureNotes?: string): Promise<DealRoom | undefined>;
   
+  // Chat Agents
+  getChatAgent(id: string): Promise<ChatAgent | undefined>;
+  getChatAgentByType(type: string): Promise<ChatAgent | undefined>;
+  getAllChatAgents(): Promise<ChatAgent[]>;
+  getActiveChatAgents(): Promise<ChatAgent[]>;
+  getDefaultChatAgent(): Promise<ChatAgent | undefined>;
+  createChatAgent(agent: InsertChatAgent): Promise<ChatAgent>;
+  updateChatAgent(id: string, updates: Partial<ChatAgent>): Promise<ChatAgent | undefined>;
+  seedDefaultChatAgents(): Promise<void>;
+  
+  // Chat Agent Workflows
+  getChatAgentWorkflow(id: string): Promise<ChatAgentWorkflow | undefined>;
+  getSessionWorkflow(sessionId: string): Promise<ChatAgentWorkflow | undefined>;
+  getUserActiveWorkflow(userId: string, workflowType: string): Promise<ChatAgentWorkflow | undefined>;
+  createChatAgentWorkflow(workflow: InsertChatAgentWorkflow): Promise<ChatAgentWorkflow>;
+  updateChatAgentWorkflow(id: string, updates: Partial<ChatAgentWorkflow>): Promise<ChatAgentWorkflow | undefined>;
+  
   // Chat
   getChatSession(userId: string): Promise<ChatSession | undefined>;
+  getChatSessionById(id: string): Promise<ChatSession | undefined>;
   getChatSessionByGuest(guestName?: string, guestEmail?: string): Promise<ChatSession | undefined>;
   getAllChatSessions(): Promise<ChatSession[]>;
   createChatSession(session: InsertChatSession): Promise<ChatSession>;
@@ -1230,8 +1251,108 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Chat
+  // Chat Agents
+  async getChatAgent(id: string): Promise<ChatAgent | undefined> {
+    const [agent] = await db.select().from(chatAgents).where(eq(chatAgents.id, id));
+    return agent || undefined;
+  }
+
+  async getChatAgentByType(type: string): Promise<ChatAgent | undefined> {
+    const [agent] = await db.select().from(chatAgents).where(eq(chatAgents.type, type as any)).limit(1);
+    return agent || undefined;
+  }
+
+  async getAllChatAgents(): Promise<ChatAgent[]> {
+    return await db.select().from(chatAgents).orderBy(desc(chatAgents.priority));
+  }
+
+  async getActiveChatAgents(): Promise<ChatAgent[]> {
+    return await db.select().from(chatAgents).where(eq(chatAgents.status, 'active')).orderBy(desc(chatAgents.priority));
+  }
+
+  async getDefaultChatAgent(): Promise<ChatAgent | undefined> {
+    const [agent] = await db.select().from(chatAgents).where(eq(chatAgents.isDefault, true));
+    return agent || undefined;
+  }
+
+  async createChatAgent(insertAgent: InsertChatAgent): Promise<ChatAgent> {
+    const [agent] = await db.insert(chatAgents).values(insertAgent).returning();
+    return agent;
+  }
+
+  async updateChatAgent(id: string, updates: Partial<ChatAgent>): Promise<ChatAgent | undefined> {
+    const [agent] = await db.update(chatAgents).set({ ...updates, updatedAt: new Date() }).where(eq(chatAgents.id, id)).returning();
+    return agent || undefined;
+  }
+
+  async seedDefaultChatAgents(): Promise<void> {
+    const existingAgents = await this.getAllChatAgents();
+    if (existingAgents.length > 0) return;
+
+    const defaultAgents: InsertChatAgent[] = [
+      {
+        name: 'general',
+        displayName: 'Finatrades Assistant',
+        type: 'general',
+        description: 'General support and FAQ assistant',
+        welcomeMessage: 'Hello! I\'m your Finatrades assistant. I can help with buying/selling gold, deposits, withdrawals, vault storage, and more. How can I assist you today?',
+        capabilities: JSON.stringify(['faq', 'balance', 'fees', 'limits', 'trading', 'deposits', 'withdrawals', 'vault', 'bnsl']),
+        status: 'active',
+        priority: 10,
+        isDefault: true
+      },
+      {
+        name: 'juris',
+        displayName: 'Juris - Registration & KYC',
+        type: 'juris',
+        description: 'Registration and KYC verification assistant',
+        welcomeMessage: 'Hello! I\'m Juris, your registration and verification assistant. I can help you create an account or complete your KYC verification. What would you like to do?',
+        capabilities: JSON.stringify(['registration', 'kyc', 'account_setup', 'document_guidance', 'verification']),
+        status: 'active',
+        priority: 20,
+        isDefault: false
+      }
+    ];
+
+    for (const agent of defaultAgents) {
+      await this.createChatAgent(agent);
+    }
+  }
+
+  // Chat Agent Workflows
+  async getChatAgentWorkflow(id: string): Promise<ChatAgentWorkflow | undefined> {
+    const [workflow] = await db.select().from(chatAgentWorkflows).where(eq(chatAgentWorkflows.id, id));
+    return workflow || undefined;
+  }
+
+  async getSessionWorkflow(sessionId: string): Promise<ChatAgentWorkflow | undefined> {
+    const [workflow] = await db.select().from(chatAgentWorkflows).where(and(eq(chatAgentWorkflows.sessionId, sessionId), eq(chatAgentWorkflows.status, 'active'))).limit(1);
+    return workflow || undefined;
+  }
+
+  async getUserActiveWorkflow(userId: string, workflowType: string): Promise<ChatAgentWorkflow | undefined> {
+    const [workflow] = await db.select().from(chatAgentWorkflows).where(and(eq(chatAgentWorkflows.userId, userId), eq(chatAgentWorkflows.workflowType, workflowType), eq(chatAgentWorkflows.status, 'active'))).limit(1);
+    return workflow || undefined;
+  }
+
+  async createChatAgentWorkflow(insertWorkflow: InsertChatAgentWorkflow): Promise<ChatAgentWorkflow> {
+    const [workflow] = await db.insert(chatAgentWorkflows).values(insertWorkflow).returning();
+    return workflow;
+  }
+
+  async updateChatAgentWorkflow(id: string, updates: Partial<ChatAgentWorkflow>): Promise<ChatAgentWorkflow | undefined> {
+    const [workflow] = await db.update(chatAgentWorkflows).set({ ...updates, updatedAt: new Date() }).where(eq(chatAgentWorkflows.id, id)).returning();
+    return workflow || undefined;
+  }
+
+  // Chat Sessions
   async getChatSession(userId: string): Promise<ChatSession | undefined> {
     const [session] = await db.select().from(chatSessions).where(and(eq(chatSessions.userId, userId), eq(chatSessions.status, 'active'))).orderBy(desc(chatSessions.createdAt)).limit(1);
+    return session || undefined;
+  }
+
+  async getChatSessionById(id: string): Promise<ChatSession | undefined> {
+    const [session] = await db.select().from(chatSessions).where(eq(chatSessions.id, id));
     return session || undefined;
   }
 

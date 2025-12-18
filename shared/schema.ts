@@ -1671,6 +1671,34 @@ export type InsertDealRoomAgreementAcceptance = z.infer<typeof insertDealRoomAgr
 export type DealRoomAgreementAcceptance = typeof dealRoomAgreementAcceptances.$inferSelect;
 
 // ============================================
+// CHAT AGENTS
+// ============================================
+
+export const chatAgentTypeEnum = pgEnum('chat_agent_type', ['general', 'juris', 'support', 'custom']);
+export const chatAgentStatusEnum = pgEnum('chat_agent_status', ['active', 'inactive', 'maintenance']);
+
+export const chatAgents = pgTable("chat_agents", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  type: chatAgentTypeEnum("type").notNull(),
+  description: text("description"),
+  avatar: varchar("avatar", { length: 500 }),
+  welcomeMessage: text("welcome_message"),
+  capabilities: text("capabilities"), // JSON array of capabilities
+  status: chatAgentStatusEnum("status").notNull().default('active'),
+  priority: integer("priority").notNull().default(0), // Higher = preferred for routing
+  isDefault: boolean("is_default").notNull().default(false),
+  config: text("config"), // JSON for agent-specific settings
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertChatAgentSchema = createInsertSchema(chatAgents).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertChatAgent = z.infer<typeof insertChatAgentSchema>;
+export type ChatAgent = typeof chatAgents.$inferSelect;
+
+// ============================================
 // CHAT
 // ============================================
 
@@ -1679,7 +1707,9 @@ export const chatSessions = pgTable("chat_sessions", {
   userId: varchar("user_id", { length: 255 }).references(() => users.id),
   guestName: varchar("guest_name", { length: 255 }),
   guestEmail: varchar("guest_email", { length: 255 }),
+  currentAgentId: varchar("current_agent_id", { length: 255 }).references(() => chatAgents.id),
   status: varchar("status", { length: 50 }).notNull().default('active'), // active, closed
+  context: text("context"), // JSON for session context (workflow state, etc.)
   lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -1691,8 +1721,12 @@ export type ChatSession = typeof chatSessions.$inferSelect;
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   sessionId: varchar("session_id", { length: 255 }).notNull().references(() => chatSessions.id),
+  agentId: varchar("agent_id", { length: 255 }).references(() => chatAgents.id),
   sender: chatMessageSenderEnum("sender").notNull(),
   content: text("content").notNull(),
+  intent: varchar("intent", { length: 100 }), // Detected intent category
+  confidence: decimal("confidence", { precision: 5, scale: 4 }), // AI confidence score
+  metadata: text("metadata"), // JSON for extra data
   isRead: boolean("is_read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -1700,6 +1734,29 @@ export const chatMessages = pgTable("chat_messages", {
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
+// Chat Agent Workflows - For multi-step processes like registration/KYC
+export const chatWorkflowStatusEnum = pgEnum('chat_workflow_status', ['active', 'completed', 'abandoned', 'paused']);
+
+export const chatAgentWorkflows = pgTable("chat_agent_workflows", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id", { length: 255 }).notNull().references(() => chatSessions.id),
+  agentId: varchar("agent_id", { length: 255 }).notNull().references(() => chatAgents.id),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  workflowType: varchar("workflow_type", { length: 100 }).notNull(), // 'registration', 'kyc', 'support_ticket'
+  currentStep: varchar("current_step", { length: 100 }).notNull(),
+  totalSteps: integer("total_steps").notNull().default(1),
+  completedSteps: integer("completed_steps").notNull().default(0),
+  stepData: text("step_data"), // JSON for collected data per step
+  status: chatWorkflowStatusEnum("status").notNull().default('active'),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertChatAgentWorkflowSchema = createInsertSchema(chatAgentWorkflows).omit({ id: true, startedAt: true, updatedAt: true });
+export type InsertChatAgentWorkflow = z.infer<typeof insertChatAgentWorkflowSchema>;
+export type ChatAgentWorkflow = typeof chatAgentWorkflows.$inferSelect;
 
 // ============================================
 // AUDIT LOGS

@@ -9210,17 +9210,67 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // CHAT AGENTS - MULTI-AGENT AI SYSTEM
+  // ============================================================================
+  
+  // Get all active chat agents (public)
+  app.get("/api/chat-agents", async (req, res) => {
+    try {
+      const agents = await storage.getActiveChatAgents();
+      res.json({ agents });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch chat agents" });
+    }
+  });
+  
+  // Get specific chat agent
+  app.get("/api/chat-agents/:id", async (req, res) => {
+    try {
+      const agent = await storage.getChatAgent(req.params.id);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      res.json({ agent });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch chat agent" });
+    }
+  });
+  
+  // Get default chat agent
+  app.get("/api/chat-agents/default", async (req, res) => {
+    try {
+      const agent = await storage.getDefaultChatAgent();
+      res.json({ agent });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch default agent" });
+    }
+  });
+  
+  // ============================================================================
   // CHATBOT - AI-POWERED INSTANT SUPPORT
   // ============================================================================
   
-  // Process chatbot message (public - works for guests and authenticated users)
+  // Process chatbot message with agent routing (public - works for guests and authenticated users)
   app.post("/api/chatbot/message", async (req, res) => {
     try {
-      const { message } = req.body;
+      const { message, agentId, agentType } = req.body;
       
       // Input validation
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ message: "Message is required" });
+      }
+      
+      // Determine which agent to use
+      let selectedAgent;
+      if (agentId) {
+        selectedAgent = await storage.getChatAgent(agentId);
+      } else if (agentType) {
+        selectedAgent = await storage.getChatAgentByType(agentType);
+      }
+      
+      // Default to general agent if no specific agent selected
+      if (!selectedAgent) {
+        selectedAgent = await storage.getDefaultChatAgent();
       }
       
       // Sanitize input - limit length and remove potentially harmful content
@@ -9322,18 +9372,51 @@ export async function registerRoutes(
         }
       }
       
-      const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
+      // Route to appropriate agent
+      let responseData: any;
       
-      // Sanitize output - ensure no script tags or dangerous content
-      const sanitizedReply = response.message.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      if (selectedAgent?.type === 'juris') {
+        // Use Juris agent for registration/KYC
+        const { processJurisMessage, getJurisGreeting } = await import('./juris-agent-service.js');
+        const user = sessionUserId ? await storage.getUser(sessionUserId) : undefined;
+        const jurisResponse = processJurisMessage(sanitizedMessage, undefined, user ? { id: user.id, firstName: user.firstName, kycStatus: user.kycStatus } : undefined);
+        
+        responseData = {
+          reply: jurisResponse.message,
+          category: 'juris',
+          confidence: 0.9,
+          suggestedActions: jurisResponse.actions,
+          escalateToHuman: false,
+          collectData: jurisResponse.collectData,
+          nextStep: jurisResponse.nextStep,
+          agent: {
+            id: selectedAgent.id,
+            name: selectedAgent.displayName,
+            type: selectedAgent.type
+          }
+        };
+      } else {
+        // Use General agent (default)
+        const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
+        
+        // Sanitize output - ensure no script tags or dangerous content
+        const sanitizedReply = response.message.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        
+        responseData = {
+          reply: sanitizedReply,
+          category: response.category,
+          confidence: response.confidence,
+          suggestedActions: response.suggestedActions,
+          escalateToHuman: response.escalateToHuman,
+          agent: selectedAgent ? {
+            id: selectedAgent.id,
+            name: selectedAgent.displayName,
+            type: selectedAgent.type
+          } : undefined
+        };
+      }
       
-      res.json({
-        reply: sanitizedReply,
-        category: response.category,
-        confidence: response.confidence,
-        suggestedActions: response.suggestedActions,
-        escalateToHuman: response.escalateToHuman,
-      });
+      res.json(responseData);
     } catch (error) {
       console.error("Chatbot error:", error);
       res.status(500).json({ message: "Failed to process message" });
