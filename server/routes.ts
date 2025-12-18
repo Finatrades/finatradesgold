@@ -17,7 +17,8 @@ import {
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
   vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings,
-  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases
+  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
+  withdrawalRequests, cryptoPaymentRequests, buyGoldRequests
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -1530,12 +1531,134 @@ export async function registerRoutes(
         }));
       } catch (e) { /* table may not exist */ }
       
-      // Get recent transactions for admin tracking
-      const recentTransactions = allTransactions
+      // Collect all pending items from various modules
+      const allPendingItems: any[] = [];
+      
+      // Pending deposit requests (bank deposits)
+      const pendingDepositReqs = allDepositRequests.filter(d => 
+        d.status === 'Pending' || d.status === 'Under Review'
+      ).map(d => ({
+        id: d.id,
+        odooId: d.odooId,
+        userId: d.userId,
+        type: 'Deposit',
+        status: d.status,
+        amountGold: null,
+        amountUsd: d.amount,
+        description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
+        sourceModule: 'finapay',
+        createdAt: d.createdAt
+      }));
+      allPendingItems.push(...pendingDepositReqs);
+      
+      // Pending withdrawal requests
+      try {
+        const allWithdrawals = await db.select().from(withdrawalRequests);
+        const pendingWithdrawReqs = allWithdrawals.filter((w: any) => 
+          w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing'
+        ).map((w: any) => ({
+          id: w.id,
+          odooId: w.odooId,
+          userId: w.userId,
+          type: 'Withdrawal',
+          status: w.status,
+          amountGold: w.amountGold,
+          amountUsd: w.amountUsd,
+          description: `Withdrawal to ${w.bankName || 'bank account'}`,
+          sourceModule: 'finapay',
+          createdAt: w.createdAt
+        }));
+        allPendingItems.push(...pendingWithdrawReqs);
+      } catch (e) { /* table may not exist */ }
+      
+      // Pending crypto payment requests
+      try {
+        const allCryptoReqs = await db.select().from(cryptoPaymentRequests);
+        const pendingCryptoReqs = allCryptoReqs.filter((c: any) => 
+          c.status === 'Pending' || c.status === 'Under Review' || c.status === 'pending'
+        ).map((c: any) => ({
+          id: c.id,
+          odooId: c.odooId,
+          userId: c.userId,
+          type: 'Crypto Deposit',
+          status: c.status,
+          amountGold: null,
+          amountUsd: c.amountUsd,
+          description: `Crypto deposit - ${c.network || 'Crypto'}`,
+          sourceModule: 'finapay',
+          createdAt: c.createdAt
+        }));
+        allPendingItems.push(...pendingCryptoReqs);
+      } catch (e) { /* table may not exist */ }
+      
+      // Pending buy gold requests
+      try {
+        const allBuyGoldReqs = await db.select().from(buyGoldRequests);
+        const pendingBuyGoldReqs = allBuyGoldReqs.filter((b: any) => 
+          b.status === 'Pending' || b.status === 'Under Review'
+        ).map((b: any) => ({
+          id: b.id,
+          odooId: b.odooId,
+          userId: b.userId,
+          type: 'Buy Gold Bar',
+          status: b.status,
+          amountGold: null,
+          amountUsd: null,
+          description: 'Wingold purchase request',
+          sourceModule: 'finapay',
+          createdAt: b.createdAt
+        }));
+        allPendingItems.push(...pendingBuyGoldReqs);
+      } catch (e) { /* table may not exist */ }
+      
+      
+      // Pending trade cases
+      try {
+        const allTrades = await db.select().from(tradeCases);
+        const pendingTrades = allTrades.filter((t: any) => 
+          t.status === 'pending_review' || t.status === 'draft'
+        ).map((t: any) => ({
+          id: t.id,
+          odooId: t.odooId,
+          userId: t.userId,
+          type: 'Trade Finance',
+          status: t.status === 'pending_review' ? 'Pending Review' : 'Draft',
+          amountGold: null,
+          amountUsd: t.amountUsd,
+          description: `Trade case: ${t.productType || 'Trade finance request'}`,
+          sourceModule: 'finabridge',
+          createdAt: t.createdAt
+        }));
+        allPendingItems.push(...pendingTrades);
+      } catch (e) { /* table may not exist */ }
+      
+      // Pending BNSL plans (activation pending, termination pending)
+      try {
+        const allBnsl = await db.select().from(bnslPlans);
+        const pendingBnsl = allBnsl.filter((b: any) => 
+          b.status === 'Pending Termination' || b.status === 'Pending'
+        ).map((b: any) => ({
+          id: b.id,
+          odooId: b.odooId,
+          userId: b.userId,
+          type: 'BNSL',
+          status: b.status,
+          amountGold: b.goldGrams,
+          amountUsd: b.baseAmountUsd,
+          description: b.status === 'Pending Termination' ? 'BNSL termination request' : 'BNSL activation pending',
+          sourceModule: 'bnsl',
+          createdAt: b.createdAt
+        }));
+        allPendingItems.push(...pendingBnsl);
+      } catch (e) { /* table may not exist */ }
+      
+      // Get recent transactions from main transactions table
+      const recentTxFromTable = allTransactions
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 10)
+        .slice(0, 20)
         .map(tx => ({
           id: tx.id,
+          odooId: tx.odooId,
           userId: tx.userId,
           type: tx.type,
           status: tx.status,
@@ -1545,6 +1668,12 @@ export async function registerRoutes(
           sourceModule: tx.sourceModule,
           createdAt: tx.createdAt
         }));
+      
+      // Merge all pending items with recent transactions, sort by date, take top 20
+      const allItems = [...allPendingItems, ...recentTxFromTable];
+      const recentTransactions = allItems
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 20);
       
       // USD to AED conversion rate
       const USD_TO_AED = 3.67;
