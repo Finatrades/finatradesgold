@@ -170,11 +170,11 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modal-buy-gold-wingold">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="text-amber-600">Buy Gold</span>
+            <span className="text-amber-600">Buy Gold Bar</span>
             <span className="text-sm font-normal text-muted-foreground">(Wingold & Metals)</span>
           </DialogTitle>
           <DialogDescription>
-            Purchase gold through our partner Wingold & Metals DMCC
+            Purchase gold bar through our partner Wingold & Metals DMCC
           </DialogDescription>
         </DialogHeader>
 
