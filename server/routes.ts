@@ -12372,7 +12372,6 @@ export async function registerRoutes(
       }
       
       // Generate PDF
-      const PDFDocument = require('pdfkit');
       const doc = new PDFDocument({ margin: 50 });
       
       res.setHeader('Content-Type', 'application/pdf');
@@ -12684,7 +12683,6 @@ export async function registerRoutes(
         }
       }
       
-      const PDFDocument = require('pdfkit');
       const doc = new PDFDocument({ margin: 50 });
       
       res.setHeader('Content-Type', 'application/pdf');
