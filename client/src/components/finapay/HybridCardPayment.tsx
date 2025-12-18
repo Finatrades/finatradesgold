@@ -583,7 +583,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
             ref={containerRef}
             id="hybrid-card-input" 
             className="border-2 border-border rounded-xl bg-white overflow-hidden shadow-sm"
-            style={{ minHeight: '200px' }}
+            style={{ minHeight: '200px', height: '200px' }}
           >
             {!cardMounted && (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
