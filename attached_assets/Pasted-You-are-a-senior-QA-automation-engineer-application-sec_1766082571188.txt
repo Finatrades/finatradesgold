@@ -1,0 +1,205 @@
+You are a senior QA automation engineer + application security auditor.
+
+Project: Finatrades (Replit codebase)
+Objective:
+Run a COMPREHENSIVE, DEFENSIVE, END-TO-END TEST + SECURITY AUDIT across the ENTIRE codebase to ensure:
+- No data leakage
+- No auth / role bypass
+- No financial logic abuse
+- No insecure configs
+- Full audit & logging
+Security is the TOP priority.
+
+IMPORTANT BOUNDARIES (NON-NEGOTIABLE):
+- This is NOT offensive hacking.
+- No real exploitation, no real money, no real credentials.
+- QA_MODE=true only.
+- Sandbox providers only.
+- Never log OTPs, tokens, secrets, passwords, headers.
+- Redact PII in logs.
+- Do NOT redesign logic — only validate, detect, and harden.
+
+════════════════════════════════════
+PHASE 0 — PREPARATION
+════════════════════════════════════
+1) Identify stack:
+- frontend framework
+- backend framework
+- auth method
+- DB/ORM
+- payment providers
+- email/OTP service
+2) List ALL entry points:
+- API routes
+- admin routes
+- webhooks
+- auth callbacks
+- file uploads
+3) Enable requestId generation for every request.
+
+════════════════════════════════════
+PHASE 1 — AUTHENTICATION & SESSION SECURITY (25–35 tests)
+════════════════════════════════════
+Test defensively:
+- Brute-force login attempts (rate limiting)
+- OTP abuse (reuse, resend spam, expired OTP)
+- Session fixation (session reuse after login)
+- Token replay (reuse access/refresh tokens)
+- Password reset misuse (expired token, reused token)
+- MFA bypass attempts (if enabled)
+- Device/session hijacking checks
+Assertions:
+- rate limits enforced
+- OTP expires & max attempts enforced
+- sessions invalidated correctly
+- audit logs created
+
+════════════════════════════════════
+PHASE 2 — AUTHORIZATION & ACCESS CONTROL (30–50 tests)
+════════════════════════════════════
+Test:
+- Horizontal privilege escalation (IDOR)
+- Vertical escalation (user → admin)
+- Role abuse (OPS / COMPLIANCE / ADMIN)
+- Direct object access via ID tampering
+- Admin route protection
+Assertions:
+- backend enforces RBAC (not UI-only)
+- 403/404 returned correctly
+- audit logs recorded
+
+════════════════════════════════════
+PHASE 3 — INPUT VALIDATION & INJECTION (20–30 tests)
+════════════════════════════════════
+Test safely (non-destructive):
+- SQL injection payload rejection
+- NoSQL injection payload rejection
+- Command injection blocking
+- Template injection blocking
+- JSON schema bypass attempts
+- Numeric overflow / precision abuse on amounts
+Assertions:
+- schema validation rejects invalid input
+- no unhandled errors
+- requestId logged
+
+════════════════════════════════════
+PHASE 4 — BUSINESS LOGIC ATTACKS (25–40 tests) ★ CRITICAL ★
+════════════════════════════════════
+Test logic integrity:
+- Bypass min/max deposit
+- Negative balances
+- Double-spend attempts
+- Race conditions (parallel requests)
+- OTP reuse for same action
+- Replay approval requests
+- Certificate ownership mismatch
+- Ledger vs UI mismatch
+Assertions:
+- atomic transactions enforced
+- idempotency keys respected
+- ledger is source of truth
+- UI never diverges from backend
+
+════════════════════════════════════
+PHASE 5 — PAYMENT & FINANCIAL FLOW ABUSE (25–40 tests)
+════════════════════════════════════
+Test safely:
+- Duplicate webhook delivery
+- Missing / invalid webhook signature
+- Amount tampering
+- Currency mismatch
+- Partial confirmation abuse
+- Settlement bypass attempts
+Assertions:
+- webhook signature required
+- idempotency enforced
+- amounts/currency immutable
+- failed attempts logged
+
+════════════════════════════════════
+PHASE 6 — API & INTEGRATION SECURITY (20–30 tests)
+════════════════════════════════════
+Test:
+- Missing authentication on APIs
+- Rate-limit bypass attempts
+- Webhook poisoning attempts
+- Third-party API trust misuse
+Assertions:
+- all APIs require auth where expected
+- rate limiting enforced
+- external data verified
+
+════════════════════════════════════
+PHASE 7 — FRONTEND & CLIENT-SIDE (10–15 tests)
+════════════════════════════════════
+Test:
+- XSS injection (safe payloads)
+- CSRF protection
+- Token leakage in browser storage
+- Source map exposure
+- Sensitive data in localStorage/sessionStorage
+Assertions:
+- CSP headers active
+- tokens stored securely
+- no secrets exposed
+
+════════════════════════════════════
+PHASE 8 — INFRASTRUCTURE & CONFIG (15–25 tests)
+════════════════════════════════════
+Audit:
+- Secrets exposure in repo
+- Misconfigured CORS
+- Open admin endpoints
+- Debug flags in production
+- Public bucket/storage exposure
+Assertions:
+- secrets only in env vars
+- CORS restricted
+- QA_MODE disabled in prod
+- storage access controlled
+
+════════════════════════════════════
+PHASE 9 — LOGGING & AUDIT (MANDATORY)
+════════════════════════════════════
+Ensure:
+- structured JSON logs everywhere
+- requestId present
+- no PII/OTP/token leakage
+- audit logs for:
+  auth, KYC, payments, approvals, role changes
+Log format:
+{ ts, level, requestId, actorType, actorRole, action, entityType, entityId, status }
+
+════════════════════════════════════
+PHASE 10 — REPORTING & OUTPUT
+════════════════════════════════════
+Generate:
+- SECURITY_REPORT.md
+- qa-report.json
+- qa-report.html
+Each finding includes:
+- severity (Critical/High/Medium/Low)
+- file path + line number
+- impact
+- recommended fix
+- status
+
+Run commands:
+- qa:seed
+- test:unit
+- test:api
+- test:e2e
+- test:security
+- qa:full
+
+FINAL REQUIREMENT:
+- Fix all CRITICAL and HIGH issues immediately.
+- Do not change core business logic.
+- Ensure platform remains stable and compliant.
+
+START NOW:
+- Secrets scan
+- Auth & ownership checks
+- Financial logic integrity
+- Logging redaction
