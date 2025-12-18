@@ -14812,15 +14812,16 @@ export async function registerRoutes(
         goldGrams: newGoldGrams.toString(),
       });
       
-      // Create transaction record
+      // Create transaction record - Use "Deposit" type since this is an external payment resulting in gold credit
+      // amountUsd is stored for reference (USD equivalent value) but the actual asset credited is gold
       const transaction = await storage.createTransaction({
         userId: paymentRequest.userId,
-        type: 'Buy',
+        type: 'Deposit',
         status: 'Completed',
         amountGold: paymentRequest.goldGrams,
         amountUsd: paymentRequest.amountUsd,
         goldPriceUsdPerGram: paymentRequest.goldPriceAtTime,
-        description: `Crypto payment approved - ${paymentRequest.transactionHash || 'Manual verification'}`,
+        description: `Crypto deposit - $${parseFloat(paymentRequest.amountUsd).toFixed(2)} (${parseFloat(paymentRequest.goldGrams).toFixed(4)}g gold)`,
         sourceModule: 'finapay',
       });
       
