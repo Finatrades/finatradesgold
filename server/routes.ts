@@ -3168,7 +3168,8 @@ export async function registerRoutes(
         vaultDepositReqs,
         vaultWithdrawalReqs,
         tradeCases,
-        userCertificates
+        userCertificates,
+        buyGoldRequests
       ] = await Promise.all([
         storage.getUserTransactions(userId),
         storage.getUserDepositRequests(userId),
@@ -3179,7 +3180,8 @@ export async function registerRoutes(
         storage.getUserVaultDepositRequests(userId),
         storage.getUserVaultWithdrawalRequests(userId),
         storage.getUserTradeCases(userId),
-        storage.getUserCertificates(userId)
+        storage.getUserCertificates(userId),
+        storage.getUserBuyGoldRequests(userId)
       ]);
       
       // Normalize all transactions to unified format
@@ -3413,6 +3415,28 @@ export async function registerRoutes(
             createdAt: cert.issuedAt,
             completedAt: cert.issuedAt,
             sourceType: 'certificate'
+          });
+        });
+      
+      // Buy Gold requests (Wingold) - exclude 'Credited' since those have transaction records
+      buyGoldRequests
+        .filter(bg => bg.status !== 'Credited')
+        .forEach(bg => {
+          unifiedTransactions.push({
+            id: bg.id,
+            userId: bg.userId,
+            module: 'finapay',
+            actionType: 'BUY',
+            grams: bg.goldGrams,
+            usd: bg.amountUsd,
+            usdPerGram: bg.goldPriceAtTime,
+            status: bg.status === 'Rejected' ? 'FAILED' : 'PENDING',
+            referenceId: bg.wingoldReferenceId,
+            description: `Buy Gold (Wingold) - ${bg.status}`,
+            counterpartyUserId: null,
+            createdAt: bg.createdAt,
+            completedAt: bg.reviewedAt,
+            sourceType: 'buy_gold_request'
           });
         });
       
