@@ -12094,13 +12094,14 @@ export async function registerRoutes(
            </div>`
         : '';
       
+      const adminFullName = `${admin.firstName} ${admin.lastName}`.trim();
       const htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
             <h1 style="color: white; margin: 0;">Admin OTP — ${actionLabels[actionType] || actionType}</h1>
           </div>
           <div style="padding: 30px; background: #ffffff;">
-            <p>Hello ${admin.firstName},</p>
+            <p>Hello ${adminFullName},</p>
             <p>You are attempting to perform: <strong>${actionLabels[actionType] || actionType}</strong></p>
             ${contextHtml}
             <p>Your verification code is:</p>
@@ -12440,7 +12441,7 @@ export async function registerRoutes(
             <h1 style="color: white; margin: 0;">Admin Action Verification</h1>
           </div>
           <div style="padding: 30px; background: #ffffff;">
-            <p>Hello ${admin.firstName},</p>
+            <p>Hello ${admin.firstName} ${admin.lastName},</p>
             <p>You requested a new verification code for: <strong>${actionLabels[existingOtp.actionType] || existingOtp.actionType}</strong></p>
             <p>Your new verification code is:</p>
             <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
