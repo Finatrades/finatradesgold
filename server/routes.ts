@@ -729,6 +729,15 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
+      // STRICT RULE: Admin/employee users cannot log in via regular login page
+      // They must use /admin/login for proper admin portal access
+      if (user.role === 'admin') {
+        return res.status(403).json({ 
+          message: "Admin accounts must log in via the Admin Portal. Please use /admin/login",
+          redirectTo: "/admin/login"
+        });
+      }
+      
       // Check if MFA is enabled
       if (user.mfaEnabled) {
         // Generate a challenge token for MFA verification

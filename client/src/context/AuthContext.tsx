@@ -87,6 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         const error = await response.json();
+        // Handle admin redirect case
+        if (error.redirectTo) {
+          const adminError = new Error(error.message || 'Login failed') as Error & { redirectTo?: string };
+          adminError.redirectTo = error.redirectTo;
+          throw adminError;
+        }
         throw new Error(error.message || 'Login failed');
       }
 

@@ -142,9 +142,23 @@ export default function Login() {
         });
       }
     } catch (error) {
-      toast.error("Invalid Credentials", {
-        description: error instanceof Error ? error.message : "Please check your email and password."
-      });
+      // Check if this is an admin redirect error
+      const err = error as Error & { redirectTo?: string };
+      if (err.redirectTo) {
+        toast.error("Admin Account Detected", {
+          description: err.message,
+          action: {
+            label: "Go to Admin Login",
+            onClick: () => setLocation(err.redirectTo!)
+          }
+        });
+        // Also auto-redirect after 2 seconds
+        setTimeout(() => setLocation(err.redirectTo!), 2000);
+      } else {
+        toast.error("Invalid Credentials", {
+          description: error instanceof Error ? error.message : "Please check your email and password."
+        });
+      }
     } finally {
       setIsLoading(false);
     }
