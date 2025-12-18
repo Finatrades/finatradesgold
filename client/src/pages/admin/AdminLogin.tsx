@@ -10,7 +10,7 @@ import { useLocation } from 'wouter';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 export default function AdminLogin() {
-  const { login, verifyMfa, user, loading } = useAuth();
+  const { adminLogin, verifyMfa, user, loading, adminPortal } = useAuth();
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -23,18 +23,19 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin') {
-        // Set session flag for admin who's already logged in visiting this page
-        sessionStorage.setItem('adminPortalSession', 'true');
+      if (user.role === 'admin' && adminPortal) {
+        // Admin already logged in via admin portal - redirect to dashboard
         setLocation('/admin/dashboard');
-      } else {
+      } else if (user.role !== 'admin') {
+        // Non-admin trying to access admin login
         toast.error("Access Denied", {
           description: "This login is for administrators only."
         });
         setLocation('/dashboard');
       }
+      // Admin logged in via regular login visiting this page - let them re-login for admin access
     }
-  }, [user, setLocation]);
+  }, [user, adminPortal, setLocation]);
 
   if (loading) {
     return (
@@ -54,7 +55,7 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const mfaChallenge = await login(email, password);
+      const mfaChallenge = await adminLogin(email, password);
       
       if (mfaChallenge?.requiresMfa) {
         setMfaRequired(true);
@@ -63,10 +64,8 @@ export default function AdminLogin() {
           description: "Please enter the code from your authenticator app."
         });
       } else {
-        // Mark admin session
-        sessionStorage.setItem('adminPortalSession', 'true');
         toast.success("Welcome back, Admin!", {
-          description: "You have successfully logged in."
+          description: "You have successfully logged in to the admin portal."
         });
       }
     } catch (error) {
@@ -89,10 +88,8 @@ export default function AdminLogin() {
 
     try {
       await verifyMfa(mfaChallengeToken, mfaCode);
-      // Mark admin session
-      sessionStorage.setItem('adminPortalSession', 'true');
       toast.success("Welcome back, Admin!", {
-        description: "You have successfully logged in."
+        description: "You have successfully logged in to the admin portal."
       });
     } catch (error) {
       toast.error("Invalid Code", {

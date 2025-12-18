@@ -13,7 +13,9 @@ interface MfaChallenge {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  adminPortal: boolean;
   login: (email: string, password: string) => Promise<MfaChallenge | null>;
+  adminLogin: (email: string, password: string) => Promise<MfaChallenge | null>;
   verifyMfa: (challengeToken: string, token: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => void;
@@ -27,6 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [adminPortal, setAdminPortal] = useState(false);
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
@@ -36,6 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshUserById(storedUserId);
     } else {
       setLoading(false);
+    }
+    
+    // Restore admin portal state from session storage
+    const adminSession = sessionStorage.getItem('adminPortalSession');
+    if (adminSession === 'true') {
+      setAdminPortal(true);
     }
   }, []);
 
@@ -94,15 +103,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(data.user);
       localStorage.setItem('fina_user_id', data.user.id);
+      setAdminPortal(false);
       
-      if (data.user.role === 'admin') {
-        setLocation('/admin');
-      } else {
-        prefetchDashboardData(data.user.id);
-        // Preload NGenius SDK in background for faster card payments
-        preloadNGeniusSDK().catch(() => {});
-        setLocation('/dashboard');
+      // Regular login always goes to user dashboard, even for admins
+      // Admins must use /admin/login to access admin panel
+      prefetchDashboardData(data.user.id);
+      preloadNGeniusSDK().catch(() => {});
+      setLocation('/dashboard');
+      
+      return null;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Admin-specific login that grants admin portal access
+  const adminLogin = async (email: string, password: string): Promise<MfaChallenge | null> => {
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
       }
+
+      const data = await response.json();
+      
+      // Check if MFA is required
+      if (data.requiresMfa) {
+        // Store that this is an admin login for MFA verification
+        sessionStorage.setItem('pendingAdminLogin', 'true');
+        return {
+          requiresMfa: true,
+          challengeToken: data.challengeToken,
+          mfaMethod: data.mfaMethod,
+        };
+      }
+      
+      setUser(data.user);
+      localStorage.setItem('fina_user_id', data.user.id);
+      setAdminPortal(true);
+      sessionStorage.setItem('adminPortalSession', 'true');
+      setLocation('/admin/dashboard');
       
       return null;
     } catch (error) {
@@ -127,14 +173,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       localStorage.setItem('fina_user_id', data.user.id);
       
-      if (data.user.role === 'admin') {
-        setLocation('/admin');
+      // Set admin portal based on server response
+      const isAdminPortal = data.adminPortal === true;
+      setAdminPortal(isAdminPortal);
+      
+      if (isAdminPortal && data.user.role === 'admin') {
+        sessionStorage.setItem('adminPortalSession', 'true');
+        setLocation('/admin/dashboard');
       } else {
         prefetchDashboardData(data.user.id);
-        // Preload NGenius SDK in background for faster card payments
         preloadNGeniusSDK().catch(() => {});
         setLocation('/dashboard');
       }
+      
+      // Clean up pending admin login flag
+      sessionStorage.removeItem('pendingAdminLogin');
     } catch (error) {
       throw error;
     }
@@ -165,13 +218,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     clearQueryCache();
     setUser(null);
+    setAdminPortal(false);
     localStorage.removeItem('fina_user_id');
     sessionStorage.removeItem('adminPortalSession');
+    sessionStorage.removeItem('pendingAdminLogin');
+    
+    // Also call server logout to destroy session
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    
     setLocation('/');
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, verifyMfa, register, logout, refreshUser, loading, setUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, adminPortal, login, adminLogin, verifyMfa, register, logout, refreshUser, loading, setUser }}>
       {children}
     </AuthContext.Provider>
   );
