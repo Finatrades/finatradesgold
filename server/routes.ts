@@ -7142,8 +7142,11 @@ export async function registerRoutes(
       }
       
       if (userId) {
+        // Check if user is an admin - admins can always access deal rooms
+        const user = await storage.getUser(userId as string);
+        const isAdmin = user?.role === 'admin';
         const isParticipant = [room.importerUserId, room.exporterUserId, room.assignedAdminId].includes(userId as string);
-        if (!isParticipant) {
+        if (!isParticipant && !isAdmin) {
           return res.status(403).json({ message: "Access denied - not a participant" });
         }
       }
@@ -7178,14 +7181,17 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Message must have content or attachment" });
       }
       
-      // Verify user is a participant
+      // Verify user is a participant or admin
       const room = await storage.getDealRoom(req.params.id);
       if (!room) {
         return res.status(404).json({ message: "Deal room not found" });
       }
       
+      // Check if user is an admin - admins can always send messages
+      const user = await storage.getUser(senderUserId);
+      const isAdmin = user?.role === 'admin';
       const isParticipant = [room.importerUserId, room.exporterUserId, room.assignedAdminId].includes(senderUserId);
-      if (!isParticipant) {
+      if (!isParticipant && !isAdmin) {
         return res.status(403).json({ message: "User is not a participant in this deal room" });
       }
       
