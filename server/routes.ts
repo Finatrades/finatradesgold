@@ -12290,6 +12290,18 @@ export async function registerRoutes(
       console.log(`[Statement] Final: runningGold=${runningGold}, totalCreditsGold=${totalCreditsGold}, totalDebitsGold=${totalDebitsGold}`);
       const reportId = `STMT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${userId.slice(0, 6).toUpperCase()}`;
       
+      // Fetch current gold price for equivalent calculation
+      const { getGoldPricePerGram } = await import('./gold-price-service');
+      let currentGoldPrice = 139.50; // Default fallback
+      try {
+        currentGoldPrice = await getGoldPricePerGram();
+      } catch (e) {
+        console.error('[Statement] Failed to fetch gold price, using fallback:', e);
+      }
+      
+      // Calculate gold equivalent of USD closing balance
+      const closingUsdGoldEquivalent = runningUsd / currentGoldPrice;
+      
       res.json({
         user: {
           id: user.id,
@@ -12304,6 +12316,7 @@ export async function registerRoutes(
         },
         reportId,
         generatedAt: new Date().toISOString(),
+        currentGoldPrice,
         balances: {
           openingUsd,
           openingGold,
@@ -12312,7 +12325,8 @@ export async function registerRoutes(
           totalCreditsGold,
           totalDebitsGold,
           closingUsd: runningUsd,
-          closingGold: runningGold
+          closingGold: runningGold,
+          closingUsdGoldEquivalent
         },
         transactions: statementTransactions
       });
@@ -12373,6 +12387,15 @@ export async function registerRoutes(
           openingUsd += amountUsd;
           openingGold -= amountGold;
         }
+      }
+      
+      // Fetch current gold price for equivalent calculation
+      const { getGoldPricePerGram } = await import('./gold-price-service');
+      let currentGoldPrice = 139.50; // Default fallback
+      try {
+        currentGoldPrice = await getGoldPricePerGram();
+      } catch (e) {
+        console.error('[PDF Statement] Failed to fetch gold price, using fallback:', e);
       }
       
       // Generate PDF
@@ -12454,6 +12477,13 @@ export async function registerRoutes(
       doc.text('', 180, summaryY + 40);
       doc.text('', 300, summaryY + 40);
       doc.text(`${runningGold.toFixed(4)}g`, 420, summaryY + 40);
+      
+      // Show gold equivalent of USD closing balance
+      const closingUsdGoldEquivalent = runningUsd / currentGoldPrice;
+      if (closingUsdGoldEquivalent > 0) {
+        doc.fillColor('#f97316').fontSize(8).font('Helvetica');
+        doc.text(`≈ ${closingUsdGoldEquivalent.toFixed(4)}g @ $${currentGoldPrice.toFixed(2)}/g`, 420, summaryY + 50);
+      }
       
       doc.y = summaryY + 75;
       
@@ -12687,6 +12717,15 @@ export async function registerRoutes(
         }
       }
       
+      // Fetch current gold price for equivalent calculation
+      const { getGoldPricePerGram } = await import('./gold-price-service');
+      let currentGoldPrice = 139.50; // Default fallback
+      try {
+        currentGoldPrice = await getGoldPricePerGram();
+      } catch (e) {
+        console.error('[User Statement PDF] Failed to fetch gold price, using fallback:', e);
+      }
+      
       const doc = new PDFDocument({ margin: 50 });
       
       res.setHeader('Content-Type', 'application/pdf');
@@ -12761,6 +12800,13 @@ export async function registerRoutes(
       doc.text('', 180, summaryY + 40);
       doc.text('', 300, summaryY + 40);
       doc.text(`${runningGold.toFixed(4)}g`, 420, summaryY + 40);
+      
+      // Show gold equivalent of USD closing balance
+      const closingUsdGoldEquivalent = runningUsd / currentGoldPrice;
+      if (closingUsdGoldEquivalent > 0) {
+        doc.fillColor('#f97316').fontSize(8).font('Helvetica');
+        doc.text(`≈ ${closingUsdGoldEquivalent.toFixed(4)}g @ $${currentGoldPrice.toFixed(2)}/g`, 420, summaryY + 50);
+      }
       
       doc.y = summaryY + 75;
       

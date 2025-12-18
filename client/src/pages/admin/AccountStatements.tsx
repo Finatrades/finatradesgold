@@ -68,6 +68,7 @@ interface AccountStatement {
   };
   reportId: string;
   generatedAt: string;
+  currentGoldPrice: number;
   balances: {
     openingUsd: number;
     openingGold: number;
@@ -77,6 +78,7 @@ interface AccountStatement {
     totalDebitsGold: number;
     closingUsd: number;
     closingGold: number;
+    closingUsdGoldEquivalent: number;
   };
   transactions: StatementTransaction[];
 }
@@ -457,6 +459,11 @@ export default function AccountStatements() {
                       <div className="text-xs text-orange-600">Closing Balance</div>
                       <div className="font-bold text-lg">{formatCurrency(statement.balances.closingUsd)}</div>
                       <div className="text-sm text-gray-500">{formatGrams(statement.balances.closingGold)}</div>
+                      {statement.balances.closingUsdGoldEquivalent > 0 && (
+                        <div className="text-xs text-orange-600 mt-1">
+                          ≈ {formatGrams(statement.balances.closingUsdGoldEquivalent)} @ ${statement.currentGoldPrice.toFixed(2)}/g
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
