@@ -10023,8 +10023,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get user's sent transfers
-  app.get("/api/finapay/transfers/sent/:userId", async (req, res) => {
+  // Get user's sent transfers - PROTECTED
+  app.get("/api/finapay/transfers/sent/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const transfers = await storage.getUserSentTransfers(req.params.userId);
       res.json({ transfers });
@@ -10033,8 +10033,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get user's received transfers
-  app.get("/api/finapay/transfers/received/:userId", async (req, res) => {
+  // Get user's received transfers - PROTECTED
+  app.get("/api/finapay/transfers/received/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const transfers = await storage.getUserReceivedTransfers(req.params.userId);
       res.json({ transfers });
@@ -10091,8 +10091,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get user's money requests (created by user)
-  app.get("/api/finapay/requests/:userId", async (req, res) => {
+  // Get user's money requests (created by user) - PROTECTED
+  app.get("/api/finapay/requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserPeerRequests(req.params.userId);
       res.json({ requests });
@@ -10101,8 +10101,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get money requests received by user
-  app.get("/api/finapay/requests/received/:userId", async (req, res) => {
+  // Get money requests received by user - PROTECTED
+  app.get("/api/finapay/requests/received/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserReceivedPeerRequests(req.params.userId);
       res.json({ requests });
@@ -10579,8 +10579,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get user's Binance transactions
-  app.get("/api/binance-pay/transactions/:userId", async (req, res) => {
+  // Get user's Binance transactions - PROTECTED
+  app.get("/api/binance-pay/transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const transactions = await storage.getUserBinanceTransactions(req.params.userId);
       res.json({ transactions });
@@ -11722,8 +11722,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get user's NGenius transactions
-  app.get("/api/ngenius/transactions/:userId", async (req, res) => {
+  // Get user's NGenius transactions - PROTECTED
+  app.get("/api/ngenius/transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const transactions = await storage.getUserNgeniusTransactions(req.params.userId);
       res.json({ transactions });
