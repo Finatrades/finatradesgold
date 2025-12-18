@@ -6367,13 +6367,24 @@ export async function registerRoutes(
         proposalIds.map(id => storage.getTradeProposal(id))
       );
       
-      // For each proposal, get exporter info but only return finatradesId (privacy)
+      // Include exporter details - use exporter profile as fallback for missing proposal fields
       const proposalsWithExporter = await Promise.all(
         proposals.filter(Boolean).map(async (proposal) => {
           const exporter = await storage.getUser(proposal!.exporterUserId);
+          const exporterFullName = exporter ? `${exporter.firstName} ${exporter.lastName}` : null;
           return {
             ...proposal,
-            exporter: exporter ? { finatradesId: exporter.finatradesId } : null,
+            // Use exporter profile as fallback for empty proposal fields
+            companyName: proposal!.companyName || exporter?.companyName || null,
+            contactPerson: proposal!.contactPerson || exporterFullName,
+            contactEmail: proposal!.contactEmail || exporter?.email || null,
+            contactPhone: proposal!.contactPhone || exporter?.phoneNumber || null,
+            exporter: exporter ? { 
+              finatradesId: exporter.finatradesId,
+              fullName: exporterFullName,
+              email: exporter.email,
+              companyName: exporter.companyName,
+            } : null,
           };
         })
       );
@@ -6735,18 +6746,25 @@ export async function registerRoutes(
     try {
       const proposals = await storage.getRequestProposals(req.params.requestId);
       
-      // Include exporter details for admin
+      // Include exporter details for admin - use exporter profile as fallback for missing proposal fields
       const proposalsWithExporter = await Promise.all(
         proposals.map(async (proposal) => {
           const exporter = await storage.getUser(proposal.exporterUserId);
+          const exporterFullName = exporter ? `${exporter.firstName} ${exporter.lastName}` : null;
           return {
             ...proposal,
+            // Use exporter profile as fallback for empty proposal fields
+            companyName: proposal.companyName || exporter?.companyName || null,
+            contactPerson: proposal.contactPerson || exporterFullName,
+            contactEmail: proposal.contactEmail || exporter?.email || null,
+            contactPhone: proposal.contactPhone || exporter?.phoneNumber || null,
             exporter: exporter ? {
               id: exporter.id,
               finatradesId: exporter.finatradesId,
-              fullName: `${exporter.firstName} ${exporter.lastName}`,
+              fullName: exporterFullName,
               email: exporter.email,
               companyName: exporter.companyName,
+              phoneNumber: exporter.phoneNumber,
             } : null,
           };
         })
