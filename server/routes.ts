@@ -4316,24 +4316,183 @@ export async function registerRoutes(
     }
   });
   
-  // Admin: Get all transactions with user info
+  // Admin: Get all transactions with user info (includes pending from all modules)
   app.get("/api/admin/transactions", async (req, res) => {
     try {
       const transactions = await storage.getAllTransactions();
-      // Enrich transactions with user info
+      const allDepositRequests = await storage.getAllDepositRequests();
+      
+      // Collect all items from various modules
+      const allItems: any[] = [];
+      
+      // Main transactions
+      allItems.push(...transactions.map(tx => ({
+        ...tx,
+        sourceTable: 'transactions'
+      })));
+      
+      // Pending deposit requests (not yet in transactions table)
+      const pendingDepositReqs = allDepositRequests.filter(d => 
+        d.status === 'Pending' || d.status === 'Under Review'
+      ).map(d => ({
+        id: d.id,
+        odooId: d.odooId,
+        userId: d.userId,
+        type: 'Deposit',
+        status: d.status,
+        amountGold: null,
+        amountUsd: d.amount,
+        amountEur: null,
+        goldPriceUsdPerGram: null,
+        description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
+        sourceModule: 'finapay',
+        createdAt: d.createdAt,
+        completedAt: null,
+        sourceTable: 'depositRequests'
+      }));
+      allItems.push(...pendingDepositReqs);
+      
+      // Pending withdrawal requests
+      try {
+        const allWithdrawals = await db.select().from(withdrawalRequests);
+        const pendingWithdrawReqs = allWithdrawals.filter((w: any) => 
+          w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing'
+        ).map((w: any) => ({
+          id: w.id,
+          odooId: w.odooId,
+          userId: w.userId,
+          type: 'Withdrawal',
+          status: w.status,
+          amountGold: w.amountGold,
+          amountUsd: w.amountUsd,
+          amountEur: null,
+          goldPriceUsdPerGram: null,
+          description: `Withdrawal to ${w.bankName || 'bank account'}`,
+          sourceModule: 'finapay',
+          createdAt: w.createdAt,
+          completedAt: null,
+          sourceTable: 'withdrawalRequests'
+        }));
+        allItems.push(...pendingWithdrawReqs);
+      } catch (e) { /* table may not exist */ }
+      
+      // Pending crypto payment requests
+      try {
+        const allCryptoReqs = await db.select().from(cryptoPaymentRequests);
+        const pendingCryptoReqs = allCryptoReqs.filter((c: any) => 
+          c.status === 'Pending' || c.status === 'Under Review' || c.status === 'pending'
+        ).map((c: any) => ({
+          id: c.id,
+          odooId: c.odooId,
+          userId: c.userId,
+          type: 'Crypto Deposit',
+          status: c.status,
+          amountGold: null,
+          amountUsd: c.amountUsd,
+          amountEur: null,
+          goldPriceUsdPerGram: null,
+          description: `Crypto deposit - ${c.network || 'Crypto'}`,
+          sourceModule: 'finapay',
+          createdAt: c.createdAt,
+          completedAt: null,
+          sourceTable: 'cryptoPaymentRequests'
+        }));
+        allItems.push(...pendingCryptoReqs);
+      } catch (e) { /* table may not exist */ }
+      
+      // Pending buy gold requests
+      try {
+        const allBuyGoldReqs = await db.select().from(buyGoldRequests);
+        const pendingBuyGoldReqs = allBuyGoldReqs.filter((b: any) => 
+          b.status === 'Pending' || b.status === 'Under Review'
+        ).map((b: any) => ({
+          id: b.id,
+          odooId: b.odooId,
+          userId: b.userId,
+          type: 'Buy Gold Bar',
+          status: b.status,
+          amountGold: null,
+          amountUsd: null,
+          amountEur: null,
+          goldPriceUsdPerGram: null,
+          description: 'Wingold purchase request',
+          sourceModule: 'finapay',
+          createdAt: b.createdAt,
+          completedAt: null,
+          sourceTable: 'buyGoldRequests'
+        }));
+        allItems.push(...pendingBuyGoldReqs);
+      } catch (e) { /* table may not exist */ }
+      
+      // Pending trade cases
+      try {
+        const allTrades = await db.select().from(tradeCases);
+        const pendingTrades = allTrades.filter((t: any) => 
+          t.status === 'pending_review' || t.status === 'draft'
+        ).map((t: any) => ({
+          id: t.id,
+          odooId: t.odooId,
+          userId: t.userId,
+          type: 'Trade Finance',
+          status: t.status === 'pending_review' ? 'Pending Review' : 'Draft',
+          amountGold: null,
+          amountUsd: t.amountUsd,
+          amountEur: null,
+          goldPriceUsdPerGram: null,
+          description: `Trade case: ${t.productType || 'Trade finance request'}`,
+          sourceModule: 'finabridge',
+          createdAt: t.createdAt,
+          completedAt: null,
+          sourceTable: 'tradeCases'
+        }));
+        allItems.push(...pendingTrades);
+      } catch (e) { /* table may not exist */ }
+      
+      // Pending BNSL plans
+      try {
+        const allBnsl = await db.select().from(bnslPlans);
+        const pendingBnsl = allBnsl.filter((b: any) => 
+          b.status === 'Pending Termination' || b.status === 'Pending'
+        ).map((b: any) => ({
+          id: b.id,
+          odooId: b.odooId,
+          userId: b.userId,
+          type: 'BNSL',
+          status: b.status,
+          amountGold: b.goldGrams,
+          amountUsd: b.baseAmountUsd,
+          amountEur: null,
+          goldPriceUsdPerGram: null,
+          description: b.status === 'Pending Termination' ? 'BNSL termination request' : 'BNSL activation pending',
+          sourceModule: 'bnsl',
+          createdAt: b.createdAt,
+          completedAt: null,
+          sourceTable: 'bnslPlans'
+        }));
+        allItems.push(...pendingBnsl);
+      } catch (e) { /* table may not exist */ }
+      
+      // Enrich all items with user info
       const enrichedTransactions = await Promise.all(
-        transactions.map(async (tx) => {
+        allItems.map(async (tx) => {
           const user = await storage.getUser(tx.userId);
           return {
             ...tx,
             userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
             userEmail: user?.email || 'Unknown',
-            finatradesId: `FT-${tx.userId.slice(0, 8).toUpperCase()}`
+            finatradesId: `FT-${tx.userId?.slice(0, 8).toUpperCase() || 'UNKNOWN'}`
           };
         })
       );
+      
+      // Sort by date descending
+      enrichedTransactions.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
       res.json({ transactions: enrichedTransactions });
     } catch (error) {
+      console.error("Failed to get all transactions:", error);
       res.status(400).json({ message: "Failed to get all transactions" });
     }
   });
