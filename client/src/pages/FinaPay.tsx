@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 
-import BuyGoldModal from '@/components/finapay/modals/BuyGoldModal';
 import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
@@ -336,7 +335,7 @@ export default function FinaPay() {
           </button>
 
           <button
-            onClick={() => setActiveModal('buy')}
+            onClick={() => setActiveModal('buyWingold')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
             data-testid="button-buy-gold"
           >
@@ -393,13 +392,6 @@ export default function FinaPay() {
 
         {/* Secondary Actions */}
         <div className="flex flex-wrap gap-2 justify-center">
-          <button 
-            onClick={() => setActiveModal('buyWingold')}
-            className="px-4 py-2 text-sm rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 transition-colors text-amber-700 font-medium"
-            data-testid="button-buy-gold-wingold"
-          >
-            <ShoppingCart className="w-4 h-4 inline mr-1" /> Buy Gold (Wingold)
-          </button>
           <button onClick={() => setLocation('/bnsl')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
             <TrendingUp className="w-4 h-4 inline mr-1" /> BNSL Plans
           </button>
@@ -416,7 +408,7 @@ export default function FinaPay() {
               <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
               <h4 className="text-lg font-semibold mb-2">No Transactions Yet</h4>
               <p className="text-muted-foreground mb-4">Your transaction history will appear here.</p>
-              <Button onClick={() => setActiveModal('buy')} className="bg-amber-500 hover:bg-amber-600">
+              <Button onClick={() => setActiveModal('buyWingold')} className="bg-amber-500 hover:bg-amber-600">
                 Make Your First Purchase
               </Button>
             </div>
@@ -426,13 +418,6 @@ export default function FinaPay() {
         </div>
 
         {/* Modals */}
-        <BuyGoldModal 
-          isOpen={activeModal === 'buy'} 
-          onClose={handleModalClose}
-          goldPrice={currentGoldPriceUsdPerGram}
-          spreadPercent={settings.buySpreadPercent}
-          onConfirm={handleBuyConfirm}
-        />
         <SellGoldModal 
           isOpen={activeModal === 'sell'} 
           onClose={handleModalClose}
