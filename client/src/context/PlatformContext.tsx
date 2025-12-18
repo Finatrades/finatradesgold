@@ -191,28 +191,7 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   referralValidityDays: 30,
   minDepositForBonus: 100,
   
-  bankAccounts: [
-    {
-      id: '1',
-      name: 'Primary CHF Account',
-      bankName: 'UBS Switzerland AG',
-      holderName: 'FinaTrades AG',
-      iban: 'CH93 0024 0000 1122 3344 5',
-      bic: 'UBSWCHZH80A',
-      currency: 'CHF',
-      isActive: true
-    },
-    {
-      id: '2',
-      name: 'Secondary EUR Account',
-      bankName: 'Credit Suisse (Switzerland) Ltd',
-      holderName: 'FinaTrades AG',
-      iban: 'CH45 0483 5000 8899 0011 2',
-      bic: 'CRESRESXX',
-      currency: 'EUR',
-      isActive: true
-    }
-  ]
+  bankAccounts: []
 };
 
 const CONFIG_KEY_MAP: Record<string, keyof PlatformSettings> = {
