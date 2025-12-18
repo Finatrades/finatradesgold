@@ -119,30 +119,30 @@ export default function Dashboard() {
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Row 1 */}
                 {(() => {
-                  const totalGoldGrams = totals.vaultGoldGrams + totals.walletGoldGrams + (finaBridge?.goldGrams || 0);
-                  const totalGoldValueUsd = totalGoldGrams * goldPrice;
+                  const availableGoldGrams = totals.walletGoldGrams || 0;
+                  const availableGoldValueUsd = availableGoldGrams * goldPrice;
                   return (
                     <>
                       <KpiBox
                         title="Gold Storage"
-                        value={`${formatNumber(totalGoldGrams, 4)} g`}
-                        secondaryValue={`${formatNumber(totalGoldGrams / 1000, 6)} KG`}
-                        tertiaryValue={`${formatNumber(totalGoldGrams / 31.1035, 4)} OZ`}
-                        subtitle="All wallets combined"
+                        value={`${formatNumber(availableGoldGrams, 4)} g`}
+                        secondaryValue={`${formatNumber(availableGoldGrams / 1000, 6)} KG`}
+                        tertiaryValue={`${formatNumber(availableGoldGrams / 31.1035, 4)} OZ`}
+                        subtitle="Available for withdrawal or transfer"
                         icon={<Database className="w-5 h-5 text-orange-600" />}
                         iconBg="bg-orange-50"
                         valueColor="text-orange-600"
                       />
                       <KpiBox
                         title="Total Gold Value (USD)"
-                        value={`$${formatNumber(totalGoldValueUsd)}`}
+                        value={`$${formatNumber(availableGoldValueUsd)}`}
                         subtitle="Worth in USD"
                         icon={<DollarSign className="w-5 h-5 text-green-600" />}
                         iconBg="bg-green-50"
                       />
                       <KpiBox
                         title="Total Gold Value (AED)"
-                        value={`د.إ ${formatNumber(totalGoldValueUsd * 3.67)}`}
+                        value={`د.إ ${formatNumber(availableGoldValueUsd * 3.67)}`}
                         subtitle="Worth in AED"
                         icon={<DollarSign className="w-5 h-5 text-blue-600" />}
                         iconBg="bg-blue-50"
