@@ -1,0 +1,116 @@
+You are a senior full-stack engineer working in the existing Finatrades codebase.
+Implement a “Buy Gold (Manual via Wingold & Metals)” flow that matches the EXISTING crypto/bank deposit logic and admin approval workflow.
+Do NOT redesign the whole platform. Reuse existing components, patterns, statuses, and tables as much as possible.
+
+FEATURE SUMMARY
+When a user clicks “Buy Gold” in FinaPay:
+1) Open a popup/modal that embeds the Wingold & Metals website (www.wingoldandmetal.com) inside the modal (iframe or safe external open if iframe blocked).
+2) Show a compliance NOTICE text above the embed (exact text below).
+3) Below the embed, user must upload Wingold & Metals transaction receipt (mandatory).
+4) User submits request. This creates a “Buy Gold Request” that behaves like existing Crypto/Bank deposit requests:
+   - status flow
+   - admin approval
+   - transaction record
+   - ledger/balance update
+   - certificates flow if already used in your system
+
+NOTICE TEXT (must be shown exactly)
+"Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold. All gold transactions executed by Wingold & Metals DMCC through the Platform are processed, recorded, and maintained within the Finatrades system, and the Platform serves solely as a technology and execution infrastructure for such gold-based services."
+
+USER SIDE — UI REQUIREMENTS (FinaPay)
+A) Add “Buy Gold” CTA/button in the correct FinaPay screen.
+B) On click, open modal:
+   - Title: “Buy Gold (Wingold & Metals)”
+   - Notice block (above)
+   - Embedded website area:
+      - Try iframe to https://www.wingoldandmetal.com
+      - If iframe is blocked (X-Frame-Options), show a button “Open Wingold & Metals in new tab” and keep modal open.
+   - Receipt upload section (below):
+      - Label: “Upload Wingold & Metals Transaction Receipt”
+      - Accept: PDF/JPG/PNG
+      - Size limit: 10MB (use existing upload rules)
+      - Required
+   - Optional fields (only if consistent with existing deposits):
+      - Amount (USD) or reference number (if your crypto/bank deposit already captures it)
+      - Transaction Reference ID
+   - Submit button: “Submit Buy Gold Request”
+   - After submit: show success state with Request ID and status “Pending Review”.
+
+C) Receipt upload must store file securely and create a record linked to the request.
+
+D) This flow must follow your platform rule:
+   - If KYC not approved, user cannot submit; show existing KYC gating message.
+
+BACKEND — REUSE EXISTING DEPOSIT/CRYPTO PATTERNS
+Implement “Buy Gold Request” as a deposit-like request with minimal new logic:
+- Create a new funding method: METHOD = BUY_GOLD_MANUAL (or similar)
+- Statuses should mirror crypto deposit statuses you already have:
+  PENDING_REVIEW -> APPROVED -> CONFIRMED (or your existing names)
+  REJECTED (with reason)
+- Store:
+  userId, method, receiptFileId/path, amount(optional), reference(optional), createdAt, updatedAt
+
+If you already have a “deposits” table:
+- Add a new enum value for method/channel and reuse same table.
+If you do NOT:
+- Create the smallest possible new table that matches your existing deposit request schema.
+
+ADMIN SIDE — FINAPAY “BUY GOLD” SECTION
+Add a new Admin page/section under FinaPay admin:
+Route suggestion (match your routing style):
+- /admin/finapay/buy-gold
+
+This admin section must look and behave like existing Crypto deposits admin:
+- List table:
+   Request ID | User | Amount (if present) | Reference | Status | Submitted Date | Receipt | Actions
+- Detail view:
+   - Show notice context
+   - Show uploaded receipt (view/download)
+   - Show user info
+   - Show any entered references
+- Actions:
+   - Approve (requires reason optional)
+   - Reject (requires reason mandatory)
+   - Confirm (if your flow uses confirm step) OR approving triggers ledger credit
+- On approval/confirm:
+   - Credit user’s FinaPay balance using the same internal ledger method used for crypto deposits
+   - Create transaction record with clear narration:
+     “Buy Gold (Manual) — Wingold & Metals DMCC”
+   - Trigger certificates logic if your system already does it for deposits (do not invent new cert logic).
+
+MODE SWITCH: MANUAL vs API METHOD (Admin setting)
+In Admin FinaPay settings, add a placeholder toggle for “Buy Gold Mode”:
+- Manual (current) = enabled now
+- API Method (future) = disabled / placeholder
+Implementation:
+- Add config flag BUY_GOLD_MODE = "MANUAL" | "API"
+- UI toggle switches between modes but only MANUAL is functional now.
+- When API is selected, show “Coming soon — API integration not enabled” and prevent user flow from breaking.
+
+SECURITY & COMPLIANCE (do not skip)
+- Do not store any payment credentials.
+- Upload must be validated (mime type + size).
+- Receipt download must be protected:
+  - user can access only their own receipt
+  - admin can access with role permission
+- Log admin actions in audit log if such system exists.
+
+REALTIME / UI UPDATES (same as crypto)
+- After admin approves, user dashboard should update without manual refresh if your app already supports realtime refresh; otherwise trigger a re-fetch on status change.
+
+TESTING (match existing test approach)
+Add tests similar to crypto deposit tests:
+- KYC blocked user cannot submit
+- Submit creates request with receipt required
+- Admin approve credits wallet
+- Reject requires reason
+- Receipt access control enforced
+
+DELIVERABLES
+- User modal flow implemented
+- Admin “Buy Gold” section implemented
+- Uses same status model as crypto/bank deposits
+- Manual/API toggle added (API is placeholder only)
+- Clear logs/audit trail
+
+Start by locating existing crypto deposit user flow + admin approval flow and cloning that structure for BUY_GOLD_MANUAL with minimal changes.
