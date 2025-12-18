@@ -12574,6 +12574,281 @@ export async function registerRoutes(
   });
 
   // ============================================
+  // BUY GOLD REQUESTS (Wingold & Metals - Manual)
+  // ============================================
+
+  // User: Submit buy gold request
+  app.post("/api/buy-gold/submit", async (req, res) => {
+    try {
+      const { userId, amountUsd, wingoldReferenceId, receiptFileUrl, receiptFileName } = req.body;
+      
+      if (!userId || !receiptFileUrl) {
+        return res.status(400).json({ message: "User ID and receipt are required" });
+      }
+      
+      // Check KYC status
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.kycStatus !== 'Approved') {
+        return res.status(403).json({ message: "KYC must be approved to submit buy gold requests" });
+      }
+      
+      // Check if buy gold mode is enabled (default to MANUAL if not configured)
+      const buyGoldModeConfig = await storage.getPlatformConfig('buy_gold_mode');
+      const buyGoldMode = buyGoldModeConfig?.configValue || 'MANUAL';
+      
+      if (buyGoldMode === 'API') {
+        return res.status(400).json({ message: "API mode is not yet available. Please wait for the feature update." });
+      }
+      
+      // Get current gold price if amount is provided
+      let goldGrams = null;
+      let goldPriceAtTime = null;
+      
+      if (amountUsd && parseFloat(amountUsd) > 0) {
+        const priceData = await getGoldPrice();
+        goldPriceAtTime = priceData.pricePerGram.toString();
+        goldGrams = (parseFloat(amountUsd) / priceData.pricePerGram).toFixed(8);
+      }
+      
+      const request = await storage.createBuyGoldRequest({
+        userId,
+        amountUsd: amountUsd || null,
+        goldGrams,
+        goldPriceAtTime,
+        wingoldReferenceId: wingoldReferenceId || null,
+        receiptFileUrl,
+        receiptFileName: receiptFileName || null,
+        status: 'Pending',
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "buy_gold_request",
+        entityId: request.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: `Buy gold request submitted: $${amountUsd || 'TBD'}`,
+      });
+      
+      // Notify admins
+      const admins = await storage.getAdminUsers();
+      for (const admin of admins) {
+        await storage.createNotification({
+          userId: admin.id,
+          title: "New Buy Gold Request",
+          message: `${user.firstName} ${user.lastName} submitted a buy gold request`,
+          type: "info",
+          read: false,
+          link: "/admin/finapay/buy-gold",
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        request,
+        message: "Buy gold request submitted successfully. Pending admin review." 
+      });
+    } catch (error) {
+      console.error("Failed to submit buy gold request:", error);
+      res.status(500).json({ message: "Failed to submit request" });
+    }
+  });
+
+  // User: Get their buy gold requests
+  app.get("/api/buy-gold/:userId", async (req, res) => {
+    try {
+      const requests = await storage.getUserBuyGoldRequests(req.params.userId);
+      res.json({ requests });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get buy gold requests" });
+    }
+  });
+
+  // Admin: Get all buy gold requests
+  app.get("/api/admin/buy-gold", ensureAdminAsync, async (req, res) => {
+    try {
+      const requests = await storage.getAllBuyGoldRequests();
+      
+      // Enrich with user info
+      const enrichedRequests = await Promise.all(
+        requests.map(async (request) => {
+          const user = await storage.getUser(request.userId);
+          return {
+            ...request,
+            user: user ? {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+            } : null,
+          };
+        })
+      );
+      
+      res.json({ requests: enrichedRequests });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get buy gold requests" });
+    }
+  });
+
+  // Admin: Approve and credit buy gold request
+  app.patch("/api/admin/buy-gold/:id/approve", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reviewNotes, amountUsd, goldGrams } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const request = await storage.getBuyGoldRequest(id);
+      if (!request) {
+        return res.status(404).json({ message: "Buy gold request not found" });
+      }
+      
+      if (!['Pending', 'Under Review'].includes(request.status)) {
+        return res.status(400).json({ message: "Request cannot be approved in current status" });
+      }
+      
+      // Use provided amounts or the ones from the request
+      const finalAmountUsd = parseFloat(amountUsd || request.amountUsd || '0');
+      let finalGoldGrams = parseFloat(goldGrams || request.goldGrams || '0');
+      
+      if (finalAmountUsd <= 0) {
+        return res.status(400).json({ message: "Amount USD is required for approval" });
+      }
+      
+      // Calculate gold grams if not provided
+      if (finalGoldGrams <= 0) {
+        const priceData = await getGoldPrice();
+        finalGoldGrams = finalAmountUsd / priceData.pricePerGram;
+      }
+      
+      // Get user's wallet
+      const wallet = await storage.getWallet(request.userId);
+      if (!wallet) {
+        return res.status(400).json({ message: "User wallet not found" });
+      }
+      
+      // Credit user's gold balance
+      const currentGold = parseFloat(wallet.goldGrams || '0');
+      const newGoldBalance = currentGold + finalGoldGrams;
+      
+      await storage.updateWallet(wallet.id, {
+        goldGrams: newGoldBalance.toString(),
+      });
+      
+      // Get current gold price for transaction record
+      const priceData = await getGoldPrice();
+      
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId: request.userId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: finalGoldGrams.toFixed(8),
+        amountUsd: finalAmountUsd.toFixed(2),
+        goldPriceUsdPerGram: priceData.pricePerGram.toString(),
+        description: 'Buy Gold (Manual) — Wingold & Metals DMCC',
+        completedAt: new Date(),
+        sourceModule: 'FinaPay',
+      });
+      
+      // Update request status
+      const updated = await storage.updateBuyGoldRequest(id, {
+        status: 'Credited',
+        amountUsd: finalAmountUsd.toString(),
+        goldGrams: finalGoldGrams.toString(),
+        reviewerId: adminUser.id,
+        reviewedAt: new Date(),
+        reviewNotes: reviewNotes || null,
+        creditedTransactionId: transaction.id,
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "buy_gold_request",
+        entityId: id,
+        actionType: "approve",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Approved buy gold request: $${finalAmountUsd.toFixed(2)} = ${finalGoldGrams.toFixed(4)}g gold`,
+      });
+      
+      // Notify user
+      await storage.createNotification({
+        userId: request.userId,
+        title: "Buy Gold Request Approved",
+        message: `Your buy gold request has been approved! ${finalGoldGrams.toFixed(4)}g gold has been credited to your wallet.`,
+        type: "success",
+        read: false,
+        link: "/finapay",
+      });
+      
+      res.json({ request: updated, transaction });
+    } catch (error) {
+      console.error("Failed to approve buy gold request:", error);
+      res.status(500).json({ message: "Failed to approve request" });
+    }
+  });
+
+  // Admin: Reject buy gold request
+  app.patch("/api/admin/buy-gold/:id/reject", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { rejectionReason, reviewNotes } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      if (!rejectionReason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
+      const request = await storage.getBuyGoldRequest(id);
+      if (!request) {
+        return res.status(404).json({ message: "Buy gold request not found" });
+      }
+      
+      if (!['Pending', 'Under Review'].includes(request.status)) {
+        return res.status(400).json({ message: "Request cannot be rejected in current status" });
+      }
+      
+      const updated = await storage.updateBuyGoldRequest(id, {
+        status: 'Rejected',
+        reviewerId: adminUser.id,
+        reviewedAt: new Date(),
+        reviewNotes: reviewNotes || null,
+        rejectionReason,
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "buy_gold_request",
+        entityId: id,
+        actionType: "reject",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Rejected buy gold request: ${rejectionReason}`,
+      });
+      
+      // Notify user
+      await storage.createNotification({
+        userId: request.userId,
+        title: "Buy Gold Request Rejected",
+        message: `Your buy gold request has been rejected. Reason: ${rejectionReason}`,
+        type: "error",
+        read: false,
+      });
+      
+      res.json({ request: updated });
+    } catch (error) {
+      console.error("Failed to reject buy gold request:", error);
+      res.status(500).json({ message: "Failed to reject request" });
+    }
+  });
+
+  // ============================================
   // USER NOTIFICATIONS
   // ============================================
 
