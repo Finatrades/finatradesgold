@@ -8637,6 +8637,7 @@ export async function registerRoutes(
 
       res.json({ acceptance, message: "Terms accepted successfully" });
     } catch (error) {
+      console.error("Failed to accept agreement:", error);
       res.status(400).json({ message: "Failed to accept agreement" });
     }
   });
