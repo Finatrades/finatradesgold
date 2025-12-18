@@ -11,10 +11,10 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
   const primaryActions = [
     { 
       id: 'buy', 
-      label: 'Buy Gold', 
+      label: 'Buy Gold Bar', 
       icon: <ShoppingCart className="w-5 h-5" />, 
       gradient: 'from-green-500 to-emerald-600',
-      description: 'Purchase digital gold'
+      description: 'Purchase gold bar'
     },
     { 
       id: 'sell', 

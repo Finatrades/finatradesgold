@@ -321,7 +321,7 @@ export default function FinaPay() {
             data-testid="button-buy-gold"
           >
             <ShoppingCart className="w-5 h-5" />
-            <span className="text-sm font-medium">Buy Gold</span>
+            <span className="text-sm font-medium">Buy Gold Bar</span>
           </button>
 
           <button

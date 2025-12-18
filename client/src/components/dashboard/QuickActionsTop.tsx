@@ -22,7 +22,7 @@ const actions = [
     isModal: true
   },
   {
-    title: 'Buy Gold',
+    title: 'Buy Gold Bar',
     path: '',
     icon: <ShoppingCart className="w-4 h-4" />,
     gradient: 'from-amber-400 to-yellow-500',
@@ -115,7 +115,7 @@ export default function QuickActionsTop() {
         setDepositModalOpen(true);
         return;
       }
-      if (action.title === 'Buy Gold') {
+      if (action.title === 'Buy Gold Bar') {
         setBuyGoldModalOpen(true);
         return;
       }
