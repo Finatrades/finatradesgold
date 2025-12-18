@@ -3140,7 +3140,8 @@ export async function registerRoutes(
         peerTransfers,
         vaultDepositReqs,
         vaultWithdrawalReqs,
-        tradeCases
+        tradeCases,
+        userCertificates
       ] = await Promise.all([
         storage.getUserTransactions(userId),
         storage.getUserDepositRequests(userId),
@@ -3150,7 +3151,8 @@ export async function registerRoutes(
         storage.getPeerTransfers(userId),
         storage.getUserVaultDepositRequests(userId),
         storage.getUserVaultWithdrawalRequests(userId),
-        storage.getUserTradeCases(userId)
+        storage.getUserTradeCases(userId),
+        storage.getUserCertificates(userId)
       ]);
       
       // Normalize all transactions to unified format
@@ -3346,6 +3348,38 @@ export async function registerRoutes(
           sourceType: 'trade_case'
         });
       });
+      
+      // Certificates (Trade Release, Physical Storage, Digital Ownership)
+      userCertificates
+        .filter(cert => ['Trade Release', 'Physical Storage', 'Digital Ownership'].includes(cert.type))
+        .forEach(cert => {
+          const moduleMap: Record<string, string> = {
+            'Trade Release': 'finabridge',
+            'Physical Storage': 'finavault',
+            'Digital Ownership': 'finavault'
+          };
+          const actionMap: Record<string, string> = {
+            'Trade Release': 'RECEIVE',
+            'Physical Storage': 'ADD_FUNDS',
+            'Digital Ownership': 'ADD_FUNDS'
+          };
+          unifiedTransactions.push({
+            id: cert.id,
+            userId: cert.userId,
+            module: moduleMap[cert.type] || 'finavault',
+            actionType: actionMap[cert.type] || 'RECEIVE',
+            grams: cert.goldGrams,
+            usd: cert.totalValueUsd,
+            usdPerGram: cert.goldPriceUsdPerGram,
+            status: cert.status === 'Active' ? 'COMPLETED' : cert.status === 'Cancelled' ? 'FAILED' : 'PENDING',
+            referenceId: cert.certificateNumber,
+            description: `${cert.type} Certificate`,
+            counterpartyUserId: null,
+            createdAt: cert.issuedAt,
+            completedAt: cert.issuedAt,
+            sourceType: 'certificate'
+          });
+        });
       
       // Apply filters
       if (module && module !== 'all') {
