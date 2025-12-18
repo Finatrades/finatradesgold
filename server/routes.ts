@@ -156,7 +156,7 @@ async function ensureOwnerOrAdmin(req: Request, res: Response, next: NextFunctio
 }
 
 // Middleware to ensure admin access via session-based authentication
-// SECURITY: No longer trusts X-Admin-User-Id header - requires valid session
+// SECURITY: Requires both admin role AND login via /admin/login path
 async function ensureAdminAsync(req: Request, res: Response, next: NextFunction) {
   try {
     const sessionUserId = req.session?.userId;
@@ -168,6 +168,13 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
     const admin = await storage.getUser(sessionUserId);
     if (!admin || admin.role !== 'admin') {
       return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    // SECURITY: Verify admin logged in via admin portal, not regular login
+    if (req.session.adminPortal !== true) {
+      return res.status(403).json({ 
+        message: "Admin portal access required. Please log in via /admin/login" 
+      });
     }
     
     // Attach the validated admin user to the request
@@ -681,7 +688,7 @@ export async function registerRoutes(
   });
   
   // In-memory MFA challenge store (in production, use Redis or database with TTL)
-  const mfaChallenges = new Map<string, { userId: string; expiresAt: Date; attempts: number }>();
+  const mfaChallenges = new Map<string, { userId: string; expiresAt: Date; attempts: number; adminPortal?: boolean }>();
   
   // Clean up expired challenges periodically
   setInterval(() => {
@@ -743,15 +750,95 @@ export async function registerRoutes(
       }
       
       // Set session for authenticated user (SECURITY-CRITICAL)
+      // Regular login does NOT grant admin portal access
       req.session.userId = user.id;
       req.session.userRole = user.role;
+      req.session.adminPortal = false;
       
       // Record login timestamp for session tracking
       const updatedUser = await storage.updateUser(user.id, {
         lastLoginAt: new Date(),
       });
       
-      res.json({ user: sanitizeUser(updatedUser || user) });
+      res.json({ user: sanitizeUser(updatedUser || user), adminPortal: false });
+    } catch (error) {
+      res.status(400).json({ message: "Login failed" });
+    }
+  });
+
+  // Admin-specific login - grants admin portal access
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Verify this is an admin user
+      if (user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required. Please use the regular login page." });
+      }
+      
+      // SECURITY: All passwords must be bcrypt hashed
+      let isValidPassword = false;
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await bcrypt.compare(password, user.password);
+      } else {
+        // Force migration: hash legacy plaintext passwords on login attempt
+        if (user.password === password) {
+          const hashedPassword = await bcrypt.hash(password, 12);
+          await storage.updateUser(user.id, { password: hashedPassword });
+          isValidPassword = true;
+        }
+      }
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Check if MFA is enabled
+      if (user.mfaEnabled) {
+        // Generate a challenge token for MFA verification
+        const challengeToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        
+        // Store challenge with 5 minute expiry, attempt counter, and admin portal flag
+        mfaChallenges.set(challengeToken, {
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+          attempts: 0,
+          adminPortal: true
+        });
+        
+        return res.json({ 
+          requiresMfa: true, 
+          challengeToken,
+          mfaMethod: user.mfaMethod,
+          message: "MFA verification required" 
+        });
+      }
+      
+      // Set session for authenticated admin user with admin portal access
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      req.session.adminPortal = true;
+      
+      // Record login timestamp for session tracking
+      const updatedUser = await storage.updateUser(user.id, {
+        lastLoginAt: new Date(),
+      });
+      
+      // Audit log for admin login
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        action: "admin_login",
+        performedBy: user.id,
+        details: { loginType: "admin_portal" }
+      });
+      
+      res.json({ user: sanitizeUser(updatedUser || user), adminPortal: true });
     } catch (error) {
       res.status(400).json({ message: "Login failed" });
     }
@@ -1120,14 +1207,18 @@ export async function registerRoutes(
       const isValid = authenticator.verify({ token, secret: user.mfaSecret });
       
       if (isValid) {
+        // Capture adminPortal flag before deleting challenge
+        const adminPortal = challenge.adminPortal || false;
+        
         // Delete challenge after successful verification
         mfaChallenges.delete(challengeToken);
         
         // Set session for authenticated user (SECURITY-CRITICAL)
         req.session.userId = user.id;
         req.session.userRole = user.role;
+        req.session.adminPortal = adminPortal;
         
-        return res.json({ success: true, user: sanitizeUser(user) });
+        return res.json({ success: true, user: sanitizeUser(user), adminPortal });
       }
       
       // Try backup codes
@@ -1137,6 +1228,9 @@ export async function registerRoutes(
         for (let i = 0; i < backupCodes.length; i++) {
           const isBackupValid = await bcrypt.compare(token.toUpperCase(), backupCodes[i]);
           if (isBackupValid) {
+            // Capture adminPortal flag before deleting challenge
+            const adminPortal = challenge.adminPortal || false;
+            
             // Remove used backup code
             backupCodes.splice(i, 1);
             await storage.updateUser(challenge.userId, { 
@@ -1149,10 +1243,12 @@ export async function registerRoutes(
             // Set session for authenticated user (SECURITY-CRITICAL)
             req.session.userId = user.id;
             req.session.userRole = user.role;
+            req.session.adminPortal = adminPortal;
             
             return res.json({ 
               success: true, 
               user: sanitizeUser(user),
+              adminPortal,
               message: "Backup code used. " + backupCodes.length + " codes remaining."
             });
           }
