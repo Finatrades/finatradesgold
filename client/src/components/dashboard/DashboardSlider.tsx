@@ -8,7 +8,10 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 export default function DashboardSlider() {
   const { totals, transactions, bnslPlans } = useDashboardData();
   
-  const pendingTransactions = transactions.filter(t => t.status === 'Pending').length;
+  const pendingTransactions = transactions.filter(t => t.status === 'Pending');
+  const pendingGoldGrams = pendingTransactions.reduce((sum, t) => {
+    return sum + parseFloat(t.amountGold || '0');
+  }, 0);
   const activeBnslPlans = bnslPlans.filter((p: any) => p.status === 'Active').length;
 
   return (
@@ -46,7 +49,7 @@ export default function DashboardSlider() {
           <div className="flex gap-6 pt-3 border-t border-border">
             <div>
               <p className="text-xs text-muted-foreground">Pending</p>
-              <p className="text-sm font-semibold text-emerald-600" data-testid="text-finapay-pending">{pendingTransactions > 0 ? `${pendingTransactions}` : '0.00g'}</p>
+              <p className="text-sm font-semibold text-emerald-600" data-testid="text-finapay-pending">{pendingGoldGrams.toFixed(2)}g</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Transactions</p>
