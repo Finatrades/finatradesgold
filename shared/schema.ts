@@ -1580,6 +1580,7 @@ export const finabridgeWallets = pgTable("finabridge_wallets", {
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
   availableGoldGrams: decimal("available_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   lockedGoldGrams: decimal("locked_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  incomingLockedGoldGrams: decimal("incoming_locked_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

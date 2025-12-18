@@ -6421,6 +6421,12 @@ export async function registerRoutes(
         lockedGoldGrams: (parseFloat(wallet.lockedGoldGrams) + requiredGold).toFixed(6),
       });
       
+      // Update exporter's wallet to show incoming locked funds
+      const exporterWallet = await storage.getOrCreateFinabridgeWallet(proposal.exporterUserId);
+      await storage.updateFinabridgeWallet(exporterWallet.id, {
+        incomingLockedGoldGrams: (parseFloat(exporterWallet.incomingLockedGoldGrams || '0') + requiredGold).toFixed(6),
+      });
+      
       // Create settlement hold
       const settlementHold = await storage.createSettlementHold({
         tradeRequestId: request.id,
@@ -6988,6 +6994,7 @@ export async function registerRoutes(
       const exporterWallet = await storage.getOrCreateFinabridgeWallet(hold.exporterUserId);
       await storage.updateFinabridgeWallet(exporterWallet.id, {
         availableGoldGrams: (parseFloat(exporterWallet.availableGoldGrams) + lockedAmount).toFixed(6),
+        incomingLockedGoldGrams: Math.max(0, parseFloat(exporterWallet.incomingLockedGoldGrams || '0') - lockedAmount).toFixed(6),
       });
       
       // Update hold status
