@@ -79,6 +79,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   });
 
   const currentGoldPrice = goldPrice?.pricePerGram || 85;
+  
+  // Calculate available balance from gold holdings (P2P transfers use gold, not USD wallet)
+  const availableGoldValueUsd = goldBalance * currentGoldPrice;
 
   useEffect(() => {
     if (isOpen) {
@@ -406,14 +409,14 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label>Amount (USD) <span className="text-red-500">*</span></Label>
-                      <span className="text-xs text-muted-foreground">Balance: ${walletBalance.toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground">Balance: ${availableGoldValueUsd.toFixed(2)} ({goldBalance.toFixed(4)}g)</span>
                     </div>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
                       <Input 
                         type="number" 
                         placeholder="0.00" 
-                        className={`bg-background pl-8 text-lg font-medium ${numericAmount > walletBalance ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
+                        className={`bg-background pl-8 text-lg font-medium ${numericAmount > availableGoldValueUsd ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                       />
@@ -421,15 +424,15 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                         size="sm" 
                         variant="ghost" 
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-primary"
-                        onClick={() => setAmount(walletBalance.toString())}
+                        onClick={() => setAmount(availableGoldValueUsd.toFixed(2))}
                       >
                         MAX
                       </Button>
                     </div>
-                    {numericAmount > walletBalance && (
+                    {numericAmount > availableGoldValueUsd && (
                       <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        <span>Insufficient funds. Your balance is ${walletBalance.toFixed(2)}</span>
+                        <span>Insufficient funds. Your gold balance is ${availableGoldValueUsd.toFixed(2)} ({goldBalance.toFixed(4)}g)</span>
                       </div>
                     )}
                   </div>
@@ -544,7 +547,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12"
-                    disabled={numericAmount <= 0 || numericAmount > walletBalance || !paymentReason || !sourceOfFunds}
+                    disabled={numericAmount <= 0 || numericAmount > availableGoldValueUsd || !paymentReason || !sourceOfFunds}
                     onClick={() => setStep('confirm')}
                   >
                     Continue to Review
