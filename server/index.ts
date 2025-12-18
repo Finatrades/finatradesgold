@@ -4,6 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupSocketIO } from "./socket";
 import path from "path";
+import crypto from "crypto";
 import { storage } from "./storage";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -29,7 +30,17 @@ app.use(
       tableName: "user_sessions",
       createTableIfMissing: true,
     }),
-    secret: process.env.SESSION_SECRET || "finatrades-secure-session-secret-change-in-production",
+    secret: (() => {
+      const secret = process.env.SESSION_SECRET;
+      if (!secret && process.env.NODE_ENV === 'production') {
+        throw new Error('SECURITY CRITICAL: SESSION_SECRET environment variable must be set in production');
+      }
+      // Use a strong default for development only, warn if not set
+      if (!secret) {
+        console.warn('[SECURITY WARNING] SESSION_SECRET not set - using development fallback. DO NOT deploy without setting SESSION_SECRET.');
+      }
+      return secret || crypto.randomBytes(32).toString('hex');
+    })(),
     resave: false,
     saveUninitialized: false,
     cookie: {

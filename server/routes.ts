@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
 import { db } from "./db";
+import crypto from "crypto";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
@@ -690,6 +691,50 @@ export async function registerRoutes(
   // In-memory MFA challenge store (in production, use Redis or database with TTL)
   const mfaChallenges = new Map<string, { userId: string; expiresAt: Date; attempts: number; adminPortal?: boolean }>();
   
+  // SECURITY: Cryptographically secure token generation
+  function generateSecureToken(length: number = 32): string {
+    return crypto.randomBytes(length).toString('hex');
+  }
+  
+  // SECURITY: Rate limiting for login endpoints
+  const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+  const LOGIN_RATE_LIMIT = 5; // max attempts
+  const LOGIN_RATE_WINDOW = 15 * 60 * 1000; // 15 minutes
+  
+  function checkLoginRateLimit(identifier: string): { allowed: boolean; remainingAttempts: number; retryAfter?: number } {
+    const now = Date.now();
+    const attempts = loginAttempts.get(identifier);
+    
+    if (!attempts) {
+      loginAttempts.set(identifier, { count: 1, firstAttempt: now });
+      return { allowed: true, remainingAttempts: LOGIN_RATE_LIMIT - 1 };
+    }
+    
+    // Reset if window expired
+    if (now - attempts.firstAttempt > LOGIN_RATE_WINDOW) {
+      loginAttempts.set(identifier, { count: 1, firstAttempt: now });
+      return { allowed: true, remainingAttempts: LOGIN_RATE_LIMIT - 1 };
+    }
+    
+    if (attempts.count >= LOGIN_RATE_LIMIT) {
+      const retryAfter = Math.ceil((LOGIN_RATE_WINDOW - (now - attempts.firstAttempt)) / 1000);
+      return { allowed: false, remainingAttempts: 0, retryAfter };
+    }
+    
+    attempts.count++;
+    return { allowed: true, remainingAttempts: LOGIN_RATE_LIMIT - attempts.count };
+  }
+  
+  // Clean up rate limit entries periodically
+  setInterval(() => {
+    const now = Date.now();
+    Array.from(loginAttempts.entries()).forEach(([key, attempts]) => {
+      if (now - attempts.firstAttempt > LOGIN_RATE_WINDOW) {
+        loginAttempts.delete(key);
+      }
+    });
+  }, 60 * 1000); // Clean every minute
+  
   // Clean up expired challenges periodically
   setInterval(() => {
     const now = new Date();
@@ -700,10 +745,24 @@ export async function registerRoutes(
     });
   }, 60000); // Clean every minute
 
-  // Login
+  // Login with rate limiting
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
+      
+      // SECURITY: Rate limiting to prevent brute force attacks
+      const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+      const rateLimitKey = `login:${clientIP}:${email}`;
+      const rateCheck = checkLoginRateLimit(rateLimitKey);
+      
+      if (!rateCheck.allowed) {
+        res.setHeader('Retry-After', rateCheck.retryAfter?.toString() || '900');
+        return res.status(429).json({ 
+          message: `Too many login attempts. Please try again in ${Math.ceil((rateCheck.retryAfter || 900) / 60)} minutes.`,
+          retryAfter: rateCheck.retryAfter
+        });
+      }
+      
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
@@ -740,8 +799,8 @@ export async function registerRoutes(
       
       // Check if MFA is enabled
       if (user.mfaEnabled) {
-        // Generate a challenge token for MFA verification
-        const challengeToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        // Generate a SECURE challenge token for MFA verification
+        const challengeToken = generateSecureToken(32);
         
         // Store challenge with 5 minute expiry and attempt counter
         mfaChallenges.set(challengeToken, {
@@ -776,10 +835,24 @@ export async function registerRoutes(
     }
   });
 
-  // Admin-specific login - grants admin portal access
+  // Admin-specific login with rate limiting - grants admin portal access
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { email, password } = req.body;
+      
+      // SECURITY: Rate limiting to prevent brute force attacks (stricter for admin)
+      const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+      const rateLimitKey = `admin_login:${clientIP}:${email}`;
+      const rateCheck = checkLoginRateLimit(rateLimitKey);
+      
+      if (!rateCheck.allowed) {
+        res.setHeader('Retry-After', rateCheck.retryAfter?.toString() || '900');
+        return res.status(429).json({ 
+          message: `Too many login attempts. Please try again in ${Math.ceil((rateCheck.retryAfter || 900) / 60)} minutes.`,
+          retryAfter: rateCheck.retryAfter
+        });
+      }
+      
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
@@ -810,8 +883,8 @@ export async function registerRoutes(
       
       // Check if MFA is enabled
       if (user.mfaEnabled) {
-        // Generate a challenge token for MFA verification
-        const challengeToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        // Generate a SECURE challenge token for MFA verification
+        const challengeToken = generateSecureToken(32);
         
         // Store challenge with 5 minute expiry, attempt counter, and admin portal flag
         mfaChallenges.set(challengeToken, {
@@ -978,8 +1051,8 @@ export async function registerRoutes(
         return res.json({ message: "If an account with that email exists, we've sent password reset instructions." });
       }
       
-      // Generate a secure token
-      const token = Math.random().toString(36).substring(2) + Date.now().toString(36) + Math.random().toString(36).substring(2);
+      // Generate a cryptographically secure token (SECURITY FIX: replaced Math.random())
+      const token = generateSecureToken(48);
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
       
       // Store the token
@@ -1141,9 +1214,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid verification code" });
       }
       
-      // Generate backup codes
+      // Generate cryptographically secure backup codes (SECURITY FIX: replaced Math.random())
       const backupCodes = Array.from({ length: 8 }, () => 
-        Math.random().toString(36).substring(2, 8).toUpperCase()
+        crypto.randomBytes(4).toString('hex').toUpperCase()
       );
       
       // Hash backup codes for storage
