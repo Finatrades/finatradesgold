@@ -2578,3 +2578,56 @@ export const platformConfig = pgTable("platform_config", {
 export const insertPlatformConfigSchema = createInsertSchema(platformConfig).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPlatformConfig = z.infer<typeof insertPlatformConfigSchema>;
 export type PlatformConfig = typeof platformConfig.$inferSelect;
+
+// ============================================
+// DATABASE BACKUPS
+// ============================================
+
+export const backupStatusEnum = pgEnum('backup_status', ['In Progress', 'Success', 'Failed']);
+export const backupTypeEnum = pgEnum('backup_type', ['manual', 'scheduled', 'pre_restore']);
+
+export const databaseBackups = pgTable("database_backups", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  backupType: backupTypeEnum("backup_type").notNull().default('manual'),
+  fileName: varchar("file_name", { length: 500 }).notNull(),
+  filePath: text("file_path").notNull(),
+  fileSizeBytes: integer("file_size_bytes"),
+  status: backupStatusEnum("status").notNull().default('In Progress'),
+  errorMessage: text("error_message"),
+  checksum: varchar("checksum", { length: 64 }),
+  isEncrypted: boolean("is_encrypted").notNull().default(true),
+  isCompressed: boolean("is_compressed").notNull().default(true),
+  tablesIncluded: integer("tables_included"),
+  totalRows: integer("total_rows"),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups).omit({ id: true, createdAt: true });
+export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
+export type DatabaseBackup = typeof databaseBackups.$inferSelect;
+
+// ============================================
+// BACKUP AUDIT LOGS (Separate from main audit for security)
+// ============================================
+
+export const backupActionEnum = pgEnum('backup_action', ['BACKUP_CREATE', 'BACKUP_DOWNLOAD', 'BACKUP_RESTORE', 'BACKUP_DELETE']);
+
+export const backupAuditLogs = pgTable("backup_audit_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  action: backupActionEnum("action").notNull(),
+  backupId: varchar("backup_id", { length: 255 }).references(() => databaseBackups.id),
+  actorAdminId: varchar("actor_admin_id", { length: 255 }).references(() => users.id),
+  actorEmail: varchar("actor_email", { length: 255 }),
+  ipAddress: varchar("ip_address", { length: 100 }),
+  userAgent: text("user_agent"),
+  result: varchar("result", { length: 50 }).notNull(),
+  errorMessage: text("error_message"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBackupAuditLogSchema = createInsertSchema(backupAuditLogs).omit({ id: true, createdAt: true });
+export type InsertBackupAuditLog = z.infer<typeof insertBackupAuditLogSchema>;
+export type BackupAuditLog = typeof backupAuditLogs.$inferSelect;

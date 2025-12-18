@@ -1,0 +1,154 @@
+You are a senior backend engineer + DevOps + security engineer.
+
+Build a complete “Database Backup & Restore” system for our platform (Finatrades).
+It must support:
+1) Create backup (manual + scheduled-ready)
+2) Download backup securely
+3) Restore backup safely (with confirmation + logging)
+4) List backups + metadata
+5) Role-based access: only Super Admin (and optionally DevOps Admin)
+
+IMPORTANT:
+- Never expose DB credentials in frontend logs or client code.
+- No backup action should be accessible to normal users.
+
+====================================================
+A) BACKUP/RESTORE UI (Admin Panel)
+====================================================
+Create Admin menu: System → Backups
+
+UI sections:
+1) “Create Backup” button
+   - shows progress
+   - on success: shows backup ID, date/time, size
+2) “Backups List” table:
+   Columns:
+   - Backup ID
+   - Type (manual / scheduled)
+   - Created by
+   - Created at (timezone)
+   - Size
+   - Status (SUCCESS/FAILED)
+   - Actions: Download, Restore, Delete (optional)
+3) Restore flow:
+   - Select backup
+   - Show warning: “Restoring will overwrite current data”
+   - Require typing confirmation text: RESTORE
+   - Require admin password re-check (or 2FA if available)
+   - Execute restore and show live logs (non-sensitive)
+
+====================================================
+B) BACKEND API ENDPOINTS (Admin Only)
+====================================================
+Implement secure endpoints:
+
+POST /api/admin/backups
+- Creates a backup file on server storage
+- Returns backup metadata
+
+GET /api/admin/backups
+- Lists all backups with metadata
+
+GET /api/admin/backups/:id/download
+- Generates a time-limited signed download link OR streams file securely
+- Must require admin auth
+
+POST /api/admin/backups/:id/restore
+- Restores DB from backup
+- Requires confirmation token + admin re-auth
+- Writes audit log
+
+DELETE /api/admin/backups/:id (optional)
+- Deletes backup file (admin only)
+
+All endpoints must enforce:
+- Auth required
+- Role required (Super Admin)
+- Rate limiting (basic)
+
+====================================================
+C) STORAGE & SECURITY REQUIREMENTS
+====================================================
+Backup storage:
+- Store backups in a protected folder (not publicly accessible)
+- File naming: finatrades-backup-YYYYMMDD-HHMMSS-<backupId>.sql.gz (or .dump)
+- Compress backups (gzip)
+- Encrypt backups at rest (AES-256) using a server-side key from ENV
+
+Never hardcode:
+- Encryption keys
+- DB connection strings
+- Admin secret tokens
+
+Use ENV variables:
+- DATABASE_URL / DB_HOST / DB_USER / DB_PASS
+- BACKUP_ENCRYPTION_KEY
+- BACKUP_STORAGE_PATH
+
+====================================================
+D) DATABASE SUPPORT (choose based on our DB)
+====================================================
+If PostgreSQL:
+- Use pg_dump for backup
+- Use pg_restore / psql for restore
+
+If MySQL:
+- Use mysqldump for backup
+- Use mysql for restore
+
+Automatically detect which DB driver we use OR read from config.
+
+====================================================
+E) SAFETY CHECKS (Must Have)
+====================================================
+Before restore:
+- Verify backup file exists and decryptable
+- Verify checksum/size not zero
+- Verify DB connection available
+- Create an automatic “pre-restore snapshot” backup (failsafe)
+
+During restore:
+- Put system into Maintenance Mode (admin toggle)
+- Block writes to DB (best effort)
+- Restore
+- Re-enable system
+
+After restore:
+- Run basic integrity checks:
+  - users table count
+  - transactions table count
+  - last transaction date
+- Show restore summary to admin
+
+====================================================
+F) AUDIT LOGGING (Mandatory)
+====================================================
+Log every action:
+- BACKUP_CREATE
+- BACKUP_DOWNLOAD
+- BACKUP_RESTORE
+- BACKUP_DELETE
+
+Log fields:
+- actorAdminId
+- actorEmail
+- ipAddress
+- userAgent
+- backupId
+- timestamp
+- result SUCCESS/FAILED
+- error message (non-sensitive)
+
+====================================================
+G) OUTPUT REQUIRED
+====================================================
+Deliver:
+1) Working Admin UI for backup/restore
+2) Secure API with role checks
+3) Encrypted + compressed backup files
+4) Download works via secure link/stream
+5) Restore works with confirmation + failsafe snapshot
+6) Full audit logs
+7) A short “Admin Backup Manual” explaining steps in simple language
+
+Do not expose secrets anywhere. Do not allow non-admin access.
