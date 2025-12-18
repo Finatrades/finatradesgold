@@ -710,30 +710,32 @@ export default function FinaBridge() {
               </div>
             </div>
 
-            {/* Locked in Escrow */}
+            {/* Locked in Escrow / Incoming Funds */}
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
               <div className="absolute right-2 bottom-2 opacity-5">
                 <ArrowLeftRight className="w-20 h-20 text-amber-500" />
               </div>
               <div className="relative z-10">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in Escrow</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {role === 'importer' ? 'Locked in Escrow' : 'Incoming Locked Funds'}
+                </p>
                 <div className="space-y-1 mb-2">
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-muted-foreground">USD Value:</span>
-                    <span className="text-2xl font-bold text-amber-500">
-                      ${(parseFloat(wallet?.lockedGoldGrams || '0') * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <span className={`text-2xl font-bold ${role === 'importer' ? 'text-amber-500' : 'text-blue-500'}`}>
+                      ${(parseFloat(role === 'importer' ? (wallet?.lockedGoldGrams || '0') : ((wallet as any)?.incomingLockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-muted-foreground">Gold Backing:</span>
-                    <span className="text-lg font-semibold text-amber-500/80">
-                      {parseFloat(wallet?.lockedGoldGrams || '0').toFixed(4)} g
+                    <span className={`text-lg font-semibold ${role === 'importer' ? 'text-amber-500/80' : 'text-blue-500/80'}`}>
+                      {parseFloat(role === 'importer' ? (wallet?.lockedGoldGrams || '0') : ((wallet as any)?.incomingLockedGoldGrams || '0')).toFixed(4)} g
                     </span>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   <ArrowLeftRight className="w-3 h-3 inline mr-1" />
-                  Gold secured for active trades.
+                  {role === 'importer' ? 'Gold secured for active trades.' : 'Reserved by importers. Released on trade completion.'}
                 </p>
               </div>
             </div>
@@ -748,14 +750,14 @@ export default function FinaBridge() {
                 <div className="space-y-1 mb-2">
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-muted-foreground">USD Value:</span>
-                    <span className="text-2xl font-bold text-amber-500">
-                      ${((parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <span className="text-2xl font-bold text-green-600">
+                      ${((parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0') + parseFloat((wallet as any)?.incomingLockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-muted-foreground">Gold Backing:</span>
                     <span className="text-lg font-semibold text-foreground">
-                      {(parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0')).toFixed(4)} g
+                      {(parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0') + parseFloat((wallet as any)?.incomingLockedGoldGrams || '0')).toFixed(4)} g
                     </span>
                   </div>
                 </div>
