@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, RefreshCw, Download, FileText, FileSpreadsheet, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, RefreshCw, Download, FileText, FileSpreadsheet, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +15,7 @@ import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
 import { useAdminOtp } from '@/hooks/useAdminOtp';
+import { Link } from 'wouter';
 
 interface Transaction {
   id: string;
@@ -463,28 +464,42 @@ export default function Transactions() {
                         <td className="px-4 py-4 text-gray-500">{format(new Date(tx.createdAt), 'MMM dd, yyyy HH:mm')}</td>
                         <td className="px-4 py-4">
                           {(tx.status === 'Pending' || tx.status === 'Under Review' || tx.status === 'Pending Review' || tx.status === 'Draft') && (
-                            <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="text-green-600 hover:bg-green-50"
-                                onClick={() => handleApproveWithOtp(tx.id, tx.type, tx.sourceTable)}
-                                disabled={approveMutation.isPending}
-                                data-testid={`button-approve-${tx.id}`}
-                              >
-                                Approve
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="text-red-600 hover:bg-red-50"
-                                onClick={() => handleRejectWithOtp(tx.id, tx.type, tx.sourceTable)}
-                                disabled={rejectMutation.isPending}
-                                data-testid={`button-reject-${tx.id}`}
-                              >
-                                Reject
-                              </Button>
-                            </div>
+                            tx.type === 'Buy Gold Bar' || tx.sourceTable === 'buyGoldRequests' ? (
+                              <Link href="/admin/finapay/buy-gold">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-orange-600 hover:bg-orange-50 gap-1"
+                                  data-testid={`button-manage-buygold-${tx.id}`}
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Manage
+                                </Button>
+                              </Link>
+                            ) : (
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-green-600 hover:bg-green-50"
+                                  onClick={() => handleApproveWithOtp(tx.id, tx.type, tx.sourceTable)}
+                                  disabled={approveMutation.isPending}
+                                  data-testid={`button-approve-${tx.id}`}
+                                >
+                                  Approve
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-red-600 hover:bg-red-50"
+                                  onClick={() => handleRejectWithOtp(tx.id, tx.type, tx.sourceTable)}
+                                  disabled={rejectMutation.isPending}
+                                  data-testid={`button-reject-${tx.id}`}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            )
                           )}
                         </td>
                       </tr>
