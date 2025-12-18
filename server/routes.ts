@@ -9261,7 +9261,14 @@ export async function registerRoutes(
       
       // Determine asset type (default to USD for backward compatibility)
       const isGoldTransfer = assetType === 'GOLD' || (amountGold && !amountUsd);
-      const goldPrice = 71.55; // Current gold price per gram
+      
+      // Get live gold price from API
+      let goldPrice: number;
+      try {
+        goldPrice = await getGoldPricePerGram();
+      } catch {
+        goldPrice = 139.44; // Fallback price if API fails
+      }
       
       // Find sender
       const sender = await storage.getUser(senderId);
