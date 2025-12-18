@@ -5524,7 +5524,7 @@ export async function registerRoutes(
     }
   });
   
-  // PUBLIC: Verify certificate authenticity
+  // PUBLIC: Verify certificate authenticity (blockchain explorer style)
   app.post("/api/certificates/verify", async (req, res) => {
     try {
       const { certificateNumber } = req.body;
@@ -5557,6 +5557,92 @@ export async function registerRoutes(
       // Build response with sanitized certificate info (no PII)
       const verificationResult = (isExpired || isStatusExpired) ? "genuine_expired" : "genuine_active";
       
+      // Get Finatrades IDs for involved parties (no personal info)
+      const holderUser = await storage.getUser(certificate.userId);
+      const holderFinatradesId = holderUser?.finatradesId || 'UNKNOWN';
+      const holderAccountType = holderUser?.accountType || 'personal';
+      
+      let senderFinatradesId: string | null = null;
+      let senderAccountType: string | null = null;
+      let recipientFinatradesId: string | null = null;
+      let recipientAccountType: string | null = null;
+      
+      if (certificate.fromUserId) {
+        const fromUser = await storage.getUser(certificate.fromUserId);
+        senderFinatradesId = fromUser?.finatradesId || null;
+        senderAccountType = fromUser?.accountType || null;
+      }
+      
+      if (certificate.toUserId) {
+        const toUser = await storage.getUser(certificate.toUserId);
+        recipientFinatradesId = toUser?.finatradesId || null;
+        recipientAccountType = toUser?.accountType || null;
+      }
+      
+      // Build blockchain explorer-style transaction history
+      const ledgerHistory: {
+        eventType: string;
+        timestamp: string;
+        goldGrams: string;
+        valueUsd: string | null;
+        fromFinatradesId: string | null;
+        fromAccountType: string | null;
+        toFinatradesId: string | null;
+        toAccountType: string | null;
+        status: string;
+        eventHash: string;
+      }[] = [];
+      
+      // Add certificate issuance event
+      ledgerHistory.push({
+        eventType: certificate.type === 'Transfer' ? 'TRANSFER' : 'ISSUANCE',
+        timestamp: certificate.issuedAt?.toISOString() || new Date().toISOString(),
+        goldGrams: certificate.goldGrams,
+        valueUsd: certificate.totalValueUsd,
+        fromFinatradesId: senderFinatradesId,
+        fromAccountType: senderAccountType,
+        toFinatradesId: certificate.type === 'Transfer' ? recipientFinatradesId : holderFinatradesId,
+        toAccountType: certificate.type === 'Transfer' ? recipientAccountType : holderAccountType,
+        status: certificate.status,
+        eventHash: `0x${Buffer.from(certificate.id).toString('hex').substring(0, 16)}...`
+      });
+      
+      // If this is a transfer certificate, add the original acquisition event
+      if (certificate.type === 'Transfer' && certificate.relatedCertificateId) {
+        const parentCert = await storage.getCertificate(certificate.relatedCertificateId);
+        if (parentCert) {
+          const parentHolder = await storage.getUser(parentCert.userId);
+          ledgerHistory.unshift({
+            eventType: 'ORIGIN',
+            timestamp: parentCert.issuedAt?.toISOString() || new Date().toISOString(),
+            goldGrams: parentCert.goldGrams,
+            valueUsd: parentCert.totalValueUsd,
+            fromFinatradesId: null,
+            fromAccountType: null,
+            toFinatradesId: parentHolder?.finatradesId || 'UNKNOWN',
+            toAccountType: parentHolder?.accountType || 'personal',
+            status: parentCert.status,
+            eventHash: `0x${Buffer.from(parentCert.id).toString('hex').substring(0, 16)}...`
+          });
+        }
+      }
+      
+      // If certificate is expired/revoked, add that event
+      if (certificate.status === 'Expired' || certificate.status === 'Revoked') {
+        ledgerHistory.push({
+          eventType: certificate.status === 'Expired' ? 'EXPIRED' : 'REVOKED',
+          timestamp: certificate.cancelledAt?.toISOString() || certificate.expiresAt?.toISOString() || new Date().toISOString(),
+          goldGrams: certificate.goldGrams,
+          valueUsd: certificate.totalValueUsd,
+          fromFinatradesId: holderFinatradesId,
+          fromAccountType: holderAccountType,
+          toFinatradesId: null,
+          toAccountType: null,
+          status: certificate.status,
+          eventHash: `0x${Buffer.from(certificate.id + '_exp').toString('hex').substring(0, 16)}...`
+        });
+      }
+      
       res.json({
         verificationResult,
         message: verificationResult === "genuine_active" 
@@ -5572,7 +5658,17 @@ export async function registerRoutes(
           vaultLocation: certificate.vaultLocation,
           status: certificate.status,
           issuedAt: certificate.issuedAt,
-          expiresAt: certificate.expiresAt
+          expiresAt: certificate.expiresAt,
+          // Privacy-safe holder info (Finatrades ID only, no personal data)
+          holderFinatradesId,
+          holderAccountType
+        },
+        // Blockchain explorer-style ledger history
+        ledgerHistory,
+        summary: {
+          totalEvents: ledgerHistory.length,
+          lastEventAt: ledgerHistory[ledgerHistory.length - 1]?.timestamp || null,
+          isTransfer: certificate.type === 'Transfer'
         }
       });
     } catch (error) {
