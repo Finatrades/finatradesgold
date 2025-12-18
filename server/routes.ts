@@ -907,6 +907,14 @@ export async function registerRoutes(
       req.session.userRole = user.role;
       req.session.adminPortal = true;
       
+      // CRITICAL: Explicitly save session to ensure adminPortal flag persists
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
       // Record login timestamp for session tracking
       const updatedUser = await storage.updateUser(user.id, {
         lastLoginAt: new Date(),
@@ -1302,6 +1310,14 @@ export async function registerRoutes(
         req.session.userRole = user.role;
         req.session.adminPortal = adminPortal;
         
+        // CRITICAL: Explicitly save session to ensure adminPortal flag persists
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
         return res.json({ success: true, user: sanitizeUser(user), adminPortal });
       }
       
@@ -1328,6 +1344,14 @@ export async function registerRoutes(
             req.session.userId = user.id;
             req.session.userRole = user.role;
             req.session.adminPortal = adminPortal;
+            
+            // CRITICAL: Explicitly save session to ensure adminPortal flag persists
+            await new Promise<void>((resolve, reject) => {
+              req.session.save((err) => {
+                if (err) reject(err);
+                else resolve();
+              });
+            });
             
             return res.json({ 
               success: true, 
