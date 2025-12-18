@@ -6846,8 +6846,19 @@ export async function registerRoutes(
   // Fund FinaBridge wallet (transfer from main wallet)
   app.post("/api/finabridge/wallet/:userId/fund", async (req, res) => {
     try {
-      const { amountGrams } = req.body;
+      const { amountGrams, goldPricePerGram } = req.body;
       const amount = parseFloat(amountGrams);
+      
+      // Get gold price from request or fetch from API as fallback
+      let goldPrice = parseFloat(goldPricePerGram) || 0;
+      if (!goldPrice) {
+        try {
+          const { getGoldPricePerGram } = await import('./gold-price');
+          goldPrice = await getGoldPricePerGram() || 0;
+        } catch (e) {
+          console.log('Could not fetch gold price for ledger entry');
+        }
+      }
       
       if (isNaN(amount) || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });
@@ -6885,6 +6896,20 @@ export async function registerRoutes(
         description: 'Transfer to FinaBridge wallet',
         sourceModule: 'finabridge',
         updatedAt: new Date(),
+      });
+      
+      // Record vault ledger entry for the transfer
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: req.params.userId,
+        action: 'FinaPay_To_FinaBridge',
+        goldGrams: amount,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'FinaPay',
+        toWallet: 'FinaBridge',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        notes: `Transferred ${amount.toFixed(4)}g from FinaPay to FinaBridge Wallet`,
       });
       
       res.json({ 

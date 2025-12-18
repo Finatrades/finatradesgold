@@ -551,7 +551,10 @@ export default function FinaBridge() {
     
     setSubmitting(true);
     try {
-      await apiRequest('POST', `/api/finabridge/wallet/${user.id}/fund`, { amountGrams: fundAmount });
+      await apiRequest('POST', `/api/finabridge/wallet/${user.id}/fund`, { 
+        amountGrams: fundAmount,
+        goldPricePerGram: currentGoldPriceUsdPerGram || 0
+      });
       toast({ title: 'Success', description: `${fundAmount}g transferred to FinaBridge wallet` });
       setShowFundDialog(false);
       setFundAmount('');
