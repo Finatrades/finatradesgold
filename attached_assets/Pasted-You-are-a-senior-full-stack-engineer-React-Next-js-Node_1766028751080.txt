@@ -1,0 +1,120 @@
+You are a senior full-stack engineer (React/Next.js + Node API) and product QA.
+
+Goal:
+Upgrade the Finatrades Admin Panel so it uses REAL DATA (from the same database and APIs as the user side), produces REAL LOGS (structured + searchable), and all admin pages/components are correctly wired to user-side flows (no stubs, no fake numbers).
+
+NON-NEGOTIABLE PLATFORM RULES:
+- Admin panel must read/write through the same domain services as user-side (single source of truth).
+- No hardcoded balances/limits/statuses in UI. Everything comes from API + config.
+- Every action must be auditable (who did what, when, before/after).
+- If a module is not implemented, show “Not configured” state, not dummy data.
+
+1) ADMIN PANEL SCOPE (pages must be connected)
+Create/verify these routes and make sure each page loads real data:
+A) /admin/dashboard (Control Tower)
+   - totals: users, kyc pending, deposits pending, withdrawals pending, open trade cases, bnsl locks
+   - last 20 critical events
+B) /admin/users (User 360)
+   - search by email/walletId/txId
+   - user profile, kyc status, wallets (FinaPay/FinaVault/BNSL/FinaBridge), certificates list, transactions list
+C) /admin/kyc
+   - queue: pending, flagged
+   - approve/reject + reason
+D) /admin/transactions
+   - filters: method (bank/crypto/card), status, date range, user
+   - view transaction detail: ledger entries + provider refs
+E) /admin/certificates
+   - list + download + regenerate (admin-only) with audit log
+F) /admin/payments (gateway config visibility)
+   - show which rails enabled, sandbox/prod, limits, webhooks status (read-only unless admin)
+G) /admin/employees
+   - roles: ADMIN / OPS / COMPLIANCE / FINANCE
+   - role permissions matrix
+H) /admin/audit-logs
+   - immutable log viewer with filters + export
+I) /admin/system-health
+   - API uptime, DB connectivity, queue/outbox status, failed jobs, last errors
+
+2) REAL DATA INTEGRATION (must share with user side)
+- Build a shared service layer:
+  /src/server/services/*
+  /src/server/repositories/*
+  /src/shared/types/*
+- User side and Admin side must call the same services:
+  - userService, kycService, walletService, transactionService, certificateService, auditService
+- No duplicated logic in admin components.
+
+3) AUTH + RBAC (employees)
+- Enforce server-side RBAC:
+  - ADMIN: full access
+  - OPS: view + ops actions (review queues) but cannot approve KYC
+  - COMPLIANCE: approve/reject KYC, view audit logs, view transactions
+  - FINANCE: view transactions/certificates, reconcile
+- Frontend must hide routes based on role, BUT backend must enforce too (403).
+- Add “Impersonation (read-only)” option for ADMIN to view user dashboard safely (no actions).
+
+4) LOGGING (real logs like production)
+Implement structured logs for every request/action:
+Log format (JSON):
+{ ts, level, requestId, actorType:"USER|EMPLOYEE", actorEmail, actorRole, route, action, targetId, status, durationMs, details, errorStack? }
+
+Where logs go:
+- Console
+- Persist to DB table: audit_logs (immutable)
+- Persist system logs to: system_logs (for errors/health)
+Admin pages:
+- /admin/audit-logs shows audit_logs
+- /admin/system-health shows last errors from system_logs
+
+5) AUDIT TRAIL (mandatory)
+Every sensitive admin action must create audit log with before/after:
+- KYC approve/reject
+- Manual status changes (ops)
+- Certificate regenerate
+- Role changes
+- Any config changes
+Audit entry fields:
+{ id, requestId, actorEmail, actorRole, action, targetType, targetId, beforeJson, afterJson, reason, ip, userAgent, createdAt }
+
+6) DATA CONSISTENCY + REALTIME UPDATES
+- Balances/transactions/certificates must update without manual refresh:
+  implement SSE or WebSocket:
+  - /api/events stream events:
+    WALLET_UPDATED, TX_STATUS_CHANGED, CERT_ISSUED, KYC_CHANGED
+- User side and Admin side should subscribe to same stream.
+
+7) ERROR HANDLING (clean + traceable)
+- Standard API error shape:
+{ code, message, requestId, meta? }
+- UI shows user-friendly messages + “Copy requestId” button.
+- All errors logged server-side with requestId.
+
+8) QA CHECKS (admin panel connected to user side)
+Add an internal “Connection Check” button on /admin/system-health that:
+- Calls key endpoints and reports pass/fail:
+  /api/me
+  /api/admin/metrics
+  /api/admin/users?search=
+  /api/admin/kyc/queue
+  /api/admin/transactions?limit=10
+  /api/admin/certificates?limit=10
+  /api/events (stream test)
+- Writes results to system_logs
+
+9) IMPLEMENTATION TASKS (do now)
+- Scan the repo for any mock data and remove it (search: mock, dummy, sample, hardcoded).
+- Wire each admin page to real endpoints.
+- Build missing endpoints under /api/admin/* using shared services.
+- Ensure each page has:
+  loading state, empty state, error state, pagination, filters.
+
+10) OUTPUT REQUIREMENTS
+- Provide a PR-style summary:
+  - files changed
+  - endpoints added
+  - how to test each page
+- Run:
+  npm test (or equivalent)
+  and show logs for at least one admin action (e.g., KYC approve) with requestId.
+
+Start now: open /admin/dashboard, replace all stub stats with real API data, then proceed page by page.
