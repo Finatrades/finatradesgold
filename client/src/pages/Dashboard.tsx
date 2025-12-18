@@ -124,7 +124,7 @@ export default function Dashboard() {
                   return (
                     <>
                       <KpiBox
-                        title="Total Gold"
+                        title="Gold Storage"
                         value={`${formatNumber(totalGoldGrams, 4)} g`}
                         secondaryValue={`${formatNumber(totalGoldGrams / 1000, 6)} KG`}
                         tertiaryValue={`${formatNumber(totalGoldGrams / 31.1035, 4)} OZ`}
