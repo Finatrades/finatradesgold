@@ -187,7 +187,7 @@ export default function Login() {
           <div className="container mx-auto px-6 max-w-md">
             
             <div className="text-center mb-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary flex items-center justify-center">
                 <Shield className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Two-Factor Authentication</h1>
@@ -222,7 +222,7 @@ export default function Login() {
                 <Button 
                   type="submit"
                   disabled={isLoading || mfaCode.length < 6}
-                  className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                  className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
                   data-testid="button-verify-mfa"
                 >
                   {isLoading ? "Verifying..." : (
@@ -320,7 +320,7 @@ export default function Login() {
               <Button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
                 data-testid="button-login"
               >
                 {isLoading ? "Signing in..." : (
