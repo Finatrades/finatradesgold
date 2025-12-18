@@ -126,6 +126,25 @@ interface CryptoPaymentRequest {
   } | null;
 }
 
+interface BuyGoldRequest {
+  id: string;
+  referenceNumber: string;
+  userId: string;
+  amountUsd: string | null;
+  wingoldReferenceId: string | null;
+  goldGrams: string | null;
+  goldPriceAtTime: string | null;
+  receiptFileUrl: string;
+  receiptFileName: string;
+  status: 'Pending' | 'Under Review' | 'Credited' | 'Rejected';
+  reviewerId: string | null;
+  reviewedAt: string | null;
+  adminNotes: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  user?: UserInfo | null;
+}
+
 export default function FinaPayManagement() {
   const { user: currentUser } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -135,6 +154,7 @@ export default function FinaPayManagement() {
   const [peerTransfers, setPeerTransfers] = useState<PeerTransfer[]>([]);
   const [peerRequests, setPeerRequests] = useState<PeerRequest[]>([]);
   const [cryptoPayments, setCryptoPayments] = useState<CryptoPaymentRequest[]>([]);
+  const [buyGoldRequests, setBuyGoldRequests] = useState<BuyGoldRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -155,6 +175,13 @@ export default function FinaPayManagement() {
   const [selectedCrypto, setSelectedCrypto] = useState<CryptoPaymentRequest | null>(null);
   const [cryptoReviewNotes, setCryptoReviewNotes] = useState('');
   const [cryptoRejectionReason, setCryptoRejectionReason] = useState('');
+  
+  const [buyGoldDialogOpen, setBuyGoldDialogOpen] = useState(false);
+  const [selectedBuyGold, setSelectedBuyGold] = useState<BuyGoldRequest | null>(null);
+  const [buyGoldAdminNotes, setBuyGoldAdminNotes] = useState('');
+  const [buyGoldRejectionReason, setBuyGoldRejectionReason] = useState('');
+  const [buyGoldGrams, setBuyGoldGrams] = useState('');
+  const [buyGoldPrice, setBuyGoldPrice] = useState('');
   
   const [otpModalOpen, setOtpModalOpen] = useState(false);
   const [otpActionType, setOtpActionType] = useState<AdminActionType>('deposit_approval');
@@ -207,14 +234,15 @@ export default function FinaPayManagement() {
       'X-Admin-User-Id': currentUser?.id || '' 
     };
     try {
-      const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes] = await Promise.all([
+      const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes, buyGoldRes] = await Promise.all([
         fetch('/api/admin/transactions', { credentials: 'include', headers: adminHeaders }),
         fetch('/api/admin/users', { credentials: 'include', headers: adminHeaders }),
         fetch('/api/admin/deposit-requests', { credentials: 'include', headers: adminHeaders }),
         fetch('/api/admin/withdrawal-requests', { credentials: 'include', headers: adminHeaders }),
         fetch('/api/admin/finapay/peer-transfers', { credentials: 'include', headers: adminHeaders }),
         fetch('/api/admin/finapay/peer-requests', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/crypto-payments', { credentials: 'include', headers: adminHeaders })
+        fetch('/api/admin/crypto-payments', { credentials: 'include', headers: adminHeaders }),
+        fetch('/api/admin/buy-gold', { credentials: 'include', headers: adminHeaders })
       ]);
       
       const txData = await txResponse.json();
@@ -224,6 +252,7 @@ export default function FinaPayManagement() {
       const peerTransfersData = await peerTransfersRes.json();
       const peerRequestsData = await peerRequestsRes.json();
       const cryptoData = cryptoRes.ok ? await cryptoRes.json() : { requests: [] };
+      const buyGoldData = buyGoldRes.ok ? await buyGoldRes.json() : { requests: [] };
       
       setTransactions(txData.transactions || []);
       setDepositRequests(depositData.requests || []);
@@ -231,6 +260,7 @@ export default function FinaPayManagement() {
       setPeerTransfers(peerTransfersData.transfers || []);
       setPeerRequests(peerRequestsData.requests || []);
       setCryptoPayments(cryptoData.requests || []);
+      setBuyGoldRequests(buyGoldData.requests || []);
       
       const userMap: Record<string, UserInfo> = {};
       (usersData.users || []).forEach((u: UserInfo) => {
@@ -425,6 +455,58 @@ export default function FinaPayManagement() {
     }
   };
 
+  const openBuyGoldDialog = (request: BuyGoldRequest) => {
+    setSelectedBuyGold(request);
+    setBuyGoldAdminNotes(request.adminNotes || '');
+    setBuyGoldRejectionReason('');
+    setBuyGoldGrams(request.goldGrams || '');
+    setBuyGoldPrice(request.goldPriceAtTime || '');
+    setBuyGoldDialogOpen(true);
+  };
+
+  const handleBuyGoldAction = async (action: 'Credited' | 'Rejected') => {
+    if (!selectedBuyGold || !currentUser) return;
+    
+    try {
+      const endpoint = action === 'Credited' 
+        ? `/api/admin/buy-gold/${selectedBuyGold.id}/approve`
+        : `/api/admin/buy-gold/${selectedBuyGold.id}/reject`;
+      
+      const body = action === 'Credited'
+        ? { 
+            adminNotes: buyGoldAdminNotes,
+            goldGrams: buyGoldGrams,
+            goldPriceAtTime: buyGoldPrice
+          }
+        : { 
+            rejectionReason: buyGoldRejectionReason, 
+            adminNotes: buyGoldAdminNotes 
+          };
+      
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-User-Id': String(currentUser.id)
+        },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Request failed');
+      }
+      
+      toast.success(`Buy gold request ${action === 'Credited' ? 'approved and credited' : 'rejected'}`);
+      setBuyGoldDialogOpen(false);
+      setSelectedBuyGold(null);
+      fetchData();
+    } catch (error) {
+      toast.error(`Failed to ${action === 'Credited' ? 'approve' : 'reject'} buy gold request`);
+    }
+  };
+
   const pendingDeposits = depositRequests.filter(d => d.status === 'Pending');
   const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'Pending' || w.status === 'Processing');
   const pendingTxs = transactions.filter(t => t.status === 'Pending');
@@ -600,6 +682,10 @@ export default function FinaPayManagement() {
             <TabsTrigger value="crypto" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
               <Bitcoin className="w-4 h-4 mr-2" />
               Crypto ({cryptoPayments.length})
+            </TabsTrigger>
+            <TabsTrigger value="buy-gold" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+              <Coins className="w-4 h-4 mr-2" />
+              Buy Gold ({buyGoldRequests.length})
             </TabsTrigger>
           </TabsList>
 
@@ -905,6 +991,74 @@ export default function FinaPayManagement() {
                             </div>
                             <Button size="sm" onClick={() => openCryptoDialog(payment)} data-testid={`button-review-crypto-${payment.id}`}>
                               {payment.status === 'Pending' || payment.status === 'Under Review' ? 'Review' : <Eye className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="buy-gold">
+              <h2 className="text-lg font-semibold mb-4">Buy Gold Requests (Wingold)</h2>
+              {buyGoldRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    <Coins className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No buy gold requests</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {buyGoldRequests.map(request => (
+                    <Card key={request.id} data-testid={`card-buy-gold-${request.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
+                              <Coins className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900 text-lg">
+                                  {request.amountUsd ? `$${parseFloat(request.amountUsd).toFixed(2)}` : 'Amount TBD'}
+                                </span>
+                                <Badge variant={
+                                  request.status === 'Credited' ? 'default' :
+                                  request.status === 'Rejected' ? 'destructive' :
+                                  request.status === 'Under Review' ? 'secondary' : 'outline'
+                                } className={
+                                  request.status === 'Credited' ? 'bg-green-100 text-green-800' : ''
+                                }>
+                                  {request.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {request.user ? `${request.user.firstName} ${request.user.lastName}` : getUserName(request.userId)} 
+                                {' '}({request.user?.email || getUserEmail(request.userId)})
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Ref: {request.referenceNumber}
+                                {request.wingoldReferenceId && ` • Wingold: ${request.wingoldReferenceId}`}
+                              </p>
+                              {request.goldGrams && (
+                                <p className="text-xs text-amber-600">
+                                  {parseFloat(request.goldGrams).toFixed(4)}g Gold
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">{new Date(request.createdAt).toLocaleString()}</p>
+                              {request.reviewedAt && (
+                                <p className="text-xs text-gray-400">Reviewed: {new Date(request.reviewedAt).toLocaleString()}</p>
+                              )}
+                            </div>
+                            <Button size="sm" onClick={() => openBuyGoldDialog(request)} data-testid={`button-review-buy-gold-${request.id}`}>
+                              {request.status === 'Pending' || request.status === 'Under Review' ? 'Review' : <Eye className="w-4 h-4" />}
                             </Button>
                           </div>
                         </div>
@@ -1406,6 +1560,175 @@ export default function FinaPayManagement() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Buy Gold Dialog */}
+        <Dialog open={buyGoldDialogOpen} onOpenChange={setBuyGoldDialogOpen}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Buy Gold Request Details</DialogTitle>
+              <DialogDescription>Review and process this buy gold request from Wingold & Metals</DialogDescription>
+            </DialogHeader>
+            {selectedBuyGold && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Amount (USD)</p>
+                    <p className="font-bold text-xl">
+                      {selectedBuyGold.amountUsd ? `$${parseFloat(selectedBuyGold.amountUsd).toFixed(2)}` : 'Not specified'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Status</p>
+                    <Badge variant={
+                      selectedBuyGold.status === 'Credited' ? 'default' :
+                      selectedBuyGold.status === 'Rejected' ? 'destructive' : 'secondary'
+                    }>
+                      {selectedBuyGold.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Reference</p>
+                    <p className="font-medium">{selectedBuyGold.referenceNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Wingold Ref</p>
+                    <p className="font-medium">{selectedBuyGold.wingoldReferenceId || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">User</p>
+                    <p className="font-medium">
+                      {selectedBuyGold.user ? `${selectedBuyGold.user.firstName} ${selectedBuyGold.user.lastName}` : getUserName(selectedBuyGold.userId)}
+                    </p>
+                    <p className="text-xs text-gray-400">{selectedBuyGold.user?.email || getUserEmail(selectedBuyGold.userId)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Created</p>
+                    <p className="font-medium">{new Date(selectedBuyGold.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {selectedBuyGold.receiptFileUrl && (
+                  <div className="p-3 bg-gray-50 rounded-lg border">
+                    <p className="text-gray-500 text-xs mb-2">Receipt</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{selectedBuyGold.receiptFileName}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.open(selectedBuyGold.receiptFileUrl, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-1" />
+                        View Receipt
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {(selectedBuyGold.status === 'Pending' || selectedBuyGold.status === 'Under Review') && (
+                  <>
+                    <div className="space-y-3 pt-2 border-t">
+                      <h4 className="font-medium">Credit Gold to User</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="buyGoldGrams">Gold Amount (grams)</Label>
+                          <Input
+                            id="buyGoldGrams"
+                            type="number"
+                            step="0.0001"
+                            value={buyGoldGrams}
+                            onChange={(e) => setBuyGoldGrams(e.target.value)}
+                            placeholder="Enter gold grams"
+                            data-testid="input-buy-gold-grams"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="buyGoldPrice">Gold Price ($/g)</Label>
+                          <Input
+                            id="buyGoldPrice"
+                            type="number"
+                            step="0.01"
+                            value={buyGoldPrice}
+                            onChange={(e) => setBuyGoldPrice(e.target.value)}
+                            placeholder="Enter price per gram"
+                            data-testid="input-buy-gold-price"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="buyGoldAdminNotes">Admin Notes</Label>
+                        <Textarea
+                          id="buyGoldAdminNotes"
+                          value={buyGoldAdminNotes}
+                          onChange={(e) => setBuyGoldAdminNotes(e.target.value)}
+                          placeholder="Optional notes..."
+                          rows={2}
+                          data-testid="input-buy-gold-notes"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-2 border-t">
+                      <h4 className="font-medium text-red-600">Reject Request</h4>
+                      <div>
+                        <Label htmlFor="buyGoldRejectionReason">Rejection Reason</Label>
+                        <Textarea
+                          id="buyGoldRejectionReason"
+                          value={buyGoldRejectionReason}
+                          onChange={(e) => setBuyGoldRejectionReason(e.target.value)}
+                          placeholder="Reason for rejection..."
+                          rows={2}
+                          data-testid="input-buy-gold-rejection"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {selectedBuyGold.status === 'Credited' && selectedBuyGold.goldGrams && (
+                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-green-800 font-medium">
+                      {parseFloat(selectedBuyGold.goldGrams).toFixed(4)}g Gold credited at ${parseFloat(selectedBuyGold.goldPriceAtTime || '0').toFixed(2)}/g
+                    </p>
+                  </div>
+                )}
+
+                {selectedBuyGold.status === 'Rejected' && selectedBuyGold.rejectionReason && (
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-red-800">{selectedBuyGold.rejectionReason}</p>
+                  </div>
+                )}
+
+                <DialogFooter>
+                  {(selectedBuyGold.status === 'Pending' || selectedBuyGold.status === 'Under Review') && (
+                    <>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleBuyGoldAction('Rejected')}
+                        disabled={!buyGoldRejectionReason}
+                        data-testid="button-reject-buy-gold"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Reject
+                      </Button>
+                      <Button
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => handleBuyGoldAction('Credited')}
+                        disabled={!buyGoldGrams || !buyGoldPrice}
+                        data-testid="button-approve-buy-gold"
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-1" />
+                        Approve & Credit
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="outline" onClick={() => setBuyGoldDialogOpen(false)}>
+                    Close
+                  </Button>
+                </DialogFooter>
               </div>
             )}
           </DialogContent>
