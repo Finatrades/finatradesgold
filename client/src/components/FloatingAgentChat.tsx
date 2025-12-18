@@ -1,11 +1,41 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, ChevronLeft, User, Mail } from "lucide-react";
+import { X, Send, ChevronLeft, User, Mail, Bot, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useChat, ChatProvider } from "@/context/ChatContext";
 import { useAuth } from "@/context/AuthContext";
+
+interface ChatbotMessage {
+  id: string;
+  sender: 'user' | 'bot';
+  content: string;
+  timestamp: Date;
+  suggestedActions?: string[];
+}
+
+async function getChatbotResponse(message: string): Promise<{
+  reply: string;
+  suggestedActions?: string[];
+  escalateToHuman?: boolean;
+}> {
+  try {
+    const response = await fetch('/api/chatbot/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    });
+    if (!response.ok) throw new Error('Failed to get response');
+    return await response.json();
+  } catch (error) {
+    console.error('Chatbot error:', error);
+    return {
+      reply: "I'm having trouble responding right now. Would you like to speak with a human agent?",
+      suggestedActions: ['Speak to Agent'],
+    };
+  }
+}
 
 const agents = [
   { name: "General", role: "General Assistant", image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/a3b38c132_General.png", greeting: "Hi! I'm your General Assistant. Ask me anything about Finatrades, or select a specialist agent below!", active: true },
@@ -38,6 +68,11 @@ function FloatingAgentChatContent() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [showGuestForm, setShowGuestForm] = useState(false);
+  
+  // Chatbot state
+  const [chatbotMessages, setChatbotMessages] = useState<ChatbotMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [useHumanAgent, setUseHumanAgent] = useState(false);
 
   // Auto-hide notification after 8 seconds
   useEffect(() => {
@@ -51,28 +86,45 @@ function FloatingAgentChatContent() {
     if (isOpen && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [isOpen, currentSession?.messages]);
+  }, [isOpen, chatbotMessages, currentSession?.messages]);
 
   const openChat = () => {
     setIsOpen(true);
     setShowNotification(false);
     
-    if (user) {
-      const existingSession = sessions.find(s => s.userId === user.id);
-      if (existingSession) {
-        selectSession(existingSession.id);
+    // Show greeting if no messages yet
+    if (chatbotMessages.length === 0 && !useHumanAgent) {
+      const greeting: ChatbotMessage = {
+        id: `bot-${Date.now()}`,
+        sender: 'bot',
+        content: user 
+          ? `Hello ${user.firstName}! I'm your Finatrades assistant. I can help you with:\n\n• Buying and selling gold\n• Account questions\n• Fees and limits\n• FinaVault storage\n• BNSL plans\n\nHow can I assist you today?`
+          : "Hello! I'm your Finatrades assistant. I can help you with:\n\n• Buying and selling gold\n• Account questions\n• Fees and limits\n• FinaVault storage\n• BNSL plans\n\nHow can I assist you today?",
+        timestamp: new Date(),
+        suggestedActions: ['How to buy gold?', 'What are the fees?', 'Tell me about BNSL']
+      };
+      setChatbotMessages([greeting]);
+    }
+    
+    // For human agent mode, set up session
+    if (useHumanAgent) {
+      if (user) {
+        const existingSession = sessions.find(s => s.userId === user.id);
+        if (existingSession) {
+          selectSession(existingSession.id);
+        } else {
+          const sessionId = createSession(user.id, `${user.firstName} ${user.lastName}`);
+          selectSession(sessionId);
+          sendMessage(currentAgent.greeting, 'agent', sessionId);
+        }
+      } else if (guestInfo) {
+        const existingSession = sessions.find(s => s.userName === guestInfo.name);
+        if (existingSession) {
+          selectSession(existingSession.id);
+        }
       } else {
-        const sessionId = createSession(user.id, `${user.firstName} ${user.lastName}`);
-        selectSession(sessionId);
-        sendMessage(currentAgent.greeting, 'agent', sessionId);
+        setShowGuestForm(true);
       }
-    } else if (guestInfo) {
-      const existingSession = sessions.find(s => s.userName === guestInfo.name);
-      if (existingSession) {
-        selectSession(existingSession.id);
-      }
-    } else {
-      setShowGuestForm(true);
     }
   };
 
@@ -104,14 +156,105 @@ function FloatingAgentChatContent() {
     setShowAgentList(false);
     sendMessage(`System: Switched to ${agent.name} (${agent.role})`, 'agent');
   };
+  
+  const escalateToHuman = useCallback(() => {
+    setUseHumanAgent(true);
+    setChatbotMessages(prev => [...prev, {
+      id: `bot-${Date.now()}`,
+      sender: 'bot',
+      content: "Connecting you with a human agent. Please wait a moment...",
+      timestamp: new Date()
+    }]);
+    
+    // Set up human chat session
+    if (user) {
+      const existingSession = sessions.find(s => s.userId === user.id);
+      if (existingSession) {
+        selectSession(existingSession.id);
+      } else {
+        const sessionId = createSession(user.id, `${user.firstName} ${user.lastName}`);
+        selectSession(sessionId);
+        sendMessage("User requested to speak with a human agent.", 'agent', sessionId);
+      }
+    } else {
+      setShowGuestForm(true);
+    }
+  }, [user, sessions, selectSession, createSession, sendMessage]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = useCallback(async () => {
     if (!message.trim()) return;
-    sendMessage(message, 'user');
+    const userMessage = message.trim();
     setMessage("");
-  };
+    
+    // If using human agent, use the socket-based chat
+    if (useHumanAgent) {
+      sendMessage(userMessage, 'user');
+      return;
+    }
+    
+    // Add user message to chatbot
+    const userMsg: ChatbotMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      content: userMessage,
+      timestamp: new Date()
+    };
+    setChatbotMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+    
+    // Get chatbot response
+    const response = await getChatbotResponse(userMessage);
+    
+    // Add bot response
+    const botMsg: ChatbotMessage = {
+      id: `bot-${Date.now()}`,
+      sender: 'bot',
+      content: response.reply,
+      timestamp: new Date(),
+      suggestedActions: response.suggestedActions
+    };
+    setChatbotMessages(prev => [...prev, botMsg]);
+    setIsLoading(false);
+    
+    // Handle escalation
+    if (response.escalateToHuman) {
+      setTimeout(() => escalateToHuman(), 1500);
+    }
+  }, [message, useHumanAgent, sendMessage, escalateToHuman]);
+  
+  const handleQuickAction = useCallback(async (action: string) => {
+    if (action === 'Speak to Agent') {
+      escalateToHuman();
+      return;
+    }
+    
+    // Add user message
+    const userMsg: ChatbotMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      content: action,
+      timestamp: new Date()
+    };
+    setChatbotMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+    
+    // Get chatbot response
+    const response = await getChatbotResponse(action);
+    
+    const botMsg: ChatbotMessage = {
+      id: `bot-${Date.now()}`,
+      sender: 'bot',
+      content: response.reply,
+      timestamp: new Date(),
+      suggestedActions: response.suggestedActions
+    };
+    setChatbotMessages(prev => [...prev, botMsg]);
+    setIsLoading(false);
+  }, [escalateToHuman]);
 
-  const displayMessages = currentSession?.messages || [];
+  const displayMessages = useHumanAgent 
+    ? (currentSession?.messages || [])
+    : chatbotMessages;
 
   return (
     <>
@@ -339,64 +482,102 @@ function FloatingAgentChatContent() {
                 >
                   {/* Chat Messages */}
                   <div className="h-72 overflow-y-auto p-4 space-y-3">
-                    {displayMessages.map((msg, idx) => (
+                    {displayMessages.map((msg, idx) => {
+                      const isUser = msg.sender === 'user';
+                      const isBot = 'suggestedActions' in msg;
+                      const chatbotMsg = msg as ChatbotMessage;
+                      
+                      return (
+                        <motion.div
+                          key={msg.id || idx}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className="flex flex-col gap-2 max-w-[85%]">
+                            <div
+                              className={`rounded-2xl px-4 py-2.5 ${
+                                isUser
+                                  ? 'bg-gradient-to-r from-primary to-[#FF2FBF] text-white'
+                                  : 'bg-muted text-foreground border border-border'
+                              }`}
+                            >
+                              {!isUser && (
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <Bot className="w-3.5 h-3.5 text-primary" />
+                                  <span className="text-xs font-medium text-primary">Assistant</span>
+                                </div>
+                              )}
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            </div>
+                            {/* Quick Actions */}
+                            {isBot && chatbotMsg.suggestedActions && chatbotMsg.suggestedActions.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {chatbotMsg.suggestedActions.map((action, actionIdx) => (
+                                  <button
+                                    key={actionIdx}
+                                    onClick={() => handleQuickAction(action)}
+                                    className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                                    data-testid={`quick-action-${actionIdx}`}
+                                  >
+                                    {action}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                    {/* Loading indicator */}
+                    {isLoading && (
                       <motion.div
-                        key={idx}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className="flex justify-start"
                       >
-                        <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-                            msg.sender === 'user'
-                              ? 'bg-gradient-to-r from-primary to-[#FF2FBF] text-white'
-                              : 'bg-muted text-foreground border border-border'
-                          }`}
-                        >
-                          <p className="text-sm">{msg.content}</p>
+                        <div className="bg-muted text-foreground border border-border rounded-2xl px-4 py-2.5 flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Thinking...</span>
                         </div>
                       </motion.div>
-                    ))}
+                    )}
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Other Specialists */}
-                  <div className="px-4 py-2 border-t border-border bg-muted/20">
-                    <p className="text-muted-foreground text-xs mb-2">Other specialists:</p>
-                    <div className="flex gap-1">
-                      {agents.filter(a => a.name !== currentAgent.name).slice(0, 6).map((agent, idx) => (
+                  {/* Quick Actions Bar - only show for chatbot */}
+                  {!useHumanAgent && (
+                    <div className="px-4 py-2 border-t border-border bg-muted/20">
+                      <div className="flex items-center gap-2">
                         <button
-                          key={idx}
-                          onClick={() => agent.active ? switchAgent(agent) : setComingSoonAgent(agent)}
-                          className={`w-8 h-8 rounded-full overflow-hidden bg-white transition-all relative hover:ring-2 ring-secondary/50 cursor-pointer border border-border ${
-                            !agent.active ? 'grayscale opacity-70' : ''
-                          }`}
-                          title={agent.name}
+                          onClick={() => escalateToHuman()}
+                          className="text-xs px-3 py-1.5 rounded-full bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors border border-secondary/20"
+                          data-testid="speak-to-agent"
                         >
-                          <img
-                            src={agent.image}
-                            alt={agent.name}
-                            className="w-full h-full object-cover object-top"
-                          />
+                          Speak to Agent
                         </button>
-                      ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Input */}
                   <div className="p-4 border-t border-border flex gap-2 bg-background">
                     <Input
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder={`Message ${currentAgent.name}...`}
+                      onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
+                      placeholder={useHumanAgent ? "Message support..." : "Ask me anything..."}
                       className="flex-1 bg-muted border-input text-foreground placeholder:text-muted-foreground focus:border-primary"
+                      disabled={isLoading}
+                      data-testid="input-chat-message"
                     />
                     <Button
                       onClick={handleSendMessage}
                       className="bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90"
+                      disabled={isLoading || !message.trim()}
+                      data-testid="button-send-message"
                     >
-                      <Send className="w-4 h-4" />
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
                 </motion.div>

@@ -9210,6 +9210,68 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // CHATBOT - AI-POWERED INSTANT SUPPORT
+  // ============================================================================
+  
+  // Process chatbot message (public - works for guests and authenticated users)
+  app.post("/api/chatbot/message", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      // Input validation
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      
+      // Sanitize input - limit length and remove potentially harmful content
+      const sanitizedMessage = message.slice(0, 1000).trim();
+      if (sanitizedMessage.length === 0) {
+        return res.status(400).json({ message: "Message cannot be empty" });
+      }
+      
+      // Rate limiting by IP
+      const clientId = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+      const { checkRateLimit, processUserMessage } = await import('./chatbot-service.js');
+      
+      if (!checkRateLimit(clientId)) {
+        return res.status(429).json({ 
+          message: "Too many requests. Please wait a moment before sending another message.",
+          reply: "You're sending messages too quickly. Please wait a moment and try again.",
+          escalateToHuman: false
+        });
+      }
+      
+      const response = processUserMessage(sanitizedMessage);
+      
+      // Sanitize output - ensure no script tags or dangerous content
+      const sanitizedReply = response.message.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      
+      res.json({
+        reply: sanitizedReply,
+        category: response.category,
+        confidence: response.confidence,
+        suggestedActions: response.suggestedActions,
+        escalateToHuman: response.escalateToHuman,
+      });
+    } catch (error) {
+      console.error("Chatbot error:", error);
+      res.status(500).json({ message: "Failed to process message" });
+    }
+  });
+  
+  // Get chatbot greeting
+  app.get("/api/chatbot/greeting", async (req, res) => {
+    try {
+      const { getChatbotGreeting } = await import('./chatbot-service.js');
+      const userName = req.user ? (req.user as any).firstName : undefined;
+      const greeting = getChatbotGreeting(userName);
+      res.json({ greeting });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get greeting" });
+    }
+  });
+  
+  // ============================================================================
   // AUDIT LOGS
   // ============================================================================
   
