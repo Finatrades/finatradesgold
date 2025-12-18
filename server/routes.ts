@@ -285,7 +285,8 @@ export async function registerRoutes(
         notifications,
         tradeCases,
         certificates,
-        finabridgeWallet
+        finabridgeWallet,
+        buyGoldRequests
       ] = await Promise.all([
         storage.getWallet(userId).catch(() => null),
         storage.getUserVaultHoldings(userId).catch(() => []),
@@ -297,7 +298,8 @@ export async function registerRoutes(
         storage.getUserNotifications(userId).catch(() => []),
         storage.getUserTradeCases(userId).catch(() => []),
         storage.getUserCertificates(userId).catch(() => []),
-        storage.getFinabridgeWallet(userId).catch(() => null)
+        storage.getFinabridgeWallet(userId).catch(() => null),
+        storage.getUserBuyGoldRequests(userId).catch(() => [])
       ]);
 
       const goldPrice = priceData.pricePerGram || 85;
@@ -332,8 +334,23 @@ export async function registerRoutes(
           sourceModule: 'FinaPay',
         }));
 
+      // Convert buy gold requests to transaction format
+      // Exclude 'Credited' since those have real transaction records
+      const buyGoldTransactions = (buyGoldRequests || [])
+        .filter((bg: any) => bg.status !== 'Credited')
+        .map((bg: any) => ({
+          id: bg.id,
+          type: 'Buy',
+          status: bg.status,
+          amountUsd: bg.amountUsd,
+          amountGold: bg.goldGrams,
+          createdAt: bg.createdAt,
+          description: `Buy Gold (Wingold) - ${bg.status}`,
+          sourceModule: 'Wingold',
+        }));
+
       // Combine and sort transactions (limit to 20 for dashboard)
-      const allTransactions = [...(transactions || []), ...depositTransactions, ...cryptoTransactions]
+      const allTransactions = [...(transactions || []), ...depositTransactions, ...cryptoTransactions, ...buyGoldTransactions]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 20);
 
