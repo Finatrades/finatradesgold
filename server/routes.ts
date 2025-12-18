@@ -9610,22 +9610,41 @@ export async function registerRoutes(
         };
       } else {
         // Use General agent (default)
+        // First, search knowledge base for relevant articles
+        let knowledgeResponse: string | null = null;
+        try {
+          const kbResults = await storage.searchKnowledgeArticles(sanitizedMessage, selectedAgent?.type || 'general');
+          if (kbResults.length > 0 && kbResults[0].summary) {
+            // Use the top matching article's summary or content
+            knowledgeResponse = kbResults[0].summary || kbResults[0].content.slice(0, 500);
+          }
+        } catch (err) {
+          console.error("Error searching knowledge base:", err);
+        }
+        
         const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
         
+        // If knowledge base found a relevant article and FAQ had low confidence, use KB response
+        let finalReply = response.message;
+        if (knowledgeResponse && response.confidence < 0.6) {
+          finalReply = knowledgeResponse;
+        }
+        
         // Sanitize output - ensure no script tags or dangerous content
-        const sanitizedReply = response.message.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        const sanitizedReply = finalReply.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         
         responseData = {
           reply: sanitizedReply,
           category: response.category,
-          confidence: response.confidence,
+          confidence: knowledgeResponse ? Math.max(response.confidence, 0.7) : response.confidence,
           suggestedActions: response.suggestedActions,
           escalateToHuman: response.escalateToHuman,
           agent: selectedAgent ? {
             id: selectedAgent.id,
             name: selectedAgent.displayName,
             type: selectedAgent.type
-          } : undefined
+          } : undefined,
+          fromKnowledgeBase: !!knowledgeResponse && response.confidence < 0.6
         };
       }
       
