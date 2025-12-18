@@ -63,7 +63,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, adminPortal } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
@@ -103,7 +103,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const isAdminSession = sessionStorage.getItem('adminPortalSession') === 'true';
   
-  if (!user || user.role !== 'admin' || !isAdminSession) {
+  // Require both admin role AND admin portal access (logged in via /admin/login)
+  if (!user || user.role !== 'admin' || (!adminPortal && !isAdminSession)) {
     return <Redirect to="/admin/login" />;
   }
 

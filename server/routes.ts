@@ -738,7 +738,8 @@ export async function registerRoutes(
         mfaChallenges.set(challengeToken, {
           userId: user.id,
           expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-          attempts: 0
+          attempts: 0,
+          adminPortal: false
         });
         
         return res.json({ 
