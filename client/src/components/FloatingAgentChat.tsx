@@ -281,8 +281,8 @@ function FloatingAgentChatContent() {
     setChatbotMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     
-    // Get chatbot response
-    const response = await getChatbotResponse(action);
+    // Get chatbot response - pass current agent type for routing
+    const response = await getChatbotResponse(action, currentAgent.type);
     
     const botMsg: ChatbotMessage = {
       id: `bot-${Date.now()}`,
