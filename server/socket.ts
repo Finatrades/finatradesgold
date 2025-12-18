@@ -265,15 +265,18 @@ export function setupSocketIO(httpServer: HttpServer) {
       try {
         const { dealRoomId, senderUserId, senderRole, content, attachmentUrl, attachmentName, attachmentType } = data;
 
-        // Verify the room exists and user is a participant
+        // Verify the room exists and user is a participant or admin
         const room = await storage.getDealRoom(dealRoomId);
         if (!room) {
           socket.emit('dealroom:error', { message: 'Deal room not found' });
           return;
         }
 
+        // Check if user is an admin - admins can always send messages
+        const user = await storage.getUser(senderUserId);
+        const isAdmin = user?.role === 'admin';
         const isParticipant = [room.importerUserId, room.exporterUserId, room.assignedAdminId].includes(senderUserId);
-        if (!isParticipant) {
+        if (!isParticipant && !isAdmin) {
           socket.emit('dealroom:error', { message: 'Not a participant in this deal room' });
           return;
         }
