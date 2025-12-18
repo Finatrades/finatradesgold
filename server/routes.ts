@@ -267,7 +267,7 @@ export async function registerRoutes(
   startDocumentExpiryScheduler();
 
   // File upload endpoint for Deal Room and other attachments
-  app.post("/api/documents/upload", upload.single('file'), (req: Request, res: Response) => {
+  app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), (req: Request, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -1088,7 +1088,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Generate MFA setup (TOTP secret and QR code)
-  app.post("/api/mfa/setup", async (req, res) => {
+  app.post("/api/mfa/setup", ensureAuthenticated, async (req, res) => {
     try {
       const { userId } = req.body;
       const user = await storage.getUser(userId);
@@ -1121,7 +1121,7 @@ export async function registerRoutes(
   });
   
   // Verify and enable MFA
-  app.post("/api/mfa/enable", async (req, res) => {
+  app.post("/api/mfa/enable", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, token } = req.body;
       const user = await storage.getUser(userId);
@@ -1277,7 +1277,7 @@ export async function registerRoutes(
   });
   
   // Disable MFA
-  app.post("/api/mfa/disable", async (req, res) => {
+  app.post("/api/mfa/disable", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, password } = req.body;
       const user = await storage.getUser(userId);
@@ -1346,7 +1346,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Enable biometric authentication
-  app.post("/api/biometric/enable", async (req, res) => {
+  app.post("/api/biometric/enable", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, deviceId, password } = req.body;
       const user = await storage.getUser(userId);
@@ -1394,7 +1394,7 @@ export async function registerRoutes(
   });
 
   // Disable biometric authentication
-  app.post("/api/biometric/disable", async (req, res) => {
+  app.post("/api/biometric/disable", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, password } = req.body;
       const user = await storage.getUser(userId);
@@ -1564,7 +1564,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Admin Dashboard Stats
-  app.get("/api/admin/stats", async (req, res) => {
+  app.get("/api/admin/stats", ensureAdminAsync, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       const kycSubmissions = await storage.getAllKycSubmissions();
@@ -1868,7 +1868,7 @@ export async function registerRoutes(
   });
 
   // System Health Check (Admin)
-  app.get("/api/admin/system-health", async (req, res) => {
+  app.get("/api/admin/system-health", ensureAdminAsync, async (req, res) => {
     const startTime = process.hrtime();
     
     try {
@@ -2776,7 +2776,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Submit KYC
-  app.post("/api/kyc", async (req, res) => {
+  app.post("/api/kyc", ensureAuthenticated, async (req, res) => {
     try {
       const kycData = insertKycSubmissionSchema.parse(req.body);
       const submission = await storage.createKycSubmission(kycData);
@@ -2813,7 +2813,7 @@ export async function registerRoutes(
   });
   
   // Update KYC status (Admin) - handles both kycAml and Finatrades personal KYC
-  app.patch("/api/kyc/:id", async (req, res) => {
+  app.patch("/api/kyc/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const updates = { ...req.body };
       
@@ -2959,7 +2959,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Submit tiered KYC with SLA tracking
-  app.post("/api/kyc/submit-tiered", async (req, res) => {
+  app.post("/api/kyc/submit-tiered", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, tier, accountType, ...kycData } = req.body;
       
@@ -3162,7 +3162,7 @@ export async function registerRoutes(
   });
 
   // Update user risk profile (Admin)
-  app.patch("/api/admin/risk-profile/:id", async (req, res) => {
+  app.patch("/api/admin/risk-profile/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { adminId, ...updates } = req.body;
       
@@ -3308,7 +3308,7 @@ export async function registerRoutes(
   });
 
   // Get all screening logs (Admin)
-  app.get("/api/admin/screening-logs", async (req, res) => {
+  app.get("/api/admin/screening-logs", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const logs = await storage.getAllAmlScreeningLogs();
       res.json({ logs });
@@ -3318,7 +3318,7 @@ export async function registerRoutes(
   });
 
   // Review screening log (Admin)
-  app.patch("/api/admin/screening-logs/:id", async (req, res) => {
+  app.patch("/api/admin/screening-logs/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { adminId, reviewDecision, reviewNotes } = req.body;
       
@@ -3345,7 +3345,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get all AML cases (Admin)
-  app.get("/api/admin/aml-cases", async (req, res) => {
+  app.get("/api/admin/aml-cases", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const cases = await storage.getAllAmlCases();
       res.json({ cases });
@@ -3355,7 +3355,7 @@ export async function registerRoutes(
   });
 
   // Get open AML cases (Admin)
-  app.get("/api/admin/aml-cases/open", async (req, res) => {
+  app.get("/api/admin/aml-cases/open", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const cases = await storage.getOpenAmlCases();
       res.json({ cases });
@@ -3365,7 +3365,7 @@ export async function registerRoutes(
   });
 
   // Get single AML case with activities (Admin)
-  app.get("/api/admin/aml-cases/:id", async (req, res) => {
+  app.get("/api/admin/aml-cases/:id", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const amlCase = await storage.getAmlCase(req.params.id);
       if (!amlCase) {
@@ -3382,7 +3382,7 @@ export async function registerRoutes(
   });
 
   // Create AML case (Admin)
-  app.post("/api/admin/aml-cases", async (req, res) => {
+  app.post("/api/admin/aml-cases", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { userId, caseType, priority, triggeredBy, triggerDetails, adminId } = req.body;
       
@@ -3425,7 +3425,7 @@ export async function registerRoutes(
   });
 
   // Update AML case (Admin)
-  app.patch("/api/admin/aml-cases/:id", async (req, res) => {
+  app.patch("/api/admin/aml-cases/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { adminId, ...updates } = req.body;
       const previousCase = await storage.getAmlCase(req.params.id);
@@ -3498,7 +3498,7 @@ export async function registerRoutes(
   });
 
   // Add note to AML case (Admin)
-  app.post("/api/admin/aml-cases/:id/notes", async (req, res) => {
+  app.post("/api/admin/aml-cases/:id/notes", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { adminId, note } = req.body;
       
@@ -3538,7 +3538,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get all monitoring rules (Admin)
-  app.get("/api/admin/aml-rules", async (req, res) => {
+  app.get("/api/admin/aml-rules", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const rules = await storage.getAllAmlMonitoringRules();
       res.json({ rules });
@@ -3548,7 +3548,7 @@ export async function registerRoutes(
   });
 
   // Get active monitoring rules (Admin)
-  app.get("/api/admin/aml-rules/active", async (req, res) => {
+  app.get("/api/admin/aml-rules/active", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const rules = await storage.getActiveAmlMonitoringRules();
       res.json({ rules });
@@ -3558,7 +3558,7 @@ export async function registerRoutes(
   });
 
   // Create monitoring rule (Admin)
-  app.post("/api/admin/aml-rules", async (req, res) => {
+  app.post("/api/admin/aml-rules", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { adminId, ...ruleData } = req.body;
       
@@ -3585,7 +3585,7 @@ export async function registerRoutes(
   });
 
   // Update monitoring rule (Admin)
-  app.patch("/api/admin/aml-rules/:id", async (req, res) => {
+  app.patch("/api/admin/aml-rules/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { adminId, ...updates } = req.body;
       
@@ -3612,7 +3612,7 @@ export async function registerRoutes(
   });
 
   // Delete monitoring rule (Admin)
-  app.delete("/api/admin/aml-rules/:id", async (req, res) => {
+  app.delete("/api/admin/aml-rules/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { adminId } = req.body;
       
@@ -3757,7 +3757,7 @@ export async function registerRoutes(
   // app.patch("/api/wallet/:id") - INTENTIONALLY REMOVED
   
   // Create transaction - all transactions start as Pending and require admin approval
-  app.post("/api/transactions", async (req, res) => {
+  app.post("/api/transactions", ensureAuthenticated, async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
       // Force all transactions to start as Pending (requires admin authorization)
@@ -4132,7 +4132,7 @@ export async function registerRoutes(
   });
   
   // Admin: Get all unified transactions
-  app.get("/api/admin/unified-transactions", async (req, res) => {
+  app.get("/api/admin/unified-transactions", ensureAdminAsync, requirePermission('view_transactions', 'manage_transactions'), async (req, res) => {
     try {
       const { module, type, status, userId, fromDate, toDate, limit = '100', cursor } = req.query;
       
@@ -4368,7 +4368,7 @@ export async function registerRoutes(
   });
   
   // Update transaction status (basic update without processing)
-  app.patch("/api/transactions/:id", async (req, res) => {
+  app.patch("/api/transactions/:id", ensureAuthenticated, async (req, res) => {
     try {
       const transaction = await storage.updateTransaction(req.params.id, req.body);
       if (!transaction) {
@@ -5813,7 +5813,7 @@ export async function registerRoutes(
   });
   
   // Create vault holding
-  app.post("/api/vault", async (req, res) => {
+  app.post("/api/vault", ensureAuthenticated, async (req, res) => {
     try {
       const holdingData = insertVaultHoldingSchema.parse(req.body);
       const holding = await storage.createVaultHolding(holdingData);
@@ -5835,7 +5835,7 @@ export async function registerRoutes(
   });
   
   // Update vault holding
-  app.patch("/api/vault/:id", async (req, res) => {
+  app.patch("/api/vault/:id", ensureAuthenticated, async (req, res) => {
     try {
       const holding = await storage.updateVaultHolding(req.params.id, req.body);
       if (!holding) {
@@ -5872,7 +5872,7 @@ export async function registerRoutes(
   });
 
   // Get single deposit request
-  app.get("/api/vault/deposit/:id", async (req, res) => {
+  app.get("/api/vault/deposit/:id", ensureAuthenticated, async (req, res) => {
     try {
       const request = await storage.getVaultDepositRequest(req.params.id);
       if (!request) {
@@ -5885,7 +5885,7 @@ export async function registerRoutes(
   });
 
   // Create vault deposit request (user submission)
-  app.post("/api/vault/deposit", async (req, res) => {
+  app.post("/api/vault/deposit", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, vaultLocation, depositType, totalDeclaredWeightGrams, items, deliveryMethod, pickupDetails, documents } = req.body;
       
@@ -6095,7 +6095,7 @@ export async function registerRoutes(
   });
 
   // Get single withdrawal request
-  app.get("/api/vault/withdrawal/:id", async (req, res) => {
+  app.get("/api/vault/withdrawal/:id", ensureAuthenticated, async (req, res) => {
     try {
       const request = await storage.getVaultWithdrawalRequest(req.params.id);
       if (!request) {
@@ -6108,7 +6108,7 @@ export async function registerRoutes(
   });
 
   // Create vault withdrawal request (user submission)
-  app.post("/api/vault/withdrawal", async (req, res) => {
+  app.post("/api/vault/withdrawal", ensureAuthenticated, async (req, res) => {
     try {
       const { 
         userId, goldGrams, goldPriceUsdPerGram, withdrawalMethod,
@@ -6331,7 +6331,7 @@ export async function registerRoutes(
   });
 
   // Transfer gold from FinaPay wallet to BNSL wallet
-  app.post("/api/bnsl/wallet/transfer", async (req, res) => {
+  app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, goldGrams } = req.body;
       
@@ -6540,7 +6540,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get all platform fees (Admin)
-  app.get("/api/admin/fees", async (req, res) => {
+  app.get("/api/admin/fees", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const fees = await storage.getAllPlatformFees();
       res.json({ fees });
@@ -6551,7 +6551,7 @@ export async function registerRoutes(
   });
   
   // Get fees by module (Admin)
-  app.get("/api/admin/fees/module/:module", async (req, res) => {
+  app.get("/api/admin/fees/module/:module", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const fees = await storage.getModuleFees(req.params.module);
       res.json({ fees });
@@ -6562,7 +6562,7 @@ export async function registerRoutes(
   });
   
   // Create platform fee (Admin)
-  app.post("/api/admin/fees", async (req, res) => {
+  app.post("/api/admin/fees", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const fee = await storage.createPlatformFee(req.body);
       res.json({ fee });
@@ -6573,7 +6573,7 @@ export async function registerRoutes(
   });
   
   // Update platform fee (Admin)
-  app.put("/api/admin/fees/:id", async (req, res) => {
+  app.put("/api/admin/fees/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const fee = await storage.updatePlatformFee(req.params.id, req.body);
       if (!fee) {
@@ -6587,7 +6587,7 @@ export async function registerRoutes(
   });
   
   // Delete platform fee (Admin)
-  app.delete("/api/admin/fees/:id", async (req, res) => {
+  app.delete("/api/admin/fees/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await storage.deletePlatformFee(req.params.id);
       res.json({ success: true });
@@ -6598,7 +6598,7 @@ export async function registerRoutes(
   });
   
   // Seed default fees (Admin)
-  app.post("/api/admin/fees/seed", async (req, res) => {
+  app.post("/api/admin/fees/seed", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await storage.seedDefaultFees();
       const fees = await storage.getAllPlatformFees();
@@ -6631,7 +6631,7 @@ export async function registerRoutes(
   });
   
   // Create BNSL plan (locks gold from BNSL wallet)
-  app.post("/api/bnsl/plans", async (req, res) => {
+  app.post("/api/bnsl/plans", ensureAuthenticated, async (req, res) => {
     try {
       // Auto-generate contractId if not provided
       const contractId = req.body.contractId || `BNSL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -6768,7 +6768,7 @@ export async function registerRoutes(
   });
   
   // Update BNSL plan
-  app.patch("/api/bnsl/plans/:id", async (req, res) => {
+  app.patch("/api/bnsl/plans/:id", ensureAuthenticated, async (req, res) => {
     try {
       const plan = await storage.updateBnslPlan(req.params.id, req.body);
       if (!plan) {
@@ -6781,7 +6781,7 @@ export async function registerRoutes(
   });
   
   // Get plan payouts
-  app.get("/api/bnsl/payouts/:planId", async (req, res) => {
+  app.get("/api/bnsl/payouts/:planId", ensureAuthenticated, async (req, res) => {
     try {
       const payouts = await storage.getPlanPayouts(req.params.planId);
       res.json({ payouts });
@@ -6791,7 +6791,7 @@ export async function registerRoutes(
   });
   
   // Create payout
-  app.post("/api/bnsl/payouts", async (req, res) => {
+  app.post("/api/bnsl/payouts", ensureAuthenticated, async (req, res) => {
     try {
       const payoutData = insertBnslPayoutSchema.parse(req.body);
       const payout = await storage.createBnslPayout(payoutData);
@@ -6802,7 +6802,7 @@ export async function registerRoutes(
   });
   
   // Update payout
-  app.patch("/api/bnsl/payouts/:id", async (req, res) => {
+  app.patch("/api/bnsl/payouts/:id", ensureAuthenticated, async (req, res) => {
     try {
       const payout = await storage.updateBnslPayout(req.params.id, req.body);
       if (!payout) {
@@ -6815,7 +6815,7 @@ export async function registerRoutes(
   });
   
   // Create early termination
-  app.post("/api/bnsl/early-termination", async (req, res) => {
+  app.post("/api/bnsl/early-termination", ensureAuthenticated, async (req, res) => {
     try {
       const terminationData = insertBnslEarlyTerminationSchema.parse(req.body);
       const termination = await storage.createBnslEarlyTermination(terminationData);
@@ -6846,7 +6846,7 @@ export async function registerRoutes(
   });
   
   // Get agreement by plan ID
-  app.get("/api/bnsl/agreements/plan/:planId", async (req, res) => {
+  app.get("/api/bnsl/agreements/plan/:planId", ensureAuthenticated, async (req, res) => {
     try {
       const agreement = await storage.getBnslAgreementByPlanId(req.params.planId);
       res.json({ agreement: agreement || null });
@@ -6866,7 +6866,7 @@ export async function registerRoutes(
   });
   
   // Create BNSL agreement
-  app.post("/api/bnsl/agreements", async (req, res) => {
+  app.post("/api/bnsl/agreements", ensureAuthenticated, async (req, res) => {
     try {
       const agreementData = insertBnslAgreementSchema.parse(req.body);
       const agreement = await storage.createBnslAgreement(agreementData);
@@ -6877,7 +6877,7 @@ export async function registerRoutes(
   });
   
   // Update BNSL agreement (for email sent status)
-  app.patch("/api/bnsl/agreements/:id", async (req, res) => {
+  app.patch("/api/bnsl/agreements/:id", ensureAuthenticated, async (req, res) => {
     try {
       const agreement = await storage.updateBnslAgreement(req.params.id, req.body);
       if (!agreement) {
@@ -6890,7 +6890,7 @@ export async function registerRoutes(
   });
   
   // Send BNSL agreement email with PDF attachment
-  app.post("/api/bnsl/agreements/:id/send-email", async (req, res) => {
+  app.post("/api/bnsl/agreements/:id/send-email", ensureAuthenticated, async (req, res) => {
     try {
       const { pdfBase64 } = req.body;
       
@@ -6963,7 +6963,7 @@ export async function registerRoutes(
   });
   
   // Download BNSL agreement PDF
-  app.get("/api/bnsl/agreements/:id/download", async (req, res) => {
+  app.get("/api/bnsl/agreements/:id/download", ensureAuthenticated, async (req, res) => {
     try {
       const agreement = await storage.getBnslAgreement(req.params.id);
       if (!agreement) {
@@ -7051,7 +7051,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get all platform bank accounts (Admin)
-  app.get("/api/admin/bank-accounts", async (req, res) => {
+  app.get("/api/admin/bank-accounts", ensureAdminAsync, async (req, res) => {
     try {
       const accounts = await storage.getAllPlatformBankAccounts();
       res.json({ accounts });
