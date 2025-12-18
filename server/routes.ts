@@ -273,7 +273,7 @@ export async function registerRoutes(
     try {
       const userId = req.params.userId;
       
-      // Parallel fetch all data sources including certificates
+      // Parallel fetch all data sources including certificates and FinaBridge wallet
       const [
         wallet,
         vaultHoldings,
@@ -284,7 +284,8 @@ export async function registerRoutes(
         priceData,
         notifications,
         tradeCases,
-        certificates
+        certificates,
+        finabridgeWallet
       ] = await Promise.all([
         storage.getWallet(userId).catch(() => null),
         storage.getUserVaultHoldings(userId).catch(() => []),
@@ -295,7 +296,8 @@ export async function registerRoutes(
         getGoldPrice().catch(() => ({ pricePerGram: 85, source: 'fallback' })),
         storage.getUserNotifications(userId).catch(() => []),
         storage.getUserTradeCases(userId).catch(() => []),
-        storage.getUserCertificates(userId).catch(() => [])
+        storage.getUserCertificates(userId).catch(() => []),
+        storage.getFinabridgeWallet(userId).catch(() => null)
       ]);
 
       const goldPrice = priceData.pricePerGram || 85;
@@ -348,7 +350,12 @@ export async function registerRoutes(
         sum + parseFloat(p.goldSoldGrams || '0'), 0);
       const bnslTotalProfit = activeBnslPlans.reduce((sum: number, p: any) => 
         sum + parseFloat(p.paidMarginUsd || '0'), 0);
-      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance;
+      
+      // FinaBridge wallet totals
+      const finabridgeGoldGrams = parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0');
+      const finabridgeGoldValueUsd = finabridgeGoldGrams * goldPrice;
+      
+      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance + finabridgeGoldValueUsd;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
       // Include both 'Pending' and 'Under Review' statuses as pending
@@ -392,8 +399,11 @@ export async function registerRoutes(
         finaBridge: {
           activeCases: (tradeCases || []).filter((tc: any) => !['Completed', 'Cancelled', 'Rejected'].includes(tc.status)).length,
           tradeVolume: (tradeCases || []).filter((tc: any) => tc.status === 'Completed').reduce((sum: number, tc: any) => sum + parseFloat(tc.tradeValueUsd || '0'), 0),
-          goldGrams: 0,
-          usdValue: 0
+          goldGrams: parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0'),
+          usdValue: (parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0')) * goldPrice,
+          availableGoldGrams: parseFloat(finabridgeWallet?.availableGoldGrams || '0'),
+          lockedGoldGrams: parseFloat(finabridgeWallet?.lockedGoldGrams || '0'),
+          incomingLockedGoldGrams: parseFloat(finabridgeWallet?.incomingLockedGoldGrams || '0')
         },
         certificates: {
           recent: recentCerts,
