@@ -72,6 +72,7 @@ interface DashboardResponse {
   goldPriceSource: string | null;
   notifications: any[];
   tradeCounts: { active: number; total: number };
+  finaBridge: { activeCases: number; tradeVolume: number; goldGrams: number; usdValue: number };
   certificates: CertificateSummary;
   totals: {
     vaultGoldGrams: number;
@@ -214,6 +215,7 @@ export function useDashboardData(): DashboardData {
     goldPriceSource: data?.goldPriceSource || null,
     certificates: data?.certificates || null,
     tradeCounts: data?.tradeCounts || { active: 0, total: 0 },
+    finaBridge: data?.finaBridge || { activeCases: 0, tradeVolume: 0, goldGrams: 0, usdValue: 0 },
     isLoading,
     isFetching,
     error: error ? 'Failed to load dashboard data' : null,

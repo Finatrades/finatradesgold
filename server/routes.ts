@@ -389,6 +389,12 @@ export async function registerRoutes(
           active: (tradeCases || []).filter((tc: any) => !['Completed', 'Cancelled', 'Rejected'].includes(tc.status)).length,
           total: (tradeCases || []).length
         },
+        finaBridge: {
+          activeCases: (tradeCases || []).filter((tc: any) => !['Completed', 'Cancelled', 'Rejected'].includes(tc.status)).length,
+          tradeVolume: (tradeCases || []).filter((tc: any) => tc.status === 'Completed').reduce((sum: number, tc: any) => sum + parseFloat(tc.tradeValueUsd || '0'), 0),
+          goldGrams: 0,
+          usdValue: 0
+        },
         certificates: {
           recent: recentCerts,
           summary: {
