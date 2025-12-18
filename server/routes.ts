@@ -12222,9 +12222,11 @@ export async function registerRoutes(
       let totalCreditsGold = 0;
       let totalDebitsGold = 0;
       
+      console.log('[Statement] Period transactions count:', periodTransactions.length);
       const statementTransactions = periodTransactions.map(tx => {
         const amountUsd = parseFloat(tx.amountUsd || '0');
         const amountGold = parseFloat(tx.amountGold || '0');
+        console.log(`[Statement] TX ${tx.type}: USD=${amountUsd}, Gold=${amountGold}, raw amountGold=${tx.amountGold}`);
         
         let debitUsd: number | null = null;
         let creditUsd: number | null = null;
@@ -12285,6 +12287,7 @@ export async function registerRoutes(
         };
       });
       
+      console.log(`[Statement] Final: runningGold=${runningGold}, totalCreditsGold=${totalCreditsGold}, totalDebitsGold=${totalDebitsGold}`);
       const reportId = `STMT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${userId.slice(0, 6).toUpperCase()}`;
       
       res.json({
