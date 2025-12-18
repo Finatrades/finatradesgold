@@ -73,7 +73,7 @@ export default function Dashboard() {
 
   const userName = user.firstName || user.email?.split('@')[0] || 'User';
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || userName;
-  const isBusinessUser = user.accountType === 'business';
+  const isBusinessUser = user.accountType === 'business' || !!user.finabridgeRole;
   const isGoldPriceLive = goldPriceSource && !goldPriceSource.includes('fallback');
 
   return (
