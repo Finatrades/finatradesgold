@@ -665,12 +665,18 @@ export default function VaultActivityList() {
                           className="w-full bg-[#D4AF37] hover:bg-[#B8860B] text-black"
                           onClick={(e) => {
                             e.stopPropagation();
+                            const tabMap: Record<string, string> = {
+                              'Transfer': 'transfer',
+                              'Digital Ownership': 'ownership',
+                              'Physical Storage': 'storage'
+                            };
+                            setCertTab(tabMap[cert.type] || 'ownership');
                             setViewingCerts(selectedTx?.certificates || []);
                           }}
                           data-testid={`button-view-cert-${cert.id}`}
                         >
                           <Eye className="w-4 h-4 mr-2" />
-                          View Certificates
+                          View Certificate
                         </Button>
                       </div>
                     ))}
@@ -688,31 +694,50 @@ export default function VaultActivityList() {
           
           {/* Tabs for switching certificates */}
           <div className="bg-black/40 border-b border-white/10 p-4 flex justify-center sticky top-0 z-20">
-            <Tabs value={certTab} onValueChange={setCertTab} className="w-full max-w-md">
-              <TabsList className="grid w-full grid-cols-2 bg-white/5">
-                <TabsTrigger value="ownership" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
-                  <Award className="w-4 h-4 mr-2" />
-                  Digital Ownership
-                </TabsTrigger>
-                <TabsTrigger value="storage" className="data-[state=active]:bg-[#C0C0C0] data-[state=active]:text-black">
-                  <Box className="w-4 h-4 mr-2" />
-                  Storage Certificate
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {viewingCerts && (() => {
+              const hasTransfer = viewingCerts.some(c => c.type === 'Transfer');
+              const hasOwnership = viewingCerts.some(c => c.type === 'Digital Ownership');
+              const hasStorage = viewingCerts.some(c => c.type === 'Physical Storage');
+              const tabCount = [hasTransfer, hasOwnership, hasStorage].filter(Boolean).length;
+              
+              return (
+                <Tabs value={certTab} onValueChange={setCertTab} className="w-full max-w-lg">
+                  <TabsList className={`grid w-full bg-white/5 ${tabCount === 3 ? 'grid-cols-3' : tabCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                    {hasTransfer && (
+                      <TabsTrigger value="transfer" className="data-[state=active]:bg-[#22c55e] data-[state=active]:text-black text-xs">
+                        <Send className="w-3 h-3 mr-1" />
+                        Transfer
+                      </TabsTrigger>
+                    )}
+                    {hasOwnership && (
+                      <TabsTrigger value="ownership" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">
+                        <Award className="w-3 h-3 mr-1" />
+                        Ownership
+                      </TabsTrigger>
+                    )}
+                    {hasStorage && (
+                      <TabsTrigger value="storage" className="data-[state=active]:bg-[#C0C0C0] data-[state=active]:text-black text-xs">
+                        <Box className="w-3 h-3 mr-1" />
+                        Storage
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+                </Tabs>
+              );
+            })()}
           </div>
 
           <div className="overflow-y-auto p-4 md:p-8">
             {viewingCerts && viewingCerts.length > 0 && (() => {
+              const transferCert = viewingCerts.find(c => c.type === 'Transfer');
               const ownershipCert = viewingCerts.find(c => c.type === 'Digital Ownership');
               const storageCert = viewingCerts.find(c => c.type === 'Physical Storage');
-              const goldGrams = ownershipCert?.goldGrams || storageCert?.goldGrams || '0';
               const issueDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
               return (
                 <div id="certificate-print-area">
                   {/* DIGITAL OWNERSHIP CERTIFICATE */}
-                  {certTab === 'ownership' && (
+                  {certTab === 'ownership' && ownershipCert && (
                     <div className="certificate-container relative p-8 md:p-12 border-8 border-double border-[#D4AF37]/30 m-2 bg-[#0D0515] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                       
                       {/* Watermark Background */}
@@ -745,7 +770,7 @@ export default function VaultActivityList() {
                           </div>
                           <div>
                             <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-1">Total Weight</p>
-                            <p className="text-xl font-bold text-white">{parseFloat(goldGrams).toFixed(4)}g</p>
+                            <p className="text-xl font-bold text-white">{parseFloat(ownershipCert?.goldGrams || '0').toFixed(4)}g</p>
                           </div>
                           <div>
                             <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-1">Purity</p>
@@ -785,8 +810,82 @@ export default function VaultActivityList() {
                     </div>
                   )}
 
+                  {/* TRANSFER CERTIFICATE */}
+                  {certTab === 'transfer' && transferCert && (
+                    <div className="certificate-container relative p-8 md:p-12 border-8 border-double border-[#22c55e]/30 m-2 bg-[#0D0515] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                      
+                      {/* Watermark Background */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
+                        <Send className="w-96 h-96" />
+                      </div>
+
+                      {/* Header */}
+                      <div className="text-center space-y-4 mb-12 relative z-10">
+                        <div className="flex justify-center mb-4">
+                          <div className="w-16 h-16 rounded-full bg-[#22c55e]/10 flex items-center justify-center border border-[#22c55e]">
+                            <Send className="w-8 h-8 text-[#22c55e]" />
+                          </div>
+                        </div>
+                        <h2 className="text-3xl md:text-5xl font-serif text-[#22c55e] tracking-wider uppercase">Certificate</h2>
+                        <h3 className="text-lg md:text-xl text-white/80 font-serif tracking-widest uppercase">of Gold Transfer</h3>
+                        <p className="text-white/40 text-sm font-mono mt-2">ID: {transferCert.certificateNumber}</p>
+                      </div>
+
+                      {/* Content */}
+                      <div className="space-y-8 text-center relative z-10">
+                        <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">
+                          This certifies that the following gold transfer has been successfully executed and recorded on the Finatrades platform.
+                        </p>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-y border-[#22c55e]/20 py-8 my-8">
+                          <div>
+                            <p className="text-xs text-[#22c55e] uppercase tracking-wider mb-1">Transaction</p>
+                            <p className="text-xl font-bold text-white">Transfer</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#22c55e] uppercase tracking-wider mb-1">Gold Amount</p>
+                            <p className="text-xl font-bold text-white">{parseFloat(transferCert.goldGrams).toFixed(4)}g</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#22c55e] uppercase tracking-wider mb-1">Purity</p>
+                            <p className="text-xl font-bold text-white">999.9</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#22c55e] uppercase tracking-wider mb-1">Status</p>
+                            <p className="text-xl font-bold text-white">{transferCert.status}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row justify-center items-center md:items-end px-8 md:px-16 mt-16 gap-8">
+                          <div className="text-center">
+                            <p className="text-white font-medium mb-2">{issueDate}</p>
+                            <Separator className="bg-[#22c55e]/40 w-48 mb-2 mx-auto" />
+                            <p className="text-xs text-[#22c55e] uppercase tracking-wider">Date of Transfer</p>
+                            <p className="text-10 text-white/40">Finatrades Platform</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-8 text-[10px] text-white/30 text-justify leading-relaxed px-4 md:px-0">
+                          <p>
+                            This Transfer Certificate confirms the successful transfer of digital gold between Finatrades users. The transaction is permanent and recorded on the platform ledger.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Footer Actions */}
+                      <div className="mt-12 flex justify-center gap-4 relative z-10 print:hidden">
+                        <Button className="bg-[#22c55e] text-black hover:bg-[#22c55e]/90 font-bold" onClick={handlePrint}>
+                          <Printer className="w-4 h-4 mr-2" /> Print
+                        </Button>
+                        <Button variant="outline" className="border-[#22c55e]/20 text-[#22c55e] hover:bg-[#22c55e]/10" onClick={() => handleShare(viewingCerts)}>
+                          <Share2 className="w-4 h-4 mr-2" /> Share
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* STORAGE CERTIFICATE (WinGold Style) */}
-                  {certTab === 'storage' && (
+                  {certTab === 'storage' && storageCert && (
                     <div className="certificate-container relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-white text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                       
                       {/* Watermark Background */}
@@ -807,7 +906,7 @@ export default function VaultActivityList() {
                         </div>
                         <div className="text-right">
                           <h3 className="text-xl font-bold uppercase tracking-widest text-black/80">Certificate of Deposit</h3>
-                          <p className="text-sm font-mono mt-1">REF: {storageCert?.certificateNumber || 'N/A'}</p>
+                          <p className="text-sm font-mono mt-1">REF: {storageCert.certificateNumber}</p>
                         </div>
                       </div>
 
@@ -838,12 +937,12 @@ export default function VaultActivityList() {
                             <tbody className="divide-y divide-black">
                               <tr>
                                 <td className="p-3 border-r border-black">Gold - Allocated Storage</td>
-                                <td className="p-3 border-r border-black text-right">{parseFloat(goldGrams).toFixed(6)}</td>
+                                <td className="p-3 border-r border-black text-right">{parseFloat(storageCert.goldGrams).toFixed(6)}</td>
                                 <td className="p-3 text-right">999.9</td>
                               </tr>
                               <tr className="bg-black/5 font-bold">
                                 <td className="p-3 border-r border-black">TOTAL NET WEIGHT</td>
-                                <td className="p-3 border-r border-black text-right">{parseFloat(goldGrams).toFixed(6)}</td>
+                                <td className="p-3 border-r border-black text-right">{parseFloat(storageCert.goldGrams).toFixed(6)}</td>
                                 <td className="p-3 text-right">Au</td>
                               </tr>
                             </tbody>
