@@ -73,6 +73,20 @@ export class VaultLedgerService {
       .limit(limit);
   }
 
+  async getLedgerEntriesByTransactionId(transactionId: string): Promise<VaultLedgerEntry[]> {
+    return db.select()
+      .from(vaultLedgerEntries)
+      .where(eq(vaultLedgerEntries.transactionId, transactionId))
+      .orderBy(vaultLedgerEntries.createdAt);
+  }
+
+  async getLedgerEntriesByCertificateId(certificateId: string): Promise<VaultLedgerEntry[]> {
+    return db.select()
+      .from(vaultLedgerEntries)
+      .where(eq(vaultLedgerEntries.certificateId, certificateId))
+      .orderBy(vaultLedgerEntries.createdAt);
+  }
+
   async recordLedgerEntry(params: LedgerEntryParams): Promise<VaultLedgerEntry> {
     const summary = await this.getOrCreateOwnershipSummary(params.userId);
     const currentBalance = parseFloat(summary.totalGoldGrams);

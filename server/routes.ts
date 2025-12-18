@@ -5528,6 +5528,12 @@ export async function registerRoutes(
   app.post("/api/certificates/verify", async (req, res) => {
     try {
       const { certificateNumber } = req.body;
+      const crypto = await import('crypto');
+      
+      // Helper to generate safe hash from UUID or any string
+      const safeHash = (input: string) => {
+        return '0x' + crypto.createHash('sha256').update(input).digest('hex').substring(0, 16) + '...';
+      };
       
       if (!certificateNumber || typeof certificateNumber !== 'string') {
         return res.status(400).json({ 
@@ -5562,24 +5568,9 @@ export async function registerRoutes(
       const holderFinatradesId = holderUser?.finatradesId || 'UNKNOWN';
       const holderAccountType = holderUser?.accountType || 'personal';
       
-      let senderFinatradesId: string | null = null;
-      let senderAccountType: string | null = null;
-      let recipientFinatradesId: string | null = null;
-      let recipientAccountType: string | null = null;
+      // Build blockchain explorer-style transaction history from vault ledger
+      const { vaultLedgerService } = await import('./vault-ledger-service');
       
-      if (certificate.fromUserId) {
-        const fromUser = await storage.getUser(certificate.fromUserId);
-        senderFinatradesId = fromUser?.finatradesId || null;
-        senderAccountType = fromUser?.accountType || null;
-      }
-      
-      if (certificate.toUserId) {
-        const toUser = await storage.getUser(certificate.toUserId);
-        recipientFinatradesId = toUser?.finatradesId || null;
-        recipientAccountType = toUser?.accountType || null;
-      }
-      
-      // Build blockchain explorer-style transaction history
       const ledgerHistory: {
         eventType: string;
         timestamp: string;
@@ -5589,59 +5580,167 @@ export async function registerRoutes(
         fromAccountType: string | null;
         toFinatradesId: string | null;
         toAccountType: string | null;
-        status: string;
+        action: string | null;
         eventHash: string;
       }[] = [];
       
-      // Add certificate issuance event
-      ledgerHistory.push({
-        eventType: certificate.type === 'Transfer' ? 'TRANSFER' : 'ISSUANCE',
-        timestamp: certificate.issuedAt?.toISOString() || new Date().toISOString(),
-        goldGrams: certificate.goldGrams,
-        valueUsd: certificate.totalValueUsd,
-        fromFinatradesId: senderFinatradesId,
-        fromAccountType: senderAccountType,
-        toFinatradesId: certificate.type === 'Transfer' ? recipientFinatradesId : holderFinatradesId,
-        toAccountType: certificate.type === 'Transfer' ? recipientAccountType : holderAccountType,
-        status: certificate.status,
-        eventHash: `0x${Buffer.from(certificate.id).toString('hex').substring(0, 16)}...`
-      });
+      // Helper to convert userId to Finatrades ID (privacy-safe)
+      const userCache = new Map<string, { finatradesId: string; accountType: string }>();
+      const getFinatradesInfo = async (userId: string | null) => {
+        if (!userId) return { finatradesId: null, accountType: null };
+        if (userCache.has(userId)) return userCache.get(userId)!;
+        const user = await storage.getUser(userId);
+        const info = { 
+          finatradesId: user?.finatradesId || 'UNKNOWN', 
+          accountType: user?.accountType || 'personal' 
+        };
+        userCache.set(userId, info);
+        return info;
+      };
       
-      // If this is a transfer certificate, add the original acquisition event
-      if (certificate.type === 'Transfer' && certificate.relatedCertificateId) {
-        const parentCert = await storage.getCertificate(certificate.relatedCertificateId);
-        if (parentCert) {
-          const parentHolder = await storage.getUser(parentCert.userId);
-          ledgerHistory.unshift({
-            eventType: 'ORIGIN',
-            timestamp: parentCert.issuedAt?.toISOString() || new Date().toISOString(),
-            goldGrams: parentCert.goldGrams,
-            valueUsd: parentCert.totalValueUsd,
-            fromFinatradesId: null,
-            fromAccountType: null,
-            toFinatradesId: parentHolder?.finatradesId || 'UNKNOWN',
-            toAccountType: parentHolder?.accountType || 'personal',
-            status: parentCert.status,
-            eventHash: `0x${Buffer.from(parentCert.id).toString('hex').substring(0, 16)}...`
+      // Helper to add ledger entry to history
+      const addLedgerEntry = async (entry: any, existingHashes: Set<string>) => {
+        const hash = safeHash(entry.id);
+        if (existingHashes.has(hash)) return;
+        existingHashes.add(hash);
+        
+        const userInfo = await getFinatradesInfo(entry.userId);
+        const counterpartyInfo = await getFinatradesInfo(entry.counterpartyUserId);
+        
+        let fromId = null, fromType = null, toId = null, toType = null;
+        
+        if (entry.action === 'Transfer_Send') {
+          fromId = userInfo.finatradesId;
+          fromType = userInfo.accountType;
+          toId = counterpartyInfo.finatradesId;
+          toType = counterpartyInfo.accountType;
+        } else if (entry.action === 'Transfer_Receive') {
+          fromId = counterpartyInfo.finatradesId;
+          fromType = counterpartyInfo.accountType;
+          toId = userInfo.finatradesId;
+          toType = userInfo.accountType;
+        } else if (entry.action === 'Deposit') {
+          toId = userInfo.finatradesId;
+          toType = userInfo.accountType;
+        } else if (entry.action === 'Withdrawal') {
+          fromId = userInfo.finatradesId;
+          fromType = userInfo.accountType;
+        } else {
+          toId = userInfo.finatradesId;
+          toType = userInfo.accountType;
+        }
+        
+        ledgerHistory.push({
+          eventType: entry.action.replace(/_/g, ' ').toUpperCase(),
+          timestamp: entry.createdAt?.toISOString() || new Date().toISOString(),
+          goldGrams: entry.goldGrams,
+          valueUsd: entry.valueUsd,
+          fromFinatradesId: fromId,
+          fromAccountType: fromType,
+          toFinatradesId: toId,
+          toAccountType: toType,
+          action: entry.action,
+          eventHash: hash
+        });
+      };
+      
+      const existingHashes = new Set<string>();
+      
+      // Traverse certificate lineage to get full history (both ancestors and descendants)
+      const visitedCertIds = new Set<string>();
+      const certificateQueue: string[] = [certificate.id];
+      
+      // Process all certificates in the chain using a proper queue
+      while (certificateQueue.length > 0) {
+        const certId = certificateQueue.shift()!;
+        if (visitedCertIds.has(certId)) continue;
+        visitedCertIds.add(certId);
+        
+        const cert = certId === certificate.id ? certificate : await storage.getCertificate(certId);
+        if (!cert) continue;
+        
+        // Get ledger entries from this certificate's transaction
+        if (cert.transactionId) {
+          const txLedgerEntries = await vaultLedgerService.getLedgerEntriesByTransactionId(cert.transactionId);
+          for (const entry of txLedgerEntries) {
+            await addLedgerEntry(entry, existingHashes);
+          }
+        }
+        
+        // Get ledger entries linked directly to this certificate
+        const certLedgerEntries = await vaultLedgerService.getLedgerEntriesByCertificateId(certId);
+        for (const entry of certLedgerEntries) {
+          await addLedgerEntry(entry, existingHashes);
+        }
+        
+        // Add parent certificate to queue (traverse backwards)
+        if (cert.relatedCertificateId && !visitedCertIds.has(cert.relatedCertificateId)) {
+          certificateQueue.push(cert.relatedCertificateId);
+        }
+        
+        // Add child certificates to queue (traverse forwards - find transfers FROM this certificate)
+        const childCerts = await storage.getCertificatesByRelatedId(certId);
+        for (const childCert of childCerts) {
+          if (!visitedCertIds.has(childCert.id)) {
+            certificateQueue.push(childCert.id);
+          }
+        }
+      }
+      
+      // Add certificate issuance event if we have no ledger entries (shows certificate creation)
+      if (ledgerHistory.length === 0) {
+        let senderFinatradesId: string | null = null;
+        let senderAccountType: string | null = null;
+        let recipientFinatradesId: string | null = null;
+        let recipientAccountType: string | null = null;
+        
+        if (certificate.fromUserId) {
+          const fromInfo = await getFinatradesInfo(certificate.fromUserId);
+          senderFinatradesId = fromInfo.finatradesId;
+          senderAccountType = fromInfo.accountType;
+        }
+        
+        if (certificate.toUserId) {
+          const toInfo = await getFinatradesInfo(certificate.toUserId);
+          recipientFinatradesId = toInfo.finatradesId;
+          recipientAccountType = toInfo.accountType;
+        }
+        
+        ledgerHistory.push({
+          eventType: certificate.type === 'Transfer' ? 'GOLD TRANSFER' : 'CERTIFICATE ISSUED',
+          timestamp: certificate.issuedAt?.toISOString() || new Date().toISOString(),
+          goldGrams: certificate.goldGrams,
+          valueUsd: certificate.totalValueUsd,
+          fromFinatradesId: senderFinatradesId,
+          fromAccountType: senderAccountType,
+          toFinatradesId: certificate.type === 'Transfer' ? recipientFinatradesId : holderFinatradesId,
+          toAccountType: certificate.type === 'Transfer' ? recipientAccountType : holderAccountType,
+          action: certificate.type,
+          eventHash: safeHash(certificate.id)
+        });
+      }
+      
+      // If certificate is expired/revoked, add that event at the end
+      if (certificate.status === 'Expired' || certificate.status === 'Revoked') {
+        const statusHash = safeHash(certificate.id + '_status');
+        if (!existingHashes.has(statusHash)) {
+          ledgerHistory.push({
+            eventType: certificate.status === 'Expired' ? 'CERTIFICATE EXPIRED' : 'CERTIFICATE REVOKED',
+            timestamp: certificate.cancelledAt?.toISOString() || certificate.expiresAt?.toISOString() || new Date().toISOString(),
+            goldGrams: certificate.goldGrams,
+            valueUsd: certificate.totalValueUsd,
+            fromFinatradesId: holderFinatradesId,
+            fromAccountType: holderAccountType,
+            toFinatradesId: null,
+            toAccountType: null,
+            action: certificate.status,
+            eventHash: statusHash
           });
         }
       }
       
-      // If certificate is expired/revoked, add that event
-      if (certificate.status === 'Expired' || certificate.status === 'Revoked') {
-        ledgerHistory.push({
-          eventType: certificate.status === 'Expired' ? 'EXPIRED' : 'REVOKED',
-          timestamp: certificate.cancelledAt?.toISOString() || certificate.expiresAt?.toISOString() || new Date().toISOString(),
-          goldGrams: certificate.goldGrams,
-          valueUsd: certificate.totalValueUsd,
-          fromFinatradesId: holderFinatradesId,
-          fromAccountType: holderAccountType,
-          toFinatradesId: null,
-          toAccountType: null,
-          status: certificate.status,
-          eventHash: `0x${Buffer.from(certificate.id + '_exp').toString('hex').substring(0, 16)}...`
-        });
-      }
+      // Sort by timestamp
+      ledgerHistory.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       
       res.json({
         verificationResult,
@@ -5663,7 +5762,7 @@ export async function registerRoutes(
           holderFinatradesId,
           holderAccountType
         },
-        // Blockchain explorer-style ledger history
+        // Blockchain explorer-style ledger history from real vault data
         ledgerHistory,
         summary: {
           totalEvents: ledgerHistory.length,
