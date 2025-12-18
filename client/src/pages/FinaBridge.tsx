@@ -1110,7 +1110,7 @@ export default function FinaBridge() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Trade Value ({requestForm.currency}) *</label>
+                          <label className="text-sm font-medium">Trade Value (USD) *</label>
                           <input
                             type="number"
                             value={requestForm.tradeValueUsd}
