@@ -345,7 +345,7 @@ export async function registerRoutes(
           amountUsd: bg.amountUsd,
           amountGold: bg.goldGrams,
           createdAt: bg.createdAt,
-          description: `Buy Gold (Wingold) - ${bg.status}`,
+          description: `Buy Gold Bar (Wingold) - ${bg.status}`,
           sourceModule: 'Wingold',
         }));
 
@@ -3418,7 +3418,7 @@ export async function registerRoutes(
           });
         });
       
-      // Buy Gold requests (Wingold) - exclude 'Credited' since those have transaction records
+      // Buy Gold Bar requests (Wingold) - exclude 'Credited' since those have transaction records
       buyGoldRequests
         .filter(bg => bg.status !== 'Credited')
         .forEach(bg => {
@@ -3432,7 +3432,7 @@ export async function registerRoutes(
             usdPerGram: bg.goldPriceAtTime,
             status: bg.status === 'Rejected' ? 'FAILED' : 'PENDING',
             referenceId: bg.wingoldReferenceId,
-            description: `Buy Gold (Wingold) - ${bg.status}`,
+            description: `Buy Gold Bar (Wingold) - ${bg.status}`,
             counterpartyUserId: null,
             createdAt: bg.createdAt,
             completedAt: bg.reviewedAt,
