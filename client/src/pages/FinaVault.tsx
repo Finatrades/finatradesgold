@@ -305,8 +305,11 @@ export default function FinaVault() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
-  // Use ledger entries if available, otherwise show combined records
-  const displayRecords = ledgerEntries.length > 0 ? ledgerEntries : allRecords;
+  // Always include certificate records, plus ledger entries or other records
+  const baseRecords = ledgerEntries.length > 0 ? ledgerEntries : [...transactionRecords, ...depositRecords];
+  const displayRecords = [...baseRecords, ...certificateRecords].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const [highlightSection, setHighlightSection] = useState(false);
   
