@@ -1,0 +1,124 @@
+You are a senior QA engineer + security reviewer.
+
+Goal:
+Verify the "Employee Management" module (Add New Employee modal) is working correctly end-to-end on BOTH:
+1) Admin panel behavior
+2) User-side access control impact (permissions actually enforce what user can/can’t do)
+
+Module Under Test:
+FinaAdmin → Employees → Add Employee modal
+Fields:
+- Link to User Account (Optional) dropdown
+- Role dropdown
+- Department text
+- Job Title text
+- Permissions checklist (view/manage per modules)
+- Create Employee button + Cancel button
+
+====================================================
+A) ADMIN UI & FORM VALIDATION TESTS (Layman checks)
+====================================================
+1) Open modal:
+- Clicking "Add Employee" opens modal every time (no lag, no duplicate modal).
+- Close button (X) and Cancel both close without saving.
+
+2) Required vs optional:
+- Confirm which fields are required.
+- If required fields missing, show clear human message (not technical error).
+- Role must be required. Department/Job title rules must be consistent.
+
+3) Link to User Account dropdown:
+- Loads users list correctly (pagination/search if needed).
+- Only eligible accounts appear (no blocked/disabled users unless allowed).
+- If linked user already assigned as employee, system blocks duplicates with a clear message.
+
+4) Role behavior:
+- Changing role should auto-set default permissions (if designed).
+- If permissions are custom, ensure role change does not accidentally erase selections without warning.
+
+5) Permissions checklist:
+- Scroll works.
+- No duplicates, no missing key permissions.
+- View vs Manage logic makes sense:
+  - If Manage Vault is checked, View Vault should auto-check (or system should enforce).
+  - Same for Manage Deposits → View Deposits, Manage BNSL → View BNSL, etc.
+- Validate permission naming matches actual modules:
+  - FinaPay, FinaVault, FinaBridge, BNSL, KYC Reviews, Transactions, Reports, Settings, Support, CMS.
+
+6) Create Employee action:
+- Button disabled until valid.
+- On submit, show success toast/message.
+- Modal closes and new employee appears in list instantly.
+- Form resets if reopened.
+
+====================================================
+B) BACKEND / DATA INTEGRITY TESTS (Must be correct)
+====================================================
+7) Confirm DB/API payload correctness:
+- Employee record includes:
+  - employeeId
+  - linkedUserId (nullable)
+  - role
+  - department
+  - jobTitle
+  - permissionSet (array)
+  - createdBy adminId
+  - createdAt timestamp
+- No silent failures.
+
+8) Audit logs (mandatory):
+- Creating employee writes an audit log:
+  - actor admin
+  - action "EMPLOYEE_CREATE"
+  - before/after permissionSet
+  - timestamp
+- Editing or deleting (if exists) also logged.
+
+9) Negative tests:
+- Create with invalid linkedUserId → must fail safely.
+- Create duplicate employee for same linkedUserId → must fail.
+- Permission list empty (if not allowed) → must fail with clear message.
+
+====================================================
+C) USER SIDE ENFORCEMENT TESTS (Most important)
+====================================================
+10) Create 3 test employees and VERIFY REAL access control:
+Employee 1: Support role
+- View Support ✅
+- View Wallet/Vault ❌
+Employee 2: Ops role
+- Manage Deposits ✅
+- View Vault ✅
+- Manage Settings ❌
+Employee 3: Finance role
+- View Reports ✅
+- Generate Reports ✅
+- Manage Vault ❌
+
+For each employee, login as that user and confirm:
+- Sidebar menus show only allowed items.
+- Direct URL access to restricted pages is blocked (403/redirect).
+- API calls for restricted resources return unauthorized.
+- Buttons/actions (approve/reject, create, edit) are hidden/disabled based on permissions.
+
+====================================================
+D) SECURITY & MISUSE TESTS
+====================================================
+11) Ensure no privilege escalation:
+- A user cannot change their own role/permissions.
+- An admin without "Manage Settings" cannot grant themselves permissions.
+- Ensure CSRF protection / auth checks on create employee endpoint.
+- Ensure rate limit for admin actions (basic).
+
+====================================================
+E) OUTPUT REQUIRED
+====================================================
+Deliver:
+1) PASS/FAIL checklist with screenshots references
+2) List of bugs with steps to reproduce
+3) Missing validations or permission gaps
+4) Recommended fixes (short, actionable)
+5) Confirmation that UI permissions match backend enforcement (or highlight mismatch)
+
+Do NOT write new features unless required.
+Focus on verifying correctness, security, and real-world admin usability.
