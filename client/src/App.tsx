@@ -17,6 +17,7 @@ import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
+import VerifyCertificate from "@/pages/VerifyCertificate";
 import FinaCard from "@/pages/FinaCard";
 import Dashboard from "@/pages/Dashboard";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/verify-certificate" component={VerifyCertificate} />
       <Route path="/kyc" component={KYC} />
       
       {/* User Dashboard Routes */}
