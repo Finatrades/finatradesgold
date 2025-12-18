@@ -18,6 +18,26 @@ interface AdminStats {
   pendingDeposits: number;
   pendingWithdrawals: number;
   pendingTransactions: number;
+  totalDeposits: number;
+  totalWithdrawals: number;
+  totalRequests: number;
+  openReviewCount: number;
+  activeBnslPlans: number;
+  bnslBaseLiability: number;
+  bnslMarginLiability: number;
+  pendingBnslTermRequests: number;
+  openTradeCases: number;
+  pendingReviewCases: number;
+  recentCriticalEvents: Array<{
+    id: string;
+    action: string;
+    actorEmail: string;
+    actorRole: string;
+    targetType: string;
+    targetId: string;
+    createdAt: string;
+    details: any;
+  }>;
   pendingKycRequests: Array<{
     id: string;
     userId: string;
@@ -174,56 +194,56 @@ export default function AdminDashboard() {
             />
             <MetricCard
               title="Total Deposits"
-              value={45}
+              value={stats?.totalDeposits || 0}
               icon={<ArrowDownRight className="w-5 h-5" />}
               color="blue"
               loading={isLoading}
             />
             <MetricCard
               title="Total Withdrawals"
-              value={28}
+              value={stats?.totalWithdrawals || 0}
               icon={<ArrowUpRight className="w-5 h-5" />}
               color="purple"
               loading={isLoading}
             />
             <MetricCard
               title="Total Requests"
-              value={73}
+              value={stats?.totalRequests || 0}
               icon={<Activity className="w-5 h-5" />}
               color="slate"
               loading={isLoading}
             />
             <MetricCard
               title="Open / Review"
-              value={12}
+              value={stats?.openReviewCount || 0}
               icon={<Clock className="w-5 h-5" />}
               color="yellow"
               loading={isLoading}
             />
             <MetricCard
-              title="Active Plans"
-              value={34}
+              title="Active BNSL Plans"
+              value={stats?.activeBnslPlans || 0}
               icon={<TrendingUp className="w-5 h-5" />}
               color="teal"
               loading={isLoading}
             />
             <MetricCard
               title="Base Liability"
-              value="$125k"
+              value={formatCurrency(stats?.bnslBaseLiability || 0)}
               icon={<DollarSign className="w-5 h-5" />}
               color="red"
               loading={isLoading}
             />
             <MetricCard
               title="Margin Liability"
-              value="$45k"
+              value={formatCurrency(stats?.bnslMarginLiability || 0)}
               icon={<BarChart3 className="w-5 h-5" />}
               color="pink"
               loading={isLoading}
             />
             <MetricCard
               title="Term Requests"
-              value={8}
+              value={stats?.pendingBnslTermRequests || 0}
               icon={<Clock className="w-5 h-5" />}
               color="indigo"
               loading={isLoading}

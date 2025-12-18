@@ -1697,6 +1697,33 @@ export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 
 // ============================================
+// SYSTEM LOGS (for health monitoring)
+// ============================================
+
+export const systemLogLevelEnum = pgEnum('system_log_level', ['info', 'warn', 'error', 'debug']);
+
+export const systemLogs = pgTable("system_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  level: systemLogLevelEnum("level").notNull().default('info'),
+  source: varchar("source", { length: 100 }).notNull(), // 'api', 'worker', 'cron', 'webhook'
+  requestId: varchar("request_id", { length: 255 }),
+  route: varchar("route", { length: 255 }),
+  action: varchar("action", { length: 255 }),
+  message: text("message").notNull(),
+  details: text("details"), // JSON string for extra context
+  errorStack: text("error_stack"),
+  durationMs: integer("duration_ms"),
+  userId: varchar("user_id", { length: 255 }),
+  ipAddress: varchar("ip_address", { length: 100 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertSystemLogSchema = createInsertSchema(systemLogs).omit({ id: true, createdAt: true });
+export type InsertSystemLog = z.infer<typeof insertSystemLogSchema>;
+export type SystemLog = typeof systemLogs.$inferSelect;
+
+// ============================================
 // CMS - CONTENT MANAGEMENT SYSTEM
 // ============================================
 

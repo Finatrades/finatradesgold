@@ -1444,6 +1444,59 @@ export async function registerRoutes(
         tx.status === 'Pending'
       ).length;
       
+      // Total completed deposits and withdrawals
+      const totalDeposits = allTransactions.filter(tx => 
+        tx.type === 'Deposit' && tx.status === 'Completed'
+      ).length + allDepositRequests.filter(d => d.status === 'Approved').length;
+      
+      const totalWithdrawals = allTransactions.filter(tx => 
+        tx.type === 'Withdrawal' && tx.status === 'Completed'
+      ).length;
+      
+      const totalRequests = allTransactions.length + allDepositRequests.length;
+      
+      // Get BNSL data
+      let activeBnslPlans = 0;
+      let bnslBaseLiability = 0;
+      let bnslMarginLiability = 0;
+      let pendingBnslTermRequests = 0;
+      try {
+        const allBnslPlans = await db.select().from(bnslPlans);
+        activeBnslPlans = allBnslPlans.filter(p => p.status === 'Active').length;
+        bnslBaseLiability = allBnslPlans.filter(p => p.status === 'Active').reduce((sum, p) => 
+          sum + parseFloat(p.baseAmountUsd || '0'), 0
+        );
+        bnslMarginLiability = allBnslPlans.filter(p => p.status === 'Active').reduce((sum, p) => 
+          sum + parseFloat(p.marginAmountUsd || '0'), 0
+        );
+        pendingBnslTermRequests = allBnslPlans.filter(p => p.status === 'Pending Termination').length;
+      } catch (e) { /* table may not exist */ }
+      
+      // Get trade finance cases
+      let openTradeCases = 0;
+      let pendingReviewCases = 0;
+      try {
+        const allTradeCases = await db.select().from(tradeCases);
+        openTradeCases = allTradeCases.filter((c: any) => c.status === 'open' || c.status === 'in_progress').length;
+        pendingReviewCases = allTradeCases.filter((c: any) => c.status === 'pending_review').length;
+      } catch (e) { /* table may not exist */ }
+      
+      // Get recent critical events (audit logs)
+      let recentCriticalEvents: any[] = [];
+      try {
+        const allAuditLogs = await db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp)).limit(20);
+        recentCriticalEvents = allAuditLogs.map(log => ({
+          id: log.id,
+          action: log.actionType,
+          actorEmail: log.actor,
+          actorRole: log.actorRole,
+          targetType: log.entityType,
+          targetId: log.entityId,
+          createdAt: log.timestamp,
+          details: log.details
+        }));
+      } catch (e) { /* table may not exist */ }
+      
       // USD to AED conversion rate
       const USD_TO_AED = 3.67;
       const totalVolumeAed = totalVolume * USD_TO_AED;
@@ -1459,7 +1512,18 @@ export async function registerRoutes(
         pendingKycRequests,
         pendingDeposits,
         pendingWithdrawals,
-        pendingTransactions
+        pendingTransactions,
+        totalDeposits,
+        totalWithdrawals,
+        totalRequests,
+        openReviewCount: pendingKycCount + pendingDeposits + pendingWithdrawals,
+        activeBnslPlans,
+        bnslBaseLiability,
+        bnslMarginLiability,
+        pendingBnslTermRequests,
+        openTradeCases,
+        pendingReviewCases,
+        recentCriticalEvents
       });
     } catch (error) {
       console.error("Failed to get admin stats:", error);
