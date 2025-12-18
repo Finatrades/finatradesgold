@@ -8556,7 +8556,7 @@ export async function registerRoutes(
   // Get deal room agreement acceptance status for current user
   app.get("/api/deal-rooms/:id/agreement", async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.session?.userId;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -8583,7 +8583,7 @@ export async function registerRoutes(
   // Accept deal room terms and conditions
   app.post("/api/deal-rooms/:id/agreement/accept", async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.session?.userId;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
