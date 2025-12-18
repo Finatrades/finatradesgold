@@ -16,7 +16,7 @@ interface BuyGoldWingoldModalProps {
 
 const COMPLIANCE_NOTICE = `Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold. All gold transactions executed by Wingold & Metals DMCC through the Platform are processed, recorded, and maintained within the Finatrades system, and the Platform serves solely as a technology and execution infrastructure for such gold-based services.`;
 
-const WINGOLD_URL = 'https://www.wingoldandmetal.com';
+const WINGOLD_URL = 'https://wingoldandmetals.com/';
 
 export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyGoldWingoldModalProps) {
   const { user } = useAuth();
