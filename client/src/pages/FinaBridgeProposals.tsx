@@ -62,8 +62,14 @@ export default function FinaBridgeProposals() {
       ]);
       const myPropData = await myPropRes.json();
       const receivedPropData = await receivedPropRes.json();
-      setMyProposals(myPropData.proposals || []);
-      setReceivedProposals(receivedPropData.proposals || []);
+      const activeMyProposals = (myPropData.proposals || []).filter(
+        (p: TradeProposal) => !['Completed', 'Cancelled'].includes(p.tradeRequest?.status || '')
+      );
+      const activeReceivedProposals = (receivedPropData.proposals || []).filter(
+        (p: TradeProposal) => !['Completed', 'Cancelled'].includes(p.tradeRequest?.status || '')
+      );
+      setMyProposals(activeMyProposals);
+      setReceivedProposals(activeReceivedProposals);
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to load proposals', variant: 'destructive' });
     } finally {
