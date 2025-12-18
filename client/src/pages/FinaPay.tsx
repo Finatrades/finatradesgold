@@ -161,25 +161,6 @@ export default function FinaPay() {
     }
   }, [searchString]);
 
-  const handleBuyConfirm = async (grams: number, cost: number) => {
-    if (usdBalance < cost) {
-      toast({ title: "Insufficient Funds", description: "You don't have enough USD balance.", variant: "destructive" });
-      return;
-    }
-    try {
-      await createTransaction({
-        type: 'Buy',
-        amountUsd: cost.toFixed(2),
-        amountGold: grams.toFixed(6),
-        description: 'Gold purchase via FinaPay'
-      });
-      setActiveModal(null);
-      toast({ title: "Purchase Order Submitted", description: `Your order for ${grams.toFixed(4)}g of gold has been submitted.` });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to submit buy order.", variant: "destructive" });
-    }
-  };
-
   const handleSellConfirm = async (grams: number, payout: number) => {
     if (grams > goldGrams) {
       toast({ title: "Insufficient Gold", description: "You don't have enough gold to sell.", variant: "destructive" });
