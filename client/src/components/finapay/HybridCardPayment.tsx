@@ -561,60 +561,80 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Card Form - Full Width at Top */}
-      <Card className="border-2">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <CreditCard className="w-5 h-5 text-primary" />
-            <span className="font-medium">Card Details</span>
-            <Lock className="w-4 h-4 text-success ml-auto" />
+    <div className="flex flex-col gap-5">
+      {/* Card Form - Enlarged with Modern Styling */}
+      <Card className="border-2 shadow-xl bg-card">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <span className="font-semibold text-lg">Card Details</span>
+              <p className="text-xs text-muted-foreground">Enter your payment information</p>
+            </div>
+            <div className="ml-auto flex items-center gap-1.5 bg-success-muted px-2.5 py-1 rounded-full">
+              <Lock className="w-3.5 h-3.5 text-success" />
+              <span className="text-xs font-medium text-success">Secure</span>
+            </div>
           </div>
           
           <div 
             ref={containerRef}
             id="hybrid-card-input" 
-            className="border rounded-lg bg-white overflow-hidden"
-            style={{ minHeight: cardMounted ? 'auto' : '100px' }}
+            className="border-2 border-border rounded-xl bg-white overflow-hidden shadow-sm"
+            style={{ minHeight: cardMounted ? '140px' : '140px' }}
           >
             {!cardMounted && (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             )}
           </div>
 
           {error && cardMounted && (
-            <p className="text-sm text-destructive mt-2">{error}</p>
+            <p className="text-sm text-destructive mt-3">{error}</p>
           )}
 
-          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-            <Lock className="w-3 h-3" />
-            Your card details are encrypted and processed securely
+          <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5" />
+            Your card details are encrypted with 256-bit SSL and processed securely
           </p>
         </CardContent>
       </Card>
 
-      {/* Order Summary - Horizontal at Bottom */}
-      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Amount:</span>
-              <span className="font-medium">${amount.toFixed(2)} USD</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Method:</span>
-              <span className="font-medium flex items-center gap-1">
-                <CreditCard className="w-3.5 h-3.5" />
-                Card
-              </span>
-            </div>
+      {/* Modern Slider-Style Order Summary */}
+      <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-muted-foreground">Order Summary</span>
+          <div className="flex items-center gap-1.5">
+            <Lock className="w-3 h-3 text-success" />
+            <span className="text-xs text-muted-foreground">SSL Protected</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Lock className="w-3.5 h-3.5 text-success" />
-            <span className="text-xs text-muted-foreground">256-bit SSL</span>
-            <span className="text-lg font-bold text-primary">${amount.toFixed(2)}</span>
+        </div>
+        
+        {/* Modern Progress Slider Bar */}
+        <div className="relative h-2 bg-muted rounded-full overflow-hidden mb-4">
+          <div 
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
+            style={{ width: formValid ? '100%' : '60%' }}
+          />
+          <div className="absolute inset-y-0 right-0 w-3 h-3 -mt-0.5 bg-primary rounded-full shadow-lg border-2 border-white" 
+               style={{ right: formValid ? '0%' : '40%' }} />
+        </div>
+        
+        {/* Summary Chips */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
+            <span className="text-xs text-muted-foreground">Amount</span>
+            <span className="text-sm font-semibold">${amount.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
+            <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-sm font-medium">Card</span>
+          </div>
+          <div className="ml-auto">
+            <span className="text-xl font-bold text-primary">${amount.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -625,23 +645,23 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           variant="outline"
           onClick={onCancel}
           disabled={processing}
-          className="flex-1"
+          className="flex-1 h-12"
         >
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={!formValid || processing}
-          className="flex-1 bg-primary"
+          className="flex-1 h-12 bg-primary text-base font-semibold"
         >
           {processing ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
               Processing...
             </>
           ) : (
             <>
-              <CreditCard className="w-4 h-4 mr-2" />
+              <CreditCard className="w-5 h-5 mr-2" />
               Pay ${amount.toFixed(2)}
             </>
           )}
