@@ -53,6 +53,15 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
       : (finaPayBalanceGold * currentGoldPrice).toFixed(2);
   };
 
+  const getAmountInGrams = (): number => {
+    const amount = parseFloat(transferAmount);
+    if (isNaN(amount)) return 0;
+    return currency === 'USD' ? amount / currentGoldPrice : amount;
+  };
+
+  const isInsufficientBalance = getAmountInGrams() > finaPayBalanceGold && transferAmount !== '';
+  const isValidAmount = !isNaN(parseFloat(transferAmount)) && parseFloat(transferAmount) > 0;
+
   return (
     <>
       <Card className="bg-white shadow-sm border border-border overflow-hidden relative">
@@ -203,7 +212,7 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
                  <Input 
                    type="number" 
                    placeholder="0.00" 
-                   className="bg-background border-input pl-4 pr-20 text-lg text-foreground"
+                   className={`bg-background pl-4 pr-20 text-lg text-foreground ${isInsufficientBalance ? 'border-destructive focus-visible:ring-destructive' : 'border-input'}`}
                    value={transferAmount}
                    onChange={(e) => setTransferAmount(e.target.value)}
                  />
@@ -219,19 +228,26 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
                    </Button>
                  </div>
                </div>
-               <p className="text-xs text-muted-foreground mt-1">
-                 {currency === 'Grams' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
-                   <>≈ ${(parseFloat(transferAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</>
-                 )}
-                 {currency === 'USD' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
-                   <>≈ {(parseFloat(transferAmount) / currentGoldPrice).toFixed(3)} g</>
-                 )}
-               </p>
+               {isInsufficientBalance ? (
+                 <p className="text-xs text-destructive mt-1 font-medium">
+                   Insufficient balance. Maximum available: {finaPayBalanceGold.toFixed(3)} g (≈ ${(finaPayBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})
+                 </p>
+               ) : (
+                 <p className="text-xs text-muted-foreground mt-1">
+                   {currency === 'Grams' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
+                     <>≈ ${(parseFloat(transferAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</>
+                   )}
+                   {currency === 'USD' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
+                     <>≈ {(parseFloat(transferAmount) / currentGoldPrice).toFixed(3)} g</>
+                   )}
+                 </p>
+               )}
              </div>
 
              <Button 
                className="w-full bg-primary text-white hover:bg-primary/90 font-bold"
                onClick={handleTransfer}
+               disabled={isInsufficientBalance || !isValidAmount}
              >
                Confirm Transfer
              </Button>
