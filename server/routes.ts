@@ -62,6 +62,17 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { emitLedgerEvent, emitLedgerEventToUsers } from "./socket";
+import {
+  createBackup,
+  listBackups,
+  getBackup,
+  getBackupFileStream,
+  verifyBackup,
+  restoreBackup,
+  deleteBackup,
+  logBackupAction,
+  getBackupAuditLogs
+} from "./backup-service";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -2335,6 +2346,229 @@ export async function registerRoutes(
     }
   });
   
+  // ============================================================================
+  // DATABASE BACKUP & RESTORE MANAGEMENT
+  // ============================================================================
+  
+  // List all backups
+  app.get("/api/admin/backups", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const backups = await listBackups();
+      res.json({ backups });
+    } catch (error) {
+      console.error("Failed to list backups:", error);
+      res.status(500).json({ message: "Failed to list backups" });
+    }
+  });
+  
+  // Create a new backup
+  app.post("/api/admin/backups", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      
+      const result = await createBackup(adminUser.id, 'manual');
+      
+      await logBackupAction(
+        'BACKUP_CREATE',
+        result.backupId || null,
+        adminUser.id,
+        adminUser.email,
+        result.success ? 'SUCCESS' : 'FAILED',
+        ipAddress,
+        userAgent,
+        result.error,
+        { fileName: result.fileName, fileSizeBytes: result.fileSizeBytes }
+      );
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error || "Backup failed" });
+      }
+      
+      res.json({
+        message: "Backup created successfully",
+        backup: {
+          id: result.backupId,
+          fileName: result.fileName,
+          fileSizeBytes: result.fileSizeBytes,
+          tablesIncluded: result.tablesIncluded,
+          totalRows: result.totalRows
+        }
+      });
+    } catch (error) {
+      console.error("Failed to create backup:", error);
+      res.status(500).json({ message: "Failed to create backup" });
+    }
+  });
+  
+  // Get backup details
+  app.get("/api/admin/backups/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const backup = await getBackup(req.params.id);
+      if (!backup) {
+        return res.status(404).json({ message: "Backup not found" });
+      }
+      res.json({ backup });
+    } catch (error) {
+      console.error("Failed to get backup:", error);
+      res.status(500).json({ message: "Failed to get backup details" });
+    }
+  });
+  
+  // Verify backup integrity
+  app.post("/api/admin/backups/:id/verify", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const result = await verifyBackup(req.params.id);
+      res.json({ valid: result.valid, error: result.error });
+    } catch (error) {
+      console.error("Failed to verify backup:", error);
+      res.status(500).json({ message: "Failed to verify backup" });
+    }
+  });
+  
+  // Download backup file
+  app.get("/api/admin/backups/:id/download", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      
+      const fileResult = await getBackupFileStream(req.params.id);
+      
+      if (!fileResult) {
+        await logBackupAction(
+          'BACKUP_DOWNLOAD',
+          req.params.id,
+          adminUser.id,
+          adminUser.email,
+          'FAILED',
+          ipAddress,
+          userAgent,
+          'Backup file not found or not ready'
+        );
+        return res.status(404).json({ message: "Backup file not found or not ready" });
+      }
+      
+      await logBackupAction(
+        'BACKUP_DOWNLOAD',
+        req.params.id,
+        adminUser.id,
+        adminUser.email,
+        'SUCCESS',
+        ipAddress,
+        userAgent
+      );
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${fileResult.fileName}"`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      fileResult.stream.pipe(res);
+    } catch (error) {
+      console.error("Failed to download backup:", error);
+      res.status(500).json({ message: "Failed to download backup" });
+    }
+  });
+  
+  // Restore from backup (DANGEROUS - requires super admin or manage_settings permission)
+  app.post("/api/admin/backups/:id/restore", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      
+      // Additional safety: Require confirmation flag
+      const { confirmed } = req.body;
+      if (!confirmed) {
+        return res.status(400).json({
+          message: "Restore operation requires explicit confirmation. Set 'confirmed: true' in request body.",
+          warning: "This operation will replace all current data with the backup data. A pre-restore snapshot will be created automatically."
+        });
+      }
+      
+      const result = await restoreBackup(req.params.id, adminUser.id);
+      
+      await logBackupAction(
+        'BACKUP_RESTORE',
+        req.params.id,
+        adminUser.id,
+        adminUser.email,
+        result.success ? 'SUCCESS' : 'FAILED',
+        ipAddress,
+        userAgent,
+        result.error,
+        {
+          preRestoreBackupId: result.preRestoreBackupId,
+          userCount: result.userCount,
+          transactionCount: result.transactionCount
+        }
+      );
+      
+      if (!result.success) {
+        return res.status(500).json({
+          message: result.error || "Restore failed",
+          preRestoreBackupId: result.preRestoreBackupId
+        });
+      }
+      
+      res.json({
+        message: "Database restored successfully",
+        preRestoreBackupId: result.preRestoreBackupId,
+        restoredFromBackupId: result.restoredFromBackupId,
+        userCount: result.userCount,
+        transactionCount: result.transactionCount,
+        lastTransactionDate: result.lastTransactionDate
+      });
+    } catch (error) {
+      console.error("Failed to restore backup:", error);
+      res.status(500).json({ message: "Failed to restore backup" });
+    }
+  });
+  
+  // Delete backup
+  app.delete("/api/admin/backups/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      
+      const backup = await getBackup(req.params.id);
+      const result = await deleteBackup(req.params.id);
+      
+      await logBackupAction(
+        'BACKUP_DELETE',
+        req.params.id,
+        adminUser.id,
+        adminUser.email,
+        result.success ? 'SUCCESS' : 'FAILED',
+        ipAddress,
+        userAgent,
+        result.error,
+        { fileName: backup?.fileName }
+      );
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error || "Delete failed" });
+      }
+      
+      res.json({ message: "Backup deleted successfully" });
+    } catch (error) {
+      console.error("Failed to delete backup:", error);
+      res.status(500).json({ message: "Failed to delete backup" });
+    }
+  });
+  
+  // Get backup audit logs
+  app.get("/api/admin/backup-audit-logs", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logs = await getBackupAuditLogs(limit);
+      res.json({ logs });
+    } catch (error) {
+      console.error("Failed to get backup audit logs:", error);
+      res.status(500).json({ message: "Failed to get backup audit logs" });
+    }
+  });
+
   // ============================================================================
   // KYC MANAGEMENT
   // ============================================================================

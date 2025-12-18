@@ -55,6 +55,7 @@ import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
 import FinaVaultManagement from "@/pages/admin/FinaVaultManagement";
 import FeeManagement from "@/pages/admin/FeeManagement";
 import FinancialReports from "@/pages/admin/FinancialReports";
+import DatabaseBackups from "@/pages/admin/DatabaseBackups";
 import BNSLExplore from "@/pages/BNSLExplore";
 import FinaVaultHistory from "@/pages/FinaVaultHistory";
 import FinaBridgeRequests from "@/pages/FinaBridgeRequests";
@@ -124,6 +125,7 @@ function Router() {
       <Route path="/admin/employees" component={EmployeeManagement} />
       <Route path="/admin/payment-gateways" component={PaymentGatewayManagement} />
       <Route path="/admin/platform-config" component={PlatformConfiguration} />
+      <Route path="/admin/database-backups" component={DatabaseBackups} />
       <Route path="/admin/security" component={SecuritySettings} />
       <Route path="/admin/documents" component={DocumentsManagement} />
       <Route path="/admin/email-notifications" component={EmailNotificationsManagement} />

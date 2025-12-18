@@ -22,6 +22,7 @@ import {
   UserCog,
   Receipt,
   Mail,
+  Database,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,6 +58,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/cms': ['view_cms', 'manage_cms'],
   '/admin/security': ['manage_settings'],
   '/admin/platform-config': ['manage_settings'],
+  '/admin/database-backups': ['manage_settings'],
   '/admin/settings': ['manage_settings'],
 };
 
@@ -148,6 +150,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: <PanelLeft className="w-5 h-5" />, label: 'CMS', href: '/admin/cms' },
         { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/admin/security' },
         { icon: <Settings className="w-5 h-5" />, label: 'Platform Config', href: '/admin/platform-config' },
+        { icon: <Database className="w-5 h-5" />, label: 'Database Backups', href: '/admin/database-backups' },
         { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/admin/settings' },
       ]
     }
