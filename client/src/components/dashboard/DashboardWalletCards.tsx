@@ -18,16 +18,25 @@ interface BnslData {
   activePlans: number;
 }
 
+interface FinaBridgeData {
+  goldGrams: number;
+  usdValue: number;
+  activeCases: number;
+  tradeVolume: number;
+}
+
 interface DashboardWalletCardsProps {
   finaPayWallet: WalletData;
   bnslData: BnslData;
+  finaBridgeData?: FinaBridgeData;
   userName?: string;
   isBusinessUser?: boolean;
 }
 
 export default function DashboardWalletCards({ 
   finaPayWallet, 
-  bnslData, 
+  bnslData,
+  finaBridgeData,
   userName = 'User',
   isBusinessUser = false 
 }: DashboardWalletCardsProps) {
@@ -92,19 +101,19 @@ export default function DashboardWalletCards({
             <div>
               <p className="text-xs text-gray-500 mb-1">Available Balance</p>
               <p className="text-2xl font-bold text-gray-900">
-                $0.00
+                ${(finaBridgeData?.usdValue || 0).toFixed(2)}
               </p>
-              <p className="text-xs text-amber-600 font-medium">~0.00g gold</p>
+              <p className="text-xs text-amber-600 font-medium">~{(finaBridgeData?.goldGrams || 0).toFixed(2)}g gold</p>
             </div>
             
             <div className="flex justify-between pt-3 border-t border-gray-100">
               <div>
                 <p className="text-xs text-gray-500">Active Cases</p>
-                <p className="text-sm font-semibold text-blue-600">0</p>
+                <p className="text-sm font-semibold text-blue-600">{finaBridgeData?.activeCases || 0}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500">Trade Volume</p>
-                <p className="text-sm font-semibold text-gray-900">$0</p>
+                <p className="text-sm font-semibold text-gray-900">${(finaBridgeData?.tradeVolume || 0).toLocaleString()}</p>
               </div>
             </div>
           </div>

@@ -59,7 +59,7 @@ function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, i
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading } = useDashboardData();
+  const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading, tradeCounts } = useDashboardData();
 
   if (!user) return null;
   
@@ -197,6 +197,12 @@ export default function Dashboard() {
                 usdValue: (totals.bnslLockedGrams || 0) * goldPrice,
                 lockedGrams: totals.bnslLockedGrams || 0,
                 activePlans: totals.activeBnslPlans || 0
+              }}
+              finaBridgeData={{
+                goldGrams: 0,
+                usdValue: 0,
+                activeCases: tradeCounts?.active || 0,
+                tradeVolume: 0
               }}
               userName={userName}
               isBusinessUser={isBusinessUser}

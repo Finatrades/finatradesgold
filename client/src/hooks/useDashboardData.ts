@@ -213,6 +213,7 @@ export function useDashboardData(): DashboardData {
     goldPrice: data?.goldPrice || 0,
     goldPriceSource: data?.goldPriceSource || null,
     certificates: data?.certificates || null,
+    tradeCounts: data?.tradeCounts || { active: 0, total: 0 },
     isLoading,
     isFetching,
     error: error ? 'Failed to load dashboard data' : null,
