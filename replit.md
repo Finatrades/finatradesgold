@@ -1,5 +1,10 @@
 # Finatrades Platform
 
+## Author
+
+**Charan Pratap Singh**  
+Contact: +971568474843
+
 ## Overview
 
 Finatrades is a gold-backed digital financial platform offering integrated services for personal and business users. Its core purpose is to enable users to buy, sell, store, and trade physical gold through digital wallets. Key capabilities include FinaVault for secure gold storage, FinaPay for digital gold transactions, BNSL (Buy Now Sell Later) for deferred gold sales, FinaBridge for trade finance, and upcoming FinaCard debit card functionality. The platform aims to provide a robust and versatile digital financial ecosystem centered around gold as an asset.
