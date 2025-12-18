@@ -157,10 +157,16 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
     onClose();
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      handleClose();
+    }
+  };
+
   const isKycApproved = user?.kycStatus === 'Approved';
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modal-buy-gold-wingold">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

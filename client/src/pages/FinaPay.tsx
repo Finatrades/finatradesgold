@@ -317,12 +317,10 @@ export default function FinaPay() {
 
           <button
             onClick={() => setActiveModal('buyWingold')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            className="flex flex-row items-center gap-2 px-5 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-all shadow-md"
             data-testid="button-buy-gold"
           >
-            <div className="p-3 bg-amber-100 rounded-full">
-              <ShoppingCart className="w-5 h-5 text-amber-600" />
-            </div>
+            <ShoppingCart className="w-5 h-5" />
             <span className="text-sm font-medium">Buy Gold</span>
           </button>
 
