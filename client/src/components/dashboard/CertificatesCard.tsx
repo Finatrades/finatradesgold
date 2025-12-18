@@ -32,7 +32,7 @@ export default function CertificatesCard() {
     enabled: !!user?.id,
   });
 
-  const recentCertificates = certificates.slice(0, 4);
+  const recentCertificates = Array.isArray(certificates) ? certificates.slice(0, 4) : [];
 
   return (
     <Card className="p-6 bg-white border border-gray-100 shadow-sm h-[400px] flex flex-col rounded-lg">
