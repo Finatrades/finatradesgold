@@ -30,11 +30,19 @@ import { UserProvider } from "@/context/UserContext";
 import { useEffect } from "react";
 
 function ProtectedRoute({ path, component: Component }: { path: string, component: React.ComponentType }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   return (
     <Route path={path}>
-      {user ? <Component /> : <Redirect to="/login" />}
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : user ? (
+        <Component />
+      ) : (
+        <Redirect to="/login" />
+      )}
     </Route>
   );
 }
