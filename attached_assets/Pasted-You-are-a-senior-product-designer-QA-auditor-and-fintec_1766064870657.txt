@@ -1,0 +1,192 @@
+You are a senior product designer, QA auditor, and fintech compliance reviewer.
+
+Your task is to DESIGN, VERIFY, and DOCUMENT the Financial Reports & Statements module
+for the Finatrades platform.
+
+Think like a normal bank customer (layman).
+The report must be understandable without technical knowledge.
+
+------------------------------------------------
+OBJECTIVE
+------------------------------------------------
+1) Allow users to VIEW financial statements inside the platform.
+2) Allow users to DOWNLOAD statements (PDF / CSV).
+3) Ensure accuracy, clarity, and audit-readiness.
+4) Match bank account statement standards.
+
+------------------------------------------------
+USER TYPES TO SUPPORT
+------------------------------------------------
+1) Individual User
+2) Corporate User (KYB)
+3) Admin (read-only or export for compliance)
+
+------------------------------------------------
+REPORT TYPES REQUIRED
+------------------------------------------------
+A) Account Statement (Primary)
+B) Transaction History
+C) Gold Holdings Statement
+D) Certificates Summary
+E) Trade Finance (FinaBridge – Corporate only)
+F) BNSL Plan Statement
+G) Fees & Charges Summary
+H) Tax / Regulatory Summary (if applicable)
+
+------------------------------------------------
+LAYMAN DESIGN PRINCIPLES
+------------------------------------------------
+- Use plain language (no crypto / tech terms).
+- Show balances clearly.
+- Dates must be clear (with timezone).
+- Totals must be visible at top.
+- One line = one transaction (like bank).
+
+------------------------------------------------
+REPORT 1: ACCOUNT STATEMENT (BANK-STYLE)
+------------------------------------------------
+Header must show:
+- Platform name (Finatrades)
+- User full name
+- User ID / Account ID
+- Account Type (Individual / Corporate)
+- Statement period (From – To)
+- Statement generated date
+
+Balances section (TOP):
+- Opening Balance (USD + Gold grams)
+- Total Credits
+- Total Debits
+- Closing Balance (USD + Gold grams)
+
+Transaction Table Columns:
+- Date
+- Reference ID
+- Description (Buy Gold / Send Gold / Receive / BNSL / Trade / Fee)
+- Debit (USD / grams)
+- Credit (USD / grams)
+- Balance after transaction
+
+------------------------------------------------
+REPORT 2: GOLD HOLDINGS STATEMENT
+------------------------------------------------
+Show:
+- Total gold held (grams)
+- Free gold
+- Locked gold (BNSL / Trade)
+- Vault location
+- Purity
+
+Include:
+- Ownership reference
+- Certificate ID link
+
+------------------------------------------------
+REPORT 3: TRANSACTION HISTORY
+------------------------------------------------
+Filters:
+- Date range
+- Transaction type
+- Credit / Debit
+- Wallet type (FinaPay / FinaVault / BNSL / FinaBridge)
+
+User must be able to:
+- Search
+- Sort
+- Export
+
+------------------------------------------------
+REPORT 4: CERTIFICATES SUMMARY
+------------------------------------------------
+List:
+- Digital Ownership Certificates
+- Storage Certificates (Wingold & Metals)
+
+Columns:
+- Certificate ID
+- Type
+- Issue date
+- Gold grams
+- Status
+- Download link
+
+------------------------------------------------
+REPORT 5: CORPORATE TRADE FINANCE (FinaBridge)
+------------------------------------------------
+Only for Corporate users.
+
+Show:
+- Trade Case ID
+- Counterparty
+- Locked gold
+- Status
+- Documents
+- Settlement date
+
+------------------------------------------------
+REPORT 6: BNSL STATEMENT
+------------------------------------------------
+Show:
+- Plan ID
+- Start date
+- Maturity date
+- Gold locked
+- Expected benefit
+- Status
+
+------------------------------------------------
+REPORT 7: FEES & CHARGES
+------------------------------------------------
+Show:
+- Date
+- Type of fee
+- Amount
+- Reason
+- Reference transaction
+
+------------------------------------------------
+DOWNLOAD OPTIONS
+------------------------------------------------
+User must be able to:
+- View inside platform
+- Download as PDF (bank-style)
+- Download as CSV (data)
+
+Downloaded files must include:
+- Platform watermark
+- Page numbers
+- Statement disclaimer
+- Unique report ID
+
+------------------------------------------------
+SECURITY & ACCESS RULES
+------------------------------------------------
+- Users can ONLY see their own data.
+- Corporate users can see:
+  - Company-level data
+  - Sub-user data (if role allows)
+- No cross-user leakage.
+- Admin access is read-only unless export permitted.
+
+------------------------------------------------
+VALIDATION & TESTING
+------------------------------------------------
+Verify:
+- Totals match transaction data.
+- Opening + Credits – Debits = Closing.
+- Gold grams always reconcile with vault.
+- Timezone consistency.
+- No missing transactions.
+
+------------------------------------------------
+OUTPUT REQUIRED
+------------------------------------------------
+1) Confirmation that reports match bank statement standards.
+2) List of missing fields (if any).
+3) UX issues for layman users.
+4) Security gaps (if any).
+5) Final user guide text:
+   "How to view and download your statement"
+
+Do NOT write backend code.
+Focus on correctness, clarity, and user self-service experience.
