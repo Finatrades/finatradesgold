@@ -8684,6 +8684,39 @@ export async function registerRoutes(
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to close deal room" });
     }
   });
+
+  // Admin: Update deal room disclaimer
+  app.post("/api/admin/deal-rooms/:id/disclaimer", ensureAdminAsync, async (req, res) => {
+    try {
+      const adminId = (req as any).user?.id;
+      const { disclaimer } = req.body;
+
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+
+      const updatedRoom = await storage.updateDealRoom(req.params.id, {
+        adminDisclaimer: disclaimer,
+        adminDisclaimerUpdatedAt: new Date(),
+        adminDisclaimerUpdatedBy: adminId,
+        updatedAt: new Date()
+      });
+
+      await storage.createAuditLog({
+        entityType: "deal_room",
+        entityId: req.params.id,
+        action: "disclaimer_updated",
+        performedBy: adminId,
+        details: { disclaimer }
+      });
+
+      res.json({ room: updatedRoom, message: "Disclaimer saved successfully" });
+    } catch (error) {
+      console.error("Failed to update disclaimer:", error);
+      res.status(400).json({ message: "Failed to update disclaimer" });
+    }
+  });
   
   // ============================================================================
   // CHAT SYSTEM

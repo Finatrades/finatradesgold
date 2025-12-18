@@ -59,6 +59,9 @@ interface DealRoomData {
   closedAt: string | null;
   closedBy: string | null;
   closureNotes: string | null;
+  adminDisclaimer: string | null;
+  adminDisclaimerUpdatedAt: string | null;
+  adminDisclaimerUpdatedBy: string | null;
   createdAt: string;
   updatedAt: string;
   tradeRequest?: {
@@ -110,6 +113,10 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [closureNotes, setClosureNotes] = useState('');
   const [closingRoom, setClosingRoom] = useState(false);
+  
+  const [adminDisclaimer, setAdminDisclaimer] = useState('');
+  const [savingDisclaimer, setSavingDisclaimer] = useState(false);
+  const [showDisclaimerSection, setShowDisclaimerSection] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -121,6 +128,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
       if (response.ok) {
         const data = await response.json();
         setRoom(data.room);
+        setAdminDisclaimer(data.room.adminDisclaimer || '');
       }
     } catch (error) {
       console.error('Failed to fetch deal room:', error);
@@ -182,6 +190,24 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
       toast({ title: 'Error', description: 'Failed to close deal room', variant: 'destructive' });
     } finally {
       setClosingRoom(false);
+    }
+  };
+
+  const saveAdminDisclaimer = async () => {
+    setSavingDisclaimer(true);
+    try {
+      const response = await apiRequest('POST', `/api/admin/deal-rooms/${dealRoomId}/disclaimer`, { disclaimer: adminDisclaimer });
+      if (response.ok) {
+        toast({ title: 'Disclaimer Saved', description: 'The disclaimer has been saved successfully' });
+        await fetchRoom();
+      } else {
+        const error = await response.json();
+        toast({ title: 'Error', description: error.message || 'Failed to save disclaimer', variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to save disclaimer', variant: 'destructive' });
+    } finally {
+      setSavingDisclaimer(false);
     }
   };
 
@@ -561,17 +587,73 @@ Version 1.0 - Effective Date: January 2025
           </div>
         )}
         
-        {allAcceptances.length > 0 && (
+        {(allAcceptances.length > 0 || userRole === 'admin') && (
           <div className="bg-success-muted border-b px-4 py-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Shield className="w-4 h-4 text-success" />
-              <span className="font-medium text-success">Terms Accepted:</span>
-              {allAcceptances.map((a) => (
-                <Badge key={a.id} variant="outline" className="text-xs">
-                  {a.role.charAt(0).toUpperCase() + a.role.slice(1)} - {format(new Date(a.acceptedAt), 'MMM d, yyyy')}
-                </Badge>
-              ))}
+            <div className="flex items-center gap-2 text-sm flex-wrap">
+              {allAcceptances.length > 0 && (
+                <>
+                  <Shield className="w-4 h-4 text-success" />
+                  <span className="font-medium text-success">Terms Accepted:</span>
+                  {allAcceptances.map((a) => (
+                    <Badge key={a.id} variant="outline" className="text-xs">
+                      {a.role.charAt(0).toUpperCase() + a.role.slice(1)} - {format(new Date(a.acceptedAt), 'MMM d, yyyy')}
+                    </Badge>
+                  ))}
+                </>
+              )}
+              {userRole === 'admin' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDisclaimerSection(!showDisclaimerSection)}
+                  className={allAcceptances.length > 0 ? "ml-auto text-xs" : "text-xs"}
+                  data-testid="button-toggle-disclaimer"
+                >
+                  <FileText className="w-3 h-3 mr-1" />
+                  {showDisclaimerSection ? 'Hide' : 'Add/View'} Disclaimer
+                </Button>
+              )}
             </div>
+          </div>
+        )}
+
+        {userRole === 'admin' && showDisclaimerSection && (
+          <div className="border-b px-4 py-3 bg-muted/30">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-primary" />
+              <span className="font-medium text-sm">Admin Disclaimer</span>
+              {room?.adminDisclaimerUpdatedAt && (
+                <span className="text-xs text-muted-foreground">
+                  Last updated: {format(new Date(room.adminDisclaimerUpdatedAt), 'MMM d, yyyy h:mm a')}
+                </span>
+              )}
+            </div>
+            <Textarea
+              value={adminDisclaimer}
+              onChange={(e) => setAdminDisclaimer(e.target.value)}
+              placeholder="Enter admin disclaimer or notes for this deal room..."
+              className="mb-2 text-sm"
+              rows={3}
+              data-testid="textarea-admin-disclaimer"
+            />
+            <Button
+              size="sm"
+              onClick={saveAdminDisclaimer}
+              disabled={savingDisclaimer}
+              data-testid="button-save-disclaimer"
+            >
+              {savingDisclaimer ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="w-3 h-3 mr-1" />
+                  Save Disclaimer
+                </>
+              )}
+            </Button>
           </div>
         )}
         

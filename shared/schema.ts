@@ -1626,11 +1626,15 @@ export const dealRooms = pgTable("deal_rooms", {
   closedBy: varchar("closed_by", { length: 255 }).references(() => users.id),
   closureNotes: text("closure_notes"),
   
+  adminDisclaimer: text("admin_disclaimer"),
+  adminDisclaimerUpdatedAt: timestamp("admin_disclaimer_updated_at"),
+  adminDisclaimerUpdatedBy: varchar("admin_disclaimer_updated_by", { length: 255 }).references(() => users.id),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertDealRoomSchema = createInsertSchema(dealRooms).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertDealRoomSchema = createInsertSchema(dealRooms).omit({ id: true, createdAt: true, updatedAt: true, adminDisclaimerUpdatedAt: true });
 export type InsertDealRoom = z.infer<typeof insertDealRoomSchema>;
 export type DealRoom = typeof dealRooms.$inferSelect;
 
