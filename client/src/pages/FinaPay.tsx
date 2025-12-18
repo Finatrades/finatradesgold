@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 
 import BuyGoldModal from '@/components/finapay/modals/BuyGoldModal';
+import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
@@ -392,6 +393,13 @@ export default function FinaPay() {
 
         {/* Secondary Actions */}
         <div className="flex flex-wrap gap-2 justify-center">
+          <button 
+            onClick={() => setActiveModal('buyWingold')}
+            className="px-4 py-2 text-sm rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 transition-colors text-amber-700 font-medium"
+            data-testid="button-buy-gold-wingold"
+          >
+            <ShoppingCart className="w-4 h-4 inline mr-1" /> Buy Gold (Wingold)
+          </button>
           <button onClick={() => setLocation('/bnsl')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
             <TrendingUp className="w-4 h-4 inline mr-1" /> BNSL Plans
           </button>
@@ -453,6 +461,14 @@ export default function FinaPay() {
           isOpen={activeModal === 'withdraw'} 
           onClose={handleModalClose}
           walletBalance={usdBalance}
+        />
+        <BuyGoldWingoldModal
+          isOpen={activeModal === 'buyWingold'}
+          onClose={handleModalClose}
+          onSuccess={() => {
+            refreshWallet();
+            refreshTransactions();
+          }}
         />
 
         {/* Deposit Callback Modal */}
