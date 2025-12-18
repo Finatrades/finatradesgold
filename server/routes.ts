@@ -8445,6 +8445,136 @@ export async function registerRoutes(
       res.status(400).json({ message: "Failed to assign admin" });
     }
   });
+
+  // Get deal room agreement acceptance status for current user
+  app.get("/api/deal-rooms/:id/agreement", async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+
+      const acceptance = await storage.getDealRoomAgreementAcceptance(req.params.id, userId);
+      const allAcceptances = await storage.getDealRoomAgreementAcceptances(req.params.id);
+
+      res.json({
+        hasAccepted: !!acceptance,
+        acceptance,
+        allAcceptances,
+        agreementVersion: "1.0"
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get agreement status" });
+    }
+  });
+
+  // Accept deal room terms and conditions
+  app.post("/api/deal-rooms/:id/agreement/accept", async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+
+      if (room.isClosed) {
+        return res.status(400).json({ message: "Deal room is closed" });
+      }
+
+      const existingAcceptance = await storage.getDealRoomAgreementAcceptance(req.params.id, userId);
+      if (existingAcceptance) {
+        return res.status(400).json({ message: "Already accepted", acceptance: existingAcceptance });
+      }
+
+      let role: "importer" | "exporter" | "admin";
+      if (room.importerUserId === userId) {
+        role = "importer";
+      } else if (room.exporterUserId === userId) {
+        role = "exporter";
+      } else if (room.assignedAdminId === userId) {
+        role = "admin";
+      } else {
+        const user = await storage.getUser(userId);
+        if (user?.role === "admin") {
+          role = "admin";
+        } else {
+          return res.status(403).json({ message: "Not a participant of this deal room" });
+        }
+      }
+
+      const acceptance = await storage.createDealRoomAgreementAcceptance({
+        dealRoomId: req.params.id,
+        userId,
+        role,
+        agreementVersion: "1.0",
+        ipAddress: req.ip || req.socket.remoteAddress || null,
+        userAgent: req.headers["user-agent"] || null
+      });
+
+      await storage.createAuditLog({
+        entityType: "deal_room",
+        entityId: req.params.id,
+        action: "agreement_accepted",
+        performedBy: userId,
+        details: { role, agreementVersion: "1.0" }
+      });
+
+      res.json({ acceptance, message: "Terms accepted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to accept agreement" });
+    }
+  });
+
+  // Admin: Close deal room
+  app.post("/api/admin/deal-rooms/:id/close", ensureAdminAsync, async (req, res) => {
+    try {
+      const adminId = (req as any).user?.id;
+      const { closureNotes } = req.body;
+
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+
+      if (room.isClosed) {
+        return res.status(400).json({ message: "Deal room is already closed" });
+      }
+
+      const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
+      if (!tradeRequest) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+
+      if (!["Settled", "Completed", "Cancelled"].includes(tradeRequest.status)) {
+        return res.status(400).json({ 
+          message: `Cannot close deal room. Trade must be Settled, Completed or Cancelled. Current status: ${tradeRequest.status}` 
+        });
+      }
+
+      const closedRoom = await storage.closeDealRoom(req.params.id, adminId, closureNotes);
+
+      await storage.createAuditLog({
+        entityType: "deal_room",
+        entityId: req.params.id,
+        action: "deal_room_closed",
+        performedBy: adminId,
+        details: { closureNotes, tradeStatus: tradeRequest.status }
+      });
+
+      res.json({ room: closedRoom, message: "Deal room closed successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to close deal room" });
+    }
+  });
   
   // ============================================================================
   // CHAT SYSTEM
