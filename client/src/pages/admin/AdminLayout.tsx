@@ -129,6 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: 'Financial Operations',
       items: [
         { icon: <ArrowRightLeft className="w-5 h-5" />, label: 'Transactions', href: '/admin/transactions' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Account Statements', href: '/admin/account-statements' },
         { icon: <CreditCard className="w-5 h-5" />, label: 'Payment Gateways', href: '/admin/payment-gateways' },
         { icon: <DollarSign className="w-5 h-5" />, label: 'Fee Management', href: '/admin/fees' },
       ]
