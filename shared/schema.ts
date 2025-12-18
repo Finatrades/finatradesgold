@@ -1620,6 +1620,12 @@ export const dealRooms = pgTable("deal_rooms", {
   exporterUserId: varchar("exporter_user_id", { length: 255 }).notNull().references(() => users.id),
   assignedAdminId: varchar("assigned_admin_id", { length: 255 }).references(() => users.id),
   status: varchar("status", { length: 50 }).notNull().default('active'),
+  
+  isClosed: boolean("is_closed").notNull().default(false),
+  closedAt: timestamp("closed_at"),
+  closedBy: varchar("closed_by", { length: 255 }).references(() => users.id),
+  closureNotes: text("closure_notes"),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1644,6 +1650,21 @@ export const dealRoomMessages = pgTable("deal_room_messages", {
 export const insertDealRoomMessageSchema = createInsertSchema(dealRoomMessages).omit({ id: true, createdAt: true });
 export type InsertDealRoomMessage = z.infer<typeof insertDealRoomMessageSchema>;
 export type DealRoomMessage = typeof dealRoomMessages.$inferSelect;
+
+export const dealRoomAgreementAcceptances = pgTable("deal_room_agreement_acceptances", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).notNull().references(() => dealRooms.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  role: dealRoomParticipantRoleEnum("role").notNull(),
+  agreementVersion: varchar("agreement_version", { length: 50 }).notNull().default('1.0'),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  acceptedAt: timestamp("accepted_at").notNull().defaultNow(),
+});
+
+export const insertDealRoomAgreementAcceptanceSchema = createInsertSchema(dealRoomAgreementAcceptances).omit({ id: true, acceptedAt: true });
+export type InsertDealRoomAgreementAcceptance = z.infer<typeof insertDealRoomAgreementAcceptanceSchema>;
+export type DealRoomAgreementAcceptance = typeof dealRoomAgreementAcceptances.$inferSelect;
 
 // ============================================
 // CHAT
