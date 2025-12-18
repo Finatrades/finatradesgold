@@ -19,8 +19,8 @@ import { useAdminOtp } from '@/hooks/useAdminOtp';
 interface Transaction {
   id: string;
   userId: string;
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Swap' | 'Deposit' | 'Withdrawal';
-  status: 'Pending' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled';
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Swap' | 'Deposit' | 'Withdrawal' | 'Buy Gold Bar' | 'Crypto Deposit' | 'Trade Finance' | 'BNSL';
+  status: 'Pending' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled' | 'Under Review' | 'Pending Review' | 'Draft' | 'Pending Termination';
   amountGold: string | null;
   amountUsd: string | null;
   amountEur: string | null;
@@ -31,6 +31,7 @@ interface Transaction {
   userName?: string;
   userEmail?: string;
   finatradesId?: string;
+  sourceTable?: string;
 }
 
 export default function Transactions() {
@@ -47,11 +48,11 @@ export default function Transactions() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, sourceTable }: { id: string; sourceTable?: string }) => {
       const res = await fetch(`/api/admin/transactions/${id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ sourceTable }),
       });
       if (!res.ok) throw new Error('Failed to approve transaction');
       return res.json();
@@ -66,11 +67,11 @@ export default function Transactions() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, sourceTable }: { id: string; sourceTable?: string }) => {
       const res = await fetch(`/api/admin/transactions/${id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: 'Rejected by admin' }),
+        body: JSON.stringify({ reason: 'Rejected by admin', sourceTable }),
       });
       if (!res.ok) throw new Error('Failed to reject transaction');
       return res.json();
@@ -84,7 +85,7 @@ export default function Transactions() {
     },
   });
 
-  const handleApproveWithOtp = async (txId: string, txType: string) => {
+  const handleApproveWithOtp = async (txId: string, txType: string, sourceTable?: string) => {
     if (!adminUser?.id) return;
     const actionType = txType === 'Deposit' ? 'deposit_approval' : 'withdrawal_approval';
     const otpRequired = await checkOtpRequired(actionType as any, adminUser.id);
@@ -93,14 +94,14 @@ export default function Transactions() {
         actionType: actionType as any,
         targetId: txId,
         targetType: 'transaction',
-        onComplete: () => approveMutation.mutate(txId),
+        onComplete: () => approveMutation.mutate({ id: txId, sourceTable }),
       });
     } else {
-      approveMutation.mutate(txId);
+      approveMutation.mutate({ id: txId, sourceTable });
     }
   };
 
-  const handleRejectWithOtp = async (txId: string, txType: string) => {
+  const handleRejectWithOtp = async (txId: string, txType: string, sourceTable?: string) => {
     if (!adminUser?.id) return;
     const actionType = txType === 'Deposit' ? 'deposit_rejection' : 'withdrawal_rejection';
     const otpRequired = await checkOtpRequired(actionType as any, adminUser.id);
@@ -109,10 +110,10 @@ export default function Transactions() {
         actionType: actionType as any,
         targetId: txId,
         targetType: 'transaction',
-        onComplete: () => rejectMutation.mutate(txId),
+        onComplete: () => rejectMutation.mutate({ id: txId, sourceTable }),
       });
     } else {
-      rejectMutation.mutate(txId);
+      rejectMutation.mutate({ id: txId, sourceTable });
     }
   };
 
@@ -461,13 +462,13 @@ export default function Transactions() {
                         <td className="px-4 py-4">{getStatusBadge(tx.status)}</td>
                         <td className="px-4 py-4 text-gray-500">{format(new Date(tx.createdAt), 'MMM dd, yyyy HH:mm')}</td>
                         <td className="px-4 py-4">
-                          {tx.status === 'Pending' && (
+                          {(tx.status === 'Pending' || tx.status === 'Under Review' || tx.status === 'Pending Review' || tx.status === 'Draft') && (
                             <div className="flex gap-2">
                               <Button 
                                 size="sm" 
                                 variant="outline" 
                                 className="text-green-600 hover:bg-green-50"
-                                onClick={() => handleApproveWithOtp(tx.id, tx.type)}
+                                onClick={() => handleApproveWithOtp(tx.id, tx.type, tx.sourceTable)}
                                 disabled={approveMutation.isPending}
                                 data-testid={`button-approve-${tx.id}`}
                               >
@@ -477,7 +478,7 @@ export default function Transactions() {
                                 size="sm" 
                                 variant="outline" 
                                 className="text-red-600 hover:bg-red-50"
-                                onClick={() => handleRejectWithOtp(tx.id, tx.type)}
+                                onClick={() => handleRejectWithOtp(tx.id, tx.type, tx.sourceTable)}
                                 disabled={rejectMutation.isPending}
                                 data-testid={`button-reject-${tx.id}`}
                               >

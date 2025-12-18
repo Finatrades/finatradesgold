@@ -3867,6 +3867,149 @@ export async function registerRoutes(
   // Admin: Approve transaction - processes wallet/vault updates and generates certificates
   app.post("/api/admin/transactions/:id/approve", async (req, res) => {
     try {
+      const { sourceTable } = req.body;
+      
+      // Handle Buy Gold Bar requests from buyGoldRequests table
+      if (sourceTable === 'buyGoldRequests') {
+        try {
+          const [buyGoldReq] = await db.select().from(buyGoldRequests).where(eq(buyGoldRequests.id, req.params.id));
+          if (!buyGoldReq) {
+            return res.status(404).json({ message: "Buy Gold Bar request not found" });
+          }
+          if (buyGoldReq.status !== 'Pending' && buyGoldReq.status !== 'Under Review') {
+            return res.status(400).json({ message: "Only pending requests can be approved" });
+          }
+          
+          // Update the request status to Approved
+          await db.update(buyGoldRequests)
+            .set({ status: 'Approved', reviewedAt: new Date() })
+            .where(eq(buyGoldRequests.id, req.params.id));
+          
+          // Audit log
+          await storage.createAuditLog({
+            entityType: "buy_gold_request",
+            entityId: req.params.id,
+            actionType: "approve",
+            actor: req.body.adminId || 'admin',
+            actorRole: "admin",
+            details: `Buy Gold Bar request approved`,
+          });
+          
+          return res.json({ message: 'Buy Gold Bar request approved successfully' });
+        } catch (e) {
+          console.error('Failed to approve buy gold request:', e);
+          return res.status(400).json({ message: "Failed to approve buy gold request" });
+        }
+      }
+      
+      // Handle deposit requests from depositRequests table
+      if (sourceTable === 'depositRequests') {
+        const depositReq = await storage.getDepositRequest(req.params.id);
+        if (!depositReq) {
+          return res.status(404).json({ message: "Deposit request not found" });
+        }
+        if (depositReq.status !== 'Pending' && depositReq.status !== 'Under Review') {
+          return res.status(400).json({ message: "Only pending requests can be approved" });
+        }
+        
+        // Update status to Approved
+        await storage.updateDepositRequest(req.params.id, { status: 'Approved', reviewedAt: new Date() });
+        
+        // Credit user wallet with USD
+        const wallet = await storage.getWallet(depositReq.userId);
+        if (wallet) {
+          const currentUsd = parseFloat(wallet.usdBalance || '0');
+          const depositAmount = parseFloat(depositReq.amount || '0');
+          await storage.updateWallet(depositReq.userId, {
+            usdBalance: (currentUsd + depositAmount).toFixed(2)
+          });
+        }
+        
+        // Audit log
+        await storage.createAuditLog({
+          entityType: "deposit_request",
+          entityId: req.params.id,
+          actionType: "approve",
+          actor: req.body.adminId || 'admin',
+          actorRole: "admin",
+          details: `Deposit request approved - Amount: $${depositReq.amount}`,
+        });
+        
+        return res.json({ message: 'Deposit request approved and wallet credited' });
+      }
+      
+      // Handle withdrawal requests from withdrawalRequests table
+      if (sourceTable === 'withdrawalRequests') {
+        try {
+          const [withdrawalReq] = await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.id, req.params.id));
+          if (!withdrawalReq) {
+            return res.status(404).json({ message: "Withdrawal request not found" });
+          }
+          if (withdrawalReq.status !== 'Pending' && withdrawalReq.status !== 'Under Review' && withdrawalReq.status !== 'Processing') {
+            return res.status(400).json({ message: "Only pending requests can be approved" });
+          }
+          
+          await db.update(withdrawalRequests)
+            .set({ status: 'Completed', completedAt: new Date() })
+            .where(eq(withdrawalRequests.id, req.params.id));
+          
+          // Audit log
+          await storage.createAuditLog({
+            entityType: "withdrawal_request",
+            entityId: req.params.id,
+            actionType: "approve",
+            actor: req.body.adminId || 'admin',
+            actorRole: "admin",
+            details: `Withdrawal request approved`,
+          });
+          
+          return res.json({ message: 'Withdrawal request approved' });
+        } catch (e) {
+          console.error('Failed to approve withdrawal request:', e);
+          return res.status(400).json({ message: "Failed to approve withdrawal request" });
+        }
+      }
+      
+      // Handle crypto payment requests
+      if (sourceTable === 'cryptoPaymentRequests') {
+        try {
+          const [cryptoReq] = await db.select().from(cryptoPaymentRequests).where(eq(cryptoPaymentRequests.id, req.params.id));
+          if (!cryptoReq) {
+            return res.status(404).json({ message: "Crypto payment request not found" });
+          }
+          
+          await db.update(cryptoPaymentRequests)
+            .set({ status: 'Approved' })
+            .where(eq(cryptoPaymentRequests.id, req.params.id));
+          
+          // Credit user wallet
+          const wallet = await storage.getWallet(cryptoReq.userId);
+          if (wallet && cryptoReq.amountUsd) {
+            const currentUsd = parseFloat(wallet.usdBalance || '0');
+            const depositAmount = parseFloat(cryptoReq.amountUsd || '0');
+            await storage.updateWallet(cryptoReq.userId, {
+              usdBalance: (currentUsd + depositAmount).toFixed(2)
+            });
+          }
+          
+          // Audit log
+          await storage.createAuditLog({
+            entityType: "crypto_payment_request",
+            entityId: req.params.id,
+            actionType: "approve",
+            actor: req.body.adminId || 'admin',
+            actorRole: "admin",
+            details: `Crypto payment request approved`,
+          });
+          
+          return res.json({ message: 'Crypto payment approved and wallet credited' });
+        } catch (e) {
+          console.error('Failed to approve crypto payment:', e);
+          return res.status(400).json({ message: "Failed to approve crypto payment" });
+        }
+      }
+      
+      // Default: Handle regular transactions table
       // Initial validation outside transaction
       const transaction = await storage.getTransaction(req.params.id);
       if (!transaction) {
@@ -4288,6 +4431,91 @@ export async function registerRoutes(
   // Admin: Reject transaction
   app.post("/api/admin/transactions/:id/reject", async (req, res) => {
     try {
+      const { sourceTable, reason } = req.body;
+      
+      // Handle Buy Gold Bar requests
+      if (sourceTable === 'buyGoldRequests') {
+        try {
+          await db.update(buyGoldRequests)
+            .set({ status: 'Rejected', reviewedAt: new Date() })
+            .where(eq(buyGoldRequests.id, req.params.id));
+          
+          await storage.createAuditLog({
+            entityType: "buy_gold_request",
+            entityId: req.params.id,
+            actionType: "reject",
+            actor: req.body.adminId || 'admin',
+            actorRole: "admin",
+            details: `Buy Gold Bar request rejected - Reason: ${reason || 'Not specified'}`,
+          });
+          
+          return res.json({ message: 'Buy Gold Bar request rejected' });
+        } catch (e) {
+          return res.status(400).json({ message: "Failed to reject buy gold request" });
+        }
+      }
+      
+      // Handle deposit requests
+      if (sourceTable === 'depositRequests') {
+        await storage.updateDepositRequest(req.params.id, { status: 'Rejected', reviewedAt: new Date() });
+        
+        await storage.createAuditLog({
+          entityType: "deposit_request",
+          entityId: req.params.id,
+          actionType: "reject",
+          actor: req.body.adminId || 'admin',
+          actorRole: "admin",
+          details: `Deposit request rejected - Reason: ${reason || 'Not specified'}`,
+        });
+        
+        return res.json({ message: 'Deposit request rejected' });
+      }
+      
+      // Handle withdrawal requests
+      if (sourceTable === 'withdrawalRequests') {
+        try {
+          await db.update(withdrawalRequests)
+            .set({ status: 'Rejected' })
+            .where(eq(withdrawalRequests.id, req.params.id));
+          
+          await storage.createAuditLog({
+            entityType: "withdrawal_request",
+            entityId: req.params.id,
+            actionType: "reject",
+            actor: req.body.adminId || 'admin',
+            actorRole: "admin",
+            details: `Withdrawal request rejected - Reason: ${reason || 'Not specified'}`,
+          });
+          
+          return res.json({ message: 'Withdrawal request rejected' });
+        } catch (e) {
+          return res.status(400).json({ message: "Failed to reject withdrawal request" });
+        }
+      }
+      
+      // Handle crypto payment requests
+      if (sourceTable === 'cryptoPaymentRequests') {
+        try {
+          await db.update(cryptoPaymentRequests)
+            .set({ status: 'Rejected' })
+            .where(eq(cryptoPaymentRequests.id, req.params.id));
+          
+          await storage.createAuditLog({
+            entityType: "crypto_payment_request",
+            entityId: req.params.id,
+            actionType: "reject",
+            actor: req.body.adminId || 'admin',
+            actorRole: "admin",
+            details: `Crypto payment request rejected - Reason: ${reason || 'Not specified'}`,
+          });
+          
+          return res.json({ message: 'Crypto payment request rejected' });
+        } catch (e) {
+          return res.status(400).json({ message: "Failed to reject crypto payment" });
+        }
+      }
+      
+      // Default: Handle regular transactions table
       const transaction = await storage.getTransaction(req.params.id);
       if (!transaction) {
         return res.status(404).json({ message: "Transaction not found" });
@@ -4307,7 +4535,7 @@ export async function registerRoutes(
         actionType: "reject",
         actor: req.body.adminId || 'admin',
         actorRole: "admin",
-        details: `Transaction rejected - Type: ${transaction.type}, Reason: ${req.body.reason || 'Not specified'}`,
+        details: `Transaction rejected - Type: ${transaction.type}, Reason: ${reason || 'Not specified'}`,
       });
       
       res.json({ transaction: updatedTransaction, message: 'Transaction rejected' });
