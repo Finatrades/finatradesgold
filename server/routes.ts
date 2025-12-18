@@ -11840,10 +11840,10 @@ export async function registerRoutes(
         configMap.set(config.configKey, config.configValue);
       }
       
-      // Get fee percentages from platform config
-      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '1.5');
-      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '1.04');
-      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '1.0');
+      // Get fee percentages from platform config (no fallbacks - must be configured)
+      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
+      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
+      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
       const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
 
       // Get all wallets to calculate AUM
@@ -11957,10 +11957,10 @@ export async function registerRoutes(
         configMap.set(config.configKey, config.configValue);
       }
       
-      // Get fee percentages from platform config
-      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '1.5');
-      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '1.04');
-      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '1.0');
+      // Get fee percentages from platform config (no fallbacks - must be configured)
+      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
+      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
+      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
       const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
 
       // FinaPay Metrics

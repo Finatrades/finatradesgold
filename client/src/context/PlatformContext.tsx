@@ -117,10 +117,10 @@ interface PlatformContextType {
 }
 
 const DEFAULT_SETTINGS: PlatformSettings = {
-  buySpreadPercent: 1.5,
-  sellSpreadPercent: 1.0,
-  storageFeePercent: 0.5,
-  minTradeAmount: 50.00,
+  buySpreadPercent: 0,
+  sellSpreadPercent: 0,
+  storageFeePercent: 0,
+  minTradeAmount: 0,
   
   tier1DailyLimit: 5000,
   tier1MonthlyLimit: 20000,
