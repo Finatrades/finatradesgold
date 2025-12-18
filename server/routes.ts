@@ -2448,15 +2448,15 @@ export async function registerRoutes(
     }
   });
   
-  // Download backup file (requires OTP verification via query param)
-  app.get("/api/admin/backups/:id/download", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+  // Download backup file (requires OTP verification via POST body)
+  app.post("/api/admin/backups/:id/download", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
       
       // Require OTP verification for download
-      const otpCode = req.query.otp as string;
+      const { otpCode } = req.body;
       if (!adminUser.mfaEnabled) {
         return res.status(403).json({ 
           message: "Two-factor authentication must be enabled to download backups.",

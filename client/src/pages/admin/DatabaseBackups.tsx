@@ -221,11 +221,44 @@ export default function DatabaseBackups() {
     },
   });
   
-  const handleDownload = (backup: Backup, otp: string) => {
-    window.open(`/api/admin/backups/${backup.id}/download?otp=${encodeURIComponent(otp)}`, "_blank");
-    setShowDownloadDialog(false);
-    setSelectedBackup(null);
-    setOtpCode("");
+  const handleDownload = async (backup: Backup, otp: string) => {
+    try {
+      const res = await fetch(`/api/admin/backups/${backup.id}/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ otpCode: otp }),
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to download backup");
+      }
+      
+      const blob = await res.blob();
+      const contentDisposition = res.headers.get("Content-Disposition");
+      const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch ? filenameMatch[1] : backup.fileName;
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success("Backup downloaded successfully");
+    } catch (error: any) {
+      toast.error("Failed to download backup", {
+        description: error.message,
+      });
+    } finally {
+      setShowDownloadDialog(false);
+      setSelectedBackup(null);
+      setOtpCode("");
+    }
   };
   
   const handleCreateBackup = () => {
@@ -542,38 +575,40 @@ export default function DatabaseBackups() {
               <AlertTriangle className="w-5 h-5" />
               Restore Database
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                <strong className="text-foreground">Warning:</strong> This will replace all current database data with the data from this backup.
-              </p>
-              
-              <div className="p-3 bg-warning-muted rounded-md">
-                <p className="text-sm text-warning-muted-foreground">
-                  <strong>A pre-restore snapshot will be created automatically</strong> so you can revert if needed.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  <strong className="text-foreground">Warning:</strong> This will replace all current database data with the data from this backup.
                 </p>
-              </div>
-              
-              <div className="p-3 bg-muted rounded-md font-mono text-sm">
-                <div>File: {selectedBackup?.fileName}</div>
-                <div>Created: {selectedBackup?.createdAt && format(new Date(selectedBackup.createdAt), "MMM d, yyyy HH:mm")}</div>
-                <div>Rows: {selectedBackup?.totalRows?.toLocaleString()}</div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="restore-otp" className="flex items-center gap-2 text-foreground">
-                  <KeyRound className="w-4 h-4" />
-                  Enter OTP Code
-                </Label>
-                <Input
-                  id="restore-otp"
-                  type="text"
-                  placeholder="Enter 6-digit code from authenticator"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  maxLength={6}
-                  className="font-mono text-center text-lg tracking-widest"
-                  data-testid="input-restore-otp"
-                />
+                
+                <div className="p-3 bg-warning-muted rounded-md">
+                  <p className="text-sm text-warning-muted-foreground">
+                    <strong>A pre-restore snapshot will be created automatically</strong> so you can revert if needed.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-muted rounded-md font-mono text-sm">
+                  <div>File: {selectedBackup?.fileName}</div>
+                  <div>Created: {selectedBackup?.createdAt && format(new Date(selectedBackup.createdAt), "MMM d, yyyy HH:mm")}</div>
+                  <div>Rows: {selectedBackup?.totalRows?.toLocaleString()}</div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="restore-otp" className="flex items-center gap-2 text-foreground">
+                    <KeyRound className="w-4 h-4" />
+                    Enter OTP Code
+                  </Label>
+                  <Input
+                    id="restore-otp"
+                    type="text"
+                    placeholder="Enter 6-digit code from authenticator"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    maxLength={6}
+                    className="font-mono text-center text-lg tracking-widest"
+                    data-testid="input-restore-otp"
+                  />
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -598,29 +633,31 @@ export default function DatabaseBackups() {
               <Database className="w-5 h-5 text-primary" />
               Create Database Backup
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                Create a full backup of the database. This may take a few minutes depending on the data size.
-              </p>
-              
-              <div className="space-y-2">
-                <Label htmlFor="create-otp" className="flex items-center gap-2 text-foreground">
-                  <KeyRound className="w-4 h-4" />
-                  Enter OTP Code
-                </Label>
-                <Input
-                  id="create-otp"
-                  type="text"
-                  placeholder="Enter 6-digit code from authenticator"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  maxLength={6}
-                  className="font-mono text-center text-lg tracking-widest"
-                  data-testid="input-create-otp"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Two-factor authentication is required for backup operations.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  Create a full backup of the database. This may take a few minutes depending on the data size.
                 </p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="create-otp" className="flex items-center gap-2 text-foreground">
+                    <KeyRound className="w-4 h-4" />
+                    Enter OTP Code
+                  </Label>
+                  <Input
+                    id="create-otp"
+                    type="text"
+                    placeholder="Enter 6-digit code from authenticator"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    maxLength={6}
+                    className="font-mono text-center text-lg tracking-widest"
+                    data-testid="input-create-otp"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Two-factor authentication is required for backup operations.
+                  </p>
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -644,30 +681,32 @@ export default function DatabaseBackups() {
               <Download className="w-5 h-5 text-primary" />
               Download Backup
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                Download backup file for secure offsite storage.
-              </p>
-              
-              <div className="p-3 bg-muted rounded-md font-mono text-sm">
-                {selectedBackup?.fileName}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="download-otp" className="flex items-center gap-2 text-foreground">
-                  <KeyRound className="w-4 h-4" />
-                  Enter OTP Code
-                </Label>
-                <Input
-                  id="download-otp"
-                  type="text"
-                  placeholder="Enter 6-digit code from authenticator"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  maxLength={6}
-                  className="font-mono text-center text-lg tracking-widest"
-                  data-testid="input-download-otp"
-                />
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  Download backup file for secure offsite storage.
+                </p>
+                
+                <div className="p-3 bg-muted rounded-md font-mono text-sm">
+                  {selectedBackup?.fileName}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="download-otp" className="flex items-center gap-2 text-foreground">
+                    <KeyRound className="w-4 h-4" />
+                    Enter OTP Code
+                  </Label>
+                  <Input
+                    id="download-otp"
+                    type="text"
+                    placeholder="Enter 6-digit code from authenticator"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    maxLength={6}
+                    className="font-mono text-center text-lg tracking-widest"
+                    data-testid="input-download-otp"
+                  />
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
