@@ -24,6 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { 
   Database, 
@@ -38,7 +40,8 @@ import {
   AlertTriangle,
   FileArchive,
   HardDrive,
-  History
+  History,
+  KeyRound
 } from "lucide-react";
 
 interface Backup {
@@ -121,6 +124,9 @@ export default function DatabaseBackups() {
   const [selectedBackup, setSelectedBackup] = useState<Backup | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
   
   const { data: backupsData, isLoading: loadingBackups, refetch: refetchBackups } = useQuery<{ backups: Backup[] }>({
     queryKey: ["/api/admin/backups"],
@@ -131,11 +137,12 @@ export default function DatabaseBackups() {
   });
   
   const createBackupMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (otp: string) => {
       const res = await fetch("/api/admin/backups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ otpCode: otp }),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -184,12 +191,12 @@ export default function DatabaseBackups() {
   });
   
   const restoreBackupMutation = useMutation({
-    mutationFn: async (backupId: string) => {
+    mutationFn: async ({ backupId, otp }: { backupId: string; otp: string }) => {
       const res = await fetch(`/api/admin/backups/${backupId}/restore`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ confirmed: true }),
+        body: JSON.stringify({ confirmed: true, otpCode: otp }),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -203,6 +210,7 @@ export default function DatabaseBackups() {
       });
       setShowRestoreDialog(false);
       setSelectedBackup(null);
+      setOtpCode("");
       queryClient.invalidateQueries({ queryKey: ["/api/admin/backups"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/backup-audit-logs"] });
     },
@@ -213,8 +221,23 @@ export default function DatabaseBackups() {
     },
   });
   
-  const handleDownload = (backup: Backup) => {
-    window.open(`/api/admin/backups/${backup.id}/download`, "_blank");
+  const handleDownload = (backup: Backup, otp: string) => {
+    window.open(`/api/admin/backups/${backup.id}/download?otp=${encodeURIComponent(otp)}`, "_blank");
+    setShowDownloadDialog(false);
+    setSelectedBackup(null);
+    setOtpCode("");
+  };
+  
+  const handleCreateBackup = () => {
+    createBackupMutation.mutate(otpCode);
+    setShowCreateDialog(false);
+    setOtpCode("");
+  };
+  
+  const handleRestoreBackup = () => {
+    if (selectedBackup) {
+      restoreBackupMutation.mutate({ backupId: selectedBackup.id, otp: otpCode });
+    }
   };
   
   const backups = backupsData?.backups || [];
@@ -309,7 +332,7 @@ export default function DatabaseBackups() {
                     Refresh
                   </Button>
                   <Button 
-                    onClick={() => createBackupMutation.mutate()}
+                    onClick={() => setShowCreateDialog(true)}
                     disabled={createBackupMutation.isPending}
                     data-testid="button-create-backup"
                   >
@@ -374,7 +397,10 @@ export default function DatabaseBackups() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => handleDownload(backup)}
+                                    onClick={() => {
+                                      setSelectedBackup(backup);
+                                      setShowDownloadDialog(true);
+                                    }}
                                     title="Download"
                                     data-testid={`button-download-${backup.id}`}
                                   >
@@ -509,7 +535,7 @@ export default function DatabaseBackups() {
         </AlertDialogContent>
       </AlertDialog>
       
-      <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+      <AlertDialog open={showRestoreDialog} onOpenChange={(open) => { setShowRestoreDialog(open); if (!open) setOtpCode(""); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-warning">
@@ -532,17 +558,127 @@ export default function DatabaseBackups() {
                 <div>Created: {selectedBackup?.createdAt && format(new Date(selectedBackup.createdAt), "MMM d, yyyy HH:mm")}</div>
                 <div>Rows: {selectedBackup?.totalRows?.toLocaleString()}</div>
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="restore-otp" className="flex items-center gap-2 text-foreground">
+                  <KeyRound className="w-4 h-4" />
+                  Enter OTP Code
+                </Label>
+                <Input
+                  id="restore-otp"
+                  type="text"
+                  placeholder="Enter 6-digit code from authenticator"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={6}
+                  className="font-mono text-center text-lg tracking-widest"
+                  data-testid="input-restore-otp"
+                />
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-restore">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => selectedBackup && restoreBackupMutation.mutate(selectedBackup.id)}
+              onClick={handleRestoreBackup}
               className="bg-warning text-warning-foreground hover:bg-warning/90"
-              disabled={restoreBackupMutation.isPending}
+              disabled={restoreBackupMutation.isPending || otpCode.length !== 6}
               data-testid="button-confirm-restore"
             >
               {restoreBackupMutation.isPending ? "Restoring..." : "Restore Database"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={showCreateDialog} onOpenChange={(open) => { setShowCreateDialog(open); if (!open) setOtpCode(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Database className="w-5 h-5 text-primary" />
+              Create Database Backup
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                Create a full backup of the database. This may take a few minutes depending on the data size.
+              </p>
+              
+              <div className="space-y-2">
+                <Label htmlFor="create-otp" className="flex items-center gap-2 text-foreground">
+                  <KeyRound className="w-4 h-4" />
+                  Enter OTP Code
+                </Label>
+                <Input
+                  id="create-otp"
+                  type="text"
+                  placeholder="Enter 6-digit code from authenticator"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={6}
+                  className="font-mono text-center text-lg tracking-widest"
+                  data-testid="input-create-otp"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Two-factor authentication is required for backup operations.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-create">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCreateBackup}
+              disabled={createBackupMutation.isPending || otpCode.length !== 6}
+              data-testid="button-confirm-create"
+            >
+              {createBackupMutation.isPending ? "Creating..." : "Create Backup"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={showDownloadDialog} onOpenChange={(open) => { setShowDownloadDialog(open); if (!open) setOtpCode(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Download className="w-5 h-5 text-primary" />
+              Download Backup
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                Download backup file for secure offsite storage.
+              </p>
+              
+              <div className="p-3 bg-muted rounded-md font-mono text-sm">
+                {selectedBackup?.fileName}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="download-otp" className="flex items-center gap-2 text-foreground">
+                  <KeyRound className="w-4 h-4" />
+                  Enter OTP Code
+                </Label>
+                <Input
+                  id="download-otp"
+                  type="text"
+                  placeholder="Enter 6-digit code from authenticator"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={6}
+                  className="font-mono text-center text-lg tracking-widest"
+                  data-testid="input-download-otp"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-download">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedBackup && handleDownload(selectedBackup, otpCode)}
+              disabled={otpCode.length !== 6}
+              data-testid="button-confirm-download"
+            >
+              Download Backup
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

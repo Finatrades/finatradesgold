@@ -2361,12 +2361,33 @@ export async function registerRoutes(
     }
   });
   
-  // Create a new backup
+  // Create a new backup (requires OTP verification)
   app.post("/api/admin/backups", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
+      
+      // Require OTP verification for backup creation
+      const { otpCode } = req.body;
+      if (!adminUser.mfaEnabled) {
+        return res.status(403).json({ 
+          message: "Two-factor authentication must be enabled to perform backup operations. Please enable 2FA in your security settings.",
+          requiresMfa: true
+        });
+      }
+      
+      if (!otpCode) {
+        return res.status(400).json({ 
+          message: "OTP verification code is required for backup operations.",
+          requiresOtp: true
+        });
+      }
+      
+      const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
+      if (!isValidOtp) {
+        return res.status(401).json({ message: "Invalid OTP code. Please try again." });
+      }
       
       const result = await createBackup(adminUser.id, 'manual');
       
@@ -2427,12 +2448,33 @@ export async function registerRoutes(
     }
   });
   
-  // Download backup file
+  // Download backup file (requires OTP verification via query param)
   app.get("/api/admin/backups/:id/download", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
+      
+      // Require OTP verification for download
+      const otpCode = req.query.otp as string;
+      if (!adminUser.mfaEnabled) {
+        return res.status(403).json({ 
+          message: "Two-factor authentication must be enabled to download backups.",
+          requiresMfa: true
+        });
+      }
+      
+      if (!otpCode) {
+        return res.status(400).json({ 
+          message: "OTP verification code is required to download backups.",
+          requiresOtp: true
+        });
+      }
+      
+      const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
+      if (!isValidOtp) {
+        return res.status(401).json({ message: "Invalid OTP code. Please try again." });
+      }
       
       const fileResult = await getBackupFileStream(req.params.id);
       
@@ -2469,15 +2511,35 @@ export async function registerRoutes(
     }
   });
   
-  // Restore from backup (DANGEROUS - requires super admin or manage_settings permission)
+  // Restore from backup (DANGEROUS - requires super admin or manage_settings permission + OTP)
   app.post("/api/admin/backups/:id/restore", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
       
+      // Require OTP verification for restore
+      const { confirmed, otpCode } = req.body;
+      if (!adminUser.mfaEnabled) {
+        return res.status(403).json({ 
+          message: "Two-factor authentication must be enabled to perform restore operations. Please enable 2FA in your security settings.",
+          requiresMfa: true
+        });
+      }
+      
+      if (!otpCode) {
+        return res.status(400).json({ 
+          message: "OTP verification code is required for restore operations.",
+          requiresOtp: true
+        });
+      }
+      
+      const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
+      if (!isValidOtp) {
+        return res.status(401).json({ message: "Invalid OTP code. Please try again." });
+      }
+      
       // Additional safety: Require confirmation flag
-      const { confirmed } = req.body;
       if (!confirmed) {
         return res.status(400).json({
           message: "Restore operation requires explicit confirmation. Set 'confirmed: true' in request body.",
