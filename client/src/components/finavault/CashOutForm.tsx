@@ -179,8 +179,18 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">g</div>
                     </div>
                     
+                    {/* Insufficient Balance Warning */}
+                    {grams > vaultBalance && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2 items-center animate-in fade-in slide-in-from-top-2">
+                        <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                        <span className="text-sm text-red-700">
+                          Insufficient balance. You only have <strong>{vaultBalance.toFixed(3)}g</strong> available.
+                        </span>
+                      </div>
+                    )}
+                    
                     {/* Live Conversion Preview */}
-                    {grams > 0 && (
+                    {grams > 0 && grams <= vaultBalance && (
                       <div className="p-4 bg-muted/30 border border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-2">
                          <span className="text-muted-foreground text-sm">Estimated Value</span>
                          <span className="text-xl font-bold text-primary">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -340,6 +350,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                   <Button 
                     onClick={handleProceed}
                     className="w-full h-12 bg-primary text-white hover:bg-primary/90 font-bold text-lg"
+                    disabled={grams <= 0 || grams > vaultBalance}
                     data-testid="button-review-withdrawal"
                   >
                     Review Withdrawal Request
