@@ -48,6 +48,9 @@ import {
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
   chatAgents, chatAgentWorkflows,
+  type KnowledgeCategory, type InsertKnowledgeCategory,
+  type KnowledgeArticle, type InsertKnowledgeArticle,
+  knowledgeCategories, knowledgeArticles,
   type AuditLog, type InsertAuditLog,
   type Certificate, type InsertCertificate,
   type ContentPage, type InsertContentPage,
@@ -385,6 +388,25 @@ export interface IStorage {
   getUserActiveWorkflow(userId: string, workflowType: string): Promise<ChatAgentWorkflow | undefined>;
   createChatAgentWorkflow(workflow: InsertChatAgentWorkflow): Promise<ChatAgentWorkflow>;
   updateChatAgentWorkflow(id: string, updates: Partial<ChatAgentWorkflow>): Promise<ChatAgentWorkflow | undefined>;
+  
+  // Knowledge Base
+  getKnowledgeCategory(id: string): Promise<KnowledgeCategory | undefined>;
+  getAllKnowledgeCategories(): Promise<KnowledgeCategory[]>;
+  createKnowledgeCategory(category: InsertKnowledgeCategory): Promise<KnowledgeCategory>;
+  updateKnowledgeCategory(id: string, updates: Partial<KnowledgeCategory>): Promise<KnowledgeCategory | undefined>;
+  deleteKnowledgeCategory(id: string): Promise<boolean>;
+  
+  getKnowledgeArticle(id: string): Promise<KnowledgeArticle | undefined>;
+  getAllKnowledgeArticles(): Promise<KnowledgeArticle[]>;
+  getPublishedKnowledgeArticles(): Promise<KnowledgeArticle[]>;
+  getKnowledgeArticlesByCategory(categoryId: string): Promise<KnowledgeArticle[]>;
+  searchKnowledgeArticles(query: string, agentType?: string): Promise<KnowledgeArticle[]>;
+  createKnowledgeArticle(article: InsertKnowledgeArticle): Promise<KnowledgeArticle>;
+  updateKnowledgeArticle(id: string, updates: Partial<KnowledgeArticle>): Promise<KnowledgeArticle | undefined>;
+  deleteKnowledgeArticle(id: string): Promise<boolean>;
+  incrementArticleViewCount(id: string): Promise<void>;
+  incrementArticleHelpfulCount(id: string): Promise<void>;
+  seedDefaultKnowledgeBase(): Promise<void>;
   
   // Chat
   getChatSession(userId: string): Promise<ChatSession | undefined>;
@@ -1343,6 +1365,121 @@ export class DatabaseStorage implements IStorage {
   async updateChatAgentWorkflow(id: string, updates: Partial<ChatAgentWorkflow>): Promise<ChatAgentWorkflow | undefined> {
     const [workflow] = await db.update(chatAgentWorkflows).set({ ...updates, updatedAt: new Date() }).where(eq(chatAgentWorkflows.id, id)).returning();
     return workflow || undefined;
+  }
+
+  // Knowledge Base
+  async getKnowledgeCategory(id: string): Promise<KnowledgeCategory | undefined> {
+    const [category] = await db.select().from(knowledgeCategories).where(eq(knowledgeCategories.id, id));
+    return category || undefined;
+  }
+
+  async getAllKnowledgeCategories(): Promise<KnowledgeCategory[]> {
+    return await db.select().from(knowledgeCategories).orderBy(knowledgeCategories.sortOrder);
+  }
+
+  async createKnowledgeCategory(category: InsertKnowledgeCategory): Promise<KnowledgeCategory> {
+    const [newCategory] = await db.insert(knowledgeCategories).values(category).returning();
+    return newCategory;
+  }
+
+  async updateKnowledgeCategory(id: string, updates: Partial<KnowledgeCategory>): Promise<KnowledgeCategory | undefined> {
+    const [category] = await db.update(knowledgeCategories).set({ ...updates, updatedAt: new Date() }).where(eq(knowledgeCategories.id, id)).returning();
+    return category || undefined;
+  }
+
+  async deleteKnowledgeCategory(id: string): Promise<boolean> {
+    const result = await db.delete(knowledgeCategories).where(eq(knowledgeCategories.id, id));
+    return true;
+  }
+
+  async getKnowledgeArticle(id: string): Promise<KnowledgeArticle | undefined> {
+    const [article] = await db.select().from(knowledgeArticles).where(eq(knowledgeArticles.id, id));
+    return article || undefined;
+  }
+
+  async getAllKnowledgeArticles(): Promise<KnowledgeArticle[]> {
+    return await db.select().from(knowledgeArticles).orderBy(desc(knowledgeArticles.createdAt));
+  }
+
+  async getPublishedKnowledgeArticles(): Promise<KnowledgeArticle[]> {
+    return await db.select().from(knowledgeArticles).where(eq(knowledgeArticles.status, 'published')).orderBy(desc(knowledgeArticles.createdAt));
+  }
+
+  async getKnowledgeArticlesByCategory(categoryId: string): Promise<KnowledgeArticle[]> {
+    return await db.select().from(knowledgeArticles).where(eq(knowledgeArticles.categoryId, categoryId)).orderBy(desc(knowledgeArticles.createdAt));
+  }
+
+  async searchKnowledgeArticles(query: string, agentType?: string): Promise<KnowledgeArticle[]> {
+    const searchPattern = `%${query.toLowerCase()}%`;
+    let articles = await db.select().from(knowledgeArticles)
+      .where(and(
+        eq(knowledgeArticles.status, 'published'),
+        or(
+          sql`LOWER(${knowledgeArticles.title}) LIKE ${searchPattern}`,
+          sql`LOWER(${knowledgeArticles.summary}) LIKE ${searchPattern}`,
+          sql`LOWER(${knowledgeArticles.content}) LIKE ${searchPattern}`,
+          sql`LOWER(${knowledgeArticles.keywords}) LIKE ${searchPattern}`
+        )
+      ))
+      .orderBy(desc(knowledgeArticles.viewCount))
+      .limit(10);
+    
+    if (agentType) {
+      articles = articles.filter(article => {
+        if (!article.agentTypes) return true;
+        try {
+          const types = JSON.parse(article.agentTypes);
+          return Array.isArray(types) && (types.length === 0 || types.includes(agentType));
+        } catch {
+          return true;
+        }
+      });
+    }
+    
+    return articles;
+  }
+
+  async createKnowledgeArticle(article: InsertKnowledgeArticle): Promise<KnowledgeArticle> {
+    const [newArticle] = await db.insert(knowledgeArticles).values(article).returning();
+    return newArticle;
+  }
+
+  async updateKnowledgeArticle(id: string, updates: Partial<KnowledgeArticle>): Promise<KnowledgeArticle | undefined> {
+    const [article] = await db.update(knowledgeArticles).set({ ...updates, updatedAt: new Date() }).where(eq(knowledgeArticles.id, id)).returning();
+    return article || undefined;
+  }
+
+  async deleteKnowledgeArticle(id: string): Promise<boolean> {
+    await db.delete(knowledgeArticles).where(eq(knowledgeArticles.id, id));
+    return true;
+  }
+
+  async incrementArticleViewCount(id: string): Promise<void> {
+    await db.update(knowledgeArticles).set({ viewCount: sql`${knowledgeArticles.viewCount} + 1` }).where(eq(knowledgeArticles.id, id));
+  }
+
+  async incrementArticleHelpfulCount(id: string): Promise<void> {
+    await db.update(knowledgeArticles).set({ helpfulCount: sql`${knowledgeArticles.helpfulCount} + 1` }).where(eq(knowledgeArticles.id, id));
+  }
+
+  async seedDefaultKnowledgeBase(): Promise<void> {
+    const existingCategories = await this.getAllKnowledgeCategories();
+    if (existingCategories.length > 0) return;
+
+    const defaultCategories: InsertKnowledgeCategory[] = [
+      { name: 'Getting Started', description: 'Basics of using Finatrades platform', icon: 'BookOpen', sortOrder: 1 },
+      { name: 'Account & Security', description: 'Account management and security settings', icon: 'Shield', sortOrder: 2 },
+      { name: 'Gold Trading', description: 'Buying, selling, and trading gold', icon: 'Coins', sortOrder: 3 },
+      { name: 'FinaVault', description: 'Gold storage and vault services', icon: 'Lock', sortOrder: 4 },
+      { name: 'FinaPay', description: 'Payment and transfer features', icon: 'CreditCard', sortOrder: 5 },
+      { name: 'BNSL', description: 'Buy Now Sell Later plans', icon: 'TrendingUp', sortOrder: 6 },
+      { name: 'KYC & Verification', description: 'Identity verification process', icon: 'UserCheck', sortOrder: 7 },
+    ];
+
+    for (const category of defaultCategories) {
+      await this.createKnowledgeCategory(category);
+    }
+    console.log('[Knowledge Base] Default categories seeded successfully');
   }
 
   // Chat Sessions

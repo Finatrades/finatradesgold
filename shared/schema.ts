@@ -1699,6 +1699,47 @@ export type InsertChatAgent = z.infer<typeof insertChatAgentSchema>;
 export type ChatAgent = typeof chatAgents.$inferSelect;
 
 // ============================================
+// KNOWLEDGE BASE
+// ============================================
+
+export const knowledgeStatusEnum = pgEnum('knowledge_status', ['draft', 'published', 'archived']);
+
+export const knowledgeCategories = pgTable("knowledge_categories", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 50 }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertKnowledgeCategorySchema = createInsertSchema(knowledgeCategories).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertKnowledgeCategory = z.infer<typeof insertKnowledgeCategorySchema>;
+export type KnowledgeCategory = typeof knowledgeCategories.$inferSelect;
+
+export const knowledgeArticles = pgTable("knowledge_articles", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id", { length: 255 }).references(() => knowledgeCategories.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  summary: text("summary"),
+  content: text("content").notNull(),
+  keywords: text("keywords"), // JSON array for search optimization
+  status: knowledgeStatusEnum("status").notNull().default('draft'),
+  agentTypes: text("agent_types"), // JSON array of agent types that can use this article
+  viewCount: integer("view_count").notNull().default(0),
+  helpfulCount: integer("helpful_count").notNull().default(0),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  updatedBy: varchar("updated_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertKnowledgeArticleSchema = createInsertSchema(knowledgeArticles).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true, helpfulCount: true });
+export type InsertKnowledgeArticle = z.infer<typeof insertKnowledgeArticleSchema>;
+export type KnowledgeArticle = typeof knowledgeArticles.$inferSelect;
+
+// ============================================
 // CHAT
 // ============================================
 
