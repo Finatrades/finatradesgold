@@ -7126,8 +7126,8 @@ export async function registerRoutes(
     }
   });
   
-  // Create platform bank account (Admin)
-  app.post("/api/admin/bank-accounts", async (req, res) => {
+  // Create platform bank account (Admin) - PROTECTED
+  app.post("/api/admin/bank-accounts", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const accountData = insertPlatformBankAccountSchema.parse(req.body);
       const account = await storage.createPlatformBankAccount(accountData);
@@ -7137,8 +7137,8 @@ export async function registerRoutes(
     }
   });
   
-  // Update platform bank account (Admin)
-  app.patch("/api/admin/bank-accounts/:id", async (req, res) => {
+  // Update platform bank account (Admin) - PROTECTED
+  app.patch("/api/admin/bank-accounts/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const account = await storage.updatePlatformBankAccount(req.params.id, req.body);
       if (!account) {
@@ -7150,8 +7150,8 @@ export async function registerRoutes(
     }
   });
   
-  // Delete platform bank account (Admin)
-  app.delete("/api/admin/bank-accounts/:id", async (req, res) => {
+  // Delete platform bank account (Admin) - PROTECTED
+  app.delete("/api/admin/bank-accounts/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await storage.deletePlatformBankAccount(req.params.id);
       res.json({ success: true });
@@ -7170,8 +7170,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get all deposit requests (Admin)
-  app.get("/api/admin/deposit-requests", async (req, res) => {
+  // Get all deposit requests (Admin) - PROTECTED
+  app.get("/api/admin/deposit-requests", ensureAdminAsync, requirePermission('manage_deposits', 'view_transactions'), async (req, res) => {
     try {
       const requests = await storage.getAllDepositRequests();
       res.json({ requests });
@@ -7180,8 +7180,8 @@ export async function registerRoutes(
     }
   });
   
-  // Create deposit request (User)
-  app.post("/api/deposit-requests", async (req, res) => {
+  // Create deposit request (User) - PROTECTED
+  app.post("/api/deposit-requests", ensureAuthenticated, async (req, res) => {
     try {
       // Generate reference number
       const referenceNumber = `DEP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -7206,8 +7206,8 @@ export async function registerRoutes(
     }
   });
   
-  // Update deposit request (Admin - approve/reject)
-  app.patch("/api/admin/deposit-requests/:id", async (req, res) => {
+  // Update deposit request (Admin - approve/reject) - PROTECTED
+  app.patch("/api/admin/deposit-requests/:id", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
     try {
       const request = await storage.getDepositRequest(req.params.id);
       if (!request) {
@@ -7584,8 +7584,8 @@ export async function registerRoutes(
     }
   });
   
-  // Update withdrawal request (Admin - process/reject)
-  app.patch("/api/admin/withdrawal-requests/:id", async (req, res) => {
+  // Update withdrawal request (Admin - process/reject) - PROTECTED
+  app.patch("/api/admin/withdrawal-requests/:id", ensureAdminAsync, requirePermission('manage_withdrawals'), async (req, res) => {
     try {
       const request = await storage.getWithdrawalRequest(req.params.id);
       if (!request) {
@@ -7706,8 +7706,8 @@ export async function registerRoutes(
     }
   });
   
-  // Create trade case
-  app.post("/api/trade/cases", async (req, res) => {
+  // Create trade case - PROTECTED
+  app.post("/api/trade/cases", ensureAuthenticated, async (req, res) => {
     try {
       const caseData = insertTradeCaseSchema.parse(req.body);
       const tradeCase = await storage.createTradeCase(caseData);
@@ -7728,8 +7728,8 @@ export async function registerRoutes(
     }
   });
   
-  // Update trade case
-  app.patch("/api/trade/cases/:id", async (req, res) => {
+  // Update trade case - PROTECTED
+  app.patch("/api/trade/cases/:id", ensureAuthenticated, async (req, res) => {
     try {
       const tradeCase = await storage.updateTradeCase(req.params.id, req.body);
       if (!tradeCase) {
@@ -7741,8 +7741,8 @@ export async function registerRoutes(
     }
   });
   
-  // Get case documents
-  app.get("/api/trade/documents/:caseId", async (req, res) => {
+  // Get case documents - PROTECTED
+  app.get("/api/trade/documents/:caseId", ensureAuthenticated, async (req, res) => {
     try {
       const documents = await storage.getCaseDocuments(req.params.caseId);
       res.json({ documents });
@@ -7751,8 +7751,8 @@ export async function registerRoutes(
     }
   });
   
-  // Upload document
-  app.post("/api/trade/documents", async (req, res) => {
+  // Upload document - PROTECTED
+  app.post("/api/trade/documents", ensureAuthenticated, async (req, res) => {
     try {
       const documentData = insertTradeDocumentSchema.parse(req.body);
       const document = await storage.createTradeDocument(documentData);
@@ -7762,8 +7762,8 @@ export async function registerRoutes(
     }
   });
   
-  // Update document status
-  app.patch("/api/trade/documents/:id", async (req, res) => {
+  // Update document status - PROTECTED
+  app.patch("/api/trade/documents/:id", ensureAuthenticated, async (req, res) => {
     try {
       const document = await storage.updateTradeDocument(req.params.id, req.body);
       if (!document) {
@@ -7789,8 +7789,8 @@ export async function registerRoutes(
     return result;
   }
   
-  // Record FinaBridge disclaimer acceptance with role selection
-  app.post("/api/finabridge/accept-disclaimer/:userId", async (req, res) => {
+  // Record FinaBridge disclaimer acceptance with role selection - PROTECTED
+  app.post("/api/finabridge/accept-disclaimer/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
       if (!user) {
@@ -7839,7 +7839,7 @@ export async function registerRoutes(
   });
   
   // Create new trade request (Importer)
-  app.post("/api/finabridge/importer/requests", async (req, res) => {
+  app.post("/api/finabridge/importer/requests", ensureAuthenticated, async (req, res) => {
     try {
       const requestData = insertTradeRequestSchema.parse({
         ...req.body,
@@ -7863,7 +7863,7 @@ export async function registerRoutes(
   });
   
   // Submit trade request (change from Draft to Open)
-  app.post("/api/finabridge/importer/requests/:id/submit", async (req, res) => {
+  app.post("/api/finabridge/importer/requests/:id/submit", ensureAuthenticated, async (req, res) => {
     try {
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) {
@@ -7890,7 +7890,7 @@ export async function registerRoutes(
   });
   
   // Get forwarded proposals for importer
-  app.get("/api/finabridge/importer/requests/:id/forwarded-proposals", async (req, res) => {
+  app.get("/api/finabridge/importer/requests/:id/forwarded-proposals", ensureAuthenticated, async (req, res) => {
     try {
       const forwardedList = await storage.getForwardedProposals(req.params.id);
       const proposalIds = forwardedList.map(f => f.proposalId);
@@ -7927,7 +7927,7 @@ export async function registerRoutes(
   });
   
   // Accept a forwarded proposal (creates settlement hold)
-  app.post("/api/finabridge/importer/proposals/:proposalId/accept", async (req, res) => {
+  app.post("/api/finabridge/importer/proposals/:proposalId/accept", ensureAuthenticated, async (req, res) => {
     try {
       const proposal = await storage.getTradeProposal(req.params.proposalId);
       if (!proposal) {
@@ -8028,7 +8028,7 @@ export async function registerRoutes(
   });
 
   // Decline a forwarded proposal
-  app.post("/api/finabridge/importer/proposals/:proposalId/decline", async (req, res) => {
+  app.post("/api/finabridge/importer/proposals/:proposalId/decline", ensureAuthenticated, async (req, res) => {
     try {
       const proposal = await storage.getTradeProposal(req.params.proposalId);
       if (!proposal) {
@@ -8149,7 +8149,7 @@ export async function registerRoutes(
   });
   
   // Submit proposal for a trade request
-  app.post("/api/finabridge/exporter/proposals", async (req, res) => {
+  app.post("/api/finabridge/exporter/proposals", ensureAuthenticated, async (req, res) => {
     try {
       const proposalData = insertTradeProposalSchema.parse(req.body);
       
@@ -8192,7 +8192,7 @@ export async function registerRoutes(
   });
 
   // Update exporter proposal (for modification resubmission)
-  app.put("/api/finabridge/exporter/proposals/:id", async (req, res) => {
+  app.put("/api/finabridge/exporter/proposals/:id", ensureAuthenticated, async (req, res) => {
     try {
       const proposal = await storage.getTradeProposal(req.params.id);
       if (!proposal) {
@@ -8421,8 +8421,8 @@ export async function registerRoutes(
     }
   });
   
-  // Fund FinaBridge wallet (transfer from main wallet)
-  app.post("/api/finabridge/wallet/:userId/fund", async (req, res) => {
+  // Fund FinaBridge wallet (transfer from main wallet) - PROTECTED
+  app.post("/api/finabridge/wallet/:userId/fund", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { amountGrams, goldPricePerGram } = req.body;
       const amount = parseFloat(amountGrams);
@@ -10043,8 +10043,8 @@ export async function registerRoutes(
     }
   });
 
-  // Create money request
-  app.post("/api/finapay/request", async (req, res) => {
+  // Create money request - PROTECTED
+  app.post("/api/finapay/request", ensureAuthenticated, async (req, res) => {
     try {
       const { requesterId, targetIdentifier, amountUsd, channel, memo } = req.body;
       
@@ -10111,8 +10111,8 @@ export async function registerRoutes(
     }
   });
 
-  // Pay a money request
-  app.post("/api/finapay/requests/:id/pay", async (req, res) => {
+  // Pay a money request - PROTECTED
+  app.post("/api/finapay/requests/:id/pay", ensureAuthenticated, async (req, res) => {
     try {
       const { payerId } = req.body;
       const request = await storage.getPeerRequest(req.params.id);
@@ -10589,8 +10589,8 @@ export async function registerRoutes(
     }
   });
 
-  // Admin: Get all Binance transactions
-  app.get("/api/admin/binance-pay/transactions", async (req, res) => {
+  // Admin: Get all Binance transactions - PROTECTED
+  app.get("/api/admin/binance-pay/transactions", ensureAdminAsync, async (req, res) => {
     try {
       const transactions = await storage.getAllBinanceTransactions();
       
@@ -11732,8 +11732,8 @@ export async function registerRoutes(
     }
   });
 
-  // Admin: Get all NGenius transactions
-  app.get("/api/admin/ngenius/transactions", async (req, res) => {
+  // Admin: Get all NGenius transactions - PROTECTED
+  app.get("/api/admin/ngenius/transactions", ensureAdminAsync, async (req, res) => {
     try {
       const transactions = await storage.getAllNgeniusTransactions();
       
