@@ -173,6 +173,7 @@ import { FeeProvider } from "@/context/FeeContext";
 import { BrandingProvider } from "@/context/BrandingContext";
 import { CMSProvider } from "@/context/CMSContext";
 import { SocketProvider } from "@/context/SocketContext";
+import { DataSyncProvider } from "@/hooks/useDataSync";
 
 function App() {
   return (
@@ -183,7 +184,8 @@ function App() {
             <UserProvider>
               <AuthProvider>
                 <SocketProvider>
-                  <FeeProvider>
+                  <DataSyncProvider>
+                    <FeeProvider>
                     <PlatformProvider>
                       <TradeFinanceProvider>
                         <BnslProvider>
@@ -203,7 +205,8 @@ function App() {
                         </BnslProvider>
                       </TradeFinanceProvider>
                     </PlatformProvider>
-                  </FeeProvider>
+                    </FeeProvider>
+                  </DataSyncProvider>
                 </SocketProvider>
               </AuthProvider>
             </UserProvider>
