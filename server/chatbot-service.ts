@@ -116,13 +116,13 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'trading',
     actions: ['Go to Sell Gold']
   },
-  // Deposits
+  // Deposits / Add Funds
   {
-    keywords: ['deposit', 'add funds', 'fund account', 'payment'],
-    patterns: [/how (do i|can i|to) deposit/i, /add (funds|money)/i, /deposit (funds|money)/i, /fund my account/i],
-    response: "To deposit funds:\n\n1. Go to FinaPay > Deposit\n2. Choose your preferred payment method (bank transfer, card, or crypto)\n3. Enter the amount in USD\n4. Follow the payment instructions\n\nMost deposits are processed within minutes. Bank transfers may take 1-2 business days.",
+    keywords: ['deposit', 'add funds', 'fund account', 'payment', 'add money', 'top up', 'load funds'],
+    patterns: [/how (do i|can i|to) deposit/i, /add (funds|money)/i, /deposit (funds|money)/i, /fund my account/i, /add fund/i, /top.?up/i, /load.*(funds|money|wallet)/i],
+    response: "__DEPOSIT_INFO__",
     category: 'deposits',
-    actions: ['Deposit Funds']
+    actions: ['Deposit Funds', 'Go to FinaPay']
   },
   // Withdrawals
   {
@@ -455,10 +455,10 @@ function generateLimitInfoResponse(config?: PlatformConfig, kycStatus?: string):
 
 function generateDepositInfoResponse(config?: PlatformConfig): string {
   if (!config) {
-    return "To deposit funds:\n\n1. Go to FinaPay > Deposit\n2. Choose your payment method\n3. Enter amount and confirm\n\nCheck your dashboard for current limits and fees.";
+    return "**How to Add Funds to Your Account:**\n\n**Step-by-Step:**\n1. Go to **FinaPay** from your dashboard\n2. Select **'Deposit'**\n3. Choose your preferred payment method\n4. Enter the USD amount you want to deposit\n5. Review the transaction details\n6. Complete the payment\n7. Funds appear in your wallet once processed\n\n**Payment Methods:**\n• Bank Transfer - No processing fee, 1-3 business days\n• Credit/Debit Card - Instant with small fee\n• Crypto - Pay with cryptocurrency\n\n**Important:** Your KYC level affects limits. All deposits are secured.";
   }
   
-  return `**Deposit Information:**\n\n• Minimum deposit: ${formatUsd(config.minDeposit)}\n• Maximum single deposit: ${formatUsd(config.maxDepositSingle)}\n• Daily limit: ${formatUsd(config.dailyDepositLimit)}\n\n**Payment Methods:**\n• Bank transfer: ${config.bankTransferFeePercent}% fee\n• Card: ${config.cardFeePercent}% + ${formatUsd(config.cardFeeFixed)}\n• Crypto: ${config.cryptoFeePercent}% fee\n\nGo to FinaPay > Deposit to add funds.`;
+  return `**How to Add Funds to Your Account:**\n\n**Step-by-Step Process:**\n1. Go to **FinaPay** from your dashboard\n2. Select **'Deposit'**\n3. Choose your preferred payment method\n4. Enter the USD amount you want to deposit\n5. Review the transaction details\n6. Complete the payment\n7. Funds will appear in your wallet once processed\n\n**Deposit Limits:**\n• Minimum deposit: ${formatSafeUsd(config.minDeposit)}\n• Maximum per deposit: ${formatSafeUsd(config.maxDepositSingle)}\n• Daily limit: ${formatSafeUsd(config.dailyDepositLimit)}\n\n**Payment Methods & Fees:**\n• **Bank Transfer:** ${formatSafeNum(config.bankTransferFeePercent, '%')} fee (1-3 business days)\n• **Credit/Debit Card:** ${formatSafeNum(config.cardFeePercent, '%')} + ${formatSafeUsd(config.cardFeeFixed)} (instant)\n• **Crypto:** ${formatSafeNum(config.cryptoFeePercent, '%')} fee\n\n**Important Notes:**\n• Your KYC verification level affects your deposit limits\n• Complete verification to unlock higher limits\n• All deposits go through security verification\n• Bank transfers take longer but have lower/no fees\n• Card payments are instant but include processing fees`;
 }
 
 function generateWithdrawalInfoResponse(config?: PlatformConfig): string {
