@@ -390,8 +390,38 @@ export default function VaultActivityList() {
   };
 
   const transactions = data?.transactions || [];
+  const certificates = data?.certificates || [];
   
-  const filteredTransactions = transactions.filter(tx => {
+  // Convert certificates to transaction-like format for display
+  const certificateActivities: VaultTransaction[] = certificates
+    .filter((cert: any) => cert.type === 'Trade Release' || cert.type === 'Physical Storage' || cert.type === 'Digital Ownership')
+    .map((cert: any) => ({
+      id: cert.id,
+      type: cert.type === 'Trade Release' ? 'Receive' as const : 'Vault Deposit' as const,
+      status: cert.status === 'Active' ? 'Completed' : cert.status,
+      amountGold: cert.goldGrams,
+      amountUsd: cert.totalValueUsd,
+      goldPriceUsdPerGram: cert.goldPriceUsdPerGram,
+      recipientEmail: null,
+      senderEmail: null,
+      description: `${cert.type} - ${cert.certificateNumber}`,
+      referenceId: cert.certificateNumber,
+      createdAt: cert.issuedAt,
+      completedAt: cert.issuedAt,
+      certificates: [{
+        id: cert.id,
+        certificateNumber: cert.certificateNumber,
+        type: cert.type,
+        status: cert.status,
+        goldGrams: cert.goldGrams,
+      }],
+    }));
+  
+  // Combine and sort by date (newest first)
+  const allActivities = [...transactions, ...certificateActivities]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  
+  const filteredTransactions = allActivities.filter(tx => {
     const matchesSearch = tx.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.recipientEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
