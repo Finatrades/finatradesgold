@@ -2,251 +2,143 @@
 
 ## Overview
 
-Finatrades is a gold-backed digital financial platform offering multiple integrated services for personal and business users. The platform enables users to buy, sell, store, and trade physical gold through digital wallets, with features including:
-
-- **FinaVault**: Secure gold storage and custody management
-- **FinaPay**: Digital gold wallet for transactions and payments
-- **BNSL (Buy Now Sell Later)**: Deferred price sale agreements for gold
-- **FinaBridge**: Trade finance module for importers/exporters
-- **FinaCard**: Upcoming debit card functionality
-
-The application follows a client-server architecture with a React frontend and Express backend, using PostgreSQL for data persistence.
+Finatrades is a gold-backed digital financial platform offering integrated services for personal and business users. Its core purpose is to enable users to buy, sell, store, and trade physical gold through digital wallets. Key capabilities include FinaVault for secure gold storage, FinaPay for digital gold transactions, BNSL (Buy Now Sell Later) for deferred gold sales, FinaBridge for trade finance, and upcoming FinaCard debit card functionality. The platform aims to provide a robust and versatile digital financial ecosystem centered around gold as an asset.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Core Calculation Rule (Single Source of Truth)
-
-All financial calculations on the Finatrades platform are performed in **USD value**, while the underlying asset is **gold (grams)**.
-
-**USD is used for:**
-- User input
-- Transaction calculations
-- Reporting clarity
-
-**Gold (grams) is the actual asset owned**
-
-This rule applies universally across:
-- FinaPay Wallet
-- FinaVault Wallet (ledger view)
-- BNSL Wallet
-
-**Display Guidelines:**
-- USD value is shown as the primary/headline amount
-- Gold grams are shown as the actual asset owned
-- Cash balances are shown separately from gold holdings
-
 ## System Architecture
 
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite with custom plugins for meta images and Replit integration
-- **Routing**: Wouter (lightweight React router)
-- **State Management**: React Context API for global state (Auth, Language, Notifications, Platform settings, Trade Finance, BNSL, FinaPay)
-- **UI Components**: shadcn/ui component library built on Radix UI primitives
-- **Styling**: Tailwind CSS v4 with custom theme (orange gradient aesthetic for light mode)
-- **Data Fetching**: TanStack React Query for server state management
-- **Animations**: Framer Motion for UI transitions
-- **Real-time**: Socket.IO client for live chat and auto-sync functionality
+The platform uses a client-server architecture with a React frontend and an Express Node.js backend. Data persistence is handled by PostgreSQL.
 
-### Real-Time Auto-Sync System
-The platform implements a 4-layer auto-sync strategy for real-time data synchronization:
+**Core Calculation Rule:** All financial calculations are performed in **USD value**, while the underlying asset is **gold (grams)**. USD is used for user input, transaction calculations, and reporting, while gold grams represent the actual owned asset.
 
-**Layer 1 - Snapshot API**: Dashboard endpoint (`/api/dashboard/:userId`) returns all user data with sync metadata (`_meta.syncVersion`, `_meta.lastTransactionId`) keyed off the latest completed transaction
+**Frontend:**
+- **Framework & Libraries**: React 18 with TypeScript, Vite, Wouter for routing, React Context API for state management, shadcn/ui (Radix UI) for components, Tailwind CSS v4 for styling, TanStack React Query for data fetching, Framer Motion for animations.
+- **Real-time**: Socket.IO client for live features.
+- **Auto-Sync System**: A 4-layer strategy ensures real-time data synchronization using a Snapshot API, Ledger Events via Socket.IO, background polling, and real-time push notifications.
 
-**Layer 2 - Ledger Events**: Server emits `ledger:sync` events via Socket.IO after successful balance mutations. Covered routes include:
-- Bank deposit approval
-- Card payment (complete-session, process-hosted-payment, webhook)
-- Crypto payment approval
-- FinaPay transfers (gold and USD, sender + recipient)
-- BNSL wallet transfers and plan creation
-- FinaVault deposit/withdrawal completion
+**Backend:**
+- **Technology**: Node.js with Express, TypeScript (ESM modules).
+- **API**: RESTful endpoints.
+- **Authentication**: Session-based with bcrypt hashing.
+- **Real-time**: Socket.IO server.
+- **Database Access**: Drizzle ORM with PostgreSQL.
 
-**Layer 3 - Background Auto-Refresh**: `useDashboardData` hook implements 15-second background polling via React Query's `refetchInterval`
+**Data Storage:**
+- **Database**: PostgreSQL with Drizzle ORM.
+- **Schema**: Defined in `shared/schema.ts`, shared across client and server.
+- **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs.
 
-**Layer 4 - Real-time Push**: Centralized `SocketProvider` context manages a single Socket.IO connection per user session. Dashboard hook listens for `ledger:sync` events and invalidates relevant query cache
+**Authentication & Authorization:**
+- **Method**: Email/password authentication.
+- **Session Storage**: PostgreSQL.
+- **Roles**: `user` and `admin`.
+- **KYC Levels**: Multi-tier status (Not Started, In Progress, Approved, Rejected).
 
-**Key Files**:
-- `client/src/context/SocketContext.tsx` - Centralized socket management
-- `client/src/hooks/useDashboardData.ts` - Dashboard data fetching with sync status
-- `server/socket.ts` - Socket.IO server with `emitLedgerEvent` function
+**KYC System:**
+- Supports two modes: `kycAml` (tiered verification: Basic, Enhanced, Corporate) and `Finatrades` (personal info + documents + liveness verification). Configurable via admin settings, including country restrictions.
 
-### Backend Architecture
-- **Runtime**: Node.js with Express
-- **Language**: TypeScript with ESM modules
-- **API Style**: RESTful endpoints under `/api` prefix
-- **Authentication**: Session-based with bcrypt password hashing
-- **Real-time**: Socket.IO server for chat and notifications
-- **Database Access**: Drizzle ORM with PostgreSQL dialect
+**Centralized Platform Configuration:**
+- All fees, limits, and system settings are managed via a `platform_config` database table.
+- An admin interface (`/admin/platform-config`) allows management of 12 categories: Gold Pricing, Transaction Limits, Deposits, Withdrawals, P2P Transfers, BNSL, FinaBridge, Payment Methods, KYC, System, Vault Inventory, Referrals.
+- Settings are exposed to the frontend via `PlatformContext`.
 
-### Data Storage
-- **Database**: PostgreSQL with Drizzle ORM
-- **Schema Location**: `shared/schema.ts` (shared between client and server)
-- **Migrations**: Drizzle Kit with push command (`db:push`)
-- **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs
+**Email Notification Management:**
+- Comprehensive system with `email_notification_settings` (toggleable types) and `email_logs` (audit trail) tables.
+- Admin interface (`/admin/email-notifications`) to manage notification toggles, seed defaults, and view email history/statistics.
+- `sendEmail` function logs all attempts.
 
-### Authentication & Authorization
-- **Method**: Email/password authentication with bcrypt hashing
-- **Session Storage**: PostgreSQL via connect-pg-simple
-- **User Roles**: `user` and `admin` roles defined in schema
-- **KYC Levels**: Multi-tier KYC status (Not Started, In Progress, Approved, Rejected)
-- **Protected Routes**: Client-side route protection with redirect to login
-
-### KYC System (Dual Mode)
-The platform supports two KYC modes, configurable via admin compliance settings:
-
-**Mode 1: kycAml (Tiered Verification)**
-- Tier 1 Basic: Government ID only ($5,000/month limit)
-- Tier 2 Enhanced: ID + Liveness + Proof of Address ($50,000/month limit)
-- Tier 3 Corporate: Full business verification (Unlimited)
-
-**Mode 2: Finatrades (Personal Info + Documents)**
-- Personal Information: Full name, email, phone, date of birth, nationality, country, city, address, postal code, occupation, source of funds, account type
-- Document Uploads: ID front/back, passport (optional), proof of address
-- Liveness Verification: Face capture with movement detection
-- Country Restrictions: Admin-managed blocked countries list
-- Data pre-fills from user profile where available
-- Corporate KYC: Comprehensive questionnaire with beneficial owners and corporate documents
-
-### Centralized Platform Configuration
-All platform fees, limits, and system settings are managed through a centralized database-driven configuration system:
-
-**Database Table**: `platform_config` stores all settings with keys, categories, and values
-**Admin Interface**: `/admin/platform-config` provides a tabbed UI for managing all 12 configuration categories
-**Public API**: `GET /api/platform-config/public` exposes non-sensitive settings to frontend
-**Admin API**: `GET/POST /api/admin/platform-config` for full CRUD operations (admin only)
-
-**12 Configuration Categories**:
-1. **Gold Pricing**: Buy/sell spreads, storage fees, minimum trade amounts
-2. **Transaction Limits**: Tier-based daily/monthly limits (Tier 1-3)
-3. **Deposits**: Min/max amounts, daily/monthly limits
-4. **Withdrawals**: Min/max amounts, fees, pending hours
-5. **P2P Transfers**: Min/max amounts, limits, fees
-6. **BNSL**: Agreement fees, max terms, early exit penalties
-7. **FinaBridge**: Trade finance fees, LC issuance, document processing
-8. **Payment Methods**: Bank transfer, card, and crypto fees
-9. **KYC**: Auto-approval, expiry days, blocked countries
-10. **System**: Maintenance mode, registrations, notifications, session timeout
-11. **Vault Inventory**: Physical gold stock, reserved amounts, alerts
-12. **Referrals**: Bonus amounts, max referrals, validity periods
-
-**Context Integration**: `PlatformContext` fetches settings from database API on app load
-
-### Email Notification Management
-Comprehensive email notification system with admin controls and audit logging:
-
-**Database Tables**:
-- `email_notification_settings`: Toggleable notification types by category (auth, transactions, KYC, BNSL, trade finance, documents, system)
-- `email_logs`: Complete audit trail of all sent emails with status, recipient, template, and error tracking
-
-**Admin Interface**: `/admin/email-notifications` provides:
-- Toggle switches for each notification type by category
-- Seed button to populate default notification settings
-- Searchable/filterable sent email history with status badges
-- Email statistics (total sent, failed, pending)
-
-**API Endpoints**:
-- `GET /api/admin/email-notifications`: List all notification settings
-- `PATCH /api/admin/email-notifications/:type/toggle`: Enable/disable specific notification
-- `POST /api/admin/email-notifications/seed`: Populate default settings
-- `GET /api/admin/email-logs`: Retrieve sent email history
-
-**Email Flow**: `sendEmail` function checks notification settings before sending and logs all attempts (success/failure) for audit purposes
-
-### Project Structure
-```
-├── client/src/          # React frontend
-│   ├── components/      # Reusable UI components
-│   ├── context/         # React Context providers
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/             # Utilities and API client
-│   └── pages/           # Route page components
-├── server/              # Express backend
-│   ├── routes.ts        # API route definitions
-│   ├── storage.ts       # Database operations interface
-│   ├── socket.ts        # Socket.IO handlers
-│   └── db.ts            # Database connection
-├── shared/              # Shared code (schema, types)
-└── migrations/          # Database migrations
-```
+**UI/UX Design:**
+- **Theme**: Orange gradient aesthetic for light mode.
+- **Design Tokens**: Centralized in `client/src/index.css` using CSS variables.
+- **Color Palette**: Defined core colors (`--primary`, `--background`, `--foreground`, etc.) and semantic status colors (`--success`, `--warning`, `--info`, `--error`).
+- **Typography**: Inter font family.
+- **Component Patterns**: Standardized sidebar, cards, buttons, and status badges using defined tokens.
 
 ## External Dependencies
 
-### Database
-- **PostgreSQL**: Primary database (connection via `DATABASE_URL` environment variable)
-- **Drizzle ORM**: Type-safe database queries and schema management
-- **connect-pg-simple**: PostgreSQL session store for Express
+**Database:**
+- **PostgreSQL**: Primary database.
+- **Drizzle ORM**: For database interactions.
+- **connect-pg-simple**: PostgreSQL session store.
 
-### UI Framework
-- **Radix UI**: Accessible component primitives (dialog, dropdown, tabs, etc.)
-- **shadcn/ui**: Pre-built component library configuration
-- **Lucide React**: Icon library
+**UI Framework:**
+- **Radix UI**: Accessible component primitives.
+- **shadcn/ui**: Pre-built component library.
+- **Lucide React**: Icon library.
 
-### Real-time Communication
-- **Socket.IO**: WebSocket-based chat system between users and admin support
+**Real-time Communication:**
+- **Socket.IO**: For WebSocket-based chat and notifications.
 
-### Build & Development
-- **Vite**: Frontend build tool with React plugin
-- **esbuild**: Server-side bundling for production
-- **TypeScript**: Full-stack type safety
+**Build & Development:**
+- **Vite**: Frontend build tool.
+- **esbuild**: Server-side bundling.
+- **TypeScript**: For full-stack type safety.
 
-### Validation
-- **Zod**: Schema validation for API inputs
-- **drizzle-zod**: Auto-generated Zod schemas from Drizzle tables
-- **@hookform/resolvers**: Form validation integration
+**Validation:**
+- **Zod**: Schema validation.
+- **drizzle-zod**: Zod schemas from Drizzle tables.
+- **@hookform/resolvers**: Form validation integration.
 
-### Payment Integrations
+**Payment Integrations:**
+- **Binance Pay**: Integrated for crypto payments via API and webhooks. Requires `BINANCE_PAY_API_KEY`, `BINANCE_PAY_SECRET_KEY`, and `BINANCE_PAY_MERCHANT_ID`.
 
-#### Binance Pay
-- **Service**: `server/binance-pay.ts` - API service for Binance Pay Merchant integration
-- **Database**: `binanceTransactions` table tracks payment orders and status
-- **Required Secrets**:
-  - `BINANCE_PAY_API_KEY` - Merchant API key from merchant.binance.com
-  - `BINANCE_PAY_SECRET_KEY` - Merchant secret key
-  - `BINANCE_PAY_MERCHANT_ID` - Merchant ID (sub-merchant ID if applicable)
-- **Flow**: 
-  1. User selects crypto payment in BuyGoldModal
-  2. POST /api/binance-pay/create-order creates order with Binance
-  3. User redirected to Binance Pay hosted checkout
-  4. Webhook at POST /api/binance-pay/webhook receives payment confirmation
-  5. On success, wallet is credited with purchased gold
-- **Note**: Requires Binance Pay Merchant credentials (not trading API keys)
+**Mobile App (Capacitor):**
+- Configured for iOS and Android builds.
+- **Installed Plugins**: `@capacitor/camera`, `@capacitor/push-notifications`, `@capacitor/haptics`, `@capacitor/status-bar`, `@capacitor/splash-screen`, `@capacitor/filesystem`, `@capacitor/preferences`.
 
-### Mobile App (Capacitor)
+## UI Theme Report
 
-The app is configured for iOS and Android mobile builds using Capacitor.
+### Design Token System
 
-#### Configuration
-- **Config File**: `capacitor.config.ts`
-- **App ID**: `com.finatrades.app`
-- **App Name**: Finatrades
-- **Web Directory**: `dist/public` (Vite build output)
+**Primary Token Location**: `client/src/index.css`
+- `:root` selector - light mode tokens
+- `.dark` selector - dark mode tokens  
+- `@theme inline` block - maps CSS vars to Tailwind utility classes
 
-#### Installed Plugins
-- `@capacitor/camera` - KYC document photo capture
-- `@capacitor/push-notifications` - Push alerts for transactions
-- `@capacitor/haptics` - Touch feedback
-- `@capacitor/status-bar` - Mobile status bar styling
-- `@capacitor/splash-screen` - App launch branding
-- `@capacitor/filesystem` - Local file access
-- `@capacitor/preferences` - Local key-value storage
+### Token Reference
 
-#### Build Commands
-```bash
-# Build web app and sync to native projects
-npm run build && npx cap sync
+#### Core Colors
+| CSS Variable | Light | Dark | Tailwind | Usage |
+|--------------|-------|------|----------|-------|
+| `--primary` | #f97316 | #f97316 | `bg-primary` | Brand orange |
+| `--background` | #ffffff | #111827 | `bg-background` | Page background |
+| `--foreground` | #1f2937 | #f9fafb | `text-foreground` | Primary text |
+| `--muted` | #f9fafb | #374151 | `bg-muted` | Subtle backgrounds |
+| `--border` | #e5e7eb | #374151 | `border-border` | Borders |
+| `--destructive` | #dc2626 | #dc2626 | `bg-destructive` | Danger actions |
 
-# Add platforms (requires Xcode/Android Studio)
-npx cap add ios
-npx cap add android
+#### Semantic Status Colors
+| Status | Base | Muted (Light) | Muted (Dark) |
+|--------|------|---------------|--------------|
+| Success | #22c55e | #f0fdf4 | #052e16 |
+| Warning | #f59e0b | #fffbeb | #451a03 |
+| Info | #3b82f6 | #eff6ff | #172554 |
+| Error | (aliases destructive) | #fef2f2 | #450a0a |
 
-# Open in IDE
-npx cap open ios      # Opens Xcode
-npx cap open android  # Opens Android Studio
-```
+### Component Patterns
 
-#### Development Notes
-- Native platforms (ios/android folders) must be added on a machine with Xcode/Android Studio
-- After web changes: run `npx cap sync` to update native projects
-- Status bar and splash screen configured with orange theme (#f97316)
+**Sidebar**: `w-72`, `bg-background`, `border-r border-border`
+- Active: `bg-primary text-primary-foreground rounded-xl`
+- Hover: `hover:bg-secondary`
+
+**Cards**: `bg-card`, `border-border`, `rounded-lg`, `shadow-sm`, `p-4`
+
+**Status Badges**: Use semantic tokens
+- Success: `bg-success-muted text-success-muted-foreground`
+- Warning: `bg-warning-muted text-warning-muted-foreground`
+- Info: `bg-info-muted text-info-muted-foreground`
+- Error: `bg-error-muted text-error-muted-foreground`
+
+### Migration Guide
+
+| Legacy Pattern | Semantic Pattern |
+|----------------|------------------|
+| `bg-green-100 text-green-700` | `bg-success-muted text-success-muted-foreground` |
+| `bg-yellow-100 text-yellow-700` | `bg-warning-muted text-warning-muted-foreground` |
+| `bg-blue-100 text-blue-700` | `bg-info-muted text-info-muted-foreground` |
+| `bg-red-100 text-red-700` | `bg-error-muted text-error-muted-foreground` |
+
+**Note**: `--error` aliases `--destructive` for consistency. Use either `bg-destructive` or `bg-error`.

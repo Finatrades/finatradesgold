@@ -26,6 +26,24 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+  
+  /* Semantic Status Colors for Tailwind */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-muted: var(--success-muted);
+  --color-success-muted-foreground: var(--success-muted-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-muted: var(--warning-muted);
+  --color-warning-muted-foreground: var(--warning-muted-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-muted: var(--info-muted);
+  --color-info-muted-foreground: var(--info-muted-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-error-muted: var(--error-muted);
+  --color-error-muted-foreground: var(--error-muted-foreground);
 }
 
 :root {
@@ -91,6 +109,28 @@
   --ring: #f97316;
 
   --radius: var(--brand-border-radius);
+
+  /* Semantic Status Colors */
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  --success-muted: #f0fdf4;
+  --success-muted-foreground: #166534;
+  
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --warning-muted: #fffbeb;
+  --warning-muted-foreground: #92400e;
+  
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
+  --info-muted: #eff6ff;
+  --info-muted-foreground: #1e40af;
+  
+  /* Note: error aliases destructive for consistency */
+  --error: var(--destructive);
+  --error-foreground: var(--destructive-foreground);
+  --error-muted: #fef2f2;
+  --error-muted-foreground: #991b1b;
 }
 
 .dark {
@@ -131,6 +171,28 @@
   --ring: #f97316;
 
   --radius: var(--brand-border-radius);
+
+  /* Semantic Status Colors - Dark Mode (subdued to match dark palette) */
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  --success-muted: #052e16;
+  --success-muted-foreground: #4ade80;
+  
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --warning-muted: #451a03;
+  --warning-muted-foreground: #fbbf24;
+  
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
+  --info-muted: #172554;
+  --info-muted-foreground: #60a5fa;
+  
+  /* Note: error aliases destructive for consistency */
+  --error: var(--destructive);
+  --error-foreground: var(--destructive-foreground);
+  --error-muted: #450a0a;
+  --error-muted-foreground: #f87171;
 }
 
 @layer base {

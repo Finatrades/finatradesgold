@@ -11165,11 +11165,133 @@ export async function registerRoutes(
     }
   });
 
+  // Helper to mask email for privacy (e.g., john.doe@finatrades.com -> j***e@finatrades.com)
+  function maskEmail(email: string): string {
+    const [local, domain] = email.split('@');
+    if (!local || !domain) return email;
+    if (local.length <= 2) return `${local[0]}***@${domain}`;
+    return `${local[0]}***${local[local.length - 1]}@${domain}`;
+  }
+
+  // Helper to get OTP context details based on target type
+  async function getOtpContext(targetType: string, targetId: string, actionData?: Record<string, any>): Promise<{
+    amountUsd?: string;
+    amountGold?: string;
+    method?: string;
+    userMasked?: string;
+    userId?: string;
+    txId?: string;
+    entityDetails?: string;
+  }> {
+    const context: any = {};
+    
+    try {
+      switch (targetType) {
+        case 'transaction':
+        case 'deposit_request':
+        case 'withdrawal_request': {
+          const tx = await storage.getTransaction(targetId);
+          if (tx) {
+            context.amountUsd = tx.amountUsd ? `$${parseFloat(tx.amountUsd).toLocaleString()}` : undefined;
+            context.amountGold = tx.amountGold ? `${parseFloat(tx.amountGold).toFixed(4)}g` : undefined;
+            context.method = tx.paymentMethod || tx.type;
+            context.txId = `TX-${targetId.slice(0, 8).toUpperCase()}`;
+            context.userId = tx.userId;
+            const user = await storage.getUser(tx.userId);
+            if (user) context.userMasked = maskEmail(user.email);
+          }
+          break;
+        }
+        case 'kyc_submission': {
+          const kyc = await storage.getKycSubmission(targetId);
+          if (kyc) {
+            context.userId = kyc.userId;
+            const user = await storage.getUser(kyc.userId);
+            if (user) {
+              context.userMasked = maskEmail(user.email);
+              context.entityDetails = `${user.firstName} ${user.lastName}`;
+            }
+          }
+          break;
+        }
+        case 'user': {
+          const user = await storage.getUser(targetId);
+          if (user) {
+            context.userId = user.id;
+            context.userMasked = maskEmail(user.email);
+            context.entityDetails = `${user.firstName} ${user.lastName}`;
+          }
+          break;
+        }
+        case 'bnsl_plan': {
+          const plans = await storage.getAllBnslPlans();
+          const plan = plans.find(p => p.id === targetId);
+          if (plan) {
+            context.amountUsd = plan.totalAmountUsd ? `$${parseFloat(plan.totalAmountUsd).toLocaleString()}` : undefined;
+            context.amountGold = plan.goldAmount ? `${parseFloat(plan.goldAmount).toFixed(4)}g` : undefined;
+            context.userId = plan.userId;
+            const user = await storage.getUser(plan.userId);
+            if (user) context.userMasked = maskEmail(user.email);
+          }
+          break;
+        }
+        case 'trade_case': {
+          const cases = await storage.getAllTradeCases();
+          const tc = cases.find(c => c.id === targetId);
+          if (tc) {
+            context.amountUsd = tc.transactionValue ? `$${parseFloat(tc.transactionValue).toLocaleString()}` : undefined;
+            context.entityDetails = tc.clientName || undefined;
+            context.userId = tc.userId;
+            const user = await storage.getUser(tc.userId);
+            if (user) context.userMasked = maskEmail(user.email);
+          }
+          break;
+        }
+        case 'vault_holding': {
+          const holding = await storage.getVaultHolding(targetId);
+          if (holding) {
+            context.amountGold = `${parseFloat(holding.goldGrams).toFixed(4)}g`;
+            context.userId = holding.userId;
+            const user = await storage.getUser(holding.userId);
+            if (user) context.userMasked = maskEmail(user.email);
+          }
+          break;
+        }
+      }
+      
+      // Merge with actionData if provided
+      if (actionData) {
+        if (actionData.amount) context.amountUsd = `$${parseFloat(actionData.amount).toLocaleString()}`;
+        if (actionData.method) context.method = actionData.method;
+        if (actionData.reason) context.entityDetails = actionData.reason;
+      }
+    } catch (e) {
+      console.error('[OTP Context] Failed to get context:', e);
+    }
+    
+    return context;
+  }
+
   // Send OTP for admin action
   app.post("/api/admin/action-otp/send", ensureAdminAsync, async (req, res) => {
     try {
       const { actionType, targetId, targetType, actionData } = req.body;
       const admin = (req as any).adminUser;
+      const requestId = `REQ-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      
+      // Structured log: OTP requested
+      console.log(JSON.stringify({
+        ts: new Date().toISOString(),
+        level: 'info',
+        requestId,
+        action: 'otp.requested',
+        actorType: 'admin',
+        actorId: admin.id,
+        emailMasked: maskEmail(admin.email),
+        entityType: targetType,
+        entityId: targetId,
+        actionType,
+      }));
       
       if (!actionType || !targetId || !targetType) {
         return res.status(400).json({ message: "Missing required fields: actionType, targetId, targetType" });
@@ -11207,9 +11329,19 @@ export async function registerRoutes(
         return res.json({ required: false, message: "OTP not required for this action" });
       }
       
+      // Get OTP context for informative messages
+      const otpContext = await getOtpContext(targetType, targetId, actionData);
+      
       // Generate 6-digit OTP code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      // Enrich actionData with context
+      const enrichedActionData = {
+        ...(actionData || {}),
+        otpContext,
+        requestId,
+      };
       
       // Create OTP record
       const otp = await storage.createAdminActionOtp({
@@ -11221,10 +11353,10 @@ export async function registerRoutes(
         expiresAt,
         attempts: 0,
         verified: false,
-        actionData: actionData || null,
+        actionData: enrichedActionData,
       });
       
-      // Send email with OTP
+      // Send email with OTP - informative version with context
       const actionLabels: Record<string, string> = {
         'kyc_approval': 'KYC Approval',
         'kyc_rejection': 'KYC Rejection',
@@ -11246,46 +11378,103 @@ export async function registerRoutes(
         'transaction_rejection': 'Transaction Rejection',
       };
       
+      // Build context details for email
+      const contextDetails: string[] = [];
+      if (otpContext.amountUsd) contextDetails.push(`<strong>Amount:</strong> ${otpContext.amountUsd}`);
+      if (otpContext.amountGold) contextDetails.push(`<strong>Gold:</strong> ${otpContext.amountGold}`);
+      if (otpContext.method) contextDetails.push(`<strong>Method:</strong> ${otpContext.method}`);
+      if (otpContext.userMasked) contextDetails.push(`<strong>User:</strong> ${otpContext.userMasked}`);
+      if (otpContext.txId) contextDetails.push(`<strong>Reference:</strong> ${otpContext.txId}`);
+      if (otpContext.entityDetails) contextDetails.push(`<strong>Details:</strong> ${otpContext.entityDetails}`);
+      
+      const contextHtml = contextDetails.length > 0 
+        ? `<div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0 0 10px 0; font-weight: 600; color: #92400e;">Action Details:</p>
+            ${contextDetails.map(d => `<p style="margin: 5px 0; font-size: 14px;">${d}</p>`).join('')}
+           </div>`
+        : '';
+      
       const htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Admin Action Verification</h1>
+            <h1 style="color: white; margin: 0;">Admin OTP — ${actionLabels[actionType] || actionType}</h1>
           </div>
           <div style="padding: 30px; background: #ffffff;">
             <p>Hello ${admin.firstName},</p>
             <p>You are attempting to perform: <strong>${actionLabels[actionType] || actionType}</strong></p>
+            ${contextHtml}
             <p>Your verification code is:</p>
             <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
               <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;">${code}</span>
             </div>
             <p>This code expires in <strong>10 minutes</strong>.</p>
-            <p style="color: #6b7280; font-size: 14px;">If you did not initiate this action, please contact security immediately.</p>
+            <div style="background: #fef2f2; padding: 12px; border-radius: 6px; margin-top: 20px;">
+              <p style="margin: 0; color: #dc2626; font-size: 13px;">
+                <strong>⚠️ Security Warning:</strong> Do not share this code with anyone. Finatrades will never ask for your OTP.
+              </p>
+            </div>
           </div>
           <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
             <p>Finatrades Admin Portal - Secure Action Verification</p>
+            <p style="font-size: 11px;">Request ID: ${requestId}</p>
           </div>
         </div>
       `;
       
-      await sendEmailDirect(admin.email, `Finatrades Admin Verification Code - ${actionLabels[actionType] || actionType}`, htmlBody);
+      await sendEmailDirect(admin.email, `Admin OTP — ${actionLabels[actionType] || actionType}`, htmlBody);
       
-      // Create audit log
+      // Structured log: OTP sent
+      console.log(JSON.stringify({
+        ts: new Date().toISOString(),
+        level: 'info',
+        requestId,
+        action: 'otp.sent',
+        actorType: 'admin',
+        actorId: admin.id,
+        emailMasked: maskEmail(admin.email),
+        entityType: targetType,
+        entityId: targetId,
+        actionType,
+        otpId: otp.id,
+        amountUsd: otpContext.amountUsd,
+        status: 'success',
+      }));
+      
+      // Create in-app notification for the admin
+      await storage.createNotification({
+        userId: admin.id,
+        title: 'OTP Sent',
+        message: `Verification code sent for ${actionLabels[actionType] || actionType}${otpContext.amountUsd ? ` (${otpContext.amountUsd})` : ''}`,
+        type: 'info',
+        link: null,
+        read: false,
+      });
+      
+      // Create audit log with enriched context
       await storage.createAuditLog({
         entityType: "admin_action_otp",
         entityId: otp.id,
         actionType: "create",
         actor: admin.id,
         actorRole: "admin",
-        details: `OTP sent for ${actionType} on ${targetType}:${targetId}`,
+        details: `OTP sent for ${actionType} on ${targetType}:${targetId}${otpContext.amountUsd ? ` - ${otpContext.amountUsd}` : ''}${otpContext.userMasked ? ` (User: ${otpContext.userMasked})` : ''}`,
       });
       
       res.json({ 
         otpId: otp.id,
         message: "Verification code sent to your email",
         expiresAt: otp.expiresAt,
+        requestId,
       });
     } catch (error) {
       console.error("Failed to send admin action OTP:", error);
+      // Structured log: OTP failed
+      console.log(JSON.stringify({
+        ts: new Date().toISOString(),
+        level: 'error',
+        action: 'otp.send.failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }));
       res.status(500).json({ message: "Failed to send verification code" });
     }
   });
@@ -11295,6 +11484,7 @@ export async function registerRoutes(
     try {
       const { otpId, code } = req.body;
       const admin = (req as any).adminUser;
+      const requestId = (req.body.requestId) || `VERIFY-${Date.now()}`;
       
       if (!otpId || !code) {
         return res.status(400).json({ message: "Missing required fields: otpId, code" });
@@ -11303,11 +11493,28 @@ export async function registerRoutes(
       const otp = await storage.getAdminActionOtp(otpId);
       
       if (!otp) {
+        console.log(JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'warn',
+          requestId,
+          action: 'otp.verify.fail',
+          reason: 'not_found',
+          otpId,
+        }));
         return res.status(404).json({ message: "Verification request not found" });
       }
       
       // Check if OTP belongs to the current admin
       if (otp.adminId !== admin.id) {
+        console.log(JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'warn',
+          requestId,
+          action: 'otp.verify.fail',
+          reason: 'wrong_admin',
+          otpId,
+          actorId: admin.id,
+        }));
         return res.status(403).json({ message: "This verification code is not for your account" });
       }
       
@@ -11318,17 +11525,45 @@ export async function registerRoutes(
       
       // Check expiry
       if (new Date() > otp.expiresAt) {
+        console.log(JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'warn',
+          requestId,
+          action: 'otp.verify.fail',
+          reason: 'expired',
+          otpId,
+          actorId: admin.id,
+        }));
         return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
       }
       
       // Check attempts (max 5)
       if (otp.attempts >= 5) {
+        console.log(JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'warn',
+          requestId,
+          action: 'otp.verify.fail',
+          reason: 'max_attempts',
+          otpId,
+          actorId: admin.id,
+        }));
         return res.status(429).json({ message: "Too many failed attempts. Please request a new code." });
       }
       
       // Verify code
       if (otp.code !== code) {
         await storage.updateAdminActionOtp(otpId, { attempts: otp.attempts + 1 });
+        console.log(JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'warn',
+          requestId,
+          action: 'otp.verify.fail',
+          reason: 'wrong_code',
+          otpId,
+          actorId: admin.id,
+          attemptsRemaining: 4 - otp.attempts,
+        }));
         return res.status(400).json({ message: "Invalid verification code", attemptsRemaining: 4 - otp.attempts });
       }
       
@@ -11338,14 +11573,87 @@ export async function registerRoutes(
         verifiedAt: new Date() 
       });
       
-      // Create audit log
+      // Extract context from actionData
+      const otpContext = (otp.actionData as any)?.otpContext || {};
+      
+      // Structured log: OTP verified successfully
+      console.log(JSON.stringify({
+        ts: new Date().toISOString(),
+        level: 'info',
+        requestId,
+        action: 'otp.verify.success',
+        actorType: 'admin',
+        actorId: admin.id,
+        emailMasked: maskEmail(admin.email),
+        entityType: otp.targetType,
+        entityId: otp.targetId,
+        actionType: otp.actionType,
+        otpId: otp.id,
+        amountUsd: otpContext.amountUsd,
+        status: 'success',
+      }));
+      
+      // Create in-app notification for the admin
+      const actionLabels: Record<string, string> = {
+        'kyc_approval': 'KYC Approval',
+        'kyc_rejection': 'KYC Rejection',
+        'deposit_approval': 'Deposit Approval',
+        'deposit_rejection': 'Deposit Rejection',
+        'withdrawal_approval': 'Withdrawal Approval',
+        'withdrawal_rejection': 'Withdrawal Rejection',
+        'bnsl_approval': 'BNSL Plan Approval',
+        'bnsl_rejection': 'BNSL Plan Rejection',
+        'trade_case_approval': 'Trade Case Approval',
+        'trade_case_rejection': 'Trade Case Rejection',
+        'user_suspension': 'User Suspension',
+        'user_activation': 'User Activation',
+        'vault_deposit_approval': 'Vault Deposit Approval',
+        'vault_deposit_rejection': 'Vault Deposit Rejection',
+        'vault_withdrawal_approval': 'Vault Withdrawal Approval',
+        'vault_withdrawal_rejection': 'Vault Withdrawal Rejection',
+        'transaction_approval': 'Transaction Approval',
+        'transaction_rejection': 'Transaction Rejection',
+      };
+      
+      await storage.createNotification({
+        userId: admin.id,
+        title: 'Action Verified',
+        message: `${actionLabels[otp.actionType] || otp.actionType} verified successfully${otpContext.amountUsd ? ` (${otpContext.amountUsd})` : ''}`,
+        type: 'success',
+        link: null,
+        read: false,
+      });
+      
+      // If there's a target user, notify them about the pending action
+      if (otpContext.userId && otpContext.userId !== admin.id) {
+        const actionDescriptions: Record<string, string> = {
+          'deposit_approval': 'Your deposit is being processed',
+          'withdrawal_approval': 'Your withdrawal is being processed',
+          'kyc_approval': 'Your KYC verification is being reviewed',
+          'bnsl_approval': 'Your BNSL plan is being reviewed',
+          'trade_case_approval': 'Your trade case is being reviewed',
+        };
+        const description = actionDescriptions[otp.actionType];
+        if (description) {
+          await storage.createNotification({
+            userId: otpContext.userId,
+            title: 'Action in Progress',
+            message: `${description}${otpContext.amountUsd ? ` (${otpContext.amountUsd})` : ''}`,
+            type: 'info',
+            link: null,
+            read: false,
+          });
+        }
+      }
+      
+      // Create audit log with context
       await storage.createAuditLog({
         entityType: "admin_action_otp",
         entityId: otp.id,
         actionType: "verify",
         actor: admin.id,
         actorRole: "admin",
-        details: `OTP verified for ${otp.actionType} on ${otp.targetType}:${otp.targetId}`,
+        details: `OTP verified for ${otp.actionType} on ${otp.targetType}:${otp.targetId}${otpContext.amountUsd ? ` - ${otpContext.amountUsd}` : ''}${otpContext.userMasked ? ` (User: ${otpContext.userMasked})` : ''}`,
       });
       
       res.json({ 
@@ -11358,6 +11666,12 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to verify admin action OTP:", error);
+      console.log(JSON.stringify({
+        ts: new Date().toISOString(),
+        level: 'error',
+        action: 'otp.verify.failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }));
       res.status(500).json({ message: "Failed to verify code" });
     }
   });
