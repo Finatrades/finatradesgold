@@ -107,6 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
+      // Clear any cached data from previous session before setting new user
+      clearQueryCache();
+      
       setUser(data.user);
       localStorage.setItem('fina_user_id', data.user.id);
       setAdminPortal(false);
@@ -150,6 +153,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
+      // Clear any cached data from previous session before setting new user
+      clearQueryCache();
+      
       setUser(data.user);
       localStorage.setItem('fina_user_id', data.user.id);
       setAdminPortal(true);
@@ -176,6 +182,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await response.json();
+      
+      // Clear any cached data from previous session before setting new user
+      clearQueryCache();
+      
       setUser(data.user);
       localStorage.setItem('fina_user_id', data.user.id);
       
