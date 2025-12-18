@@ -125,6 +125,13 @@ app.use((req, res, next) => {
   } catch (error) {
     console.error('[Chat Agents] Failed to seed defaults:', error);
   }
+
+  // Seed knowledge base categories
+  try {
+    await storage.seedDefaultKnowledgeBase();
+  } catch (error) {
+    console.error('[Knowledge Base] Failed to seed defaults:', error);
+  }
   
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);

@@ -9272,6 +9272,194 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // KNOWLEDGE BASE - FAQ & ARTICLE MANAGEMENT
+  // ============================================================================
+
+  // Get all knowledge categories
+  app.get("/api/knowledge/categories", async (req, res) => {
+    try {
+      const categories = await storage.getAllKnowledgeCategories();
+      res.json({ categories });
+    } catch (error) {
+      console.error("Failed to fetch knowledge categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // Create knowledge category (admin only)
+  app.post("/api/knowledge/categories", ensureAdminAsync, async (req, res) => {
+    try {
+      const { name, description, icon, sortOrder } = req.body;
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+      const category = await storage.createKnowledgeCategory({ name, description, icon, sortOrder: sortOrder || 0 });
+      res.json({ category });
+    } catch (error) {
+      console.error("Failed to create knowledge category:", error);
+      res.status(500).json({ message: "Failed to create category" });
+    }
+  });
+
+  // Update knowledge category (admin only)
+  app.put("/api/knowledge/categories/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { name, description, icon, sortOrder } = req.body;
+      const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (description !== undefined) updates.description = description;
+      if (icon !== undefined) updates.icon = icon;
+      if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+      
+      const category = await storage.updateKnowledgeCategory(req.params.id, updates);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      res.json({ category });
+    } catch (error) {
+      console.error("Failed to update knowledge category:", error);
+      res.status(500).json({ message: "Failed to update category" });
+    }
+  });
+
+  // Delete knowledge category (admin only)
+  app.delete("/api/knowledge/categories/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      await storage.deleteKnowledgeCategory(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete knowledge category:", error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
+  // Get all knowledge articles (admin only - includes drafts)
+  app.get("/api/knowledge/articles", ensureAdminAsync, async (req, res) => {
+    try {
+      const articles = await storage.getAllKnowledgeArticles();
+      res.json({ articles });
+    } catch (error) {
+      console.error("Failed to fetch knowledge articles:", error);
+      res.status(500).json({ message: "Failed to fetch articles" });
+    }
+  });
+
+  // Get published knowledge articles (public)
+  app.get("/api/knowledge/articles/published", async (req, res) => {
+    try {
+      const articles = await storage.getPublishedKnowledgeArticles();
+      res.json({ articles });
+    } catch (error) {
+      console.error("Failed to fetch published articles:", error);
+      res.status(500).json({ message: "Failed to fetch articles" });
+    }
+  });
+
+  // Search knowledge base (public - for chatbot use)
+  app.get("/api/knowledge/search", async (req, res) => {
+    try {
+      const { q, agentType } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      const articles = await storage.searchKnowledgeArticles(q, agentType as string | undefined);
+      res.json({ articles });
+    } catch (error) {
+      console.error("Failed to search knowledge base:", error);
+      res.status(500).json({ message: "Failed to search" });
+    }
+  });
+
+  // Get single knowledge article
+  app.get("/api/knowledge/articles/:id", async (req, res) => {
+    try {
+      const article = await storage.getKnowledgeArticle(req.params.id);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      await storage.incrementArticleViewCount(req.params.id);
+      res.json({ article });
+    } catch (error) {
+      console.error("Failed to fetch knowledge article:", error);
+      res.status(500).json({ message: "Failed to fetch article" });
+    }
+  });
+
+  // Create knowledge article (admin only)
+  app.post("/api/knowledge/articles", ensureAdminAsync, async (req, res) => {
+    try {
+      const { categoryId, title, summary, content, keywords, status, agentTypes } = req.body;
+      if (!title || !content) {
+        return res.status(400).json({ message: "Title and content are required" });
+      }
+      const adminUser = (req as any).adminUser;
+      const article = await storage.createKnowledgeArticle({
+        categoryId,
+        title,
+        summary,
+        content,
+        keywords: keywords ? JSON.stringify(keywords) : null,
+        status: status || 'draft',
+        agentTypes: agentTypes ? JSON.stringify(agentTypes) : null,
+        createdBy: adminUser?.id,
+        updatedBy: adminUser?.id,
+      });
+      res.json({ article });
+    } catch (error) {
+      console.error("Failed to create knowledge article:", error);
+      res.status(500).json({ message: "Failed to create article" });
+    }
+  });
+
+  // Update knowledge article (admin only)
+  app.put("/api/knowledge/articles/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { categoryId, title, summary, content, keywords, status, agentTypes } = req.body;
+      const adminUser = (req as any).adminUser;
+      const updates: any = { updatedBy: adminUser?.id };
+      
+      if (categoryId !== undefined) updates.categoryId = categoryId;
+      if (title !== undefined) updates.title = title;
+      if (summary !== undefined) updates.summary = summary;
+      if (content !== undefined) updates.content = content;
+      if (keywords !== undefined) updates.keywords = JSON.stringify(keywords);
+      if (status !== undefined) updates.status = status;
+      if (agentTypes !== undefined) updates.agentTypes = JSON.stringify(agentTypes);
+      
+      const article = await storage.updateKnowledgeArticle(req.params.id, updates);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      res.json({ article });
+    } catch (error) {
+      console.error("Failed to update knowledge article:", error);
+      res.status(500).json({ message: "Failed to update article" });
+    }
+  });
+
+  // Delete knowledge article (admin only)
+  app.delete("/api/knowledge/articles/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      await storage.deleteKnowledgeArticle(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete knowledge article:", error);
+      res.status(500).json({ message: "Failed to delete article" });
+    }
+  });
+
+  // Mark article as helpful (public)
+  app.post("/api/knowledge/articles/:id/helpful", async (req, res) => {
+    try {
+      await storage.incrementArticleHelpfulCount(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to mark article as helpful:", error);
+      res.status(500).json({ message: "Failed to update article" });
+    }
+  });
+  
+  // ============================================================================
   // CHATBOT - AI-POWERED INSTANT SUPPORT
   // ============================================================================
   

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Search, Send, MoreVertical, Phone, Video, Clock, CheckCheck, User, PhoneOff, PhoneIncoming, Bot, Settings, MessageSquare, Activity, Edit2, Save } from 'lucide-react';
+import { Search, Send, MoreVertical, Phone, Video, Clock, CheckCheck, User, PhoneOff, PhoneIncoming, Bot, Settings, MessageSquare, Activity, Edit2, Save, BookOpen, Plus, Trash2, Eye, EyeOff, FileText, FolderOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useChat, ChatProvider } from '@/context/ChatContext';
 import { format } from 'date-fns';
@@ -277,6 +277,411 @@ function AgentManagement() {
             <Button onClick={saveAgentChanges} className="w-full" data-testid="button-save-agent">
               <Save className="w-4 h-4 mr-2" />
               Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+interface KnowledgeCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+}
+
+interface KnowledgeArticle {
+  id: string;
+  categoryId: string | null;
+  title: string;
+  summary: string | null;
+  content: string;
+  keywords: string | null;
+  status: 'draft' | 'published' | 'archived';
+  agentTypes: string | null;
+  viewCount: number;
+  helpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function KnowledgeBaseManagement() {
+  const { toast } = useToast();
+  const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
+  const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingArticle, setEditingArticle] = useState<KnowledgeArticle | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [articleForm, setArticleForm] = useState({
+    categoryId: '',
+    title: '',
+    summary: '',
+    content: '',
+    keywords: '',
+    status: 'draft' as 'draft' | 'published' | 'archived',
+    agentTypes: [] as string[]
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [catRes, artRes] = await Promise.all([
+        fetch('/api/knowledge/categories'),
+        fetch('/api/knowledge/articles')
+      ]);
+      
+      if (catRes.ok) {
+        const catData = await catRes.json();
+        setCategories(catData.categories || []);
+      }
+      if (artRes.ok) {
+        const artData = await artRes.json();
+        setArticles(artData.articles || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch knowledge base:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openCreateDialog = () => {
+    setIsCreating(true);
+    setEditingArticle(null);
+    setArticleForm({
+      categoryId: '',
+      title: '',
+      summary: '',
+      content: '',
+      keywords: '',
+      status: 'draft',
+      agentTypes: []
+    });
+  };
+
+  const openEditDialog = (article: KnowledgeArticle) => {
+    setIsCreating(false);
+    setEditingArticle(article);
+    let agentTypesArray: string[] = [];
+    if (article.agentTypes) {
+      try { agentTypesArray = JSON.parse(article.agentTypes); } catch {}
+    }
+    let keywordsStr = '';
+    if (article.keywords) {
+      try { keywordsStr = JSON.parse(article.keywords).join(', '); } catch { keywordsStr = article.keywords; }
+    }
+    setArticleForm({
+      categoryId: article.categoryId || '',
+      title: article.title,
+      summary: article.summary || '',
+      content: article.content,
+      keywords: keywordsStr,
+      status: article.status,
+      agentTypes: agentTypesArray
+    });
+  };
+
+  const saveArticle = async () => {
+    if (!articleForm.title || !articleForm.content) {
+      toast({ title: 'Error', description: 'Title and content are required', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const payload = {
+        ...articleForm,
+        keywords: articleForm.keywords ? articleForm.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
+      };
+
+      const url = editingArticle 
+        ? `/api/knowledge/articles/${editingArticle.id}` 
+        : '/api/knowledge/articles';
+      const method = editingArticle ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error('Failed to save article');
+
+      toast({ title: 'Success', description: `Article ${editingArticle ? 'updated' : 'created'} successfully` });
+      setEditingArticle(null);
+      setIsCreating(false);
+      fetchData();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to save article', variant: 'destructive' });
+    }
+  };
+
+  const deleteArticle = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this article?')) return;
+    try {
+      const response = await fetch(`/api/knowledge/articles/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete');
+      setArticles(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Success', description: 'Article deleted' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to delete article', variant: 'destructive' });
+    }
+  };
+
+  const toggleArticleStatus = async (article: KnowledgeArticle) => {
+    const newStatus = article.status === 'published' ? 'draft' : 'published';
+    try {
+      const response = await fetch(`/api/knowledge/articles/${article.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!response.ok) throw new Error('Failed to update');
+      setArticles(prev => prev.map(a => a.id === article.id ? { ...a, status: newStatus } : a));
+      toast({ title: 'Success', description: `Article ${newStatus === 'published' ? 'published' : 'unpublished'}` });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update article status', variant: 'destructive' });
+    }
+  };
+
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return 'Uncategorized';
+    return categories.find(c => c.id === categoryId)?.name || 'Unknown';
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'published': return 'bg-green-100 text-green-700';
+      case 'draft': return 'bg-yellow-100 text-yellow-700';
+      case 'archived': return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading knowledge base...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Knowledge Base Articles
+            </CardTitle>
+            <Button onClick={openCreateDialog} data-testid="button-create-article">
+              <Plus className="w-4 h-4 mr-2" />
+              New Article
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-700">{articles.length}</div>
+                <div className="text-sm text-blue-600">Total Articles</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-700">
+                  {articles.filter(a => a.status === 'published').length}
+                </div>
+                <div className="text-sm text-green-600">Published</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-purple-50 border-purple-200">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-purple-700">{categories.length}</div>
+                <div className="text-sm text-purple-600">Categories</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {articles.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No articles yet. Create your first knowledge base article.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {articles.map(article => (
+                <div 
+                  key={article.id} 
+                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  data-testid={`article-row-${article.id}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium truncate">{article.title}</h3>
+                      <Badge className={getStatusColor(article.status)}>{article.status}</Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <FolderOpen className="w-3 h-3" />
+                        {getCategoryName(article.categoryId)}
+                      </span>
+                      <span>{article.viewCount} views</span>
+                      <span>{article.helpfulCount} helpful</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleArticleStatus(article)}
+                      title={article.status === 'published' ? 'Unpublish' : 'Publish'}
+                      data-testid={`button-toggle-article-${article.id}`}
+                    >
+                      {article.status === 'published' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openEditDialog(article)}
+                      data-testid={`button-edit-article-${article.id}`}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => deleteArticle(article.id)}
+                      className="text-destructive hover:text-destructive"
+                      data-testid={`button-delete-article-${article.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isCreating || !!editingArticle} onOpenChange={() => { setEditingArticle(null); setIsCreating(false); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingArticle ? 'Edit Article' : 'Create New Article'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="article-title">Title</Label>
+                <Input
+                  id="article-title"
+                  value={articleForm.title}
+                  onChange={(e) => setArticleForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Article title"
+                  data-testid="input-article-title"
+                />
+              </div>
+              <div>
+                <Label htmlFor="article-category">Category</Label>
+                <select
+                  id="article-category"
+                  className="w-full h-10 px-3 rounded-md border bg-background"
+                  value={articleForm.categoryId}
+                  onChange={(e) => setArticleForm(prev => ({ ...prev, categoryId: e.target.value }))}
+                  data-testid="select-article-category"
+                >
+                  <option value="">Select category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="article-summary">Summary</Label>
+              <Input
+                id="article-summary"
+                value={articleForm.summary}
+                onChange={(e) => setArticleForm(prev => ({ ...prev, summary: e.target.value }))}
+                placeholder="Brief summary for search results"
+                data-testid="input-article-summary"
+              />
+            </div>
+            <div>
+              <Label htmlFor="article-content">Content</Label>
+              <Textarea
+                id="article-content"
+                value={articleForm.content}
+                onChange={(e) => setArticleForm(prev => ({ ...prev, content: e.target.value }))}
+                placeholder="Full article content..."
+                rows={8}
+                data-testid="input-article-content"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="article-keywords">Keywords (comma-separated)</Label>
+                <Input
+                  id="article-keywords"
+                  value={articleForm.keywords}
+                  onChange={(e) => setArticleForm(prev => ({ ...prev, keywords: e.target.value }))}
+                  placeholder="gold, trading, wallet"
+                  data-testid="input-article-keywords"
+                />
+              </div>
+              <div>
+                <Label htmlFor="article-status">Status</Label>
+                <select
+                  id="article-status"
+                  className="w-full h-10 px-3 rounded-md border bg-background"
+                  value={articleForm.status}
+                  onChange={(e) => setArticleForm(prev => ({ ...prev, status: e.target.value as any }))}
+                  data-testid="select-article-status"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <Label>Agent Types (which agents can use this article)</Label>
+              <div className="flex gap-4 mt-2">
+                {['general', 'juris', 'support'].map(type => (
+                  <label key={type} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={articleForm.agentTypes.includes(type)}
+                      onChange={(e) => {
+                        setArticleForm(prev => ({
+                          ...prev,
+                          agentTypes: e.target.checked 
+                            ? [...prev.agentTypes, type]
+                            : prev.agentTypes.filter(t => t !== type)
+                        }));
+                      }}
+                      className="rounded"
+                      data-testid={`checkbox-agent-type-${type}`}
+                    />
+                    <span className="capitalize">{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <Button onClick={saveArticle} className="w-full" data-testid="button-save-article">
+              <Save className="w-4 h-4 mr-2" />
+              {editingArticle ? 'Update Article' : 'Create Article'}
             </Button>
           </div>
         </DialogContent>
@@ -570,6 +975,10 @@ function AdminChatContent() {
             <Bot className="w-4 h-4" />
             AI Agents
           </TabsTrigger>
+          <TabsTrigger value="knowledge" className="flex items-center gap-2" data-testid="tab-knowledge">
+            <BookOpen className="w-4 h-4" />
+            Knowledge Base
+          </TabsTrigger>
           <TabsTrigger value="conversations" className="flex items-center gap-2" data-testid="tab-conversations">
             <MessageSquare className="w-4 h-4" />
             Conversations
@@ -578,6 +987,10 @@ function AdminChatContent() {
         
         <TabsContent value="agents">
           <AgentManagement />
+        </TabsContent>
+
+        <TabsContent value="knowledge">
+          <KnowledgeBaseManagement />
         </TabsContent>
         
         <TabsContent value="conversations">
