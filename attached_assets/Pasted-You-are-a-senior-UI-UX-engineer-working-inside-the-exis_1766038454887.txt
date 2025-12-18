@@ -1,0 +1,92 @@
+You are a senior UI/UX engineer working inside the existing Finatrades codebase.
+
+SCOPE:
+UI ONLY.
+No backend logic.
+No payment logic.
+No validation logic changes.
+No security implementation changes.
+Only visual consistency, layout, spacing, typography, and UI behavior.
+
+GOAL:
+Ensure the “Deposit Funds” modal UI matches the EXISTING user dashboard and sidebar theme
+and looks visually consistent across all components, modals, and forms.
+
+DO NOT:
+- Redesign the flow
+- Change colors or branding
+- Introduce new UI styles
+- Modify business logic or security logic
+
+STEP 1 — IDENTIFY SOURCE UI THEME (Single Source of Truth)
+Inspect the current USER DASHBOARD (with sidebar visible) and extract:
+- Background colors (app, content, sidebar)
+- Card background color
+- Border radius values
+- Shadow styles
+- Font family and font sizes
+- Primary button style
+- Secondary/outline button style
+- Text colors (primary, muted, helper text)
+
+Document these values and treat them as the ONLY allowed UI tokens.
+
+STEP 2 — APPLY SAME THEME TO DEPOSIT FUNDS MODAL
+Update the Deposit Funds modal so that:
+- Modal background matches dashboard surface color
+- Modal border radius matches dashboard cards
+- Modal shadow matches dashboard overlays
+- Order Summary card uses the same card style as dashboard cards
+- Section titles use the same typography as dashboard headings
+- Body text uses dashboard body text style
+
+STEP 3 — BUTTON CONSISTENCY
+Ensure:
+- “Pay $XXX” button uses the same PRIMARY button style as dashboard CTAs
+- “Cancel” button uses the same SECONDARY / OUTLINE button style
+- Button height, radius, font weight, and hover states match exactly
+- No custom colors or inline styles are used
+
+STEP 4 — FORM UI CONSISTENCY
+Ensure card input section UI matches dashboard forms:
+- Input height, border, radius
+- Focus state (border or ring)
+- Placeholder color
+- Label style and spacing
+- Helper/security text style
+
+STEP 5 — MODAL BEHAVIOR (UI ONLY)
+Ensure:
+- Modal overlay opacity matches other modals
+- Modal is centered and responsive
+- Spacing between sections is consistent
+- Scroll behavior is clean on small screens
+- Close (X) icon style matches other modals
+
+STEP 6 — ICONS & TRUST INDICATORS (UI ONLY)
+Ensure:
+- Lock icon style matches dashboard icon set
+- “256-bit SSL Encrypted” text uses muted/helper text style
+- Icons are aligned and sized consistently
+
+STEP 7 — CLEANUP INCONSISTENCIES
+Search and remove:
+- Hardcoded hex colors
+- Random Tailwind utility colors not part of dashboard theme
+- Inconsistent margins/padding
+- Inline styles that break consistency
+
+STEP 8 — FINAL UI CHECKLIST (must pass)
+Confirm visually:
+- Modal looks like it belongs to the dashboard
+- No element looks “out of theme”
+- Spacing is balanced
+- Typography hierarchy is consistent
+- Buttons and cards match the rest of the app
+
+OUTPUT REQUIRED:
+- List of UI inconsistencies found (if any)
+- File paths/components updated
+- Confirmation that Deposit Funds modal UI now fully matches dashboard theme
+
+Start with the Deposit Funds modal component and apply dashboard UI tokens strictly.

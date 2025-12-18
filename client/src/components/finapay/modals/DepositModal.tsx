@@ -484,8 +484,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               data-testid="button-select-bank-transfer"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Building className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-info-muted rounded-full flex items-center justify-center">
+                  <Building className="w-6 h-6 text-info" />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-bold text-foreground">Bank Transfer</h4>
@@ -502,8 +502,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 data-testid="button-select-card-payment"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <CreditCard className="w-6 h-6 text-green-600" />
+                  <div className="w-12 h-12 bg-success-muted rounded-full flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-success" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-foreground">Card Payment</h4>
@@ -521,8 +521,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 data-testid="button-select-crypto-payment"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <Bitcoin className="w-6 h-6 text-orange-600" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Bitcoin className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-foreground">Crypto Payment</h4>
@@ -655,7 +655,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
 
                 {parseFloat(amount) > 0 && (
-                  <div className="border border-primary/20 rounded-xl p-4 bg-gradient-to-br from-orange-50 to-amber-50">
+                  <div className="border border-primary/20 rounded-xl p-4 bg-primary/5">
                     <div className="flex items-center gap-2 mb-3">
                       <Coins className="w-5 h-5 text-primary" />
                       <h4 className="font-semibold text-foreground">Deposit Summary</h4>
@@ -666,14 +666,14 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         <span className="font-medium">${getDepositSummary().amountNum.toFixed(2)}</span>
                       </div>
                       {depositFee && getDepositSummary().feeAmount > 0 && (
-                        <div className="flex justify-between text-orange-600">
+                        <div className="flex justify-between text-warning">
                           <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
                           <span>-${getDepositSummary().feeAmount.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
                         <span>Net Credit to Wallet:</span>
-                        <span className="text-green-600">${getDepositSummary().netDeposit.toFixed(2)}</span>
+                        <span className="text-success">${getDepositSummary().netDeposit.toFixed(2)}</span>
                       </div>
                       {goldPrice?.pricePerGram && getDepositSummary().goldGrams > 0 && (
                         <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
@@ -690,9 +690,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         </p>
                       )}
                       {goldPrice?.pricePerGram && (
-                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-2.5 mt-3">
-                          <p className="font-medium text-amber-800 dark:text-amber-300 text-xs mb-1">Important Notice:</p>
-                          <p className="text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+                        <div className="bg-warning-muted border border-warning/30 rounded-lg p-2.5 mt-3">
+                          <p className="font-medium text-warning-muted-foreground text-xs mb-1">Important Notice:</p>
+                          <p className="text-warning-muted-foreground text-xs leading-relaxed">
                             Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
                             After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.
                           </p>
@@ -749,22 +749,22 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <p className="text-xs text-muted-foreground mt-1">PNG, JPG, PDF (max 5MB)</p>
                     </button>
                   ) : (
-                    <div className="border border-border rounded-lg p-3 bg-green-50">
+                    <div className="border border-success/30 rounded-lg p-3 bg-success-muted">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                            <Image className="w-4 h-4 text-green-600" />
+                          <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
+                            <Image className="w-4 h-4 text-success" />
                           </div>
                           <div>
                             <p className="text-sm font-medium text-foreground truncate max-w-[150px]">{proofFileName}</p>
-                            <p className="text-xs text-green-600">Uploaded</p>
+                            <p className="text-xs text-success">Uploaded</p>
                           </div>
                         </div>
                         <Button 
                           variant="ghost" 
                           size="icon"
                           onClick={removeProof}
-                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                           data-testid="button-remove-proof"
                         >
                           <X className="w-4 h-4" />
@@ -774,12 +774,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   )}
                 </div>
 
-                <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg flex items-start gap-2">
+                <div className="bg-warning-muted text-warning-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
                    <div className="mt-0.5">⚠️</div>
                    <p>Your deposit will be reviewed and credited within 1-3 business days after verification.</p>
                 </div>
                 
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+                <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                    <p className="font-semibold mb-1">Important Notice</p>
                    <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
                 </div>
@@ -788,10 +788,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'card-amount' ? (
           <div className="space-y-6 py-4">
-            <div className="border border-border rounded-xl p-4 bg-gradient-to-br from-green-50 to-emerald-50">
+            <div className="border border-border rounded-xl p-4 bg-success-muted/30">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 bg-success-muted rounded-full flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-success" />
                 </div>
                 <div>
                   <h4 className="font-bold text-foreground">Card Payment</h4>
@@ -818,7 +818,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
 
               {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
-                <div className="border border-green-200 rounded-lg p-3 bg-green-50/50 mt-3">
+                <div className="border border-success/30 rounded-lg p-3 bg-success-muted/50 mt-3">
                   <div className="flex justify-between items-start">
                     <span className="flex items-center gap-1 text-muted-foreground text-sm">
                       <Coins className="w-4 h-4 text-primary" />
@@ -828,7 +828,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <p className="font-bold text-primary text-lg">
                         ${parseFloat(amount).toFixed(2)}
                       </p>
-                      <p className="text-xs text-amber-600 font-medium">
+                      <p className="text-xs text-primary font-medium">
                         ~{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g gold
                       </p>
                     </div>
@@ -837,12 +837,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               )}
             </div>
             
-            <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex items-start gap-2">
+            <div className="bg-info-muted text-info-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
                <div className="mt-0.5">ℹ️</div>
                <p>Enter your card details securely on the next screen. Your wallet will be credited instantly upon successful payment.</p>
             </div>
             
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+            <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                <p className="font-semibold mb-1">Important Notice</p>
                <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
             </div>
@@ -869,7 +869,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'card-success' ? (
           <div className="py-12 text-center space-y-6">
-            <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto" />
+            <CheckCircle2 className="w-20 h-20 text-success mx-auto" />
             <div>
               <h3 className="text-2xl font-bold text-foreground">Payment Successful!</h3>
               <p className="text-muted-foreground mt-2">
@@ -878,7 +878,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             </div>
             <Button 
               onClick={handleClose}
-              className="bg-gradient-to-r from-orange-500 to-orange-600"
+              className="bg-primary"
             >
               Done
             </Button>
@@ -903,7 +903,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             </div>
 
             {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
-              <div className="border border-green-200 rounded-lg p-3 bg-green-50/50">
+              <div className="border border-success/30 rounded-lg p-3 bg-success-muted/50">
                 <div className="flex justify-between items-start">
                   <span className="flex items-center gap-1 text-muted-foreground text-sm">
                     <Coins className="w-4 h-4 text-primary" />
@@ -913,7 +913,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <p className="font-bold text-primary text-lg">
                       ${parseFloat(amount).toFixed(2)}
                     </p>
-                    <p className="text-xs text-amber-600 font-medium">
+                    <p className="text-xs text-primary font-medium">
                       ~{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g gold
                     </p>
                   </div>
@@ -921,12 +921,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
             )}
             
-            <div className="bg-orange-50 text-orange-800 text-xs p-3 rounded-lg flex items-start gap-2">
+            <div className="bg-warning-muted text-warning-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
               <div className="mt-0.5">ℹ️</div>
               <p>After entering the amount, you'll select a crypto network and send payment to our wallet address.</p>
             </div>
             
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+            <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                <p className="font-semibold mb-1">Important Notice</p>
                <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
             </div>
@@ -1002,9 +1002,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'crypto-address' && selectedCryptoWallet ? (
           <div className="space-y-4 py-4">
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="p-4 bg-warning-muted border border-warning/30 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
-                <Bitcoin className="w-5 h-5 text-orange-600" />
+                <Bitcoin className="w-5 h-5 text-primary" />
                 <span className="font-semibold">{selectedCryptoWallet.networkLabel}</span>
               </div>
               
@@ -1033,7 +1033,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       onClick={() => copyToClipboardCrypto(selectedCryptoWallet.walletAddress)}
                     >
                       {copiedAddress ? (
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-success" />
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
@@ -1051,7 +1051,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 )}
                 
                 {selectedCryptoWallet.instructions && (
-                  <p className="text-xs text-orange-700">{selectedCryptoWallet.instructions}</p>
+                  <p className="text-xs text-warning-muted-foreground">{selectedCryptoWallet.instructions}</p>
                 )}
               </div>
             </div>
@@ -1069,7 +1069,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               )}
             </div>
             
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+            <div className="bg-warning-muted border border-warning/30 rounded-lg p-3 text-sm text-warning-muted-foreground">
               <p className="font-medium mb-1">After sending, click "I've Sent Payment" below</p>
               <p className="text-xs">You'll then enter your transaction hash for verification.</p>
             </div>
@@ -1107,7 +1107,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <div className="border rounded-lg p-3 bg-muted/20">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <CheckCircle2 className="w-4 h-4 text-success" />
                         <span className="text-sm truncate max-w-[200px]">{cryptoReceiptFileName}</span>
                       </div>
                       <Button 
@@ -1153,8 +1153,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'crypto-submitted' ? (
           <div className="text-center py-8 space-y-4">
-            <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 mx-auto bg-success-muted rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-success" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">Payment Submitted</h3>
@@ -1162,15 +1162,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 Your payment is being reviewed. Your wallet will be credited once verified.
               </p>
             </div>
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
+            <div className="p-3 bg-warning-muted border border-warning/30 rounded-lg text-sm text-warning-muted-foreground flex items-start gap-2">
               <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <span>Verification typically takes 1-24 hours depending on network confirmations.</span>
             </div>
           </div>
         ) : step === 'submitted' ? (
           <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-success-muted rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-success" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">Deposit Request Submitted</h3>
