@@ -56,6 +56,7 @@ import FinaBridgeManagement from "@/pages/admin/FinaBridgeManagement";
 import FinaVaultManagement from "@/pages/admin/FinaVaultManagement";
 import FeeManagement from "@/pages/admin/FeeManagement";
 import FinancialReports from "@/pages/admin/FinancialReports";
+import AccountStatements from "@/pages/admin/AccountStatements";
 import DatabaseBackups from "@/pages/admin/DatabaseBackups";
 import BNSLExplore from "@/pages/BNSLExplore";
 import FinaVaultHistory from "@/pages/FinaVaultHistory";
@@ -144,6 +145,7 @@ function Router() {
       <Route path="/admin/finance" component={TradeFinance} />
       <Route path="/admin/reports" component={FinancialReports} />
       <Route path="/admin/financial-reports" component={FinancialReports} />
+      <Route path="/admin/account-statements" component={AccountStatements} />
       <Route path="/admin/referrals" component={ReferralManagement} />
       <Route path="/admin/audit-logs" component={AuditLogs} />
       <Route path="/admin/system-health" component={SystemHealth} />

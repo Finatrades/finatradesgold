@@ -12100,6 +12100,806 @@ export async function registerRoutes(
   });
 
   // ============================================================================
+  // ACCOUNT STATEMENTS (Admin)
+  // ============================================================================
+
+  // Get user list for account statements dropdown
+  app.get("/api/admin/users/list", ensureAdminAsync, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const userList = allUsers.map(u => ({
+        id: u.id,
+        finatradesId: u.finatradesId || `FT-${u.id.slice(0, 8).toUpperCase()}`,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        email: u.email,
+        accountType: u.accountType || 'Personal'
+      }));
+      res.json(userList);
+    } catch (error) {
+      console.error("Failed to get users list:", error);
+      res.status(400).json({ message: "Failed to get users list" });
+    }
+  });
+
+  // Get account statement data for a user
+  app.get("/api/admin/account-statement/:userId", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { from, to } = req.query;
+      
+      if (!from || !to) {
+        return res.status(400).json({ message: "Date range required (from, to)" });
+      }
+      
+      const fromDate = new Date(from as string);
+      const toDate = new Date(to as string);
+      toDate.setHours(23, 59, 59, 999);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const wallet = await storage.getWallet(userId);
+      const allTransactions = await storage.getUserTransactions(userId);
+      
+      // Filter transactions by date range
+      const periodTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
+      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+      
+      // Calculate opening balance (sum of all transactions before fromDate)
+      const priorTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate < fromDate && tx.status === 'Completed';
+      });
+      
+      let openingUsd = 0;
+      let openingGold = 0;
+      
+      for (const tx of priorTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          openingUsd += amountUsd;
+          openingGold += amountGold;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          openingUsd -= amountUsd;
+          openingGold -= amountGold;
+        } else if (tx.type === 'Buy') {
+          openingUsd -= amountUsd;
+          openingGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          openingUsd += amountUsd;
+          openingGold -= amountGold;
+        }
+      }
+      
+      // Calculate running balances and categorize debits/credits
+      let runningUsd = openingUsd;
+      let runningGold = openingGold;
+      let totalCreditsUsd = 0;
+      let totalDebitsUsd = 0;
+      let totalCreditsGold = 0;
+      let totalDebitsGold = 0;
+      
+      const statementTransactions = periodTransactions.map(tx => {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        
+        let debitUsd: number | null = null;
+        let creditUsd: number | null = null;
+        let debitGold: number | null = null;
+        let creditGold: number | null = null;
+        
+        // Determine if credit or debit based on transaction type
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          creditUsd = amountUsd > 0 ? amountUsd : null;
+          creditGold = amountGold > 0 ? amountGold : null;
+          runningUsd += amountUsd;
+          runningGold += amountGold;
+          totalCreditsUsd += amountUsd;
+          totalCreditsGold += amountGold;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          debitUsd = amountUsd > 0 ? amountUsd : null;
+          debitGold = amountGold > 0 ? amountGold : null;
+          runningUsd -= amountUsd;
+          runningGold -= amountGold;
+          totalDebitsUsd += amountUsd;
+          totalDebitsGold += amountGold;
+        } else if (tx.type === 'Buy') {
+          // Buying gold: USD debited, gold credited
+          debitUsd = amountUsd > 0 ? amountUsd : null;
+          creditGold = amountGold > 0 ? amountGold : null;
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+          totalDebitsUsd += amountUsd;
+          totalCreditsGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          // Selling gold: gold debited, USD credited
+          creditUsd = amountUsd > 0 ? amountUsd : null;
+          debitGold = amountGold > 0 ? amountGold : null;
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+          totalCreditsUsd += amountUsd;
+          totalDebitsGold += amountGold;
+        } else if (tx.type === 'Swap') {
+          // For swaps, treat based on description
+          creditGold = amountGold > 0 ? amountGold : null;
+          runningGold += amountGold;
+          totalCreditsGold += amountGold;
+        }
+        
+        return {
+          id: tx.id,
+          date: tx.createdAt,
+          reference: `TXN-${tx.id.slice(0, 8).toUpperCase()}`,
+          description: tx.description || `${tx.type} Transaction`,
+          debitUsd,
+          creditUsd,
+          debitGold,
+          creditGold,
+          balanceUsd: runningUsd,
+          balanceGold: runningGold,
+          type: tx.type,
+          status: tx.status
+        };
+      });
+      
+      const reportId = `STMT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${userId.slice(0, 6).toUpperCase()}`;
+      
+      res.json({
+        user: {
+          id: user.id,
+          finatradesId: user.finatradesId || `FT-${user.id.slice(0, 8).toUpperCase()}`,
+          fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+          email: user.email,
+          accountType: user.accountType || 'Personal'
+        },
+        period: {
+          from: fromDate.toISOString(),
+          to: toDate.toISOString()
+        },
+        reportId,
+        generatedAt: new Date().toISOString(),
+        balances: {
+          openingUsd,
+          openingGold,
+          totalCreditsUsd,
+          totalDebitsUsd,
+          totalCreditsGold,
+          totalDebitsGold,
+          closingUsd: runningUsd,
+          closingGold: runningGold
+        },
+        transactions: statementTransactions
+      });
+    } catch (error) {
+      console.error("Failed to get account statement:", error);
+      res.status(400).json({ message: "Failed to get account statement" });
+    }
+  });
+
+  // Generate PDF account statement
+  app.get("/api/admin/account-statement/:userId/pdf", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { from, to } = req.query;
+      
+      if (!from || !to) {
+        return res.status(400).json({ message: "Date range required" });
+      }
+      
+      const fromDate = new Date(from as string);
+      const toDate = new Date(to as string);
+      toDate.setHours(23, 59, 59, 999);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const allTransactions = await storage.getUserTransactions(userId);
+      
+      // Filter and process transactions
+      const periodTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
+      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+      
+      const priorTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate < fromDate && tx.status === 'Completed';
+      });
+      
+      let openingUsd = 0;
+      let openingGold = 0;
+      
+      for (const tx of priorTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          openingUsd += amountUsd;
+          openingGold += amountGold;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          openingUsd -= amountUsd;
+          openingGold -= amountGold;
+        } else if (tx.type === 'Buy') {
+          openingUsd -= amountUsd;
+          openingGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          openingUsd += amountUsd;
+          openingGold -= amountGold;
+        }
+      }
+      
+      // Generate PDF
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument({ margin: 50 });
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.pdf`);
+      
+      doc.pipe(res);
+      
+      // Header
+      doc.fillColor('#f97316').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
+      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Account Statement', { align: 'center' });
+      doc.moveDown(1.5);
+      
+      // Account details box
+      doc.rect(50, doc.y, 515, 80).stroke('#e5e7eb');
+      const boxY = doc.y + 10;
+      doc.fontSize(10).fillColor('#6b7280');
+      doc.text('Account Holder:', 60, boxY);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${user.firstName || ''} ${user.lastName || ''}`.trim(), 150, boxY);
+      doc.fillColor('#6b7280').font('Helvetica').text('Account ID:', 60, boxY + 15);
+      doc.fillColor('#f97316').font('Helvetica-Bold').text(user.finatradesId || `FT-${user.id.slice(0, 8).toUpperCase()}`, 150, boxY + 15);
+      doc.fillColor('#6b7280').font('Helvetica').text('Account Type:', 60, boxY + 30);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(user.accountType || 'Personal', 150, boxY + 30);
+      doc.fillColor('#6b7280').font('Helvetica').text('Statement Period:', 300, boxY);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, 400, boxY);
+      doc.fillColor('#6b7280').font('Helvetica').text('Generated:', 300, boxY + 15);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' (GST)', 400, boxY + 15);
+      
+      doc.y = boxY + 85;
+      
+      // Balance summary
+      let runningUsd = openingUsd;
+      let runningGold = openingGold;
+      let totalCreditsUsd = 0;
+      let totalDebitsUsd = 0;
+      
+      for (const tx of periodTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          runningUsd += amountUsd;
+          totalCreditsUsd += amountUsd;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          runningUsd -= amountUsd;
+          totalDebitsUsd += amountUsd;
+        } else if (tx.type === 'Buy') {
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+          totalDebitsUsd += amountUsd;
+        } else if (tx.type === 'Sell') {
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+          totalCreditsUsd += amountUsd;
+        }
+      }
+      
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('BALANCE SUMMARY', { align: 'center' });
+      doc.moveDown(0.5);
+      
+      // Summary table
+      const summaryY = doc.y;
+      doc.rect(50, summaryY, 515, 60).fill('#f9fafb').stroke('#e5e7eb');
+      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
+      doc.text('', 60, summaryY + 10).text('Opening Balance', 60, summaryY + 10);
+      doc.text('Total Credits (+)', 180, summaryY + 10);
+      doc.text('Total Debits (-)', 300, summaryY + 10);
+      doc.text('Closing Balance', 420, summaryY + 10);
+      
+      doc.fillColor('#1f2937').fontSize(11).font('Helvetica-Bold');
+      doc.text(`$${openingUsd.toFixed(2)}`, 60, summaryY + 25);
+      doc.fillColor('#16a34a').text(`$${totalCreditsUsd.toFixed(2)}`, 180, summaryY + 25);
+      doc.fillColor('#dc2626').text(`$${totalDebitsUsd.toFixed(2)}`, 300, summaryY + 25);
+      doc.fillColor('#1f2937').text(`$${runningUsd.toFixed(2)}`, 420, summaryY + 25);
+      
+      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
+      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 40);
+      doc.text('', 180, summaryY + 40);
+      doc.text('', 300, summaryY + 40);
+      doc.text(`${runningGold.toFixed(4)}g`, 420, summaryY + 40);
+      
+      doc.y = summaryY + 75;
+      
+      // Transactions table header
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('TRANSACTION DETAILS');
+      doc.moveDown(0.5);
+      
+      const tableTop = doc.y;
+      doc.rect(50, tableTop, 515, 20).fill('#f3f4f6');
+      doc.fillColor('#374151').fontSize(8).font('Helvetica-Bold');
+      doc.text('Date', 55, tableTop + 6);
+      doc.text('Reference', 110, tableTop + 6);
+      doc.text('Description', 180, tableTop + 6);
+      doc.text('Debit (-)', 340, tableTop + 6, { width: 60, align: 'right' });
+      doc.text('Credit (+)', 410, tableTop + 6, { width: 60, align: 'right' });
+      doc.text('Balance', 480, tableTop + 6, { width: 70, align: 'right' });
+      
+      let y = tableTop + 25;
+      runningUsd = openingUsd;
+      runningGold = openingGold;
+      
+      doc.font('Helvetica').fontSize(8);
+      
+      for (const tx of periodTransactions) {
+        if (y > 720) {
+          doc.addPage();
+          y = 50;
+        }
+        
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        let debit = '';
+        let credit = '';
+        
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          credit = `$${amountUsd.toFixed(2)}`;
+          runningUsd += amountUsd;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          debit = `$${amountUsd.toFixed(2)}`;
+          runningUsd -= amountUsd;
+        } else if (tx.type === 'Buy') {
+          debit = `$${amountUsd.toFixed(2)}`;
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          credit = `$${amountUsd.toFixed(2)}`;
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+        }
+        
+        const txDate = new Date(tx.createdAt!);
+        doc.fillColor('#374151');
+        doc.text(txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }), 55, y);
+        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 110, y);
+        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 30), 180, y);
+        doc.fillColor('#dc2626').text(debit, 340, y, { width: 60, align: 'right' });
+        doc.fillColor('#16a34a').text(credit, 410, y, { width: 60, align: 'right' });
+        doc.fillColor('#1f2937').font('Helvetica-Bold').text(`$${runningUsd.toFixed(2)}`, 480, y, { width: 70, align: 'right' });
+        doc.font('Helvetica');
+        
+        y += 15;
+      }
+      
+      if (periodTransactions.length === 0) {
+        doc.fillColor('#6b7280').text('No transactions in this period', 50, y + 20, { align: 'center', width: 515 });
+      }
+      
+      // Footer
+      doc.y = 750;
+      doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
+      doc.text('This statement is generated by Finatrades and is for informational purposes only.', 50, doc.y, { align: 'center', width: 515 });
+      doc.text('Gold values are calculated at transaction time rates. For questions, contact support@finatrades.com', 50, doc.y + 10, { align: 'center', width: 515 });
+      
+      doc.end();
+    } catch (error) {
+      console.error("Failed to generate PDF statement:", error);
+      res.status(400).json({ message: "Failed to generate PDF statement" });
+    }
+  });
+
+  // Generate CSV account statement
+  app.get("/api/admin/account-statement/:userId/csv", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { from, to } = req.query;
+      
+      if (!from || !to) {
+        return res.status(400).json({ message: "Date range required" });
+      }
+      
+      const fromDate = new Date(from as string);
+      const toDate = new Date(to as string);
+      toDate.setHours(23, 59, 59, 999);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const allTransactions = await storage.getUserTransactions(userId);
+      
+      const periodTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
+      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+      
+      const priorTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate < fromDate && tx.status === 'Completed';
+      });
+      
+      let runningUsd = 0;
+      let runningGold = 0;
+      
+      for (const tx of priorTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          runningUsd += amountUsd;
+          runningGold += amountGold;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          runningUsd -= amountUsd;
+          runningGold -= amountGold;
+        } else if (tx.type === 'Buy') {
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+        }
+      }
+      
+      let csv = 'Date,Reference,Type,Description,Debit (USD),Credit (USD),Debit (Gold),Credit (Gold),Balance (USD),Balance (Gold)\n';
+      
+      for (const tx of periodTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        let debitUsd = '';
+        let creditUsd = '';
+        let debitGold = '';
+        let creditGold = '';
+        
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          creditUsd = amountUsd.toFixed(2);
+          runningUsd += amountUsd;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          debitUsd = amountUsd.toFixed(2);
+          runningUsd -= amountUsd;
+        } else if (tx.type === 'Buy') {
+          debitUsd = amountUsd.toFixed(2);
+          creditGold = amountGold.toFixed(4);
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          creditUsd = amountUsd.toFixed(2);
+          debitGold = amountGold.toFixed(4);
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+        }
+        
+        const txDate = new Date(tx.createdAt!);
+        const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
+        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitUsd},${creditUsd},${debitGold},${creditGold},${runningUsd.toFixed(2)},${runningGold.toFixed(4)}\n`;
+      }
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.csv`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Failed to generate CSV statement:", error);
+      res.status(400).json({ message: "Failed to generate CSV statement" });
+    }
+  });
+
+  // ============================================================================
+  // USER ACCOUNT STATEMENTS (Authenticated User)
+  // ============================================================================
+
+  // User downloads their own PDF statement
+  app.get("/api/my-statement/pdf", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const { from, to } = req.query;
+      if (!from || !to) {
+        return res.status(400).json({ message: "Date range required" });
+      }
+      
+      const fromDate = new Date(from as string);
+      const toDate = new Date(to as string);
+      toDate.setHours(23, 59, 59, 999);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const allTransactions = await storage.getUserTransactions(userId);
+      
+      const periodTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
+      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+      
+      const priorTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate < fromDate && tx.status === 'Completed';
+      });
+      
+      let openingUsd = 0;
+      let openingGold = 0;
+      
+      for (const tx of priorTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          openingUsd += amountUsd;
+          openingGold += amountGold;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          openingUsd -= amountUsd;
+          openingGold -= amountGold;
+        } else if (tx.type === 'Buy') {
+          openingUsd -= amountUsd;
+          openingGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          openingUsd += amountUsd;
+          openingGold -= amountGold;
+        }
+      }
+      
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument({ margin: 50 });
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.pdf`);
+      
+      doc.pipe(res);
+      
+      doc.fillColor('#f97316').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
+      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Account Statement', { align: 'center' });
+      doc.moveDown(1.5);
+      
+      doc.rect(50, doc.y, 515, 80).stroke('#e5e7eb');
+      const boxY = doc.y + 10;
+      doc.fontSize(10).fillColor('#6b7280');
+      doc.text('Account Holder:', 60, boxY);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${user.firstName || ''} ${user.lastName || ''}`.trim(), 150, boxY);
+      doc.fillColor('#6b7280').font('Helvetica').text('Account ID:', 60, boxY + 15);
+      doc.fillColor('#f97316').font('Helvetica-Bold').text(user.finatradesId || `FT-${user.id.slice(0, 8).toUpperCase()}`, 150, boxY + 15);
+      doc.fillColor('#6b7280').font('Helvetica').text('Account Type:', 60, boxY + 30);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(user.accountType || 'Personal', 150, boxY + 30);
+      doc.fillColor('#6b7280').font('Helvetica').text('Statement Period:', 300, boxY);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, 400, boxY);
+      doc.fillColor('#6b7280').font('Helvetica').text('Generated:', 300, boxY + 15);
+      doc.fillColor('#1f2937').font('Helvetica-Bold').text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' (GST)', 400, boxY + 15);
+      
+      doc.y = boxY + 85;
+      
+      let runningUsd = openingUsd;
+      let runningGold = openingGold;
+      let totalCreditsUsd = 0;
+      let totalDebitsUsd = 0;
+      
+      for (const tx of periodTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          runningUsd += amountUsd;
+          totalCreditsUsd += amountUsd;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          runningUsd -= amountUsd;
+          totalDebitsUsd += amountUsd;
+        } else if (tx.type === 'Buy') {
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+          totalDebitsUsd += amountUsd;
+        } else if (tx.type === 'Sell') {
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+          totalCreditsUsd += amountUsd;
+        }
+      }
+      
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('BALANCE SUMMARY', { align: 'center' });
+      doc.moveDown(0.5);
+      
+      const summaryY = doc.y;
+      doc.rect(50, summaryY, 515, 60).fill('#f9fafb').stroke('#e5e7eb');
+      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
+      doc.text('', 60, summaryY + 10).text('Opening Balance', 60, summaryY + 10);
+      doc.text('Total Credits (+)', 180, summaryY + 10);
+      doc.text('Total Debits (-)', 300, summaryY + 10);
+      doc.text('Closing Balance', 420, summaryY + 10);
+      
+      doc.fillColor('#1f2937').fontSize(11).font('Helvetica-Bold');
+      doc.text(`$${openingUsd.toFixed(2)}`, 60, summaryY + 25);
+      doc.fillColor('#16a34a').text(`$${totalCreditsUsd.toFixed(2)}`, 180, summaryY + 25);
+      doc.fillColor('#dc2626').text(`$${totalDebitsUsd.toFixed(2)}`, 300, summaryY + 25);
+      doc.fillColor('#1f2937').text(`$${runningUsd.toFixed(2)}`, 420, summaryY + 25);
+      
+      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
+      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 40);
+      doc.text('', 180, summaryY + 40);
+      doc.text('', 300, summaryY + 40);
+      doc.text(`${runningGold.toFixed(4)}g`, 420, summaryY + 40);
+      
+      doc.y = summaryY + 75;
+      
+      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('TRANSACTION DETAILS');
+      doc.moveDown(0.5);
+      
+      const tableTop = doc.y;
+      doc.rect(50, tableTop, 515, 20).fill('#f3f4f6');
+      doc.fillColor('#374151').fontSize(8).font('Helvetica-Bold');
+      doc.text('Date', 55, tableTop + 6);
+      doc.text('Reference', 110, tableTop + 6);
+      doc.text('Description', 180, tableTop + 6);
+      doc.text('Debit (-)', 340, tableTop + 6, { width: 60, align: 'right' });
+      doc.text('Credit (+)', 410, tableTop + 6, { width: 60, align: 'right' });
+      doc.text('Balance', 480, tableTop + 6, { width: 70, align: 'right' });
+      
+      let y = tableTop + 25;
+      runningUsd = openingUsd;
+      runningGold = openingGold;
+      
+      doc.font('Helvetica').fontSize(8);
+      
+      for (const tx of periodTransactions) {
+        if (y > 720) {
+          doc.addPage();
+          y = 50;
+        }
+        
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        let debit = '';
+        let credit = '';
+        
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          credit = `$${amountUsd.toFixed(2)}`;
+          runningUsd += amountUsd;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          debit = `$${amountUsd.toFixed(2)}`;
+          runningUsd -= amountUsd;
+        } else if (tx.type === 'Buy') {
+          debit = `$${amountUsd.toFixed(2)}`;
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          credit = `$${amountUsd.toFixed(2)}`;
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+        }
+        
+        const txDate = new Date(tx.createdAt!);
+        doc.fillColor('#374151');
+        doc.text(txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }), 55, y);
+        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 110, y);
+        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 30), 180, y);
+        doc.fillColor('#dc2626').text(debit, 340, y, { width: 60, align: 'right' });
+        doc.fillColor('#16a34a').text(credit, 410, y, { width: 60, align: 'right' });
+        doc.fillColor('#1f2937').font('Helvetica-Bold').text(`$${runningUsd.toFixed(2)}`, 480, y, { width: 70, align: 'right' });
+        doc.font('Helvetica');
+        
+        y += 15;
+      }
+      
+      if (periodTransactions.length === 0) {
+        doc.fillColor('#6b7280').text('No transactions in this period', 50, y + 20, { align: 'center', width: 515 });
+      }
+      
+      doc.y = 750;
+      doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
+      doc.text('This statement is generated by Finatrades and is for informational purposes only.', 50, doc.y, { align: 'center', width: 515 });
+      doc.text('Gold values are calculated at transaction time rates. For questions, contact support@finatrades.com', 50, doc.y + 10, { align: 'center', width: 515 });
+      
+      doc.end();
+    } catch (error) {
+      console.error("Failed to generate user PDF statement:", error);
+      res.status(400).json({ message: "Failed to generate statement" });
+    }
+  });
+
+  // User downloads their own CSV statement
+  app.get("/api/my-statement/csv", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const { from, to } = req.query;
+      if (!from || !to) {
+        return res.status(400).json({ message: "Date range required" });
+      }
+      
+      const fromDate = new Date(from as string);
+      const toDate = new Date(to as string);
+      toDate.setHours(23, 59, 59, 999);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const allTransactions = await storage.getUserTransactions(userId);
+      
+      const periodTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
+      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+      
+      const priorTransactions = allTransactions.filter(tx => {
+        const txDate = new Date(tx.createdAt!);
+        return txDate < fromDate && tx.status === 'Completed';
+      });
+      
+      let runningUsd = 0;
+      let runningGold = 0;
+      
+      for (const tx of priorTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          runningUsd += amountUsd;
+          runningGold += amountGold;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          runningUsd -= amountUsd;
+          runningGold -= amountGold;
+        } else if (tx.type === 'Buy') {
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+        }
+      }
+      
+      let csv = 'Date,Reference,Type,Description,Debit (USD),Credit (USD),Debit (Gold),Credit (Gold),Balance (USD),Balance (Gold)\n';
+      
+      for (const tx of periodTransactions) {
+        const amountUsd = parseFloat(tx.amountUsd || '0');
+        const amountGold = parseFloat(tx.amountGold || '0');
+        let debitUsd = '';
+        let creditUsd = '';
+        let debitGold = '';
+        let creditGold = '';
+        
+        if (['Deposit', 'Receive'].includes(tx.type)) {
+          creditUsd = amountUsd.toFixed(2);
+          runningUsd += amountUsd;
+        } else if (['Withdrawal', 'Send'].includes(tx.type)) {
+          debitUsd = amountUsd.toFixed(2);
+          runningUsd -= amountUsd;
+        } else if (tx.type === 'Buy') {
+          debitUsd = amountUsd.toFixed(2);
+          creditGold = amountGold.toFixed(4);
+          runningUsd -= amountUsd;
+          runningGold += amountGold;
+        } else if (tx.type === 'Sell') {
+          creditUsd = amountUsd.toFixed(2);
+          debitGold = amountGold.toFixed(4);
+          runningUsd += amountUsd;
+          runningGold -= amountGold;
+        }
+        
+        const txDate = new Date(tx.createdAt!);
+        const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
+        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitUsd},${creditUsd},${debitGold},${creditGold},${runningUsd.toFixed(2)},${runningGold.toFixed(4)}\n`;
+      }
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.csv`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Failed to generate user CSV statement:", error);
+      res.status(400).json({ message: "Failed to generate statement" });
+    }
+  });
+
+  // ============================================================================
   // PAYMENT GATEWAY SETTINGS (Admin)
   // ============================================================================
 

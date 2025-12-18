@@ -9,12 +9,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText, Loader2, Trash2, Fingerprint } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText, Loader2, Trash2, Fingerprint, Calendar, Wallet } from 'lucide-react';
 import BiometricSettings from '@/components/BiometricSettings';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+import { format, subMonths, startOfMonth, endOfMonth, subDays } from 'date-fns';
 
 export default function Profile() {
   const { user, refreshUser, logout } = useAuth();
@@ -24,6 +25,9 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [statementFrom, setStatementFrom] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
+  const [statementTo, setStatementTo] = useState(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
+  const [isGeneratingStatement, setIsGeneratingStatement] = useState(false);
   
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -213,8 +217,9 @@ export default function Profile() {
           {/* Right Column: Details & Settings */}
           <div className="md:col-span-8">
             <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8">
+              <TabsList className="grid w-full grid-cols-4 mb-8">
                 <TabsTrigger value="personal">Personal Info</TabsTrigger>
+                <TabsTrigger value="statements">Statements</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
               </TabsList>
@@ -325,6 +330,170 @@ export default function Profile() {
                         </div>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="statements">
+                <Card className="border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5" />
+                      Account Statements
+                    </CardTitle>
+                    <CardDescription>Download your account statements in bank-style format.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-sm text-orange-800">
+                        Generate a comprehensive statement showing all your deposits, withdrawals, transfers, 
+                        and gold transactions with opening and closing balances.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-sm font-medium">Quick Select Period</Label>
+                      <div className="flex flex-wrap gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const today = new Date();
+                            setStatementFrom(format(subDays(today, 30), 'yyyy-MM-dd'));
+                            setStatementTo(format(today, 'yyyy-MM-dd'));
+                          }}
+                          data-testid="btn-last30-days"
+                        >
+                          Last 30 Days
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const today = new Date();
+                            setStatementFrom(format(startOfMonth(subMonths(today, 1)), 'yyyy-MM-dd'));
+                            setStatementTo(format(endOfMonth(subMonths(today, 1)), 'yyyy-MM-dd'));
+                          }}
+                          data-testid="btn-last-month"
+                        >
+                          Last Month
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const today = new Date();
+                            setStatementFrom(format(subMonths(today, 3), 'yyyy-MM-dd'));
+                            setStatementTo(format(today, 'yyyy-MM-dd'));
+                          }}
+                          data-testid="btn-last-3months"
+                        >
+                          Last 3 Months
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const today = new Date();
+                            setStatementFrom(format(new Date(today.getFullYear(), 0, 1), 'yyyy-MM-dd'));
+                            setStatementTo(format(today, 'yyyy-MM-dd'));
+                          }}
+                          data-testid="btn-this-year"
+                        >
+                          This Year
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>From Date</Label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="date"
+                            value={statementFrom}
+                            onChange={(e) => setStatementFrom(e.target.value)}
+                            className="pl-10"
+                            data-testid="input-statement-from"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>To Date</Label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="date"
+                            value={statementTo}
+                            onChange={(e) => setStatementTo(e.target.value)}
+                            className="pl-10"
+                            data-testid="input-statement-to"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        className="flex-1"
+                        onClick={async () => {
+                          setIsGeneratingStatement(true);
+                          try {
+                            const res = await fetch(`/api/my-statement/pdf?from=${statementFrom}&to=${statementTo}`);
+                            if (!res.ok) throw new Error('Failed to generate statement');
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `account-statement-${statementFrom}-to-${statementTo}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            toast.success('Statement downloaded successfully');
+                          } catch (error) {
+                            toast.error('Failed to download statement');
+                          } finally {
+                            setIsGeneratingStatement(false);
+                          }
+                        }}
+                        disabled={isGeneratingStatement}
+                        data-testid="btn-download-pdf-statement"
+                      >
+                        {isGeneratingStatement ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <FileText className="w-4 h-4 mr-2" />
+                        )}
+                        Download PDF Statement
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/my-statement/csv?from=${statementFrom}&to=${statementTo}`);
+                            if (!res.ok) throw new Error('Failed to generate CSV');
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `account-statement-${statementFrom}-to-${statementTo}.csv`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            toast.success('CSV downloaded successfully');
+                          } catch (error) {
+                            toast.error('Failed to download CSV');
+                          }
+                        }}
+                        data-testid="btn-download-csv-statement"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        CSV
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
