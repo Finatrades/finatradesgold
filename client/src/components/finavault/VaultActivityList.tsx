@@ -392,9 +392,19 @@ export default function VaultActivityList() {
   const transactions = data?.transactions || [];
   const certificates = data?.certificates || [];
   
+  // Check if there are FinaBridge transactions to avoid duplicate entries from Trade Release certificates
+  const hasFinaBridgeTransactions = transactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
+  
   // Convert certificates to transaction-like format for display
+  // Exclude Trade Release certificates if there's already a FinaBridge transaction
   const certificateActivities: VaultTransaction[] = certificates
-    .filter((cert: any) => cert.type === 'Trade Release' || cert.type === 'Physical Storage' || cert.type === 'Digital Ownership')
+    .filter((cert: any) => {
+      // Include Physical Storage and Digital Ownership certificates
+      if (cert.type === 'Physical Storage' || cert.type === 'Digital Ownership') return true;
+      // Only include Trade Release if there's no corresponding transaction
+      if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
+      return false;
+    })
     .map((cert: any) => ({
       id: cert.id,
       type: cert.type === 'Trade Release' ? 'Receive' as const : 'Vault Deposit' as const,

@@ -281,9 +281,18 @@ export default function FinaVault() {
   }));
 
   // Convert certificates to ledger-like format
+  // Check if there are FinaBridge transactions to avoid duplicate entries from Trade Release certificates
+  const hasFinaBridgeTransactions = transactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
+  
   const certificates = certificatesData?.certificates || [];
   const certificateRecords = certificates
-    .filter((cert: any) => ['Trade Release', 'Physical Storage', 'Digital Ownership'].includes(cert.type))
+    .filter((cert: any) => {
+      // Include Physical Storage and Digital Ownership certificates
+      if (['Physical Storage', 'Digital Ownership'].includes(cert.type)) return true;
+      // Only include Trade Release if there's no corresponding transaction
+      if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
+      return false;
+    })
     .map((cert: any) => ({
       id: cert.id,
       createdAt: cert.issuedAt,
