@@ -233,7 +233,10 @@ export default function FinaBridge() {
       ]);
       const requestsData = await requestsRes.json();
       const walletData = await walletRes.json();
-      setMyRequests(requestsData.requests || []);
+      const activeRequests = (requestsData.requests || []).filter(
+        (r: TradeRequest) => !['Completed', 'Cancelled'].includes(r.status)
+      );
+      setMyRequests(activeRequests);
       setWallet(walletData.wallet);
       
       try {
@@ -263,7 +266,10 @@ export default function FinaBridge() {
       const proposalsData = await proposalsRes.json();
       const walletData = await walletRes.json();
       setOpenRequests(openData.requests || []);
-      setMyProposals(proposalsData.proposals || []);
+      const activeProposals = (proposalsData.proposals || []).filter(
+        (p: TradeProposal) => !['Completed', 'Cancelled'].includes(p.tradeRequest?.status || '')
+      );
+      setMyProposals(activeProposals);
       setWallet(walletData.wallet);
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to load exporter data', variant: 'destructive' });
