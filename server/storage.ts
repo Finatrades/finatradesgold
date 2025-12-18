@@ -41,6 +41,8 @@ import {
   type SettlementHold, type InsertSettlementHold,
   type DealRoom, type InsertDealRoom,
   type DealRoomMessage, type InsertDealRoomMessage,
+  type DealRoomAgreementAcceptance, type InsertDealRoomAgreementAcceptance,
+  dealRoomAgreementAcceptances,
   type ChatSession, type InsertChatSession,
   type ChatMessage, type InsertChatMessage,
   type AuditLog, type InsertAuditLog,
@@ -357,6 +359,12 @@ export interface IStorage {
   createDealRoomMessage(message: InsertDealRoomMessage): Promise<DealRoomMessage>;
   markDealRoomMessagesAsRead(dealRoomId: string, userId: string): Promise<void>;
   getUnreadDealRoomMessageCount(dealRoomId: string, userId: string): Promise<number>;
+  
+  // Deal Room Agreement Acceptances
+  getDealRoomAgreementAcceptance(dealRoomId: string, userId: string): Promise<DealRoomAgreementAcceptance | undefined>;
+  getDealRoomAgreementAcceptances(dealRoomId: string): Promise<DealRoomAgreementAcceptance[]>;
+  createDealRoomAgreementAcceptance(acceptance: InsertDealRoomAgreementAcceptance): Promise<DealRoomAgreementAcceptance>;
+  closeDealRoom(id: string, closedBy: string, closureNotes?: string): Promise<DealRoom | undefined>;
   
   // Chat
   getChatSession(userId: string): Promise<ChatSession | undefined>;
@@ -1184,6 +1192,39 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return result[0]?.count || 0;
+  }
+
+  // Deal Room Agreement Acceptances
+  async getDealRoomAgreementAcceptance(dealRoomId: string, userId: string): Promise<DealRoomAgreementAcceptance | undefined> {
+    const [acceptance] = await db.select().from(dealRoomAgreementAcceptances)
+      .where(and(
+        eq(dealRoomAgreementAcceptances.dealRoomId, dealRoomId),
+        eq(dealRoomAgreementAcceptances.userId, userId)
+      ))
+      .limit(1);
+    return acceptance || undefined;
+  }
+
+  async getDealRoomAgreementAcceptances(dealRoomId: string): Promise<DealRoomAgreementAcceptance[]> {
+    return await db.select().from(dealRoomAgreementAcceptances)
+      .where(eq(dealRoomAgreementAcceptances.dealRoomId, dealRoomId))
+      .orderBy(dealRoomAgreementAcceptances.acceptedAt);
+  }
+
+  async createDealRoomAgreementAcceptance(acceptance: InsertDealRoomAgreementAcceptance): Promise<DealRoomAgreementAcceptance> {
+    const [created] = await db.insert(dealRoomAgreementAcceptances).values(acceptance).returning();
+    return created;
+  }
+
+  async closeDealRoom(id: string, closedBy: string, closureNotes?: string): Promise<DealRoom | undefined> {
+    const [room] = await db.update(dealRooms).set({
+      isClosed: true,
+      closedAt: new Date(),
+      closedBy,
+      closureNotes,
+      updatedAt: new Date()
+    }).where(eq(dealRooms.id, id)).returning();
+    return room || undefined;
   }
 
   // Chat
