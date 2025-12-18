@@ -28,6 +28,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface DealRoomMessage {
   id: string;
@@ -82,6 +89,8 @@ interface AgreementAcceptance {
   role: 'importer' | 'exporter' | 'admin';
   agreementVersion: string;
   acceptedAt: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
 }
 
 interface DealRoomProps {
@@ -117,6 +126,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [adminDisclaimer, setAdminDisclaimer] = useState('');
   const [savingDisclaimer, setSavingDisclaimer] = useState(false);
   const [showDisclaimerSection, setShowDisclaimerSection] = useState(false);
+  const [selectedAcceptance, setSelectedAcceptance] = useState<AgreementAcceptance | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -566,6 +576,54 @@ Version 1.0 - Effective Date: January 2025
         </AlertDialogContent>
       </AlertDialog>
 
+      <Dialog open={!!selectedAcceptance} onOpenChange={(open) => !open && setSelectedAcceptance(null)}>
+        <DialogContent className="max-w-md" data-testid="dialog-acceptance-details">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-success" />
+              Terms Acceptance Details
+            </DialogTitle>
+            <DialogDescription>
+              Full details of this agreement acceptance
+            </DialogDescription>
+          </DialogHeader>
+          {selectedAcceptance && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Role</p>
+                  <p className="font-medium">{selectedAcceptance.role.charAt(0).toUpperCase() + selectedAcceptance.role.slice(1)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Agreement Version</p>
+                  <p className="font-medium">v{selectedAcceptance.agreementVersion}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Date & Time</p>
+                <p className="font-medium">{format(new Date(selectedAcceptance.acceptedAt), 'MMMM d, yyyy h:mm:ss a')}</p>
+              </div>
+              {selectedAcceptance.ipAddress && (
+                <div>
+                  <p className="text-xs text-muted-foreground">IP Address</p>
+                  <p className="font-medium font-mono text-sm">{selectedAcceptance.ipAddress}</p>
+                </div>
+              )}
+              {selectedAcceptance.userAgent && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Browser / Device</p>
+                  <p className="font-medium text-sm break-words">{selectedAcceptance.userAgent}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-muted-foreground">User ID</p>
+                <p className="font-mono text-xs text-muted-foreground">{selectedAcceptance.userId}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Card className="h-full flex flex-col" data-testid="deal-room-container">
         {room?.isClosed && (
           <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3 flex items-center gap-2 text-destructive">
@@ -595,7 +653,13 @@ Version 1.0 - Effective Date: January 2025
                   <Shield className="w-4 h-4 text-success" />
                   <span className="font-medium text-success">Terms Accepted:</span>
                   {allAcceptances.map((a) => (
-                    <Badge key={a.id} variant="outline" className="text-xs">
+                    <Badge 
+                      key={a.id} 
+                      variant="outline" 
+                      className="text-xs cursor-pointer hover:bg-success/10"
+                      onClick={() => setSelectedAcceptance(a)}
+                      data-testid={`badge-acceptance-${a.role}`}
+                    >
                       {a.role.charAt(0).toUpperCase() + a.role.slice(1)} - {format(new Date(a.acceptedAt), 'MMM d, yyyy')}
                     </Badge>
                   ))}
