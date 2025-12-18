@@ -87,6 +87,8 @@ import {
   cryptoWalletConfigs, cryptoPaymentRequests,
   type CryptoWalletConfig, type InsertCryptoWalletConfig,
   type CryptoPaymentRequest, type InsertCryptoPaymentRequest,
+  buyGoldRequests,
+  type BuyGoldRequest, type InsertBuyGoldRequest,
   platformConfig,
   type PlatformConfig, type InsertPlatformConfig,
   emailNotificationSettings,
@@ -2614,6 +2616,41 @@ export class DatabaseStorage implements IStorage {
 
   async updateCryptoPaymentRequest(id: string, updates: Partial<CryptoPaymentRequest>): Promise<CryptoPaymentRequest | undefined> {
     const [request] = await db.update(cryptoPaymentRequests).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoPaymentRequests.id, id)).returning();
+    return request || undefined;
+  }
+
+  // ============================================
+  // BUY GOLD REQUESTS (Wingold & Metals)
+  // ============================================
+
+  async getBuyGoldRequest(id: string): Promise<BuyGoldRequest | undefined> {
+    const [request] = await db.select().from(buyGoldRequests).where(eq(buyGoldRequests.id, id));
+    return request || undefined;
+  }
+
+  async getUserBuyGoldRequests(userId: string): Promise<BuyGoldRequest[]> {
+    return await db.select().from(buyGoldRequests)
+      .where(eq(buyGoldRequests.userId, userId))
+      .orderBy(desc(buyGoldRequests.createdAt));
+  }
+
+  async getAllBuyGoldRequests(): Promise<BuyGoldRequest[]> {
+    return await db.select().from(buyGoldRequests).orderBy(desc(buyGoldRequests.createdAt));
+  }
+
+  async getBuyGoldRequestsByStatus(status: string): Promise<BuyGoldRequest[]> {
+    return await db.select().from(buyGoldRequests)
+      .where(eq(buyGoldRequests.status, status as any))
+      .orderBy(desc(buyGoldRequests.createdAt));
+  }
+
+  async createBuyGoldRequest(request: InsertBuyGoldRequest): Promise<BuyGoldRequest> {
+    const [newRequest] = await db.insert(buyGoldRequests).values(request).returning();
+    return newRequest;
+  }
+
+  async updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined> {
+    const [request] = await db.update(buyGoldRequests).set({ ...updates, updatedAt: new Date() }).where(eq(buyGoldRequests.id, id)).returning();
     return request || undefined;
   }
 

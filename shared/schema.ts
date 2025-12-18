@@ -2520,6 +2520,37 @@ export type InsertCryptoPaymentRequest = z.infer<typeof insertCryptoPaymentReque
 export type CryptoPaymentRequest = typeof cryptoPaymentRequests.$inferSelect;
 
 // ============================================
+// BUY GOLD REQUESTS (Manual via Wingold & Metals)
+// ============================================
+
+export const buyGoldStatusEnum = pgEnum('buy_gold_status', [
+  'Pending', 'Under Review', 'Approved', 'Rejected', 'Credited', 'Cancelled'
+]);
+
+export const buyGoldRequests = pgTable("buy_gold_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 8 }),
+  goldPriceAtTime: decimal("gold_price_at_time", { precision: 18, scale: 2 }),
+  wingoldReferenceId: varchar("wingold_reference_id", { length: 255 }),
+  receiptFileUrl: text("receipt_file_url").notNull(),
+  receiptFileName: varchar("receipt_file_name", { length: 255 }),
+  status: buyGoldStatusEnum("status").notNull().default('Pending'),
+  reviewerId: varchar("reviewer_id", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  rejectionReason: text("rejection_reason"),
+  creditedTransactionId: varchar("credited_transaction_id", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBuyGoldRequestSchema = createInsertSchema(buyGoldRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBuyGoldRequest = z.infer<typeof insertBuyGoldRequestSchema>;
+export type BuyGoldRequest = typeof buyGoldRequests.$inferSelect;
+
+// ============================================
 // CENTRALIZED PLATFORM CONFIGURATION
 // ============================================
 
