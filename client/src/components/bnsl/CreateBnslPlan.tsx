@@ -453,35 +453,37 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             </>
           )}
 
-          {/* Summary Box */}
-          <div className="mt-8 p-6 bg-gradient-to-br from-[#8A2BE2]/5 to-[#8A2BE2]/10 rounded-xl border border-[#8A2BE2]/20">
-            <h4 className="font-bold text-foreground mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-[#8A2BE2]" />
-              Plan Summary
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Base Price</p>
-                <p className="text-xl font-bold text-foreground" data-testid="text-base-price">${basePriceComponent.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-[10px] text-muted-foreground">Paid at maturity</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin</p>
-                <p className="text-xl font-bold text-green-600" data-testid="text-total-margin">${totalMarginComponent.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-[10px] text-muted-foreground">Over {selectedTenor} months</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Quarterly Payout</p>
-                <p className="text-xl font-bold text-[#8A2BE2]" data-testid="text-quarterly-payout">${quarterlyMargin.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-[10px] text-muted-foreground">Paid in gold</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Proceeds</p>
-                <p className="text-xl font-bold text-foreground" data-testid="text-total-proceeds">${totalProceeds.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-[10px] text-muted-foreground">{numDisbursements} payments</p>
+          {/* Summary Box - only show when plans are configured */}
+          {!noTemplatesConfigured && !loadingTemplates && (
+            <div className="mt-8 p-6 bg-gradient-to-br from-[#8A2BE2]/5 to-[#8A2BE2]/10 rounded-xl border border-[#8A2BE2]/20">
+              <h4 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#8A2BE2]" />
+                Plan Summary
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Base Price</p>
+                  <p className="text-xl font-bold text-foreground" data-testid="text-base-price">${basePriceComponent.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-muted-foreground">Paid at maturity</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin</p>
+                  <p className="text-xl font-bold text-green-600" data-testid="text-total-margin">${totalMarginComponent.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-muted-foreground">Over {selectedTenor} months</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Quarterly Payout</p>
+                  <p className="text-xl font-bold text-[#8A2BE2]" data-testid="text-quarterly-payout">${quarterlyMargin.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-muted-foreground">Paid in gold</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Proceeds</p>
+                  <p className="text-xl font-bold text-foreground" data-testid="text-total-proceeds">${totalProceeds.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-muted-foreground">{numDisbursements} payments</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
