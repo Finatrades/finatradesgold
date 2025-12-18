@@ -128,16 +128,7 @@ export default function Dashboard() {
                   iconBg="bg-orange-50"
                   valueColor="text-orange-600"
                 />
-                <KpiBox
-                  title="FinaPay Wallet"
-                  value={formatGrams(totals.walletGoldGrams)}
-                  secondaryValue={`$${formatNumber(totals.walletGoldGrams * goldPrice)}`}
-                  subtitle="Digital gold balance"
-                  icon={<Wallet className="w-5 h-5 text-emerald-600" />}
-                  iconBg="bg-emerald-50"
-                  valueColor="text-emerald-600"
-                />
-                <KpiBox
+                                <KpiBox
                   title="Total Gold Value (USD)"
                   value={`$${formatNumber(totals.vaultGoldValueUsd + (totals.walletGoldGrams * goldPrice))}`}
                   subtitle="Worth in USD"
