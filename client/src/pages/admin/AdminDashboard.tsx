@@ -168,6 +168,7 @@ export default function AdminDashboard() {
             icon={<ArrowDownRight className="w-5 h-5" />}
             color="green"
             loading={isLoading}
+            href="/admin/payment-operations"
           />
           <PendingCard
             title="Pending Withdrawals"
@@ -175,6 +176,7 @@ export default function AdminDashboard() {
             icon={<ArrowUpRight className="w-5 h-5" />}
             color="orange"
             loading={isLoading}
+            href="/admin/payment-operations"
           />
           <PendingCard
             title="Pending Transactions"
@@ -182,6 +184,7 @@ export default function AdminDashboard() {
             icon={<Clock className="w-5 h-5" />}
             color="yellow"
             loading={isLoading}
+            href="/admin/transactions"
           />
         </div>
 
@@ -195,6 +198,7 @@ export default function AdminDashboard() {
               icon={<ArrowDownRight className="w-5 h-5" />}
               color="emerald"
               loading={isLoading}
+              href="/admin/payment-operations"
             />
             <MetricCard
               title="Pending Withdrawals"
@@ -202,6 +206,7 @@ export default function AdminDashboard() {
               icon={<ArrowUpRight className="w-5 h-5" />}
               color="orange"
               loading={isLoading}
+              href="/admin/payment-operations"
             />
             <MetricCard
               title="Total Deposits"
@@ -209,6 +214,7 @@ export default function AdminDashboard() {
               icon={<ArrowDownRight className="w-5 h-5" />}
               color="blue"
               loading={isLoading}
+              href="/admin/transactions"
             />
             <MetricCard
               title="Total Withdrawals"
@@ -216,6 +222,7 @@ export default function AdminDashboard() {
               icon={<ArrowUpRight className="w-5 h-5" />}
               color="purple"
               loading={isLoading}
+              href="/admin/transactions"
             />
             <MetricCard
               title="Total Requests"
@@ -223,6 +230,7 @@ export default function AdminDashboard() {
               icon={<Activity className="w-5 h-5" />}
               color="slate"
               loading={isLoading}
+              href="/admin/transactions"
             />
             <MetricCard
               title="Open / Review"
@@ -230,6 +238,7 @@ export default function AdminDashboard() {
               icon={<Clock className="w-5 h-5" />}
               color="yellow"
               loading={isLoading}
+              href="/admin/kyc"
             />
             <MetricCard
               title="Active BNSL Plans"
@@ -237,6 +246,7 @@ export default function AdminDashboard() {
               icon={<TrendingUp className="w-5 h-5" />}
               color="teal"
               loading={isLoading}
+              href="/admin/bnsl"
             />
             <MetricCard
               title="Base Liability"
@@ -244,6 +254,7 @@ export default function AdminDashboard() {
               icon={<DollarSign className="w-5 h-5" />}
               color="red"
               loading={isLoading}
+              href="/admin/bnsl"
             />
             <MetricCard
               title="Margin Liability"
@@ -251,6 +262,7 @@ export default function AdminDashboard() {
               icon={<BarChart3 className="w-5 h-5" />}
               color="pink"
               loading={isLoading}
+              href="/admin/bnsl"
             />
             <MetricCard
               title="Term Requests"
@@ -258,6 +270,7 @@ export default function AdminDashboard() {
               icon={<Clock className="w-5 h-5" />}
               color="indigo"
               loading={isLoading}
+              href="/admin/bnsl"
             />
           </div>
         </div>
@@ -476,12 +489,13 @@ function StatusItem({ label, status, color }: any) {
   );
 }
 
-function MetricCard({ title, value, icon, color, loading }: {
+function MetricCard({ title, value, icon, color, loading, href }: {
   title: string;
   value: number | string;
   icon: React.ReactNode;
   color: 'emerald' | 'orange' | 'blue' | 'purple' | 'slate' | 'yellow' | 'teal' | 'red' | 'pink' | 'indigo';
   loading?: boolean;
+  href?: string;
 }) {
   const colorClasses = {
     emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', icon: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -498,8 +512,8 @@ function MetricCard({ title, value, icon, color, loading }: {
   
   const colors = colorClasses[color];
   
-  return (
-    <Card className={`${colors.bg} border-0 shadow-sm`} data-testid={`card-metric-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+  const cardContent = (
+    <Card className={`${colors.bg} border-0 shadow-sm ${href ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} data-testid={`card-metric-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${colors.icon}`}>
@@ -515,14 +529,21 @@ function MetricCard({ title, value, icon, color, loading }: {
       </CardContent>
     </Card>
   );
+  
+  if (href) {
+    return <Link href={href}>{cardContent}</Link>;
+  }
+  
+  return cardContent;
 }
 
-function PendingCard({ title, count, icon, color, loading }: {
+function PendingCard({ title, count, icon, color, loading, href }: {
   title: string;
   count: number;
   icon: React.ReactNode;
   color: 'green' | 'orange' | 'yellow';
   loading?: boolean;
+  href?: string;
 }) {
   const colorClasses = {
     green: { bg: 'bg-green-50', icon: 'bg-green-100 text-green-600', text: 'text-green-700' },
@@ -532,8 +553,8 @@ function PendingCard({ title, count, icon, color, loading }: {
   
   const colors = colorClasses[color];
   
-  return (
-    <Card className={`${colors.bg} border-0 shadow-sm`} data-testid={`card-pending-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+  const cardContent = (
+    <Card className={`${colors.bg} border-0 shadow-sm ${href ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} data-testid={`card-pending-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <CardContent className="p-5">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${colors.icon}`}>
@@ -549,4 +570,10 @@ function PendingCard({ title, count, icon, color, loading }: {
       </CardContent>
     </Card>
   );
+  
+  if (href) {
+    return <Link href={href}>{cardContent}</Link>;
+  }
+  
+  return cardContent;
 }
