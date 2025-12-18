@@ -3359,9 +3359,17 @@ export async function registerRoutes(
         });
       });
       
-      // Certificates (Trade Release, Physical Storage, Digital Ownership)
+      // Certificates (Physical Storage, Digital Ownership) - excluding Trade Release since those have transaction records
+      // Check if there are FinaBridge transactions to avoid duplicate entries
+      const hasFinaBridgeTransactions = regularTransactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
       userCertificates
-        .filter(cert => ['Trade Release', 'Physical Storage', 'Digital Ownership'].includes(cert.type))
+        .filter(cert => {
+          // Include Physical Storage and Digital Ownership certificates
+          if (['Physical Storage', 'Digital Ownership'].includes(cert.type)) return true;
+          // Only include Trade Release if there's no corresponding transaction
+          if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
+          return false;
+        })
         .forEach(cert => {
           const moduleMap: Record<string, string> = {
             'Trade Release': 'finabridge',
