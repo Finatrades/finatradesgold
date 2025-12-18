@@ -100,6 +100,8 @@ interface DashboardData {
   goldPrice: number;
   goldPriceSource: string | null;
   certificates: CertificateSummary | null;
+  tradeCounts: { active: number; total: number };
+  finaBridge: { activeCases: number; tradeVolume: number; goldGrams: number; usdValue: number };
   isLoading: boolean;
   isFetching: boolean;
   error: string | null;
