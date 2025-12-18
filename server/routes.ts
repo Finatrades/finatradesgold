@@ -1497,6 +1497,22 @@ export async function registerRoutes(
         }));
       } catch (e) { /* table may not exist */ }
       
+      // Get recent transactions for admin tracking
+      const recentTransactions = allTransactions
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 10)
+        .map(tx => ({
+          id: tx.id,
+          userId: tx.userId,
+          type: tx.type,
+          status: tx.status,
+          amountGold: tx.amountGold,
+          amountUsd: tx.amountUsd,
+          description: tx.description,
+          sourceModule: tx.sourceModule,
+          createdAt: tx.createdAt
+        }));
+      
       // USD to AED conversion rate
       const USD_TO_AED = 3.67;
       const totalVolumeAed = totalVolume * USD_TO_AED;
@@ -1523,7 +1539,8 @@ export async function registerRoutes(
         pendingBnslTermRequests,
         openTradeCases,
         pendingReviewCases,
-        recentCriticalEvents
+        recentCriticalEvents,
+        recentTransactions
       });
     } catch (error) {
       console.error("Failed to get admin stats:", error);

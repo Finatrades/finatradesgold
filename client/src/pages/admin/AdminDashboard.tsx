@@ -46,6 +46,17 @@ interface AdminStats {
     status: string;
     createdAt: string;
   }>;
+  recentTransactions: Array<{
+    id: number;
+    userId: number;
+    type: string;
+    status: string;
+    amountGold: string | null;
+    amountUsd: string | null;
+    description: string | null;
+    sourceModule: string | null;
+    createdAt: string;
+  }>;
 }
 
 function formatAed(amount: number): string {
@@ -321,6 +332,91 @@ export default function AdminDashboard() {
           </Card>
 
         </div>
+
+        {/* Recent Transactions */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recent Transactions</CardTitle>
+            <Link href="/admin/transactions">
+              <Button variant="outline" size="sm" data-testid="button-view-all-transactions">View All</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : stats?.recentTransactions && stats.recentTransactions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">ID</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Type</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Amount</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Source</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Time</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.recentTransactions.map((tx) => (
+                      <tr key={tx.id} className="border-b border-border/50 hover:bg-muted/50" data-testid={`row-transaction-${tx.id}`}>
+                        <td className="py-3 px-2 font-mono text-xs">#{tx.id}</td>
+                        <td className="py-3 px-2">
+                          <Badge variant="secondary" className={
+                            tx.type === 'Deposit' ? 'bg-success-muted text-success' :
+                            tx.type === 'Withdrawal' ? 'bg-error-muted text-error-muted-foreground' :
+                            tx.type === 'Transfer' ? 'bg-info-muted text-info-muted-foreground' :
+                            'bg-muted text-muted-foreground'
+                          }>
+                            {tx.type}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-2">
+                          <Badge variant="secondary" className={
+                            tx.status === 'Completed' ? 'bg-success-muted text-success' :
+                            tx.status === 'Pending' ? 'bg-warning-muted text-warning-muted-foreground' :
+                            tx.status === 'Failed' ? 'bg-error-muted text-error-muted-foreground' :
+                            'bg-muted text-muted-foreground'
+                          }>
+                            {tx.status}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-2">
+                          {tx.amountGold ? (
+                            <span className="font-medium">{parseFloat(tx.amountGold).toFixed(4)}g</span>
+                          ) : tx.amountUsd ? (
+                            <span className="font-medium">${parseFloat(tx.amountUsd).toFixed(2)}</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-2 text-xs text-muted-foreground">
+                          {tx.sourceModule || '-'}
+                        </td>
+                        <td className="py-3 px-2 text-xs text-muted-foreground">
+                          {formatTimeAgo(tx.createdAt)}
+                        </td>
+                        <td className="py-3 px-2">
+                          <Link href={`/admin/transactions?id=${tx.id}`}>
+                            <Button size="sm" variant="ghost" data-testid={`button-view-tx-${tx.id}`}>View</Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No recent transactions</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );
