@@ -27,7 +27,7 @@ interface ComplianceSettings {
 }
 
 export default function AdminSettings() {
-  const { settings, updateSettings, updateBankAccount, addBankAccount } = usePlatform();
+  const { settings, updateSettings, updateBankAccount, addBankAccount, deleteBankAccount } = usePlatform();
   const { user } = useAuth();
   const [complianceSettings, setComplianceSettings] = useState<ComplianceSettings | null>(null);
   const [loadingCompliance, setLoadingCompliance] = useState(true);
@@ -260,10 +260,20 @@ export default function AdminSettings() {
                     <div key={account.id} className={`space-y-4 border rounded-lg p-4 ${account.isActive ? 'border-gray-200' : 'border-red-200 bg-red-50/50'}`}>
                        <div className="flex justify-between items-start">
                           <h4 className="font-medium text-gray-900">{account.name}</h4>
-                          <Switch 
-                            checked={account.isActive}
-                            onCheckedChange={(checked) => updateBankAccount(account.id, { isActive: checked })}
-                          />
+                          <div className="flex items-center gap-2">
+                            <Switch 
+                              checked={account.isActive}
+                              onCheckedChange={(checked) => updateBankAccount(account.id, { isActive: checked })}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => deleteBankAccount(account.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                        </div>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">

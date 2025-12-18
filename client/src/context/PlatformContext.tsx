@@ -111,6 +111,7 @@ interface PlatformContextType {
   updateSettings: (newSettings: Partial<PlatformSettings>) => void;
   updateBankAccount: (id: string, updates: Partial<BankAccount>) => void;
   addBankAccount: (account: Omit<BankAccount, 'id'>) => void;
+  deleteBankAccount: (id: string) => void;
   updateInventory: (grams: number, type: 'add' | 'remove' | 'reserve' | 'release') => void;
   refreshSettings: () => Promise<void>;
 }
@@ -324,6 +325,13 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const deleteBankAccount = (id: string) => {
+    setSettings(prev => ({
+      ...prev,
+      bankAccounts: prev.bankAccounts.filter(acc => acc.id !== id)
+    }));
+  };
+
   const updateInventory = (grams: number, type: 'add' | 'remove' | 'reserve' | 'release') => {
     setSettings(prev => {
       let newInventory = prev.vaultInventoryGrams;
@@ -350,7 +358,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       loading,
       updateSettings, 
       updateBankAccount, 
-      addBankAccount, 
+      addBankAccount,
+      deleteBankAccount,
       updateInventory,
       refreshSettings
     }}>
