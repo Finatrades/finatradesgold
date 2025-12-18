@@ -133,6 +133,10 @@ export default function FinaBridgeManagement() {
   const [selectedDealRoom, setSelectedDealRoom] = useState<string | null>(null);
   const [settlementHolds, setSettlementHolds] = useState<SettlementHold[]>([]);
   const [completingTrade, setCompletingTrade] = useState<string | null>(null);
+  const [releaseConfirmDialog, setReleaseConfirmDialog] = useState<{
+    hold: SettlementHold;
+    request: TradeRequest;
+  } | null>(null);
 
   const STANDARD_DOCUMENTS = [
     { key: 'company_registration', label: 'Company Registration Certificate' },
@@ -204,14 +208,19 @@ export default function FinaBridgeManagement() {
     }
   };
 
-  const handleCompleteTrade = async (holdId: string, tradeRefId: string) => {
-    if (!confirm(`Are you sure you want to complete this trade and release the gold to the exporter?\n\nTrade: ${tradeRefId}\n\nThis action cannot be undone.`)) {
-      return;
-    }
+  const openReleaseDialog = (hold: SettlementHold, request: TradeRequest) => {
+    setReleaseConfirmDialog({ hold, request });
+  };
+
+  const handleConfirmRelease = async () => {
+    if (!releaseConfirmDialog) return;
     
-    setCompletingTrade(holdId);
+    const { hold } = releaseConfirmDialog;
+    setCompletingTrade(hold.id);
+    setReleaseConfirmDialog(null);
+    
     try {
-      await apiRequest('POST', `/api/admin/finabridge/settlement-holds/${holdId}/release`);
+      await apiRequest('POST', `/api/admin/finabridge/settlement-holds/${hold.id}/release`);
       toast({ title: 'Success', description: 'Trade completed! Gold has been released to the exporter.' });
       fetchRequests();
       fetchSettlementHolds();
@@ -549,7 +558,7 @@ export default function FinaBridgeManagement() {
                               className="bg-green-600 hover:bg-green-700"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleCompleteTrade(hold.id, request.tradeRefId);
+                                openReleaseDialog(hold, request);
                               }}
                               disabled={completingTrade === hold.id}
                             >
@@ -1060,6 +1069,85 @@ export default function FinaBridgeManagement() {
                 {updating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 <Send className="w-4 h-4 mr-2" />
                 Send Request
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Settlement Release Confirmation Dialog */}
+        <Dialog open={!!releaseConfirmDialog} onOpenChange={(open) => !open && setReleaseConfirmDialog(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-amber-600">
+                <AlertCircle className="w-5 h-5" />
+                Release Settlement Gold
+              </DialogTitle>
+            </DialogHeader>
+            
+            {releaseConfirmDialog && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  You are about to complete this trade and release the settlement gold to the exporter. 
+                  Please review the details below:
+                </p>
+                
+                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-800 font-medium">Trade Reference:</span>
+                    <span className="text-amber-900 font-bold">{releaseConfirmDialog.request.tradeRefId}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-800 font-medium">Goods:</span>
+                    <span className="text-amber-900">{releaseConfirmDialog.request.goodsName}</span>
+                  </div>
+                  
+                  <div className="border-t border-amber-200 pt-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-amber-800 font-medium">Settlement Gold:</span>
+                      <span className="text-amber-900 font-bold text-lg">
+                        {parseFloat(releaseConfirmDialog.hold.lockedGoldGrams).toFixed(3)}g
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-amber-700">Trade Value:</span>
+                      <span className="text-amber-700">${parseFloat(releaseConfirmDialog.request.tradeValueUsd).toLocaleString()} USD</span>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-amber-200 pt-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-amber-700">From:</span>
+                      <span className="text-amber-800">Importer's Escrow</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-amber-700">To:</span>
+                      <span className="text-amber-800">Exporter's Wallet</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800 font-medium">
+                    This action cannot be undone.
+                  </p>
+                  <p className="text-xs text-red-700 mt-1">
+                    The locked gold will be immediately credited to the exporter's FinaBridge wallet 
+                    and the trade will be marked as completed.
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setReleaseConfirmDialog(null)}>
+                Cancel
+              </Button>
+              <Button 
+                className="bg-amber-600 hover:bg-amber-700 text-white" 
+                onClick={handleConfirmRelease}
+              >
+                Confirm Release
               </Button>
             </DialogFooter>
           </DialogContent>
