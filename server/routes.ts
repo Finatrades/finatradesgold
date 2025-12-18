@@ -3880,10 +3880,146 @@ export async function registerRoutes(
             return res.status(400).json({ message: "Only pending requests can be approved" });
           }
           
-          // Update the request status to Approved
-          await db.update(buyGoldRequests)
-            .set({ status: 'Approved', reviewedAt: new Date() })
-            .where(eq(buyGoldRequests.id, req.params.id));
+          // Get admin-provided gold amount and price from request body
+          const { goldGrams: adminGoldGrams, goldPricePerGram: adminGoldPrice, amountUsd: adminAmountUsd } = req.body;
+          
+          if (!adminGoldGrams || adminGoldGrams <= 0) {
+            return res.status(400).json({ message: "Gold amount (grams) is required for approval" });
+          }
+          if (!adminGoldPrice || adminGoldPrice <= 0) {
+            return res.status(400).json({ message: "Gold price per gram is required for approval" });
+          }
+          
+          const goldGrams = parseFloat(adminGoldGrams);
+          const goldPrice = parseFloat(adminGoldPrice);
+          const usdAmount = adminAmountUsd ? parseFloat(adminAmountUsd) : goldGrams * goldPrice;
+          
+          // Process the approval with full wallet/vault/certificate creation
+          const result = await storage.withTransaction(async (txStorage) => {
+            const generatedCertificates: any[] = [];
+            
+            // 1. Update user's wallet with gold balance
+            const wallet = await txStorage.getWallet(buyGoldReq.userId);
+            if (!wallet) {
+              throw new Error('User wallet not found');
+            }
+            const currentGold = parseFloat(wallet.goldGrams || '0');
+            const newGoldBalance = currentGold + goldGrams;
+            
+            await txStorage.updateWallet(buyGoldReq.userId, {
+              goldGrams: newGoldBalance.toFixed(6)
+            });
+            
+            // 2. Create a completed transaction record
+            const newTransaction = await txStorage.createTransaction({
+              userId: buyGoldReq.userId,
+              type: 'Buy',
+              status: 'Completed',
+              amountGold: goldGrams.toFixed(6),
+              amountUsd: usdAmount.toFixed(2),
+              goldPriceUsdPerGram: goldPrice.toFixed(2),
+              sourceModule: 'Buy Gold Bar',
+              method: 'Wingold Purchase',
+              description: `Buy Gold Bar - ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+              completedAt: new Date()
+            });
+            
+            // 3. Create vault holding
+            const wingoldRef = `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+            
+            // Check for existing holdings
+            const existingHoldings = await txStorage.getUserVaultHoldings(buyGoldReq.userId);
+            let holdingId: string;
+            
+            if (existingHoldings.length > 0) {
+              // Update existing holding
+              const holding = existingHoldings[0];
+              const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
+              await txStorage.updateVaultHolding(holding.id, {
+                goldGrams: (currentHoldingGrams + goldGrams).toFixed(6),
+                wingoldStorageRef: wingoldRef
+              });
+              holdingId = holding.id;
+            } else {
+              // Create new holding
+              const newHolding = await txStorage.createVaultHolding({
+                userId: buyGoldReq.userId,
+                goldGrams: goldGrams.toFixed(6),
+                vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                wingoldStorageRef: wingoldRef,
+                purchasePriceUsdPerGram: goldPrice.toFixed(2),
+                isPhysicallyDeposited: false
+              });
+              holdingId = newHolding.id;
+            }
+            
+            // 4. Issue Digital Ownership Certificate from Finatrades
+            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
+            const digitalCert = await txStorage.createCertificate({
+              certificateNumber: docCertNum,
+              userId: buyGoldReq.userId,
+              transactionId: newTransaction.id,
+              vaultHoldingId: holdingId,
+              type: 'Digital Ownership',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPrice.toFixed(2),
+              totalValueUsd: usdAmount.toFixed(2),
+              issuer: 'Finatrades',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              wingoldStorageRef: wingoldRef
+            });
+            generatedCertificates.push(digitalCert);
+            
+            // 5. Issue Physical Storage Certificate from Wingold
+            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
+            const storageCert = await txStorage.createCertificate({
+              certificateNumber: pscCertNum,
+              userId: buyGoldReq.userId,
+              transactionId: newTransaction.id,
+              vaultHoldingId: holdingId,
+              type: 'Physical Storage',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPrice.toFixed(2),
+              totalValueUsd: usdAmount.toFixed(2),
+              issuer: 'Wingold & Metals DMCC',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              wingoldStorageRef: wingoldRef
+            });
+            generatedCertificates.push(storageCert);
+            
+            // 6. Record vault ledger entry
+            const { vaultLedgerService } = await import('./vault-ledger-service');
+            await vaultLedgerService.recordLedgerEntry({
+              userId: buyGoldReq.userId,
+              action: 'Deposit',
+              goldGrams: goldGrams,
+              goldPriceUsdPerGram: goldPrice,
+              fromWallet: 'External',
+              toWallet: 'FinaPay',
+              toStatus: 'Available',
+              transactionId: newTransaction.id,
+              certificateId: digitalCert.id,
+              notes: `Buy Gold Bar - Purchased ${goldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g via Wingold & Metals DMCC`,
+              createdBy: req.body.adminId || 'admin',
+            });
+            
+            // 7. Update the buy gold request with the credited transaction
+            await db.update(buyGoldRequests)
+              .set({ 
+                status: 'Approved', 
+                reviewedAt: new Date(),
+                reviewerId: req.body.adminId || null,
+                goldGrams: goldGrams.toFixed(6),
+                goldPriceAtTime: goldPrice.toFixed(2),
+                amountUsd: usdAmount.toFixed(2),
+                creditedTransactionId: newTransaction.id
+              })
+              .where(eq(buyGoldRequests.id, req.params.id));
+            
+            return { newTransaction, generatedCertificates, newGoldBalance, holdingId };
+          });
           
           // Audit log
           await storage.createAuditLog({
@@ -3892,13 +4028,28 @@ export async function registerRoutes(
             actionType: "approve",
             actor: req.body.adminId || 'admin',
             actorRole: "admin",
-            details: `Buy Gold Bar request approved`,
+            details: `Buy Gold Bar approved - ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g = $${usdAmount.toFixed(2)}. Certificates issued: ${result.generatedCertificates.length}`,
           });
           
-          return res.json({ message: 'Buy Gold Bar request approved successfully' });
+          // Emit real-time updates
+          const io = getIO();
+          io.to(`user:${buyGoldReq.userId}`).emit('ledger:balance_update', {
+            goldGrams: result.newGoldBalance.toFixed(6)
+          });
+          io.to(`user:${buyGoldReq.userId}`).emit('ledger:vault_update', {
+            holdingId: result.holdingId
+          });
+          
+          return res.json({ 
+            message: 'Buy Gold Bar approved - wallet credited and certificates issued',
+            transaction: result.newTransaction,
+            certificates: result.generatedCertificates,
+            goldGrams: goldGrams,
+            usdAmount: usdAmount
+          });
         } catch (e) {
           console.error('Failed to approve buy gold request:', e);
-          return res.status(400).json({ message: "Failed to approve buy gold request" });
+          return res.status(400).json({ message: e instanceof Error ? e.message : "Failed to approve buy gold request" });
         }
       }
       
@@ -13258,7 +13409,7 @@ export async function registerRoutes(
   app.patch("/api/admin/buy-gold/:id/approve", ensureAdminAsync, async (req, res) => {
     try {
       const { id } = req.params;
-      const { reviewNotes, amountUsd, goldGrams } = req.body;
+      const { reviewNotes, amountUsd, goldGrams, goldPriceAtTime, adminNotes } = req.body;
       const adminUser = (req as any).adminUser;
       
       const request = await storage.getBuyGoldRequest(id);
@@ -13270,59 +13421,146 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Request cannot be approved in current status" });
       }
       
-      // Use provided amounts or the ones from the request
-      const finalAmountUsd = parseFloat(amountUsd || request.amountUsd || '0');
-      let finalGoldGrams = parseFloat(goldGrams || request.goldGrams || '0');
-      
-      if (finalAmountUsd <= 0) {
-        return res.status(400).json({ message: "Amount USD is required for approval" });
-      }
-      
-      // Calculate gold grams if not provided
+      // Use provided gold grams (required from admin input)
+      const finalGoldGrams = parseFloat(goldGrams || request.goldGrams || '0');
       if (finalGoldGrams <= 0) {
+        return res.status(400).json({ message: "Gold amount (grams) is required for approval" });
+      }
+      
+      // Get gold price (from admin input or fetch live)
+      let goldPrice = parseFloat(goldPriceAtTime || '0');
+      if (goldPrice <= 0) {
         const priceData = await getGoldPrice();
-        finalGoldGrams = finalAmountUsd / priceData.pricePerGram;
+        goldPrice = priceData.pricePerGram;
       }
       
-      // Get user's wallet
-      const wallet = await storage.getWallet(request.userId);
-      if (!wallet) {
-        return res.status(400).json({ message: "User wallet not found" });
-      }
+      // Calculate USD amount
+      const finalAmountUsd = parseFloat(amountUsd || '0') || (finalGoldGrams * goldPrice);
       
-      // Credit user's gold balance
-      const currentGold = parseFloat(wallet.goldGrams || '0');
-      const newGoldBalance = currentGold + finalGoldGrams;
-      
-      await storage.updateWallet(wallet.id, {
-        goldGrams: newGoldBalance.toString(),
-      });
-      
-      // Get current gold price for transaction record
-      const priceData = await getGoldPrice();
-      
-      // Create transaction record
-      const transaction = await storage.createTransaction({
-        userId: request.userId,
-        type: 'Receive',
-        status: 'Completed',
-        amountGold: finalGoldGrams.toFixed(8),
-        amountUsd: finalAmountUsd.toFixed(2),
-        goldPriceUsdPerGram: priceData.pricePerGram.toString(),
-        description: 'Buy Gold (Manual) — Wingold & Metals DMCC',
-        completedAt: new Date(),
-        sourceModule: 'FinaPay',
-      });
-      
-      // Update request status
-      const updated = await storage.updateBuyGoldRequest(id, {
-        status: 'Credited',
-        amountUsd: finalAmountUsd.toString(),
-        goldGrams: finalGoldGrams.toString(),
-        reviewerId: adminUser.id,
-        reviewedAt: new Date(),
-        reviewNotes: reviewNotes || null,
-        creditedTransactionId: transaction.id,
+      // Process the approval with full wallet/vault/certificate creation
+      const result = await storage.withTransaction(async (txStorage) => {
+        const generatedCertificates: any[] = [];
+        
+        // 1. Update user's wallet with gold balance
+        const wallet = await txStorage.getWallet(request.userId);
+        if (!wallet) {
+          throw new Error('User wallet not found');
+        }
+        const currentGold = parseFloat(wallet.goldGrams || '0');
+        const newGoldBalance = currentGold + finalGoldGrams;
+        
+        await txStorage.updateWallet(request.userId, {
+          goldGrams: newGoldBalance.toFixed(6)
+        });
+        
+        // 2. Create a completed transaction record
+        const newTransaction = await txStorage.createTransaction({
+          userId: request.userId,
+          type: 'Buy',
+          status: 'Completed',
+          amountGold: finalGoldGrams.toFixed(6),
+          amountUsd: finalAmountUsd.toFixed(2),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          sourceModule: 'Buy Gold Bar',
+          method: 'Wingold Purchase',
+          description: `Buy Gold Bar - ${finalGoldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+          completedAt: new Date()
+        });
+        
+        // 3. Create vault holding
+        const wingoldRef = `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        
+        // Check for existing holdings
+        const existingHoldings = await txStorage.getUserVaultHoldings(request.userId);
+        let holdingId: string;
+        
+        if (existingHoldings.length > 0) {
+          // Update existing holding
+          const holding = existingHoldings[0];
+          const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
+          await txStorage.updateVaultHolding(holding.id, {
+            goldGrams: (currentHoldingGrams + finalGoldGrams).toFixed(6),
+            wingoldStorageRef: wingoldRef
+          });
+          holdingId = holding.id;
+        } else {
+          // Create new holding
+          const newHolding = await txStorage.createVaultHolding({
+            userId: request.userId,
+            goldGrams: finalGoldGrams.toFixed(6),
+            vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            wingoldStorageRef: wingoldRef,
+            purchasePriceUsdPerGram: goldPrice.toFixed(2),
+            isPhysicallyDeposited: false
+          });
+          holdingId = newHolding.id;
+        }
+        
+        // 4. Issue Digital Ownership Certificate from Finatrades
+        const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
+        const digitalCert = await txStorage.createCertificate({
+          certificateNumber: docCertNum,
+          userId: request.userId,
+          transactionId: newTransaction.id,
+          vaultHoldingId: holdingId,
+          type: 'Digital Ownership',
+          status: 'Active',
+          goldGrams: finalGoldGrams.toFixed(6),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          totalValueUsd: finalAmountUsd.toFixed(2),
+          issuer: 'Finatrades',
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          wingoldStorageRef: wingoldRef
+        });
+        generatedCertificates.push(digitalCert);
+        
+        // 5. Issue Physical Storage Certificate from Wingold
+        const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
+        const storageCert = await txStorage.createCertificate({
+          certificateNumber: pscCertNum,
+          userId: request.userId,
+          transactionId: newTransaction.id,
+          vaultHoldingId: holdingId,
+          type: 'Physical Storage',
+          status: 'Active',
+          goldGrams: finalGoldGrams.toFixed(6),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          totalValueUsd: finalAmountUsd.toFixed(2),
+          issuer: 'Wingold & Metals DMCC',
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          wingoldStorageRef: wingoldRef
+        });
+        generatedCertificates.push(storageCert);
+        
+        // 6. Record vault ledger entry
+        const { vaultLedgerService } = await import('./vault-ledger-service');
+        await vaultLedgerService.recordLedgerEntry({
+          userId: request.userId,
+          action: 'Deposit',
+          goldGrams: finalGoldGrams,
+          goldPriceUsdPerGram: goldPrice,
+          fromWallet: 'External',
+          toWallet: 'FinaPay',
+          toStatus: 'Available',
+          transactionId: newTransaction.id,
+          certificateId: digitalCert.id,
+          notes: `Buy Gold Bar - Purchased ${finalGoldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g via Wingold & Metals DMCC`,
+          createdBy: adminUser.id,
+        });
+        
+        // 7. Update the buy gold request with the credited transaction
+        const updated = await txStorage.updateBuyGoldRequest(id, {
+          status: 'Credited',
+          amountUsd: finalAmountUsd.toFixed(2),
+          goldGrams: finalGoldGrams.toFixed(6),
+          goldPriceAtTime: goldPrice.toFixed(2),
+          reviewerId: adminUser.id,
+          reviewedAt: new Date(),
+          reviewNotes: adminNotes || reviewNotes || null,
+          creditedTransactionId: newTransaction.id,
+        });
+        
+        return { newTransaction, generatedCertificates, newGoldBalance, holdingId, updated };
       });
       
       // Create audit log
@@ -13332,23 +13570,37 @@ export async function registerRoutes(
         actionType: "approve",
         actor: adminUser.id,
         actorRole: "admin",
-        details: `Approved buy gold request: $${finalAmountUsd.toFixed(2)} = ${finalGoldGrams.toFixed(4)}g gold`,
+        details: `Approved buy gold request: ${finalGoldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g = $${finalAmountUsd.toFixed(2)}. Certificates issued: ${result.generatedCertificates.length}`,
       });
       
       // Notify user
       await storage.createNotification({
         userId: request.userId,
-        title: "Buy Gold Request Approved",
-        message: `Your buy gold request has been approved! ${finalGoldGrams.toFixed(4)}g gold has been credited to your wallet.`,
+        title: "Buy Gold Bar Approved",
+        message: `Your purchase of ${finalGoldGrams.toFixed(4)}g gold has been credited to your wallet. Certificates issued.`,
         type: "success",
         read: false,
-        link: "/finapay",
+        link: "/finavault",
       });
       
-      res.json({ request: updated, transaction });
+      // Emit real-time updates
+      const io = getIO();
+      io.to(`user:${request.userId}`).emit('ledger:balance_update', {
+        goldGrams: result.newGoldBalance.toFixed(6)
+      });
+      io.to(`user:${request.userId}`).emit('ledger:vault_update', {
+        holdingId: result.holdingId
+      });
+      
+      res.json({ 
+        request: result.updated, 
+        transaction: result.newTransaction,
+        certificates: result.generatedCertificates,
+        message: 'Buy Gold Bar approved - wallet credited and certificates issued'
+      });
     } catch (error) {
       console.error("Failed to approve buy gold request:", error);
-      res.status(500).json({ message: "Failed to approve request" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to approve request" });
     }
   });
 
