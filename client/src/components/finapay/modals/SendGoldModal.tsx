@@ -519,12 +519,15 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                   <div className="bg-muted/30 border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                        <Avatar className="w-10 h-10 border-2 border-primary">
+                          {user?.profilePhoto && (
+                            <AvatarImage src={user.profilePhoto} alt="You" />
+                          )}
+                          <AvatarFallback className="bg-primary text-white text-xs font-bold">
                             {user?.firstName?.[0]}{user?.lastName?.[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-muted-foreground">You</span>
+                        <span className="text-sm font-medium">You</span>
                       </div>
                       <div className="flex-1 flex items-center justify-center">
                         <div className="h-px flex-1 bg-border"></div>
@@ -532,8 +535,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                         <div className="h-px flex-1 bg-border"></div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{foundUser.firstName}</span>
-                        <Avatar className="w-8 h-8 border border-green-300">
+                        <span className="text-sm font-medium">{foundUser.firstName}</span>
+                        <Avatar className="w-10 h-10 border-2 border-green-500">
                           {foundUser.profilePhotoUrl && (
                             <AvatarImage src={foundUser.profilePhotoUrl} alt={foundUser.firstName} />
                           )}
