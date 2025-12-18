@@ -46,15 +46,27 @@ export function useDataSync() {
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const lastSyncVersion = useRef<number>(0);
+  const processedEvents = useRef<Set<string>>(new Set());
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    if (isConnected) {
+      processedEvents.current.clear();
+      console.log('[DataSync] Cleared event cache on reconnect');
+    }
+  }, [isConnected]);
+
   const invalidateQueriesForEvent = useCallback((event: LedgerEvent) => {
-    if (event.syncVersion <= lastSyncVersion.current) {
-      console.log('[DataSync] Skipping duplicate event', event.syncVersion);
+    const eventKey = `${event.type}-${event.module}-${event.action}-${event.syncVersion}`;
+    if (processedEvents.current.has(eventKey)) {
+      console.log('[DataSync] Skipping duplicate event', eventKey);
       return;
     }
-    lastSyncVersion.current = event.syncVersion;
+    processedEvents.current.add(eventKey);
+    if (processedEvents.current.size > 100) {
+      const entries = Array.from(processedEvents.current);
+      processedEvents.current = new Set(entries.slice(-50));
+    }
 
     const queriesToInvalidate: string[][] = [];
 
@@ -145,7 +157,7 @@ export function useDataSync() {
     isConnected,
     requestSync,
     forceRefresh,
-    lastSyncVersion: lastSyncVersion.current,
+    processedEventCount: processedEvents.current.size,
   };
 }
 

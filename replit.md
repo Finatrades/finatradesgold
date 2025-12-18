@@ -22,7 +22,12 @@ The platform uses a client-server architecture with a React frontend and an Expr
 **Frontend:**
 - **Framework & Libraries**: React 18 with TypeScript, Vite, Wouter for routing, React Context API for state management, shadcn/ui (Radix UI) for components, Tailwind CSS v4 for styling, TanStack React Query for data fetching, Framer Motion for animations.
 - **Real-time**: Socket.IO client for live features.
-- **Auto-Sync System**: A 4-layer strategy ensures real-time data synchronization using a Snapshot API, Ledger Events via Socket.IO, background polling, and real-time push notifications.
+- **Data Sync Strategy**: Event-driven architecture with centralized cache invalidation:
+  1. **Socket Events**: Server emits `ledger:sync` events on data changes (wallet updates, transactions, etc.)
+  2. **DataSyncProvider** (`client/src/hooks/useDataSync.tsx`): Central listener that maps socket events to React Query invalidation
+  3. **Query Key Mapping**: Events auto-invalidate related queries (e.g., `balance_update` invalidates `['dashboard']`, `['wallet']`, `['user']`)
+  4. **Deduplication**: Uses `syncVersion` timestamps to prevent duplicate invalidations
+  5. **Fallback**: React Query's `refetchOnWindowFocus: true` provides backup sync on tab focus
 
 **Backend:**
 - **Technology**: Node.js with Express, TypeScript (ESM modules).
