@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Link } from 'wouter';
+import { Link, useSearch } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { Shield, CheckCircle2, XCircle, AlertTriangle, ArrowLeft, Loader2, Award, Calendar, MapPin } from 'lucide-react';
 import FinatradesLogo from '@/components/FinatradesLogo';
@@ -27,8 +27,10 @@ interface CertificateVerificationResult {
 }
 
 export default function VerifyCertificate() {
+  const searchString = useSearch();
   const [certificateNumber, setCertificateNumber] = useState('');
   const [result, setResult] = useState<CertificateVerificationResult | null>(null);
+  const [autoVerified, setAutoVerified] = useState(false);
 
   const verifyMutation = useMutation({
     mutationFn: async (certNumber: string): Promise<CertificateVerificationResult> => {
@@ -59,6 +61,18 @@ export default function VerifyCertificate() {
       verifyMutation.mutate(certificateNumber.trim());
     }
   };
+
+  useEffect(() => {
+    if (searchString && !autoVerified) {
+      const params = new URLSearchParams(searchString);
+      const certFromUrl = params.get('cert');
+      if (certFromUrl) {
+        setCertificateNumber(certFromUrl.toUpperCase());
+        setAutoVerified(true);
+        verifyMutation.mutate(certFromUrl.trim());
+      }
+    }
+  }, [searchString, autoVerified]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

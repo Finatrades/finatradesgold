@@ -660,24 +660,39 @@ export default function VaultActivityList() {
                             <p className="font-medium text-xs">{cert.type === 'Digital Ownership' ? 'Finatrades' : 'Wingold & Metals DMCC'}</p>
                           </div>
                         </div>
-                        <Button 
-                          size="sm" 
-                          className="w-full bg-[#D4AF37] hover:bg-[#B8860B] text-black"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const tabMap: Record<string, string> = {
-                              'Transfer': 'transfer',
-                              'Digital Ownership': 'ownership',
-                              'Physical Storage': 'storage'
-                            };
-                            setCertTab(tabMap[cert.type] || 'ownership');
-                            setViewingCerts(selectedTx?.certificates || []);
-                          }}
-                          data-testid={`button-view-cert-${cert.id}`}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Certificate
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            className="flex-1 bg-[#D4AF37] hover:bg-[#B8860B] text-black"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const tabMap: Record<string, string> = {
+                                'Transfer': 'transfer',
+                                'Digital Ownership': 'ownership',
+                                'Physical Storage': 'storage'
+                              };
+                              setCertTab(tabMap[cert.type] || 'ownership');
+                              setViewingCerts(selectedTx?.certificates || []);
+                            }}
+                            data-testid={`button-view-cert-${cert.id}`}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(`/verify-certificate?cert=${encodeURIComponent(cert.certificateNumber)}`, '_blank');
+                            }}
+                            data-testid={`button-verify-cert-${cert.id}`}
+                          >
+                            <ShieldCheck className="w-4 h-4 mr-2" />
+                            Verify
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
