@@ -181,10 +181,12 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     setIsLoading(true);
     
     try {
+      const goldAmountToSend = numericAmount / currentGoldPrice;
       const res = await apiRequest('POST', '/api/finapay/send', {
         senderId: user.id,
         recipientIdentifier: activeTab === 'email' ? foundUser.email : foundUser.finatradesId,
-        amountUsd: numericAmount.toFixed(2),
+        amountGold: goldAmountToSend.toFixed(6),
+        assetType: 'GOLD',
         channel: activeTab === 'qr_code' ? 'finatrades_id' : activeTab,
         memo: memo || null,
         paymentReason: paymentReason,
