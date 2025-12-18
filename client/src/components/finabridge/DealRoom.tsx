@@ -70,9 +70,9 @@ interface DealRoomData {
     tradeValueUsd: string;
     status: string;
   };
-  importer?: { id: string; finatradesId: string | null; email: string } | null;
-  exporter?: { id: string; finatradesId: string | null; email: string } | null;
-  assignedAdmin?: { id: string; finatradesId: string | null; email: string } | null;
+  importer?: { id: string; finatradesId: string | null; email: string; profilePhoto?: string | null; firstName?: string | null; lastName?: string | null; accountType?: string | null } | null;
+  exporter?: { id: string; finatradesId: string | null; email: string; profilePhoto?: string | null; firstName?: string | null; lastName?: string | null; accountType?: string | null } | null;
+  assignedAdmin?: { id: string; finatradesId: string | null; email: string; profilePhoto?: string | null; firstName?: string | null; lastName?: string | null; accountType?: string | null } | null;
 }
 
 interface AgreementAcceptance {
@@ -698,21 +698,73 @@ Version 1.0 - Effective Date: January 2025
             </div>
           </div>
           
-          <div className="flex gap-2 mt-3 flex-wrap">
+          <div className="flex gap-4 mt-3 flex-wrap">
             {room?.importer && (
-              <Badge variant={getRoleBadgeVariant('importer')} className="text-xs">
-                Importer: {room.importer.finatradesId || room.importer.email}
-              </Badge>
+              <div className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid="participant-importer">
+                <Avatar className="w-10 h-10 border-2 border-primary">
+                  {room.importer.profilePhoto ? (
+                    <AvatarImage src={room.importer.profilePhoto} alt="Importer" />
+                  ) : null}
+                  <AvatarFallback className="bg-primary text-white text-sm font-medium">
+                    {(room.importer.firstName?.charAt(0) || room.importer.email.charAt(0)).toUpperCase()}
+                    {(room.importer.lastName?.charAt(0) || '').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">
+                    {room.importer.firstName && room.importer.lastName 
+                      ? `${room.importer.firstName} ${room.importer.lastName}`
+                      : room.importer.finatradesId || room.importer.email}
+                  </span>
+                  <span className="text-xs text-primary">
+                    {room.importer.accountType === 'business' ? 'Business Account' : 'Personal Account'} · Importer
+                  </span>
+                </div>
+              </div>
             )}
             {room?.exporter && (
-              <Badge variant={getRoleBadgeVariant('exporter')} className="text-xs">
-                Exporter: {room.exporter.finatradesId || room.exporter.email}
-              </Badge>
+              <div className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid="participant-exporter">
+                <Avatar className="w-10 h-10 border-2 border-primary">
+                  {room.exporter.profilePhoto ? (
+                    <AvatarImage src={room.exporter.profilePhoto} alt="Exporter" />
+                  ) : null}
+                  <AvatarFallback className="bg-primary text-white text-sm font-medium">
+                    {(room.exporter.firstName?.charAt(0) || room.exporter.email.charAt(0)).toUpperCase()}
+                    {(room.exporter.lastName?.charAt(0) || '').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">
+                    {room.exporter.firstName && room.exporter.lastName 
+                      ? `${room.exporter.firstName} ${room.exporter.lastName}`
+                      : room.exporter.finatradesId || room.exporter.email}
+                  </span>
+                  <span className="text-xs text-primary">
+                    {room.exporter.accountType === 'business' ? 'Business Account' : 'Personal Account'} · Exporter
+                  </span>
+                </div>
+              </div>
             )}
             {room?.assignedAdmin && (
-              <Badge variant={getRoleBadgeVariant('admin')} className="text-xs">
-                Admin: {room.assignedAdmin.finatradesId || 'Assigned'}
-              </Badge>
+              <div className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid="participant-admin">
+                <Avatar className="w-10 h-10 border-2 border-primary">
+                  {room.assignedAdmin.profilePhoto ? (
+                    <AvatarImage src={room.assignedAdmin.profilePhoto} alt="Admin" />
+                  ) : null}
+                  <AvatarFallback className="bg-primary text-white text-sm font-medium">
+                    {(room.assignedAdmin.firstName?.charAt(0) || room.assignedAdmin.email.charAt(0)).toUpperCase()}
+                    {(room.assignedAdmin.lastName?.charAt(0) || '').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">
+                    {room.assignedAdmin.firstName && room.assignedAdmin.lastName 
+                      ? `${room.assignedAdmin.firstName} ${room.assignedAdmin.lastName}`
+                      : room.assignedAdmin.finatradesId || 'Admin'}
+                  </span>
+                  <span className="text-xs text-primary">Admin</span>
+                </div>
+              </div>
             )}
           </div>
         </CardHeader>
