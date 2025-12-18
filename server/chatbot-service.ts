@@ -6,6 +6,16 @@ interface ChatbotResponse {
   escalateToHuman?: boolean;
 }
 
+// User context for personalized responses (only for authenticated users)
+export interface UserContext {
+  userId: string;
+  userName: string;
+  goldBalance: number; // in grams
+  usdValue: number; // current USD value of gold
+  vaultGold: number; // gold in vault (grams)
+  kycStatus: string;
+}
+
 interface FAQEntry {
   keywords: string[];
   patterns: RegExp[];
@@ -232,6 +242,22 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'compliance',
     actions: ['Sign Up']
   },
+  // Balance Queries (requires authentication - handled dynamically)
+  {
+    keywords: ['balance', 'how much', 'my gold', 'my account', 'holdings', 'portfolio'],
+    patterns: [/my balance/i, /how much (gold|do i have)/i, /my (gold|holdings|portfolio)/i, /what('s| is) my balance/i, /check (my )?balance/i, /account balance/i],
+    response: '__BALANCE_QUERY__', // Special marker - handled by processUserMessage
+    category: 'account',
+    actions: ['View Dashboard']
+  },
+  // Account Status
+  {
+    keywords: ['account', 'status', 'kyc status', 'verification status'],
+    patterns: [/my account/i, /account status/i, /kyc status/i, /verification status/i],
+    response: '__ACCOUNT_STATUS__', // Special marker - handled by processUserMessage
+    category: 'account',
+    actions: ['View Profile']
+  },
   // Greeting
   {
     keywords: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening'],
@@ -287,7 +313,43 @@ function shouldEscalate(message: string): boolean {
   );
 }
 
-export function processUserMessage(message: string): ChatbotResponse {
+// Helper to generate balance response
+function generateBalanceResponse(userContext?: UserContext): string {
+  if (!userContext) {
+    return "To check your balance, please log in to your account and view your dashboard. Your balance will show your gold holdings in grams and the current USD value.\n\nIf you're already logged in, please refresh the page and try again.";
+  }
+  
+  const { userName, goldBalance, usdValue, vaultGold } = userContext;
+  const totalGold = goldBalance + vaultGold;
+  const formattedGold = goldBalance.toFixed(4);
+  const formattedVault = vaultGold.toFixed(4);
+  const formattedTotal = totalGold.toFixed(4);
+  const formattedUsd = usdValue.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  
+  return `Here's your current balance, ${userName}:\n\n**Wallet Gold:** ${formattedGold}g\n**Vault Gold:** ${formattedVault}g\n**Total Holdings:** ${formattedTotal}g\n**Current USD Value:** ${formattedUsd}\n\nPrices update in real-time. Visit your dashboard for detailed transaction history.`;
+}
+
+// Helper to generate account status response
+function generateAccountStatusResponse(userContext?: UserContext): string {
+  if (!userContext) {
+    return "To check your account status, please log in to your account. You can view your profile and KYC verification status in the Settings section.";
+  }
+  
+  const { userName, kycStatus } = userContext;
+  const statusEmoji = kycStatus === 'approved' ? 'Verified' : 
+                      kycStatus === 'pending' ? 'Pending Review' : 
+                      kycStatus === 'rejected' ? 'Needs Attention' : 'Not Started';
+  
+  return `Here's your account status, ${userName}:\n\n**KYC Status:** ${statusEmoji}\n\n${
+    kycStatus === 'approved' 
+      ? "Your account is fully verified. You have access to all features and higher transaction limits."
+      : kycStatus === 'pending'
+      ? "Your verification is being reviewed. This usually takes 1-2 business days."
+      : "Complete your KYC verification to unlock higher limits and all features."
+  }`;
+}
+
+export function processUserMessage(message: string, userContext?: UserContext): ChatbotResponse {
   // Check for escalation request
   if (shouldEscalate(message)) {
     return {
@@ -311,8 +373,16 @@ export function processUserMessage(message: string): ChatbotResponse {
     const best = scoredEntries[0];
     const confidence = Math.min(best.score / 35, 1.0); // Normalize confidence
     
+    // Handle special dynamic responses
+    let responseMessage = best.entry.response;
+    if (responseMessage === '__BALANCE_QUERY__') {
+      responseMessage = generateBalanceResponse(userContext);
+    } else if (responseMessage === '__ACCOUNT_STATUS__') {
+      responseMessage = generateAccountStatusResponse(userContext);
+    }
+    
     return {
-      message: best.entry.response,
+      message: responseMessage,
       category: best.entry.category,
       confidence,
       suggestedActions: best.entry.actions,
@@ -322,7 +392,7 @@ export function processUserMessage(message: string): ChatbotResponse {
   
   // Default fallback response
   return {
-    message: "I'm not sure I understand your question. Here are some topics I can help with:\n\n• How to buy or sell gold\n• Deposits and withdrawals\n• FinaVault storage\n• BNSL investment plans\n• Fees and limits\n• Account verification (KYC)\n\nCould you please rephrase your question, or would you like to speak with a human agent?",
+    message: "I'm not sure I understand your question. Here are some topics I can help with:\n\n• How to buy or sell gold\n• Deposits and withdrawals\n• FinaVault storage\n• BNSL investment plans\n• Fees and limits\n• Account verification (KYC)\n• Your balance (when logged in)\n\nCould you please rephrase your question, or would you like to speak with a human agent?",
     category: 'unknown',
     confidence: 0,
     suggestedActions: ['Speak to Agent'],

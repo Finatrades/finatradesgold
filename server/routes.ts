@@ -9241,7 +9241,40 @@ export async function registerRoutes(
         });
       }
       
-      const response = processUserMessage(sanitizedMessage);
+      // Build user context if authenticated (for personalized responses)
+      let userContext: { userId: string; userName: string; goldBalance: number; usdValue: number; vaultGold: number; kycStatus: string } | undefined;
+      const sessionUserId = req.session?.userId;
+      if (sessionUserId) {
+        try {
+          const user = await storage.getUser(sessionUserId);
+          if (user) {
+            const wallet = await storage.getWallet(sessionUserId);
+            const vaultHoldings = await storage.getUserVaultHoldings(sessionUserId);
+            const { getGoldPrice } = await import('./gold-price-service.js');
+            const goldPrice = await getGoldPrice();
+            
+            // Use goldGrams field (correct schema field name)
+            const walletGold = wallet?.goldGrams ? parseFloat(wallet.goldGrams) : 0;
+            const vaultGoldTotal = vaultHoldings.reduce((sum, h) => sum + parseFloat(h.goldGrams || '0'), 0);
+            const totalGold = walletGold + vaultGoldTotal;
+            const usdValue = totalGold * goldPrice.pricePerGram;
+            
+            userContext = {
+              userId: sessionUserId,
+              userName: user.firstName || user.email.split('@')[0],
+              goldBalance: walletGold,
+              usdValue: usdValue,
+              vaultGold: vaultGoldTotal,
+              kycStatus: user.kycStatus || 'not_started'
+            };
+          }
+        } catch (err) {
+          console.error("Error building user context for chatbot:", err);
+          // Continue without user context
+        }
+      }
+      
+      const response = processUserMessage(sanitizedMessage, userContext);
       
       // Sanitize output - ensure no script tags or dangerous content
       const sanitizedReply = response.message.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
