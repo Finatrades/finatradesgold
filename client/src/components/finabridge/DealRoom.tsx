@@ -207,15 +207,12 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     setSavingDisclaimer(true);
     try {
       const response = await apiRequest('POST', `/api/admin/deal-rooms/${dealRoomId}/disclaimer`, { disclaimer: adminDisclaimer });
-      if (response.ok) {
-        toast({ title: 'Disclaimer Saved', description: 'The disclaimer has been saved successfully' });
-        await fetchRoom();
-      } else {
-        const error = await response.json();
-        toast({ title: 'Error', description: error.message || 'Failed to save disclaimer', variant: 'destructive' });
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to save disclaimer', variant: 'destructive' });
+      toast({ title: 'Disclaimer Saved', description: 'The disclaimer has been saved successfully' });
+      await fetchRoom();
+    } catch (error: any) {
+      console.error('Failed to save disclaimer:', error);
+      const errorMessage = error?.message || 'Failed to save disclaimer';
+      toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
     } finally {
       setSavingDisclaimer(false);
     }
