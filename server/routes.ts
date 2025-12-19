@@ -3036,9 +3036,14 @@ export async function registerRoutes(
     }
   });
   
+  // Simple test endpoint to verify admin access
+  app.get("/api/admin/kyc-test", ensureAdminAsync, async (req, res) => {
+    return res.json({ success: true, message: "Admin KYC test endpoint works", timestamp: new Date().toISOString() });
+  });
+
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    console.log("[KYC Admin] Endpoint hit");
+    console.log("[KYC Admin] Endpoint hit - starting execution");
     try {
       console.log("[KYC Admin] Fetching all KYC submissions...");
       
