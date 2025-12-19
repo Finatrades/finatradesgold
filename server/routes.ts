@@ -3047,7 +3047,8 @@ export async function registerRoutes(
       
       res.json({ submissions: allSubmissions });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get KYC submissions" });
+      console.error("Failed to get KYC submissions:", error);
+      res.status(500).json({ message: "Failed to get KYC submissions", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
