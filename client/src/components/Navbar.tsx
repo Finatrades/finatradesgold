@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useAccountType } from '@/context/AccountTypeContext';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,23 +13,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, LayoutDashboard, Menu, X, ChevronRight, User } from 'lucide-react';
+import { LogOut, LayoutDashboard, Menu, X, ChevronRight, User, Globe, ChevronDown } from 'lucide-react';
 import FinatradesLogo from '@/components/FinatradesLogo';
 
 export default function Navbar() {
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { user, logout } = useAuth();
+  const { accountType, setAccountType } = useAccountType();
   const [location] = useLocation();
-  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const isActive = (path: string) => location === path;
 
@@ -54,68 +48,97 @@ export default function Navbar() {
   };
 
   return (
-    <motion.nav 
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled 
-          ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-purple-100/50 border-b border-purple-100' 
-          : 'bg-white/90 backdrop-blur-md'
-      }`} 
+    <header 
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]"
       data-testid="navbar"
     >
-      <div className="container mx-auto px-6">
-        <div className="h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex items-center justify-between h-20">
+          {/* Logo */}
           <Link href="/">
-            <motion.div 
-              className="cursor-pointer"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              data-testid="link-home-logo"
-            >
-              <FinatradesLogo variant="color" size="md" />
-            </motion.div>
+            <button className="flex items-center group" data-testid="link-home-logo">
+              <FinatradesLogo variant="white" size="md" />
+            </button>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-2">
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => {
-                  if (!scrollToSection(link.href)) {
-                    window.location.href = link.href;
-                  }
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  isActive(link.href) || (link.href === '/' && location === '/')
-                    ? 'text-purple-600 bg-purple-50'
-                    : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50/50'
-                }`}
-                data-testid={`link-nav-${link.id}`}
-              >
-                {link.label}
-              </button>
-            ))}
-          </div>
+          {/* Center Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map((link) => {
+              const active = isActive(link.href) || (link.id === 'home' && location === '/');
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => {
+                    if (!scrollToSection(link.href)) {
+                      window.location.href = link.href;
+                    }
+                  }}
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+                    active
+                      ? 'bg-[#8A2BE2] text-white'
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                  data-testid={`link-nav-${link.id}`}
+                >
+                  {link.label}
+                </button>
+              );
+            })}
+          </nav>
 
+          {/* Right Side Controls */}
           <div className="flex items-center gap-3">
-            <div className="hidden md:block">
-              <LanguageSwitcher />
+            {/* Language Selector - Compact */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="hidden md:flex items-center gap-1 px-3 py-1.5 text-sm text-white/80 hover:text-white border border-white/20 rounded-full transition-colors" data-testid="button-language">
+                  <Globe className="w-4 h-4" />
+                  <span className="uppercase">{language}</span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white border-gray-200">
+                <DropdownMenuItem onClick={() => setLanguage('en')} className="cursor-pointer">English</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('ar')} className="cursor-pointer">العربية</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Personal/Business Toggle */}
+            <div className="hidden md:flex items-center bg-white/10 rounded-full p-0.5 border border-white/20">
+              <button
+                onClick={() => setAccountType('personal')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                  accountType === 'personal'
+                    ? 'bg-[#8A2BE2] text-white'
+                    : 'text-white/70 hover:text-white'
+                }`}
+                data-testid="button-personal"
+              >
+                Personal
+              </button>
+              <button
+                onClick={() => setAccountType('business')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                  accountType === 'business'
+                    ? 'bg-[#8A2BE2] text-white'
+                    : 'text-white/70 hover:text-white'
+                }`}
+                data-testid="button-business"
+              >
+                Business
+              </button>
             </div>
 
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 hover:bg-transparent" data-testid="button-user-menu">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Avatar className="h-11 w-11 border-2 border-purple-200 shadow-lg shadow-purple-100">
-                        <AvatarImage src={user.profilePhoto || ''} alt={user.firstName} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-500 text-white font-bold text-sm">
-                          {user.firstName[0]}{user.lastName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    </motion.div>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-white/10" data-testid="button-user-menu">
+                    <Avatar className="h-10 w-10 border-2 border-white/30">
+                      <AvatarImage src={user.profilePhoto || ''} alt={user.firstName} />
+                      <AvatarFallback className="bg-[#8A2BE2] text-white font-bold text-sm">
+                        {user.firstName[0]}{user.lastName[0]}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-white border-gray-200" align="end" forceMount>
@@ -127,11 +150,11 @@ export default function Navbar() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-gray-100" />
                   <DropdownMenuItem onClick={() => window.location.href = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="hover:bg-purple-50 cursor-pointer" data-testid="menu-item-dashboard">
-                    <LayoutDashboard className="mr-2 h-4 w-4 text-purple-500" />
+                    <LayoutDashboard className="mr-2 h-4 w-4 text-[#8A2BE2]" />
                     <span>{user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="hover:bg-purple-50 cursor-pointer" data-testid="menu-item-profile">
-                    <User className="mr-2 h-4 w-4 text-purple-500" />
+                    <User className="mr-2 h-4 w-4 text-[#8A2BE2]" />
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-100" />
@@ -142,48 +165,40 @@ export default function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-                className="hidden md:flex items-center gap-3"
-              >
+              <div className="hidden md:flex items-center gap-2">
                 <Link href="/login">
                   <Button 
-                    variant="ghost" 
-                    className="rounded-full text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-5 font-medium"
+                    variant="outline" 
+                    className="rounded-full border-white/30 text-white bg-transparent hover:bg-white/10 px-5 font-medium"
                     data-testid="button-login"
                   >
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button 
-                      className="bg-gradient-to-r from-purple-500 to-purple-500 hover:shadow-lg hover:shadow-purple-200 text-white rounded-full px-6 font-semibold transition-all duration-300"
-                      data-testid="button-register"
-                    >
-                      Get Started
-                      <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </motion.div>
+                  <Button 
+                    className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] hover:opacity-90 text-white rounded-full px-5 font-semibold"
+                    data-testid="button-register"
+                  >
+                    Get Started
+                  </Button>
                 </Link>
-              </motion.div>
+              </div>
             )}
 
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="lg:hidden p-2.5 rounded-xl text-gray-700 bg-gray-100 border border-gray-200 hover:border-purple-300 transition-colors"
+            {/* Mobile Menu Button */}
+            <button 
+              className="lg:hidden p-2.5 rounded-xl text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </motion.button>
+            </button>
           </div>
         </div>
       </div>
 
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div 
@@ -191,9 +206,33 @@ export default function Navbar() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="lg:hidden overflow-hidden bg-white border-t border-gray-100"
+            className="lg:hidden overflow-hidden bg-[#1a0a2e] border-t border-white/10"
           >
             <div className="container mx-auto px-6 py-6 space-y-3">
+              {/* Mobile Personal/Business Toggle */}
+              <div className="flex items-center justify-center bg-white/10 rounded-full p-1 mb-4">
+                <button
+                  onClick={() => setAccountType('personal')}
+                  className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${
+                    accountType === 'personal'
+                      ? 'bg-[#8A2BE2] text-white'
+                      : 'text-white/70'
+                  }`}
+                >
+                  Personal
+                </button>
+                <button
+                  onClick={() => setAccountType('business')}
+                  className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${
+                    accountType === 'business'
+                      ? 'bg-[#8A2BE2] text-white'
+                      : 'text-white/70'
+                  }`}
+                >
+                  Business
+                </button>
+              </div>
+
               {navLinks.map((link, index) => (
                 <motion.button
                   key={link.id}
@@ -207,9 +246,9 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                   }}
                   className={`w-full text-left px-5 py-4 rounded-xl text-sm font-medium flex items-center justify-between transition-all ${
-                    isActive(link.href)
-                      ? 'bg-purple-50 text-purple-600 border border-purple-200'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    isActive(link.href) || (link.id === 'home' && location === '/')
+                      ? 'bg-[#8A2BE2] text-white'
+                      : 'text-white/80 hover:bg-white/10'
                   }`}
                   data-testid={`mobile-link-${link.id}`}
                 >
@@ -223,13 +262,13 @@ export default function Navbar() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="pt-4 border-t border-gray-100"
+                  className="pt-4 border-t border-white/10"
                 >
                   <div className="flex gap-3">
                     <Link href="/login" className="flex-1">
                       <Button 
                         variant="outline" 
-                        className="w-full rounded-full border-gray-300 text-gray-700 bg-white hover:bg-gray-50 py-5"
+                        className="w-full rounded-full border-white/30 text-white bg-transparent hover:bg-white/10 py-5"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Sign In
@@ -237,7 +276,7 @@ export default function Navbar() {
                     </Link>
                     <Link href="/register" className="flex-1">
                       <Button 
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white rounded-full py-5 font-semibold"
+                        className="w-full bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] text-white rounded-full py-5 font-semibold"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Get Started
@@ -250,6 +289,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.nav>
+    </header>
   );
 }
