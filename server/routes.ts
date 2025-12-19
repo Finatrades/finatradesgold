@@ -9704,7 +9704,63 @@ export async function registerRoutes(
         // Use Juris agent for registration/KYC
         const { processJurisMessage, getJurisGreeting } = await import('./juris-agent-service.js');
         const user = sessionUserId ? await storage.getUser(sessionUserId) : undefined;
-        const jurisResponse = processJurisMessage(sanitizedMessage, undefined, user ? { id: user.id, firstName: user.firstName, kycStatus: user.kycStatus } : undefined);
+        
+        // Load active workflow from session (guest or user)
+        const sessionKey = sessionUserId || req.sessionID;
+        let activeWorkflow: any = undefined;
+        
+        try {
+          // Try to find active workflow by session ID first
+          activeWorkflow = await storage.getActiveWorkflowBySession(sessionKey);
+          
+          // If no session workflow, try user workflow
+          if (!activeWorkflow && sessionUserId) {
+            activeWorkflow = await storage.getActiveWorkflowByUser(sessionUserId, 'registration');
+            if (!activeWorkflow) {
+              activeWorkflow = await storage.getActiveWorkflowByUser(sessionUserId, 'kyc');
+            }
+          }
+        } catch (err) {
+          console.log("[Juris] No active workflow found, starting fresh");
+        }
+        
+        const jurisResponse = processJurisMessage(
+          sanitizedMessage, 
+          activeWorkflow,
+          user ? { id: user.id, firstName: user.firstName, kycStatus: user.kycStatus } : undefined
+        );
+        
+        // Save workflow state if Juris returned an update
+        if (jurisResponse.workflowUpdate) {
+          try {
+            const workflowType = jurisResponse.workflowUpdate.currentStep?.includes('kyc') || 
+                                 jurisResponse.nextStep?.includes('kyc') ? 'kyc' : 'registration';
+            
+            if (activeWorkflow) {
+              // Update existing workflow
+              await storage.updateWorkflow(activeWorkflow.id, {
+                currentStep: jurisResponse.workflowUpdate.currentStep,
+                completedSteps: jurisResponse.workflowUpdate.completedSteps,
+                stepData: JSON.stringify(jurisResponse.workflowUpdate.stepData || {}),
+                status: jurisResponse.workflowUpdate.currentStep === 'complete' ? 'completed' : 'active'
+              });
+            } else {
+              // Create new workflow
+              await storage.createWorkflow({
+                userId: sessionUserId || null,
+                sessionId: sessionKey,
+                agentId: selectedAgent.id,
+                workflowType: workflowType,
+                currentStep: jurisResponse.workflowUpdate.currentStep,
+                completedSteps: jurisResponse.workflowUpdate.completedSteps || 0,
+                stepData: JSON.stringify(jurisResponse.workflowUpdate.stepData || {}),
+                status: 'active'
+              });
+            }
+          } catch (err) {
+            console.error("[Juris] Error saving workflow:", err);
+          }
+        }
         
         responseData = {
           reply: jurisResponse.message,
@@ -9714,6 +9770,7 @@ export async function registerRoutes(
           escalateToHuman: false,
           collectData: jurisResponse.collectData,
           nextStep: jurisResponse.nextStep,
+          workflowUpdate: jurisResponse.workflowUpdate,
           agent: {
             id: selectedAgent.id,
             name: selectedAgent.displayName,
