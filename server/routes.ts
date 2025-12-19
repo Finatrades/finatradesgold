@@ -15177,11 +15177,55 @@ export async function registerRoutes(
   // AUDIT LOGS
   // ============================================
 
-  // Get all audit logs (Admin)
+  // Get all audit logs (Admin) - with resolved names
   app.get("/api/admin/audit-logs", async (req, res) => {
     try {
       const logs = await storage.getAllAuditLogs();
-      res.json({ logs });
+      
+      // Cache for user lookups to avoid duplicate queries
+      const userCache = new Map<string, { firstName: string; lastName: string; email: string } | null>();
+      
+      // Resolve user names for actor and entityId
+      const enrichedLogs = await Promise.all(logs.map(async (log) => {
+        let actorName = log.actor;
+        let entityName = log.entityId;
+        
+        // Resolve actor name (if it's a UUID)
+        if (log.actor && log.actor.includes('-') && log.actor.length > 30) {
+          if (!userCache.has(log.actor)) {
+            try {
+              const user = await storage.getUser(log.actor);
+              userCache.set(log.actor, user ? { firstName: user.firstName || '', lastName: user.lastName || '', email: user.email } : null);
+            } catch { userCache.set(log.actor, null); }
+          }
+          const cached = userCache.get(log.actor);
+          if (cached) {
+            actorName = `${cached.firstName} ${cached.lastName}`.trim() || cached.email;
+          }
+        }
+        
+        // Resolve entity name (if entityType is 'user' and entityId is a UUID)
+        if (log.entityType === 'user' && log.entityId && log.entityId.includes('-') && log.entityId.length > 30) {
+          if (!userCache.has(log.entityId)) {
+            try {
+              const user = await storage.getUser(log.entityId);
+              userCache.set(log.entityId, user ? { firstName: user.firstName || '', lastName: user.lastName || '', email: user.email } : null);
+            } catch { userCache.set(log.entityId, null); }
+          }
+          const cached = userCache.get(log.entityId);
+          if (cached) {
+            entityName = `${cached.firstName} ${cached.lastName}`.trim() || cached.email;
+          }
+        }
+        
+        return {
+          ...log,
+          actorName,
+          entityName,
+        };
+      }));
+      
+      res.json({ logs: enrichedLogs });
     } catch (error) {
       res.status(500).json({ message: "Failed to get audit logs" });
     }

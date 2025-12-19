@@ -674,10 +674,10 @@ export default function ComplianceDashboard() {
                             </td>
                             <td className="px-4 py-3 text-sm">
                               <span className="font-medium">{log.entityType}</span>
-                              <span className="text-gray-400 text-xs block">{log.entityId?.slice(0, 8)}...</span>
+                              <span className="text-gray-500 text-xs block">{log.entityName || log.entityId?.slice(0, 8) + '...'}</span>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">
-                              {log.actor || log.performedBy || 'System'}
+                              {log.actorName || log.actor || log.performedBy || 'System'}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
                               {typeof log.details === 'object' 
