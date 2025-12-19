@@ -522,7 +522,7 @@ export default function Register() {
               className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white py-6"
               data-testid="button-submit"
             >
-              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+              {isSubmitting ? 'Creating Account...' : <span className="font-bold">Create Account</span>}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
