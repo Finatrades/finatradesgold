@@ -123,6 +123,12 @@ function FloatingAgentChatContent() {
     setIsOpen(true);
     setShowNotification(false);
     
+    // For guests (not logged in), always ask for name and email first
+    if (!user && !guestInfo) {
+      setShowGuestForm(true);
+      return;
+    }
+    
     // Show greeting if no messages yet
     if (chatbotMessages.length === 0 && !useHumanAgent) {
       const greeting: ChatbotMessage = {
@@ -130,7 +136,9 @@ function FloatingAgentChatContent() {
         sender: 'bot',
         content: user 
           ? `Hello ${user.firstName}! I'm your Finatrades assistant. I can help you with:\n\n• Buying and selling gold\n• Account questions\n• Fees and limits\n• FinaVault storage\n• BNSL plans\n\nHow can I assist you today?`
-          : "Hello! I'm your Finatrades assistant. I can help you with:\n\n• Buying and selling gold\n• Account questions\n• Fees and limits\n• FinaVault storage\n• BNSL plans\n\nHow can I assist you today?",
+          : guestInfo
+            ? `Hello ${guestInfo.name}! I'm your Finatrades assistant. I can help you with:\n\n• Buying and selling gold\n• Account questions\n• Fees and limits\n• FinaVault storage\n• BNSL plans\n\nHow can I assist you today?`
+            : "Hello! I'm your Finatrades assistant. How can I assist you today?",
         timestamp: new Date(),
         suggestedActions: ['How to buy gold?', 'What are the fees?', 'Tell me about BNSL']
       };
@@ -153,8 +161,6 @@ function FloatingAgentChatContent() {
         if (existingSession) {
           selectSession(existingSession.id);
         }
-      } else {
-        setShowGuestForm(true);
       }
     }
   };
@@ -167,6 +173,20 @@ function FloatingAgentChatContent() {
     setGuestInfo(info);
     setShowGuestForm(false);
     
+    // For AI chatbot mode, show personalized greeting
+    if (!useHumanAgent) {
+      const greeting: ChatbotMessage = {
+        id: `bot-${Date.now()}`,
+        sender: 'bot',
+        content: `Hello ${info.name}! I'm your Finatrades assistant. I can help you with:\n\n• Buying and selling gold\n• Account questions\n• Fees and limits\n• FinaVault storage\n• BNSL plans\n\nHow can I assist you today?`,
+        timestamp: new Date(),
+        suggestedActions: ['How to buy gold?', 'What are the fees?', 'Tell me about BNSL']
+      };
+      setChatbotMessages([greeting]);
+      return;
+    }
+    
+    // For human agent mode, start session
     const sessionId = startGuestSession(info.name, info.email);
     if (sessionId) {
       setTimeout(() => {
