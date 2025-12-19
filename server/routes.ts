@@ -3039,9 +3039,10 @@ export async function registerRoutes(
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
-      const kycAmlSubmissions = await storage.getAllKycSubmissions();
-      const finatradesPersonalSubmissions = await storage.getAllFinatradesPersonalKyc();
-      const finatradesCorporateSubmissions = await storage.getAllFinatradesCorporateKyc();
+      // Fetch all submissions with defensive handling for empty arrays
+      const kycAmlSubmissions = (await storage.getAllKycSubmissions()) || [];
+      const finatradesPersonalSubmissions = (await storage.getAllFinatradesPersonalKyc()) || [];
+      const finatradesCorporateSubmissions = (await storage.getAllFinatradesCorporateKyc()) || [];
       
       // Normalize Finatrades personal KYC submissions to match kycAml format for admin display
       const normalizedFinatradesPersonal = finatradesPersonalSubmissions.map(s => ({
@@ -3059,29 +3060,47 @@ export async function registerRoutes(
       
       // Normalize Finatrades corporate KYC submissions - include user details for Applicant Details display
       const normalizedFinatradesCorporate = await Promise.all(finatradesCorporateSubmissions.map(async (s) => {
-        // Fetch user data to get personal details (fullName, country, nationality)
-        const user = await storage.getUser(s.userId);
-        // Also check if there's a personal KYC with details
-        const personalKyc = finatradesPersonalSubmissions.find(p => p.userId === s.userId);
-        
-        return {
-          ...s,
-          tier: 'finatrades_corporate',
-          kycType: 'finatrades_corporate',
-          accountType: 'business',
-          // Include user's personal details for Applicant Details section
-          fullName: personalKyc?.fullName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null),
-          country: personalKyc?.country || user?.country || s.countryOfIncorporation,
-          nationality: personalKyc?.nationality || user?.nationality,
-        };
+        try {
+          // Fetch user data to get personal details (fullName, country, nationality)
+          const user = await storage.getUser(s.userId);
+          // Also check if there's a personal KYC with details
+          const personalKyc = finatradesPersonalSubmissions.find(p => p.userId === s.userId);
+          
+          return {
+            ...s,
+            tier: 'finatrades_corporate',
+            kycType: 'finatrades_corporate',
+            accountType: 'business',
+            // Include user's personal details for Applicant Details section
+            fullName: personalKyc?.fullName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null),
+            country: personalKyc?.country || user?.country || s.countryOfIncorporation,
+            nationality: personalKyc?.nationality || user?.nationality,
+          };
+        } catch (err) {
+          console.error(`Error processing corporate KYC ${s.id}:`, err);
+          // Return minimal data if processing fails
+          return {
+            ...s,
+            tier: 'finatrades_corporate',
+            kycType: 'finatrades_corporate',
+            accountType: 'business',
+            fullName: null,
+            country: s.countryOfIncorporation,
+            nationality: null,
+          };
+        }
       }));
       
-      // Combine and sort by creation date
+      // Combine and sort by creation date with null handling
       const allSubmissions = [
         ...kycAmlSubmissions.map(s => ({ ...s, kycType: 'kycAml' })),
         ...normalizedFinatradesPersonal,
         ...normalizedFinatradesCorporate,
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      ].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
       
       res.json({ submissions: allSubmissions });
     } catch (error) {
