@@ -1565,170 +1565,170 @@ export default function FinaPayManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Buy Gold Dialog */}
+        {/* Buy Gold Dialog - Compact Layout */}
         <Dialog open={buyGoldDialogOpen} onOpenChange={setBuyGoldDialogOpen}>
-          <DialogContent className="max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Buy Gold Request Details</DialogTitle>
-              <DialogDescription>Review and process this buy gold request from Wingold & Metals</DialogDescription>
+          <DialogContent className="max-w-md">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-base">Buy Gold Request</DialogTitle>
             </DialogHeader>
             {selectedBuyGold && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-3">
+                {/* Header Info Row */}
+                <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                   <div>
-                    <p className="text-gray-500">Amount (USD)</p>
-                    <p className="font-bold text-xl">
-                      {selectedBuyGold.amountUsd ? `$${parseFloat(selectedBuyGold.amountUsd).toFixed(2)}` : 'Not specified'}
+                    <p className="text-2xl font-bold text-gray-900">
+                      {selectedBuyGold.amountUsd ? `$${parseFloat(selectedBuyGold.amountUsd).toLocaleString()}` : 'N/A'}
                     </p>
+                    <p className="text-xs text-gray-500">Amount (USD)</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Status</p>
-                    <Badge variant={
-                      selectedBuyGold.status === 'Credited' ? 'default' :
-                      selectedBuyGold.status === 'Rejected' ? 'destructive' : 'secondary'
-                    }>
-                      {selectedBuyGold.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Reference</p>
-                    <p className="font-medium">{selectedBuyGold.referenceNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Wingold Ref</p>
-                    <p className="font-medium">{selectedBuyGold.wingoldReferenceId || 'Not provided'}</p>
-                  </div>
-                  <div>
+                  <Badge variant={
+                    selectedBuyGold.status === 'Credited' ? 'default' :
+                    selectedBuyGold.status === 'Rejected' ? 'destructive' : 'secondary'
+                  } className="text-xs">
+                    {selectedBuyGold.status}
+                  </Badge>
+                </div>
+
+                {/* User & Reference Info */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-gray-50 rounded p-2">
                     <p className="text-gray-500">User</p>
-                    <p className="font-medium">
-                      {selectedBuyGold.user ? `${selectedBuyGold.user.firstName} ${selectedBuyGold.user.lastName}` : getUserName(selectedBuyGold.userId)}
+                    <p className="font-medium truncate">
+                      {selectedBuyGold.user ? `${selectedBuyGold.user.firstName} ${selectedBuyGold.user.lastName}` : 'Unknown'}
                     </p>
-                    <p className="text-xs text-gray-400">{selectedBuyGold.user?.email || getUserEmail(selectedBuyGold.userId)}</p>
+                    <p className="text-gray-400 truncate">{selectedBuyGold.user?.email}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Created</p>
-                    <p className="font-medium">{new Date(selectedBuyGold.createdAt).toLocaleString()}</p>
+                  <div className="bg-gray-50 rounded p-2">
+                    <p className="text-gray-500">Reference</p>
+                    <p className="font-medium">{selectedBuyGold.referenceNumber || 'N/A'}</p>
+                    <p className="text-gray-400">WG: {selectedBuyGold.wingoldReferenceId || 'N/A'}</p>
                   </div>
                 </div>
 
+                {/* Receipt */}
                 {selectedBuyGold.receiptFileUrl && (
-                  <div className="p-3 bg-gray-50 rounded-lg border">
-                    <p className="text-gray-500 text-xs mb-2">Receipt</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{selectedBuyGold.receiptFileName}</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(selectedBuyGold.receiptFileUrl, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        View Receipt
-                      </Button>
+                  <div className="flex items-center justify-between bg-blue-50 rounded p-2 text-xs">
+                    <span className="font-medium text-blue-700">{selectedBuyGold.receiptFileName || 'Receipt'}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="h-6 text-xs text-blue-600"
+                      onClick={() => window.open(selectedBuyGold.receiptFileUrl, '_blank')}
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                )}
+
+                {/* Credit Gold Section */}
+                {(selectedBuyGold.status === 'Pending' || selectedBuyGold.status === 'Under Review') && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-xs font-medium text-gray-700">Credit Gold to User</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label htmlFor="buyGoldGrams" className="text-xs">Gold (grams)</Label>
+                        <Input
+                          id="buyGoldGrams"
+                          type="number"
+                          step="0.0001"
+                          value={buyGoldGrams}
+                          onChange={(e) => setBuyGoldGrams(e.target.value)}
+                          placeholder="0.0000"
+                          className="h-8 text-sm"
+                          data-testid="input-buy-gold-grams"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="buyGoldPrice" className="text-xs">Price ($/g)</Label>
+                        <Input
+                          id="buyGoldPrice"
+                          type="number"
+                          step="0.01"
+                          value={buyGoldPrice}
+                          onChange={(e) => setBuyGoldPrice(e.target.value)}
+                          placeholder="0.00"
+                          className="h-8 text-sm"
+                          data-testid="input-buy-gold-price"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="buyGoldAdminNotes" className="text-xs">Admin Notes</Label>
+                      <Textarea
+                        id="buyGoldAdminNotes"
+                        value={buyGoldAdminNotes}
+                        onChange={(e) => setBuyGoldAdminNotes(e.target.value)}
+                        placeholder="Optional notes..."
+                        rows={1}
+                        className="text-sm resize-none"
+                        data-testid="input-buy-gold-notes"
+                      />
                     </div>
                   </div>
                 )}
 
+                {/* Reject Section - Collapsible */}
                 {(selectedBuyGold.status === 'Pending' || selectedBuyGold.status === 'Under Review') && (
-                  <>
-                    <div className="space-y-3 pt-2 border-t">
-                      <h4 className="font-medium">Credit Gold to User</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="buyGoldGrams">Gold Amount (grams)</Label>
-                          <Input
-                            id="buyGoldGrams"
-                            type="number"
-                            step="0.0001"
-                            value={buyGoldGrams}
-                            onChange={(e) => setBuyGoldGrams(e.target.value)}
-                            placeholder="Enter gold grams"
-                            data-testid="input-buy-gold-grams"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="buyGoldPrice">Gold Price ($/g)</Label>
-                          <Input
-                            id="buyGoldPrice"
-                            type="number"
-                            step="0.01"
-                            value={buyGoldPrice}
-                            onChange={(e) => setBuyGoldPrice(e.target.value)}
-                            placeholder="Enter price per gram"
-                            data-testid="input-buy-gold-price"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="buyGoldAdminNotes">Admin Notes</Label>
-                        <Textarea
-                          id="buyGoldAdminNotes"
-                          value={buyGoldAdminNotes}
-                          onChange={(e) => setBuyGoldAdminNotes(e.target.value)}
-                          placeholder="Optional notes..."
-                          rows={2}
-                          data-testid="input-buy-gold-notes"
-                        />
-                      </div>
+                  <details className="border-t pt-2">
+                    <summary className="text-xs font-medium text-red-600 cursor-pointer">Reject Request</summary>
+                    <div className="mt-2">
+                      <Textarea
+                        value={buyGoldRejectionReason}
+                        onChange={(e) => setBuyGoldRejectionReason(e.target.value)}
+                        placeholder="Reason for rejection..."
+                        rows={2}
+                        className="text-sm"
+                        data-testid="input-buy-gold-rejection"
+                      />
                     </div>
-
-                    <div className="space-y-3 pt-2 border-t">
-                      <h4 className="font-medium text-red-600">Reject Request</h4>
-                      <div>
-                        <Label htmlFor="buyGoldRejectionReason">Rejection Reason</Label>
-                        <Textarea
-                          id="buyGoldRejectionReason"
-                          value={buyGoldRejectionReason}
-                          onChange={(e) => setBuyGoldRejectionReason(e.target.value)}
-                          placeholder="Reason for rejection..."
-                          rows={2}
-                          data-testid="input-buy-gold-rejection"
-                        />
-                      </div>
-                    </div>
-                  </>
+                  </details>
                 )}
 
+                {/* Status Messages */}
                 {selectedBuyGold.status === 'Credited' && selectedBuyGold.goldGrams && (
-                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-green-800 font-medium">
-                      {parseFloat(selectedBuyGold.goldGrams).toFixed(4)}g Gold credited at ${parseFloat(selectedBuyGold.goldPriceAtTime || '0').toFixed(2)}/g
-                    </p>
+                  <div className="p-2 bg-green-50 rounded text-xs text-green-800 font-medium">
+                    {parseFloat(selectedBuyGold.goldGrams).toFixed(4)}g credited at ${parseFloat(selectedBuyGold.goldPriceAtTime || '0').toFixed(2)}/g
                   </div>
                 )}
 
                 {selectedBuyGold.status === 'Rejected' && selectedBuyGold.rejectionReason && (
-                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                    <p className="text-red-800">{selectedBuyGold.rejectionReason}</p>
+                  <div className="p-2 bg-red-50 rounded text-xs text-red-800">
+                    {selectedBuyGold.rejectionReason}
                   </div>
                 )}
 
-                <DialogFooter>
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2 border-t">
                   {(selectedBuyGold.status === 'Pending' || selectedBuyGold.status === 'Under Review') && (
                     <>
                       <Button
                         variant="destructive"
+                        size="sm"
                         onClick={() => handleBuyGoldAction('Rejected')}
                         disabled={!buyGoldRejectionReason}
+                        className="flex-1"
                         data-testid="button-reject-buy-gold"
                       >
-                        <XCircle className="w-4 h-4 mr-1" />
+                        <XCircle className="w-3 h-3 mr-1" />
                         Reject
                       </Button>
                       <Button
-                        className="bg-green-600 hover:bg-green-700"
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700"
                         onClick={() => handleBuyGoldAction('Credited')}
                         disabled={!buyGoldGrams || !buyGoldPrice}
                         data-testid="button-approve-buy-gold"
                       >
-                        <CheckCircle2 className="w-4 h-4 mr-1" />
-                        Approve & Credit
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Approve
                       </Button>
                     </>
                   )}
-                  <Button variant="outline" onClick={() => setBuyGoldDialogOpen(false)}>
+                  <Button variant="outline" size="sm" onClick={() => setBuyGoldDialogOpen(false)}>
                     Close
                   </Button>
-                </DialogFooter>
+                </div>
               </div>
             )}
           </DialogContent>
