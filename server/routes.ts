@@ -9606,7 +9606,7 @@ export async function registerRoutes(
       
       // Rate limiting by IP
       const clientId = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
-      const { checkRateLimit, processUserMessage } = await import('./chatbot-service.js');
+      const { checkRateLimit, processUserMessage, processUserMessageWithAI } = await import('./chatbot-service.js');
       
       if (!checkRateLimit(clientId)) {
         return res.status(429).json({ 
@@ -9778,7 +9778,7 @@ export async function registerRoutes(
           }
         };
       } else {
-        // Use General agent (default)
+        // Use General agent with OpenAI LLM
         // First, search knowledge base for relevant articles
         let knowledgeResponse: string | null = null;
         try {
@@ -9791,9 +9791,10 @@ export async function registerRoutes(
           console.error("Error searching knowledge base:", err);
         }
         
-        const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
+        // Use AI-powered response with OpenAI
+        const response = await processUserMessageWithAI(sanitizedMessage, userContext, platformConfig, goldPrice);
         
-        // If knowledge base found a relevant article and FAQ had low confidence, use KB response
+        // If knowledge base found a relevant article and AI had low confidence, prefer KB
         let finalReply = response.message;
         if (knowledgeResponse && response.confidence < 0.6) {
           finalReply = knowledgeResponse;
@@ -9813,7 +9814,8 @@ export async function registerRoutes(
             name: selectedAgent.displayName,
             type: selectedAgent.type
           } : undefined,
-          fromKnowledgeBase: !!knowledgeResponse && response.confidence < 0.6
+          fromKnowledgeBase: !!knowledgeResponse && response.confidence < 0.6,
+          aiPowered: true
         };
       }
       

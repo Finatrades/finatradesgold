@@ -1,3 +1,9 @@
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
 interface ChatbotResponse {
   message: string;
   category: string;
@@ -889,4 +895,156 @@ function getMenuActions(): string[] {
 export function getChatbotGreeting(userName?: string): string {
   const greeting = userName ? `Hello ${userName}!` : "Hello!";
   return `${greeting} Welcome to Finatrades.\n\nI'm your AI Assistant. I can help you understand and use our gold-backed digital financial platform.\n\n${generateMainMenuResponse()}`;
+}
+
+// System prompt for OpenAI
+const FINATRADES_SYSTEM_PROMPT = `You are the official Finatrades AI Assistant.
+
+Goal:
+Help users understand and use Finatrades (FinaPay, FinaVault, BNSL, and Business-only FinaBridge) in a banking-style experience backed 100% by physical gold.
+
+Mandatory Core Rules:
+1) Gold grams are the real balance. USD is shown only as a reference display.
+2) Never describe Finatrades as crypto, DeFi, token, or blockchain-based in user help.
+3) Never promise guaranteed profits. For BNSL, only state plan terms and schedules.
+4) Always mention verification/approval where applicable (KYC/KYB, admin approvals, certificate issuance).
+5) Ask one question at a time. Confirm details before submitting any action.
+6) If user disputes verification, requests bypass, asks for admin access, or reports fraud/dispute → escalate to human support.
+7) Be professional, calm, clear, and short. Use numbered steps and bullet points.
+
+MAIN MENU OPTIONS:
+1) Create Account (Personal / Business)
+2) Login Help (OTP / Password reset)
+3) Complete Verification (KYC / KYB)
+4) Understand My Balance (Gold grams vs USD)
+5) Add Funds (Card / Bank / Crypto) – How it works
+6) Send Payment
+7) Request Payment
+8) View Certificates (Ownership / Storage / Transfer)
+9) BNSL Plans (Lock gold and earn margin)
+10) FinaBridge (Business Trade Settlement)
+11) Troubleshooting (Pending, Locked, Failed)
+12) Contact Support
+
+KEY KNOWLEDGE:
+- Personal Account includes: FinaPay + FinaVault + BNSL
+- Business Account includes: All Personal features + FinaBridge
+- BNSL terms: 12 months 10%, 24 months 11%, 36 months 12%
+- Certificates: Digital Ownership (Finatrades), Physical Storage (Wingold & Metals DMCC), Transfer
+- Gold is the ONLY real asset. USD is for display/calculation only.
+
+Conversation Style:
+- Guide step-by-step when user chooses a menu item
+- Validate input formats: email, phone, country, company reg number, password
+- Summarize user entries before final submission
+- Provide next steps at the end
+
+Escalation Triggers (respond with "I will connect you to support"):
+- Chargeback, fraud, dispute
+- Compliance block
+- Requests to bypass verification`;
+
+// OpenAI-powered response function
+export async function processUserMessageWithAI(
+  message: string, 
+  userContext?: UserContext, 
+  platformConfig?: PlatformConfig, 
+  goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string },
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
+): Promise<ChatbotResponse> {
+  // Check for escalation keywords first
+  if (shouldEscalate(message)) {
+    return {
+      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team. Please share your registered email and transaction/reference ID (if any).",
+      category: 'escalation',
+      confidence: 1.0,
+      escalateToHuman: true
+    };
+  }
+
+  // Check for menu request
+  const normalizedMsg = message.toLowerCase().trim();
+  if (normalizedMsg === 'menu' || normalizedMsg === 'help' || normalizedMsg === 'start') {
+    return {
+      message: generateMainMenuResponse(),
+      category: 'menu',
+      confidence: 1.0,
+      suggestedActions: getMenuActions(),
+      escalateToHuman: false
+    };
+  }
+
+  try {
+    // Build context string
+    let contextInfo = '';
+    if (userContext) {
+      contextInfo += `\nUser Context: Name: ${userContext.userName}, Gold Balance: ${userContext.goldBalance.toFixed(4)}g, Vault Gold: ${userContext.vaultGold.toFixed(4)}g, USD Value: $${userContext.usdValue.toFixed(2)}, KYC Status: ${userContext.kycStatus}`;
+    }
+    if (goldPrice) {
+      contextInfo += `\nCurrent Gold Price: $${goldPrice.pricePerGram.toFixed(2)}/gram, $${goldPrice.pricePerOz.toFixed(2)}/oz`;
+    }
+    if (platformConfig) {
+      contextInfo += `\nPlatform Fees: Buy spread ${platformConfig.buySpreadPercent}%, Sell spread ${platformConfig.sellSpreadPercent}%, Storage ${platformConfig.storageFeePercent}%/year`;
+    }
+
+    // Build messages array
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: FINATRADES_SYSTEM_PROMPT + contextInfo }
+    ];
+
+    // Add conversation history if provided
+    if (conversationHistory && conversationHistory.length > 0) {
+      // Keep last 10 messages for context
+      const recentHistory = conversationHistory.slice(-10);
+      for (const msg of recentHistory) {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    // Add current user message
+    messages.push({ role: 'user', content: message });
+
+    // Call OpenAI
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages,
+      max_tokens: 800,
+      temperature: 0.7
+    });
+
+    const aiResponse = completion.choices[0]?.message?.content || '';
+
+    // Determine suggested actions based on content
+    let suggestedActions: string[] = [];
+    if (aiResponse.toLowerCase().includes('create account') || aiResponse.toLowerCase().includes('register')) {
+      suggestedActions = ['Personal', 'Business', 'Talk to Juris AI'];
+    } else if (aiResponse.toLowerCase().includes('kyc') || aiResponse.toLowerCase().includes('verification')) {
+      suggestedActions = ['Start Verification', 'Talk to Juris AI'];
+    } else if (aiResponse.toLowerCase().includes('bnsl')) {
+      suggestedActions = ['View BNSL Plans', 'Create Plan'];
+    } else if (aiResponse.toLowerCase().includes('deposit') || aiResponse.toLowerCase().includes('add funds')) {
+      suggestedActions = ['Add Funds', 'View Methods'];
+    } else if (aiResponse.toLowerCase().includes('support') || aiResponse.toLowerCase().includes('agent')) {
+      suggestedActions = ['Speak to Agent'];
+    } else {
+      suggestedActions = ['Show Menu', 'Contact Support'];
+    }
+
+    // Check if response suggests escalation
+    const shouldEscalateResponse = aiResponse.toLowerCase().includes('connect you to support') || 
+                                    aiResponse.toLowerCase().includes('human agent');
+
+    return {
+      message: aiResponse,
+      category: 'ai_response',
+      confidence: 0.95,
+      suggestedActions,
+      escalateToHuman: shouldEscalateResponse
+    };
+
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    // Fall back to FAQ-based response
+    return processUserMessage(message, userContext, platformConfig, goldPrice);
+  }
 }
