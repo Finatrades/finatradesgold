@@ -499,6 +499,111 @@ const FAQ_DATABASE: FAQEntry[] = [
     response: "You're welcome! Is there anything else I can help you with today?",
     category: 'closing',
     actions: []
+  },
+  // MAIN MENU OPTIONS (1-12)
+  // Menu Option 1: Create Account
+  {
+    keywords: ['1', 'create account', 'new account', 'register', 'sign up', 'personal', 'business'],
+    patterns: [/^1\.?\s*create account/i, /^1$/],
+    response: "**CREATE ACCOUNT**\n\nChoose your account type:\n\n**1) Personal Account includes:**\n• FinaPay (gold-backed wallet)\n• FinaVault (secure gold storage)\n• BNSL (gold-based yield plans)\n\n**2) Business Account includes:**\n• All Personal features\n• FinaBridge (trade settlement for importers/exporters)\n\nWhich type would you like to create? Type 'Personal' or 'Business'.\n\nFor step-by-step guidance, chat with **Juris AI** - our registration assistant.",
+    category: 'account',
+    actions: ['Personal', 'Business', 'Talk to Juris AI']
+  },
+  // Menu Option 2: Login Help
+  {
+    keywords: ['2', 'login help', 'forgot password', 'reset password', 'otp', 'cant login', 'password reset'],
+    patterns: [/^2\.?\s*login help/i, /^2$/, /forgot password/i, /reset password/i, /can'?t login/i],
+    response: "**LOGIN HELP**\n\nCommon login issues:\n\n**Forgot Password:**\n1. Click 'Forgot Password' on login page\n2. Enter your registered email\n3. Check your email for reset link\n4. Create a new password\n\n**OTP Not Received:**\n• Check spam/junk folder\n• Wait 2 minutes before requesting again\n• Ensure phone number is correct\n\n**Account Locked:**\nAfter multiple failed attempts, accounts are temporarily locked for security. Please wait 15 minutes or contact support.\n\nStill having issues?",
+    category: 'support',
+    actions: ['Contact Support', 'Resend OTP']
+  },
+  // Menu Option 3: Complete Verification
+  {
+    keywords: ['3', 'complete verification', 'kyc', 'kyb', 'verify', 'verification'],
+    patterns: [/^3\.?\s*complete verification/i, /^3$/],
+    response: "**COMPLETE VERIFICATION (KYC/KYB)**\n\nTo activate deposits, payments, and certificates, verification is mandatory.\n\n**Personal Account (KYC):**\n• Valid ID (Passport, National ID, Driver's License)\n• Proof of Address (utility bill, bank statement)\n• Selfie for liveness verification\n\n**Business Account (KYB):**\n• Company registration documents\n• Proof of business address\n• Authorized representative documents\n\n**Processing Time:**\n• Personal: 1-2 business days\n• Business: 3-5 business days\n\nFor guided assistance, chat with **Juris AI**.",
+    category: 'kyc',
+    actions: ['Start Verification', 'Talk to Juris AI']
+  },
+  // Menu Option 4: Understand Balance
+  {
+    keywords: ['4', 'understand balance', 'gold grams', 'usd balance', 'my balance'],
+    patterns: [/^4\.?\s*understand/i, /^4$/, /understand.*balance/i],
+    response: "**UNDERSTANDING YOUR BALANCE**\n\nOn Finatrades, your true balance is in **gold grams**. USD is shown only as a reference value.\n\n**Key Points:**\n• Your USD value may change with market prices\n• Your gold grams remain the same unless you:\n  - Add funds\n  - Send or receive payments\n  - Lock gold in BNSL or trade settlement\n  - Withdraw or sell gold\n\n**Remember:** Gold is your real asset. USD is just for display.\n\n**Balance Types:**\n• **Available Gold** - Can be used for transactions\n• **Locked Gold** - Reserved for BNSL or trade settlement\n• **Vault Gold** - Stored in FinaVault",
+    category: 'account',
+    actions: ['View Dashboard']
+  },
+  // Menu Option 5: Add Funds
+  {
+    keywords: ['5', 'add funds', 'deposit', 'top up', 'fund account', 'buy gold'],
+    patterns: [/^5\.?\s*add funds/i, /^5$/],
+    response: "**ADD FUNDS - How It Works**\n\n**Step-by-Step Process:**\n1. User enters USD amount and sees equivalent gold grams\n2. Payment is verified and approved\n3. Physical gold is allocated in storage\n4. Digital gold grams are credited to your wallet\n\n**Certificates Issued:**\n• Digital Ownership Certificate (by Finatrades)\n• Physical Storage Certificate (by Wingold & Metals DMCC)\n\n**Payment Methods:**\n• Credit/Debit Card - Instant\n• Bank Transfer - 1-3 business days\n• Crypto - BTC, USDT accepted\n\nGo to FinaPay > Deposit to add funds.",
+    category: 'deposits',
+    actions: ['Add Funds', 'View Payment Methods']
+  },
+  // Menu Option 6: Send Payment
+  {
+    keywords: ['6', 'send payment', 'transfer', 'pay someone', 'send gold'],
+    patterns: [/^6\.?\s*send payment/i, /^6$/],
+    response: "**SEND PAYMENT**\n\nPayment = Transfer of gold ownership.\n\n**How to Send:**\n1. Go to FinaPay > Send\n2. Enter recipient's Finatrades email\n3. Enter amount (in USD or gold grams)\n4. Review and confirm\n\n**Certificates Issued:**\n• Sender receives: Transfer Certificate\n• Receiver receives: Digital Ownership Certificate\n• Storage certificate remains valid (gold stays vaulted)\n\n**Important:**\n• Receiver must have a registered Finatrades account\n• P2P transfers are instant and free\n• KYC must be completed for larger amounts",
+    category: 'transfers',
+    actions: ['Send Payment']
+  },
+  // Menu Option 7: Request Payment
+  {
+    keywords: ['7', 'request payment', 'invoice', 'request money', 'ask for payment'],
+    patterns: [/^7\.?\s*request payment/i, /^7$/],
+    response: "**REQUEST PAYMENT**\n\nRequest gold/USD from another Finatrades user.\n\n**How to Request:**\n1. Go to FinaPay > Request\n2. Enter the email of the person you're requesting from\n3. Enter the amount and description\n4. Send the request\n\n**What Happens:**\n• Recipient receives a notification\n• They can approve or decline\n• If approved, gold is transferred to you automatically\n• Both parties receive certificates\n\n**Note:** The recipient must have sufficient available balance.",
+    category: 'transfers',
+    actions: ['Request Payment']
+  },
+  // Menu Option 8: View Certificates
+  {
+    keywords: ['8', 'view certificates', 'certificates', 'ownership', 'storage certificate'],
+    patterns: [/^8\.?\s*view certificates/i, /^8$/],
+    response: "**VIEW CERTIFICATES**\n\nFinatrades issues official certificates for all gold transactions:\n\n**Certificate Types:**\n• **Digital Ownership Certificate** - Issued by Finatrades, proves your gold ownership\n• **Physical Storage Certificate** - Issued by Wingold & Metals DMCC, confirms vault storage\n• **Transfer Certificate** - Issued when you send/receive payments\n\n**How to View:**\n1. Go to FinaVault > My Holdings\n2. Click on any holding to see its certificates\n3. Download or share certificates as needed\n\nCertificates are issued after verification and approval.",
+    category: 'certificates',
+    actions: ['View Certificates']
+  },
+  // Menu Option 9: BNSL Plans
+  {
+    keywords: ['9', 'bnsl plans', 'bnsl', 'buy now sell later', 'lock gold', 'earn'],
+    patterns: [/^9\.?\s*bnsl/i, /^9$/],
+    response: "**BNSL (Buy Now Sell Later)**\n\nLock your gold and earn margin over time.\n\n**How It Works:**\n• Gold is locked for the plan term\n• Margin accrues daily\n• Payouts made quarterly\n\n**Plan Terms:**\n• 12 months: 10% margin\n• 24 months: 11% margin\n• 36 months: 12% margin\n\n**Important:**\n• Locked gold cannot be used for other transactions\n• Early exit is possible with penalty\n• KYC must be completed to participate\n\n**To Start:**\nGo to BNSL > Create New Plan",
+    category: 'bnsl',
+    actions: ['View BNSL Plans', 'Create BNSL Plan']
+  },
+  // Menu Option 10: FinaBridge
+  {
+    keywords: ['10', 'finabridge', 'trade settlement', 'import', 'export', 'business trade'],
+    patterns: [/^10\.?\s*finabridge/i, /^10$/],
+    response: "**FINABRIDGE (Trade Settlement)**\n\nBusiness-only feature for international trade settlement.\n\n**How It Works:**\n1. Importer creates trade request\n2. Exporters submit proposals\n3. Importer details protected (only Finatrades IDs visible)\n4. Admin reviews and shortlists proposals\n5. Deal room opens after terms acceptance\n6. Gold locked as settlement collateral\n7. Gold released upon trade completion\n\n**Requirements:**\n• Business account with completed KYB\n• Trade finance documentation\n• Admin approval required\n\n**Note:** Personal accounts cannot access FinaBridge.",
+    category: 'trade',
+    actions: ['Learn More']
+  },
+  // Menu Option 11: Troubleshooting
+  {
+    keywords: ['11', 'troubleshooting', 'pending', 'locked', 'failed', 'problem', 'issue'],
+    patterns: [/^11\.?\s*troubleshooting/i, /^11$/],
+    response: "**TROUBLESHOOTING**\n\n**Transaction Pending:**\n• Under verification/approval\n• Once approved, balances and certificates update automatically\n\n**Gold Locked:**\n• Gold is reserved under BNSL or trade settlement\n• Only Available gold can be used for new transactions\n\n**Receiver Not Found:**\n• Ask receiver to create a Finatrades account using the same email\n\n**Transaction Failed:**\n• Check your available balance\n• Verify recipient email is correct\n• Ensure KYC is completed for larger amounts\n\n**Payment Declined:**\n• Contact your bank/card issuer\n• Try a different payment method\n\nNeed more help?",
+    category: 'support',
+    actions: ['Contact Support', 'Speak to Agent']
+  },
+  // Menu Option 12: Contact Support
+  {
+    keywords: ['12', 'contact support', 'help', 'support', 'human', 'agent'],
+    patterns: [/^12\.?\s*contact support/i, /^12$/],
+    response: "**CONTACT SUPPORT**\n\nOur support team is here to help:\n\n• **Email:** support@finatrades.com\n• **Live Chat:** Available 9 AM - 6 PM GMT\n• **Response Time:** Usually within 24 hours\n\n**For urgent matters:**\n• Disputes or chargebacks\n• Account security concerns\n• Compliance questions\n\nPlease have ready:\n• Your registered email\n• Transaction/reference ID (if applicable)\n\nWould you like to speak with a human agent now?",
+    category: 'support',
+    actions: ['Speak to Agent', 'Email Support']
+  },
+  // Show Menu
+  {
+    keywords: ['menu', 'start', 'help', 'options', 'what can you do'],
+    patterns: [/^(menu|start|help)$/i, /show.*menu/i, /what can you (do|help)/i],
+    response: "__SHOW_MENU__",
+    category: 'menu',
+    actions: []
   }
 ];
 
@@ -690,6 +795,7 @@ export function processUserMessage(message: string, userContext?: UserContext, p
     
     // Handle special dynamic responses
     let responseMessage = best.entry.response;
+    let responseActions = best.entry.actions;
     switch (responseMessage) {
       case '__BALANCE_QUERY__':
         responseMessage = generateBalanceResponse(userContext);
@@ -715,28 +821,72 @@ export function processUserMessage(message: string, userContext?: UserContext, p
       case '__GOLD_PRICE__':
         responseMessage = generateGoldPriceResponse(goldPrice);
         break;
+      case '__SHOW_MENU__':
+        responseMessage = generateMainMenuResponse();
+        responseActions = getMenuActions();
+        break;
     }
     
     return {
       message: responseMessage,
       category: best.entry.category,
       confidence,
-      suggestedActions: best.entry.actions,
+      suggestedActions: responseActions,
       escalateToHuman: false
     };
   }
   
-  // Default fallback response
+  // Default fallback response - show main menu
   return {
-    message: "I'm not sure I understand your question. Here are some topics I can help with:\n\n• How to buy or sell gold\n• Current gold price\n• Deposits and withdrawals\n• FinaVault storage\n• BNSL investment plans\n• Fees and limits\n• Account verification (KYC)\n• Your balance (when logged in)\n\nCould you please rephrase your question, or would you like to speak with a human agent?",
+    message: generateMainMenuResponse() + "\n\nCould you please select an option, or rephrase your question?",
     category: 'unknown',
     confidence: 0,
-    suggestedActions: ['Speak to Agent'],
+    suggestedActions: getMenuActions(),
     escalateToHuman: false
   };
 }
 
+// Helper function to generate main menu
+function generateMainMenuResponse(): string {
+  return `**MAIN MENU**
+
+Please select an option:
+
+1) Create Account (Personal / Business)
+2) Login Help (OTP / Password reset)
+3) Complete Verification (KYC / KYB)
+4) Understand My Balance (Gold grams vs USD)
+5) Add Funds (Card / Bank / Crypto)
+6) Send Payment
+7) Request Payment
+8) View Certificates (Ownership / Storage / Transfer)
+9) BNSL Plans (Lock gold and earn margin)
+10) FinaBridge (Business Trade Settlement)
+11) Troubleshooting (Pending, Locked, Failed)
+12) Contact Support
+
+Type a number (1-12) or describe what you need help with.`;
+}
+
+// Helper function to get menu action buttons
+function getMenuActions(): string[] {
+  return [
+    '1. Create Account',
+    '2. Login Help',
+    '3. Verification',
+    '4. Balance',
+    '5. Add Funds',
+    '6. Send',
+    '7. Request',
+    '8. Certificates',
+    '9. BNSL',
+    '10. FinaBridge',
+    '11. Troubleshoot',
+    '12. Support'
+  ];
+}
+
 export function getChatbotGreeting(userName?: string): string {
   const greeting = userName ? `Hello ${userName}!` : "Hello!";
-  return `${greeting} I'm your Finatrades assistant. I can help you with:\n\n• Buying and selling gold\n• Account questions\n• Fees and limits\n• FinaVault storage\n• BNSL plans\n\nHow can I assist you today?`;
+  return `${greeting} Welcome to Finatrades.\n\nI'm your AI Assistant. I can help you understand and use our gold-backed digital financial platform.\n\n${generateMainMenuResponse()}`;
 }

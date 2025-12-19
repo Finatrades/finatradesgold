@@ -129,29 +129,27 @@ function FloatingAgentChatContent() {
       return;
     }
     
-    // Show greeting if no messages yet
+    // Show greeting if no messages yet - Main Menu
     if (chatbotMessages.length === 0 && !useHumanAgent) {
       const userName = user ? user.firstName : guestInfo?.name;
       const greeting: ChatbotMessage = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        content: `Hello ${userName}! Welcome to Finatrades.\n\nI'm your AI assistant. Please select a topic below or type your question:`,
+        content: `Hello ${userName}! Welcome to Finatrades.\n\nI'm your AI assistant. Please select an option from the menu below:`,
         timestamp: new Date(),
         suggestedActions: [
-          'What is Finatrades?',
-          'Gold vs USD Balance',
-          'FinaPay Wallet',
-          'Add Funds',
-          'Buy Gold',
-          'Send Payment',
-          'FinaVault',
-          'BNSL Plans',
-          'FinaBridge Trade',
-          'Certificates',
-          'Fees & Limits',
-          'Security',
-          'KYC Process',
-          'Talk to Juris AI'
+          '1. Create Account',
+          '2. Login Help',
+          '3. Complete Verification',
+          '4. Understand My Balance',
+          '5. Add Funds',
+          '6. Send Payment',
+          '7. Request Payment',
+          '8. View Certificates',
+          '9. BNSL Plans',
+          '10. FinaBridge',
+          '11. Troubleshooting',
+          '12. Contact Support'
         ]
       };
       setChatbotMessages([greeting]);
@@ -185,30 +183,26 @@ function FloatingAgentChatContent() {
     setGuestInfo(info);
     setShowGuestForm(false);
     
-    // For AI chatbot mode, show personalized greeting with all topics
+    // For AI chatbot mode, show personalized greeting with main menu
     if (!useHumanAgent) {
       const greeting: ChatbotMessage = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        content: `Hello ${info.name}! Welcome to Finatrades.\n\nI'm your AI assistant. Please select a topic below or type your question:`,
+        content: `Hello ${info.name}! Welcome to Finatrades.\n\nI'm your AI assistant. Please select an option from the menu below:`,
         timestamp: new Date(),
         suggestedActions: [
-          'Create Account',
-          'Email Verification', 
-          'KYC Process',
-          'What is Finatrades?',
-          'Gold vs USD Balance',
-          'FinaPay Wallet',
-          'Add Funds',
-          'Buy Gold',
-          'Send Payment',
-          'FinaVault',
-          'BNSL Plans',
-          'FinaBridge Trade',
-          'Certificates',
-          'Fees & Limits',
-          'Security',
-          'Talk to Juris AI'
+          '1. Create Account',
+          '2. Login Help',
+          '3. Complete Verification',
+          '4. Understand My Balance',
+          '5. Add Funds',
+          '6. Send Payment',
+          '7. Request Payment',
+          '8. View Certificates',
+          '9. BNSL Plans',
+          '10. FinaBridge',
+          '11. Troubleshooting',
+          '12. Contact Support'
         ]
       };
       setChatbotMessages([greeting]);
