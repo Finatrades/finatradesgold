@@ -44,12 +44,11 @@ interface StatementTransaction {
   date: string;
   reference: string;
   description: string;
-  debitUsd: number | null;
-  creditUsd: number | null;
   debitGold: number | null;
   creditGold: number | null;
-  balanceUsd: number;
   balanceGold: number;
+  usdValue: number;
+  goldPriceAtTime: number;
   type: string;
   status: string;
 }
@@ -486,16 +485,14 @@ export default function AccountStatements() {
                             <td className="px-3 py-2 font-mono text-xs">{tx.reference}</td>
                             <td className="px-3 py-2">{tx.description}</td>
                             <td className="px-3 py-2 text-right text-red-600">
-                              {tx.debitUsd ? formatCurrency(tx.debitUsd) : ''}
-                              {tx.debitGold ? <span className="block text-xs">{formatGrams(tx.debitGold)}</span> : ''}
+                              {tx.debitGold ? <span>{formatGrams(tx.debitGold)}</span> : ''}
                             </td>
                             <td className="px-3 py-2 text-right text-green-600">
-                              {tx.creditUsd ? formatCurrency(tx.creditUsd) : ''}
-                              {tx.creditGold ? <span className="block text-xs">{formatGrams(tx.creditGold)}</span> : ''}
+                              {tx.creditGold ? <span>{formatGrams(tx.creditGold)}</span> : ''}
                             </td>
                             <td className="px-3 py-2 text-right font-medium">
-                              {formatCurrency(tx.balanceUsd)}
-                              <span className="block text-xs text-gray-500">{formatGrams(tx.balanceGold)}</span>
+                              {formatCurrency((tx.balanceGold || 0) * statement.currentGoldPrice)}
+                              <span className="block text-xs text-gray-500">{formatGrams(tx.balanceGold || 0)}</span>
                             </td>
                           </tr>
                         ))
