@@ -252,27 +252,44 @@ function handleNoWorkflow(message: string, intent: string, userData?: Partial<Us
 function handleRegistrationWorkflow(message: string, intent: string, workflow: ChatAgentWorkflow): JurisResponse {
   const stepData = workflow.stepData ? JSON.parse(workflow.stepData) : {};
   const currentStep = workflow.currentStep;
+  const isBusinessAccount = stepData.accountType === 'Business';
   
-  // Get step order
-  const stepKeys = Object.keys(REGISTRATION_STEPS) as (keyof typeof REGISTRATION_STEPS)[];
-  const currentIndex = stepKeys.indexOf(currentStep as keyof typeof REGISTRATION_STEPS);
+  // Define step order based on account type
+  // Personal: welcome → email → firstName → lastName → phone → country → password → confirm → complete
+  // Business: welcome → email → firstName → lastName → phone → country → companyName → registrationNumber → password → confirmBusiness → complete
+  const personalSteps = ['welcome', 'email', 'firstName', 'lastName', 'phone', 'country', 'password', 'confirm', 'complete'];
+  const businessSteps = ['welcome', 'email', 'firstName', 'lastName', 'phone', 'country', 'companyName', 'registrationNumber', 'password', 'confirmBusiness', 'complete'];
   
-  // Store user input for current step
+  const stepKeys = isBusinessAccount ? businessSteps : personalSteps;
+  const currentIndex = stepKeys.indexOf(currentStep);
+  
+  // Store user input for current step (based on actual database schema fields)
   if (currentStep === 'welcome') {
     stepData.accountType = message.includes('Business') ? 'Business' : 'Personal';
   } else if (currentStep === 'email') {
     stepData.email = message.trim();
-  } else if (currentStep === 'name') {
-    stepData.fullName = message.trim();
+  } else if (currentStep === 'firstName') {
+    stepData.firstName = message.trim();
+  } else if (currentStep === 'lastName') {
+    stepData.lastName = message.trim();
   } else if (currentStep === 'phone') {
-    stepData.phone = message.trim();
+    stepData.phoneNumber = message.trim() || 'Not provided';
+  } else if (currentStep === 'country') {
+    stepData.country = message.trim() || 'Not provided';
+  } else if (currentStep === 'companyName') {
+    stepData.companyName = message.trim();
+  } else if (currentStep === 'registrationNumber') {
+    stepData.registrationNumber = message.trim();
   } else if (currentStep === 'password') {
     stepData.password = '********'; // Don't store actual password in step data
-  } else if (currentStep === 'confirm') {
+  } else if (currentStep === 'confirm' || currentStep === 'confirmBusiness') {
     if (intent === 'reject') {
+      const changeOptions = isBusinessAccount 
+        ? ['Change Account Type', 'Change Email', 'Change Name', 'Change Company', 'Continue Registration']
+        : ['Change Account Type', 'Change Email', 'Change Name', 'Change Phone', 'Continue Registration'];
       return {
-        message: "No problem! Which information would you like to change?\n\n1. Account Type: " + stepData.accountType + "\n2. Email: " + stepData.email + "\n3. Name: " + stepData.fullName + "\n4. Phone: " + stepData.phone,
-        actions: ['Change Account Type', 'Change Email', 'Change Name', 'Change Phone', 'Continue Registration']
+        message: `No problem! Here's your current information:\n\n**Account Type:** ${stepData.accountType}\n**Email:** ${stepData.email}\n**Name:** ${stepData.firstName} ${stepData.lastName}\n**Phone:** ${stepData.phoneNumber}\n**Country:** ${stepData.country}${isBusinessAccount ? `\n**Company:** ${stepData.companyName}\n**Registration #:** ${stepData.registrationNumber}` : ''}\n\nWhich would you like to change?`,
+        actions: changeOptions
       };
     }
   }
@@ -292,13 +309,13 @@ function handleRegistrationWorkflow(message: string, intent: string, workflow: C
     };
   }
   
-  const nextStepKey = stepKeys[nextIndex];
+  const nextStepKey = stepKeys[nextIndex] as keyof typeof REGISTRATION_STEPS;
   const nextStep = REGISTRATION_STEPS[nextStepKey];
   
   // Format message with collected data
   let responseMessage = nextStep.message;
   Object.keys(stepData).forEach(key => {
-    responseMessage = responseMessage.replace(`{${key}}`, stepData[key]);
+    responseMessage = responseMessage.replace(new RegExp(`\\{${key}\\}`, 'g'), stepData[key] || 'Not provided');
   });
   
   return {
