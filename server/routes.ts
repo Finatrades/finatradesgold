@@ -3072,66 +3072,58 @@ export async function registerRoutes(
 
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    // This endpoint uses the same pattern as kyc-test3 which works
+    const results: any = { submissions: [] };
     try {
-      // Fetch all submissions
-      const kycAmlSubmissions = (await storage.getAllKycSubmissions()) || [];
-      const finatradesPersonalSubmissions = (await storage.getAllFinatradesPersonalKyc()) || [];
-      const finatradesCorporateSubmissions = (await storage.getAllFinatradesCorporateKyc()) || [];
+      const kycAml = await storage.getAllKycSubmissions();
+      const kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
       
-      // Normalize Finatrades personal KYC submissions
-      const normalizedFinatradesPersonal = finatradesPersonalSubmissions.map((s: any) => ({
-        ...s,
-        tier: 'finatrades_personal',
-        kycType: 'finatrades_personal',
-        accountType: 'personal',
-        documents: s?.idFrontUrl || s?.idBackUrl || s?.passportUrl || s?.addressProofUrl ? {
-          idFront: s?.idFrontUrl || null,
-          idBack: s?.idBackUrl || null,
-          passport: s?.passportUrl || null,
-          addressProof: s?.addressProofUrl || null,
-        } : null,
-      }));
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      const personalArray = Array.isArray(personal) ? personal : [];
       
-      // Normalize Finatrades corporate KYC submissions
-      const normalizedFinatradesCorporate: any[] = [];
-      for (const s of finatradesCorporateSubmissions) {
-        const user = s?.userId ? await storage.getUser(s.userId).catch(() => null) : null;
-        const personalKyc = finatradesPersonalSubmissions.find((p: any) => p?.userId === s?.userId);
-        
-        let fullName = null;
-        if (personalKyc?.fullName) {
-          fullName = personalKyc.fullName;
-        } else if (user) {
-          fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || null;
-        }
-        
-        normalizedFinatradesCorporate.push({
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      const corporateArray = Array.isArray(corporate) ? corporate : [];
+      
+      // Simple normalization without complex operations
+      const allSubmissions: any[] = [];
+      
+      // Add kycAml submissions
+      for (const s of kycAmlArray) {
+        allSubmissions.push({ ...s, kycType: 'kycAml' });
+      }
+      
+      // Add personal submissions
+      for (const s of personalArray) {
+        allSubmissions.push({
+          ...s,
+          tier: 'finatrades_personal',
+          kycType: 'finatrades_personal',
+          accountType: 'personal',
+        });
+      }
+      
+      // Add corporate submissions
+      for (const s of corporateArray) {
+        allSubmissions.push({
           ...s,
           tier: 'finatrades_corporate',
           kycType: 'finatrades_corporate',
           accountType: 'business',
-          fullName,
-          country: personalKyc?.country || user?.country || s?.countryOfIncorporation || null,
-          nationality: personalKyc?.nationality || null,
         });
       }
       
-      // Combine and sort by creation date
-      const allSubmissions = [
-        ...kycAmlSubmissions.map((s: any) => ({ ...s, kycType: 'kycAml' })),
-        ...normalizedFinatradesPersonal,
-        ...normalizedFinatradesCorporate,
-      ].sort((a, b) => {
+      // Sort by creation date
+      allSubmissions.sort((a, b) => {
         const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
       });
       
-      return res.json({ submissions: allSubmissions });
-    } catch (error: any) {
-      console.error("[KYC Admin] Error:", error?.message || error);
-      return res.json({ submissions: [], error: error?.message || 'Unknown error' });
+      results.submissions = allSubmissions;
+    } catch (e: any) {
+      results.error = e?.message || String(e);
     }
+    return res.json(results);
   });
 
   // ============================================================================
