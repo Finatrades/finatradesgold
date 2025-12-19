@@ -3102,13 +3102,14 @@ export async function registerRoutes(
         });
       }
       
-      // Add corporate submissions
+      // Add corporate submissions - use companyName as fullName for display
       for (const s of corporateArray) {
         allSubmissions.push({
           ...s,
           tier: 'finatrades_corporate',
           kycType: 'finatrades_corporate',
           accountType: 'business',
+          fullName: s?.companyName || null,
         });
       }
       
