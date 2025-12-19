@@ -19,7 +19,7 @@ export const screeningStatusEnum = pgEnum('screening_status', ['Pending', 'Clear
 export const amlCaseStatusEnum = pgEnum('aml_case_status', ['Open', 'Under Investigation', 'Pending SAR', 'SAR Filed', 'Closed - No Action', 'Closed - Action Taken']);
 
 export const transactionTypeEnum = pgEnum('transaction_type', ['Buy', 'Sell', 'Send', 'Receive', 'Swap', 'Deposit', 'Withdrawal']);
-export const transactionStatusEnum = pgEnum('transaction_status', ['Pending', 'Processing', 'Completed', 'Failed', 'Cancelled']);
+export const transactionStatusEnum = pgEnum('transaction_status', ['Draft', 'Pending', 'Pending Verification', 'Approved', 'Processing', 'Completed', 'Failed', 'Cancelled', 'Rejected']);
 
 export const bnslPlanStatusEnum = pgEnum('bnsl_plan_status', [
   'Pending Activation', 'Active', 'Maturing', 'Completed', 
@@ -997,6 +997,7 @@ export const vaultOwnershipSummary = pgTable("vault_ownership_summary", {
   
   // Breakdown by status
   availableGrams: decimal("available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  pendingGrams: decimal("pending_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   lockedBnslGrams: decimal("locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   reservedTradeGrams: decimal("reserved_trade_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   
@@ -1018,6 +1019,40 @@ export const vaultOwnershipSummary = pgTable("vault_ownership_summary", {
 export const insertVaultOwnershipSummarySchema = createInsertSchema(vaultOwnershipSummary).omit({ id: true, createdAt: true, lastUpdated: true });
 export type InsertVaultOwnershipSummary = z.infer<typeof insertVaultOwnershipSummarySchema>;
 export type VaultOwnershipSummary = typeof vaultOwnershipSummary.$inferSelect;
+
+// ============================================
+// PHYSICAL GOLD ALLOCATIONS (Wingold & Metals DMCC)
+// ============================================
+
+export const allocationStatusEnum = pgEnum('allocation_status', ['Allocated', 'Released', 'Adjusted']);
+
+export const allocations = pgTable("allocations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Allocation details
+  gramsAllocated: decimal("grams_allocated", { precision: 18, scale: 6 }).notNull(),
+  vaultLocation: varchar("vault_location", { length: 255 }).notNull().default('Dubai - Wingold & Metals DMCC'),
+  physicalProvider: varchar("physical_provider", { length: 255 }).notNull().default('Wingold & Metals DMCC'),
+  
+  // Storage certificate reference
+  storageCertificateId: varchar("storage_certificate_id", { length: 255 }).references(() => certificates.id),
+  allocationBatchRef: varchar("allocation_batch_ref", { length: 100 }),
+  
+  // Status
+  status: allocationStatusEnum("status").notNull().default('Allocated'),
+  
+  // Audit
+  notes: text("notes"),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAllocationSchema = createInsertSchema(allocations).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAllocation = z.infer<typeof insertAllocationSchema>;
+export type Allocation = typeof allocations.$inferSelect;
 
 // ============================================
 // INVOICES - GOLD PURCHASE INVOICES

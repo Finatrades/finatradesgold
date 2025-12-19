@@ -1,0 +1,255 @@
+You are a senior full-stack engineer working in an existing FINATRADES codebase (already ~80–85% complete).
+
+DO NOT refactor or rewrite the whole platform.
+Implement the missing requirements as incremental, safe patches with DB migrations, unit tests, and minimal UI changes.
+
+Context (already implemented):
+- Gold grams are the real balance; USD is reference display.
+- Users: Personal/Business with accountType field.
+- KYC/KYB gate exists.
+- vaultOwnershipSummary tracks availableGrams, lockedBnslGrams, reservedTradeGrams.
+- vaultLedgerEntries exists (append-only).
+- certificates table exists with multiple types.
+- BNSL, FinaBridge, admin panel, audit logs, roles already exist.
+- P2P transfers + add funds exist.
+
+Goal:
+Close the remaining gaps (~15–20%):
+1) Add pendingGrams bucket
+2) Implement full transaction state machine (DRAFT → PENDING_VERIFICATION → APPROVED → COMPLETED, or REJECTED)
+3) Add physical allocations table and storage tracking (Wingold & Metals DMCC)
+4) Auto-generate missing certificate types on all actions
+5) Add Buy Gold Bar flow with receipt upload + admin verification
+6) Add Deposit Physical Gold flow with declared weight + vault location
+7) Enforce strict spending restrictions (pending/locked never spendable)
+8) Update admin UI + user UI where needed
+9) Add tests to prevent regression
+
+========================================================
+A) DATA MODEL CHANGES (MIGRATIONS REQUIRED)
+========================================================
+
+1) vaultOwnershipSummary:
+- Add field: pendingGrams (default 0)
+- Update any computed views/queries and UI to show Pending separately.
+
+2) transactions:
+If not present, add:
+- status enum:
+  DRAFT | PENDING_VERIFICATION | APPROVED | COMPLETED | REJECTED
+- rejectedReason (nullable)
+- approvedBy (nullable), approvedAt (nullable)
+
+Rules:
+- Only COMPLETED affects availableGrams (unless action is a lock transfer)
+- PendingGrams represents gold that is expected but not yet confirmed / usable.
+
+3) allocations table (NEW):
+Create table: allocations
+Fields:
+- id (pk)
+- txId (fk transactions)
+- userId (fk users)
+- gramsAllocated (decimal)
+- vaultLocation (enum/string: "Dubai Vault", "Swiss Vault", etc.)
+- physicalProvider ("Wingold & Metals DMCC")
+- storageCertificateId (fk certificates nullable)
+- allocationBatchRef (string nullable)
+- status (ALLOCATED | RELEASED | ADJUSTED)
+- createdAt
+
+Purpose:
+Link each credited gold batch to a physical allocation + vault location.
+
+========================================================
+B) CERTIFICATES (AUTO-GENERATION RULES)
+========================================================
+
+Ensure these certificate types exist and are generated automatically:
+
+1) DIGITAL_OWNERSHIP_CERTIFICATE (Finatrades)
+- Issued when user receives gold into FinaPay/FinaVault (after approval/completion)
+- Issued to receiver on P2P transfer
+
+2) PHYSICAL_STORAGE_CERTIFICATE (Wingold & Metals DMCC)
+- Issued only after allocation confirmation
+- Must include vaultLocation + provider + grams + allocationBatchRef
+
+3) TRANSFER_CERTIFICATE
+- Issued to sender on every P2P transfer (Send/Request settlement)
+
+4) LOCK_CERTIFICATE
+- Issued when moving gold from available → locked (BNSL lock or Trade lock)
+- Must include lock purpose (BNSL or Trade) + grams + timestamps
+
+5) TITLE_TRANSFER_TO_FINATRADES_CERTIFICATE
+- Issued when user sells/withdraws gold (ownership reduced and transferred to Finatrades)
+
+Implementation details:
+- Add a certificate service that is called from transaction handlers.
+- Certificates must be created as DB records even if PDF generation is stubbed.
+
+========================================================
+C) TRANSACTION STATE MACHINE (PATCH EXISTING LOGIC)
+========================================================
+
+Replace simple Pending→Completed flow with:
+
+Statuses:
+- DRAFT: created but not submitted
+- PENDING_VERIFICATION: user submitted, awaiting admin verification
+- APPROVED: admin approved, physical allocation confirmed
+- COMPLETED: ledger finalized, balances updated, certificates issued
+- REJECTED: admin rejected; no gold credited; store rejectedReason
+
+Update handlers for:
+- Add Funds (Card/Bank/Crypto)
+- Buy Gold Bar (receipt-based)
+- Deposit Physical Gold
+- Withdrawal/Sell
+
+Rules:
+- When PENDING_VERIFICATION: do not credit availableGrams
+- Optional: on APPROVED you may credit pendingGrams
+- On COMPLETED: move pendingGrams → availableGrams and finalize ledger entries + certificates
+- On REJECTED: revert any pendingGrams if used; issue no ownership/storage certificates
+
+========================================================
+D) NEW/UPDATED FLOWS
+========================================================
+
+1) Buy Gold Bar (receipt verification required)
+User flow:
+- Create BUY_GOLD_BAR transaction
+- Upload receipt file (store URL in tx metadata)
+- Status becomes PENDING_VERIFICATION
+Admin flow:
+- Verify receipt + confirm physical allocation
+- On approve:
+  - create allocation record with vaultLocation
+  - issue PHYSICAL_STORAGE_CERTIFICATE + DIGITAL_OWNERSHIP_CERTIFICATE
+  - update tx: APPROVED → COMPLETED
+- On reject:
+  - set REJECTED with reason
+
+2) Deposit Physical Gold (new)
+User flow:
+- Create DEPOSIT_PHYSICAL_GOLD transaction with:
+  - declaredWeightGrams
+  - depositType (bars/coins/mixed optional)
+  - vaultLocation
+  - notes
+- Status: PENDING_VERIFICATION
+Admin flow:
+- Verify deposit and storage confirmation
+- On approve:
+  - create allocation
+  - issue certificates
+  - credit balances
+- On reject:
+  - REJECTED with reason
+
+3) Lock Certificates
+- When user transfers from FinaPay → BNSL wallet:
+  - move availableGrams → lockedBnslGrams
+  - ledger entry created
+  - LOCK_CERTIFICATE issued
+
+- When user transfers from FinaPay → FinaBridge:
+  - either:
+    a) move available → reservedTrade (recommended) OR
+    b) move to finabridgeAvailable then lock at trade creation
+  - Ensure consistent and enforceable
+  - Issue LOCK_CERTIFICATE at the moment of lock/reserve
+
+4) Withdraw/Sell Gold (missing title transfer cert)
+User flow:
+- Create WITHDRAW or SELL transaction
+- Must check availableGrams
+Admin approval:
+- On approve:
+  - debit availableGrams
+  - ledger entry: title transfer to Finatrades
+  - issue TITLE_TRANSFER_TO_FINATRADES_CERTIFICATE
+  - status COMPLETED
+- No negative balances allowed.
+
+========================================================
+E) SPENDING RESTRICTIONS (HARD ENFORCEMENT)
+========================================================
+
+Implement a single reusable guard:
+- spendableGrams = availableGrams only
+- pendingGrams, lockedBnslGrams, reservedTradeGrams are NOT spendable
+
+Enforce on:
+- Send Payment
+- Request Payment settlement
+- Withdraw/Sell
+- Any “lock” transfer
+- Any admin settlement release
+
+If insufficient availableGrams → reject with clear error message.
+
+========================================================
+F) ADMIN PANEL & UI CHANGES (MINIMAL)
+========================================================
+
+1) Admin approvals pages:
+- Show new states DRAFT/PENDING/APPROVED/COMPLETED/REJECTED
+- Approve action must ask vaultLocation + gramsAllocated + allocationBatchRef (optional)
+- Reject action must require rejectedReason
+
+2) User UI:
+- Wallet summary must show:
+  - Available
+  - Pending
+  - Locked (BNSL)
+  - Reserved (Trade)
+- Each transaction shows:
+  - status
+  - certificate links (if issued)
+- Add pages:
+  - Buy Gold Bar: upload receipt + status
+  - Deposit Physical Gold: form + vault location selection
+
+========================================================
+G) TESTS (REGRESSION SAFE)
+========================================================
+
+Add automated tests to verify:
+1) pendingGrams not spendable
+2) state machine transitions valid (cannot complete without approve)
+3) certificates generated for:
+   - P2P transfer sender/receiver
+   - lock actions
+   - withdraw/sell
+4) allocations created on approved credit actions
+5) rejected transactions never credit available grams
+6) no negative balances under any path
+
+========================================================
+H) DELIVERABLES
+========================================================
+
+- DB migration scripts
+- Updated models + services
+- Updated transaction handlers
+- Updated admin screens
+- Updated user screens (minimal)
+- Test suite passing
+
+Implementation Approach:
+1) Add pendingGrams + update balance calculations/UI
+2) Add state machine + update existing transaction routes
+3) Add allocations + storage certificate changes
+4) Add certificate auto-generation hooks
+5) Add buy gold bar receipt flow + physical deposit flow
+6) Add spending restrictions guard everywhere
+7) Add tests
+
+Start now by:
+- locating current tables/models
+- implementing migrations
+- updating the transaction handler architecture in the safest way
+- then updating UI components and tests.

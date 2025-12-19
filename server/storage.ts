@@ -5,7 +5,7 @@ import {
   tradeCases, tradeDocuments,
   tradeRequests, tradeProposals, forwardedProposals, tradeConfirmations,
   finabridgeWallets, settlementHolds, dealRooms, dealRoomMessages,
-  chatSessions, chatMessages, auditLogs, certificates,
+  chatSessions, chatMessages, auditLogs, certificates, allocations,
   contentPages, contentBlocks, templates, mediaAssets, cmsLabels,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
@@ -53,6 +53,7 @@ import {
   knowledgeCategories, knowledgeArticles,
   type AuditLog, type InsertAuditLog,
   type Certificate, type InsertCertificate,
+  type Allocation, type InsertAllocation,
   type ContentPage, type InsertContentPage,
   type ContentBlock, type InsertContentBlock,
   type Template, type InsertTemplate,
@@ -1587,6 +1588,31 @@ export class DatabaseStorage implements IStorage {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     return `${prefix}-${timestamp}-${random}`;
+  }
+
+  // Allocations (Physical Gold Tracking)
+  async createAllocation(insertAllocation: InsertAllocation): Promise<Allocation> {
+    const [allocation] = await db.insert(allocations).values(insertAllocation).returning();
+    return allocation;
+  }
+
+  async getAllocation(id: string): Promise<Allocation | undefined> {
+    const [allocation] = await db.select().from(allocations).where(eq(allocations.id, id));
+    return allocation || undefined;
+  }
+
+  async getAllocationByTransaction(transactionId: string): Promise<Allocation | undefined> {
+    const [allocation] = await db.select().from(allocations).where(eq(allocations.transactionId, transactionId));
+    return allocation || undefined;
+  }
+
+  async getUserAllocations(userId: string): Promise<Allocation[]> {
+    return await db.select().from(allocations).where(eq(allocations.userId, userId)).orderBy(desc(allocations.createdAt));
+  }
+
+  async updateAllocation(id: string, updates: Partial<Allocation>): Promise<Allocation | undefined> {
+    const [allocation] = await db.update(allocations).set({ ...updates, updatedAt: new Date() }).where(eq(allocations.id, id)).returning();
+    return allocation || undefined;
   }
 
   async withTransaction<T>(fn: (txStorage: TransactionalStorage) => Promise<T>): Promise<T> {
