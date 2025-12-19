@@ -19,7 +19,9 @@ interface JurisResponse {
   };
 }
 
-// Registration workflow steps
+// Registration workflow steps - Based on actual database schema (shared/schema.ts)
+// Required fields: email, password, firstName, lastName
+// Optional fields: phoneNumber, country, companyName (business), registrationNumber (business)
 const REGISTRATION_STEPS = {
   welcome: {
     order: 1,
@@ -28,32 +30,60 @@ const REGISTRATION_STEPS = {
   },
   email: {
     order: 2,
-    message: "Great choice! Now, please provide your email address. This will be your login credential.",
+    message: "Great choice! Now, please provide your email address. This will be your login credential and used for account verification.",
     collectData: { field: 'email', type: 'email' as const, required: true }
   },
-  name: {
+  firstName: {
     order: 3,
-    message: "Perfect! What is your full name?",
-    collectData: { field: 'fullName', type: 'text' as const, required: true }
+    message: "What is your first name?",
+    collectData: { field: 'firstName', type: 'text' as const, required: true }
+  },
+  lastName: {
+    order: 4,
+    message: "And your last name?",
+    collectData: { field: 'lastName', type: 'text' as const, required: true }
   },
   phone: {
-    order: 4,
-    message: "Thank you! Please provide your phone number with country code (e.g., +971 xxx xxx xxxx).",
-    collectData: { field: 'phone', type: 'phone' as const, required: true }
+    order: 5,
+    message: "Please provide your phone number with country code (e.g., +971 xxx xxx xxxx). This is optional but recommended for account security.",
+    collectData: { field: 'phoneNumber', type: 'phone' as const, required: false }
+  },
+  country: {
+    order: 6,
+    message: "Which country are you located in?",
+    collectData: { field: 'country', type: 'text' as const, required: false }
+  },
+  companyName: {
+    order: 7,
+    message: "Please provide your company/business name.",
+    collectData: { field: 'companyName', type: 'text' as const, required: true },
+    businessOnly: true
+  },
+  registrationNumber: {
+    order: 8,
+    message: "What is your company registration number (Trade License or Commercial Registration)?",
+    collectData: { field: 'registrationNumber', type: 'text' as const, required: true },
+    businessOnly: true
   },
   password: {
-    order: 5,
+    order: 9,
     message: "Almost done! Please create a secure password (at least 8 characters with numbers and special characters).",
     collectData: { field: 'password', type: 'text' as const, required: true }
   },
   confirm: {
-    order: 6,
-    message: "Excellent! Here's a summary of your registration:\n\n**Account Type:** {accountType}\n**Email:** {email}\n**Name:** {fullName}\n**Phone:** {phone}\n\nShall I create your account now?",
+    order: 10,
+    message: "Excellent! Here's a summary of your registration:\n\n**Account Type:** {accountType}\n**Email:** {email}\n**Name:** {firstName} {lastName}\n**Phone:** {phoneNumber}\n**Country:** {country}\n\nShall I create your account now?",
     collectData: { field: 'confirmation', type: 'select' as const, options: ['Yes, create my account', 'No, I need to make changes'], required: true }
   },
+  confirmBusiness: {
+    order: 10,
+    message: "Excellent! Here's a summary of your business registration:\n\n**Account Type:** {accountType}\n**Company:** {companyName}\n**Registration #:** {registrationNumber}\n**Email:** {email}\n**Name:** {firstName} {lastName}\n**Phone:** {phoneNumber}\n**Country:** {country}\n\nShall I create your account now?",
+    collectData: { field: 'confirmation', type: 'select' as const, options: ['Yes, create my account', 'No, I need to make changes'], required: true },
+    businessOnly: true
+  },
   complete: {
-    order: 7,
-    message: "Congratulations! Your Finatrades account has been created successfully!\n\nNext Steps:\n1. Check your email for verification link\n2. Complete your KYC verification to unlock all features\n3. Start trading gold!\n\nWould you like me to help you with KYC verification now?"
+    order: 11,
+    message: "Congratulations! Your Finatrades account has been created successfully!\n\n**Next Steps:**\n1. Check your email for verification link (required to activate account)\n2. Complete your KYC verification to unlock full platform access\n3. Add funds and start trading gold!\n\n**Email Verification:** A verification link has been sent to your email. Please click it within 24 hours to activate your account.\n\nWould you like me to help you with KYC verification now?"
   }
 };
 
