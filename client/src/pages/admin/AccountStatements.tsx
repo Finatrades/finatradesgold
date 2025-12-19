@@ -70,15 +70,12 @@ interface AccountStatement {
   generatedAt: string;
   currentGoldPrice: number;
   balances: {
-    openingUsd: number;
     openingGold: number;
-    totalCreditsUsd: number;
-    totalDebitsUsd: number;
+    openingGoldUsdValue: number;
     totalCreditsGold: number;
     totalDebitsGold: number;
-    closingUsd: number;
     closingGold: number;
-    closingUsdGoldEquivalent: number;
+    closingGoldUsdValue: number;
   };
   transactions: StatementTransaction[];
 }
@@ -371,19 +368,19 @@ export default function AccountStatements() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <div className="text-gray-500">Opening USD</div>
-                        <div className="font-semibold">{formatCurrency(statement.balances.openingUsd)}</div>
+                        <div className="font-semibold">{formatCurrency(statement.balances.openingGoldUsdValue || 0)}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">Closing USD</div>
-                        <div className="font-semibold">{formatCurrency(statement.balances.closingUsd)}</div>
+                        <div className="font-semibold">{formatCurrency(statement.balances.closingGoldUsdValue || 0)}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">Opening Gold</div>
-                        <div className="font-semibold">{formatGrams(statement.balances.openingGold)}</div>
+                        <div className="font-semibold">{formatGrams(statement.balances.openingGold || 0)}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">Closing Gold</div>
-                        <div className="font-semibold">{formatGrams(statement.balances.closingGold)}</div>
+                        <div className="font-semibold">{formatGrams(statement.balances.closingGold || 0)}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -432,8 +429,8 @@ export default function AccountStatements() {
                   <Card className="bg-blue-50">
                     <CardContent className="pt-4">
                       <div className="text-xs text-blue-600">Opening Balance</div>
-                      <div className="font-bold text-lg">{formatCurrency(statement.balances.openingUsd)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.openingGold)}</div>
+                      <div className="font-bold text-lg">{formatCurrency(statement.balances.openingGoldUsdValue || 0)}</div>
+                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.openingGold || 0)}</div>
                     </CardContent>
                   </Card>
                   <Card className="bg-green-50">
@@ -441,8 +438,8 @@ export default function AccountStatements() {
                       <div className="text-xs text-green-600 flex items-center gap-1">
                         <ArrowUpRight className="w-3 h-3" /> Total Credits
                       </div>
-                      <div className="font-bold text-lg text-green-700">{formatCurrency(statement.balances.totalCreditsUsd)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.totalCreditsGold)}</div>
+                      <div className="font-bold text-lg text-green-700">{formatCurrency((statement.balances.totalCreditsGold || 0) * statement.currentGoldPrice)}</div>
+                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.totalCreditsGold || 0)}</div>
                     </CardContent>
                   </Card>
                   <Card className="bg-red-50">
@@ -450,20 +447,15 @@ export default function AccountStatements() {
                       <div className="text-xs text-red-600 flex items-center gap-1">
                         <ArrowDownRight className="w-3 h-3" /> Total Debits
                       </div>
-                      <div className="font-bold text-lg text-red-700">{formatCurrency(statement.balances.totalDebitsUsd)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.totalDebitsGold)}</div>
+                      <div className="font-bold text-lg text-red-700">{formatCurrency((statement.balances.totalDebitsGold || 0) * statement.currentGoldPrice)}</div>
+                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.totalDebitsGold || 0)}</div>
                     </CardContent>
                   </Card>
                   <Card className="bg-orange-50">
                     <CardContent className="pt-4">
                       <div className="text-xs text-orange-600">Closing Balance</div>
-                      <div className="font-bold text-lg">{formatCurrency(statement.balances.closingUsd)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.closingGold)}</div>
-                      {statement.balances.closingUsdGoldEquivalent > 0 && (
-                        <div className="text-xs text-orange-600 mt-1">
-                          ≈ {formatGrams(statement.balances.closingUsdGoldEquivalent)} @ ${statement.currentGoldPrice.toFixed(2)}/g
-                        </div>
-                      )}
+                      <div className="font-bold text-lg">{formatCurrency(statement.balances.closingGoldUsdValue || 0)}</div>
+                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.closingGold || 0)}</div>
                     </CardContent>
                   </Card>
                 </div>
