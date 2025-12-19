@@ -61,11 +61,17 @@ The platform uses a client-server architecture with a React frontend and an Expr
 - `sendEmail` function logs all attempts.
 
 **UI/UX Design:**
-- **Theme**: Orange gradient aesthetic for light mode.
+- **Theme**: Purple gradient aesthetic for light mode (rebranded from orange in Dec 2025).
 - **Design Tokens**: Centralized in `client/src/index.css` using CSS variables.
-- **Color Palette**: Defined core colors (`--primary`, `--background`, `--foreground`, etc.) and semantic status colors (`--success`, `--warning`, `--info`, `--error`).
+- **Color Palette**: 
+  - Primary purple: #8A2BE2
+  - Dark purple: #4B0082
+  - Light purple: #A342FF
+  - Pink accent: #FF2FBF
+  - Header gradient: from #0D001E via #2A0055 to #4B0082
 - **Typography**: Inter font family.
 - **Component Patterns**: Standardized sidebar, cards, buttons, and status badges using defined tokens.
+- **Custom Scrollbar**: Purple/pink gradient scrollbar styling globally applied.
 
 ## External Dependencies
 
@@ -113,11 +119,11 @@ The platform uses a client-server architecture with a React frontend and an Expr
 #### Core Colors
 | CSS Variable | Light | Dark | Tailwind | Usage |
 |--------------|-------|------|----------|-------|
-| `--primary` | #f97316 | #f97316 | `bg-primary` | Brand orange |
-| `--background` | #ffffff | #111827 | `bg-background` | Page background |
-| `--foreground` | #1f2937 | #f9fafb | `text-foreground` | Primary text |
-| `--muted` | #f9fafb | #374151 | `bg-muted` | Subtle backgrounds |
-| `--border` | #e5e7eb | #374151 | `border-border` | Borders |
+| `--primary` | #8A2BE2 | #A342FF | `bg-primary` | Brand purple |
+| `--background` | #FAFBFF | #0D001E | `bg-background` | Page background |
+| `--foreground` | #0D0D0D | #f9fafb | `text-foreground` | Primary text |
+| `--muted` | #F4F6FC | #2A0055 | `bg-muted` | Subtle backgrounds |
+| `--border` | #e5e7eb | #4B0082 | `border-border` | Borders |
 | `--destructive` | #dc2626 | #dc2626 | `bg-destructive` | Danger actions |
 
 #### Semantic Status Colors
