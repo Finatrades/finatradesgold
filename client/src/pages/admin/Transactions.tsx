@@ -21,7 +21,7 @@ interface Transaction {
   id: string;
   userId: string;
   type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Swap' | 'Deposit' | 'Withdrawal' | 'Buy Gold Bar' | 'Crypto Deposit' | 'Trade Finance' | 'BNSL';
-  status: 'Pending' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled' | 'Under Review' | 'Pending Review' | 'Draft' | 'Pending Termination';
+  status: 'Draft' | 'Pending' | 'Pending Verification' | 'Approved' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled' | 'Rejected' | 'Under Review' | 'Pending Review' | 'Pending Termination';
   amountGold: string | null;
   amountUsd: string | null;
   amountEur: string | null;
@@ -33,6 +33,8 @@ interface Transaction {
   userEmail?: string;
   finatradesId?: string;
   sourceTable?: string;
+  allocationId?: string;
+  allocationBatchRef?: string;
 }
 
 export default function Transactions() {
@@ -228,12 +230,20 @@ export default function Transactions() {
     switch (status) {
       case 'Completed':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-none">Completed</Badge>;
+      case 'Approved':
+        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-none">Approved</Badge>;
       case 'Pending':
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">Pending</Badge>;
+      case 'Pending Verification':
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-none">Pending Verification</Badge>;
+      case 'Draft':
+        return <Badge className="bg-slate-100 text-slate-800 hover:bg-slate-200 border-none">Draft</Badge>;
       case 'Processing':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-none">Processing</Badge>;
       case 'Failed':
         return <Badge variant="destructive">Failed</Badge>;
+      case 'Rejected':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border-none">Rejected</Badge>;
       case 'Cancelled':
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 border-none">Cancelled</Badge>;
       default:
@@ -374,9 +384,13 @@ export default function Transactions() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Draft">Draft</SelectItem>
               <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Pending Verification">Pending Verification</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
               <SelectItem value="Processing">Processing</SelectItem>
               <SelectItem value="Completed">Completed</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
               <SelectItem value="Failed">Failed</SelectItem>
               <SelectItem value="Cancelled">Cancelled</SelectItem>
             </SelectContent>
@@ -463,7 +477,7 @@ export default function Transactions() {
                         <td className="px-4 py-4">{getStatusBadge(tx.status)}</td>
                         <td className="px-4 py-4 text-gray-500">{format(new Date(tx.createdAt), 'MMM dd, yyyy HH:mm')}</td>
                         <td className="px-4 py-4">
-                          {(tx.status === 'Pending' || tx.status === 'Under Review' || tx.status === 'Pending Review' || tx.status === 'Draft') && (
+                          {(tx.status === 'Pending' || tx.status === 'Pending Verification' || tx.status === 'Under Review' || tx.status === 'Pending Review' || tx.status === 'Draft') && (
                             tx.type === 'Buy Gold Bar' || tx.sourceTable === 'buyGoldRequests' ? (
                               <Link href="/admin/finapay/buy-gold">
                                 <Button 
