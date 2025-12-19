@@ -284,13 +284,37 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'pricing',
     actions: ['View Current Price', 'Price Charts']
   },
-  // Account
+  // Account Creation (Enhanced)
   {
-    keywords: ['account', 'register', 'sign up', 'create account'],
-    patterns: [/create (an )?account/i, /sign up/i, /register/i, /open account/i],
-    response: "Creating an account is easy:\n\n1. Click 'Sign Up' on our homepage\n2. Enter your email and create a password\n3. Verify your email address\n4. Complete basic profile information\n5. Optional: Complete KYC for higher limits\n\nYou can start exploring the platform immediately after email verification!",
+    keywords: ['account', 'register', 'sign up', 'create account', 'new account', 'join'],
+    patterns: [/create (an )?account/i, /sign up/i, /register/i, /open account/i, /new account/i, /how (do i|to) join/i],
+    response: "Creating a Finatrades account is simple:\n\n1. Choose account type (Personal or Business)\n2. Enter your email address\n3. Create a secure password\n4. Verify your email via the link sent to you\n5. Complete your profile information\n\nAfter email verification, you can access basic features. Complete KYC verification to unlock full platform access and higher limits.\n\nNeed step-by-step guidance? Chat with Juris AI for personalized registration assistance.",
     category: 'account',
-    actions: ['Sign Up', 'Login']
+    actions: ['Sign Up', 'Talk to Juris AI']
+  },
+  // Email Verification
+  {
+    keywords: ['email verification', 'verify email', 'email link', 'verification email', 'confirm email'],
+    patterns: [/email verification/i, /verify (my )?email/i, /verification (link|email)/i, /confirm (my )?email/i, /didn't receive email/i],
+    response: "Email verification is required to activate your account:\n\n**How it works:**\n1. After registration, a verification link is sent to your email\n2. Click the link to verify your email address\n3. Your account is now active for basic features\n\n**Didn't receive the email?**\n• Check your spam/junk folder\n• Make sure you entered the correct email\n• Request a new verification email from the login page\n\nEmail verification typically takes 1-2 minutes to arrive.",
+    category: 'account',
+    actions: ['Resend Verification', 'Contact Support']
+  },
+  // Finatrades KYC (Main Entry)
+  {
+    keywords: ['finatrades kyc', 'kyc process', 'verification process', 'kyc steps', 'how kyc works'],
+    patterns: [/finatrades kyc/i, /kyc process/i, /verification process/i, /kyc steps/i, /how (does )?kyc work/i, /complete kyc/i],
+    response: "Finatrades KYC verification unlocks full platform access:\n\n**Verification Tiers:**\n• Basic (Tier 1) - Quick verification, basic limits\n• Enhanced (Tier 2) - Full access, higher limits\n• Corporate (Tier 3) - Business accounts\n\n**Required Documents:**\n• Valid ID (Passport, National ID, or Driver's License)\n• Proof of Address (utility bill, bank statement)\n• Selfie with ID for liveness verification\n\n**Processing Time:**\n• Basic: 1-2 hours\n• Enhanced: 1-2 business days\n• Corporate: 3-5 business days\n\nFor guided assistance, chat with **Juris AI** - our specialized KYC assistant.",
+    category: 'kyc',
+    actions: ['Start KYC', 'Talk to Juris AI']
+  },
+  // Juris AI Reference
+  {
+    keywords: ['juris', 'juris ai', 'registration assistant', 'kyc assistant', 'kyc help'],
+    patterns: [/juris/i, /juris ai/i, /registration assistant/i, /kyc (help|assistant|guide)/i],
+    response: "**Juris AI** is our specialized registration and KYC assistant.\n\nJuris can help you with:\n• Creating a new account step-by-step\n• Completing KYC verification\n• Document requirements and tips\n• Checking verification status\n\nTo chat with Juris AI, select the 'Juris AI' agent from the chat options or click 'Talk to Juris AI' below.",
+    category: 'support',
+    actions: ['Talk to Juris AI']
   },
   // Transfer / P2P
   {
