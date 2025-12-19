@@ -3046,6 +3046,30 @@ export async function registerRoutes(
     return res.json({ success: true, message: "Admin KYC test2 with permissions works", timestamp: new Date().toISOString() });
   });
 
+  // Test endpoint that calls storage functions
+  app.get("/api/admin/kyc-test3", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    const results: any = { success: true, timestamp: new Date().toISOString() };
+    try {
+      const kycAml = await storage.getAllKycSubmissions();
+      results.kycAmlCount = Array.isArray(kycAml) ? kycAml.length : 'not array';
+    } catch (e: any) {
+      results.kycAmlError = e?.message || String(e);
+    }
+    try {
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      results.personalCount = Array.isArray(personal) ? personal.length : 'not array';
+    } catch (e: any) {
+      results.personalError = e?.message || String(e);
+    }
+    try {
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      results.corporateCount = Array.isArray(corporate) ? corporate.length : 'not array';
+    } catch (e: any) {
+      results.corporateError = e?.message || String(e);
+    }
+    return res.json(results);
+  });
+
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     console.log("[KYC Admin] Endpoint hit - starting execution");
