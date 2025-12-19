@@ -335,19 +335,32 @@ export async function restoreBackup(
       fileData = await decompressBuffer(fileData);
     }
     
-    const tempSqlPath = path.join(BACKUP_STORAGE_PATH, `restore-temp-${Date.now()}.sql`);
-    fs.writeFileSync(tempSqlPath, fileData);
-    
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
       throw new Error('DATABASE_URL not configured');
     }
     
-    await execAsync(`psql "${databaseUrl}" -f "${tempSqlPath}"`, {
-      timeout: 600000,
+    // Stream SQL directly to psql via stdin (avoids writing decrypted data to disk)
+    await new Promise<void>((resolve, reject) => {
+      const psql = spawn('psql', [databaseUrl], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 600000,
+      });
+      
+      let stderr = '';
+      psql.stderr.on('data', (data) => { stderr += data.toString(); });
+      
+      psql.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`psql exited with code ${code}: ${stderr}`));
+      });
+      
+      psql.on('error', reject);
+      
+      // Write decrypted SQL directly to psql stdin (never touches disk)
+      psql.stdin.write(fileData);
+      psql.stdin.end();
     });
-    
-    fs.unlinkSync(tempSqlPath);
     
     const [userCountResult] = await db.select({ count: sql`count(*)` }).from(users);
     const [txCountResult] = await db.select({ count: sql`count(*)` }).from(transactions);
