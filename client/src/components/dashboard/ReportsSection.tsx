@@ -215,7 +215,7 @@ export default function ReportsSection() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-amber-600" />
+          <FileText className="w-5 h-5 text-fuchsia-600" />
           Download Reports
         </CardTitle>
         <CardDescription>
@@ -255,7 +255,7 @@ export default function ReportsSection() {
         <Button 
           onClick={generatePDF} 
           disabled={generating || isLoading}
-          className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+          className="w-full bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
           data-testid="button-download-report"
         >
           {isLoading ? (

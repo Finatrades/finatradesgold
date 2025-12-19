@@ -39,7 +39,7 @@ export default function CertificatesCard() {
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-gray-900">Certificates</h3>
         <Link href="/finavault">
-          <Button variant="link" className="text-orange-500 h-auto p-0 hover:text-orange-600" data-testid="link-view-all-certificates">
+          <Button variant="link" className="text-purple-500 h-auto p-0 hover:text-purple-600" data-testid="link-view-all-certificates">
             View all
           </Button>
         </Link>
@@ -48,7 +48,7 @@ export default function CertificatesCard() {
       <div className="overflow-y-auto flex-1 pr-2 space-y-3">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="animate-spin w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full" />
+            <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full" />
           </div>
         ) : recentCertificates.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -74,10 +74,10 @@ export default function CertificatesCard() {
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isDigital ? 'bg-amber-100' : 'bg-gray-200'
+                      isDigital ? 'bg-purple-100' : 'bg-gray-200'
                     }`}>
                       {isDigital ? (
-                        <Award className="w-5 h-5 text-amber-600" />
+                        <Award className="w-5 h-5 text-fuchsia-600" />
                       ) : (
                         <Box className="w-5 h-5 text-gray-600" />
                       )}

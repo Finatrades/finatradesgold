@@ -83,7 +83,7 @@ const plans: Plan[] = [
     totalBonus: '18.0%',
     minInvestment: '$1,000',
     icon: Crown,
-    gradient: 'from-orange-500 to-amber-600',
+    gradient: 'from-purple-500 to-fuchsia-600',
     popular: true,
     features: [
       'Premium gold allocation',
@@ -103,7 +103,7 @@ const plans: Plan[] = [
     totalBonus: '30.0%',
     minInvestment: '$5,000',
     icon: Zap,
-    gradient: 'from-amber-500 to-yellow-600',
+    gradient: 'from-purple-500 to-yellow-600',
     features: [
       'Elite gold allocation',
       'Monthly + Compound options',
@@ -141,9 +141,9 @@ export default function BNSLPlanComparison() {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 100, repeat: Infinity, ease: 'linear' }}
-          className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full border border-dashed border-orange-100/50"
+          className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full border border-dashed border-purple-100/50"
         />
-        <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-amber-100/20 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-purple-100/20 blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -158,15 +158,15 @@ export default function BNSLPlanComparison() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-200/50 mb-6"
           >
-            <Sparkles className="w-4 h-4 text-orange-600" />
-            <span className="text-sm font-medium text-orange-800">Choose Your Plan</span>
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <span className="text-sm font-medium text-purple-800">Choose Your Plan</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Investment{' '}
-            <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-500 to-purple-500 bg-clip-text text-transparent">
               Plans
             </span>
           </h2>
@@ -196,7 +196,7 @@ export default function BNSLPlanComparison() {
                     animate={{ opacity: 1, y: 0 }}
                     className="absolute -top-4 left-1/2 -translate-x-1/2 z-10"
                   >
-                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold shadow-lg">
+                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-yellow-500 text-white text-xs font-bold shadow-lg">
                       <Star className="w-3 h-3" />
                       MOST POPULAR
                     </div>
@@ -296,7 +296,7 @@ export default function BNSLPlanComparison() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setLocation('/register')}
-            className="px-10 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold text-lg shadow-lg shadow-amber-200/50 inline-flex items-center gap-2"
+            className="px-10 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-yellow-500 text-white font-semibold text-lg shadow-lg shadow-purple-200/50 inline-flex items-center gap-2"
             data-testid="button-get-started-plan"
           >
             Get Started with {plans.find((p) => p.id === selectedPlan)?.name}

@@ -69,7 +69,7 @@ const benefits: Benefit[] = [
       'Plan upgrade options',
       'Partial withdrawal support',
     ],
-    gradient: 'from-orange-500 to-amber-600',
+    gradient: 'from-purple-500 to-fuchsia-600',
     color: 'orange',
   },
   {
@@ -83,7 +83,7 @@ const benefits: Benefit[] = [
       'Market rate selling',
       'Multiple payout options',
     ],
-    gradient: 'from-amber-500 to-yellow-600',
+    gradient: 'from-purple-500 to-yellow-600',
     color: 'amber',
   },
   {
@@ -133,7 +133,7 @@ export default function BNSLBenefits() {
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-40 -left-20 w-96 h-96 rounded-full bg-blue-100/30 blur-3xl" />
-        <div className="absolute bottom-20 right-0 w-80 h-80 rounded-full bg-orange-100/30 blur-3xl" />
+        <div className="absolute bottom-20 right-0 w-80 h-80 rounded-full bg-purple-100/30 blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -316,7 +316,7 @@ export default function BNSLBenefits() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setLocation('/register')}
-            className="px-10 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold text-lg shadow-lg shadow-amber-200/50 inline-flex items-center gap-2"
+            className="px-10 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-yellow-500 text-white font-semibold text-lg shadow-lg shadow-purple-200/50 inline-flex items-center gap-2"
             data-testid="button-experience-benefits"
           >
             <Sparkles className="w-5 h-5" />

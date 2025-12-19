@@ -110,7 +110,7 @@ export default function SecuritySettings() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
         </div>
       </AdminLayout>
     );
@@ -155,7 +155,7 @@ export default function SecuritySettings() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Mail className="w-5 h-5 text-orange-500" /> Email OTP Verification
+                      <Mail className="w-5 h-5 text-purple-500" /> Email OTP Verification
                     </CardTitle>
                     <CardDescription>
                       Require users to verify their identity via email code before performing sensitive actions.
@@ -292,14 +292,14 @@ export default function SecuritySettings() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <UserCheck className="w-5 h-5 text-orange-500" /> Admin Multi-Approval OTP
+                      <UserCheck className="w-5 h-5 text-purple-500" /> Admin Multi-Approval OTP
                     </CardTitle>
                     <CardDescription>
                       Require OTP verification for admin actions. When enabled, admins must verify via email code before approving sensitive operations.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
                       <div>
                         <Label className="text-base font-semibold">Enable Admin OTP Verification</Label>
                         <p className="text-sm text-gray-500">Master switch for admin multi-approval OTP</p>
@@ -396,7 +396,7 @@ export default function SecuritySettings() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Key className="w-5 h-5 text-orange-500" /> Passkey Authentication
+                    <Key className="w-5 h-5 text-purple-500" /> Passkey Authentication
                   </CardTitle>
                   <CardDescription>
                     Allow users to use biometric or hardware security keys for authentication.
@@ -476,7 +476,7 @@ export default function SecuritySettings() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-orange-500" /> OTP Configuration
+                    <Clock className="w-5 h-5 text-purple-500" /> OTP Configuration
                   </CardTitle>
                   <CardDescription>
                     Configure timing and attempt limits for OTP verification.

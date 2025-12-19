@@ -708,7 +708,7 @@ function BlockDialog({
           const parsed = JSON.parse(displayContent);
           return <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">{JSON.stringify(parsed, null, 2)}</pre>;
         } catch {
-          return <div className="text-amber-600 text-sm">JSON format will be validated on save</div>;
+          return <div className="text-fuchsia-600 text-sm">JSON format will be validated on save</div>;
         }
       case 'rich_text':
         return (
@@ -1074,7 +1074,7 @@ function TemplateDialog({
       case 'email':
         return 'bg-white';
       case 'certificate':
-        return 'bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200';
+        return 'bg-gradient-to-br from-purple-50 to-purple-50 border-2 border-purple-200';
       case 'notification':
         return 'bg-blue-50 border-l-4 border-blue-500';
       case 'invoice':
@@ -1327,7 +1327,7 @@ function TemplateDialog({
                 )}
                 {type === 'certificate' && (
                   <div className="text-center mb-4">
-                    <Award className="w-12 h-12 mx-auto text-amber-600" />
+                    <Award className="w-12 h-12 mx-auto text-fuchsia-600" />
                   </div>
                 )}
                 {type === 'notification' && (
@@ -1337,8 +1337,8 @@ function TemplateDialog({
                   </div>
                 )}
                 {type === 'invoice' && (
-                  <div className="text-center mb-4 pb-2 border-b-2 border-orange-500">
-                    <FileText className="w-10 h-10 mx-auto text-orange-600" />
+                  <div className="text-center mb-4 pb-2 border-b-2 border-purple-500">
+                    <FileText className="w-10 h-10 mx-auto text-purple-600" />
                     <div className="text-lg font-bold text-gray-800 mt-2">INVOICE</div>
                   </div>
                 )}
@@ -1416,7 +1416,7 @@ const quickAddTemplates = [
   {
     category: 'How It Works Section',
     icon: Hash,
-    color: 'bg-amber-100 text-amber-700',
+    color: 'bg-purple-100 text-fuchsia-700',
     items: [
       { name: 'Section Title', section: 'how_it_works', key: 'title', type: 'text' as const, defaultContent: 'How It Works' },
       { name: 'Section Subtitle', section: 'how_it_works', key: 'subtitle', type: 'text' as const, defaultContent: 'Get started in 4 simple steps' },
@@ -1519,7 +1519,7 @@ const quickAddTemplates = [
   {
     category: 'FinaVault (Private)',
     icon: Database,
-    color: 'bg-amber-100 text-amber-700',
+    color: 'bg-purple-100 text-fuchsia-700',
     items: [
       { name: 'Page Title', section: 'finavault', key: 'title', type: 'text' as const, defaultContent: 'FinaVault' },
       { name: 'Page Subtitle', section: 'finavault', key: 'subtitle', type: 'text' as const, defaultContent: 'Secure physical gold storage with dual certificates.' },
@@ -1569,7 +1569,7 @@ const quickAddTemplates = [
   {
     category: 'Profile (Private)',
     icon: User,
-    color: 'bg-orange-100 text-orange-700',
+    color: 'bg-purple-100 text-purple-700',
     items: [
       { name: 'Page Title', section: 'profile', key: 'title', type: 'text' as const, defaultContent: 'My Profile' },
       { name: 'Page Subtitle', section: 'profile', key: 'subtitle', type: 'text' as const, defaultContent: 'Manage your account settings and preferences.' },
@@ -1756,8 +1756,8 @@ const templateCategories = [
     name: 'Certificate Templates',
     description: 'Ownership and storage certificates',
     icon: Award,
-    color: 'bg-amber-100 text-amber-600',
-    borderColor: 'border-amber-200'
+    color: 'bg-purple-100 text-fuchsia-600',
+    borderColor: 'border-purple-200'
   },
   {
     type: 'notification',
@@ -2084,7 +2084,7 @@ function LabelsTab() {
     {
       name: 'Section Headers',
       icon: Type,
-      color: 'bg-orange-100 text-orange-700',
+      color: 'bg-purple-100 text-purple-700',
       labels: [
         { key: 'header_welcome', defaultValue: 'Welcome to Finatrades', description: 'Welcome header text' },
         { key: 'header_your_portfolio', defaultValue: 'Your Portfolio', description: 'Portfolio section header' },
@@ -2235,13 +2235,13 @@ function BrandingTab({
     tagline: '',
     logoUrl: '',
     faviconUrl: '',
-    primaryColor: '#f97316',
+    primaryColor: '#8A2BE2',
     primaryForeground: '#ffffff',
     secondaryColor: '#eab308',
     secondaryForeground: '#ffffff',
     accentColor: '#f59e0b',
     buttonRadius: '0.5rem',
-    buttonPrimaryBg: '#f97316',
+    buttonPrimaryBg: '#8A2BE2',
     buttonPrimaryText: '#ffffff',
     buttonSecondaryBg: '#f3f4f6',
     buttonSecondaryText: '#1f2937',
@@ -2266,13 +2266,13 @@ function BrandingTab({
         tagline: settings.tagline || '',
         logoUrl: settings.logoUrl || '',
         faviconUrl: settings.faviconUrl || '',
-        primaryColor: settings.primaryColor || '#f97316',
+        primaryColor: settings.primaryColor || '#8A2BE2',
         primaryForeground: settings.primaryForeground || '#ffffff',
         secondaryColor: settings.secondaryColor || '#eab308',
         secondaryForeground: settings.secondaryForeground || '#ffffff',
         accentColor: settings.accentColor || '#f59e0b',
         buttonRadius: settings.buttonRadius || '0.5rem',
-        buttonPrimaryBg: settings.buttonPrimaryBg || '#f97316',
+        buttonPrimaryBg: settings.buttonPrimaryBg || '#8A2BE2',
         buttonPrimaryText: settings.buttonPrimaryText || '#ffffff',
         buttonSecondaryBg: settings.buttonSecondaryBg || '#f3f4f6',
         buttonSecondaryText: settings.buttonSecondaryText || '#1f2937',

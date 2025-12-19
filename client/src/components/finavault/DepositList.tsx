@@ -38,7 +38,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
         colorClass = 'bg-blue-500/10 text-blue-500 border-blue-500/20';
         break;
       case 'Under Review':
-        colorClass = 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+        colorClass = 'bg-purple-500/10 text-purple-500 border-purple-500/20';
         break;
       case 'Approved – Awaiting Delivery':
       case 'Approved':
@@ -51,7 +51,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
         colorClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
         break;
       case 'Transferred':
-        colorClass = 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+        colorClass = 'bg-purple-500/10 text-purple-500 border-purple-500/20';
         break;
       case 'Rejected':
       case 'Cancelled':

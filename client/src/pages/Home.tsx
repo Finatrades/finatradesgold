@@ -76,18 +76,18 @@ export default function Home() {
   return (
     <Layout>
       {/* Hero Section - Compact */}
-      <section className="relative min-h-[70vh] flex items-center overflow-hidden bg-gradient-to-b from-white via-orange-50/30 to-white" data-testid="section-hero">
+      <section className="relative min-h-[70vh] flex items-center overflow-hidden bg-gradient-to-br from-[#FAFBFF] via-[#F4F6FC] to-[#FFFFFF]" data-testid="section-hero">
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-orange-300 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-60 h-60 bg-amber-300 rounded-full blur-3xl" />
+          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-400 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-60 h-60 bg-pink-300 rounded-full blur-3xl" />
         </div>
         
         <div className="relative z-10 container mx-auto px-4 py-16">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#f97316]/10 to-[#ea580c]/10 border border-[#f97316]/20 rounded-full px-3 py-1.5 mb-4">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#f97316]" />
-                <span className="text-xs font-medium text-[#ea580c]">Swiss-Regulated Platform</span>
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#8A2BE2]/10 to-[#4B0082]/10 border border-[#8A2BE2]/20 rounded-full px-3 py-1.5 mb-4">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#8A2BE2]" />
+                <span className="text-xs font-medium text-[#4B0082]">Swiss-Regulated Platform</span>
               </div>
 
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 leading-tight" data-testid="text-hero-title">
@@ -105,8 +105,8 @@ export default function Home() {
               </p>
               <p className="text-sm text-gray-500 mb-6 max-w-lg" data-testid="text-hero-partnership">
                 {accountType === 'business' 
-                  ? <>Partnership with <span className="font-semibold text-[#ea580c]">Wingold and Metals DMCC</span> for settlement-ready financial instruments.</>
-                  : <>Send, receive, spend anywhere, and earn through <span className="font-semibold text-[#ea580c]">BNSL</span> structured plans.</>}
+                  ? <>Partnership with <span className="font-semibold text-[#8A2BE2]">Wingold and Metals DMCC</span> for settlement-ready financial instruments.</>
+                  : <>Send, receive, spend anywhere, and earn through <span className="font-semibold text-[#8A2BE2]">BNSL</span> structured plans.</>}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/login">
@@ -115,7 +115,7 @@ export default function Home() {
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button size="default" className="bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white px-6 rounded-full" data-testid="button-get-started">
+                  <Button size="default" className="bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] hover:opacity-90 text-white px-6 rounded-full" data-testid="button-get-started">
                     Get Started <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
@@ -131,9 +131,9 @@ export default function Home() {
                 className="relative"
               >
                 <div className="relative w-full max-w-sm mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#f97316]/30 to-[#ea580c]/30 rounded-2xl blur-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#8A2BE2]/30 to-[#FF2FBF]/30 rounded-2xl blur-2xl" />
                   
-                  <div className="relative aspect-[1.6/1] bg-gradient-to-br from-[#1e293b] via-[#334155] to-[#0f172a] rounded-xl p-4 shadow-xl overflow-hidden border border-[#f97316]/20">
+                  <div className="relative aspect-[1.6/1] bg-gradient-to-br from-[#0D001E] via-[#2A0055] to-[#4B0082] rounded-xl p-4 shadow-xl overflow-hidden border border-[#8A2BE2]/20">
                     <div className="relative z-10 h-full flex flex-col justify-between">
                       <div className="flex justify-between items-start">
                         <FinatradesLogo variant="white" size="sm" />
@@ -153,7 +153,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="mt-4 bg-[#1e293b]/80 backdrop-blur-sm rounded-xl p-3 border border-[#f97316]/10">
+                  <div className="mt-4 bg-[#0D001E]/80 backdrop-blur-sm rounded-xl p-3 border border-[#8A2BE2]/10">
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
                         <div className="text-gray-400 text-[10px]">Vault</div>
@@ -180,7 +180,7 @@ export default function Home() {
       <section id="products" className="py-12 bg-white" data-testid="section-products">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
-            <span className="inline-block text-[#f97316] text-xs font-semibold tracking-wider uppercase mb-2">
+            <span className="inline-block text-[#8A2BE2] text-xs font-semibold tracking-wider uppercase mb-2">
               {accountType === 'business' ? 'BUSINESS ECOSYSTEM' : 'OUR PRODUCTS'}
             </span>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -202,13 +202,13 @@ export default function Home() {
               >
                 <Card className="h-full border-0 shadow-md hover:shadow-lg transition-all duration-300 group bg-white" data-testid={`card-product-${index}`}>
                   <CardContent className="p-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f97316]/10 to-[#ea580c]/10 flex items-center justify-center mb-3 group-hover:from-[#f97316]/20 group-hover:to-[#ea580c]/20 transition-colors">
-                      <div className="text-[#f97316]">{product.icon}</div>
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8A2BE2]/10 to-[#4B0082]/10 flex items-center justify-center mb-3 group-hover:from-[#8A2BE2]/20 group-hover:to-[#4B0082]/20 transition-colors">
+                      <div className="text-[#8A2BE2]">{product.icon}</div>
                     </div>
                     <h3 className="text-base font-semibold text-gray-900 mb-1">{product.title}</h3>
                     <p className="text-gray-500 text-xs mb-3">{product.description}</p>
                     <Link href={product.link}>
-                      <Button variant="ghost" className="p-0 h-auto text-[#f97316] hover:text-[#ea580c] font-medium text-sm">
+                      <Button variant="ghost" className="p-0 h-auto text-[#8A2BE2] hover:text-[#4B0082] font-medium text-sm">
                         {product.cta} <ArrowRight className="w-3.5 h-3.5 ml-1" />
                       </Button>
                     </Link>
@@ -265,7 +265,7 @@ export default function Home() {
       <section className="py-12 bg-white" data-testid="section-bnsl">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
-            <span className="inline-block text-[#f97316] text-xs font-semibold tracking-wider uppercase mb-2">
+            <span className="inline-block text-[#8A2BE2] text-xs font-semibold tracking-wider uppercase mb-2">
               STRUCTURED BNSL PLANS
             </span>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Buy Now, Sell Later</h2>
@@ -283,19 +283,19 @@ export default function Home() {
               >
                 <Card 
                   className={`h-full border-2 transition-all duration-300 hover:shadow-lg ${
-                    index === 1 ? 'border-[#f97316] shadow-md scale-105' : 'border-gray-200'
+                    index === 1 ? 'border-[#8A2BE2] shadow-md scale-105' : 'border-gray-200'
                   }`}
                   data-testid={`card-bnsl-${plan.duration}`}
                 >
                   <CardContent className="p-5 text-center">
                     {index === 1 && (
-                      <div className="inline-block bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full mb-2">
+                      <div className="inline-block bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full mb-2">
                         POPULAR
                       </div>
                     )}
                     <div className="text-3xl font-bold text-gray-900 mb-1">{plan.duration}</div>
                     <div className="text-gray-500 text-xs mb-3">Months</div>
-                    <div className="text-2xl font-bold text-[#f97316] mb-1">{plan.returns}</div>
+                    <div className="text-2xl font-bold text-[#8A2BE2] mb-1">{plan.returns}</div>
                     <div className="text-gray-500 text-xs mb-3">Expected Returns</div>
                     <div className="text-xs text-gray-600 mb-4">Min: {plan.minInvestment}</div>
                     <Link href="/bnsl">
@@ -303,7 +303,7 @@ export default function Home() {
                         size="sm"
                         className={`w-full rounded-full ${
                           index === 1 
-                            ? 'bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white' 
+                            ? 'bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] text-white' 
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -319,10 +319,10 @@ export default function Home() {
       </section>
 
       {/* Advantages - Compact */}
-      <section id="about" className="py-12 bg-gradient-to-b from-orange-50/50 to-white" data-testid="section-about">
+      <section id="about" className="py-12 bg-gradient-to-b from-purple-50/50 to-white" data-testid="section-about">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
-            <span className="inline-block text-[#f97316] text-xs font-semibold tracking-wider uppercase mb-2">
+            <span className="inline-block text-[#8A2BE2] text-xs font-semibold tracking-wider uppercase mb-2">
               WHY CHOOSE US
             </span>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">The Finatrades Advantage</h2>
@@ -339,8 +339,8 @@ export default function Home() {
                 className="text-center p-3"
                 data-testid={`advantage-${index}`}
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f97316]/10 to-[#ea580c]/10 flex items-center justify-center mx-auto mb-2">
-                  <div className="text-[#f97316]">{advantage.icon}</div>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8A2BE2]/10 to-[#4B0082]/10 flex items-center justify-center mx-auto mb-2">
+                  <div className="text-[#8A2BE2]">{advantage.icon}</div>
                 </div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">{advantage.title}</h3>
                 <p className="text-xs text-gray-600">{advantage.description}</p>
@@ -355,7 +355,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="max-w-lg mx-auto">
             <div className="text-center mb-6">
-              <span className="inline-block text-[#f97316] text-xs font-semibold tracking-wider uppercase mb-2">
+              <span className="inline-block text-[#8A2BE2] text-xs font-semibold tracking-wider uppercase mb-2">
                 CONTACT US
               </span>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Get in Touch</h2>
@@ -401,7 +401,7 @@ export default function Home() {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white rounded-full"
+                    className="w-full bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] text-white rounded-full"
                     data-testid="button-contact-submit"
                   >
                     Send Message
@@ -414,7 +414,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section - Compact */}
-      <section className="py-12 bg-gradient-to-r from-[#f97316] to-[#ea580c]" data-testid="section-cta">
+      <section className="py-12 bg-gradient-to-r from-[#8A2BE2] to-[#4B0082]" data-testid="section-cta">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
             Ready to Start Your Gold Journey?
@@ -425,7 +425,7 @@ export default function Home() {
           <Link href="/register">
             <Button 
               size="lg" 
-              className="bg-white text-[#f97316] hover:bg-gray-100 px-8 font-semibold rounded-full"
+              className="bg-white text-[#8A2BE2] hover:bg-gray-100 px-8 font-semibold rounded-full"
               data-testid="button-cta-register"
             >
               Create Your Account <ArrowRight className="w-4 h-4 ml-2" />

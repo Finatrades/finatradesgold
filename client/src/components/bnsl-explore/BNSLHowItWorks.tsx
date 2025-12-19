@@ -44,7 +44,7 @@ const steps: Step[] = [
     ],
     highlight: 'No minimum investment required',
     color: 'amber',
-    gradient: 'from-amber-500 to-yellow-500',
+    gradient: 'from-purple-500 to-yellow-500',
   },
   {
     id: 2,
@@ -60,7 +60,7 @@ const steps: Step[] = [
     ],
     highlight: 'Plans starting from 3 months',
     color: 'orange',
-    gradient: 'from-orange-500 to-amber-500',
+    gradient: 'from-purple-500 to-purple-500',
   },
   {
     id: 3,
@@ -145,12 +145,12 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-amber-200/30"
+          className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-purple-200/30"
         />
         <motion.div
           animate={{ rotate: -360 }}
           transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-orange-200/30"
+          className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-purple-200/30"
         />
       </div>
 
@@ -166,15 +166,15 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200/50 mb-6"
           >
-            <Sparkles className="w-4 h-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Simple 4-Step Process</span>
+            <Sparkles className="w-4 h-4 text-fuchsia-600" />
+            <span className="text-sm font-medium text-fuchsia-800">Simple 4-Step Process</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             How{' '}
-            <span className="bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-500 to-yellow-500 bg-clip-text text-transparent">
               BNSL
             </span>{' '}
             Works
@@ -196,7 +196,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                 onClick={toggleAutoPlay}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
                   isAutoPlaying
-                    ? 'bg-amber-100 text-amber-700'
+                    ? 'bg-purple-100 text-fuchsia-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -242,7 +242,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                     whileHover={{ x: 4 }}
                     className={`w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 ${
                       isActive
-                        ? 'bg-white border-amber-300 shadow-lg shadow-amber-100/50'
+                        ? 'bg-white border-purple-300 shadow-lg shadow-purple-100/50'
                         : 'bg-white/60 border-gray-100 hover:border-gray-200 hover:bg-white'
                     }`}
                   >
@@ -258,7 +258,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                         </motion.div>
                         <div
                           className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                            isActive ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-600'
+                            isActive ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-600'
                           }`}
                         >
                           {step.id}
@@ -289,7 +289,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                         transition={{ duration: 1, repeat: isActive ? Infinity : 0 }}
                       >
                         <ChevronRight
-                          className={`w-5 h-5 ${isActive ? 'text-amber-500' : 'text-gray-300'}`}
+                          className={`w-5 h-5 ${isActive ? 'text-purple-500' : 'text-gray-300'}`}
                         />
                       </motion.div>
                     </div>
@@ -298,7 +298,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                     {isActive && isAutoPlaying && (
                       <div className="mt-4 h-1 bg-gray-100 rounded-full overflow-hidden">
                         <motion.div
-                          className="h-full bg-gradient-to-r from-amber-400 to-yellow-500"
+                          className="h-full bg-gradient-to-r from-fuchsia-400 to-yellow-500"
                           style={{ width: `${progress}%` }}
                         />
                       </div>
@@ -371,11 +371,11 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50"
+                    className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200/50"
                   >
                     <div className="flex items-center gap-3">
-                      <BadgeCheck className="w-5 h-5 text-amber-600" />
-                      <span className="font-medium text-amber-800">{steps[activeStep].highlight}</span>
+                      <BadgeCheck className="w-5 h-5 text-fuchsia-600" />
+                      <span className="font-medium text-fuchsia-800">{steps[activeStep].highlight}</span>
                     </div>
                   </motion.div>
                 </div>
@@ -393,7 +393,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onOpenCalculator}
-                className="flex-1 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50"
+                className="flex-1 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-yellow-500 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-purple-200/50"
                 data-testid="button-calculate-returns"
               >
                 Calculate Your Returns

@@ -141,7 +141,7 @@ export default function TradeCaseDetailAdmin({
             <Badge variant="outline" className="bg-white text-base py-1 px-3">{tradeCase.status}</Badge>
             <Badge className={
               tradeCase.jurisdictionRisk === 'Critical' ? 'bg-red-600' :
-              tradeCase.jurisdictionRisk === 'High' ? 'bg-orange-600' :
+              tradeCase.jurisdictionRisk === 'High' ? 'bg-purple-600' :
               tradeCase.jurisdictionRisk === 'Medium' ? 'bg-yellow-600' : 'bg-green-600'
             }>
               {tradeCase.jurisdictionRisk} Risk
@@ -167,7 +167,7 @@ export default function TradeCaseDetailAdmin({
            ) : null}
 
            {tradeCase.status === 'Approved – Ready to Release' && (
-             <Button className="bg-amber-500 hover:bg-amber-600 text-white border-amber-600" onClick={() => setShowReleaseDialog(true)}>
+             <Button className="bg-purple-500 hover:bg-fuchsia-600 text-white border-fuchsia-600" onClick={() => setShowReleaseDialog(true)}>
                Release Settlement
              </Button>
            )}
@@ -241,7 +241,7 @@ export default function TradeCaseDetailAdmin({
                       </div>
                       <div>
                         <Label className="text-gray-500">Value (Gold)</Label>
-                        <p className="text-xl font-bold text-amber-600">{tradeCase.valueGoldGrams}g</p>
+                        <p className="text-xl font-bold text-fuchsia-600">{tradeCase.valueGoldGrams}g</p>
                       </div>
                     </div>
                     <Separator />
@@ -272,21 +272,21 @@ export default function TradeCaseDetailAdmin({
                   </CardContent>
                 </Card>
 
-                <Card className="bg-amber-50 border-amber-200">
+                <Card className="bg-purple-50 border-purple-200">
                   <CardHeader>
-                    <CardTitle className="text-amber-800">Settlement Status</CardTitle>
+                    <CardTitle className="text-fuchsia-800">Settlement Status</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-3 mb-4">
-                       <div className="p-2 bg-amber-100 rounded-full text-amber-700">
+                       <div className="p-2 bg-purple-100 rounded-full text-fuchsia-700">
                          {tradeCase.lockStatus === 'Locked' ? <Lock className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
                        </div>
                        <div>
-                         <p className="text-sm font-medium text-amber-900">Lock Status: {tradeCase.lockStatus}</p>
-                         <p className="text-2xl font-bold text-amber-700">{tradeCase.lockedGoldGrams}g</p>
+                         <p className="text-sm font-medium text-fuchsia-900">Lock Status: {tradeCase.lockStatus}</p>
+                         <p className="text-2xl font-bold text-fuchsia-700">{tradeCase.lockedGoldGrams}g</p>
                        </div>
                     </div>
-                    <p className="text-sm text-amber-800 bg-amber-100 p-3 rounded">
+                    <p className="text-sm text-fuchsia-800 bg-purple-100 p-3 rounded">
                       {tradeCase.lockStatus === 'Locked' 
                         ? "This gold is reserved for settlement and is not transferable until released by FinaBridge Admin." 
                         : "Settlement funds are currently not locked or have been released."}
@@ -414,7 +414,7 @@ export default function TradeCaseDetailAdmin({
                         </div>
                      </div>
                      <div className="flex items-start gap-4">
-                        <div className={`p-2 rounded-full mt-1 ${tradeCase.lockStatus === 'Locked' || tradeCase.lockStatus === 'Released' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'}`}>
+                        <div className={`p-2 rounded-full mt-1 ${tradeCase.lockStatus === 'Locked' || tradeCase.lockStatus === 'Released' ? 'bg-purple-100 text-fuchsia-700' : 'bg-gray-100 text-gray-400'}`}>
                            <Lock className="w-4 h-4" />
                         </div>
                         <div>
@@ -497,16 +497,16 @@ export default function TradeCaseDetailAdmin({
               Are you sure you want to release the settlement funds?
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 my-4">
+          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 my-4">
              <div className="flex justify-between items-center mb-2">
-               <span className="text-amber-800 font-medium">Transfer Amount:</span>
-               <span className="text-amber-900 font-bold text-lg">{tradeCase.lockedGoldGrams}g Gold</span>
+               <span className="text-fuchsia-800 font-medium">Transfer Amount:</span>
+               <span className="text-fuchsia-900 font-bold text-lg">{tradeCase.lockedGoldGrams}g Gold</span>
              </div>
              <div className="flex justify-between items-center text-sm">
-               <span className="text-amber-700">From: FinaVault Escrow</span>
-               <span className="text-amber-700">To: {tradeCase.exporter.name}</span>
+               <span className="text-fuchsia-700">From: FinaVault Escrow</span>
+               <span className="text-fuchsia-700">To: {tradeCase.exporter.name}</span>
              </div>
-             <div className="mt-2 text-xs text-amber-600 text-center">
+             <div className="mt-2 text-xs text-fuchsia-600 text-center">
                ~${(tradeCase.lockedGoldGrams * currentGoldPrice).toLocaleString()} USD value
              </div>
           </div>
@@ -515,7 +515,7 @@ export default function TradeCaseDetailAdmin({
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReleaseDialog(false)}>Cancel</Button>
-            <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleReleaseSettlement}>Release Funds</Button>
+            <Button className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white" onClick={handleReleaseSettlement}>Release Funds</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

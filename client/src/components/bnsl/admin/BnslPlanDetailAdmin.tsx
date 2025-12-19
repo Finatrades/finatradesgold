@@ -163,7 +163,7 @@ export default function BnslPlanDetailAdmin({
             <Badge variant="outline" className="bg-white">{plan.status}</Badge>
             <Badge className={
               plan.planRiskLevel === 'Critical' ? 'bg-red-600' :
-              plan.planRiskLevel === 'High' ? 'bg-orange-600' :
+              plan.planRiskLevel === 'High' ? 'bg-purple-600' :
               plan.planRiskLevel === 'Medium' ? 'bg-yellow-600' : 'bg-green-600'
             }>
               {plan.planRiskLevel} Risk
@@ -215,18 +215,18 @@ export default function BnslPlanDetailAdmin({
                    
                    <div>
                      <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Margin Component</h4>
-                     <div className="grid grid-cols-2 gap-4 bg-amber-50 p-4 rounded-lg">
+                     <div className="grid grid-cols-2 gap-4 bg-purple-50 p-4 rounded-lg">
                         <div>
-                          <p className="text-xs text-amber-800">Annual Rate</p>
-                          <p className="font-bold text-amber-900">{plan.agreedMarginAnnualPercent}% p.a.</p>
+                          <p className="text-xs text-fuchsia-800">Annual Rate</p>
+                          <p className="font-bold text-fuchsia-900">{plan.agreedMarginAnnualPercent}% p.a.</p>
                         </div>
                         <div>
-                          <p className="text-xs text-amber-800">Tenor</p>
-                          <p className="font-bold text-amber-900">{plan.tenorMonths} Months</p>
+                          <p className="text-xs text-fuchsia-800">Tenor</p>
+                          <p className="font-bold text-fuchsia-900">{plan.tenorMonths} Months</p>
                         </div>
-                        <div className="col-span-2 border-t border-amber-200 pt-2 mt-1">
-                          <p className="text-xs text-amber-800">Total Margin Component</p>
-                          <p className="text-xl font-bold text-amber-700">${plan.totalMarginComponentUsd.toLocaleString()}</p>
+                        <div className="col-span-2 border-t border-purple-200 pt-2 mt-1">
+                          <p className="text-xs text-fuchsia-800">Total Margin Component</p>
+                          <p className="text-xl font-bold text-fuchsia-700">${plan.totalMarginComponentUsd.toLocaleString()}</p>
                         </div>
                      </div>
                    </div>
@@ -331,7 +331,7 @@ export default function BnslPlanDetailAdmin({
                            <td className="p-3 text-gray-500">
                              {payout.marketPriceUsdPerGram ? `$${payout.marketPriceUsdPerGram}/g` : '-'}
                            </td>
-                           <td className="p-3 font-bold text-amber-600">
+                           <td className="p-3 font-bold text-fuchsia-600">
                              {payout.gramsCredited ? `${payout.gramsCredited.toFixed(4)}g` : '-'}
                            </td>
                            <td className="p-3">
@@ -448,10 +448,10 @@ export default function BnslPlanDetailAdmin({
                          <span>${plan.earlyTermination.netValueUsd.toLocaleString()}</span>
                       </div>
                       
-                      <div className="mt-4 bg-amber-100 p-4 rounded-lg border border-amber-200 text-center">
-                         <p className="text-sm text-amber-800 uppercase font-semibold mb-1">Final Gold Settlement</p>
-                         <p className="text-3xl font-bold text-amber-900">{plan.earlyTermination.finalGoldGrams.toFixed(4)}g</p>
-                         <p className="text-xs text-amber-700 mt-2">
+                      <div className="mt-4 bg-purple-100 p-4 rounded-lg border border-purple-200 text-center">
+                         <p className="text-sm text-fuchsia-800 uppercase font-semibold mb-1">Final Gold Settlement</p>
+                         <p className="text-3xl font-bold text-fuchsia-900">{plan.earlyTermination.finalGoldGrams.toFixed(4)}g</p>
+                         <p className="text-xs text-fuchsia-700 mt-2">
                            Loss: {(plan.goldSoldGrams - plan.earlyTermination.finalGoldGrams).toFixed(2)}g ({((plan.goldSoldGrams - plan.earlyTermination.finalGoldGrams) / plan.goldSoldGrams * 100).toFixed(1)}%)
                          </p>
                       </div>
@@ -581,9 +581,9 @@ export default function BnslPlanDetailAdmin({
                 </div>
              </div>
 
-             <div className="bg-amber-100 p-4 rounded-lg border border-amber-200 text-center">
-                <p className="text-sm text-amber-800 uppercase font-semibold mb-1">Simulated Settlement</p>
-                <p className="text-3xl font-bold text-amber-900">{simulation.finalGoldGrams.toFixed(4)}g</p>
+             <div className="bg-purple-100 p-4 rounded-lg border border-purple-200 text-center">
+                <p className="text-sm text-fuchsia-800 uppercase font-semibold mb-1">Simulated Settlement</p>
+                <p className="text-3xl font-bold text-fuchsia-900">{simulation.finalGoldGrams.toFixed(4)}g</p>
              </div>
           </div>
 

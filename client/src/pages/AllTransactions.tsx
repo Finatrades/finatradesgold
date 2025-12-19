@@ -121,7 +121,7 @@ export default function AllTransactions() {
   const getModuleColor = (module: string) => {
     switch (module) {
       case 'finapay': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'finavault': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+      case 'finavault': return 'bg-purple-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400';
       case 'bnsl': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
       case 'finabridge': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
       default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
@@ -137,10 +137,10 @@ export default function AllTransactions() {
       case 'RECEIVE':
       case 'Receive': return <ArrowDownLeft className="w-4 h-4 text-green-500" />;
       case 'LOCK':
-      case 'Buy': return <Lock className="w-4 h-4 text-amber-500" />;
+      case 'Buy': return <Lock className="w-4 h-4 text-purple-500" />;
       case 'UNLOCK':
       case 'Sell': return <Unlock className="w-4 h-4 text-blue-500" />;
-      case 'BUY_GOLD_BAR': return <Plus className="w-4 h-4 text-amber-500" />;
+      case 'BUY_GOLD_BAR': return <Plus className="w-4 h-4 text-purple-500" />;
       default: return <Wallet className="w-4 h-4 text-gray-500" />;
     }
   };
@@ -150,7 +150,7 @@ export default function AllTransactions() {
       case 'COMPLETED':
         return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
       case 'PENDING':
-        return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
+        return <Badge className="bg-purple-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
       case 'LOCKED':
         return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>;
       case 'FAILED':
@@ -205,17 +205,17 @@ export default function AllTransactions() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-200/50">
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-fuchsia-900/20 border-purple-200/50">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Gold</p>
-                <p className="text-2xl font-bold text-amber-700 dark:text-amber-400" data-testid="text-total-grams">
+                <p className="text-2xl font-bold text-fuchsia-700 dark:text-fuchsia-400" data-testid="text-total-grams">
                   {totals.totalGrams.toFixed(4)}g
                 </p>
               </div>
-              <div className="p-3 bg-amber-200/50 dark:bg-amber-800/30 rounded-full">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+              <div className="p-3 bg-purple-200/50 dark:bg-fuchsia-800/30 rounded-full">
+                <TrendingUp className="w-5 h-5 text-fuchsia-600" />
               </div>
             </div>
           </CardContent>
@@ -406,9 +406,9 @@ export default function AllTransactions() {
               </div>
 
               {selectedTx.status === 'Pending' && !selectedTx.grams && selectedTx.usd && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-sm">
-                  <p className="font-medium text-amber-800 dark:text-amber-300 mb-1">Important Notice:</p>
-                  <p className="text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+                <div className="bg-purple-50 dark:bg-fuchsia-900/20 border border-purple-200 dark:border-fuchsia-700 rounded-lg p-3 text-sm">
+                  <p className="font-medium text-fuchsia-800 dark:text-purple-300 mb-1">Important Notice:</p>
+                  <p className="text-fuchsia-700 dark:text-fuchsia-400 text-xs leading-relaxed">
                     Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
                     After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.
                   </p>
@@ -419,12 +419,12 @@ export default function AllTransactions() {
                 {selectedTx.grams ? (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Gold Amount</p>
-                    <p className="font-semibold text-amber-600">{parseFloat(selectedTx.grams).toFixed(6)}g</p>
+                    <p className="font-semibold text-fuchsia-600">{parseFloat(selectedTx.grams).toFixed(6)}g</p>
                   </div>
                 ) : selectedTx.usd && currentGoldPrice > 0 ? (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Gold Amount (Est.)</p>
-                    <p className="font-semibold text-amber-600">~{(parseFloat(selectedTx.usd) / currentGoldPrice).toFixed(4)}g</p>
+                    <p className="font-semibold text-fuchsia-600">~{(parseFloat(selectedTx.usd) / currentGoldPrice).toFixed(4)}g</p>
                   </div>
                 ) : null}
                 {selectedTx.usd && (

@@ -230,7 +230,7 @@ export default function ResetPassword() {
               <Button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all"
                 data-testid="button-reset-password"
               >
                 {isLoading ? "Resetting..." : (

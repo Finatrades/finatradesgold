@@ -333,10 +333,10 @@ export default function FinaVaultManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Pending Withdrawals</p>
-                  <p className="text-2xl font-bold text-orange-600">{pendingWithdrawals.length}</p>
+                  <p className="text-2xl font-bold text-purple-600">{pendingWithdrawals.length}</p>
                 </div>
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <ArrowUpCircle className="w-6 h-6 text-orange-600" />
+                <div className="p-3 bg-purple-100 rounded-full">
+                  <ArrowUpCircle className="w-6 h-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -508,7 +508,7 @@ export default function FinaVaultManagement() {
                                 {withdrawal.withdrawalMethod === 'Bank Transfer' ? (
                                   <Building className="w-4 h-4 text-blue-600" />
                                 ) : (
-                                  <Bitcoin className="w-4 h-4 text-orange-600" />
+                                  <Bitcoin className="w-4 h-4 text-purple-600" />
                                 )}
                                 <span>{withdrawal.withdrawalMethod}</span>
                               </div>
@@ -649,9 +649,9 @@ export default function FinaVaultManagement() {
                 {selectedDeposit.status !== 'Stored' && selectedDeposit.status !== 'Stored in Vault' && selectedDeposit.status !== 'Rejected' ? (
                   <>
                     <Separator />
-                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-sm font-medium text-orange-800">Update Status</p>
-                      <p className="text-xs text-orange-600 mt-1">Progress the deposit through the workflow stages</p>
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-sm font-medium text-purple-800">Update Status</p>
+                      <p className="text-xs text-purple-600 mt-1">Progress the deposit through the workflow stages</p>
                     </div>
                     
                     <div className="space-y-4">
@@ -698,7 +698,7 @@ export default function FinaVaultManagement() {
                         <Button 
                           onClick={handleUpdateStatus}
                           disabled={processingId === selectedDeposit.id || !selectedStatus}
-                          className="bg-orange-600 hover:bg-orange-700"
+                          className="bg-purple-600 hover:bg-purple-700"
                           data-testid="button-update-status"
                         >
                           {processingId === selectedDeposit.id ? (
@@ -856,7 +856,7 @@ export default function FinaVaultManagement() {
                     {selectedWithdrawal.withdrawalMethod === 'Bank Transfer' ? (
                       <Building className="w-5 h-5 text-blue-600" />
                     ) : (
-                      <Bitcoin className="w-5 h-5 text-orange-600" />
+                      <Bitcoin className="w-5 h-5 text-purple-600" />
                     )}
                     <span className="font-medium">{selectedWithdrawal.withdrawalMethod}</span>
                   </div>
@@ -916,10 +916,10 @@ export default function FinaVaultManagement() {
                 {(selectedWithdrawal.status === 'Pending' || selectedWithdrawal.status === 'Processing') ? (
                   <>
                     <Separator />
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                       <div className="flex gap-2 items-start">
-                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                        <div className="text-sm text-amber-800">
+                        <AlertCircle className="w-5 h-5 text-fuchsia-600 flex-shrink-0" />
+                        <div className="text-sm text-fuchsia-800">
                           <p className="font-medium">Review Required</p>
                           <p className="mt-1">Verify the payout details carefully before approving. Funds will be disbursed to the destination specified above.</p>
                         </div>

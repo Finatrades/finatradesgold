@@ -28,7 +28,7 @@ export default function FinaPayCard() {
       </div>
 
       {/* Card Visual */}
-      <div className="relative w-full aspect-[1.586/1] rounded-xl bg-gradient-to-br from-secondary via-orange-300 to-orange-500 shadow-lg p-5 flex flex-col justify-between mb-6 group-hover:scale-[1.02] transition-transform duration-300">
+      <div className="relative w-full aspect-[1.586/1] rounded-xl bg-gradient-to-br from-secondary via-purple-300 to-purple-500 shadow-lg p-5 flex flex-col justify-between mb-6 group-hover:scale-[1.02] transition-transform duration-300">
         {/* Card Noise Texture */}
         <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay rounded-xl" />
         

@@ -756,7 +756,7 @@ export default function KYCReview() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {submissions.map((app: any, index: number) => (
-                      <tr key={app.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150`}>
+                      <tr key={app.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
                         <td className="px-4 py-3 font-medium">{app.fullName || 'Not provided'}</td>
                         <td className="px-4 py-3 capitalize">{app.accountType}</td>
                         <td className="px-4 py-3">{getStatusBadge(app.status)}</td>

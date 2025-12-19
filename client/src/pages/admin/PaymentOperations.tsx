@@ -541,7 +541,7 @@ export default function FinaPayManagement() {
       case 'Send': return 'bg-blue-100 text-blue-700';
       case 'Receive': return 'bg-purple-100 text-purple-700';
       case 'Deposit': return 'bg-green-100 text-green-700';
-      case 'Withdrawal': return 'bg-orange-100 text-orange-700';
+      case 'Withdrawal': return 'bg-purple-100 text-purple-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -616,15 +616,15 @@ export default function FinaPayManagement() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-orange-50 border-orange-100">
+          <Card className="bg-purple-50 border-purple-100">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 text-orange-700 rounded-lg">
+                <div className="p-2 bg-purple-100 text-purple-700 rounded-lg">
                   <ArrowUpRight className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-orange-900">Pending Withdrawals</p>
-                  <h3 className="text-xl font-bold text-orange-700" data-testid="text-pending-withdrawals">{pendingWithdrawals.length}</h3>
+                  <p className="text-xs font-medium text-purple-900">Pending Withdrawals</p>
+                  <h3 className="text-xl font-bold text-purple-700" data-testid="text-pending-withdrawals">{pendingWithdrawals.length}</h3>
                 </div>
               </div>
             </CardContent>
@@ -659,31 +659,31 @@ export default function FinaPayManagement() {
 
         <Tabs defaultValue="deposits" className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-            <TabsTrigger value="deposits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="deposits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <ArrowDownLeft className="w-4 h-4 mr-2" />
               Deposits ({depositRequests.length})
             </TabsTrigger>
-            <TabsTrigger value="withdrawals" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="withdrawals" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <ArrowUpRight className="w-4 h-4 mr-2" />
               Withdrawals ({withdrawalRequests.length})
             </TabsTrigger>
-            <TabsTrigger value="transactions" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="transactions" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Coins className="w-4 h-4 mr-2" />
               Transactions ({transactions.length})
             </TabsTrigger>
-            <TabsTrigger value="peer-transfers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="peer-transfers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Send className="w-4 h-4 mr-2" />
               Peer Transfers ({peerTransfers.length})
             </TabsTrigger>
-            <TabsTrigger value="peer-requests" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="peer-requests" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <CreditCard className="w-4 h-4 mr-2" />
               Peer Requests ({peerRequests.length})
             </TabsTrigger>
-            <TabsTrigger value="crypto" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="crypto" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Bitcoin className="w-4 h-4 mr-2" />
               Crypto ({cryptoPayments.length})
             </TabsTrigger>
-            <TabsTrigger value="buy-gold" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="buy-gold" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Coins className="w-4 h-4 mr-2" />
               Buy Gold ({buyGoldRequests.length})
             </TabsTrigger>
@@ -763,7 +763,7 @@ export default function FinaPayManagement() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-orange-100 text-orange-700 rounded-lg">
+                            <div className="p-3 bg-purple-100 text-purple-700 rounded-lg">
                               <ArrowUpRight className="w-6 h-6" />
                             </div>
                             <div>
@@ -950,7 +950,7 @@ export default function FinaPayManagement() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-orange-100 text-orange-700 rounded-lg">
+                            <div className="p-3 bg-purple-100 text-purple-700 rounded-lg">
                               <Bitcoin className="w-6 h-6" />
                             </div>
                             <div>
@@ -1017,7 +1017,7 @@ export default function FinaPayManagement() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
+                            <div className="p-3 bg-purple-100 text-fuchsia-700 rounded-lg">
                               <Coins className="w-6 h-6" />
                             </div>
                             <div>
@@ -1044,7 +1044,7 @@ export default function FinaPayManagement() {
                                 {request.wingoldReferenceId && ` • Wingold: ${request.wingoldReferenceId}`}
                               </p>
                               {request.goldGrams && (
-                                <p className="text-xs text-amber-600">
+                                <p className="text-xs text-fuchsia-600">
                                   {parseFloat(request.goldGrams).toFixed(4)}g Gold
                                 </p>
                               )}
@@ -1138,8 +1138,8 @@ export default function FinaPayManagement() {
                 )}
 
                 {selectedCrypto.walletConfig && (
-                  <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                    <p className="text-orange-700 text-xs mb-1">Receiving Wallet</p>
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <p className="text-purple-700 text-xs mb-1">Receiving Wallet</p>
                     <p className="font-mono text-sm break-all">{selectedCrypto.walletConfig.walletAddress}</p>
                   </div>
                 )}

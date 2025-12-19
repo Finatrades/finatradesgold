@@ -96,7 +96,7 @@ export default function DealRoomList({ onOpenDealRoom }: DealRoomListProps) {
         return (
           <Card 
             key={room.id} 
-            className={`cursor-pointer transition-colors hover:bg-muted/50 ${hasUnread ? 'ring-2 ring-orange-500' : ''}`}
+            className={`cursor-pointer transition-colors hover:bg-muted/50 ${hasUnread ? 'ring-2 ring-purple-500' : ''}`}
             onClick={() => onOpenDealRoom(room.id, userRole)}
             data-testid={`deal-room-card-${room.id}`}
           >
@@ -104,7 +104,7 @@ export default function DealRoomList({ onOpenDealRoom }: DealRoomListProps) {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <MessageCircle className="w-4 h-4 text-orange-500" />
+                    <MessageCircle className="w-4 h-4 text-purple-500" />
                     <span className="font-medium">{room.tradeRequest?.tradeRefId || 'Trade Case'}</span>
                     {hasUnread && (
                       <Badge variant="destructive" className="ml-2 text-xs">

@@ -174,8 +174,8 @@ export default function ReferralManagement() {
           <Card data-testid="stat-total">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30">
-                  <Users className="h-6 w-6 text-orange-600" />
+                <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                  <Users className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Total Referrals</p>

@@ -118,10 +118,10 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
     switch (type) {
       case 'Buy': return 'text-green-500 bg-green-500/10 border-green-500/20';
       case 'Sell': return 'text-red-500 bg-red-500/10 border-red-500/20';
-      case 'Send': return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
+      case 'Send': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
       case 'Receive': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
       case 'Deposit': return 'text-green-500 bg-green-500/10 border-green-500/20';
-      case 'Request': return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
+      case 'Request': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
       default: return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
     }
   };
@@ -157,7 +157,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
                   ≈ ${transaction.amountUsd.toFixed(2)} USD
                 </p>
               ) : goldPrice > 0 && (
-                <p className="text-sm text-amber-600 font-medium mt-1">
+                <p className="text-sm text-fuchsia-600 font-medium mt-1">
                   ~{(transaction.amountUsd / goldPrice).toFixed(2)}g gold
                 </p>
               )}

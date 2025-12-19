@@ -250,8 +250,8 @@ export default function AccountStatements() {
                   users.map((user) => (
                     <div
                       key={user.id}
-                      className={`p-3 cursor-pointer hover:bg-orange-50 transition-colors ${
-                        selectedUserId === user.id ? 'bg-orange-100 border-l-4 border-orange-500' : ''
+                      className={`p-3 cursor-pointer hover:bg-purple-50 transition-colors ${
+                        selectedUserId === user.id ? 'bg-purple-100 border-l-4 border-purple-500' : ''
                       }`}
                       onClick={() => setSelectedUserId(user.id)}
                       data-testid={`user-option-${user.id}`}
@@ -262,7 +262,7 @@ export default function AccountStatements() {
                             {user.firstName} {user.lastName}
                           </div>
                           <div className="text-xs text-gray-500">{user.email}</div>
-                          <div className="text-xs font-mono text-orange-600">{user.finatradesId}</div>
+                          <div className="text-xs font-mono text-purple-600">{user.finatradesId}</div>
                         </div>
                         <Badge variant={user.accountType === 'Corporate' ? 'default' : 'secondary'} className="text-xs">
                           {user.accountType === 'Corporate' ? <Building2 className="w-3 h-3 mr-1" /> : <User className="w-3 h-3 mr-1" />}
@@ -405,9 +405,9 @@ export default function AccountStatements() {
               </div>
             ) : statement ? (
               <div className="space-y-6">
-                <div className="border-2 border-orange-200 rounded-lg p-6 bg-gradient-to-r from-orange-50 to-white">
+                <div className="border-2 border-purple-200 rounded-lg p-6 bg-gradient-to-r from-purple-50 to-white">
                   <div className="text-center mb-4">
-                    <h2 className="text-2xl font-bold text-orange-600">FINATRADES</h2>
+                    <h2 className="text-2xl font-bold text-purple-600">FINATRADES</h2>
                     <p className="text-lg font-medium text-gray-700">Account Statement</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -450,9 +450,9 @@ export default function AccountStatements() {
                       <div className="text-sm text-gray-500">{formatGrams(statement.balances.totalDebitsGold || 0)}</div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-orange-50">
+                  <Card className="bg-purple-50">
                     <CardContent className="pt-4">
-                      <div className="text-xs text-orange-600">Closing Balance</div>
+                      <div className="text-xs text-purple-600">Closing Balance</div>
                       <div className="font-bold text-lg">{formatCurrency(statement.balances.closingGoldUsdValue || 0)}</div>
                       <div className="text-sm text-gray-500">{formatGrams(statement.balances.closingGold || 0)}</div>
                     </CardContent>

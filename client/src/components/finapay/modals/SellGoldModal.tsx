@@ -146,7 +146,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
             )}
 
             {isBelowMinimum && (
-              <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-50 p-2 rounded-md">
+              <div className="flex items-center gap-2 text-fuchsia-600 text-sm bg-purple-50 p-2 rounded-md">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>Minimum trade amount is ${minTradeAmount}</span>
               </div>

@@ -245,11 +245,11 @@ export default function FinaPay() {
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
         {/* FinaPay Wallet Card */}
-        <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-orange-50' : ''}`}>
+        <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <WalletIcon className="w-5 h-5 text-amber-600" />
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <WalletIcon className="w-5 h-5 text-fuchsia-600" />
               </div>
               <h2 className="text-lg font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'FinaPay Wallet')}</h2>
             </div>
@@ -259,7 +259,7 @@ export default function FinaPay() {
             
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <WalletIcon className="w-20 h-20 text-amber-500" />
+                <WalletIcon className="w-20 h-20 text-purple-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
@@ -273,12 +273,12 @@ export default function FinaPay() {
 
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <Lock className="w-20 h-20 text-amber-500" />
+                <Lock className="w-20 h-20 text-purple-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
-                <p className="text-3xl font-bold text-amber-500 mb-1">$0.00</p>
-                <p className="text-sm text-amber-500/70">0.000 g</p>
+                <p className="text-3xl font-bold text-purple-500 mb-1">$0.00</p>
+                <p className="text-sm text-purple-500/70">0.000 g</p>
                 <p className="text-xs text-muted-foreground mt-3">
                   <Lock className="w-3 h-3 inline mr-1" />
                   Assets locked in active plans and trades.
@@ -288,11 +288,11 @@ export default function FinaPay() {
 
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <TrendingUp className="w-20 h-20 text-amber-500" />
+                <TrendingUp className="w-20 h-20 text-purple-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
-                <p className="text-3xl font-bold text-amber-500 mb-1">
+                <p className="text-3xl font-bold text-purple-500 mb-1">
                   ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-sm text-muted-foreground">{goldGrams.toFixed(3)} g Total</p>
@@ -306,7 +306,7 @@ export default function FinaPay() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <button
             onClick={() => setActiveModal('deposit')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
             data-testid="button-add-funds"
           >
             <div className="p-3 bg-green-100 rounded-full">
@@ -326,7 +326,7 @@ export default function FinaPay() {
 
           <button
             onClick={() => setActiveModal('sell')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
             data-testid="button-sell-gold"
           >
             <div className="p-3 bg-purple-100 rounded-full">
@@ -337,18 +337,18 @@ export default function FinaPay() {
 
           <button
             onClick={() => setActiveModal('withdraw')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
             data-testid="button-withdrawals"
           >
-            <div className="p-3 bg-orange-100 rounded-full">
-              <ArrowUpRight className="w-5 h-5 text-orange-600" />
+            <div className="p-3 bg-purple-100 rounded-full">
+              <ArrowUpRight className="w-5 h-5 text-purple-600" />
             </div>
             <span className="text-sm font-medium">Withdrawals</span>
           </button>
 
           <button
             onClick={() => setActiveModal('send')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
             data-testid="button-send-funds"
           >
             <div className="p-3 bg-blue-100 rounded-full">
@@ -359,7 +359,7 @@ export default function FinaPay() {
 
           <button
             onClick={() => setActiveModal('request')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-amber-300 hover:bg-amber-50 transition-all"
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
             data-testid="button-request-funds"
           >
             <div className="p-3 bg-teal-100 rounded-full">
@@ -387,7 +387,7 @@ export default function FinaPay() {
               <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
               <h4 className="text-lg font-semibold mb-2">No Transactions Yet</h4>
               <p className="text-muted-foreground mb-4">Your transaction history will appear here.</p>
-              <Button onClick={() => setActiveModal('buyWingold')} className="bg-amber-500 hover:bg-amber-600">
+              <Button onClick={() => setActiveModal('buyWingold')} className="bg-purple-500 hover:bg-fuchsia-600">
                 Make Your First Purchase
               </Button>
             </div>

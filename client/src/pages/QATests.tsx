@@ -115,7 +115,7 @@ export default function QATests() {
     <div className="container mx-auto py-8 px-4 max-w-7xl" data-testid="qa-tests-page">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <Beaker className="h-8 w-8 text-orange-500" />
+          <Beaker className="h-8 w-8 text-purple-500" />
           QA Test Harness
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -247,7 +247,7 @@ export default function QATests() {
                 </div>
 
                 {isRunning && (
-                  <div className="mt-6 flex items-center justify-center gap-2 text-orange-500">
+                  <div className="mt-6 flex items-center justify-center gap-2 text-purple-500">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span>Running tests...</span>
                   </div>

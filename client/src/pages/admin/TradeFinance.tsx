@@ -115,10 +115,10 @@ export default function TradeFinance() {
 
         <Tabs defaultValue="bridge" className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-            <TabsTrigger value="bridge" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="bridge" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               FinaBridge Requests
             </TabsTrigger>
-            <TabsTrigger value="bnsl" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+            <TabsTrigger value="bnsl" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               BNSL Positions
             </TabsTrigger>
           </TabsList>

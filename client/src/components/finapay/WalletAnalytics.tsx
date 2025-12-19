@@ -24,13 +24,13 @@ export default function WalletAnalytics({ wallet }: WalletAnalyticsProps) {
 
       <div className="space-y-4">
         {/* Gold Allocation */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100">
+        <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-100">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" />
+              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-500" />
               <span className="text-sm font-medium text-foreground">Gold Holdings</span>
             </div>
-            <span className="text-sm font-bold text-amber-600">{goldPercentage.toFixed(1)}%</span>
+            <span className="text-sm font-bold text-fuchsia-600">{goldPercentage.toFixed(1)}%</span>
           </div>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold text-foreground">
@@ -40,9 +40,9 @@ export default function WalletAnalytics({ wallet }: WalletAnalyticsProps) {
               {wallet.goldBalanceGrams.toFixed(4)} g
             </span>
           </div>
-          <div className="mt-2 h-2 bg-amber-100 rounded-full overflow-hidden">
+          <div className="mt-2 h-2 bg-purple-100 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-purple-500 to-purple-500 rounded-full transition-all duration-500"
               style={{ width: `${goldPercentage}%` }}
             />
           </div>

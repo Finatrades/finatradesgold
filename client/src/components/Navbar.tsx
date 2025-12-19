@@ -60,7 +60,7 @@ export default function Navbar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={`fixed top-0 w-full z-50 transition-all duration-500 ${
         scrolled 
-          ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-orange-100/50 border-b border-orange-100' 
+          ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-purple-100/50 border-b border-purple-100' 
           : 'bg-white/90 backdrop-blur-md'
       }`} 
       data-testid="navbar"
@@ -89,8 +89,8 @@ export default function Navbar() {
                 }}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
                   isActive(link.href) || (link.href === '/' && location === '/')
-                    ? 'text-orange-600 bg-orange-50'
-                    : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50/50'
+                    ? 'text-purple-600 bg-purple-50'
+                    : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50/50'
                 }`}
                 data-testid={`link-nav-${link.id}`}
               >
@@ -109,9 +109,9 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 hover:bg-transparent" data-testid="button-user-menu">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Avatar className="h-11 w-11 border-2 border-orange-200 shadow-lg shadow-orange-100">
+                      <Avatar className="h-11 w-11 border-2 border-purple-200 shadow-lg shadow-purple-100">
                         <AvatarImage src={user.profilePhoto || ''} alt={user.firstName} />
-                        <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold text-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-500 text-white font-bold text-sm">
                           {user.firstName[0]}{user.lastName[0]}
                         </AvatarFallback>
                       </Avatar>
@@ -126,12 +126,12 @@ export default function Navbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-gray-100" />
-                  <DropdownMenuItem onClick={() => window.location.href = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="hover:bg-orange-50 cursor-pointer" data-testid="menu-item-dashboard">
-                    <LayoutDashboard className="mr-2 h-4 w-4 text-orange-500" />
+                  <DropdownMenuItem onClick={() => window.location.href = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="hover:bg-purple-50 cursor-pointer" data-testid="menu-item-dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4 text-purple-500" />
                     <span>{user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="hover:bg-orange-50 cursor-pointer" data-testid="menu-item-profile">
-                    <User className="mr-2 h-4 w-4 text-orange-500" />
+                  <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="hover:bg-purple-50 cursor-pointer" data-testid="menu-item-profile">
+                    <User className="mr-2 h-4 w-4 text-purple-500" />
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-100" />
@@ -160,7 +160,7 @@ export default function Navbar() {
                 <Link href="/register">
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button 
-                      className="bg-gradient-to-r from-orange-500 to-amber-500 hover:shadow-lg hover:shadow-orange-200 text-white rounded-full px-6 font-semibold transition-all duration-300"
+                      className="bg-gradient-to-r from-purple-500 to-purple-500 hover:shadow-lg hover:shadow-purple-200 text-white rounded-full px-6 font-semibold transition-all duration-300"
                       data-testid="button-register"
                     >
                       Get Started
@@ -174,7 +174,7 @@ export default function Navbar() {
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="lg:hidden p-2.5 rounded-xl text-gray-700 bg-gray-100 border border-gray-200 hover:border-orange-300 transition-colors"
+              className="lg:hidden p-2.5 rounded-xl text-gray-700 bg-gray-100 border border-gray-200 hover:border-purple-300 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
@@ -208,7 +208,7 @@ export default function Navbar() {
                   }}
                   className={`w-full text-left px-5 py-4 rounded-xl text-sm font-medium flex items-center justify-between transition-all ${
                     isActive(link.href)
-                      ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                      ? 'bg-purple-50 text-purple-600 border border-purple-200'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                   data-testid={`mobile-link-${link.id}`}
@@ -237,7 +237,7 @@ export default function Navbar() {
                     </Link>
                     <Link href="/register" className="flex-1">
                       <Button 
-                        className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full py-5 font-semibold"
+                        className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white rounded-full py-5 font-semibold"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Get Started

@@ -180,7 +180,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] p-0 overflow-hidden [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         {/* Header */}
-        <DialogHeader className="p-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white flex-shrink-0">
+        <DialogHeader className="p-4 bg-gradient-to-r from-purple-500 to-purple-500 text-white flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <Shield className="w-6 h-6" />
@@ -232,9 +232,9 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
                   </div>
                 </div>
 
-                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <h4 className="font-semibold text-amber-900 mb-1 text-sm">Dynamic Updates</h4>
-                  <p className="text-xs text-amber-800">
+                <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 className="font-semibold text-fuchsia-900 mb-1 text-sm">Dynamic Updates</h4>
+                  <p className="text-xs text-fuchsia-800">
                     Finatrades may expand or modify the restricted jurisdictions list without notice.
                   </p>
                 </div>
@@ -271,7 +271,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
               <Button
                 variant="outline"
                 onClick={() => setShowFullTerms(true)}
-                className="w-full border-orange-300 text-orange-600 hover:bg-orange-50 mt-2"
+                className="w-full border-purple-300 text-purple-600 hover:bg-purple-50 mt-2"
                 data-testid="button-view-full-terms"
               >
                 <FileText className="w-4 h-4 mr-2" />
@@ -348,7 +348,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
               <Button 
                 onClick={handleAccept}
                 disabled={!accepted || !selectedRole}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-purple-500 to-purple-500 hover:from-purple-600 hover:to-fuchsia-600 text-white font-semibold disabled:opacity-50"
                 data-testid="button-accept-disclaimer"
               >
                 <Scale className="w-4 h-4 mr-2" />

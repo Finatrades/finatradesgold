@@ -58,7 +58,7 @@ export default function VaultManagement() {
             <Button variant="outline" onClick={() => { setStockAction('remove'); setIsStockModalOpen(true); }}>
               <MinusCircle className="w-4 h-4 mr-2" /> Remove Stock
             </Button>
-            <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => { setStockAction('add'); setIsStockModalOpen(true); }}>
+            <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => { setStockAction('add'); setIsStockModalOpen(true); }}>
               <PlusCircle className="w-4 h-4 mr-2" /> Add Physical Gold
             </Button>
           </div>
@@ -147,7 +147,7 @@ export default function VaultManagement() {
                       <Badge variant="outline" className={
                         item.status === 'Allocated' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
                         item.status === 'Available' ? 'bg-green-50 text-green-700 border-green-200' :
-                        'bg-orange-50 text-orange-700 border-orange-200'
+                        'bg-purple-50 text-purple-700 border-purple-200'
                       }>
                         {item.status}
                       </Badge>
@@ -163,17 +163,17 @@ export default function VaultManagement() {
 
           {/* Reconciliation Actions */}
           <div className="space-y-6">
-            <Card className="bg-orange-50 border-orange-100">
+            <Card className="bg-purple-50 border-purple-100">
               <CardHeader>
-                <CardTitle className="text-orange-900 flex items-center gap-2">
+                <CardTitle className="text-purple-900 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" /> Low Inventory Alert
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-orange-800 mb-4">
+                <p className="text-sm text-purple-800 mb-4">
                   Available unallocated gold is below 10kg. Consider restocking to maintain liquidity buffer for BNSL operations.
                 </p>
-                <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700">Initiate Restock</Button>
+                <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700">Initiate Restock</Button>
               </CardContent>
             </Card>
 

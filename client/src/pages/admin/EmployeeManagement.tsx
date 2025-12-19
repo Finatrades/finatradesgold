@@ -23,7 +23,7 @@ const EMPLOYEE_ROLES = [
   { value: 'admin', label: 'Admin', color: 'bg-blue-500' },
   { value: 'manager', label: 'Manager', color: 'bg-green-500' },
   { value: 'support', label: 'Support', color: 'bg-yellow-500' },
-  { value: 'finance', label: 'Finance', color: 'bg-orange-500' },
+  { value: 'finance', label: 'Finance', color: 'bg-purple-500' },
   { value: 'compliance', label: 'Compliance', color: 'bg-red-500' },
 ];
 
@@ -294,7 +294,7 @@ export default function EmployeeManagement() {
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button data-testid="button-add-employee" className="bg-orange-500 hover:bg-orange-600">
+              <Button data-testid="button-add-employee" className="bg-purple-500 hover:bg-purple-600">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Employee
               </Button>
@@ -477,7 +477,7 @@ export default function EmployeeManagement() {
                           <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10">
                               <AvatarImage src={employee.user?.profilePhoto || ''} />
-                              <AvatarFallback className="bg-orange-100 text-orange-600">
+                              <AvatarFallback className="bg-purple-100 text-purple-600">
                                 {employee.user ? 
                                   `${employee.user.firstName[0]}${employee.user.lastName[0]}` : 
                                   employee.employeeId.slice(-2)

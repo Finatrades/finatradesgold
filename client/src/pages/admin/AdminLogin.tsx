@@ -40,7 +40,7 @@ export default function AdminLogin() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function AdminLogin() {
           <div className="container mx-auto px-6 max-w-md">
             
             <div className="text-center mb-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center">
                 <Shield className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">Two-Factor Authentication</h1>
@@ -146,7 +146,7 @@ export default function AdminLogin() {
                 <Button 
                   type="submit"
                   disabled={isLoading || mfaCode.length < 6}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl"
+                  className="w-full bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl"
                   data-testid="button-admin-verify-mfa"
                 >
                   {isLoading ? "Verifying..." : (
@@ -177,7 +177,7 @@ export default function AdminLogin() {
         <div className="container mx-auto px-6 max-w-md">
           
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
               <Shield className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Admin Portal</h1>
@@ -195,7 +195,7 @@ export default function AdminLogin() {
                   placeholder="admin@finatrades.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500"
+                  className="h-12 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-purple-500 focus:ring-purple-500"
                   data-testid="input-admin-email"
                 />
               </div>
@@ -209,7 +209,7 @@ export default function AdminLogin() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 pr-12 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500"
+                    className="h-12 pr-12 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-purple-500 focus:ring-purple-500"
                     data-testid="input-admin-password"
                   />
                   <button
@@ -226,7 +226,7 @@ export default function AdminLogin() {
               <Button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20"
+                className="w-full bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-purple-500/20"
                 data-testid="button-admin-login"
               >
                 {isLoading ? "Signing in..." : (

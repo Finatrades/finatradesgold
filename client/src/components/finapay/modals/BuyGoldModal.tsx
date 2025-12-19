@@ -311,7 +311,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                   Your payment is being reviewed. Once verified, {numericGrams.toFixed(4)}g of gold will be credited to your wallet.
                 </p>
               </div>
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-fuchsia-800 flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>Verification typically takes 1-24 hours depending on network confirmations.</span>
               </div>
@@ -324,9 +324,9 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
           {/* Crypto Payment - Show Address */}
           {method === 'crypto' && cryptoStep === 'show_address' && selectedWallet && (
             <div className="space-y-4">
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
-                  <Bitcoin className="w-5 h-5 text-orange-600" />
+                  <Bitcoin className="w-5 h-5 text-purple-600" />
                   <span className="font-semibold">{selectedWallet.networkLabel}</span>
                 </div>
                 
@@ -359,7 +359,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                   )}
                   
                   {selectedWallet.instructions && (
-                    <p className="text-xs text-orange-700">{selectedWallet.instructions}</p>
+                    <p className="text-xs text-purple-700">{selectedWallet.instructions}</p>
                   )}
                 </div>
               </div>
@@ -492,7 +492,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                   </RadioGroup>
                 </div>
               ) : (
-                <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+                <div className="p-4 rounded-lg border border-purple-200 bg-purple-50 text-fuchsia-800 text-sm">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <div>
@@ -514,13 +514,13 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                         onClick={() => handleSelectCryptoWallet(wallet)}
                         className={`p-3 border rounded-lg cursor-pointer transition-all flex items-center gap-3 ${
                           selectedWallet?.id === wallet.id 
-                            ? 'border-orange-500 bg-orange-50' 
+                            ? 'border-purple-500 bg-purple-50' 
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                         data-testid={`crypto-wallet-${wallet.network}`}
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          selectedWallet?.id === wallet.id ? 'bg-orange-500 text-white' : 'bg-gray-100'
+                          selectedWallet?.id === wallet.id ? 'bg-purple-500 text-white' : 'bg-gray-100'
                         }`}>
                           <Bitcoin className="w-4 h-4" />
                         </div>
@@ -529,7 +529,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                           <p className="text-xs text-muted-foreground truncate">{wallet.walletAddress.slice(0, 20)}...</p>
                         </div>
                         {selectedWallet?.id === wallet.id && (
-                          <CheckCircle2 className="w-5 h-5 text-orange-500" />
+                          <CheckCircle2 className="w-5 h-5 text-purple-500" />
                         )}
                       </div>
                     ))}
@@ -615,7 +615,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
 
               {/* Below Minimum Warning */}
               {isBelowMinimum && (
-                <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-50 p-2 rounded-md">
+                <div className="flex items-center gap-2 text-fuchsia-600 text-sm bg-purple-50 p-2 rounded-md">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>Minimum trade amount is ${minTradeAmount}</span>
                 </div>

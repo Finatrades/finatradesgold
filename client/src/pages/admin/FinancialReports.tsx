@@ -207,8 +207,8 @@ function OverviewSection({ overview, isLoading, metrics }: { overview?: Financia
         <MetricCard
           title="Total Liabilities"
           value={formatCurrency(overview?.totalLiabilities || 0)}
-          icon={<AlertTriangle className="w-5 h-5 text-orange-600" />}
-          bg="bg-orange-50"
+          icon={<AlertTriangle className="w-5 h-5 text-purple-600" />}
+          bg="bg-purple-50"
           loading={isLoading}
         />
         <MetricCard
@@ -230,14 +230,14 @@ function OverviewSection({ overview, isLoading, metrics }: { overview?: Financia
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-amber-50 rounded-lg">
+            <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
               <div>
                 <p className="text-sm text-gray-600">Total Gold Stored</p>
-                <p className="text-2xl font-bold text-amber-700">
+                <p className="text-2xl font-bold text-fuchsia-700">
                   {isLoading ? '...' : formatGrams(overview?.goldHoldingsGrams || 0)}
                 </p>
               </div>
-              <Vault className="w-10 h-10 text-amber-500" />
+              <Vault className="w-10 h-10 text-purple-500" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 border rounded-lg">
@@ -299,7 +299,7 @@ function RevenueSection({ overview, metrics, isLoading }: { overview?: Financial
       amount: metrics?.finavault?.storageFeesUsd || 0,
       percentage: 25,
       icon: <Vault className="w-4 h-4" />,
-      color: 'bg-amber-500'
+      color: 'bg-purple-500'
     },
     { 
       source: 'BNSL Interest Income', 
@@ -407,8 +407,8 @@ function FinaPaySection({ metrics, isLoading, userFinancials }: { metrics?: Prod
         <MetricCard
           title="Fees Collected"
           value={formatCurrency(metrics?.feesCollectedUsd || 0)}
-          icon={<DollarSign className="w-5 h-5 text-amber-600" />}
-          bg="bg-amber-50"
+          icon={<DollarSign className="w-5 h-5 text-fuchsia-600" />}
+          bg="bg-purple-50"
           loading={isLoading}
         />
       </div>
@@ -432,7 +432,7 @@ function FinaPaySection({ metrics, isLoading, userFinancials }: { metrics?: Prod
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {userFinancials?.slice(0, 10).map((user, index) => (
-                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150`} data-testid={`row-user-${user.id}`}>
+                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`} data-testid={`row-user-${user.id}`}>
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium">{user.name}</p>
@@ -471,8 +471,8 @@ function FinaVaultSection({ metrics, isLoading, userFinancials }: { metrics?: Pr
         <MetricCard
           title="Total Holdings"
           value={metrics?.totalHoldings?.toString() || '0'}
-          icon={<Building2 className="w-5 h-5 text-amber-600" />}
-          bg="bg-amber-50"
+          icon={<Building2 className="w-5 h-5 text-fuchsia-600" />}
+          bg="bg-purple-50"
           loading={isLoading}
         />
         <MetricCard
@@ -517,7 +517,7 @@ function FinaVaultSection({ metrics, isLoading, userFinancials }: { metrics?: Pr
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {userFinancials?.filter(u => u.goldHoldingsGrams > 0).slice(0, 10).map((user, index) => (
-                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150`}>
+                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium">{user.name}</p>
@@ -529,7 +529,7 @@ function FinaVaultSection({ metrics, isLoading, userFinancials }: { metrics?: Pr
                         {user.accountType}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-right font-semibold text-amber-600">
+                    <td className="py-3 px-4 text-right font-semibold text-fuchsia-600">
                       {formatGrams(user.goldHoldingsGrams)}
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -577,8 +577,8 @@ function BNSLSection({ metrics, isLoading }: { metrics?: ProductMetrics['bnsl'];
         <MetricCard
           title="Expected Payouts"
           value={formatCurrency(metrics?.expectedPayoutsUsd || 0)}
-          icon={<Clock className="w-5 h-5 text-orange-600" />}
-          bg="bg-orange-50"
+          icon={<Clock className="w-5 h-5 text-purple-600" />}
+          bg="bg-purple-50"
           loading={isLoading}
         />
         <MetricCard
@@ -634,15 +634,15 @@ function LiabilitiesSection({ overview, metrics, isLoading }: { overview?: Finan
         <MetricCard
           title="Gold Owed to Users"
           value={formatGrams(overview?.goldLiabilityGrams || 0)}
-          icon={<Vault className="w-5 h-5 text-amber-600" />}
-          bg="bg-amber-50"
+          icon={<Vault className="w-5 h-5 text-fuchsia-600" />}
+          bg="bg-purple-50"
           loading={isLoading}
         />
         <MetricCard
           title="Pending Withdrawals"
           value={formatCurrency(overview?.pendingPayoutsUsd || 0)}
-          icon={<Clock className="w-5 h-5 text-orange-600" />}
-          bg="bg-orange-50"
+          icon={<Clock className="w-5 h-5 text-purple-600" />}
+          bg="bg-purple-50"
           loading={isLoading}
         />
         <MetricCard
@@ -664,8 +664,8 @@ function LiabilitiesSection({ overview, metrics, isLoading }: { overview?: Finan
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 rounded-lg">
-                    <Vault className="w-5 h-5 text-amber-600" />
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Vault className="w-5 h-5 text-fuchsia-600" />
                   </div>
                   <div>
                     <h4 className="font-semibold">Gold Liability</h4>
@@ -673,7 +673,7 @@ function LiabilitiesSection({ overview, metrics, isLoading }: { overview?: Finan
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-amber-600">{formatGrams(overview?.goldLiabilityGrams || 0)}</p>
+                  <p className="text-xl font-bold text-fuchsia-600">{formatGrams(overview?.goldLiabilityGrams || 0)}</p>
                   <p className="text-sm text-gray-500">{formatCurrency((overview?.goldLiabilityGrams || 0) * 93.5)}</p>
                 </div>
               </div>
@@ -775,12 +775,12 @@ function MetricCard({ title, value, icon, bg, trend, change, loading }: {
 function ProductPerformanceRow({ name, volume, fees, color }: { name: string; volume: string; fees: string; color: string }) {
   const bgColors: Record<string, string> = {
     blue: 'bg-blue-100',
-    amber: 'bg-amber-100',
+    amber: 'bg-purple-100',
     purple: 'bg-purple-100'
   };
   const textColors: Record<string, string> = {
     blue: 'text-blue-600',
-    amber: 'text-amber-600',
+    amber: 'text-fuchsia-600',
     purple: 'text-purple-600'
   };
 

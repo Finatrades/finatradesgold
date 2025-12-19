@@ -72,7 +72,7 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
             <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
-              <div className={`p-2 rounded-lg ${role === 'Importer' ? 'bg-blue-600/10 text-blue-600' : 'bg-orange-600/10 text-orange-600'}`}>
+              <div className={`p-2 rounded-lg ${role === 'Importer' ? 'bg-blue-600/10 text-blue-600' : 'bg-purple-600/10 text-purple-600'}`}>
                 <Wallet className="w-5 h-5" />
               </div>
               FinaBridge Wallet <span className="text-muted-foreground font-normal text-sm ml-1">({role})</span>
@@ -104,7 +104,7 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">Gold Backing:</span>
-                  <span className="text-base font-semibold text-amber-600">
+                  <span className="text-base font-semibold text-fuchsia-600">
                     {currentWallet.availableGoldGrams.toFixed(4)} g
                   </span>
                 </div>
@@ -124,13 +124,13 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">USD Value:</span>
-                  <span className={`text-xl font-bold ${role === 'Importer' ? 'text-amber-500' : 'text-blue-500'}`}>
+                  <span className={`text-xl font-bold ${role === 'Importer' ? 'text-purple-500' : 'text-blue-500'}`}>
                     ${((role === 'Importer' ? currentWallet.lockedGoldGrams : (currentWallet.incomingLockedGoldGrams || 0)) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">Gold Backing:</span>
-                  <span className={`text-base font-semibold ${role === 'Importer' ? 'text-amber-500/80' : 'text-blue-500/80'}`}>
+                  <span className={`text-base font-semibold ${role === 'Importer' ? 'text-purple-500/80' : 'text-blue-500/80'}`}>
                     {(role === 'Importer' ? currentWallet.lockedGoldGrams : (currentWallet.incomingLockedGoldGrams || 0)).toFixed(4)} g
                   </span>
                 </div>

@@ -235,7 +235,7 @@ export default function Transactions() {
       case 'Pending':
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">Pending</Badge>;
       case 'Pending Verification':
-        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-none">Pending Verification</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-none">Pending Verification</Badge>;
       case 'Draft':
         return <Badge className="bg-slate-100 text-slate-800 hover:bg-slate-200 border-none">Draft</Badge>;
       case 'Processing':
@@ -257,7 +257,7 @@ export default function Transactions() {
       'Sell': 'bg-red-100 text-red-800',
       'Send': 'bg-blue-100 text-blue-800',
       'Receive': 'bg-purple-100 text-purple-800',
-      'Deposit': 'bg-orange-100 text-orange-800',
+      'Deposit': 'bg-purple-100 text-purple-800',
       'Withdrawal': 'bg-pink-100 text-pink-800',
       'Swap': 'bg-cyan-100 text-cyan-800',
     };
@@ -448,7 +448,7 @@ export default function Transactions() {
                     {filteredTransactions.map((tx, index) => (
                       <tr 
                         key={tx.id} 
-                        className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150 group`} 
+                        className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150 group`} 
                         data-testid={`row-transaction-${tx.id}`}
                       >
                         <td className="px-4 py-4">
@@ -464,7 +464,7 @@ export default function Transactions() {
                         </td>
                         <td className="px-4 py-4 font-mono text-xs text-gray-500">TX-{tx.id.slice(0, 8).toUpperCase()}</td>
                         <td className="px-4 py-4">
-                          <span className="font-mono text-sm font-medium text-orange-600">{tx.finatradesId || `FT-${tx.userId.slice(0, 8).toUpperCase()}`}</span>
+                          <span className="font-mono text-sm font-medium text-purple-600">{tx.finatradesId || `FT-${tx.userId.slice(0, 8).toUpperCase()}`}</span>
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-col">
@@ -483,7 +483,7 @@ export default function Transactions() {
                                 <Button 
                                   size="sm" 
                                   variant="outline" 
-                                  className="text-orange-600 hover:bg-orange-50 gap-1"
+                                  className="text-purple-600 hover:bg-purple-50 gap-1"
                                   data-testid={`button-manage-buygold-${tx.id}`}
                                 >
                                   <ExternalLink className="w-3 h-3" />

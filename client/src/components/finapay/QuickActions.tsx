@@ -20,7 +20,7 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
       id: 'sell', 
       label: 'Sell Gold', 
       icon: <Coins className="w-5 h-5" />, 
-      gradient: 'from-orange-500 to-amber-600',
+      gradient: 'from-purple-500 to-fuchsia-600',
       description: 'Convert to USD'
     },
     { 
@@ -34,7 +34,7 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
       id: 'request', 
       label: 'Request', 
       icon: <ArrowDownLeft className="w-5 h-5" />, 
-      gradient: 'from-orange-500 to-amber-600',
+      gradient: 'from-purple-500 to-fuchsia-600',
       description: 'Request payment'
     },
   ];

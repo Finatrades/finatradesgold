@@ -519,7 +519,7 @@ export default function Register() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-6"
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white py-6"
               data-testid="button-submit"
             >
               {isSubmitting ? 'Creating Account...' : <span className="font-bold">Create Account</span>}

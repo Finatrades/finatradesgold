@@ -32,7 +32,7 @@ export default function LanguageSwitcher({ variant = 'default' }: { variant?: 'd
         className="flex items-center gap-2 px-3 py-2 rounded-full transition-all bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200"
         data-testid="button-language-switcher"
       >
-        <Globe className="w-4 h-4 text-orange-600" />
+        <Globe className="w-4 h-4 text-purple-600" />
         <span className="text-xs font-medium">{currentLang.code.toUpperCase()}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -55,7 +55,7 @@ export default function LanguageSwitcher({ variant = 'default' }: { variant?: 'd
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
                   language === lang.code 
-                    ? 'bg-orange-50 text-orange-600' 
+                    ? 'bg-purple-50 text-purple-600' 
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
                 data-testid={`button-lang-${lang.code}`}
@@ -63,7 +63,7 @@ export default function LanguageSwitcher({ variant = 'default' }: { variant?: 'd
                 <span className="text-lg">{lang.flag}</span>
                 <span className="font-medium">{lang.label}</span>
                 {language === lang.code && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-orange-600" />
+                  <div className="ml-auto w-2 h-2 rounded-full bg-purple-600" />
                 )}
               </button>
             ))}

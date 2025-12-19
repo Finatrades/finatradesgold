@@ -46,7 +46,7 @@ export default function BNSLHeroVault() {
             opacity: [0.3, 0.5, 0.3],
           }}
           transition={{ duration: 8, repeat: Infinity }}
-          className="absolute top-20 left-20 w-96 h-96 rounded-full bg-gradient-to-r from-amber-200/30 to-yellow-300/30 blur-3xl"
+          className="absolute top-20 left-20 w-96 h-96 rounded-full bg-gradient-to-r from-purple-200/30 to-yellow-300/30 blur-3xl"
         />
         <motion.div
           animate={{
@@ -54,7 +54,7 @@ export default function BNSLHeroVault() {
             opacity: [0.4, 0.6, 0.4],
           }}
           transition={{ duration: 10, repeat: Infinity }}
-          className="absolute bottom-20 right-20 w-[500px] h-[500px] rounded-full bg-gradient-to-r from-orange-200/30 to-amber-200/30 blur-3xl"
+          className="absolute bottom-20 right-20 w-[500px] h-[500px] rounded-full bg-gradient-to-r from-purple-200/30 to-purple-200/30 blur-3xl"
         />
 
         {/* Floating Gold Coins */}
@@ -79,8 +79,8 @@ export default function BNSLHeroVault() {
               top: `${20 + (i % 3) * 25}%`,
             }}
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 shadow-lg shadow-amber-200/50 flex items-center justify-center">
-              <Coins className="w-4 h-4 text-amber-800" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-300 to-yellow-500 shadow-lg shadow-purple-200/50 flex items-center justify-center">
+              <Coins className="w-4 h-4 text-fuchsia-800" />
             </div>
           </motion.div>
         ))}
@@ -109,10 +109,10 @@ export default function BNSLHeroVault() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200/50 shadow-sm"
             >
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-800">
+              <Sparkles className="w-4 h-4 text-fuchsia-600" />
+              <span className="text-sm font-medium text-fuchsia-800">
                 Trusted by 50,000+ Gold Investors
               </span>
             </motion.div>
@@ -127,7 +127,7 @@ export default function BNSLHeroVault() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="inline-block bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                      className="inline-block bg-gradient-to-r from-purple-500 via-yellow-500 to-fuchsia-600 bg-clip-text text-transparent"
                     >
                       {words[currentWord]}
                     </motion.span>
@@ -151,8 +151,8 @@ export default function BNSLHeroVault() {
                   transition={{ delay: 0.4 + index * 0.1 }}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm"
                 >
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100">
-                    <stat.icon className="w-5 h-5 text-amber-600" />
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-yellow-100">
+                    <stat.icon className="w-5 h-5 text-fuchsia-600" />
                   </div>
                   <div>
                     <p className="text-xl font-bold text-gray-900">{stat.value}</p>
@@ -168,7 +168,7 @@ export default function BNSLHeroVault() {
                 whileHover={{ scale: 1.02, boxShadow: '0 20px 40px rgba(245, 158, 11, 0.3)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setLocation('/register')}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white font-semibold text-lg shadow-lg shadow-amber-200/50 flex items-center gap-2 group"
+                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-500 via-yellow-500 to-fuchsia-600 text-white font-semibold text-lg shadow-lg shadow-purple-200/50 flex items-center gap-2 group"
                 data-testid="button-start-investing"
               >
                 Start Investing
@@ -179,10 +179,10 @@ export default function BNSLHeroVault() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => scrollToSection('how-it-works')}
-                className="px-8 py-4 rounded-2xl bg-white border-2 border-gray-200 text-gray-700 font-semibold text-lg flex items-center gap-2 hover:border-amber-300 transition-colors"
+                className="px-8 py-4 rounded-2xl bg-white border-2 border-gray-200 text-gray-700 font-semibold text-lg flex items-center gap-2 hover:border-purple-300 transition-colors"
                 data-testid="button-watch-demo"
               >
-                <Play className="w-5 h-5 text-amber-600" />
+                <Play className="w-5 h-5 text-fuchsia-600" />
                 Watch Demo
               </motion.button>
             </div>
@@ -200,7 +200,7 @@ export default function BNSLHeroVault() {
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-                className="absolute inset-0 rounded-full border-2 border-dashed border-amber-300/30"
+                className="absolute inset-0 rounded-full border-2 border-dashed border-purple-300/30"
               />
 
               {/* Main Vault Container */}
@@ -220,10 +220,10 @@ export default function BNSLHeroVault() {
                     <motion.div
                       animate={{ rotate: [0, 360] }}
                       transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-                      className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 shadow-lg shadow-amber-400/50 flex items-center justify-center"
+                      className="w-24 h-24 rounded-full bg-gradient-to-br from-fuchsia-400 to-yellow-600 shadow-lg shadow-fuchsia-400/50 flex items-center justify-center"
                     >
                       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                        <Shield className="w-8 h-8 text-amber-400" />
+                        <Shield className="w-8 h-8 text-fuchsia-400" />
                       </div>
                     </motion.div>
                   </div>
@@ -240,7 +240,7 @@ export default function BNSLHeroVault() {
                         key={i}
                         animate={{ y: [0, -5, 0] }}
                         transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-                        className="w-12 h-8 rounded bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 shadow-lg"
+                        className="w-12 h-8 rounded bg-gradient-to-br from-purple-300 via-yellow-400 to-purple-500 shadow-lg"
                       />
                     ))}
                   </motion.div>
@@ -294,7 +294,7 @@ export default function BNSLHeroVault() {
               ))}
 
               {/* Glow Effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-amber-400/20 via-transparent to-transparent blur-2xl" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-fuchsia-400/20 via-transparent to-transparent blur-2xl" />
             </div>
           </motion.div>
         </div>

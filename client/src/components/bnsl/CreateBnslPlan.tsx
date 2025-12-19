@@ -347,7 +347,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             </div>
           ) : noTemplatesConfigured ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
+              <AlertTriangle className="w-12 h-12 text-purple-500 mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">No Plans Available</h3>
               <p className="text-muted-foreground max-w-md">
                 BNSL plans are not currently configured. Please contact the administrator to set up plan options.
@@ -496,7 +496,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+          <div className="flex items-center gap-2 text-sm text-fuchsia-600 bg-purple-50 p-3 rounded-lg border border-purple-200">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span>Please read the complete terms carefully. Scroll to the bottom to continue.</span>
           </div>

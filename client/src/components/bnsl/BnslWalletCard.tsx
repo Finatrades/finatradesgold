@@ -113,7 +113,7 @@ export default function BnslWalletCard({
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">Gold Backing:</span>
-                  <span className="text-base font-semibold text-amber-600">
+                  <span className="text-base font-semibold text-fuchsia-600">
                     {bnslBalanceGold.toFixed(4)} g
                   </span>
                 </div>
@@ -129,13 +129,13 @@ export default function BnslWalletCard({
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">USD Value:</span>
-                  <span className="text-xl font-bold text-amber-500">
+                  <span className="text-xl font-bold text-purple-500">
                     ${(lockedBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">Gold Backing:</span>
-                  <span className="text-base font-semibold text-amber-500/80">
+                  <span className="text-base font-semibold text-purple-500/80">
                     {lockedBalanceGold.toFixed(4)} g
                   </span>
                 </div>

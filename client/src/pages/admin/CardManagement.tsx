@@ -33,7 +33,7 @@ export default function CardManagement() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-10 rounded bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center text-white shadow-sm mb-4">
+              <div className="w-16 h-10 rounded bg-gradient-to-r from-purple-400 to-purple-600 flex items-center justify-center text-white shadow-sm mb-4">
                 <CreditCard className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Cards Issued Yet</h3>

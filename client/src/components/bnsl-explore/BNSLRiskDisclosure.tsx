@@ -76,7 +76,7 @@ export default function BNSLRiskDisclosure() {
       case 'low':
         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'medium':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
+        return 'bg-purple-100 text-fuchsia-700 border-purple-200';
       case 'high':
         return 'bg-red-100 text-red-700 border-red-200';
       default:
@@ -132,15 +132,15 @@ export default function BNSLRiskDisclosure() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-8 p-6 rounded-2xl bg-amber-50 border border-amber-200"
+            className="mb-8 p-6 rounded-2xl bg-purple-50 border border-purple-200"
           >
             <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-amber-100">
-                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              <div className="p-2 rounded-lg bg-purple-100">
+                <AlertTriangle className="w-6 h-6 text-fuchsia-600" />
               </div>
               <div>
-                <h3 className="font-bold text-amber-900 mb-2">Important Investment Notice</h3>
-                <p className="text-amber-800 text-sm leading-relaxed">
+                <h3 className="font-bold text-fuchsia-900 mb-2">Important Investment Notice</h3>
+                <p className="text-fuchsia-800 text-sm leading-relaxed">
                   All investments carry risk. The value of your gold can go down as well as up, and
                   you may get back less than you invest. Please read this disclosure carefully and
                   consider seeking independent financial advice before making investment decisions.
@@ -249,7 +249,7 @@ export default function BNSLRiskDisclosure() {
                 type="checkbox"
                 checked={acknowledged}
                 onChange={(e) => setAcknowledged(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-gray-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-slate-900"
+                className="mt-1 w-5 h-5 rounded border-gray-600 text-purple-500 focus:ring-purple-500 focus:ring-offset-slate-900"
                 data-testid="checkbox-risk-acknowledgment"
               />
               <div>

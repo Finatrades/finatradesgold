@@ -372,7 +372,7 @@ export default function PlatformConfiguration() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
         </div>
       </AdminLayout>
     );
@@ -384,7 +384,7 @@ export default function PlatformConfiguration() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Settings className="h-6 w-6 text-orange-500" />
+              <Settings className="h-6 w-6 text-purple-500" />
               Platform Configuration
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -405,7 +405,7 @@ export default function PlatformConfiguration() {
             <Button 
               onClick={saveAllChanges} 
               disabled={!hasChanges || saving}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-purple-500 hover:bg-purple-600"
               data-testid="button-save-config"
             >
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
@@ -415,9 +415,9 @@ export default function PlatformConfiguration() {
         </div>
 
         {hasChanges && (
-          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-orange-500" />
-            <span className="text-sm text-orange-700 dark:text-orange-300">
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-purple-500" />
+            <span className="text-sm text-purple-700 dark:text-purple-300">
               You have unsaved changes. Click "Save Changes" to apply them.
             </span>
           </div>
@@ -431,7 +431,7 @@ export default function PlatformConfiguration() {
               <p className="text-gray-500 dark:text-gray-400 mb-4 text-center max-w-md">
                 The platform configuration has not been initialized yet. Click below to set up default values.
               </p>
-              <Button onClick={seedDefaults} className="bg-orange-500 hover:bg-orange-600" data-testid="button-seed-defaults-empty">
+              <Button onClick={seedDefaults} className="bg-purple-500 hover:bg-purple-600" data-testid="button-seed-defaults-empty">
                 <Database className="h-4 w-4 mr-2" />
                 Initialize Default Configuration
               </Button>
@@ -457,7 +457,7 @@ export default function PlatformConfiguration() {
                           onClick={() => setActiveTab(category)}
                           className={`flex items-center justify-between px-4 py-3 text-left border-l-2 transition-colors ${
                             isActive 
-                              ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300' 
+                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' 
                               : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                           }`}
                           data-testid={`tab-${category}`}

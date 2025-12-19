@@ -421,12 +421,12 @@ export default function FinaVault() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Database className="w-5 h-5 text-amber-600" />
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Database className="w-5 h-5 text-fuchsia-600" />
               </div>
               <h2 className="text-lg font-bold text-foreground">FinaVault Wallet</h2>
             </div>
-            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveTab('new-request')}>
+            <Button size="sm" className="bg-purple-500 hover:bg-fuchsia-600 text-white" onClick={() => setActiveTab('new-request')}>
               <Database className="w-4 h-4 mr-2" />
               Deposit Gold
             </Button>
@@ -457,14 +457,14 @@ export default function FinaVault() {
             {/* Locked in BNSL */}
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-bnsl-locked">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <Clock className="w-20 h-20 text-orange-500" />
+                <Clock className="w-20 h-20 text-purple-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in BNSL</p>
-                <p className="text-3xl font-bold text-orange-600 mb-1">
+                <p className="text-3xl font-bold text-purple-600 mb-1">
                   ${(bnslLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-orange-600/70">
+                <p className="text-sm text-purple-600/70">
                   {bnslLockedGrams.toFixed(3)} g
                 </p>
                 <p className="text-xs text-muted-foreground mt-3">
@@ -477,14 +477,14 @@ export default function FinaVault() {
             {/* Locked in Trade Finance */}
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-trade-locked">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <Briefcase className="w-20 h-20 text-amber-500" />
+                <Briefcase className="w-20 h-20 text-purple-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in Trades</p>
-                <p className="text-3xl font-bold text-amber-500 mb-1">
+                <p className="text-3xl font-bold text-purple-500 mb-1">
                   ${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-amber-500/70">
+                <p className="text-sm text-purple-500/70">
                   {finabridgeLockedGrams.toFixed(3)} g
                 </p>
                 <p className="text-xs text-muted-foreground mt-3">
@@ -497,7 +497,7 @@ export default function FinaVault() {
             {/* Total Value */}
             <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-total-value">
               <div className="absolute right-2 bottom-2 opacity-5">
-                <TrendingUp className="w-20 h-20 text-amber-500" />
+                <TrendingUp className="w-20 h-20 text-purple-500" />
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Vault Value</p>
@@ -615,7 +615,7 @@ export default function FinaVault() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="new-request" id="finavault-deposit-section" className={`transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-orange-50' : ''}`}>
+                <TabsContent value="new-request" id="finavault-deposit-section" className={`transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50' : ''}`}>
                   <NewDepositForm 
                     onSubmit={handleNewRequest}
                     onCancel={() => setActiveTab('my-deposits')}
@@ -697,7 +697,7 @@ export default function FinaVault() {
                                         entry.action === 'Buy' || entry.action.includes('Deposit') || entry.action.includes('Receive') || entry.action.includes('Credit') 
                                           ? 'bg-green-100 text-green-700'
                                           : entry.action.includes('Lock') || entry.action.includes('Reserve')
-                                          ? 'bg-orange-100 text-orange-700'
+                                          ? 'bg-purple-100 text-purple-700'
                                           : entry.action === 'Sell' || entry.action.includes('Withdrawal') || entry.action.includes('Send') || entry.action.includes('Fee')
                                           ? 'bg-red-100 text-red-700'
                                           : 'bg-blue-100 text-blue-700'

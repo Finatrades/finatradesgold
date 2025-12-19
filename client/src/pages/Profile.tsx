@@ -125,7 +125,7 @@ export default function Profile() {
             </Badge>
             {(isKycInProgress || isKycNotStarted) && (
               <Link href="/kyc">
-                 <Button size="sm" variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
+                 <Button size="sm" variant="outline" className="border-purple-500 text-purple-600 hover:bg-purple-50">
                     Complete Verification <ArrowRight className="w-3 h-3 ml-1" />
                  </Button>
               </Link>
@@ -179,7 +179,7 @@ export default function Profile() {
                        <p className="text-xs text-muted-foreground">Level 2 Access</p>
                     ) : (
                        <Link href="/kyc">
-                         <p className="text-xs text-orange-600 font-medium hover:underline cursor-pointer">Complete KYC Now</p>
+                         <p className="text-xs text-purple-600 font-medium hover:underline cursor-pointer">Complete KYC Now</p>
                        </Link>
                     )}
                   </div>
@@ -198,7 +198,7 @@ export default function Profile() {
 
             <Card className="p-4 border-border" data-testid="card-user-manual">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-orange-100 text-orange-700">
+                <div className="p-2 rounded-lg bg-purple-100 text-purple-700">
                   <FileText className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
@@ -344,8 +344,8 @@ export default function Profile() {
                     <CardDescription>Download your account statements in bank-style format.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-sm text-orange-800">
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-sm text-purple-800">
                         Generate a comprehensive statement showing all your deposits, withdrawals, transfers, 
                         and gold transactions with opening and closing balances.
                       </p>

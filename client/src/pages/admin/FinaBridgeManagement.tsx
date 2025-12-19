@@ -356,13 +356,13 @@ export default function FinaBridgeManagement() {
     switch (status) {
       case 'Draft': return 'bg-gray-100 text-gray-700';
       case 'Open': return 'bg-blue-100 text-blue-700';
-      case 'Proposal Review': return 'bg-amber-100 text-amber-700';
+      case 'Proposal Review': return 'bg-purple-100 text-fuchsia-700';
       case 'Awaiting Importer': return 'bg-purple-100 text-purple-700';
       case 'Active Trade': return 'bg-green-100 text-green-700';
       case 'Completed': return 'bg-emerald-100 text-emerald-700';
       case 'Cancelled': return 'bg-red-100 text-red-700';
       case 'Submitted': return 'bg-blue-100 text-blue-700';
-      case 'Shortlisted': return 'bg-amber-100 text-amber-700';
+      case 'Shortlisted': return 'bg-purple-100 text-fuchsia-700';
       case 'Forwarded': return 'bg-purple-100 text-purple-700';
       case 'Accepted': return 'bg-green-100 text-green-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
@@ -498,8 +498,8 @@ export default function FinaBridgeManagement() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="p-2 bg-amber-100 rounded-lg">
-                          <TrendingUp className="w-5 h-5 text-amber-600" />
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <TrendingUp className="w-5 h-5 text-fuchsia-600" />
                         </div>
                         <div>
                           <h3 className="font-bold">{request.tradeRefId}</h3>
@@ -616,7 +616,7 @@ export default function FinaBridgeManagement() {
                               Accepted {new Date(u.finabridgeDisclaimerAcceptedAt).toLocaleDateString()}
                             </Badge>
                           ) : (
-                            <Badge className="bg-amber-100 text-amber-700 flex items-center gap-1 w-fit">
+                            <Badge className="bg-purple-100 text-fuchsia-700 flex items-center gap-1 w-fit">
                               <AlertCircle className="w-3 h-3" />
                               Not Accepted
                             </Badge>
@@ -723,7 +723,7 @@ export default function FinaBridgeManagement() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Settlement Gold</p>
-                    <p className="font-medium text-amber-600">{parseFloat(selectedRequest.settlementGoldGrams).toFixed(3)}g</p>
+                    <p className="font-medium text-fuchsia-600">{parseFloat(selectedRequest.settlementGoldGrams).toFixed(3)}g</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Status</p>
@@ -818,9 +818,9 @@ export default function FinaBridgeManagement() {
                             {expandedProposal === proposal.id && (
                               <div className="mt-4 pt-4 border-t space-y-4">
                                 {proposal.modificationRequest && (
-                                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-xs font-medium text-amber-800 mb-1">Modification Requested:</p>
-                                    <p className="text-sm text-amber-700">{proposal.modificationRequest}</p>
+                                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                    <p className="text-xs font-medium text-fuchsia-800 mb-1">Modification Requested:</p>
+                                    <p className="text-sm text-fuchsia-700">{proposal.modificationRequest}</p>
                                   </div>
                                 )}
                                 
@@ -921,7 +921,7 @@ export default function FinaBridgeManagement() {
                                     </>
                                   )}
                                   {proposal.status === 'Modification Requested' && (
-                                    <Badge className="bg-amber-100 text-amber-700">Awaiting Exporter Response</Badge>
+                                    <Badge className="bg-purple-100 text-fuchsia-700">Awaiting Exporter Response</Badge>
                                   )}
                                 </div>
                               </div>
@@ -1010,7 +1010,7 @@ export default function FinaBridgeManagement() {
                 {requestedDocuments.filter(d => d.startsWith('custom:')).length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {requestedDocuments.filter(d => d.startsWith('custom:')).map((doc) => (
-                      <span key={doc} className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
+                      <span key={doc} className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
                         {doc.replace('custom:', '')}
                         <button
                           type="button"
@@ -1049,9 +1049,9 @@ export default function FinaBridgeManagement() {
               </div>
 
               {requestedDocuments.length > 0 && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-xs font-medium text-amber-800 mb-1">Documents to be requested ({requestedDocuments.length}):</p>
-                  <p className="text-xs text-amber-700">
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-xs font-medium text-fuchsia-800 mb-1">Documents to be requested ({requestedDocuments.length}):</p>
+                  <p className="text-xs text-fuchsia-700">
                     {requestedDocuments.map(d => d.startsWith('custom:') ? d.replace('custom:', '') : STANDARD_DOCUMENTS.find(sd => sd.key === d)?.label || d).join(', ')}
                   </p>
                 </div>
@@ -1078,7 +1078,7 @@ export default function FinaBridgeManagement() {
         <Dialog open={!!releaseConfirmDialog} onOpenChange={(open) => !open && setReleaseConfirmDialog(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <DialogTitle className="flex items-center gap-2 text-fuchsia-600">
                 <AlertCircle className="w-5 h-5" />
                 Release Settlement Gold
               </DialogTitle>
@@ -1091,38 +1091,38 @@ export default function FinaBridgeManagement() {
                   Please review the details below:
                 </p>
                 
-                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-3">
+                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-amber-800 font-medium">Trade Reference:</span>
-                    <span className="text-amber-900 font-bold">{releaseConfirmDialog.request.tradeRefId}</span>
+                    <span className="text-fuchsia-800 font-medium">Trade Reference:</span>
+                    <span className="text-fuchsia-900 font-bold">{releaseConfirmDialog.request.tradeRefId}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-amber-800 font-medium">Goods:</span>
-                    <span className="text-amber-900">{releaseConfirmDialog.request.goodsName}</span>
+                    <span className="text-fuchsia-800 font-medium">Goods:</span>
+                    <span className="text-fuchsia-900">{releaseConfirmDialog.request.goodsName}</span>
                   </div>
                   
-                  <div className="border-t border-amber-200 pt-3">
+                  <div className="border-t border-purple-200 pt-3">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-amber-800 font-medium">Settlement Gold:</span>
-                      <span className="text-amber-900 font-bold text-lg">
+                      <span className="text-fuchsia-800 font-medium">Settlement Gold:</span>
+                      <span className="text-fuchsia-900 font-bold text-lg">
                         {parseFloat(releaseConfirmDialog.hold.lockedGoldGrams).toFixed(3)}g
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-amber-700">Trade Value:</span>
-                      <span className="text-amber-700">${parseFloat(releaseConfirmDialog.request.tradeValueUsd).toLocaleString()} USD</span>
+                      <span className="text-fuchsia-700">Trade Value:</span>
+                      <span className="text-fuchsia-700">${parseFloat(releaseConfirmDialog.request.tradeValueUsd).toLocaleString()} USD</span>
                     </div>
                   </div>
                   
-                  <div className="border-t border-amber-200 pt-3 text-sm">
+                  <div className="border-t border-purple-200 pt-3 text-sm">
                     <div className="flex justify-between items-center">
-                      <span className="text-amber-700">From:</span>
-                      <span className="text-amber-800">Importer's Escrow</span>
+                      <span className="text-fuchsia-700">From:</span>
+                      <span className="text-fuchsia-800">Importer's Escrow</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-amber-700">To:</span>
-                      <span className="text-amber-800">Exporter's Wallet</span>
+                      <span className="text-fuchsia-700">To:</span>
+                      <span className="text-fuchsia-800">Exporter's Wallet</span>
                     </div>
                   </div>
                 </div>
@@ -1144,7 +1144,7 @@ export default function FinaBridgeManagement() {
                 Cancel
               </Button>
               <Button 
-                className="bg-amber-600 hover:bg-amber-700 text-white" 
+                className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white" 
                 onClick={handleConfirmRelease}
               >
                 Confirm Release

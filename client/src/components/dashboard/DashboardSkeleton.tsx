@@ -9,7 +9,7 @@ function SkeletonPulse({ className = '' }: { className?: string }) {
 
 export function KpiCardSkeleton() {
   return (
-    <Card className="p-4 bg-white border border-orange-200 shadow-sm rounded-lg">
+    <Card className="p-4 bg-white border border-purple-200 shadow-sm rounded-lg">
       <div className="flex items-start justify-between">
         <div className="flex-1 space-y-2">
           <SkeletonPulse className="h-3 w-16" />
@@ -58,7 +58,7 @@ export function TransactionsTableSkeleton() {
 
 export function WalletCardSkeleton() {
   return (
-    <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/50 rounded-2xl">
+    <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200/50 rounded-2xl">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <SkeletonPulse className="h-5 w-24" />

@@ -36,7 +36,7 @@ interface KpiBoxProps {
 
 function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
   return (
-    <Card className="p-4 bg-white border border-orange-200 shadow-sm rounded-lg">
+    <Card className="p-4 bg-white border border-purple-200 shadow-sm rounded-lg">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs text-gray-500 mb-2">{title}</p>
@@ -85,7 +85,7 @@ export default function Dashboard() {
           <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
             isGoldPriceLive 
               ? 'bg-green-50 text-green-700 border border-green-200' 
-              : 'bg-amber-50 text-amber-700 border border-amber-200'
+              : 'bg-purple-50 text-fuchsia-700 border border-purple-200'
           }`}>
             {isGoldPriceLive ? (
               <>
@@ -129,9 +129,9 @@ export default function Dashboard() {
                         secondaryValue={`${formatNumber(availableGoldGrams / 1000, 6)} KG`}
                         tertiaryValue={`${formatNumber(availableGoldGrams / 31.1035, 4)} OZ`}
                         subtitle="Available for withdrawal or transfer"
-                        icon={<Database className="w-5 h-5 text-orange-600" />}
-                        iconBg="bg-orange-50"
-                        valueColor="text-orange-600"
+                        icon={<Database className="w-5 h-5 text-purple-600" />}
+                        iconBg="bg-purple-50"
+                        valueColor="text-purple-600"
                       />
                       <KpiBox
                         title="Total Gold Value (USD)"
@@ -158,7 +158,7 @@ export default function Dashboard() {
                   subtitle="Overall investment"
                   icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
                   iconBg="bg-purple-50"
-                  valueColor="text-orange-600"
+                  valueColor="text-purple-600"
                 />
                 <KpiBox
                   title="BNSL Invested"
@@ -166,14 +166,14 @@ export default function Dashboard() {
                   subtitle="In active plans"
                   icon={<TrendingUp className="w-5 h-5 text-teal-600" />}
                   iconBg="bg-teal-50"
-                  valueColor="text-orange-600"
+                  valueColor="text-purple-600"
                 />
                 <KpiBox
                   title="Total Profit"
                   value={`+$${formatNumber(totals.bnslTotalProfit)}`}
                   subtitle="ROI from BNSL"
-                  icon={<Coins className="w-5 h-5 text-orange-600" />}
-                  iconBg="bg-orange-50"
+                  icon={<Coins className="w-5 h-5 text-purple-600" />}
+                  iconBg="bg-purple-50"
                   valueColor="text-green-600"
                 />
               </div>

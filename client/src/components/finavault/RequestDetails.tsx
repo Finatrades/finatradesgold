@@ -84,7 +84,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
     switch (status) {
       case 'Submitted': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
       case 'Under Review': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'Approved – Awaiting Delivery': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+      case 'Approved – Awaiting Delivery': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
       case 'Received at Vault': return 'bg-teal-500/10 text-teal-500 border-teal-500/20';
       case 'Stored in Vault': return 'bg-green-500/10 text-green-500 border-green-500/20';
       case 'Rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
@@ -318,7 +318,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
               )}
 
               {request.status === 'Approved – Awaiting Delivery' && (
-                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-600 text-sm">
+                 <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-fuchsia-600 text-sm">
                    <p className="font-bold mb-1">Action Required:</p>
                    Please deliver your gold to the vault address provided in your email, quoting Reference #{request.id}.
                  </div>

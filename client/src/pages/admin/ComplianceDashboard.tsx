@@ -162,7 +162,7 @@ export default function ComplianceDashboard() {
       case 'Critical':
         return <Badge className="bg-red-600 text-white">Critical</Badge>;
       case 'High':
-        return <Badge className="bg-orange-500 text-white">High</Badge>;
+        return <Badge className="bg-purple-500 text-white">High</Badge>;
       case 'Medium':
         return <Badge className="bg-yellow-500 text-white">Medium</Badge>;
       case 'Low':
@@ -194,7 +194,7 @@ export default function ComplianceDashboard() {
       case 'Critical':
         return <Badge variant="destructive">Critical</Badge>;
       case 'High':
-        return <Badge className="bg-orange-500 text-white">High</Badge>;
+        return <Badge className="bg-purple-500 text-white">High</Badge>;
       case 'Medium':
         return <Badge className="bg-yellow-500 text-white">Medium</Badge>;
       case 'Low':
@@ -232,7 +232,7 @@ export default function ComplianceDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Shield className="w-8 h-8 text-orange-500" />
+              <Shield className="w-8 h-8 text-purple-500" />
               Compliance Dashboard
             </h1>
             <p className="text-gray-500 mt-1">Monitor AML alerts, manage cases, and track user risk profiles.</p>
@@ -282,15 +282,15 @@ export default function ComplianceDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-orange-500">
+              <Card className="border-l-4 border-l-purple-500">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-500">High Priority</p>
                       <p className="text-3xl font-bold text-gray-900" data-testid="stat-high-priority">{highPriorityCases.length}</p>
                     </div>
-                    <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                      <AlertTriangle className="w-6 h-6 text-orange-600" />
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6 text-purple-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -329,7 +329,7 @@ export default function ComplianceDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-orange-500" />
+                    <AlertTriangle className="w-5 h-5 text-purple-500" />
                     Recent Alerts (24h)
                   </CardTitle>
                 </CardHeader>
@@ -516,7 +516,7 @@ export default function ComplianceDashboard() {
                                   <div 
                                     className={`h-full rounded-full ${
                                       p.overallRiskScore >= 70 ? 'bg-red-500' :
-                                      p.overallRiskScore >= 50 ? 'bg-orange-500' :
+                                      p.overallRiskScore >= 50 ? 'bg-purple-500' :
                                       p.overallRiskScore >= 30 ? 'bg-yellow-500' :
                                       'bg-green-500'
                                     }`}

@@ -22,13 +22,13 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-100 rounded-lg">
-            <Wallet className="w-5 h-5 text-amber-600" />
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <Wallet className="w-5 h-5 text-fuchsia-600" />
           </div>
           <h2 className="text-lg font-bold text-foreground">FinaPay Wallet</h2>
         </div>
         {onTransfer && (
-          <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={onTransfer}>
+          <Button size="sm" className="bg-purple-500 hover:bg-fuchsia-600 text-white" onClick={onTransfer}>
             <ArrowRightLeft className="w-4 h-4 mr-2" />
             Transfer from FinaVault
           </Button>
@@ -41,7 +41,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
         {/* Available Balance */}
         <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
           <div className="absolute right-2 bottom-2 opacity-5">
-            <Wallet className="w-20 h-20 text-amber-500" />
+            <Wallet className="w-20 h-20 text-purple-500" />
           </div>
           <div className="relative z-10">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
@@ -53,7 +53,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-xs text-muted-foreground">Gold Owned:</span>
-                <span className="text-lg font-semibold text-amber-600">
+                <span className="text-lg font-semibold text-fuchsia-600">
                   {wallet.goldBalanceGrams.toFixed(4)} g
                 </span>
                 {wallet.usdBalance > 0 && (
@@ -72,19 +72,19 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
         {/* Locked Assets */}
         <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
           <div className="absolute right-2 bottom-2 opacity-5">
-            <Lock className="w-20 h-20 text-amber-500" />
+            <Lock className="w-20 h-20 text-purple-500" />
           </div>
           <div className="relative z-10">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-amber-500">
+                <span className="text-2xl font-bold text-purple-500">
                   ${totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-xs text-muted-foreground">Gold Locked:</span>
-                <span className="text-lg font-semibold text-amber-500/80">
+                <span className="text-lg font-semibold text-purple-500/80">
                   {totalLockedGrams.toFixed(4)} g
                 </span>
               </div>
@@ -99,13 +99,13 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
         {/* Total Value */}
         <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
           <div className="absolute right-2 bottom-2 opacity-5">
-            <TrendingUp className="w-20 h-20 text-amber-500" />
+            <TrendingUp className="w-20 h-20 text-purple-500" />
           </div>
           <div className="relative z-10">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-amber-500">
+                <span className="text-2xl font-bold text-purple-500">
                   ${grandTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>

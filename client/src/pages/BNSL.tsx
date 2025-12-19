@@ -439,7 +439,7 @@ export default function BNSL() {
              value={`$${totalDailyMargin.toFixed(2)}`} 
              subValue="Earning daily, paid quarterly"
              icon={Coins} 
-             accentColor="text-amber-600"
+             accentColor="text-fuchsia-600"
              tooltip="Amount of margin accruing today across all active plans."
            />
            <BnslStatsCard 
@@ -447,7 +447,7 @@ export default function BNSL() {
              value={`$${unpaidAccruedMargin.toFixed(2)}`} 
              subValue="Pending next quarterly payout"
              icon={TrendingUp} 
-             accentColor="text-orange-600"
+             accentColor="text-purple-600"
              tooltip="Total margin earned but not yet paid out."
            />
            <BnslStatsCard 
@@ -511,7 +511,7 @@ export default function BNSL() {
                </div>
             </TabsContent>
 
-            <TabsContent value="create" id="bnsl-create-section" className={`mt-0 animate-in fade-in slide-in-from-bottom-2 transition-all duration-500 ${highlightCreate ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-orange-50' : ''}`}>
+            <TabsContent value="create" id="bnsl-create-section" className={`mt-0 animate-in fade-in slide-in-from-bottom-2 transition-all duration-500 ${highlightCreate ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50' : ''}`}>
                <CreateBnslPlan 
                  bnslWalletBalance={bnslWalletBalance} 
                  currentGoldPrice={currentGoldPrice}

@@ -292,11 +292,11 @@ export default function UserManagement() {
                       filteredUsers.map((user, index) => (
                         <tr 
                           key={user.id} 
-                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/50 transition-colors duration-150 group`} 
+                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150 group`} 
                           data-testid={`row-user-${user.id}`}
                         >
                           <td className="px-6 py-4">
-                            <span className="font-mono text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded" data-testid={`text-finatrades-id-${user.id}`}>
+                            <span className="font-mono text-sm font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded" data-testid={`text-finatrades-id-${user.id}`}>
                               {user.finatradesId || '-'}
                             </span>
                           </td>

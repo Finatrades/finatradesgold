@@ -19,7 +19,7 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
       case 'Draft': return <Badge variant="outline" className="bg-gray-500/10 text-gray-500 border-gray-500/20">Draft</Badge>;
       case 'Awaiting Funding': return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Awaiting Funding</Badge>;
       case 'Funded – Docs Pending': return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">Funded</Badge>;
-      case 'Under Review': return <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20">Under Review</Badge>;
+      case 'Under Review': return <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">Under Review</Badge>;
       case 'Approved – Ready to Release': return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Approved</Badge>;
       case 'Released': return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Released</Badge>;
       case 'Rejected': return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Rejected</Badge>;
@@ -73,7 +73,7 @@ export default function TradeCaseList({ cases, onViewCase, onCreateNew }: TradeC
                   </TableCell>
                   <TableCell className="text-foreground/80">${c.valueUsd.toLocaleString()}</TableCell>
                   <TableCell className="text-foreground/80 flex items-center gap-2">
-                    {c.lockedGoldGrams > 0 && <Lock className="w-3 h-3 text-amber-500" />}
+                    {c.lockedGoldGrams > 0 && <Lock className="w-3 h-3 text-purple-500" />}
                     {c.lockedGoldGrams.toFixed(3)} g
                   </TableCell>
                   <TableCell>{getStatusBadge(c.status)}</TableCell>

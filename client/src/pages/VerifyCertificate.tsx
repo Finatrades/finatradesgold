@@ -167,7 +167,7 @@ export default function VerifyCertificate() {
   const getEventColor = (eventType: string) => {
     const type = eventType.toUpperCase();
     if (type.includes('DEPOSIT') || type.includes('RECEIVE')) return 'bg-green-500';
-    if (type.includes('WITHDRAWAL') || type.includes('SEND')) return 'bg-orange-500';
+    if (type.includes('WITHDRAWAL') || type.includes('SEND')) return 'bg-purple-500';
     if (type.includes('TRANSFER')) return 'bg-blue-500';
     if (type.includes('EXPIRED')) return 'bg-yellow-500';
     if (type.includes('REVOKED')) return 'bg-red-500';

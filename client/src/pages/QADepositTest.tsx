@@ -208,14 +208,14 @@ export default function QADepositTest() {
           {TEST_CASES.map((testCase) => (
             <Card 
               key={testCase.method}
-              className="cursor-pointer hover:border-orange-500 transition-colors"
+              className="cursor-pointer hover:border-purple-500 transition-colors"
               onClick={() => runQuickTest(testCase)}
               data-testid={`quick-test-${testCase.method}`}
             >
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center gap-3">
                   {testCase.method === 'bank' && <Building className="h-5 w-5 text-blue-500" />}
-                  {testCase.method === 'crypto' && <Bitcoin className="h-5 w-5 text-orange-500" />}
+                  {testCase.method === 'crypto' && <Bitcoin className="h-5 w-5 text-purple-500" />}
                   {testCase.method === 'card' && <CreditCard className="h-5 w-5 text-purple-500" />}
                   <div>
                     <p className="font-medium">{testCase.label}</p>
@@ -331,8 +331,8 @@ export default function QADepositTest() {
               {step === 'approve' && (
                 <div className="space-y-4">
                   <Label>Approval Decision</Label>
-                  <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                  <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
                       Ready to execute {method?.toUpperCase()} deposit of ${parseFloat(amount || '0').toLocaleString()} for {testEmail}
                     </p>
                   </div>

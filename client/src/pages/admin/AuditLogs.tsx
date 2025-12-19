@@ -79,7 +79,7 @@ export default function AuditLogs() {
       'update': 'bg-blue-100 text-blue-800',
       'delete': 'bg-red-100 text-red-800',
       'approve': 'bg-emerald-100 text-emerald-800',
-      'reject': 'bg-orange-100 text-orange-800',
+      'reject': 'bg-purple-100 text-purple-800',
       'login': 'bg-purple-100 text-purple-800',
       'logout': 'bg-gray-100 text-gray-800',
     };
@@ -145,8 +145,8 @@ export default function AuditLogs() {
           <Card data-testid="stat-total">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30">
-                  <FileText className="h-6 w-6 text-orange-600" />
+                <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                  <FileText className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Total Logs</p>

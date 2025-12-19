@@ -222,7 +222,7 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
           <Button variant="outline" onClick={onCancel} className="flex-1">
             Cancel
           </Button>
-          <Button disabled className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 opacity-50">
+          <Button disabled className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 opacity-50">
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
             Loading...
           </Button>
@@ -311,7 +311,7 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
         <Button
           onClick={handleSubmit}
           disabled={!formValid || processing}
-          className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600"
+          className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600"
         >
           {processing ? (
             <>

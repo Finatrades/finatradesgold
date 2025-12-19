@@ -170,7 +170,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modal-buy-gold-wingold">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="text-amber-600">Buy Gold Bar</span>
+            <span className="text-fuchsia-600">Buy Gold Bar</span>
             <span className="text-sm font-normal text-muted-foreground">(Wingold & Metals)</span>
           </DialogTitle>
           <DialogDescription>
@@ -201,7 +201,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              Status: <span className="text-amber-600 font-medium">Pending Review</span>
+              Status: <span className="text-fuchsia-600 font-medium">Pending Review</span>
             </p>
             <Button onClick={handleClose} className="mt-4" data-testid="button-close-success">
               Close
@@ -209,9 +209,9 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
           </div>
         ) : (
           <div className="space-y-4">
-            <Alert className="bg-amber-50 border-amber-200">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-sm text-amber-800">
+            <Alert className="bg-purple-50 border-purple-200">
+              <AlertCircle className="h-4 w-4 text-fuchsia-600" />
+              <AlertDescription className="text-sm text-fuchsia-800">
                 {COMPLIANCE_NOTICE}
               </AlertDescription>
             </Alert>
@@ -225,7 +225,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                     </p>
                     <Button
                       onClick={() => window.open(WINGOLD_URL, '_blank')}
-                      className="bg-amber-600 hover:bg-amber-700"
+                      className="bg-fuchsia-600 hover:bg-fuchsia-700"
                       data-testid="button-open-wingold"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
@@ -291,7 +291,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                   {receiptFile ? (
                     <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                       <div className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-amber-600" />
+                        <FileText className="w-5 h-5 text-fuchsia-600" />
                         <div>
                           <p className="text-sm font-medium">{receiptFile.name}</p>
                           <p className="text-xs text-muted-foreground">
@@ -336,7 +336,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                   <Button
                     onClick={handleSubmit}
                     disabled={!receiptFile || isSubmitting}
-                    className="bg-amber-600 hover:bg-amber-700"
+                    className="bg-fuchsia-600 hover:bg-fuchsia-700"
                     data-testid="button-submit-request"
                   >
                     {isSubmitting ? (

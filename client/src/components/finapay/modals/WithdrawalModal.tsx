@@ -88,7 +88,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
       <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <ArrowUpRight className="w-5 h-5 text-orange-500" />
+            <ArrowUpRight className="w-5 h-5 text-purple-500" />
             <span>Withdraw Funds</span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -101,18 +101,18 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
             {/* Left Panel - Balance & Amount */}
             <div className="space-y-4">
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-50 rounded-xl p-5 border border-purple-100">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Available Balance</p>
                     <p className="text-2xl font-bold text-gray-900">${walletBalance.toFixed(2)}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-orange-600" />
+                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-purple-600" />
                   </div>
                 </div>
                 
-                <div className="pt-4 border-t border-orange-200">
+                <div className="pt-4 border-t border-purple-200">
                   <Label className="text-sm font-medium text-gray-700">Amount to Withdraw (USD) *</Label>
                   <div className="relative mt-2">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -135,8 +135,8 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
                 </div>
               </div>
               
-              <div className="bg-orange-50 text-orange-800 text-xs p-4 rounded-lg flex items-start gap-2 border border-orange-200">
-                <div className="mt-0.5 text-orange-500">⚠️</div>
+              <div className="bg-purple-50 text-purple-800 text-xs p-4 rounded-lg flex items-start gap-2 border border-purple-200">
+                <div className="mt-0.5 text-purple-500">⚠️</div>
                 <p className="leading-relaxed">Once submitted, the withdrawal amount will be held from your balance. Funds will be transferred to your bank account within 2-5 business days after admin approval.</p>
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
               <Button 
                 onClick={handleSubmit} 
                 disabled={!amount || !bankName || !accountName || !accountNumber || submitting || parseFloat(amount) > walletBalance}
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-purple-500 hover:bg-purple-600"
                 data-testid="button-submit-withdrawal"
               >
                 {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}

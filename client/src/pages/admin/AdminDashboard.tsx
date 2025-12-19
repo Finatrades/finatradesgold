@@ -147,7 +147,7 @@ export default function AdminDashboard() {
             value={isLoading ? '...' : stats?.pendingKycCount?.toString() || '0'}
             subtitle="Awaiting review"
             icon={<ShieldCheck className="w-6 h-6" />} 
-            gradient="from-orange-500 to-red-500"
+            gradient="from-purple-500 to-red-500"
             loading={isLoading}
           />
           <GlassStatsCard 
@@ -499,7 +499,7 @@ function MetricCard({ title, value, icon, color, loading, href }: {
 }) {
   const colorClasses = {
     emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', icon: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
-    orange: { bg: 'bg-orange-50 dark:bg-orange-950/30', icon: 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400', text: 'text-orange-700 dark:text-orange-300' },
+    orange: { bg: 'bg-purple-50 dark:bg-purple-950/30', icon: 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400', text: 'text-purple-700 dark:text-purple-300' },
     blue: { bg: 'bg-blue-50 dark:bg-blue-950/30', icon: 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400', text: 'text-blue-700 dark:text-blue-300' },
     purple: { bg: 'bg-purple-50 dark:bg-purple-950/30', icon: 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400', text: 'text-purple-700 dark:text-purple-300' },
     slate: { bg: 'bg-slate-50 dark:bg-slate-950/30', icon: 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400', text: 'text-slate-700 dark:text-slate-300' },
@@ -547,7 +547,7 @@ function PendingCard({ title, count, icon, color, loading, href }: {
 }) {
   const colorClasses = {
     green: { bg: 'bg-green-50', icon: 'bg-green-100 text-green-600', text: 'text-green-700' },
-    orange: { bg: 'bg-orange-50', icon: 'bg-orange-100 text-orange-600', text: 'text-orange-700' },
+    orange: { bg: 'bg-purple-50', icon: 'bg-purple-100 text-purple-600', text: 'text-purple-700' },
     yellow: { bg: 'bg-yellow-50', icon: 'bg-yellow-100 text-yellow-600', text: 'text-yellow-700' },
   };
   

@@ -94,8 +94,8 @@ export default function BNSLGoldPlanner() {
     <section id="calculator" className="py-24 bg-gradient-to-b from-gray-50 via-white to-gray-50 relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-amber-100/40 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-orange-100/30 blur-3xl" />
+        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-purple-100/40 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-purple-100/30 blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
@@ -117,15 +117,15 @@ export default function BNSLGoldPlanner() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200/50 mb-6"
           >
-            <Calculator className="w-4 h-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Investment Calculator</span>
+            <Calculator className="w-4 h-4 text-fuchsia-600" />
+            <span className="text-sm font-medium text-fuchsia-800">Investment Calculator</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Plan Your{' '}
-            <span className="bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-500 to-yellow-500 bg-clip-text text-transparent">
               Gold Returns
             </span>
           </h2>
@@ -146,8 +146,8 @@ export default function BNSLGoldPlanner() {
               {/* Investment Amount */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-lg">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100">
-                    <Wallet className="w-5 h-5 text-amber-600" />
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-100 to-yellow-100">
+                    <Wallet className="w-5 h-5 text-fuchsia-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Investment Amount</h3>
@@ -164,7 +164,7 @@ export default function BNSLGoldPlanner() {
                     type="number"
                     value={investmentAmount}
                     onChange={(e) => handleAmountChange(Number(e.target.value))}
-                    className="w-full pl-12 pr-4 py-4 text-3xl font-bold text-gray-900 bg-gray-50 rounded-xl border-2 border-gray-100 focus:border-amber-300 focus:ring-4 focus:ring-amber-100 outline-none transition-all"
+                    className="w-full pl-12 pr-4 py-4 text-3xl font-bold text-gray-900 bg-gray-50 rounded-xl border-2 border-gray-100 focus:border-purple-300 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
                     data-testid="input-investment-amount"
                   />
                 </div>
@@ -178,7 +178,7 @@ export default function BNSLGoldPlanner() {
                     step="100"
                     value={investmentAmount}
                     onChange={(e) => handleAmountChange(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
                     data-testid="slider-investment-amount"
                   />
                   <div className="flex justify-between mt-2 text-xs text-gray-500">
@@ -197,7 +197,7 @@ export default function BNSLGoldPlanner() {
                       onClick={() => handleAmountChange(amount)}
                       className={`py-2.5 rounded-lg text-sm font-medium transition-all ${
                         investmentAmount === amount
-                          ? 'bg-amber-500 text-white shadow-md'
+                          ? 'bg-purple-500 text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                       data-testid={`button-preset-${amount}`}
@@ -211,8 +211,8 @@ export default function BNSLGoldPlanner() {
               {/* Plan Selection */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-lg">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
-                    <Calendar className="w-5 h-5 text-orange-600" />
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-100 to-purple-100">
+                    <Calendar className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Select Plan Duration</h3>
@@ -229,13 +229,13 @@ export default function BNSLGoldPlanner() {
                       onClick={() => setSelectedPlan(plan)}
                       className={`w-full p-4 rounded-xl border-2 transition-all relative ${
                         selectedPlan.duration === plan.duration
-                          ? 'border-orange-400 bg-orange-50'
+                          ? 'border-purple-400 bg-purple-50'
                           : 'border-gray-100 bg-gray-50 hover:border-gray-200'
                       }`}
                       data-testid={`button-plan-${plan.duration}`}
                     >
                       {plan.popular && (
-                        <span className="absolute -top-2 right-4 px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full">
+                        <span className="absolute -top-2 right-4 px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-purple-500 to-yellow-500 text-white rounded-full">
                           POPULAR
                         </span>
                       )}
@@ -245,7 +245,7 @@ export default function BNSLGoldPlanner() {
                           <div className="text-sm text-gray-500">{plan.description}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-orange-600">{plan.bonusRate}%</div>
+                          <div className="text-2xl font-bold text-purple-600">{plan.bonusRate}%</div>
                           <div className="text-xs text-gray-500">Monthly bonus</div>
                         </div>
                       </div>
@@ -281,9 +281,9 @@ export default function BNSLGoldPlanner() {
                       key={i}
                       animate={{ y: [0, -5, 0], rotate: [0, 180, 360] }}
                       transition={{ duration: 4, repeat: Infinity, delay: i * 0.3 }}
-                      className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg"
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-400 to-yellow-500 flex items-center justify-center shadow-lg"
                     >
-                      <Coins className="w-4 h-4 text-amber-800" />
+                      <Coins className="w-4 h-4 text-fuchsia-800" />
                     </motion.div>
                   ))}
                 </div>
@@ -291,8 +291,8 @@ export default function BNSLGoldPlanner() {
                 {/* Header */}
                 <div className="relative z-10 mb-8">
                   <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-5 h-5 text-amber-400" />
-                    <span className="text-sm font-medium text-amber-400">Your Projected Returns</span>
+                    <Sparkles className="w-5 h-5 text-fuchsia-400" />
+                    <span className="text-sm font-medium text-fuchsia-400">Your Projected Returns</span>
                   </div>
                   <h3 className="text-3xl font-bold">
                     Investment Summary
@@ -309,10 +309,10 @@ export default function BNSLGoldPlanner() {
                     className="relative z-10"
                   >
                     {/* Total Value Card */}
-                    <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-2xl p-6 mb-6 border border-amber-500/30">
+                    <div className="bg-gradient-to-r from-purple-500/20 to-yellow-500/20 rounded-2xl p-6 mb-6 border border-purple-500/30">
                       <div className="flex items-end justify-between">
                         <div>
-                          <p className="text-amber-300 text-sm mb-1">Estimated Total Value</p>
+                          <p className="text-purple-300 text-sm mb-1">Estimated Total Value</p>
                           <motion.p
                             key={calculations.estimatedValue}
                             initial={{ y: 10, opacity: 0 }}
@@ -338,14 +338,14 @@ export default function BNSLGoldPlanner() {
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                         <div className="flex items-center gap-2 mb-2">
-                          <Coins className="w-4 h-4 text-amber-400" />
+                          <Coins className="w-4 h-4 text-fuchsia-400" />
                           <span className="text-sm text-gray-400">Initial Gold</span>
                         </div>
                         <p className="text-2xl font-bold">{calculations.goldGrams}g</p>
                       </div>
                       <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                         <div className="flex items-center gap-2 mb-2">
-                          <Gift className="w-4 h-4 text-orange-400" />
+                          <Gift className="w-4 h-4 text-purple-400" />
                           <span className="text-sm text-gray-400">Total Bonus</span>
                         </div>
                         <p className="text-2xl font-bold text-emerald-400">+{calculations.totalBonusGrams}g</p>
@@ -413,7 +413,7 @@ export default function BNSLGoldPlanner() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setLocation('/register')}
-                      className="w-full mt-6 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
+                      className="w-full mt-6 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-yellow-500 text-slate-900 font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-purple-500/30"
                       data-testid="button-start-investing-cta"
                     >
                       Start Investing Now

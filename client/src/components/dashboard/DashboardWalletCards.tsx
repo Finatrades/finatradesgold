@@ -52,7 +52,7 @@ export default function DashboardWalletCards({
             <span className="font-semibold text-gray-900">FinaPay Wallet</span>
           </div>
           <Link href="/finapay">
-            <span className="text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer">
+            <span className="text-sm text-purple-500 hover:text-purple-600 flex items-center gap-1 cursor-pointer">
               View <ArrowRight className="w-3 h-3" />
             </span>
           </Link>
@@ -64,13 +64,13 @@ export default function DashboardWalletCards({
             <p className="text-2xl font-bold text-gray-900">
               ${finaPayWallet.usdValue.toFixed(2)}
             </p>
-            <p className="text-xs text-amber-600 font-medium">~{finaPayWallet.goldGrams.toFixed(2)}g gold</p>
+            <p className="text-xs text-fuchsia-600 font-medium">~{finaPayWallet.goldGrams.toFixed(2)}g gold</p>
           </div>
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-500">Pending</p>
-              <p className="text-sm font-semibold text-orange-500">{(finaPayWallet.pending || 0).toFixed(2)}g</p>
+              <p className="text-sm font-semibold text-purple-500">{(finaPayWallet.pending || 0).toFixed(2)}g</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Transactions</p>
@@ -91,7 +91,7 @@ export default function DashboardWalletCards({
               <span className="font-semibold text-gray-900">FinaBridge Wallet</span>
             </div>
             <Link href="/finabridge">
-              <span className="text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer">
+              <span className="text-sm text-purple-500 hover:text-purple-600 flex items-center gap-1 cursor-pointer">
                 View <ArrowRight className="w-3 h-3" />
               </span>
             </Link>
@@ -103,7 +103,7 @@ export default function DashboardWalletCards({
               <p className="text-2xl font-bold text-gray-900">
                 ${(finaBridgeData?.usdValue || 0).toFixed(2)}
               </p>
-              <p className="text-xs text-amber-600 font-medium">~{(finaBridgeData?.goldGrams || 0).toFixed(2)}g gold</p>
+              <p className="text-xs text-fuchsia-600 font-medium">~{(finaBridgeData?.goldGrams || 0).toFixed(2)}g gold</p>
             </div>
             
             <div className="flex justify-between pt-3 border-t border-gray-100">
@@ -122,8 +122,8 @@ export default function DashboardWalletCards({
         <Card className="p-5 bg-white border border-gray-100 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                <CreditCard className="w-4 h-4 text-amber-600" />
+              <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                <CreditCard className="w-4 h-4 text-fuchsia-600" />
               </div>
               <span className="font-semibold text-gray-900">FinaCard</span>
             </div>
@@ -138,7 +138,7 @@ export default function DashboardWalletCards({
               <p className="text-2xl font-bold text-gray-900">
                 $0.00
               </p>
-              <p className="text-xs text-amber-600 font-medium">~0.00g gold</p>
+              <p className="text-xs text-fuchsia-600 font-medium">~0.00g gold</p>
             </div>
             
             <div className="flex justify-between pt-3 border-t border-gray-100">
@@ -165,7 +165,7 @@ export default function DashboardWalletCards({
             <span className="font-semibold text-gray-900">BNSL Wallet</span>
           </div>
           <Link href="/bnsl">
-            <span className="text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer">
+            <span className="text-sm text-purple-500 hover:text-purple-600 flex items-center gap-1 cursor-pointer">
               View <ArrowRight className="w-3 h-3" />
             </span>
           </Link>
@@ -177,13 +177,13 @@ export default function DashboardWalletCards({
             <p className="text-2xl font-bold text-gray-900">
               ${bnslData.usdValue.toFixed(2)}
             </p>
-            <p className="text-xs text-amber-600 font-medium">~{bnslData.goldGrams.toFixed(2)}g gold</p>
+            <p className="text-xs text-fuchsia-600 font-medium">~{bnslData.goldGrams.toFixed(2)}g gold</p>
           </div>
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-500">Locked</p>
-              <p className="text-sm font-semibold text-amber-600">{bnslData.lockedGrams.toFixed(2)}g</p>
+              <p className="text-sm font-semibold text-fuchsia-600">{bnslData.lockedGrams.toFixed(2)}g</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Active Plans</p>

@@ -163,8 +163,8 @@ function AgentManagement() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <MessageSquare className="w-6 h-6 text-orange-600" />
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <MessageSquare className="w-6 h-6 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{agents.filter(a => a.isDefault).length}</p>
@@ -187,7 +187,7 @@ function AgentManagement() {
             {agents.map(agent => (
               <div key={agent.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors" data-testid={`agent-row-${agent.id}`}>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-orange-400 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-purple-400 rounded-full flex items-center justify-center text-white font-bold">
                     {agent.displayName.charAt(0)}
                   </div>
                   <div>
@@ -727,8 +727,8 @@ function ConversationsPanel() {
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center py-6">
-            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-              <User className="w-10 h-10 text-orange-500" />
+            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+              <User className="w-10 h-10 text-purple-500" />
             </div>
             <p className="text-lg font-semibold">{incomingCall?.callerName}</p>
             <p className="text-sm text-gray-500">is calling you...</p>
@@ -759,11 +759,11 @@ function ConversationsPanel() {
       {activeCall && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
-            <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
               {activeCall.callType === 'video' ? (
-                <Video className="w-12 h-12 text-orange-500" />
+                <Video className="w-12 h-12 text-purple-500" />
               ) : (
-                <Phone className="w-12 h-12 text-orange-500" />
+                <Phone className="w-12 h-12 text-purple-500" />
               )}
             </div>
             <h2 className="text-xl font-bold mb-2">
@@ -809,7 +809,7 @@ function ConversationsPanel() {
                 key={session.id}
                 onClick={() => selectSession(session.id)}
                 className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors ${
-                  currentSession?.id === session.id ? 'bg-orange-50 hover:bg-orange-50 border-l-4 border-l-orange-500' : 'border-l-4 border-l-transparent'
+                  currentSession?.id === session.id ? 'bg-purple-50 hover:bg-purple-50 border-l-4 border-l-purple-500' : 'border-l-4 border-l-transparent'
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -821,7 +821,7 @@ function ConversationsPanel() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className={`font-semibold text-sm ${currentSession?.id === session.id ? 'text-orange-900' : 'text-gray-900'}`}>
+                      <h3 className={`font-semibold text-sm ${currentSession?.id === session.id ? 'text-purple-900' : 'text-gray-900'}`}>
                         {session.userName}
                       </h3>
                       <p className="text-xs text-gray-500 truncate max-w-[140px]">
@@ -834,7 +834,7 @@ function ConversationsPanel() {
                       {session.lastMessageAt && format(new Date(session.lastMessageAt), 'HH:mm')}
                     </span>
                     {session.unreadCount > 0 && (
-                      <Badge className="bg-orange-500 hover:bg-orange-600 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
+                      <Badge className="bg-purple-500 hover:bg-purple-600 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
                         {session.unreadCount}
                       </Badge>
                     )}
@@ -911,7 +911,7 @@ function ConversationsPanel() {
                         <div className={`
                           px-4 py-3 rounded-2xl text-sm shadow-sm
                           ${isAdmin 
-                            ? 'bg-orange-500 text-white rounded-tr-none' 
+                            ? 'bg-purple-500 text-white rounded-tr-none' 
                             : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
                           }
                         `}>
@@ -922,7 +922,7 @@ function ConversationsPanel() {
                             {format(new Date(msg.timestamp), 'HH:mm')}
                           </span>
                           {isAdmin && (
-                            <CheckCheck className="w-3 h-3 text-orange-500" />
+                            <CheckCheck className="w-3 h-3 text-purple-500" />
                           )}
                         </div>
                       </div>
@@ -937,13 +937,13 @@ function ConversationsPanel() {
                 <div className="flex items-center gap-2">
                   <Input 
                     placeholder="Type your reply..." 
-                    className="flex-1 bg-gray-50 border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
+                    className="flex-1 bg-gray-50 border-gray-200 focus:border-purple-500 focus:ring-purple-500/20"
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   />
                   <Button 
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    className="bg-purple-500 hover:bg-purple-600 text-white"
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim()}
                   >

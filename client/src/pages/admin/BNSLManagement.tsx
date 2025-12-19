@@ -529,15 +529,15 @@ export default function BNSLManagement() {
              </CardContent>
            </Card>
 
-           <Card className="bg-amber-50 border-amber-100">
+           <Card className="bg-purple-50 border-purple-100">
              <CardContent className="p-6">
                <div className="flex items-center gap-4">
-                 <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
+                 <div className="p-3 bg-purple-100 text-fuchsia-700 rounded-lg">
                    <FileText className="w-6 h-6" />
                  </div>
                  <div>
-                   <p className="text-sm font-medium text-amber-900">Base Liability</p>
-                   <h3 className="text-2xl font-bold text-amber-700">${totalBaseLiability.toLocaleString()}</h3>
+                   <p className="text-sm font-medium text-fuchsia-900">Base Liability</p>
+                   <h3 className="text-2xl font-bold text-fuchsia-700">${totalBaseLiability.toLocaleString()}</h3>
                  </div>
                </div>
              </CardContent>
@@ -574,19 +574,19 @@ export default function BNSLManagement() {
 
         <Tabs defaultValue="plans" className="w-full">
            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-             <TabsTrigger value="plans" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+             <TabsTrigger value="plans" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                All Plans
              </TabsTrigger>
-             <TabsTrigger value="templates" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+             <TabsTrigger value="templates" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                Plan Templates
              </TabsTrigger>
-             <TabsTrigger value="risk" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+             <TabsTrigger value="risk" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                Risk & Exposure
              </TabsTrigger>
-             <TabsTrigger value="audit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+             <TabsTrigger value="audit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                Global Audit Log
              </TabsTrigger>
-             <TabsTrigger value="agreements" className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 py-3 px-1">
+             <TabsTrigger value="agreements" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                Signed Agreements
              </TabsTrigger>
            </TabsList>
@@ -611,7 +611,7 @@ export default function BNSLManagement() {
                                  </div>
                                  <div>
                                      <div className="flex items-center gap-2">
-                                       <h4 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">{plan.contractId}</h4>
+                                       <h4 className="font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{plan.contractId}</h4>
                                        <Badge variant="outline" className="text-xs">{plan.status}</Badge>
                                        {plan.earlyTermination?.status === 'Requested' && <Badge variant="destructive" className="text-xs animate-pulse">Termination Requested</Badge>}
                                      </div>

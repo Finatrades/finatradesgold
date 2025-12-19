@@ -11,11 +11,11 @@ export default function PremiumHeroSection() {
   const { accountType, setAccountType } = useAccountType();
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-orange-50/50 to-amber-50/30">
+    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-purple-50/50 to-purple-50/30">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-orange-200/30 blur-[150px] rounded-full" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-amber-200/20 blur-[120px] rounded-full" />
-        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-orange-100/30 blur-[100px] rounded-full" />
+        <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-200/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-purple-200/20 blur-[120px] rounded-full" />
+        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-100/30 blur-[100px] rounded-full" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -25,9 +25,9 @@ export default function PremiumHeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-orange-200 shadow-sm mb-6">
-              <Sparkles className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium text-orange-700">{t('hero.swissRegulated')}</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-purple-200 shadow-sm mb-6">
+              <Sparkles className="w-4 h-4 text-purple-500" />
+              <span className="text-sm font-medium text-purple-700">{t('hero.swissRegulated')}</span>
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             </div>
 
@@ -48,7 +48,7 @@ export default function PremiumHeroSection() {
                 onClick={() => setAccountType('business')}
                 className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all ${
                   accountType === 'business' 
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm' 
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-500 text-white shadow-sm' 
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
                 data-testid="hero-button-business"
@@ -59,7 +59,7 @@ export default function PremiumHeroSection() {
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-purple-500 to-purple-500 bg-clip-text text-transparent">
                 Finatrades
               </span>
               <br />
@@ -95,7 +95,7 @@ export default function PremiumHeroSection() {
               <Link href="/register">
                 <Button 
                   size="lg" 
-                  className="h-12 px-8 bg-gradient-to-r from-[#FF6B2F] to-[#FF8F5F] hover:opacity-90 text-white rounded-full shadow-lg shadow-orange-200"
+                  className="h-12 px-8 bg-gradient-to-r from-[#FF6B2F] to-[#FF8F5F] hover:opacity-90 text-white rounded-full shadow-lg shadow-purple-200"
                   data-testid="button-hero-register"
                 >
                   Get Started
@@ -111,13 +111,13 @@ export default function PremiumHeroSection() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative hidden lg:block"
           >
-            <div className="absolute -top-4 right-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-orange-200 shadow-sm z-10">
+            <div className="absolute -top-4 right-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-purple-200 shadow-sm z-10">
               <div className="w-2 h-2 rounded-full bg-green-400" />
-              <span className="text-xs font-medium text-orange-700">Swiss-Regulated Platform</span>
+              <span className="text-xs font-medium text-purple-700">Swiss-Regulated Platform</span>
             </div>
             
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 shadow-2xl overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 blur-2xl rounded-full" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 blur-2xl rounded-full" />
               
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export default function PremiumHeroSection() {
               </div>
               
               <div className="mb-4">
-                <span className="text-orange-300 text-xs uppercase tracking-wide">Enterprise Gold</span>
+                <span className="text-purple-300 text-xs uppercase tracking-wide">Enterprise Gold</span>
                 <p className="text-gray-400 text-xs">Gold-Backed Digital</p>
               </div>
               

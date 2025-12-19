@@ -15,14 +15,14 @@ export default function CreditCardPreview({
   return (
     <div className="relative w-full h-full min-h-[200px] rounded-2xl overflow-hidden shadow-2xl">
       {/* Premium gold gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-600" />
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-yellow-500 to-purple-600" />
       
       {/* Metallic shine overlay */}
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent" />
       
       {/* Decorative circles pattern */}
       <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-white/30 to-transparent" />
-      <div className="absolute -bottom-20 -left-10 w-48 h-48 rounded-full bg-gradient-to-tr from-amber-700/40 to-transparent" />
+      <div className="absolute -bottom-20 -left-10 w-48 h-48 rounded-full bg-gradient-to-tr from-fuchsia-700/40 to-transparent" />
       <div className="absolute top-1/2 right-1/4 w-32 h-32 rounded-full bg-gradient-to-bl from-white/10 to-transparent blur-sm" />
       
       {/* Subtle grid pattern */}
@@ -50,12 +50,12 @@ export default function CreditCardPreview({
         <div className="flex items-center gap-4 my-2">
           <div className="w-11 h-8 rounded-md bg-gradient-to-br from-yellow-200 via-yellow-100 to-yellow-300 shadow-inner flex items-center justify-center overflow-hidden">
             <div className="w-full h-full grid grid-cols-3 grid-rows-2 gap-[1px] p-1">
-              <div className="bg-gradient-to-br from-amber-300 to-amber-400 rounded-[2px]" />
-              <div className="bg-gradient-to-br from-amber-300 to-amber-400 rounded-[2px]" />
-              <div className="bg-gradient-to-br from-amber-300 to-amber-400 rounded-[2px]" />
-              <div className="bg-gradient-to-br from-amber-300 to-amber-400 rounded-[2px]" />
-              <div className="bg-gradient-to-br from-amber-300 to-amber-400 rounded-[2px]" />
-              <div className="bg-gradient-to-br from-amber-300 to-amber-400 rounded-[2px]" />
+              <div className="bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-[2px]" />
+              <div className="bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-[2px]" />
+              <div className="bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-[2px]" />
+              <div className="bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-[2px]" />
+              <div className="bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-[2px]" />
+              <div className="bg-gradient-to-br from-purple-300 to-fuchsia-400 rounded-[2px]" />
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function CreditCardPreview({
           <div className="flex items-center">
             <div className="flex -space-x-3">
               <div className="w-8 h-8 rounded-full bg-red-600 shadow-lg" />
-              <div className="w-8 h-8 rounded-full bg-orange-500 shadow-lg opacity-90" />
+              <div className="w-8 h-8 rounded-full bg-purple-500 shadow-lg opacity-90" />
             </div>
           </div>
         </div>

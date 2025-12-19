@@ -207,7 +207,7 @@ export default function CertificatesView() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -221,7 +221,7 @@ export default function CertificatesView() {
               <CardTitle className="text-lg">My Certificates</CardTitle>
               <p className="text-muted-foreground text-sm">View your Digital Ownership and Physical Storage certificates</p>
             </div>
-            <Badge variant="outline" className="text-amber-600 border-amber-500">
+            <Badge variant="outline" className="text-fuchsia-600 border-purple-500">
               {activeCertificates.length} Active
             </Badge>
           </div>
@@ -229,10 +229,10 @@ export default function CertificatesView() {
         <CardContent className="p-6">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
             <TabsList className="bg-muted mb-6">
-              <TabsTrigger value="active" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <TabsTrigger value="active" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
                 Active
               </TabsTrigger>
-              <TabsTrigger value="digital" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <TabsTrigger value="digital" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
                 Digital Ownership
               </TabsTrigger>
               <TabsTrigger value="storage" className="data-[state=active]:bg-gray-500 data-[state=active]:text-white">
@@ -269,10 +269,10 @@ export default function CertificatesView() {
                     data-testid={`certificate-card-${cert.id}`}
                   >
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      isDigital ? 'bg-amber-100' : 'bg-gray-200'
+                      isDigital ? 'bg-purple-100' : 'bg-gray-200'
                     }`}>
                       {isDigital ? (
-                        <Award className="w-6 h-6 text-amber-600" />
+                        <Award className="w-6 h-6 text-fuchsia-600" />
                       ) : (
                         <Box className="w-6 h-6 text-gray-500" />
                       )}
@@ -280,7 +280,7 @@ export default function CertificatesView() {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${isDigital ? 'text-amber-600' : 'text-gray-600'}`}>
+                        <span className={`font-semibold ${isDigital ? 'text-fuchsia-600' : 'text-gray-600'}`}>
                           {cert.type}
                         </span>
                         <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={`text-xs ${

@@ -1850,7 +1850,7 @@ export default function KYC() {
                               {beneficialOwners.filter(o => o.name.trim()).length} beneficial owner(s) listed
                             </p>
                             {hasPepOwners && (
-                              <p className="text-sm text-amber-600 mt-1">PEP declaration included</p>
+                              <p className="text-sm text-fuchsia-600 mt-1">PEP declaration included</p>
                             )}
                           </div>
                           
@@ -1879,8 +1879,8 @@ export default function KYC() {
                           </div>
                         </div>
                         
-                        <div className="p-4 border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 rounded-lg">
-                          <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <div className="p-4 border border-purple-200 bg-purple-50 dark:bg-fuchsia-900/20 dark:border-fuchsia-700 rounded-lg">
+                          <p className="text-sm text-fuchsia-800 dark:text-purple-200">
                             By submitting this application, I confirm that all information provided is accurate and complete. 
                             I understand that providing false information may result in rejection or account termination.
                           </p>

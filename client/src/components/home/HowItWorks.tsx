@@ -37,10 +37,10 @@ export default function HowItWorks() {
   const steps = getSteps(accountType);
 
   return (
-    <section id="how-it-works" className="py-24 bg-gradient-to-br from-white via-orange-50/20 to-amber-50/20 relative overflow-hidden">
+    <section id="how-it-works" className="py-24 bg-gradient-to-br from-white via-purple-50/20 to-purple-50/20 relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-orange-100/30 blur-[150px] rounded-full" />
-        <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-amber-100/30 blur-[120px] rounded-full" />
+        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-purple-100/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-purple-100/30 blur-[120px] rounded-full" />
       </div>
       
       <div className="container mx-auto px-6 relative z-10">
@@ -50,12 +50,12 @@ export default function HowItWorks() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-600/10 border border-amber-500/20 text-sm font-semibold text-orange-600 uppercase tracking-wider mb-6">
+          <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/20 text-sm font-semibold text-purple-600 uppercase tracking-wider mb-6">
             {accountType === 'business' ? 'ENTERPRISE WORKFLOW' : 'PERSONAL WORKFLOW'}
           </span>
           <h2 className="text-3xl lg:text-5xl font-bold mb-4">
             <span className="text-gray-900">How It </span>
-            <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">Works</span>
+            <span className="bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">Works</span>
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             {accountType === 'business' 
@@ -68,9 +68,9 @@ export default function HowItWorks() {
           <svg className="absolute left-1/2 top-0 h-full w-px hidden lg:block" style={{ transform: 'translateX(-50%)' }}>
             <defs>
               <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="amber-500" stopOpacity="0.3" />
-                <stop offset="50%" stopColor="orange-600" />
-                <stop offset="100%" stopColor="amber-500" stopOpacity="0.3" />
+                <stop offset="0%" stopColor="purple-500" stopOpacity="0.3" />
+                <stop offset="50%" stopColor="purple-600" />
+                <stop offset="100%" stopColor="purple-500" stopOpacity="0.3" />
               </linearGradient>
             </defs>
             <path
@@ -105,9 +105,9 @@ export default function HowItWorks() {
                 </div>
                 
                 <div className="relative z-10 hidden lg:flex items-center justify-center flex-shrink-0">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-600/10 to-amber-500/10 border border-orange-600/20 flex items-center justify-center relative">
-                    <step.icon className="w-7 h-7 text-orange-600" strokeWidth={1.5} />
-                    <span className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-gradient-to-br from-orange-600 to-amber-500 text-white text-xs font-bold flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600/10 to-purple-500/10 border border-purple-600/20 flex items-center justify-center relative">
+                    <step.icon className="w-7 h-7 text-purple-600" strokeWidth={1.5} />
+                    <span className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 text-white text-xs font-bold flex items-center justify-center">
                       {step.number}
                     </span>
                   </div>
@@ -128,7 +128,7 @@ export default function HowItWorks() {
           <Link href="/register">
             <Button 
               size="lg"
-              className="px-8 h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white rounded-full shadow-lg shadow-orange-200"
+              className="px-8 h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:opacity-90 text-white rounded-full shadow-lg shadow-purple-200"
               data-testid="button-explore-platform"
             >
               {accountType === 'business' ? 'Explore Business Platform' : 'Get Started Today'}

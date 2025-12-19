@@ -396,7 +396,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
       case 'exporter':
         return 'bg-green-500';
       case 'admin':
-        return 'bg-orange-500';
+        return 'bg-purple-500';
       default:
         return 'bg-gray-500';
     }
@@ -476,7 +476,7 @@ Version 1.0 - Effective Date: January 2025
         <AlertDialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-orange-500" />
+              <Shield className="w-5 h-5 text-purple-500" />
               FinaBridge Terms & Conditions
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -728,7 +728,7 @@ Version 1.0 - Effective Date: January 2025
               )}
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-orange-500" />
+                  <MessageCircle className="w-5 h-5 text-purple-500" />
                   Deal Room
                   {room?.isClosed && <Badge variant="destructive">Closed</Badge>}
                 </CardTitle>
@@ -865,7 +865,7 @@ Version 1.0 - Effective Date: January 2025
                         <div
                           className={`rounded-lg px-3 py-2 ${
                             isOwnMessage
-                              ? 'bg-orange-500 text-white'
+                              ? 'bg-purple-500 text-white'
                               : 'bg-muted'
                           }`}
                         >

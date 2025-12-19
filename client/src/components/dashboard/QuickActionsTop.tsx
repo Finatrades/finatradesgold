@@ -25,8 +25,8 @@ const actions = [
     title: 'Buy Gold Bar',
     path: '',
     icon: <ShoppingCart className="w-4 h-4" />,
-    gradient: 'from-amber-400 to-yellow-500',
-    hoverGradient: 'hover:from-amber-500 hover:to-yellow-600',
+    gradient: 'from-fuchsia-400 to-yellow-500',
+    hoverGradient: 'hover:from-purple-500 hover:to-yellow-600',
     requiresKyc: true,
     isModal: true
   },
@@ -43,8 +43,8 @@ const actions = [
     title: 'Send Payment',
     path: '',
     icon: <Send className="w-4 h-4" />,
-    gradient: 'from-orange-500 to-red-500',
-    hoverGradient: 'hover:from-orange-600 hover:to-red-600',
+    gradient: 'from-purple-500 to-red-500',
+    hoverGradient: 'hover:from-purple-600 hover:to-red-600',
     requiresKyc: true,
     isModal: true
   },

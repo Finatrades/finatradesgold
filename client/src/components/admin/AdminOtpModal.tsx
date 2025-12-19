@@ -209,7 +209,7 @@ export default function AdminOtpModal({
       <DialogContent className="sm:max-w-md" data-testid="admin-otp-modal">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-orange-500" />
+            <Shield className="h-5 w-5 text-purple-500" />
             Admin Verification Required
           </DialogTitle>
           <DialogDescription>
@@ -220,7 +220,7 @@ export default function AdminOtpModal({
         <div className="py-6">
           {step === 'sending' && (
             <div className="flex flex-col items-center space-y-4">
-              <Loader2 className="h-12 w-12 animate-spin text-orange-500" />
+              <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
               <p className="text-sm text-muted-foreground">Sending verification code...</p>
             </div>
           )}
@@ -280,7 +280,7 @@ export default function AdminOtpModal({
 
           {step === 'verifying' && (
             <div className="flex flex-col items-center space-y-4">
-              <Loader2 className="h-12 w-12 animate-spin text-orange-500" />
+              <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
               <p className="text-sm text-muted-foreground">Verifying code...</p>
             </div>
           )}
@@ -312,7 +312,7 @@ export default function AdminOtpModal({
               <Button
                 onClick={handleVerify}
                 disabled={code.length !== 6}
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-purple-500 hover:bg-purple-600"
                 data-testid="button-verify-otp"
               >
                 Verify & Continue

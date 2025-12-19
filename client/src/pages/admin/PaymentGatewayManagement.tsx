@@ -455,20 +455,20 @@ export default function PaymentGatewayManagement() {
             </p>
           </CardContent>
         </Card>
-        <Card className={settings.bankTransferEnabled ? 'border-amber-500' : ''}>
+        <Card className={settings.bankTransferEnabled ? 'border-purple-500' : ''}>
           <CardContent className="pt-6 text-center">
-            <Landmark className={`w-8 h-8 mx-auto mb-2 ${settings.bankTransferEnabled ? 'text-amber-500' : 'text-muted-foreground'}`} />
+            <Landmark className={`w-8 h-8 mx-auto mb-2 ${settings.bankTransferEnabled ? 'text-purple-500' : 'text-muted-foreground'}`} />
             <p className="font-semibold">Bank Transfer</p>
-            <p className={`text-sm ${settings.bankTransferEnabled ? 'text-amber-500' : 'text-muted-foreground'}`}>
+            <p className={`text-sm ${settings.bankTransferEnabled ? 'text-purple-500' : 'text-muted-foreground'}`}>
               {settings.bankTransferEnabled ? 'Enabled' : 'Disabled'}
             </p>
           </CardContent>
         </Card>
-        <Card className={manualCryptoEnabled ? 'border-orange-500' : ''}>
+        <Card className={manualCryptoEnabled ? 'border-purple-500' : ''}>
           <CardContent className="pt-6 text-center">
-            <Bitcoin className={`w-8 h-8 mx-auto mb-2 ${manualCryptoEnabled ? 'text-orange-500' : 'text-muted-foreground'}`} />
+            <Bitcoin className={`w-8 h-8 mx-auto mb-2 ${manualCryptoEnabled ? 'text-purple-500' : 'text-muted-foreground'}`} />
             <p className="font-semibold">Manual Crypto</p>
-            <p className={`text-sm ${manualCryptoEnabled ? 'text-orange-500' : 'text-muted-foreground'}`}>
+            <p className={`text-sm ${manualCryptoEnabled ? 'text-purple-500' : 'text-muted-foreground'}`}>
               {cryptoWallets.filter(w => w.isActive).length} wallet(s)
             </p>
           </CardContent>
@@ -878,7 +878,7 @@ export default function PaymentGatewayManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Bitcoin className="w-5 h-5 text-orange-500" /> Manual Crypto Payments
+                    <Bitcoin className="w-5 h-5 text-purple-500" /> Manual Crypto Payments
                   </CardTitle>
                   <CardDescription>Configure wallet addresses for receiving cryptocurrency payments</CardDescription>
                 </div>
@@ -888,8 +888,8 @@ export default function PaymentGatewayManagement() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
-                <p className="text-sm text-orange-800">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-purple-800">
                   Users will see these wallet addresses when choosing crypto payment. After sending crypto, users submit their transaction hash for admin verification in Payment Operations.
                 </p>
               </div>
@@ -916,7 +916,7 @@ export default function PaymentGatewayManagement() {
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">
-                          <Bitcoin className="w-5 h-5 text-orange-500" />
+                          <Bitcoin className="w-5 h-5 text-purple-500" />
                           <h4 className="font-medium text-gray-900">{wallet.networkLabel}</h4>
                           {wallet.qrCodeImage && (
                             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-600 rounded-full flex items-center gap-1">
@@ -1142,8 +1142,8 @@ export default function PaymentGatewayManagement() {
                   <p className="text-xs text-muted-foreground">Percentage markup added to the gold price (e.g., 2.5 adds 2.5% to the API price)</p>
                 </div>
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
-                <p className="text-sm text-amber-800">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+                <p className="text-sm text-fuchsia-800">
                   <strong>Note:</strong> When enabled, GoldAPI.io will be used as the primary source for gold prices. 
                   If disabled or if the API fails, the system will fall back to the last known price.
                 </p>

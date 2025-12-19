@@ -161,7 +161,7 @@ export default function ChartCard() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-lg font-bold text-foreground">Gold Price Chart</h3>
-            <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">LBMA</span>
+            <span className="text-xs px-2 py-0.5 bg-purple-100 text-fuchsia-700 rounded font-medium">LBMA</span>
           </div>
           <p className="text-xs text-muted-foreground mb-2">
             Spot Price - {chartType === 'candle' ? 'Candlestick' : 'Area'} View (Live)

@@ -236,7 +236,7 @@ export default function Login() {
                 <Button 
                   type="submit"
                   disabled={isLoading || mfaCode.length < 6}
-                  className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                  className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all"
                   data-testid="button-verify-mfa"
                 >
                   {isLoading ? "Verifying..." : (
@@ -334,7 +334,7 @@ export default function Login() {
               <Button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all"
                 data-testid="button-login"
               >
                 {isLoading ? "Signing in..." : (
@@ -375,7 +375,7 @@ export default function Login() {
             <div className="mt-8 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>
               <Link href="/register">
-                <span className="text-orange-500 font-bold hover:text-orange-600 hover:underline cursor-pointer transition-colors">Create Account</span>
+                <span className="text-purple-500 font-bold hover:text-purple-600 hover:underline cursor-pointer transition-colors">Create Account</span>
               </Link>
             </div>
           </Card>

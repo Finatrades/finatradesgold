@@ -476,8 +476,8 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
                 <span className="text-muted-foreground">Est. Value (USD)</span>
                 <span className="text-primary font-bold">~${(totalWeight * 85.22).toFixed(2)}</span>
               </div>
-              <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
-                <p className="text-xs text-amber-800 flex gap-2">
+              <div className="mt-4 p-3 bg-purple-50 rounded border border-purple-200">
+                <p className="text-xs text-fuchsia-800 flex gap-2">
                   <Info className="w-4 h-4 flex-shrink-0" />
                   <span>Upon verification at the vault, <strong>{totalWeight}g</strong> of Gold will be credited to your FinaPay Wallet.</span>
                 </p>

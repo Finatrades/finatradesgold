@@ -36,9 +36,9 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
       case 'Buy': return 'bg-green-500/10 text-green-500';
       case 'Deposit': return 'bg-green-500/10 text-green-500';
       case 'Sell': return 'bg-red-500/10 text-red-500';
-      case 'Send': return 'bg-orange-500/10 text-orange-500';
+      case 'Send': return 'bg-purple-500/10 text-purple-500';
       case 'Receive': return 'bg-blue-500/10 text-blue-500';
-      case 'Request': return 'bg-orange-500/10 text-orange-500';
+      case 'Request': return 'bg-purple-500/10 text-purple-500';
       default: return 'bg-gray-500/10 text-gray-500';
     }
   };
@@ -185,12 +185,12 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                       ) : tx.amountGrams && tx.amountGrams > 0 ? (
                          <>
                            <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
-                           <p className="text-[10px] text-amber-600 font-medium">{tx.amountGrams.toFixed(4)}g gold</p>
+                           <p className="text-[10px] text-fuchsia-600 font-medium">{tx.amountGrams.toFixed(4)}g gold</p>
                          </>
                       ) : goldPrice > 0 ? (
                          <>
                            <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
-                           <p className="text-[10px] text-amber-600 font-medium">~{(tx.amountUsd / goldPrice).toFixed(2)}g gold</p>
+                           <p className="text-[10px] text-fuchsia-600 font-medium">~{(tx.amountUsd / goldPrice).toFixed(2)}g gold</p>
                          </>
                       ) : (
                          <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>

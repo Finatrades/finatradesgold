@@ -25,7 +25,7 @@ export default function NotificationCenter() {
   const getIcon = (type: NotificationType) => {
     switch (type) {
       case 'success': return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5 text-amber-500" />;
+      case 'warning': return <AlertTriangle className="w-5 h-5 text-purple-500" />;
       case 'error': return <XCircle className="w-5 h-5 text-red-500" />;
       case 'transaction': return <ArrowRightLeft className="w-5 h-5 text-blue-500" />;
       default: return <Info className="w-5 h-5 text-secondary" />;

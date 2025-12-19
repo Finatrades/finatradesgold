@@ -47,35 +47,37 @@
 }
 
 :root {
-  /* Brand Variables - Orange & White Theme */
-  --brand-orange: #f97316;
-  --brand-orange-dark: #ea580c;
-  --brand-orange-light: #fb923c;
-  --brand-primary: #f97316;
+  /* Brand Variables - Purple & White Theme */
+  --brand-purple: #8A2BE2;
+  --brand-purple-dark: #4B0082;
+  --brand-purple-light: #A342FF;
+  --brand-pink: #FF2FBF;
+  --brand-primary: #8A2BE2;
   --brand-primary-foreground: #ffffff;
-  --brand-secondary: #f97316;
+  --brand-secondary: #4B0082;
   --brand-secondary-foreground: #ffffff;
-  --brand-accent: #f97316;
+  --brand-accent: #FF2FBF;
   --brand-button-radius: 0.5rem;
-  --brand-button-primary-bg: #f97316;
+  --brand-button-primary-bg: linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%);
   --brand-button-primary-text: #ffffff;
   --brand-button-secondary-bg: #ffffff;
-  --brand-button-secondary-text: #f97316;
+  --brand-button-secondary-text: #8A2BE2;
   --brand-font-family: 'Inter', system-ui, sans-serif;
   --brand-heading-font-family: var(--brand-font-family);
-  --brand-background: #ffffff;
+  --brand-background: #FAFBFF;
   --brand-card-background: #ffffff;
   --brand-sidebar-background: #ffffff;
   --brand-border-radius: 0.5rem;
   --brand-border-color: #e5e7eb;
+  --brand-header-gradient: linear-gradient(90deg, #0D001E 0%, #2A0055 50%, #4B0082 100%);
 
-  /* Orange & White Theme */
+  /* Purple & White Theme */
   
-  /* Background - Pure White */
-  --background: #ffffff;
-  --foreground: #1f2937;
+  /* Background - Soft Light Gradient Base */
+  --background: #FAFBFF;
+  --foreground: #0D0D0D;
 
-  /* Cards - Pure White with Gray Text */
+  /* Cards - Pure White with Dark Text */
   --card: #ffffff;
   --card-foreground: #1f2937;
 
@@ -85,28 +87,28 @@
   /* Sidebar background - White */
   --sidebar-background: #ffffff;
 
-  /* Primary - Orange */
-  --primary: #f97316;
+  /* Primary - Purple */
+  --primary: #8A2BE2;
   --primary-foreground: #ffffff;
 
-  /* Secondary - Light Orange */
-  --secondary: #fff7ed;
-  --secondary-foreground: #f97316;
+  /* Secondary - Light Purple */
+  --secondary: #f5f3ff;
+  --secondary-foreground: #8A2BE2;
 
-  /* Muted backgrounds - Light Gray */
-  --muted: #f9fafb;
+  /* Muted backgrounds - Light Gray-Blue */
+  --muted: #F4F6FC;
   --muted-foreground: #6b7280;
 
-  /* Accent - Orange */
-  --accent: #fff7ed;
-  --accent-foreground: #f97316;
+  /* Accent - Pink/Purple */
+  --accent: #fdf4ff;
+  --accent-foreground: #8A2BE2;
 
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
   --border: #e5e7eb;
   --input: #e5e7eb;
-  --ring: #f97316;
+  --ring: #8A2BE2;
 
   --radius: var(--brand-border-radius);
 
@@ -134,41 +136,41 @@
 }
 
 .dark {
-  /* Dark Theme - Orange accent on dark */
+  /* Dark Theme - Purple accent on dark */
   
   /* Dark Background */
-  --background: #111827;
+  --background: #0D001E;
   --foreground: #f9fafb;
 
   /* Cards */
-  --card: #1f2937;
+  --card: #1a0a2e;
   --card-foreground: #f9fafb;
 
-  --popover: #1f2937;
+  --popover: #1a0a2e;
   --popover-foreground: #f9fafb;
 
-  /* Primary - Orange */
-  --primary: #f97316;
+  /* Primary - Purple */
+  --primary: #A342FF;
   --primary-foreground: #ffffff;
 
   /* Secondary */
-  --secondary: #374151;
+  --secondary: #2A0055;
   --secondary-foreground: #f9fafb;
 
   /* Muted backgrounds */
-  --muted: #374151;
+  --muted: #2A0055;
   --muted-foreground: #9ca3af;
 
-  /* Accent - Orange tint */
-  --accent: #7c2d12;
+  /* Accent - Purple tint */
+  --accent: #4B0082;
   --accent-foreground: #f9fafb;
 
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
-  --border: #374151;
-  --input: #374151;
-  --ring: #f97316;
+  --border: #4B0082;
+  --input: #2A0055;
+  --ring: #A342FF;
 
   --radius: var(--brand-border-radius);
 
@@ -213,25 +215,54 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: linear-gradient(180deg, #8A2BE2, #FF2FBF);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: linear-gradient(180deg, #A342FF, #FF4CD6);
 }
 
-/* Utility classes for orange theme */
-.text-brand-orange {
-  color: #f97316;
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
 }
-.bg-brand-orange {
-  background-color: #f97316;
+::-webkit-scrollbar-track {
+  background: #F4F6FC;
 }
-.border-brand-orange {
-  border-color: #f97316;
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8A2BE2, #FF2FBF);
+  border-radius: 4px;
 }
-.hover\:bg-brand-orange:hover {
-  background-color: #f97316;
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #A342FF, #FF4CD6);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Utility classes for purple theme */
+.text-brand-purple {
+  color: #8A2BE2;
+}
+.bg-brand-purple {
+  background-color: #8A2BE2;
+}
+.border-brand-purple {
+  border-color: #8A2BE2;
+}
+.hover\:bg-brand-purple:hover {
+  background-color: #8A2BE2;
+}
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%);
+}
+.bg-brand-header {
+  background: linear-gradient(90deg, #0D001E 0%, #2A0055 50%, #4B0082 100%);
 }
 
 /* QR Scanner styles - ensure html5-qrcode video is visible */

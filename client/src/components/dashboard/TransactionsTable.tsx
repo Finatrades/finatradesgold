@@ -26,7 +26,7 @@ const getIcon = (type: string) => {
   if (t === 'buy') return <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   if (t === 'deposit') return <ArrowDownLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   if (t === 'sell') return <DollarSign className="w-4 h-4 text-rose-600 dark:text-rose-400" />;
-  if (t === 'send') return <ArrowUpRight className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
+  if (t === 'send') return <ArrowUpRight className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />;
   if (t === 'receive') return <ArrowDownLeft className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
   return <RefreshCw className="w-4 h-4 text-[#D4AF37]" />;
 };
@@ -36,7 +36,7 @@ const getBgColor = (type: string) => {
   if (t === 'buy') return 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 dark:from-emerald-500/25 dark:to-emerald-600/10';
   if (t === 'deposit') return 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 dark:from-emerald-500/25 dark:to-emerald-600/10';
   if (t === 'sell') return 'bg-gradient-to-br from-rose-500/15 to-rose-600/5 dark:from-rose-500/25 dark:to-rose-600/10';
-  if (t === 'send') return 'bg-gradient-to-br from-amber-500/15 to-amber-600/5 dark:from-amber-500/25 dark:to-amber-600/10';
+  if (t === 'send') return 'bg-gradient-to-br from-purple-500/15 to-fuchsia-600/5 dark:from-purple-500/25 dark:to-fuchsia-600/10';
   if (t === 'receive') return 'bg-gradient-to-br from-sky-500/15 to-sky-600/5 dark:from-sky-500/25 dark:to-sky-600/10';
   return 'bg-gradient-to-br from-[#D4AF37]/15 to-[#F4E4BC]/10 dark:from-[#D4AF37]/25 dark:to-[#F4E4BC]/15';
 };
