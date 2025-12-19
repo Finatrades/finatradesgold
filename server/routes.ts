@@ -9778,7 +9778,7 @@ export async function registerRoutes(
           }
         };
       } else {
-        // Use General agent with OpenAI LLM
+        // Use General agent with FREE FAQ-based responses
         // First, search knowledge base for relevant articles
         let knowledgeResponse: string | null = null;
         try {
@@ -9791,10 +9791,10 @@ export async function registerRoutes(
           console.error("Error searching knowledge base:", err);
         }
         
-        // Use AI-powered response with OpenAI
-        const response = await processUserMessageWithAI(sanitizedMessage, userContext, platformConfig, goldPrice);
+        // Use FREE FAQ-based response (no API costs)
+        const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
         
-        // If knowledge base found a relevant article and AI had low confidence, prefer KB
+        // If knowledge base found a relevant article and FAQ had low confidence, prefer KB
         let finalReply = response.message;
         if (knowledgeResponse && response.confidence < 0.6) {
           finalReply = knowledgeResponse;
@@ -9814,8 +9814,7 @@ export async function registerRoutes(
             name: selectedAgent.displayName,
             type: selectedAgent.type
           } : undefined,
-          fromKnowledgeBase: !!knowledgeResponse && response.confidence < 0.6,
-          aiPowered: true
+          fromKnowledgeBase: !!knowledgeResponse && response.confidence < 0.6
         };
       }
       
