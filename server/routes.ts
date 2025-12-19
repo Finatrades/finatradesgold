@@ -1685,13 +1685,29 @@ export async function registerRoutes(
   // ADMIN - USER MANAGEMENT
   // ============================================================================
   
+  // Server-side cache for admin stats (expensive query)
+  let adminStatsCache: { data: any; timestamp: number } | null = null;
+  const ADMIN_STATS_CACHE_TTL = 30000; // 30 seconds
+
   // Admin Dashboard Stats
   app.get("/api/admin/stats", ensureAdminAsync, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
-      const kycSubmissions = await storage.getAllKycSubmissions();
-      const allTransactions = await storage.getAllTransactions();
-      const allDepositRequests = await storage.getAllDepositRequests();
+      // Check cache first
+      const now = Date.now();
+      if (adminStatsCache && (now - adminStatsCache.timestamp) < ADMIN_STATS_CACHE_TTL) {
+        console.log('[Admin Stats] Serving from cache');
+        return res.json(adminStatsCache.data);
+      }
+
+      const startTime = now;
+      
+      // Fetch all data in parallel for speed
+      const [users, kycSubmissions, allTransactions, allDepositRequests] = await Promise.all([
+        storage.getAllUsers(),
+        storage.getAllKycSubmissions(),
+        storage.getAllTransactions(),
+        storage.getAllDepositRequests()
+      ]);
       
       // Total users count
       const totalUsers = users.length;
@@ -1959,7 +1975,7 @@ export async function registerRoutes(
       const totalVolumeAed = totalVolume * USD_TO_AED;
       const revenueAed = revenue * USD_TO_AED;
       
-      res.json({
+      const responseData = {
         totalUsers,
         pendingKycCount,
         totalVolume,
@@ -1982,7 +1998,13 @@ export async function registerRoutes(
         pendingReviewCases,
         recentCriticalEvents,
         recentTransactions
-      });
+      };
+
+      // Cache the response
+      adminStatsCache = { data: responseData, timestamp: Date.now() };
+      console.log(`[Admin Stats] Generated in ${Date.now() - startTime}ms`);
+      
+      res.json(responseData);
     } catch (error) {
       console.error("Failed to get admin stats:", error);
       res.status(400).json({ message: "Failed to get admin stats" });
