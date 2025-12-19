@@ -3845,6 +3845,18 @@ export async function registerRoutes(
     }
   });
 
+  // Seed AML rules (frontend endpoint)
+  app.post("/api/admin/aml/seed-rules", ensureAdminAsync, async (req, res) => {
+    try {
+      await seedDefaultAmlRules();
+      const rules = await storage.getAllAmlMonitoringRules();
+      res.json({ success: true, message: `Seeded default AML rules`, rules });
+    } catch (error) {
+      console.error("Seed AML rules error:", error);
+      res.status(400).json({ success: false, message: "Failed to seed AML rules" });
+    }
+  });
+
   // Get AML alerts summary (Admin)
   app.get("/api/admin/aml/alerts", ensureAdminAsync, async (req, res) => {
     try {
