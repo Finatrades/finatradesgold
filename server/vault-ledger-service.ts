@@ -26,7 +26,10 @@ export type LedgerAction =
   | 'Trade_Release'
   | 'Payout_Credit'
   | 'Fee_Deduction'
-  | 'Adjustment';
+  | 'Adjustment'
+  | 'Pending_Deposit'
+  | 'Pending_Confirm'
+  | 'Pending_Reject';
 
 export type WalletType = 'FinaPay' | 'BNSL' | 'FinaBridge' | 'External';
 export type OwnershipStatus = 'Available' | 'Locked_BNSL' | 'Reserved_Trade' | 'Pending_Deposit' | 'Pending_Withdrawal';
@@ -261,6 +264,31 @@ export class VaultLedgerService {
           totalGoldGrams: (parseFloat(summary.totalGoldGrams) - grams).toFixed(6),
           availableGrams: (parseFloat(summary.availableGrams) - grams).toFixed(6),
           finaPayGrams: (parseFloat(summary.finaPayGrams) - grams).toFixed(6),
+        };
+        break;
+
+      case 'Pending_Deposit':
+        updates = {
+          ...updates,
+          totalGoldGrams: (parseFloat(summary.totalGoldGrams) + grams).toFixed(6),
+          pendingGrams: (parseFloat(summary.pendingGrams) + grams).toFixed(6),
+        };
+        break;
+
+      case 'Pending_Confirm':
+        updates = {
+          ...updates,
+          pendingGrams: (parseFloat(summary.pendingGrams) - grams).toFixed(6),
+          availableGrams: (parseFloat(summary.availableGrams) + grams).toFixed(6),
+          finaPayGrams: (parseFloat(summary.finaPayGrams) + grams).toFixed(6),
+        };
+        break;
+
+      case 'Pending_Reject':
+        updates = {
+          ...updates,
+          totalGoldGrams: (parseFloat(summary.totalGoldGrams) - grams).toFixed(6),
+          pendingGrams: (parseFloat(summary.pendingGrams) - grams).toFixed(6),
         };
         break;
     }
@@ -543,6 +571,68 @@ export class VaultLedgerService {
     }
 
     return updated;
+  }
+
+  async recordPendingDeposit(
+    userId: string,
+    goldGrams: number,
+    goldPriceUsd: number,
+    transactionId?: string,
+    notes?: string
+  ): Promise<VaultLedgerEntry> {
+    return this.recordLedgerEntry({
+      userId,
+      action: 'Pending_Deposit',
+      goldGrams,
+      goldPriceUsdPerGram: goldPriceUsd,
+      toWallet: 'FinaPay',
+      toStatus: 'Pending_Deposit',
+      transactionId,
+      notes: notes || `Pending deposit of ${goldGrams.toFixed(4)}g awaiting verification`,
+    });
+  }
+
+  async confirmPendingDeposit(
+    userId: string,
+    goldGrams: number,
+    goldPriceUsd: number,
+    transactionId?: string,
+    notes?: string
+  ): Promise<VaultLedgerEntry> {
+    await db.update(wallets)
+      .set({ goldGrams: sql`${wallets.goldGrams} + ${goldGrams}` })
+      .where(eq(wallets.userId, userId));
+
+    return this.recordLedgerEntry({
+      userId,
+      action: 'Pending_Confirm',
+      goldGrams,
+      goldPriceUsdPerGram: goldPriceUsd,
+      toWallet: 'FinaPay',
+      fromStatus: 'Pending_Deposit',
+      toStatus: 'Available',
+      transactionId,
+      notes: notes || `Confirmed pending deposit of ${goldGrams.toFixed(4)}g - now available`,
+    });
+  }
+
+  async rejectPendingDeposit(
+    userId: string,
+    goldGrams: number,
+    goldPriceUsd: number,
+    transactionId?: string,
+    notes?: string
+  ): Promise<VaultLedgerEntry> {
+    return this.recordLedgerEntry({
+      userId,
+      action: 'Pending_Reject',
+      goldGrams,
+      goldPriceUsdPerGram: goldPriceUsd,
+      fromWallet: 'FinaPay',
+      fromStatus: 'Pending_Deposit',
+      transactionId,
+      notes: notes || `Rejected pending deposit of ${goldGrams.toFixed(4)}g`,
+    });
   }
 }
 

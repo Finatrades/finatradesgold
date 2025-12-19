@@ -936,7 +936,10 @@ export const ledgerActionEnum = pgEnum('ledger_action', [
   'Trade_Release',              // Release gold from trade (settlement complete)
   'Payout_Credit',              // BNSL payout credited as gold
   'Fee_Deduction',              // Fee deducted from balance
-  'Adjustment'                  // Manual adjustment by admin
+  'Adjustment',                 // Manual adjustment by admin
+  'Pending_Deposit',            // Deposit awaiting verification
+  'Pending_Confirm',            // Pending deposit confirmed
+  'Pending_Reject'              // Pending deposit rejected
 ]);
 
 // Wallet types for tracking source/destination
