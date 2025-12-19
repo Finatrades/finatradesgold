@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
-import { db } from "./db";
+import { db, pool } from "./db";
 import crypto from "crypto";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { 
@@ -157,7 +157,7 @@ async function ensureOwnerOrAdmin(req: Request, res: Response, next: NextFunctio
 }
 
 // Middleware to ensure admin access via session-based authentication
-// SECURITY: Requires both admin role AND login via /admin/login path
+// SECURITY: Requires both admin role AND login via /admin/login path AND active employee status
 async function ensureAdminAsync(req: Request, res: Response, next: NextFunction) {
   try {
     const sessionUserId = req.session?.userId;
@@ -178,8 +178,24 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
       });
     }
     
-    // Attach the validated admin user to the request
+    // SECURITY: Check if employee is active (skip for original admins without employee records)
+    const employee = await storage.getEmployeeByUserId(admin.id);
+    if (employee && employee.status !== 'active') {
+      // Destroy the session for inactive employees - promisified
+      await new Promise<void>((resolve) => {
+        req.session.destroy((err) => {
+          if (err) console.error('Session destroy error:', err);
+          resolve();
+        });
+      });
+      return res.status(403).json({ 
+        message: "Your account has been deactivated. Please contact a super admin." 
+      });
+    }
+    
+    // Attach the validated admin user and employee to the request
     (req as any).adminUser = admin;
+    (req as any).adminEmployee = employee;
     next();
   } catch (error) {
     return res.status(500).json({ message: "Authentication failed" });
@@ -187,17 +203,26 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
 }
 
 // Middleware to require specific employee permissions
-// Must be used AFTER ensureAdminAsync as it relies on adminUser being set
+// Must be used AFTER ensureAdminAsync as it relies on adminUser and adminEmployee being set
 function requirePermission(...requiredPermissions: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminUser = (req as any).adminUser;
+      const adminEmployee = (req as any).adminEmployee;
+      
       if (!adminUser) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      // Get employee record for this admin user
-      const employee = await storage.getEmployeeByUserId(adminUser.id);
+      // Use employee from ensureAdminAsync or fetch if not available
+      const employee = adminEmployee || await storage.getEmployeeByUserId(adminUser.id);
+      
+      // Double-check employee is active (in case middleware order changes)
+      if (employee && employee.status !== 'active') {
+        return res.status(403).json({ 
+          message: "Your account has been deactivated. Please contact a super admin." 
+        });
+      }
       
       // If no employee record, allow access (original admin accounts)
       // Super admins have all permissions
@@ -2478,9 +2503,22 @@ export async function registerRoutes(
       
       const employee = await storage.updateEmployee(req.params.id, { status: 'inactive' });
       
-      // If employee has a user account, update their role back to user
+      // If employee has a user account, update their role back to user and invalidate sessions
       if (existingEmployee.userId) {
         await storage.updateUser(existingEmployee.userId, { role: 'user' });
+        
+        // SECURITY: Invalidate all sessions for this user by deleting from session store
+        // This ensures the deactivated employee is immediately logged out
+        try {
+          await pool.query(
+            `DELETE FROM session WHERE sess::jsonb->>'userId' = $1 AND (sess::jsonb->'adminPortal')::boolean = true`,
+            [existingEmployee.userId]
+          );
+          console.log(`[Security] Invalidated admin sessions for deactivated employee: ${existingEmployee.employeeId}`);
+        } catch (sessionError) {
+          console.error('Failed to invalidate sessions:', sessionError);
+          // Continue even if session deletion fails - the middleware will block access
+        }
       }
       
       // Create audit log with before/after data
@@ -2490,12 +2528,12 @@ export async function registerRoutes(
         actionType: "update",
         actor: adminUser.id,
         actorRole: "admin",
-        details: `Employee ${existingEmployee.employeeId} deactivated. Reason: ${reason || 'Not specified'}`,
+        details: `Employee ${existingEmployee.employeeId} deactivated. Reason: ${reason || 'Not specified'}. Sessions invalidated.`,
         previousData: JSON.stringify({ status: existingEmployee.status }),
         newData: JSON.stringify({ status: 'inactive' }),
       });
       
-      res.json({ message: "Employee deactivated", employee });
+      res.json({ message: "Employee deactivated and sessions invalidated", employee });
     } catch (error) {
       res.status(400).json({ message: "Failed to deactivate employee" });
     }
