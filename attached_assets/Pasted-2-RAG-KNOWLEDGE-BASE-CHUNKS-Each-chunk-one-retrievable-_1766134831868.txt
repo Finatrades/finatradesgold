@@ -1,0 +1,328 @@
+2️⃣ RAG KNOWLEDGE BASE — CHUNKS
+
+(Each chunk = one retrievable document)
+
+KB-01 — What Is Finatrades
+
+Title: What is Finatrades?
+
+Finatrades is a gold-backed digital financial platform that allows users to store, transfer, earn, and settle value using physical gold.
+
+Although balances are displayed in USD for convenience, all real value is held in gold grams. Every gram shown on the platform is backed by physical gold stored securely with Finatrades’ vault partner, Wingold & Metals DMCC.
+
+Finatrades combines the reliability of physical gold with the usability of modern digital banking, without relying on fiat inflation or speculative assets.
+
+KB-02 — Gold vs USD (Critical Concept)
+
+Title: Why does my balance show USD if I own gold?
+
+On Finatrades, gold grams are your actual balance.
+USD is shown only as a reference value so users can easily understand worth.
+
+Your USD value may change with market prices, but your gold grams remain the same unless you:
+
+Add funds
+
+Send or receive payments
+
+Lock gold in BNSL or trade settlement
+
+Withdraw or sell gold
+
+KB-03 — Account Types
+
+Title: Personal vs Business Accounts
+
+Personal Account includes:
+
+FinaPay
+
+FinaVault
+
+BNSL
+
+Business Account includes:
+
+All Personal features
+
+FinaBridge (trade settlement)
+
+The only difference is access to trade finance tools.
+
+KB-04 — FinaPay Overview
+
+Title: What is FinaPay?
+
+FinaPay is your gold-backed digital wallet.
+
+You can:
+
+Add funds (Card / Bank / Crypto)
+
+Send payments
+
+Request payments
+
+All transactions represent gold ownership transfers, even though amounts are displayed in USD.
+
+KB-05 — Add Funds Process
+
+Title: How Add Funds Works
+
+Steps:
+
+Enter amount in USD
+
+See equivalent gold grams
+
+Submit payment
+
+Payment is verified and approved
+
+Physical gold is purchased and stored
+
+Gold grams are credited
+
+After approval, users receive:
+
+Digital Ownership Certificate (Finatrades)
+
+Physical Storage Certificate (Wingold & Metals DMCC)
+
+KB-06 — FinaVault Explained
+
+Title: What is FinaVault?
+
+FinaVault is your digital gold vault.
+
+It shows:
+
+Total gold owned
+
+Available gold
+
+Locked gold
+
+Certificates
+
+FinaVault is the official record of your gold ownership on Finatrades.
+
+KB-07 — Physical Gold Deposit
+
+Title: Depositing Physical Gold
+
+Users may deposit their own physical gold.
+
+Process:
+
+Submit deposit request
+
+Gold is verified and stored
+
+Admin approves
+
+Digital gold credited
+
+Certificates issued
+
+Gold becomes usable inside FinaPay after approval.
+
+KB-08 — Buy Gold Bar
+
+Title: Buying Gold Bars via Partner
+
+Users may purchase gold bars through Wingold & Metals.
+
+Steps:
+
+Complete purchase on partner site
+
+Upload receipt
+
+Admin verifies storage
+
+Gold credited digitally
+
+Certificates issued
+
+Until verification, balance may show as pending.
+
+KB-09 — Send Payment
+
+Title: Sending Payments
+
+Sending a payment transfers gold ownership.
+
+Steps:
+
+Enter receiver email
+
+Enter USD amount (gold shown)
+
+Confirm transfer
+
+Sender receives:
+
+Transfer Certificate
+
+Receiver receives:
+
+Digital Ownership Certificate
+
+Gold remains physically stored.
+
+KB-10 — Request Payment
+
+Title: Requesting Payments
+
+Request Payment allows a user to ask another Finatrades user for gold.
+
+Once paid:
+
+Ownership transfers
+
+Certificates are issued
+
+Balances update automatically
+
+KB-11 — BNSL Plans
+
+Title: What is BNSL?
+
+BNSL (Buy Now Sell Later) allows users to commit gold for a fixed term and earn a margin.
+
+Plans:
+
+12 months → 10%
+
+24 months → 11%
+
+36 months → 12%
+
+Gold is locked during the term.
+Returns accrue daily and are paid quarterly in gold value.
+
+KB-12 — Locked vs Available Balance
+
+Title: Why is my gold locked?
+
+Gold may be locked if:
+
+It is committed to a BNSL plan
+
+It is reserved for a trade settlement (FinaBridge)
+
+Only available gold can be transferred or spent.
+
+KB-13 — FinaBridge Overview
+
+Title: What is FinaBridge?
+
+FinaBridge is a business-only module for gold-backed trade settlement between importers and exporters.
+
+Gold is locked as settlement collateral and released upon trade completion.
+
+KB-14 — Trade Flow (Importer)
+
+Title: Importer Trade Flow
+
+Create trade request
+
+Receive exporter proposals
+
+Select proposal
+
+Lock settlement gold
+
+Enter deal room
+
+Admin finalizes settlement
+
+Importer details are protected.
+
+KB-15 — Trade Flow (Exporter)
+
+Title: Exporter Trade Flow
+
+View trade requests via Finatrades ID
+
+Submit proposals
+
+See locked settlement indicator
+
+Communicate in deal room
+
+No personal importer data is shared initially.
+
+KB-16 — Certificates Explained
+
+Title: Understanding Certificates
+
+Types:
+
+Digital Ownership Certificate — issued by Finatrades
+
+Physical Storage Certificate — issued by Wingold & Metals DMCC
+
+Transfer Certificate — issued on payments
+
+Certificates are issued after verification and approval.
+
+KB-17 — Pending Status
+
+Title: Why is my transaction pending?
+
+A transaction may be pending due to:
+
+Payment verification
+
+Gold allocation confirmation
+
+Compliance review
+
+Once approved, balances and certificates update automatically.
+
+KB-18 — Security & Transparency
+
+Title: How is my gold protected?
+
+Physical storage in secure vaults
+
+Digital ownership ledger
+
+No rehypothecation
+
+Full audit trail
+
+Certificate-backed balances
+
+3️⃣ INTENT MAP (For AI Routing)
+User Intent	KB to Use
+What is Finatrades	KB-01
+Why USD changed	KB-02
+Add funds	KB-05
+Pending transaction	KB-17
+Send payment	KB-09
+Request payment	KB-10
+Certificates	KB-16
+Locked balance	KB-12
+BNSL returns	KB-11
+Trade finance	KB-13
+Importer help	KB-14
+Exporter help	KB-15
+4️⃣ SAFE ANSWER PATTERNS (Compliance)
+Profit Questions
+
+✔ “Returns are defined per plan terms and settled quarterly.”
+
+Price Volatility
+
+✔ “USD is a reference value. Gold grams are your actual holding.”
+
+Delays
+
+✔ “Your request is under verification and will be completed after approval.”
+
+Escalation
+
+✔ “This requires manual review. I will connect you with support.”

@@ -100,7 +100,47 @@ setInterval(() => {
 }, 300000); // Clean every 5 minutes
 
 const FAQ_DATABASE: FAQEntry[] = [
-  // Gold Buying
+  // KB-01 — What Is Finatrades
+  {
+    keywords: ['what is finatrades', 'about finatrades', 'finatrades platform', 'what does finatrades do'],
+    patterns: [/what is finatrades/i, /about finatrades/i, /tell me about finatrades/i, /what does finatrades do/i],
+    response: "Finatrades is a gold-backed digital financial platform that allows users to store, transfer, earn, and settle value using physical gold.\n\nAlthough balances are displayed in USD for convenience, all real value is held in gold grams. Every gram shown on the platform is backed by physical gold stored securely with our vault partner, Wingold & Metals DMCC.\n\nFinatrades combines the reliability of physical gold with the usability of modern digital banking, without relying on fiat inflation or speculative assets.",
+    category: 'general',
+    actions: ['Learn More', 'Sign Up']
+  },
+  // KB-02 — Gold vs USD (Critical Concept)
+  {
+    keywords: ['usd changed', 'balance changed', 'gold vs usd', 'why usd', 'value changed'],
+    patterns: [/why (did|does) my (usd|balance|value) chang/i, /gold vs usd/i, /usd reference/i, /balance show usd/i, /value (is different|changed)/i],
+    response: "On Finatrades, gold grams are your actual balance. USD is shown only as a reference value so users can easily understand worth.\n\nYour USD value may change with market prices, but your gold grams remain the same unless you:\n• Add funds\n• Send or receive payments\n• Lock gold in BNSL or trade settlement\n• Withdraw or sell gold\n\nRemember: Gold is your real asset. USD is just for display.",
+    category: 'account',
+    actions: ['View Dashboard']
+  },
+  // KB-03 — Account Types
+  {
+    keywords: ['personal account', 'business account', 'account type', 'account difference'],
+    patterns: [/personal (vs|or|and) business/i, /account type/i, /difference between.*account/i, /business account/i, /personal account/i],
+    response: "Finatrades offers two account types:\n\n**Personal Account includes:**\n• FinaPay (gold-backed wallet)\n• FinaVault (secure gold storage)\n• BNSL (gold-based yield plans)\n\n**Business Account includes:**\n• All Personal features\n• FinaBridge (trade settlement for importers/exporters)\n\nThe only difference is access to trade finance tools.",
+    category: 'account',
+    actions: ['View Profile']
+  },
+  // KB-04 — FinaPay Overview
+  {
+    keywords: ['finapay', 'what is finapay', 'digital wallet', 'gold wallet'],
+    patterns: [/what is finapay/i, /finapay wallet/i, /digital wallet/i, /gold wallet/i],
+    response: "FinaPay is your gold-backed digital wallet.\n\nYou can:\n• Add funds (Card / Bank / Crypto)\n• Send payments to other users\n• Request payments from others\n\nAll transactions represent gold ownership transfers, even though amounts are displayed in USD for convenience.",
+    category: 'finapay',
+    actions: ['Go to FinaPay', 'Deposit Funds']
+  },
+  // KB-05 — Add Funds Process
+  {
+    keywords: ['add funds', 'how add funds works', 'deposit process', 'fund wallet'],
+    patterns: [/how (does )?add funds work/i, /add funds process/i, /deposit process/i, /funding process/i],
+    response: "Here's how Add Funds works:\n\n1. Enter amount in USD\n2. See equivalent gold grams\n3. Submit payment\n4. Payment is verified and approved\n5. Physical gold is purchased and stored\n6. Gold grams are credited to your wallet\n\nAfter approval, you receive:\n• Digital Ownership Certificate (from Finatrades)\n• Physical Storage Certificate (from Wingold & Metals DMCC)",
+    category: 'deposits',
+    actions: ['Deposit Funds']
+  },
+  // Gold Buying (enhanced)
   {
     keywords: ['buy', 'purchase', 'gold', 'how to buy'],
     patterns: [/how (do i|can i|to) buy/i, /buy gold/i, /purchase gold/i, /want to buy/i],
@@ -108,7 +148,7 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'trading',
     actions: ['Go to Buy Gold', 'Deposit Funds']
   },
-  // Gold Selling
+  // Gold Selling (enhanced)
   {
     keywords: ['sell', 'gold', 'cash out', 'convert'],
     patterns: [/how (do i|can i|to) sell/i, /sell gold/i, /cash out/i, /convert gold/i],
@@ -132,29 +172,85 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'withdrawals',
     actions: ['Withdraw Funds']
   },
-  // FinaVault
+  // KB-06 — FinaVault Explained
   {
-    keywords: ['vault', 'finavault', 'storage', 'secure', 'store gold'],
-    patterns: [/what is (fina)?vault/i, /vault storage/i, /store (my )?gold/i, /secure storage/i, /long.?term/i],
-    response: "FinaVault is our secure gold storage service:\n\n• Your gold is stored in insured, Grade-A vaults\n• Each holding has a unique certificate\n• Annual storage fee of 0.5%\n• You can cash out or transfer back to wallet anytime\n\nPerfect for long-term gold savings!",
+    keywords: ['vault', 'finavault', 'storage', 'secure', 'store gold', 'gold vault'],
+    patterns: [/what is (fina)?vault/i, /vault storage/i, /store (my )?gold/i, /secure storage/i, /long.?term/i, /gold vault/i],
+    response: "FinaVault is your digital gold vault.\n\nIt shows:\n• Total gold owned\n• Available gold\n• Locked gold\n• Certificates\n\nFinaVault is the official record of your gold ownership on Finatrades. Your gold is stored in insured, Grade-A vaults and you can cash out or transfer back to wallet anytime.",
     category: 'vault',
     actions: ['Go to FinaVault']
   },
-  // BNSL
+  // KB-07 — Physical Gold Deposit
   {
-    keywords: ['bnsl', 'buy now sell later', 'lock', 'profit', 'guaranteed'],
-    patterns: [/what is bnsl/i, /buy now sell later/i, /lock gold/i, /guaranteed (return|profit)/i],
-    response: "BNSL (Buy Now Sell Later) lets you lock gold at today's price and sell later at a guaranteed higher price:\n\n• Choose a lock period (30-365 days)\n• See your guaranteed profit upfront\n• Early termination possible (with a fee)\n• Profits paid when the plan matures\n\nIt's a great way to earn returns on your gold holdings!",
+    keywords: ['physical gold', 'deposit gold', 'own gold', 'bring gold'],
+    patterns: [/physical gold/i, /deposit (my )?gold/i, /bring (my )?gold/i, /own gold/i],
+    response: "You may deposit your own physical gold.\n\nProcess:\n1. Submit deposit request\n2. Gold is verified and stored\n3. Admin approves\n4. Digital gold credited\n5. Certificates issued\n\nYour gold becomes usable inside FinaPay after approval.",
+    category: 'vault',
+    actions: ['Submit Deposit Request']
+  },
+  // KB-08 — Buy Gold Bar
+  {
+    keywords: ['gold bar', 'wingold', 'buy bar', 'physical purchase'],
+    patterns: [/gold bar/i, /wingold/i, /buy (a )?bar/i, /physical (gold )?purchase/i],
+    response: "You may purchase gold bars through Wingold & Metals.\n\nSteps:\n1. Complete purchase on partner site\n2. Upload receipt\n3. Admin verifies storage\n4. Gold credited digitally\n5. Certificates issued\n\nUntil verification, balance may show as pending.",
+    category: 'vault',
+    actions: ['Learn More']
+  },
+  // KB-09 — Send Payment (enhanced)
+  {
+    keywords: ['send payment', 'send gold', 'transfer gold', 'pay someone'],
+    patterns: [/send (a )?payment/i, /send gold/i, /transfer gold/i, /pay someone/i],
+    response: "Sending a payment transfers gold ownership.\n\nSteps:\n1. Enter receiver email\n2. Enter USD amount (gold shown)\n3. Confirm transfer\n\nSender receives: Transfer Certificate\nReceiver receives: Digital Ownership Certificate\n\nGold remains physically stored. Transfers are instant and free!",
+    category: 'transfers',
+    actions: ['Transfer Gold']
+  },
+  // KB-10 — Request Payment
+  {
+    keywords: ['request payment', 'ask for payment', 'receive payment'],
+    patterns: [/request (a )?payment/i, /ask for payment/i, /receive payment/i],
+    response: "Request Payment allows you to ask another Finatrades user for gold.\n\nOnce paid:\n• Ownership transfers\n• Certificates are issued\n• Balances update automatically\n\nThis is useful for invoicing or receiving payments from other users.",
+    category: 'transfers',
+    actions: ['Request Payment']
+  },
+  // KB-11 — BNSL Plans (enhanced)
+  {
+    keywords: ['bnsl', 'buy now sell later', 'lock', 'profit', 'guaranteed', 'yield', 'returns'],
+    patterns: [/what is bnsl/i, /buy now sell later/i, /lock gold/i, /guaranteed (return|profit)/i, /bnsl (plan|return)/i],
+    response: "BNSL (Buy Now Sell Later) allows you to commit gold for a fixed term and earn a margin.\n\nPlans:\n• 12 months → 10%\n• 24 months → 11%\n• 36 months → 12%\n\nGold is locked during the term. Returns accrue daily and are paid quarterly in gold value.\n\nNote: Returns are defined per plan terms and settled quarterly.",
     category: 'bnsl',
     actions: ['Explore BNSL Plans']
   },
-  // FinaBridge
+  // KB-12 — Locked vs Available Balance
   {
-    keywords: ['finabridge', 'trade finance', 'business', 'b2b', 'import', 'export'],
-    patterns: [/what is finabridge/i, /trade finance/i, /business (trading|gold)/i, /import|export/i],
-    response: "FinaBridge is our trade finance platform for businesses:\n\n• Buy/sell gold in bulk for commercial purposes\n• Document verification and escrow services\n• Deal room for secure negotiations\n• Transparent fees and tracking\n\nContact our team to set up a business account.",
+    keywords: ['locked', 'locked gold', 'unavailable', 'why locked', 'available balance'],
+    patterns: [/locked (gold|balance)/i, /why (is|are) (my )?.*locked/i, /unavailable/i, /available (vs|and) locked/i],
+    response: "Gold may be locked if:\n• It is committed to a BNSL plan\n• It is reserved for a trade settlement (FinaBridge)\n\nOnly available gold can be transferred or spent. Locked gold remains safely stored and will become available when the plan or trade completes.",
+    category: 'account',
+    actions: ['View Dashboard']
+  },
+  // KB-13 — FinaBridge Overview (enhanced)
+  {
+    keywords: ['finabridge', 'trade finance', 'business', 'b2b', 'import', 'export', 'trade settlement'],
+    patterns: [/what is finabridge/i, /trade finance/i, /business (trading|gold)/i, /import|export/i, /trade settlement/i],
+    response: "FinaBridge is a business-only module for gold-backed trade settlement between importers and exporters.\n\nGold is locked as settlement collateral and released upon trade completion.\n\nFeatures:\n• Document verification and escrow services\n• Deal room for secure negotiations\n• Transparent fees and tracking\n\nContact our team to set up a business account.",
     category: 'finabridge',
     actions: ['Contact Support', 'Learn More']
+  },
+  // KB-14 — Trade Flow (Importer)
+  {
+    keywords: ['importer', 'import trade', 'trade request', 'importer flow'],
+    patterns: [/importer/i, /import trade/i, /trade request/i, /importer flow/i],
+    response: "Importer Trade Flow:\n\n1. Create trade request\n2. Receive exporter proposals\n3. Select proposal\n4. Lock settlement gold\n5. Enter deal room\n6. Admin finalizes settlement\n\nImporter details are protected throughout the process.",
+    category: 'finabridge',
+    actions: ['Create Trade Request']
+  },
+  // KB-15 — Trade Flow (Exporter)
+  {
+    keywords: ['exporter', 'export trade', 'proposal', 'exporter flow'],
+    patterns: [/exporter/i, /export trade/i, /submit proposal/i, /exporter flow/i],
+    response: "Exporter Trade Flow:\n\n1. View trade requests via Finatrades ID\n2. Submit proposals\n3. See locked settlement indicator\n4. Communicate in deal room\n\nNo personal importer data is shared initially for privacy.",
+    category: 'finabridge',
+    actions: ['View Trade Requests']
   },
   // Fees
   {
@@ -228,13 +324,29 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'deposits',
     actions: ['Deposit Funds']
   },
-  // Certificates
+  // KB-16 — Certificates Explained
   {
-    keywords: ['certificate', 'ownership', 'proof', 'document', 'verify'],
-    patterns: [/certificate/i, /proof of ownership/i, /verify (my )?gold/i, /gold document/i],
-    response: "Every gold holding in FinaVault has a unique digital certificate:\n\n• Certificate shows exact gold grams and purity\n• Includes unique certificate number\n• Can be verified publicly via our Certificate Verification page\n• PDF download available for your records\n\nView your certificates in FinaVault > My Holdings.",
+    keywords: ['certificate', 'ownership', 'proof', 'document', 'verify', 'storage certificate'],
+    patterns: [/certificate/i, /proof of ownership/i, /verify (my )?gold/i, /gold document/i, /storage certificate/i],
+    response: "Finatrades provides multiple certificate types:\n\n• Digital Ownership Certificate — issued by Finatrades\n• Physical Storage Certificate — issued by Wingold & Metals DMCC\n• Transfer Certificate — issued on payments\n\nCertificates are issued after verification and approval. View your certificates in FinaVault > My Holdings.",
     category: 'certificates',
     actions: ['View Certificates']
+  },
+  // KB-17 — Pending Status
+  {
+    keywords: ['pending', 'waiting', 'processing', 'not complete', 'transaction pending'],
+    patterns: [/pending/i, /why (is )?(my )?.*pending/i, /waiting/i, /processing/i, /not complete/i, /transaction pending/i],
+    response: "A transaction may be pending due to:\n• Payment verification\n• Gold allocation confirmation\n• Compliance review\n\nYour request is under verification and will be completed after approval. Once approved, balances and certificates update automatically.",
+    category: 'support',
+    actions: ['View Transaction History']
+  },
+  // KB-18 — Security & Transparency
+  {
+    keywords: ['security', 'safe', 'protect', 'transparency', 'protected', 'secure'],
+    patterns: [/is (it|my gold) safe/i, /security/i, /protect/i, /how.*protected/i, /transparency/i],
+    response: "Your gold is protected by:\n\n• Physical storage in secure vaults\n• Digital ownership ledger\n• No rehypothecation (your gold is never lent out)\n• Full audit trail\n• Certificate-backed balances\n\nYour security is our priority.",
+    category: 'security',
+    actions: ['Security Settings']
   },
   // MFA / Two-Factor
   {
@@ -348,11 +460,11 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'pricing',
     actions: ['Buy Gold', 'Sell Gold']
   },
-  // Greeting
+  // Greeting (Professional, banking-style)
   {
     keywords: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening'],
     patterns: [/^(hello|hi|hey|good morning|good afternoon|good evening)/i, /how are you/i],
-    response: "Hello! Welcome to Finatrades support. I'm here to help you with:\n\n• Buying and selling gold\n• FinaPay wallet questions\n• FinaVault storage\n• BNSL plans\n• Account and verification\n• Fees and limits\n\nWhat would you like to know?",
+    response: "Welcome to Finatrades. I'm your AI Assistant, here to help you understand and use our gold-backed digital financial platform.\n\nI can assist you with:\n• FinaPay (gold-backed wallet)\n• FinaVault (secure gold storage)\n• BNSL (gold-based yield plans)\n• Account and verification\n• Fees and transaction limits\n\nHow may I assist you today?",
     category: 'greeting',
     actions: []
   },
