@@ -665,11 +665,11 @@ export default function ComplianceDashboard() {
                           <tr key={log.id} className="hover:bg-gray-50 transition-colors" data-testid={`audit-row-${log.id}`}>
                             <td className="px-4 py-3">
                               <Badge variant={
-                                log.action?.includes('create') ? 'default' :
-                                log.action?.includes('update') ? 'secondary' :
-                                log.action?.includes('delete') ? 'destructive' : 'outline'
+                                (log.actionType || log.action)?.includes('create') ? 'default' :
+                                (log.actionType || log.action)?.includes('update') ? 'secondary' :
+                                (log.actionType || log.action)?.includes('delete') ? 'destructive' : 'outline'
                               }>
-                                {log.action}
+                                {log.actionType || log.action}
                               </Badge>
                             </td>
                             <td className="px-4 py-3 text-sm">
@@ -677,7 +677,7 @@ export default function ComplianceDashboard() {
                               <span className="text-gray-400 text-xs block">{log.entityId?.slice(0, 8)}...</span>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">
-                              {log.performedBy || 'System'}
+                              {log.actor || log.performedBy || 'System'}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
                               {typeof log.details === 'object' 
@@ -685,7 +685,7 @@ export default function ComplianceDashboard() {
                                 : log.details || '-'}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500">
-                              {log.createdAt ? format(new Date(log.createdAt), 'MMM d, yyyy HH:mm') : '-'}
+                              {(log.timestamp || log.createdAt) ? format(new Date(log.timestamp || log.createdAt), 'MMM d, yyyy HH:mm') : '-'}
                             </td>
                           </tr>
                         ))}
