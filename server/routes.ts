@@ -3039,34 +3039,65 @@ export async function registerRoutes(
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
+      console.log("[KYC Admin] Fetching all KYC submissions...");
+      
       // Fetch all submissions with defensive handling for empty arrays
-      const kycAmlSubmissions = (await storage.getAllKycSubmissions()) || [];
-      const finatradesPersonalSubmissions = (await storage.getAllFinatradesPersonalKyc()) || [];
-      const finatradesCorporateSubmissions = (await storage.getAllFinatradesCorporateKyc()) || [];
+      let kycAmlSubmissions: any[] = [];
+      let finatradesPersonalSubmissions: any[] = [];
+      let finatradesCorporateSubmissions: any[] = [];
+      
+      try {
+        kycAmlSubmissions = (await storage.getAllKycSubmissions()) || [];
+        console.log(`[KYC Admin] Found ${kycAmlSubmissions.length} kycAml submissions`);
+      } catch (err) {
+        console.error("[KYC Admin] Error fetching kycAml submissions:", err);
+      }
+      
+      try {
+        finatradesPersonalSubmissions = (await storage.getAllFinatradesPersonalKyc()) || [];
+        console.log(`[KYC Admin] Found ${finatradesPersonalSubmissions.length} personal submissions`);
+      } catch (err) {
+        console.error("[KYC Admin] Error fetching personal submissions:", err);
+      }
+      
+      try {
+        finatradesCorporateSubmissions = (await storage.getAllFinatradesCorporateKyc()) || [];
+        console.log(`[KYC Admin] Found ${finatradesCorporateSubmissions.length} corporate submissions`);
+      } catch (err) {
+        console.error("[KYC Admin] Error fetching corporate submissions:", err);
+      }
       
       // Normalize Finatrades personal KYC submissions to match kycAml format for admin display
-      const normalizedFinatradesPersonal = finatradesPersonalSubmissions.map(s => ({
-        ...s,
-        tier: 'finatrades_personal',
-        kycType: 'finatrades_personal',
-        accountType: 'personal',
-        documents: s.idFrontUrl || s.idBackUrl || s.passportUrl || s.addressProofUrl ? {
-          idFront: s.idFrontUrl,
-          idBack: s.idBackUrl,
-          passport: s.passportUrl,
-          addressProof: s.addressProofUrl,
-        } : null,
-      }));
+      const normalizedFinatradesPersonal = finatradesPersonalSubmissions.map(s => {
+        try {
+          return {
+            ...s,
+            tier: 'finatrades_personal',
+            kycType: 'finatrades_personal',
+            accountType: 'personal',
+            documents: s.idFrontUrl || s.idBackUrl || s.passportUrl || s.addressProofUrl ? {
+              idFront: s.idFrontUrl,
+              idBack: s.idBackUrl,
+              passport: s.passportUrl,
+              addressProof: s.addressProofUrl,
+            } : null,
+          };
+        } catch (err) {
+          console.error(`[KYC Admin] Error normalizing personal KYC ${s?.id}:`, err);
+          return { ...s, tier: 'finatrades_personal', kycType: 'finatrades_personal', accountType: 'personal' };
+        }
+      });
       
       // Normalize Finatrades corporate KYC submissions - include user details for Applicant Details display
-      const normalizedFinatradesCorporate = await Promise.all(finatradesCorporateSubmissions.map(async (s) => {
+      const normalizedFinatradesCorporate: any[] = [];
+      for (const s of finatradesCorporateSubmissions) {
         try {
-          // Fetch user data to get personal details (fullName, country, nationality)
+          // Fetch user data to get personal details (fullName, country)
           const user = await storage.getUser(s.userId);
           // Also check if there's a personal KYC with details
           const personalKyc = finatradesPersonalSubmissions.find(p => p.userId === s.userId);
           
-          return {
+          normalizedFinatradesCorporate.push({
             ...s,
             tier: 'finatrades_corporate',
             kycType: 'finatrades_corporate',
@@ -3074,22 +3105,22 @@ export async function registerRoutes(
             // Include user's personal details for Applicant Details section
             fullName: personalKyc?.fullName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null),
             country: personalKyc?.country || user?.country || s.countryOfIncorporation,
-            nationality: personalKyc?.nationality || user?.nationality,
-          };
+            nationality: personalKyc?.nationality || null,
+          });
         } catch (err) {
-          console.error(`Error processing corporate KYC ${s.id}:`, err);
+          console.error(`[KYC Admin] Error processing corporate KYC ${s?.id}:`, err);
           // Return minimal data if processing fails
-          return {
+          normalizedFinatradesCorporate.push({
             ...s,
             tier: 'finatrades_corporate',
             kycType: 'finatrades_corporate',
             accountType: 'business',
             fullName: null,
-            country: s.countryOfIncorporation,
+            country: s?.countryOfIncorporation || null,
             nationality: null,
-          };
+          });
         }
-      }));
+      }
       
       // Combine and sort by creation date with null handling
       const allSubmissions = [
@@ -3102,9 +3133,10 @@ export async function registerRoutes(
         return dateB - dateA;
       });
       
+      console.log(`[KYC Admin] Returning ${allSubmissions.length} total submissions`);
       res.json({ submissions: allSubmissions });
     } catch (error) {
-      console.error("Failed to get KYC submissions:", error);
+      console.error("[KYC Admin] Failed to get KYC submissions:", error);
       res.status(500).json({ message: "Failed to get KYC submissions", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
