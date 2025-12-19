@@ -3038,6 +3038,7 @@ export async function registerRoutes(
   
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    console.log("[KYC Admin] Endpoint hit");
     try {
       console.log("[KYC Admin] Fetching all KYC submissions...");
       
@@ -3047,68 +3048,85 @@ export async function registerRoutes(
       let finatradesCorporateSubmissions: any[] = [];
       
       try {
-        kycAmlSubmissions = (await storage.getAllKycSubmissions()) || [];
+        const result = await storage.getAllKycSubmissions();
+        kycAmlSubmissions = Array.isArray(result) ? result : [];
         console.log(`[KYC Admin] Found ${kycAmlSubmissions.length} kycAml submissions`);
-      } catch (err) {
-        console.error("[KYC Admin] Error fetching kycAml submissions:", err);
+      } catch (err: any) {
+        console.error("[KYC Admin] Error fetching kycAml submissions:", err?.message || err);
       }
       
       try {
-        finatradesPersonalSubmissions = (await storage.getAllFinatradesPersonalKyc()) || [];
+        const result = await storage.getAllFinatradesPersonalKyc();
+        finatradesPersonalSubmissions = Array.isArray(result) ? result : [];
         console.log(`[KYC Admin] Found ${finatradesPersonalSubmissions.length} personal submissions`);
-      } catch (err) {
-        console.error("[KYC Admin] Error fetching personal submissions:", err);
+      } catch (err: any) {
+        console.error("[KYC Admin] Error fetching personal submissions:", err?.message || err);
       }
       
       try {
-        finatradesCorporateSubmissions = (await storage.getAllFinatradesCorporateKyc()) || [];
+        const result = await storage.getAllFinatradesCorporateKyc();
+        finatradesCorporateSubmissions = Array.isArray(result) ? result : [];
         console.log(`[KYC Admin] Found ${finatradesCorporateSubmissions.length} corporate submissions`);
-      } catch (err) {
-        console.error("[KYC Admin] Error fetching corporate submissions:", err);
+      } catch (err: any) {
+        console.error("[KYC Admin] Error fetching corporate submissions:", err?.message || err);
       }
       
       // Normalize Finatrades personal KYC submissions to match kycAml format for admin display
-      const normalizedFinatradesPersonal = finatradesPersonalSubmissions.map(s => {
+      const normalizedFinatradesPersonal: any[] = [];
+      for (const s of finatradesPersonalSubmissions) {
         try {
-          return {
+          normalizedFinatradesPersonal.push({
             ...s,
             tier: 'finatrades_personal',
             kycType: 'finatrades_personal',
             accountType: 'personal',
-            documents: s.idFrontUrl || s.idBackUrl || s.passportUrl || s.addressProofUrl ? {
-              idFront: s.idFrontUrl,
-              idBack: s.idBackUrl,
-              passport: s.passportUrl,
-              addressProof: s.addressProofUrl,
+            documents: s?.idFrontUrl || s?.idBackUrl || s?.passportUrl || s?.addressProofUrl ? {
+              idFront: s?.idFrontUrl || null,
+              idBack: s?.idBackUrl || null,
+              passport: s?.passportUrl || null,
+              addressProof: s?.addressProofUrl || null,
             } : null,
-          };
-        } catch (err) {
-          console.error(`[KYC Admin] Error normalizing personal KYC ${s?.id}:`, err);
-          return { ...s, tier: 'finatrades_personal', kycType: 'finatrades_personal', accountType: 'personal' };
+          });
+        } catch (err: any) {
+          console.error(`[KYC Admin] Error normalizing personal KYC ${s?.id}:`, err?.message || err);
+          normalizedFinatradesPersonal.push({ ...s, tier: 'finatrades_personal', kycType: 'finatrades_personal', accountType: 'personal' });
         }
-      });
+      }
       
       // Normalize Finatrades corporate KYC submissions - include user details for Applicant Details display
       const normalizedFinatradesCorporate: any[] = [];
       for (const s of finatradesCorporateSubmissions) {
         try {
           // Fetch user data to get personal details (fullName, country)
-          const user = await storage.getUser(s.userId);
+          let user: any = null;
+          try {
+            user = await storage.getUser(s?.userId);
+          } catch (userErr: any) {
+            console.error(`[KYC Admin] Error fetching user ${s?.userId}:`, userErr?.message || userErr);
+          }
           // Also check if there's a personal KYC with details
-          const personalKyc = finatradesPersonalSubmissions.find(p => p.userId === s.userId);
+          const personalKyc = finatradesPersonalSubmissions.find(p => p?.userId === s?.userId);
+          
+          let fullName = null;
+          if (personalKyc?.fullName) {
+            fullName = personalKyc.fullName;
+          } else if (user) {
+            const firstName = user.firstName || '';
+            const lastName = user.lastName || '';
+            fullName = `${firstName} ${lastName}`.trim() || null;
+          }
           
           normalizedFinatradesCorporate.push({
             ...s,
             tier: 'finatrades_corporate',
             kycType: 'finatrades_corporate',
             accountType: 'business',
-            // Include user's personal details for Applicant Details section
-            fullName: personalKyc?.fullName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null),
-            country: personalKyc?.country || user?.country || s.countryOfIncorporation,
+            fullName,
+            country: personalKyc?.country || user?.country || s?.countryOfIncorporation || null,
             nationality: personalKyc?.nationality || null,
           });
-        } catch (err) {
-          console.error(`[KYC Admin] Error processing corporate KYC ${s?.id}:`, err);
+        } catch (err: any) {
+          console.error(`[KYC Admin] Error processing corporate KYC ${s?.id}:`, err?.message || err);
           // Return minimal data if processing fails
           normalizedFinatradesCorporate.push({
             ...s,
@@ -3123,21 +3141,33 @@ export async function registerRoutes(
       }
       
       // Combine and sort by creation date with null handling
-      const allSubmissions = [
-        ...kycAmlSubmissions.map(s => ({ ...s, kycType: 'kycAml' })),
-        ...normalizedFinatradesPersonal,
-        ...normalizedFinatradesCorporate,
-      ].sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
+      let allSubmissions: any[] = [];
+      try {
+        allSubmissions = [
+          ...kycAmlSubmissions.map(s => ({ ...s, kycType: 'kycAml' })),
+          ...normalizedFinatradesPersonal,
+          ...normalizedFinatradesCorporate,
+        ].sort((a, b) => {
+          const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
+      } catch (sortErr: any) {
+        console.error("[KYC Admin] Error sorting submissions:", sortErr?.message || sortErr);
+        // Return unsorted if sorting fails
+        allSubmissions = [
+          ...kycAmlSubmissions.map(s => ({ ...s, kycType: 'kycAml' })),
+          ...normalizedFinatradesPersonal,
+          ...normalizedFinatradesCorporate,
+        ];
+      }
       
       console.log(`[KYC Admin] Returning ${allSubmissions.length} total submissions`);
-      res.json({ submissions: allSubmissions });
-    } catch (error) {
-      console.error("[KYC Admin] Failed to get KYC submissions:", error);
-      res.status(500).json({ message: "Failed to get KYC submissions", error: error instanceof Error ? error.message : 'Unknown error' });
+      return res.json({ submissions: allSubmissions });
+    } catch (error: any) {
+      console.error("[KYC Admin] Failed to get KYC submissions:", error?.message || error, error?.stack);
+      // Return empty array instead of 500 to prevent frontend errors
+      return res.json({ submissions: [], error: error?.message || 'Unknown error' });
     }
   });
 
