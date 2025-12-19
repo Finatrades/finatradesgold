@@ -1,0 +1,177 @@
+You are a senior full-stack engineer building a **banking-style, gold-backed platform** for FINATRADES in Replit.
+
+Goal:
+Implement the complete **Finatrades gold ledger workflow** with correct states, certificates, and transfers across:
+- FinaPay (wallet)
+- FinaVault (digital gold vault / ledger)
+- BNSL (lock plans)
+- FinaBridge (trade settlement wallet)
+- Wingold & Metals DMCC (physical storage provider – represented as storage certificates + allocation records)
+
+Core Concept (MUST FOLLOW):
+- **Gold grams are the real balance**.
+- **USD is reference display only** using a price feed.
+- No action can credit gold unless it is backed by a verified physical allocation.
+- All actions must write to a central ledger (FinaVault) and produce certificates.
+
+User Types:
+1) Personal: FinaPay + FinaVault + BNSL
+2) Business: Personal features + FinaBridge
+
+Required Transaction States (CRITICAL):
+For any Add Funds / Buy Gold Bar / Deposit Gold:
+- DRAFT → PENDING_VERIFICATION → APPROVED → COMPLETED
+- Or REJECTED (with reason)
+Rules:
+- Pending gold is not spendable
+- Locked gold is not spendable
+- Only Available gold can be transferred or withdrawn
+
+Wallet Balance Buckets (per user):
+- available_grams
+- pending_grams
+- locked_bnsl_grams
+- locked_trade_grams
+Also provide USD reference value = available_grams * current_price_per_gram (and similarly for other buckets).
+
+Certificates (MUST GENERATE PDFs or records at minimum):
+1) Digital Ownership Certificate (Finatrades / FinaVault) – issued only after approval for credits or after receipt of payment
+2) Physical Storage Certificate (Wingold & Metals DMCC) – issued only after physical allocation confirmation
+3) Transfer Certificate – issued on send/request payment (sender side)
+4) Lock Certificate – issued when moving funds into BNSL or FinaBridge lock states
+5) Title Transfer to Finatrades Certificate – issued on withdrawal/sell (user → Finatrades)
+
+Modules & Flows to Implement:
+
+A) Signup/Login + KYC/KYB Gate
+- Users can register as Personal or Business.
+- KYC required before enabling Add Funds, Send/Request, BNSL, Withdraw.
+- Business accounts require KYB before enabling FinaBridge trade creation.
+- If KYC/KYB not approved, show clear UI banners and disable restricted actions.
+
+B) Add Funds (Card/Bank/Crypto)
+User UI:
+- input USD amount
+- display estimated grams at current price
+Backend:
+- create transaction record (type=ADD_FUNDS) in DRAFT then PENDING_VERIFICATION
+Admin approves:
+- on approval, create physical allocation record + storage certificate
+- credit pending_grams then move to available_grams when COMPLETED
+- generate digital ownership certificate
+- add ledger entries for every step
+
+C) Deposit Physical Gold
+- User submits deposit request with declared grams/weight + vault location
+- Admin verifies and approves
+- On approval: create allocation + storage certificate + digital ownership certificate
+- Credit available_grams
+
+D) Buy Gold Bar (Wingold partner)
+- User initiates buy, uploads receipt/proof
+- Create transaction type=BUY_GOLD_BAR PENDING_VERIFICATION
+- Admin verifies receipt and allocation
+- On approval: issue storage + digital ownership certificate, credit available_grams
+
+E) Send Payment
+- Sender enters receiver email, validate user exists
+- Sender enters USD, show grams
+- On confirm:
+  - check sender available_grams >= grams
+  - debit sender available_grams
+  - credit receiver available_grams
+  - generate:
+    - Transfer Certificate for sender
+    - Digital Ownership Certificate for receiver
+    - storage certificate remains valid (do NOT duplicate physical storage unless policy says so; just reference latest storage certificate or allocation batch)
+
+F) Request Payment
+- Requester sends request to payer
+- Payer approves and pays
+- Same logic as Send Payment + certificates accordingly
+
+G) Transfer to BNSL (Lock)
+- Move grams from available_grams → locked_bnsl_grams
+- Issue Lock Certificate (and reference storage certificate)
+- Track BNSL plans:
+  - 12m=10%, 24m=11%, 36m=12%
+  - accrual shown daily, payout quarterly
+- On plan completion:
+  - allow BNSL → FinaPay transfer (locked_bnsl_grams back to available_grams)
+  - issue updated digital ownership + storage reference
+
+H) Transfer to FinaBridge Wallet + Trade Lock
+- Business user transfers grams from available_grams → locked_trade_grams (or separate finabridge_available then lock at trade step; choose one and be consistent)
+- Issue Lock Certificate
+- Trade Case flow:
+  1. Importer creates trade request (no personal info leaked)
+  2. Exporters view trade cases with Finatrades IDs
+  3. Exporters submit proposals
+  4. Admin reviews proposals; can request modification; can shortlist
+  5. Importer accepts/rejects shortlisted proposal
+  6. On acceptance: settlement gold is locked and visible to exporter
+  7. Deal room opens only after all parties accept T&Cs
+  8. Admin monitors chat and documents
+  9. Admin completes deal and closes deal room
+  10. Settlement release transfers gold per final settlement rules and updates ledger + certificates
+
+I) Withdraw/Sell Gold (User → Finatrades)
+- User requests withdrawal/sell amount in USD/grams
+- Check available_grams
+- Move grams out of user (debit) and transfer title to Finatrades
+- Issue "Title Transfer to Finatrades" certificate
+- Mark transaction as COMPLETED after admin approval (if required)
+- Record payout reference (bank transfer reference) in transaction metadata
+
+Admin Panel (MUST BUILD):
+- Approve/Reject Add Funds, Buy Gold Bar, Deposit Gold, Withdraw
+- Manage KYC/KYB approvals
+- View ledger entries per user
+- View certificates per transaction
+- Manage trade cases and proposals
+- Trigger trade settlement completion
+- Full audit log (immutable append-only records)
+
+Data Model (Minimum Tables/Collections):
+- users (type, kyc_status, kyb_status)
+- wallets (available_grams, pending_grams, locked_bnsl_grams, locked_trade_grams)
+- transactions (type, status, usd_amount, grams, metadata, timestamps)
+- ledger_entries (append-only: debit/credit/lock/unlock, before/after balances, refs)
+- certificates (type, user_id, tx_id, file_url or json, issued_at)
+- allocations (physical allocation mapping to grams batches, vault location, storage_cert_id)
+- bnsl_plans (user_id, plan_type, locked_grams, start_date, end_date, accrual, payouts)
+- trade_cases (importer_id, status, details)
+- trade_proposals (exporter_id, trade_case_id, status, terms, admin_comments)
+- deal_rooms (trade_case_id, participants, tnc_signed flags, messages, docs)
+
+UI Requirements:
+- Banking-style clean UI, light/dark mode
+- Clear separation of Available / Pending / Locked balances
+- Every transaction shows status + certificates download links
+- Every module should show explanations (tooltips) about gold grams vs USD reference
+
+Security Requirements (minimum):
+- Auth sessions secure
+- Role-based access control (USER / ADMIN / OPS / COMPLIANCE)
+- Prevent IDOR: users can only view their own transactions/certificates
+- Audit log for admin actions
+- Rate limit login attempts
+
+Deliverables:
+1) Working user app (Personal + Business UI)
+2) Admin panel (approvals, trade management, KYC)
+3) Central ledger logic + certificate generation records
+4) Seed data for demo users (one personal, one importer, one exporter, one admin)
+5) Automated tests for:
+   - credit/debit correctness
+   - locked vs available restrictions
+   - certificate issuance rules
+   - trade proposal flow
+   - pending approval rules
+
+Important:
+- Use realistic mock integrations where real payment/vault APIs are missing.
+- Ensure every action updates ledger_entries and wallet balances consistently.
+- Never allow negative balances or spending pending/locked gold.
+
+Start by scaffolding the project, implementing the database models, then build user flows, then admin flows, then tests.
