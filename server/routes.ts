@@ -4061,8 +4061,23 @@ export async function registerRoutes(
       // Normalize all transactions to unified format
       let unifiedTransactions: any[] = [];
       
-      // Regular transactions (FinaPay)
-      regularTransactions.forEach(tx => {
+      // Get transaction IDs that have certificates - these will be shown as certificate entries, not Buy
+      const transactionIdsWithCerts = new Set(
+        userCertificates
+          .filter(c => c.transactionId && (c.type === 'Digital Ownership' || c.type === 'Physical Storage'))
+          .map(c => c.transactionId)
+      );
+      
+      // Regular transactions (FinaPay) - exclude Buy transactions that have certificates
+      regularTransactions
+        .filter(tx => {
+          // Skip Buy transactions that have certificates (they're shown as ADD_FUNDS from certificate)
+          if (tx.type === 'Buy' && transactionIdsWithCerts.has(tx.id)) {
+            return false;
+          }
+          return true;
+        })
+        .forEach(tx => {
         unifiedTransactions.push({
           id: tx.id,
           userId: tx.userId,
@@ -4254,7 +4269,7 @@ export async function registerRoutes(
       
       // Certificates - only show Digital Ownership (not Physical Storage to avoid duplicates)
       // Digital Ownership and Physical Storage are created together for the same purchase,
-      // so we only show Digital Ownership as the main transaction entry
+      // so we only show Digital Ownership as the main transaction entry with module = finapay
       // Trade Release certificates are excluded if there's a corresponding transaction
       const hasFinaBridgeTransactions = regularTransactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
       userCertificates
@@ -4268,7 +4283,7 @@ export async function registerRoutes(
         .forEach(cert => {
           const moduleMap: Record<string, string> = {
             'Trade Release': 'finabridge',
-            'Digital Ownership': 'finavault'
+            'Digital Ownership': 'finapay'  // Show as FinaPay since this is gold added to wallet
           };
           const actionMap: Record<string, string> = {
             'Trade Release': 'RECEIVE',
@@ -4277,7 +4292,7 @@ export async function registerRoutes(
           unifiedTransactions.push({
             id: cert.id,
             userId: cert.userId,
-            module: moduleMap[cert.type] || 'finavault',
+            module: moduleMap[cert.type] || 'finapay',
             actionType: actionMap[cert.type] || 'RECEIVE',
             grams: cert.goldGrams,
             usd: cert.totalValueUsd,
