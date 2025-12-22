@@ -1,6 +1,6 @@
 import { motion, useInView, useAnimation } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
-import { UserPlus, ShieldCheck, Coins, Lock, BarChart3, Clock, ArrowRight } from 'lucide-react';
+import { UserPlus, ShieldCheck, Coins, Lock, BarChart3, Clock, ArrowRight, Building2, FileCheck, Users, Warehouse, Award, Globe, FileText } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 
@@ -21,14 +21,15 @@ const content = {
   },
   business: {
     title: 'How It Works',
-    subtitle: 'Enterprise gold infrastructure',
+    subtitle: 'Enterprise-grade gold infrastructure with governance controls',
     steps: [
-      { icon: UserPlus, number: '01', title: 'Register Corporate Profile', description: 'Submit company details, documents, and authorized signatories.' },
-      { icon: ShieldCheck, number: '02', title: 'KYB & Compliance Review', description: 'We verify corporate identity, structure, and compliance requirements.' },
-      { icon: Lock, number: '03', title: 'Create Gold Reserve Account', description: 'Set user roles, permissions, and operational limits.' },
-      { icon: Coins, number: '04', title: 'Deposit Physical Gold', description: 'Move existing bars into approved vaults via secure procedures.' },
-      { icon: BarChart3, number: '05', title: 'Receive Vault Certificates', description: 'Each deposit generates a standardized certificate for internal and external use.' },
-      { icon: Clock, number: '06', title: 'Use Gold for Trade & Treasury', description: 'Integrate gold value into settlement terms, collateral needs, or internal treasury planning.' },
+      { icon: Building2, number: '01', title: 'Register a Corporate Profile', description: 'Submit company details, authorized signatories, and compliance documents.' },
+      { icon: FileCheck, number: '02', title: 'KYB & Compliance Review', description: 'Finatrades performs a Swiss-aligned corporate verification process.' },
+      { icon: Users, number: '03', title: 'Establish Gold Reserve Account', description: 'Set user roles, permissions, and operational limits for your organization.' },
+      { icon: Warehouse, number: '04', title: 'Deposit Physical Gold', description: 'Deposit existing bars through verified channels into approved vaults.' },
+      { icon: Award, number: '05', title: 'Receive Vault Certificates', description: 'Each deposit generates standardized vault documentation.' },
+      { icon: Globe, number: '06', title: 'Use Gold Value for Trade & Treasury', description: 'Integrate gold value into trade flows, settlements, or collateral structures.' },
+      { icon: FileText, number: '07', title: 'Reporting & Audit Controls', description: 'Access detailed reports for accounting, governance, and external audits.' },
     ],
     cta: 'Explore Business Platform',
     ctaHref: '/dashboard',
