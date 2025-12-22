@@ -168,12 +168,20 @@ export default function FinaVaultHistory() {
         </div>
 
         <Tabs defaultValue="ledger" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="ledger" data-testid="tab-ledger">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/80 p-1 rounded-xl border border-border">
+            <TabsTrigger 
+              value="ledger" 
+              data-testid="tab-ledger"
+              className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-3 font-medium transition-all"
+            >
               <Wallet className="w-4 h-4 mr-2" />
               Ledger History
             </TabsTrigger>
-            <TabsTrigger value="physical" data-testid="tab-physical">
+            <TabsTrigger 
+              value="physical" 
+              data-testid="tab-physical"
+              className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-3 font-medium transition-all"
+            >
               <History className="w-4 h-4 mr-2" />
               Physical Deposits/Withdrawals
             </TabsTrigger>
