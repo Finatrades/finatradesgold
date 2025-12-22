@@ -846,7 +846,7 @@ export default function FinaPayLanding() {
   return (
     <ModeProvider>
       <div className="min-h-screen bg-black text-white" data-testid="finapay-landing">
-        <Navbar />
+        <Navbar variant="products" />
         <HeroSection />
         <ValuePillarsSection />
         <WalletUIDemoSection />

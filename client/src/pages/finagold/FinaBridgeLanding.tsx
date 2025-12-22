@@ -887,7 +887,7 @@ export default function FinaBridgeLanding() {
   return (
     <ModeProvider>
       <div className="min-h-screen bg-black text-white" data-testid="finabridge-landing">
-        <Navbar />
+        <Navbar variant="products" />
         <HeroSection />
         <ValuePillarsSection />
         <FeaturesShowcaseSection />

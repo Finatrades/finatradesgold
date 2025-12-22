@@ -964,7 +964,7 @@ export default function FinaVaultLanding() {
   return (
     <ModeProvider>
       <div className="min-h-screen bg-black text-white" data-testid="finavault-landing">
-        <Navbar />
+        <Navbar variant="products" />
         <HeroSection />
         <ValuePillarsSection />
         <CertificateSection />

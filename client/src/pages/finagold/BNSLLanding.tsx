@@ -909,7 +909,7 @@ export default function BNSLLanding() {
   return (
     <ModeProvider>
       <div className="min-h-screen bg-black text-white" data-testid="bnsl-landing">
-        <Navbar />
+        <Navbar variant="products" />
         <HeroSection />
         <HowItWorksSection />
         <CalculatorSection />

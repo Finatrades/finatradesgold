@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo.png';
@@ -8,8 +8,17 @@ import finatradesLogo from '@/assets/finatrades-logo.png';
 type NavLink = {
   label: string;
   href: string;
+  isAnchor?: boolean;
   businessOnly?: boolean;
 };
+
+const universalLinks: NavLink[] = [
+  { label: 'Home', href: '/' },
+  { label: 'Products', href: '#products', isAnchor: true },
+  { label: 'How It Works', href: '#how-it-works', isAnchor: true },
+  { label: 'About', href: '#who-its-for', isAnchor: true },
+  { label: 'Contact', href: '#contact', isAnchor: true },
+];
 
 const productLinks: NavLink[] = [
   { label: 'Home', href: '/' },
@@ -19,7 +28,11 @@ const productLinks: NavLink[] = [
   { label: 'FinaBridge', href: '/finabridge-landing', businessOnly: true },
 ];
 
-export default function Navbar() {
+interface NavbarProps {
+  variant?: 'universal' | 'products';
+}
+
+export default function Navbar({ variant = 'universal' }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { mode, setMode, isPersonal } = useMode();
@@ -31,11 +44,13 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const visibleLinks = productLinks.filter(link => 
+  const baseLinks = variant === 'products' ? productLinks : universalLinks;
+  const visibleLinks = baseLinks.filter(link => 
     !link.businessOnly || !isPersonal
   );
 
   const isActive = (href: string) => {
+    if (href.startsWith('#')) return false;
     if (href === '/') return location === '/';
     return location.startsWith(href);
   };
@@ -67,18 +82,29 @@ export default function Navbar() {
 
           <div className="hidden lg:flex items-center gap-1">
             {visibleLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
+              link.isAnchor ? (
                 <a
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive(link.href)
-                      ? 'bg-white/10 text-white border border-white/20'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
-                  data-testid={`nav-link-${link.label.toLowerCase()}`}
+                  key={link.href}
+                  href={link.href}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+                  data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {link.label}
                 </a>
-              </Link>
+              ) : (
+                <Link key={link.href} href={link.href}>
+                  <a
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive(link.href)
+                        ? 'bg-white/10 text-white border border-white/20'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
+                    data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {link.label}
+                  </a>
+                </Link>
+              )
             ))}
           </div>
 
@@ -144,18 +170,29 @@ export default function Navbar() {
             >
               <div className="flex flex-col gap-2">
                 {visibleLinks.map((link) => (
-                  <Link key={link.href} href={link.href}>
+                  link.isAnchor ? (
                     <a
-                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                        isActive(link.href)
-                          ? 'bg-white/10 text-white border border-white/20'
-                          : 'text-gray-400 hover:text-white'
-                      }`}
+                      key={link.href}
+                      href={link.href}
+                      className="px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all"
                       onClick={() => setMobileOpen(false)}
                     >
                       {link.label}
                     </a>
-                  </Link>
+                  ) : (
+                    <Link key={link.href} href={link.href}>
+                      <a
+                        className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                          isActive(link.href)
+                            ? 'bg-white/10 text-white border border-white/20'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {link.label}
+                      </a>
+                    </Link>
+                  )
                 ))}
                 <div className="flex gap-2 mt-4">
                   <button
