@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo.png';
+import Navbar from './components/Navbar';
+import { ModeProvider } from './context/ModeContext';
 
 const GOLD_COLOR = '#EAC26B';
 
@@ -882,17 +884,20 @@ function Footer() {
 
 export default function FinaBridgeLanding() {
   return (
-    <div className="min-h-screen bg-black text-white" data-testid="finabridge-landing">
-      <HeroSection />
-      <ValuePillarsSection />
-      <FeaturesShowcaseSection />
-      <DealRoomSection />
-      <GlobalTradeMapSection />
-      <DocumentManagementSection />
-      <SecuritySection />
-      <GoldSettlementSection />
-      <FinalCTASection />
-      <Footer />
-    </div>
+    <ModeProvider>
+      <div className="min-h-screen bg-black text-white" data-testid="finabridge-landing">
+        <Navbar />
+        <HeroSection />
+        <ValuePillarsSection />
+        <FeaturesShowcaseSection />
+        <DealRoomSection />
+        <GlobalTradeMapSection />
+        <DocumentManagementSection />
+        <SecuritySection />
+        <GoldSettlementSection />
+        <FinalCTASection />
+        <Footer />
+      </div>
+    </ModeProvider>
   );
 }

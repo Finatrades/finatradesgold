@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo.png';
+import Navbar from './components/Navbar';
+import { ModeProvider } from './context/ModeContext';
 
 const GOLD_COLOR = '#EAC26B';
 
@@ -904,17 +906,20 @@ function Footer() {
 
 export default function BNSLLanding() {
   return (
-    <div className="min-h-screen bg-black text-white" data-testid="bnsl-landing">
-      <HeroSection />
-      <HowItWorksSection />
-      <CalculatorSection />
-      <PlanComparisonSection />
-      <BenefitsSection />
-      <FAQSection />
-      <RiskDisclosureSection />
-      <TermsSection />
-      <FinalCTASection />
-      <Footer />
-    </div>
+    <ModeProvider>
+      <div className="min-h-screen bg-black text-white" data-testid="bnsl-landing">
+        <Navbar />
+        <HeroSection />
+        <HowItWorksSection />
+        <CalculatorSection />
+        <PlanComparisonSection />
+        <BenefitsSection />
+        <FAQSection />
+        <RiskDisclosureSection />
+        <TermsSection />
+        <FinalCTASection />
+        <Footer />
+      </div>
+    </ModeProvider>
   );
 }
