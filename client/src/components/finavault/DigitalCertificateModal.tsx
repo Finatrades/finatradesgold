@@ -16,12 +16,13 @@ interface DigitalCertificateModalProps {
 
 export default function DigitalCertificateModal({ request, open, onOpenChange }: DigitalCertificateModalProps) {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('ownership');
+  
   if (!request) return null;
 
   const certificateId = `CERT-${request.id.replace(/[^0-9]/g, '')}-${new Date().getFullYear()}`;
   const storageRef = `STR-${request.id.replace(/[^0-9]/g, '')}-WG`;
   const issueDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-  const [activeTab, setActiveTab] = useState('ownership');
 
   const handleDownloadPDF = () => {
     const certType = activeTab === 'ownership' ? 'Digital Ownership Certificate' : 'Storage Certificate';

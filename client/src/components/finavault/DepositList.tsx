@@ -147,7 +147,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-border text-xs font-semibold text-secondary uppercase tracking-wider bg-secondary/5">
+                <tr className="border-b border-border text-xs font-semibold text-foreground uppercase tracking-wider bg-muted/40">
                   <th className="p-4 rounded-tl-lg">Request ID</th>
                   <th className="p-4">Weight</th>
                   <th className="p-4">Type</th>
