@@ -6,12 +6,19 @@ let isConnected = false;
 export function getRedisClient(): Redis | null {
   if (redisClient) return redisClient;
   
-  const redisUrl = process.env.REDIS_URL;
+  let redisUrl = process.env.REDIS_URL;
   
   if (!redisUrl) {
     console.log('[Redis] REDIS_URL not configured - Redis features disabled');
     return null;
   }
+  
+  // Strip quotes if accidentally included in the environment variable
+  // Handle both regular quotes and URL-encoded quotes (%22)
+  redisUrl = redisUrl
+    .replace(/^%22|%22$/g, '')  // URL-encoded double quotes
+    .replace(/^["']|["']$/g, '')  // Regular quotes
+    .trim();
   
   try {
     redisClient = new Redis(redisUrl, {
