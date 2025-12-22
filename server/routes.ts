@@ -4118,9 +4118,9 @@ export async function registerRoutes(
           });
         });
       
-      // Crypto payments (exclude approved - they already have a transaction record)
+      // Crypto payments (exclude approved/credited - they already have a transaction record)
       cryptoPayments
-        .filter(cp => cp.status !== 'Approved')
+        .filter(cp => cp.status !== 'Approved' && cp.status !== 'Credited')
         .forEach(cp => {
           unifiedTransactions.push({
             id: cp.id,
