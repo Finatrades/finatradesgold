@@ -5611,6 +5611,31 @@ export async function registerRoutes(
         allItems.push(...pendingBnsl);
       } catch (e) { /* table may not exist */ }
       
+      // Vault deposit requests (physical gold deposits)
+      try {
+        const allVaultDeposits = await db.select().from(vaultDepositRequests);
+        const pendingVaultDeposits = allVaultDeposits.filter((v: any) => 
+          v.status === 'Submitted' || v.status === 'Under Review' || v.status === 'Pending'
+        ).map((v: any) => ({
+          id: v.id,
+          odooId: null,
+          userId: v.userId,
+          type: 'Vault Deposit',
+          status: v.status === 'Submitted' ? 'Pending' : v.status,
+          amountGold: v.totalDeclaredWeightGrams,
+          amountUsd: null,
+          amountEur: null,
+          goldPriceUsdPerGram: null,
+          referenceId: v.referenceNumber,
+          description: `Vault deposit - ${v.totalDeclaredWeightGrams}g ${v.depositType}`,
+          sourceModule: 'finavault',
+          createdAt: v.createdAt,
+          completedAt: null,
+          sourceTable: 'vaultDepositRequests'
+        }));
+        allItems.push(...pendingVaultDeposits);
+      } catch (e) { /* table may not exist */ }
+      
       // Enrich all items with user info
       const enrichedTransactions = await Promise.all(
         allItems.map(async (tx) => {
