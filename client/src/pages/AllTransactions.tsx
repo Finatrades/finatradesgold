@@ -40,6 +40,20 @@ interface Totals {
   count: number;
 }
 
+// Helper to convert action types to user-friendly display labels
+const getActionLabel = (actionType: string, module: string): string => {
+  const action = actionType?.toUpperCase() || '';
+  // FinaPay deposits that result in gold should show as "Deposit Gold"
+  if (action === 'ADD_FUNDS' && module === 'FinaPay') {
+    return 'Deposit Gold';
+  }
+  if (action === 'ADD_FUNDS') {
+    return 'Deposit Gold';
+  }
+  // Default: convert underscores to spaces and title case
+  return actionType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
 export default function AllTransactions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -342,7 +356,7 @@ export default function AllTransactions() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-semibold text-foreground">{tx.actionType.replace(/_/g, ' ')}</span>
+                          <span className="font-semibold text-foreground">{getActionLabel(tx.actionType, tx.module)}</span>
                           <Badge variant="outline" className={`text-xs ${getModuleColor(tx.module)}`}>
                             {getModuleIcon(tx.module)}
                             <span className="ml-1">{formatModuleName(tx.module)}</span>
@@ -396,7 +410,7 @@ export default function AllTransactions() {
                     {getActionIcon(selectedTx.actionType)}
                   </div>
                   <div>
-                    <p className="font-semibold">{selectedTx.actionType.replace(/_/g, ' ')}</p>
+                    <p className="font-semibold">{getActionLabel(selectedTx.actionType, selectedTx.module)}</p>
                     <Badge variant="outline" className={`text-xs ${getModuleColor(selectedTx.module)}`}>
                       {formatModuleName(selectedTx.module)}
                     </Badge>
