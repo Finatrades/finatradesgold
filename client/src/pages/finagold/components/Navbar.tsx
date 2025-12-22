@@ -79,10 +79,16 @@ export default function Navbar() {
               </button>
             </div>
             <button
-              className="bg-[#EAC26B] text-black px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-colors shadow-lg shadow-[#EAC26B]/20"
-              data-testid="btn-open-account"
+              className="text-gray-300 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
+              data-testid="btn-sign-in"
             >
-              {isPersonal ? 'Open Account' : 'Open Corporate Account'}
+              Sign In
+            </button>
+            <button
+              className="bg-[#EAC26B] text-black px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-colors shadow-lg shadow-[#EAC26B]/20"
+              data-testid="btn-get-started"
+            >
+              Get Started
             </button>
           </div>
 
@@ -136,8 +142,11 @@ export default function Navbar() {
                     Business
                   </button>
                 </div>
-                <button className="bg-[#EAC26B] text-black px-6 py-3 rounded-full text-sm font-semibold w-full mt-2">
-                  {isPersonal ? 'Open Account' : 'Open Corporate Account'}
+                <button className="border border-white/20 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2">
+                  Sign In
+                </button>
+                <button className="bg-[#EAC26B] text-black px-6 py-3 rounded-full text-sm font-semibold w-full">
+                  Get Started
                 </button>
               </div>
             </motion.div>
