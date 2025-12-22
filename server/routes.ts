@@ -14630,6 +14630,106 @@ export async function registerRoutes(
     }
   });
 
+  // Get all platform attachments (from vault deposits, KYC, etc.)
+  app.get("/api/admin/attachments", ensureAdminAsync, async (req, res) => {
+    try {
+      const allAttachments: any[] = [];
+      
+      // Vault deposit attachments
+      const vaultDeposits = await db.select().from(vaultDepositRequests);
+      for (const deposit of vaultDeposits) {
+        const user = await storage.getUser(deposit.userId);
+        const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+        
+        if (deposit.documents && Array.isArray(deposit.documents)) {
+          deposit.documents.forEach((doc: any, idx: number) => {
+            allAttachments.push({
+              id: `vault-${deposit.id}-${idx}`,
+              source: 'Vault Deposit',
+              sourceId: deposit.referenceNumber,
+              userId: deposit.userId,
+              userName,
+              userEmail: user?.email || 'Unknown',
+              fileName: typeof doc === 'string' ? `Document ${idx + 1}` : (doc.name || `Document ${idx + 1}`),
+              fileType: typeof doc === 'string' && doc.startsWith('data:image') ? 'image' : 'document',
+              fileUrl: typeof doc === 'string' ? doc : (doc.url || doc),
+              uploadedAt: deposit.createdAt,
+              status: deposit.status,
+            });
+          });
+        }
+      }
+      
+      // KYC submission attachments
+      const kycSubmissions = await storage.getAllKycSubmissions();
+      for (const kyc of kycSubmissions) {
+        const user = await storage.getUser(kyc.userId);
+        const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+        
+        // ID Document
+        if (kyc.idDocumentUrl) {
+          allAttachments.push({
+            id: `kyc-id-${kyc.id}`,
+            source: 'KYC - ID Document',
+            sourceId: `KYC-${kyc.id}`,
+            userId: kyc.userId,
+            userName,
+            userEmail: user?.email || 'Unknown',
+            fileName: 'ID Document',
+            fileType: kyc.idDocumentUrl.startsWith('data:image') ? 'image' : 'document',
+            fileUrl: kyc.idDocumentUrl,
+            uploadedAt: kyc.createdAt,
+            status: kyc.status,
+          });
+        }
+        
+        // Selfie
+        if (kyc.selfieUrl) {
+          allAttachments.push({
+            id: `kyc-selfie-${kyc.id}`,
+            source: 'KYC - Selfie',
+            sourceId: `KYC-${kyc.id}`,
+            userId: kyc.userId,
+            userName,
+            userEmail: user?.email || 'Unknown',
+            fileName: 'Selfie',
+            fileType: 'image',
+            fileUrl: kyc.selfieUrl,
+            uploadedAt: kyc.createdAt,
+            status: kyc.status,
+          });
+        }
+        
+        // Address Proof
+        if (kyc.addressProofUrl) {
+          allAttachments.push({
+            id: `kyc-address-${kyc.id}`,
+            source: 'KYC - Address Proof',
+            sourceId: `KYC-${kyc.id}`,
+            userId: kyc.userId,
+            userName,
+            userEmail: user?.email || 'Unknown',
+            fileName: 'Address Proof',
+            fileType: kyc.addressProofUrl.startsWith('data:image') ? 'image' : 'document',
+            fileUrl: kyc.addressProofUrl,
+            uploadedAt: kyc.createdAt,
+            status: kyc.status,
+          });
+        }
+      }
+      
+      // Sort by upload date descending
+      allAttachments.sort((a, b) => 
+        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      );
+      
+      res.json({ attachments: allAttachments });
+    } catch (error) {
+      console.error("Failed to get attachments:", error);
+      res.status(400).json({ message: "Failed to get attachments" });
+    }
+  });
+
   // User endpoints for downloading their own documents
   app.get("/api/documents/invoices/:id/download", async (req, res) => {
     try {
