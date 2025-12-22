@@ -4068,11 +4068,11 @@ export async function registerRoutes(
           .map(c => c.transactionId)
       );
       
-      // Regular transactions (FinaPay) - exclude Buy transactions that have certificates
+      // Regular transactions (FinaPay) - exclude Buy/Deposit transactions that have certificates
       regularTransactions
         .filter(tx => {
-          // Skip Buy transactions that have certificates (they're shown as ADD_FUNDS from certificate)
-          if (tx.type === 'Buy' && transactionIdsWithCerts.has(tx.id)) {
+          // Skip Buy and Deposit transactions that have certificates (they're shown as ADD_FUNDS from certificate)
+          if ((tx.type === 'Buy' || tx.type === 'Deposit') && transactionIdsWithCerts.has(tx.id)) {
             return false;
           }
           return true;
