@@ -396,11 +396,12 @@ export default function VaultActivityList() {
   const hasFinaBridgeTransactions = transactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
   
   // Convert certificates to transaction-like format for display
+  // Only show Digital Ownership certificates (Physical Storage is a companion document)
   // Exclude Trade Release certificates if there's already a FinaBridge transaction
   const certificateActivities: VaultTransaction[] = certificates
     .filter((cert: any) => {
-      // Include Physical Storage and Digital Ownership certificates
-      if (cert.type === 'Physical Storage' || cert.type === 'Digital Ownership') return true;
+      // Only include Digital Ownership certificates (Physical Storage is duplicate of same purchase)
+      if (cert.type === 'Digital Ownership') return true;
       // Only include Trade Release if there's no corresponding transaction
       if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
       return false;
