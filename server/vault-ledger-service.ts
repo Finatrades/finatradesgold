@@ -332,6 +332,74 @@ export class VaultLedgerService {
     });
   }
 
+  async transferBnslToFinaPay(userId: string, goldGrams: number, goldPriceUsd: number): Promise<VaultLedgerEntry> {
+    const summary = await this.getOrCreateOwnershipSummary(userId);
+    const bnslAvailable = parseFloat(summary.bnslAvailableGrams);
+    
+    if (goldGrams > bnslAvailable) {
+      throw new Error(`Insufficient balance in BNSL Wallet. Available: ${bnslAvailable}g, Requested: ${goldGrams}g`);
+    }
+
+    // Deduct from BNSL wallet
+    await db.update(bnslWallets)
+      .set({ 
+        availableGoldGrams: sql`${bnslWallets.availableGoldGrams} - ${goldGrams}`,
+        updatedAt: new Date() 
+      })
+      .where(eq(bnslWallets.userId, userId));
+
+    // Add to FinaPay wallet
+    await db.update(wallets)
+      .set({ goldGrams: sql`${wallets.goldGrams} + ${goldGrams}` })
+      .where(eq(wallets.userId, userId));
+
+    return this.recordLedgerEntry({
+      userId,
+      action: 'BNSL_To_FinaPay',
+      goldGrams,
+      goldPriceUsdPerGram: goldPriceUsd,
+      fromWallet: 'BNSL',
+      toWallet: 'FinaPay',
+      fromStatus: 'Available',
+      toStatus: 'Available',
+      notes: `Transferred ${goldGrams.toFixed(4)}g from BNSL Wallet to FinaPay`,
+    });
+  }
+
+  async transferFinaBridgeToFinaPay(userId: string, goldGrams: number, goldPriceUsd: number): Promise<VaultLedgerEntry> {
+    const summary = await this.getOrCreateOwnershipSummary(userId);
+    const bridgeAvailable = parseFloat(summary.finaBridgeAvailableGrams);
+    
+    if (goldGrams > bridgeAvailable) {
+      throw new Error(`Insufficient balance in FinaBridge Wallet. Available: ${bridgeAvailable}g, Requested: ${goldGrams}g`);
+    }
+
+    // Deduct from FinaBridge wallet
+    await db.update(finabridgeWallets)
+      .set({ 
+        availableGoldGrams: sql`${finabridgeWallets.availableGoldGrams} - ${goldGrams}`,
+        updatedAt: new Date() 
+      })
+      .where(eq(finabridgeWallets.userId, userId));
+
+    // Add to FinaPay wallet
+    await db.update(wallets)
+      .set({ goldGrams: sql`${wallets.goldGrams} + ${goldGrams}` })
+      .where(eq(wallets.userId, userId));
+
+    return this.recordLedgerEntry({
+      userId,
+      action: 'FinaBridge_To_FinaPay',
+      goldGrams,
+      goldPriceUsdPerGram: goldPriceUsd,
+      fromWallet: 'FinaBridge',
+      toWallet: 'FinaPay',
+      fromStatus: 'Available',
+      toStatus: 'Available',
+      notes: `Transferred ${goldGrams.toFixed(4)}g from FinaBridge Wallet to FinaPay`,
+    });
+  }
+
   async lockBnslGold(userId: string, goldGrams: number, goldPriceUsd: number, bnslPlanId: string): Promise<VaultLedgerEntry> {
     const summary = await this.getOrCreateOwnershipSummary(userId);
     const bnslAvailable = parseFloat(summary.bnslAvailableGrams);

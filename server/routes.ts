@@ -6564,6 +6564,13 @@ export async function registerRoutes(
     try {
       const { userId, goldGrams } = req.body;
       
+      // SECURITY: Verify the user can only transfer from their own wallet
+      const sessionUserId = req.session?.userId;
+      const isAdmin = req.session?.userRole === 'admin';
+      if (!isAdmin && sessionUserId !== userId) {
+        return res.status(403).json({ message: "Unauthorized: Cannot transfer from another user's wallet" });
+      }
+      
       if (!userId || !goldGrams || parseFloat(goldGrams) <= 0) {
         return res.status(400).json({ message: "Invalid transfer amount" });
       }
@@ -6645,6 +6652,104 @@ export async function registerRoutes(
     } catch (error) {
       console.error('BNSL transfer error:', error);
       res.status(400).json({ message: "Failed to transfer to BNSL wallet" });
+    }
+  });
+
+  // Transfer gold from BNSL wallet to FinaPay wallet (withdraw)
+  app.post("/api/bnsl/wallet/withdraw", ensureAuthenticated, async (req, res) => {
+    try {
+      const { userId, goldGrams } = req.body;
+      
+      // SECURITY: Verify the user can only withdraw from their own wallet
+      const sessionUserId = req.session?.userId;
+      const isAdmin = req.session?.userRole === 'admin';
+      if (!isAdmin && sessionUserId !== userId) {
+        return res.status(403).json({ message: "Unauthorized: Cannot withdraw from another user's wallet" });
+      }
+      
+      if (!userId || !goldGrams || parseFloat(goldGrams) <= 0) {
+        return res.status(400).json({ message: "Invalid withdrawal amount" });
+      }
+
+      const amountGrams = parseFloat(goldGrams);
+      
+      // Get user's BNSL wallet
+      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
+      const availableGold = parseFloat(bnslWallet.availableGoldGrams);
+      
+      if (availableGold < amountGrams) {
+        return res.status(400).json({ message: "Insufficient gold balance in BNSL wallet" });
+      }
+      
+      // Verify FinaPay wallet exists BEFORE making any changes
+      const finapayWallet = await storage.getWallet(userId);
+      if (!finapayWallet) {
+        return res.status(404).json({ message: "FinaPay wallet not found" });
+      }
+      
+      // Get current gold price for USD value calculation
+      const goldPrice = await getGoldPricePerGram();
+      const usdValue = amountGrams * goldPrice;
+      
+      // Debit from BNSL wallet
+      await storage.updateBnslWallet(bnslWallet.id, {
+        availableGoldGrams: (availableGold - amountGrams).toFixed(6)
+      });
+      
+      // Credit to FinaPay wallet
+      const newFinapayBalance = parseFloat(finapayWallet.goldGrams) + amountGrams;
+      await storage.updateWallet(finapayWallet.id, {
+        goldGrams: newFinapayBalance.toFixed(6)
+      });
+      
+      // Create transaction record with USD value
+      const transferTx = await storage.createTransaction({
+        userId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: amountGrams.toFixed(6),
+        amountUsd: usdValue.toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        description: `Transfer ${amountGrams.toFixed(3)}g from BNSL wallet to FinaPay`,
+        sourceModule: 'bnsl'
+      });
+
+      // Record ledger entry for BNSL to FinaPay transfer
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId,
+        action: 'BNSL_To_FinaPay',
+        goldGrams: amountGrams,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'BNSL',
+        toWallet: 'FinaPay',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        transactionId: transferTx.id,
+        notes: `Transferred ${amountGrams.toFixed(4)}g from BNSL Wallet to FinaPay`,
+        createdBy: 'system',
+      });
+      
+      // Get updated wallets
+      const updatedFinapay = await storage.getWallet(userId);
+      const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
+      
+      // Emit real-time sync event for auto-update
+      emitLedgerEvent(userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'bnsl_to_finapay_transfer',
+        data: { goldGrams: amountGrams, amountUsd: usdValue },
+      });
+      
+      res.json({ 
+        success: true, 
+        finapayWallet: updatedFinapay,
+        bnslWallet: updatedBnsl 
+      });
+    } catch (error) {
+      console.error('BNSL withdraw error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to withdraw from BNSL wallet" });
     }
   });
   
@@ -8725,6 +8830,95 @@ export async function registerRoutes(
       });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to fund wallet" });
+    }
+  });
+
+  // Withdraw from FinaBridge wallet (transfer to FinaPay) - PROTECTED
+  app.post("/api/finabridge/wallet/:userId/withdraw", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { amountGrams, goldPricePerGram } = req.body;
+      const amount = parseFloat(amountGrams);
+      
+      // Get gold price from request or fetch from API as fallback
+      let goldPrice = parseFloat(goldPricePerGram) || 0;
+      if (!goldPrice) {
+        try {
+          goldPrice = await getGoldPricePerGram() || 0;
+        } catch (e) {
+          console.log('Could not fetch gold price for ledger entry');
+        }
+      }
+      
+      if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+      
+      // Get FinaBridge wallet
+      const fbWallet = await storage.getOrCreateFinabridgeWallet(req.params.userId);
+      const fbGoldBalance = parseFloat(fbWallet.availableGoldGrams || '0');
+      
+      if (fbGoldBalance < amount) {
+        return res.status(400).json({ message: "Insufficient gold balance in FinaBridge wallet" });
+      }
+      
+      // Deduct from FinaBridge wallet
+      await storage.updateFinabridgeWallet(fbWallet.id, {
+        availableGoldGrams: (fbGoldBalance - amount).toFixed(6),
+      });
+      
+      // Add to main FinaPay wallet
+      const mainWallet = await storage.getWallet(req.params.userId);
+      if (!mainWallet) {
+        return res.status(404).json({ message: "Main wallet not found" });
+      }
+      const mainGoldBalance = parseFloat(mainWallet.goldGrams || '0');
+      await storage.updateWallet(mainWallet.id, {
+        goldGrams: (mainGoldBalance + amount).toFixed(6),
+      });
+      
+      // Create transaction record
+      const usdValue = amount * goldPrice;
+      await storage.createTransaction({
+        userId: req.params.userId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: amount.toFixed(6),
+        amountUsd: usdValue.toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        description: 'Transfer from FinaBridge wallet to FinaPay',
+        sourceModule: 'finabridge',
+        updatedAt: new Date(),
+      });
+      
+      // Record vault ledger entry for the transfer
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: req.params.userId,
+        action: 'FinaBridge_To_FinaPay',
+        goldGrams: amount,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'FinaBridge',
+        toWallet: 'FinaPay',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        notes: `Transferred ${amount.toFixed(4)}g from FinaBridge Wallet to FinaPay`,
+      });
+      
+      // Emit real-time sync event
+      emitLedgerEvent(req.params.userId, {
+        type: 'balance_update',
+        module: 'finabridge',
+        action: 'finabridge_to_finapay_transfer',
+        data: { goldGrams: amount, amountUsd: usdValue },
+      });
+      
+      res.json({ 
+        message: `${amount}g transferred from FinaBridge to FinaPay wallet`,
+        wallet: await storage.getFinabridgeWallet(req.params.userId),
+        finapayWallet: await storage.getWallet(req.params.userId),
+      });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to withdraw from FinaBridge wallet" });
     }
   });
   
