@@ -21,7 +21,7 @@ const content = {
         subtitle: 'Payments & Transfers',
         description: 'Send and receive payments through the platform, manage your wallet and spend anywhere using your gold-backed debit card.',
         cta: 'Explore FinaPay Wallet',
-        href: '/finapay',
+        href: '/finapay-landing',
       },
       {
         icon: TrendingUp,
@@ -50,7 +50,7 @@ const content = {
         subtitle: 'Payments & Transfers',
         description: 'Send and receive payments through the platform, manage your wallet and spend anywhere using your gold-backed debit card.',
         cta: 'Explore FinaPay Wallet',
-        href: '/finapay',
+        href: '/finapay-landing',
       },
       {
         icon: Building2,
