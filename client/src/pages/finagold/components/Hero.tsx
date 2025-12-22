@@ -8,9 +8,9 @@ const content = {
     badge: 'Swiss-Regulated Platform',
     headline: 'Digital Gold, Designed for Everyday People',
     subheadline: 'Save, store, and use real gold value through a secure, modern online account.',
-    paragraph: 'Finatrades gives you a simple, transparent way to own and manage real physical gold without complexity. Whether you buy or deposit gold, we store it in regulated vaults and give you a clean digital interface to track your grams, certificates, and estimated value — anytime, anywhere.',
-    primaryCta: 'Open Personal Account',
-    secondaryCta: 'Explore Personal Platform',
+    paragraph: "Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through BNSL. Optional: Join structured B'N'SL plans — lock gold into structured buy back plans for defined durations.",
+    primaryCta: 'Get Started',
+    secondaryCta: 'Sign In',
     cardTitle: 'Personal Gold',
     cardType: 'Individual Account',
   },
@@ -19,8 +19,8 @@ const content = {
     headline: 'Gold-Backed Infrastructure for Real-World Trade',
     subheadline: 'Designed for corporates, importers, exporters, trading houses, and institutional partners.',
     paragraph: 'Finatrades enables businesses to store gold reserves, access standardized vault certificates, and integrate gold value into structured commercial and trade operations. The platform strengthens treasury, compliance, and settlement processes with a secure, auditable infrastructure backed by real physical gold.',
-    primaryCta: 'Open Corporate Account',
-    secondaryCta: 'Schedule a Business Call',
+    primaryCta: 'Get Started',
+    secondaryCta: 'Sign In',
     cardTitle: 'Corporate Gold',
     cardType: 'Business Reserve',
   },
@@ -98,26 +98,21 @@ export default function Hero() {
               </motion.p>
 
               <motion.div variants={itemVariants} className="flex flex-wrap gap-4 pt-4">
+                <Link href="/login">
+                  <a
+                    className="group flex items-center gap-2 border border-[#EAC26B]/40 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all"
+                    data-testid="btn-sign-in"
+                  >
+                    {c.secondaryCta}
+                  </a>
+                </Link>
                 <Link href="/register">
                   <a
                     className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/25"
-                    data-testid="btn-primary-cta"
+                    data-testid="btn-get-started"
                   >
                     {c.primaryCta}
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </a>
-                </Link>
-                <Link href="/dashboard">
-                  <a
-                    className="group flex items-center gap-2 border border-[#EAC26B]/40 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all"
-                    data-testid="btn-secondary-cta"
-                  >
-                    {isPersonal ? (
-                      <ArrowRight className="w-4 h-4" />
-                    ) : (
-                      <Phone className="w-4 h-4" />
-                    )}
-                    {c.secondaryCta}
                   </a>
                 </Link>
               </motion.div>
