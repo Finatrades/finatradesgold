@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Phone, MessageCircle } from 'lucide-react';
+import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 
 const content = {
@@ -80,24 +81,28 @@ export default function CTA() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-4">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/25"
-                data-testid="cta-primary"
-              >
-                {c.primaryCta}
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex items-center gap-2 border border-white/20 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/5 hover:border-white/30 transition-all"
-                data-testid="cta-secondary"
-              >
-                <c.secondaryIcon className="w-4 h-4" />
-                {c.secondaryCta}
-              </motion.button>
+              <Link href="/register">
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/25 cursor-pointer"
+                  data-testid="cta-primary"
+                >
+                  {c.primaryCta}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </motion.a>
+              </Link>
+              <Link href="/login">
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group flex items-center gap-2 border border-white/20 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/5 hover:border-white/30 transition-all cursor-pointer"
+                  data-testid="cta-secondary"
+                >
+                  <c.secondaryIcon className="w-4 h-4" />
+                  {c.secondaryCta}
+                </motion.a>
+              </Link>
             </div>
           </div>
         </motion.div>

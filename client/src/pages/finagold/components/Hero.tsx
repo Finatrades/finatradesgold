@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Phone, Shield, CheckCircle } from 'lucide-react';
+import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 
 const content = {
@@ -97,24 +98,28 @@ export default function Hero() {
               </motion.p>
 
               <motion.div variants={itemVariants} className="flex flex-wrap gap-4 pt-4">
-                <button
-                  className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/25"
-                  data-testid="btn-primary-cta"
-                >
-                  {c.primaryCta}
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button
-                  className="group flex items-center gap-2 border border-[#EAC26B]/40 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all"
-                  data-testid="btn-secondary-cta"
-                >
-                  {isPersonal ? (
-                    <ArrowRight className="w-4 h-4" />
-                  ) : (
-                    <Phone className="w-4 h-4" />
-                  )}
-                  {c.secondaryCta}
-                </button>
+                <Link href="/register">
+                  <a
+                    className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/25"
+                    data-testid="btn-primary-cta"
+                  >
+                    {c.primaryCta}
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </a>
+                </Link>
+                <Link href="/dashboard">
+                  <a
+                    className="group flex items-center gap-2 border border-[#EAC26B]/40 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all"
+                    data-testid="btn-secondary-cta"
+                  >
+                    {isPersonal ? (
+                      <ArrowRight className="w-4 h-4" />
+                    ) : (
+                      <Phone className="w-4 h-4" />
+                    )}
+                    {c.secondaryCta}
+                  </a>
+                </Link>
               </motion.div>
             </motion.div>
           </AnimatePresence>

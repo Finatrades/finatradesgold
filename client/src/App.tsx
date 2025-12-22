@@ -96,8 +96,8 @@ import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/finagold" component={FinagoldLanding} />
+      <Route path="/" component={FinagoldLanding} />
+      <Route path="/home-old" component={Home} />
       <Route path="/bnsl-explore" component={BNSLExplore} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />

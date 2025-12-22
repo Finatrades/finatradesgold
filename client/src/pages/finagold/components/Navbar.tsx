@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 
 export default function Navbar() {
@@ -78,18 +79,22 @@ export default function Navbar() {
                 Business
               </button>
             </div>
-            <button
-              className="text-gray-300 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
-              data-testid="btn-sign-in"
-            >
-              Sign In
-            </button>
-            <button
-              className="bg-[#EAC26B] text-black px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-colors shadow-lg shadow-[#EAC26B]/20"
-              data-testid="btn-get-started"
-            >
-              Get Started
-            </button>
+            <Link href="/login">
+              <a
+                className="text-gray-300 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
+                data-testid="btn-sign-in"
+              >
+                Sign In
+              </a>
+            </Link>
+            <Link href="/register">
+              <a
+                className="bg-[#EAC26B] text-black px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-colors shadow-lg shadow-[#EAC26B]/20"
+                data-testid="btn-get-started"
+              >
+                Get Started
+              </a>
+            </Link>
           </div>
 
           <button
@@ -142,12 +147,16 @@ export default function Navbar() {
                     Business
                   </button>
                 </div>
-                <button className="border border-white/20 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2">
-                  Sign In
-                </button>
-                <button className="bg-[#EAC26B] text-black px-6 py-3 rounded-full text-sm font-semibold w-full">
-                  Get Started
-                </button>
+                <Link href="/login">
+                  <a className="block border border-white/20 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center">
+                    Sign In
+                  </a>
+                </Link>
+                <Link href="/register">
+                  <a className="block bg-[#EAC26B] text-black px-6 py-3 rounded-full text-sm font-semibold w-full text-center">
+                    Get Started
+                  </a>
+                </Link>
               </div>
             </motion.div>
           )}
