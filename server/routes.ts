@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
 import { db, pool } from "./db";
 import crypto from "crypto";
+import { checkRateLimit as redisCheckRateLimit, isRedisConnected } from "./redis-client";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
@@ -729,7 +730,23 @@ export async function registerRoutes(
   // SECURITY: Rate limiting for login endpoints
   const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
   const LOGIN_RATE_LIMIT = 5; // max attempts
-  const LOGIN_RATE_WINDOW = 15 * 60 * 1000; // 15 minutes
+  const LOGIN_RATE_WINDOW_SECONDS = 15 * 60; // 15 minutes in seconds
+  const LOGIN_RATE_WINDOW = LOGIN_RATE_WINDOW_SECONDS * 1000; // 15 minutes in ms
+  
+  async function checkLoginRateLimitAsync(identifier: string): Promise<{ allowed: boolean; remainingAttempts: number; retryAfter?: number }> {
+    // Use Redis rate limiting if available
+    if (isRedisConnected()) {
+      const result = await redisCheckRateLimit(identifier, LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW_SECONDS);
+      return {
+        allowed: result.allowed,
+        remainingAttempts: result.remaining,
+        retryAfter: result.retryAfter
+      };
+    }
+    
+    // Fallback to in-memory rate limiting
+    return checkLoginRateLimit(identifier);
+  }
   
   function checkLoginRateLimit(identifier: string): { allowed: boolean; remainingAttempts: number; retryAfter?: number } {
     const now = Date.now();
@@ -755,7 +772,7 @@ export async function registerRoutes(
     return { allowed: true, remainingAttempts: LOGIN_RATE_LIMIT - attempts.count };
   }
   
-  // Clean up rate limit entries periodically
+  // Clean up rate limit entries periodically (only needed for in-memory fallback)
   setInterval(() => {
     const now = Date.now();
     Array.from(loginAttempts.entries()).forEach(([key, attempts]) => {
@@ -783,7 +800,7 @@ export async function registerRoutes(
       // SECURITY: Rate limiting to prevent brute force attacks
       const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
       const rateLimitKey = `login:${clientIP}:${email}`;
-      const rateCheck = checkLoginRateLimit(rateLimitKey);
+      const rateCheck = await checkLoginRateLimitAsync(rateLimitKey);
       
       if (!rateCheck.allowed) {
         res.setHeader('Retry-After', rateCheck.retryAfter?.toString() || '900');
@@ -873,7 +890,7 @@ export async function registerRoutes(
       // SECURITY: Rate limiting to prevent brute force attacks (stricter for admin)
       const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
       const rateLimitKey = `admin_login:${clientIP}:${email}`;
-      const rateCheck = checkLoginRateLimit(rateLimitKey);
+      const rateCheck = await checkLoginRateLimitAsync(rateLimitKey);
       
       if (!rateCheck.allowed) {
         res.setHeader('Retry-After', rateCheck.retryAfter?.toString() || '900');
