@@ -4808,8 +4808,8 @@ export async function registerRoutes(
           return res.status(400).json({ message: "Only pending requests can be approved" });
         }
         
-        // Update status to Approved
-        await storage.updateDepositRequest(req.params.id, { status: 'Approved', reviewedAt: new Date() });
+        // Update status to Confirmed (per deposit_request_status enum)
+        await storage.updateDepositRequest(req.params.id, { status: 'Confirmed', reviewedAt: new Date() });
         
         // Credit user wallet with USD
         const wallet = await storage.getWallet(depositReq.userId);
