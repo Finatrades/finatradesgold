@@ -963,7 +963,26 @@ function Footer() {
 export default function FinaVaultLanding() {
   return (
     <ModeProvider>
-      <div className="min-h-screen bg-black text-white" data-testid="finavault-landing">
+      <div className="finavault-landing min-h-screen bg-black text-white" data-testid="finavault-landing">
+        <style>{`
+          .finavault-landing {
+            --primary: #EAC26B;
+            --primary-foreground: #000000;
+            --ring: #EAC26B;
+            --accent: #d4af5a;
+            --accent-foreground: #000000;
+            --muted: #1a1a1a;
+            --muted-foreground: #9ca3af;
+            --input: #333333;
+            --border: #333333;
+            --background: #000000;
+            --foreground: #ffffff;
+            --card: #111111;
+            --card-foreground: #ffffff;
+            --popover: #111111;
+            --popover-foreground: #ffffff;
+          }
+        `}</style>
         <Navbar variant="products" />
         <HeroSection />
         <ValuePillarsSection />
