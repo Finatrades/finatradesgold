@@ -29,6 +29,17 @@ import { TradeFinanceProvider } from "@/context/TradeFinanceContext";
 import { UserProvider } from "@/context/UserContext";
 import { useEffect } from "react";
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const [location] = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location]);
+  
+  return null;
+}
+
 function ProtectedRoute({ path, component: Component }: { path: string, component: React.ComponentType }) {
   const { user, loading } = useAuth();
 
@@ -99,7 +110,9 @@ import FinaPayLanding from "@/pages/finagold/FinaPayLanding";
 
 function Router() {
   return (
-    <Switch>
+    <>
+      <ScrollToTop />
+      <Switch>
       <Route path="/" component={FinagoldLanding} />
       <Route path="/home-old" component={Home} />
       <Route path="/bnsl-landing" component={BNSLLanding} />
@@ -178,6 +191,7 @@ function Router() {
 
       <Route component={NotFound} />
     </Switch>
+    </>
   );
 }
 
