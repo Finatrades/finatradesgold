@@ -8,6 +8,7 @@ import {
 import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo.png';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import { ModeProvider } from './context/ModeContext';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
@@ -936,29 +937,6 @@ function FinalCTASection() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="relative py-12 bg-[#050505] border-t border-white/5">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <Link href="/">
-            <a>
-              <img src={finatradesLogo} alt="Finatrades" className="h-8 w-auto" />
-            </a>
-          </Link>
-          <p className="text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} Finatrades. All rights reserved.
-          </p>
-          <Link href="/">
-            <a className="text-sm text-gray-400 hover:text-white transition-colors">
-              Back to Home
-            </a>
-          </Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
 
 export default function FinaVaultLanding() {
   return (
