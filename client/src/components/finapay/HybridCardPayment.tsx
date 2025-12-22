@@ -182,19 +182,49 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           apiKey: sdkConfig.apiKey,
           outletRef: sdkConfig.outletRef,
           style: {
-            main: { margin: '0', padding: '0' },
+            main: { 
+              margin: '0', 
+              padding: '16px',
+              backgroundColor: '#ffffff',
+            },
             base: {
               color: '#1f2937',
-              fontSize: '16px',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              '::placeholder': { color: '#9ca3af' },
+              fontSize: '15px',
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+              fontWeight: '500',
+              letterSpacing: '0.5px',
+              '::placeholder': { 
+                color: '#9ca3af',
+                fontWeight: '400',
+              },
             },
-            invalid: { color: '#dc2626' },
+            invalid: { 
+              color: '#dc2626',
+              borderColor: '#dc2626',
+            },
+            valid: {
+              color: '#059669',
+              borderColor: '#10b981',
+            },
             input: {
-              padding: '12px',
-              borderRadius: '8px',
+              padding: '14px 16px',
+              borderRadius: '12px',
               borderColor: '#e5e7eb',
-              backgroundColor: '#ffffff',
+              borderWidth: '2px',
+              backgroundColor: '#fafbff',
+              marginBottom: '12px',
+              transition: 'all 0.2s ease',
+            },
+            cardNumber: {
+              marginBottom: '16px',
+            },
+            label: {
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#374151',
+              marginBottom: '6px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
             },
           },
           onSuccess: () => setCardMounted(true),
@@ -582,8 +612,8 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           <div 
             ref={containerRef}
             id="hybrid-card-input" 
-            className="border-2 border-border rounded-xl bg-white overflow-hidden shadow-sm"
-            style={{ minHeight: '200px', height: '200px' }}
+            className="border-2 border-border rounded-2xl bg-white overflow-hidden shadow-lg"
+            style={{ minHeight: '280px' }}
           >
             {!cardMounted && (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
