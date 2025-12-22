@@ -452,9 +452,10 @@ export default function VaultActivityList() {
       .map((c: any) => c.transactionId)
   );
   
-  // Filter transactions: exclude Buy if it has certificates (shown as Vault Deposit instead)
+  // Filter transactions: exclude Buy/Deposit if it has certificates (shown as Vault Deposit instead)
   const filteredTxs = transactions.filter((tx: any) => {
-    if (tx.type === 'Buy' && transactionIdsWithCerts.has(tx.id)) {
+    // Skip Buy and Deposit transactions that have certificates - they're shown as Vault Deposit
+    if ((tx.type === 'Buy' || tx.type === 'Deposit') && transactionIdsWithCerts.has(tx.id)) {
       return false; // Skip - represented by Vault Deposit
     }
     return true;
