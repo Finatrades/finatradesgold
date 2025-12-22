@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Trash2, Plus, Info, UploadCloud, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 interface NewDepositFormProps {
   onSubmit: (data: Omit<DepositRequest, 'id' | 'status' | 'submittedAt'>) => void;
@@ -22,6 +23,18 @@ const KYC_APPROVED = true;
 
 export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormProps) {
   const { toast } = useToast();
+
+  // Fetch current gold price
+  const { data: goldPriceData } = useQuery<{ pricePerGram: number }>({
+    queryKey: ['gold-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-price');
+      if (!res.ok) throw new Error('Failed to fetch gold price');
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+  const goldPrice = goldPriceData?.pricePerGram || 141;
 
   // --- State ---
   const [vaultLocation, setVaultLocation] = useState<string>('Dubai Vault');
@@ -474,7 +487,7 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
               <Separator className="bg-border" />
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Est. Value (USD)</span>
-                <span className="text-primary font-bold">~${(totalWeight * 85.22).toFixed(2)}</span>
+                <span className="text-primary font-bold">~${(totalWeight * goldPrice).toFixed(2)}</span>
               </div>
               <div className="mt-4 p-3 bg-purple-50 rounded border border-purple-200">
                 <p className="text-xs text-fuchsia-800 flex gap-2">
