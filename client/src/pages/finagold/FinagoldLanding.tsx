@@ -1,13 +1,17 @@
 import { useEffect } from 'react';
+import { ModeProvider } from './context/ModeContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import ToolsGrid from './components/ToolsGrid';
+import ValueProps from './components/ValueProps';
+import WhoItsFor from './components/WhoItsFor';
 import HowItWorks from './components/HowItWorks';
+import Products from './components/Products';
+import Certificates from './components/Certificates';
 import TrustStrip from './components/TrustStrip';
 import CTA from './components/CTA';
 import Footer from './components/Footer';
 
-export default function FinagoldLanding() {
+function FinagoldContent() {
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) {
@@ -55,17 +59,32 @@ export default function FinagoldLanding() {
             transition-duration: 0.01ms !important;
           }
         }
+
+        html {
+          scroll-behavior: smooth;
+        }
       `}</style>
       
       <Navbar />
       <main>
         <Hero />
-        <ToolsGrid />
+        <ValueProps />
+        <WhoItsFor />
         <HowItWorks />
+        <Products />
+        <Certificates />
         <TrustStrip />
         <CTA />
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function FinagoldLanding() {
+  return (
+    <ModeProvider>
+      <FinagoldContent />
+    </ModeProvider>
   );
 }

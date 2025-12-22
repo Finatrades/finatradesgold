@@ -1,0 +1,344 @@
+Perfect — I will now produce **a FULL, FINAL, CMS-READY HOME PAGE** written **line-by-line** for **Personal Mode** and **Business Mode** separately.
+
+This is premium, Swiss-grade, bank-level copywriting designed for your Finatrades website UI.
+
+---
+
+# 🟡 **FINATRADES — HOME PAGE (FULL CONTENT)**
+
+### **Two Separate Versions**
+
+* **PERSONAL**
+* **BUSINESS**
+
+You can plug these sections directly into your Next.js/React CMS modules.
+
+---
+
+# =========================================
+
+# 🟠 **HOME PAGE — PERSONAL VERSION**
+
+# =========================================
+
+---
+
+## ✅ **SECTION 1 — HERO**
+
+**Badge:**
+**• Swiss-Regulated Platform**
+
+**Headline (H1):**
+**Digital Gold, Designed for Everyday People**
+
+**Subheadline:**
+**Save, store, and use real gold value through a secure, modern online account.**
+
+**Paragraph:**
+Finatrades gives you a simple, transparent way to own and manage real physical gold without complexity. Whether you buy or deposit gold, we store it in regulated vaults and give you a clean digital interface to track your grams, certificates, and estimated value — anytime, anywhere.
+
+**Primary CTA:**
+**Open Personal Account →**
+
+**Secondary CTA:**
+**Explore Personal Platform →**
+
+---
+
+## ✅ **SECTION 2 — WHY FINATRADES (PERSONAL VALUE BLOCK)**
+
+**Section Title:**
+**Why Individuals Choose Finatrades**
+
+**Card 1 — Real Gold, Fully Backed**
+Your balance represents real, physical gold held securely in certified vaults.
+
+**Card 2 — Easy to Start, Easy to Manage**
+Open your account, verify your identity, and manage your gold in just a few steps.
+
+**Card 3 — Transparent & Real-Time**
+See your gold holdings, certificates, and estimated value updated instantly.
+
+**Card 4 — Built for Everyday Planning**
+Use your gold for long-term savings, family goals, or as an extra financial reserve.
+
+---
+
+## ✅ **SECTION 3 — WHO IT’S FOR**
+
+**Section Title:**
+**Made for People Who Value Stability & Simplicity**
+
+**List:**
+• Individuals who prefer real-world assets over high-risk products
+• Salaried users and professionals building long-term reserves
+• Families consolidating their gold into one secure, trackable place
+• People receiving gold through gifts, marriage, or inheritance
+• Anyone who wants a Swiss-regulated, modern gold account
+
+---
+
+## ✅ **SECTION 4 — HOW IT WORKS (PERSONAL)**
+
+**Section Title:**
+**How Your Personal Gold Account Works**
+
+**Step 1:**
+**Create Your Account**
+Register as an individual user with basic information.
+
+**Step 2:**
+**Complete Identity Verification**
+Our Swiss-regulated compliance process verifies your documents securely.
+
+**Step 3:**
+**Deposit or Buy Gold**
+Deposit existing physical gold via approved partners, or buy new gold (where available).
+
+**Step 4:**
+**Vault Storage Confirmation**
+Your gold is securely stored in approved vaults with full documentation.
+
+**Step 5:**
+**Track Your Gold 24/7**
+View grams, certificates, and estimated value directly in your dashboard.
+
+**Step 6:**
+**Optional: Join Holding Plans**
+Lock gold into structured holding plans like BNSL for defined terms and visibility.
+
+---
+
+## ✅ **SECTION 5 — PRODUCT OVERVIEW (PERSONAL)**
+
+**Section Title:**
+**Your Tools to Manage Real Gold Digitally**
+
+### **FinaVault — Personal Gold Locker**
+
+A secure digital ledger showing your stored gold, certificates, and purity details.
+
+### **FinaPay Wallet — Gold Value View**
+
+Displays your gold in grams and estimated value. Helps plan expenses and savings.
+
+### **FinaEarn (BNSL) — Holding Plans**
+
+Choose defined durations (12, 24, or 36 months) for structured holding.
+
+### **FinaFinance (View-Only)**
+
+Understand how your gold participates in a broader real-world ecosystem.
+
+---
+
+## ✅ **SECTION 6 — CERTIFICATES**
+
+**Section Title:**
+**Your Gold Certificates, Digitally Organized**
+
+**Text:**
+Every eligible gold deposit comes with formal documentation showing refinery details, purity, weight, serial numbers, and vault information. You can access and download these certificates anytime.
+
+---
+
+## ✅ **SECTION 7 — TRUST & REGULATION**
+
+**Section Title:**
+**Swiss-Aligned, Transparency-Driven**
+
+**Bullets:**
+• Real physical gold stored in regulated vaults
+• Clear documentation for every gram
+• Independent verifications and compliance checks
+• No trading, no tokens, no hidden financial instruments
+
+---
+
+## ✅ **SECTION 8 — CTA SECTION**
+
+**Headline:**
+**Start Your Personal Gold Journey Today**
+
+**Primary CTA:**
+**Open Personal Account →**
+
+**Secondary CTA:**
+**Talk to Support →**
+
+---
+
+# =========================================
+
+# 🔵 **HOME PAGE — BUSINESS VERSION**
+
+# =========================================
+
+---
+
+## ✅ **SECTION 1 — HERO**
+
+**Badge:**
+**• Swiss-Regulated Business Platform**
+
+**Headline (H1):**
+**Gold-Backed Financial Infrastructure for Global Business**
+
+**Subheadline:**
+**Designed for corporates, importers, exporters, trading houses, and institutional partners.**
+
+**Paragraph:**
+Finatrades enables businesses to store gold reserves, access standardized vault certificates, and integrate gold value into structured commercial and trade operations. The platform strengthens treasury, compliance, and settlement processes with a secure, auditable infrastructure backed by real physical gold.
+
+**Primary CTA:**
+**Open Corporate Account →**
+
+**Secondary CTA:**
+**Schedule a Business Call →**
+
+---
+
+## ✅ **SECTION 2 — WHY FINATRADES (BUSINESS VALUE BLOCK)**
+
+**Section Title:**
+**Why Businesses Choose Finatrades**
+
+**Card 1 — Verified Gold Reserves**
+Maintain documented holdings with full traceability across bars, batches, and vaults.
+
+**Card 2 — Built for Trade & Settlement**
+Use gold value as a reference in commercial agreements, collateral, or structured flows.
+
+**Card 3 — Institutional Governance Controls**
+Role-based access, approval workflows, and multi-user corporate environments.
+
+**Card 4 — Compliance-Ready Documentation**
+Standardized certificates and reports that support regulators, auditors, and banking partners.
+
+---
+
+## ✅ **SECTION 3 — WHO IT’S FOR**
+
+**Section Title:**
+**Created for Serious Gold-Using Enterprises**
+
+**List:**
+• Gold traders and commodity brokers
+• Import–export houses dealing in precious metals
+• Family offices and holding companies managing reserves
+• Mining companies or exporters requiring gold-backed flows
+• Businesses using gold as treasury or collateral
+
+---
+
+## ✅ **SECTION 4 — HOW IT WORKS (BUSINESS)**
+
+**Section Title:**
+**How Finatrades Works for Your Business**
+
+**Step 1:**
+**Register a Corporate Profile**
+Submit company details, documents, and authorized signatories.
+
+**Step 2:**
+**KYB & Compliance Review**
+We verify corporate identity, structure, and compliance requirements.
+
+**Step 3:**
+**Create Your Gold Reserve Account**
+Set user roles, permissions, and operational limits.
+
+**Step 4:**
+**Deposit Physical Gold**
+Move existing bars into approved vaults via secure procedures.
+
+**Step 5:**
+**Receive Vault Certificates**
+Each deposit generates a standardized certificate for internal and external use.
+
+**Step 6:**
+**Use Gold Value for Trade & Treasury**
+Integrate gold value into settlement terms, collateral needs, or internal treasury planning.
+
+**Step 7:**
+**Reporting & Audit Tools**
+Export reports for internal audit, financial statements, or stakeholders.
+
+---
+
+## ✅ **SECTION 5 — PRODUCT OVERVIEW (BUSINESS)**
+
+**Section Title:**
+**A Structured Ecosystem for Business Gold Operations**
+
+### **FinaVault — Corporate Gold Reserve Ledger**
+
+Complete visibility across bar numbers, batch origins, purity, and vault locations.
+
+### **FinaPay Wallet — Operational Gold Dashboard**
+
+Real-time value tracking for treasury, risk monitoring, and allocation.
+
+### **FinaFinance — Trade Support Layer**
+
+Documentation and workflows that support trade deals backed by gold value.
+
+### **FinaEarn (BNSL) — Programmatic Holding**
+
+Lock gold into structured terms aligned with business cycles.
+
+---
+
+## ✅ **SECTION 6 — CERTIFICATES & DOCUMENTATION**
+
+**Section Title:**
+**Documentation You Can Present to Boards, Auditors, and Partners**
+
+**Text:**
+Finatrades provides professional-grade certificates and documentation compliant with industry standards, making it easier to conduct audits, structure deals, and report reserves to stakeholders.
+
+---
+
+## ✅ **SECTION 7 — TRUST & REGULATION**
+
+**Section Title:**
+**Compliance First. Enterprise Ready.**
+
+**Bullets:**
+• Swiss-aligned framework for gold custody
+• Detailed vault documentation
+• Controlled multi-user corporate environment
+• Designed to support audit trails and structured trade workflows
+
+---
+
+## ✅ **SECTION 8 — CTA SECTION**
+
+**Headline:**
+**Strengthen Your Business with Real, Verified Gold Infrastructure**
+
+**Primary CTA:**
+**Open Corporate Account →**
+
+**Secondary CTA:**
+**Schedule a Business Call →**
+
+---
+
+# ✅ READY FOR NEXT STEP
+
+If you want, I can now generate:
+
+### 🔸 **Full “Products” Page** (Personal + Business)
+
+### 🔸 **Full “How It Works” Page**
+
+### 🔸 **Full “Certificates” Page**
+
+### 🔸 **Full “FinaVault” Page**
+
+### 🔸 **Base44 Prompts for entire UI**
+
+### 🔸 **CMS-optimized blocks (short, medium, long versions)**
+
+Which page should I write next in full?
