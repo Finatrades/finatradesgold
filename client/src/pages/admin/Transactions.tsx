@@ -319,54 +319,6 @@ export default function Transactions() {
           </div>
         </div>
 
-        {pendingCount > 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">{pendingCount}</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-yellow-800">Pending Authorization</h3>
-                <p className="text-yellow-700 text-sm">{pendingCount} transaction(s) awaiting your approval</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {selectedIds.size > 0 && (
-                <span className="text-sm text-yellow-700 mr-2">{selectedIds.size} selected</span>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleBulkApprove}
-                disabled={selectedIds.size === 0 || bulkApproveMutation.isPending}
-                className="text-green-600 border-green-300 hover:bg-green-50"
-                data-testid="button-bulk-approve-tx"
-              >
-                {bulkApproveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                Bulk Approve
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleBulkReject}
-                disabled={selectedIds.size === 0 || bulkRejectMutation.isPending}
-                className="text-red-600 border-red-300 hover:bg-red-50"
-                data-testid="button-bulk-reject-tx"
-              >
-                {bulkRejectMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
-                Bulk Reject
-              </Button>
-              <Button 
-                variant="outline" 
-                className="border-yellow-500 text-yellow-700 hover:bg-yellow-100"
-                onClick={() => setStatusFilter('Pending')}
-              >
-                View Pending
-              </Button>
-            </div>
-          </div>
-        )}
-
         <div className="flex gap-4 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -426,14 +378,6 @@ export default function Transactions() {
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-4 py-4 font-semibold tracking-wide w-12">
-                        <Checkbox 
-                          checked={selectedIds.size === pendingTransactions.length && pendingTransactions.length > 0}
-                          onCheckedChange={toggleSelectAllPending}
-                          disabled={pendingTransactions.length === 0}
-                          data-testid="checkbox-select-all-tx"
-                        />
-                      </th>
                       <th className="px-4 py-4 font-semibold tracking-wide">Transaction ID</th>
                       <th className="px-4 py-4 font-semibold tracking-wide">Finatrades ID</th>
                       <th className="px-4 py-4 font-semibold tracking-wide">User</th>
@@ -441,7 +385,6 @@ export default function Transactions() {
                       <th className="px-4 py-4 font-semibold tracking-wide">Amount</th>
                       <th className="px-4 py-4 font-semibold tracking-wide">Status</th>
                       <th className="px-4 py-4 font-semibold tracking-wide">Date</th>
-                      <th className="px-4 py-4 font-semibold tracking-wide">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -451,17 +394,6 @@ export default function Transactions() {
                         className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150 group`} 
                         data-testid={`row-transaction-${tx.id}`}
                       >
-                        <td className="px-4 py-4">
-                          {tx.status === 'Pending' ? (
-                            <Checkbox 
-                              checked={selectedIds.has(tx.id)}
-                              onCheckedChange={() => toggleSelection(tx.id)}
-                              data-testid={`checkbox-tx-${tx.id}`}
-                            />
-                          ) : (
-                            <div className="w-4" />
-                          )}
-                        </td>
                         <td className="px-4 py-4 font-mono text-xs text-gray-500">TX-{tx.id.slice(0, 8).toUpperCase()}</td>
                         <td className="px-4 py-4">
                           <span className="font-mono text-sm font-medium text-purple-600">{tx.finatradesId || `FT-${tx.userId.slice(0, 8).toUpperCase()}`}</span>
@@ -476,46 +408,6 @@ export default function Transactions() {
                         <td className="px-4 py-4 font-medium text-gray-900">{formatAmount(tx)}</td>
                         <td className="px-4 py-4">{getStatusBadge(tx.status)}</td>
                         <td className="px-4 py-4 text-gray-500">{format(new Date(tx.createdAt), 'MMM dd, yyyy HH:mm')}</td>
-                        <td className="px-4 py-4">
-                          {(tx.status === 'Pending' || tx.status === 'Pending Verification' || tx.status === 'Under Review' || tx.status === 'Pending Review' || tx.status === 'Draft') && (
-                            tx.type === 'Buy Gold Bar' || tx.sourceTable === 'buyGoldRequests' ? (
-                              <Link href="/admin/finapay/buy-gold">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="text-purple-600 hover:bg-purple-50 gap-1"
-                                  data-testid={`button-manage-buygold-${tx.id}`}
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Manage
-                                </Button>
-                              </Link>
-                            ) : (
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="text-green-600 hover:bg-green-50"
-                                  onClick={() => handleApproveWithOtp(tx.id, tx.type, tx.sourceTable)}
-                                  disabled={approveMutation.isPending}
-                                  data-testid={`button-approve-${tx.id}`}
-                                >
-                                  Approve
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="text-red-600 hover:bg-red-50"
-                                  onClick={() => handleRejectWithOtp(tx.id, tx.type, tx.sourceTable)}
-                                  disabled={rejectMutation.isPending}
-                                  data-testid={`button-reject-${tx.id}`}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            )
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
