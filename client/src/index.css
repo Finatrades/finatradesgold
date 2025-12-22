@@ -47,11 +47,27 @@
 }
 
 :root {
-  /* Brand Variables - Purple & White Theme */
+  /* Brand Variables - Purple & White Theme with Gold Accents */
+  
+  /* Primary Purple/Violet Gradient */
   --brand-purple: #8A2BE2;
   --brand-purple-dark: #4B0082;
   --brand-purple-light: #A342FF;
+  --brand-purple-pink: #FF4CD6;
   --brand-pink: #FF2FBF;
+  
+  /* Gold Accent Colors */
+  --brand-gold: #D4AF37;
+  --brand-gold-bright: #FFD500;
+  --brand-gold-light: #F7D878;
+  --brand-gold-dark: #B8860B;
+  
+  /* Dark Background Colors (Header/Footer) */
+  --brand-bg-darkest: #0D001E;
+  --brand-bg-dark: #1A002F;
+  --brand-bg-medium: #2A0055;
+  --brand-bg-indigo: #4B0082;
+  
   --brand-primary: #8A2BE2;
   --brand-primary-foreground: #ffffff;
   --brand-secondary: #4B0082;
