@@ -24,25 +24,42 @@ function FinagoldContent() {
     <div className="finagold-landing min-h-screen bg-black text-white antialiased selection:bg-[#EAC26B] selection:text-black">
       <style>{`
         .finagold-landing {
-          --gold: #EAC26B;
-          --gold-dark: #d4af5a;
+          /* Gold accent colors */
+          --gold: #D4AF37;
+          --gold-bright: #FFD500;
+          --gold-light: #F7D878;
+          --gold-dark: #B8860B;
+          
+          /* Purple primary colors */
+          --purple-deep: #8A2BE2;
+          --purple-magenta: #FF2FBF;
+          --purple-light: #A342FF;
+          --purple-pink: #FF4CD6;
+          --purple-violet: #4B0082;
+          
+          /* Dark backgrounds */
+          --bg-darkest: #0D001E;
+          --bg-dark: #1A002F;
+          --bg-medium: #2A0055;
+          --bg-indigo: #4B0082;
+          
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
           
-          /* Override app theme colors to gold for landing pages */
-          --primary: #EAC26B;
-          --primary-foreground: #000000;
-          --ring: #EAC26B;
-          --accent: #d4af5a;
+          /* Theme overrides for landing pages - Purple primary with gold accents */
+          --primary: #8A2BE2;
+          --primary-foreground: #ffffff;
+          --ring: #8A2BE2;
+          --accent: #D4AF37;
           --accent-foreground: #000000;
-          --muted: #1a1a1a;
-          --muted-foreground: #9ca3af;
-          --input: #333333;
-          --border: #333333;
-          --background: #000000;
+          --muted: #1A002F;
+          --muted-foreground: rgba(255,255,255,0.7);
+          --input: #2A0055;
+          --border: #4B0082;
+          --background: #0D001E;
           --foreground: #ffffff;
-          --card: #111111;
+          --card: #1A002F;
           --card-foreground: #ffffff;
-          --popover: #111111;
+          --popover: #1A002F;
           --popover-foreground: #ffffff;
         }
         

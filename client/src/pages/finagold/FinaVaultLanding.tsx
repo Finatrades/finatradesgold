@@ -966,20 +966,28 @@ export default function FinaVaultLanding() {
       <div className="finavault-landing min-h-screen bg-black text-white" data-testid="finavault-landing">
         <style>{`
           .finavault-landing {
-            --primary: #EAC26B;
-            --primary-foreground: #000000;
-            --ring: #EAC26B;
-            --accent: #d4af5a;
+            --gold: #D4AF37;
+            --gold-bright: #FFD500;
+            --gold-light: #F7D878;
+            --gold-dark: #B8860B;
+            --purple-deep: #8A2BE2;
+            --purple-magenta: #FF2FBF;
+            --purple-light: #A342FF;
+            --purple-violet: #4B0082;
+            --primary: #8A2BE2;
+            --primary-foreground: #ffffff;
+            --ring: #8A2BE2;
+            --accent: #D4AF37;
             --accent-foreground: #000000;
-            --muted: #1a1a1a;
-            --muted-foreground: #9ca3af;
-            --input: #333333;
-            --border: #333333;
-            --background: #000000;
+            --muted: #1A002F;
+            --muted-foreground: rgba(255,255,255,0.7);
+            --input: #2A0055;
+            --border: #4B0082;
+            --background: #0D001E;
             --foreground: #ffffff;
-            --card: #111111;
+            --card: #1A002F;
             --card-foreground: #ffffff;
-            --popover: #111111;
+            --popover: #1A002F;
             --popover-foreground: #ffffff;
           }
         `}</style>
