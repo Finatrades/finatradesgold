@@ -13,17 +13,29 @@ export function getRedisClient(): Redis | null {
     return null;
   }
   
-  // Strip quotes if accidentally included in the environment variable
-  // Handle both regular quotes and URL-encoded quotes (%22)
+  // Strip quotes and variable assignment if accidentally included
+  try {
+    // First try to URL-decode the entire string in case it was encoded
+    redisUrl = decodeURIComponent(redisUrl);
+  } catch (e) {
+    // If decoding fails, continue with original
+  }
+  
+  // Handle cases where the value includes the variable name (e.g., REDIS_URL="...")
+  if (redisUrl.includes('REDIS_URL=')) {
+    redisUrl = redisUrl.replace(/^REDIS_URL=/, '');
+  }
+  
   redisUrl = redisUrl
-    .replace(/^%22|%22$/g, '')  // URL-encoded double quotes
     .replace(/^["']|["']$/g, '')  // Regular quotes
     .trim();
+  
+  console.log('[Redis] Connecting to:', redisUrl.replace(/:[^:@]+@/, ':***@'));
   
   try {
     redisClient = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
+      enableReadyCheck: false, // Disabled for Upstash (read-only tokens lack INFO permission)
       lazyConnect: true,
       tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
     });
