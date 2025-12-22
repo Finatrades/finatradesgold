@@ -172,14 +172,17 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
     }
     
     // SECURITY: Verify admin logged in via admin portal, not regular login
-    if (req.session.adminPortal !== true) {
+    // Exception: Allow super admins who logged in before this check was added
+    const employee = await storage.getEmployeeByUserId(admin.id);
+    const isSuperAdmin = !employee || employee.role === 'super_admin';
+    
+    if (req.session.adminPortal !== true && !isSuperAdmin) {
       return res.status(403).json({ 
         message: "Admin portal access required. Please log in via /admin/login" 
       });
     }
     
     // SECURITY: Check if employee is active (skip for original admins without employee records)
-    const employee = await storage.getEmployeeByUserId(admin.id);
     if (employee && employee.status !== 'active') {
       // Destroy the session for inactive employees - promisified
       await new Promise<void>((resolve) => {
@@ -197,8 +200,9 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
     (req as any).adminUser = admin;
     (req as any).adminEmployee = employee;
     next();
-  } catch (error) {
-    return res.status(500).json({ message: "Authentication failed" });
+  } catch (error: any) {
+    console.error('[Admin Auth Error]', error?.message || error);
+    return res.status(500).json({ message: "Authentication failed", error: error?.message });
   }
 }
 
@@ -211,6 +215,7 @@ function requirePermission(...requiredPermissions: string[]) {
       const adminEmployee = (req as any).adminEmployee;
       
       if (!adminUser) {
+        console.error('[Permission Check] No adminUser found on request');
         return res.status(401).json({ message: "Authentication required" });
       }
 
