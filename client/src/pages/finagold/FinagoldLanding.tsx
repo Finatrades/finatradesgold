@@ -10,6 +10,7 @@ import Certificates from './components/Certificates';
 import TrustStrip from './components/TrustStrip';
 import CTA from './components/CTA';
 import Footer from './components/Footer';
+import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 function FinagoldContent() {
   useEffect(() => {
@@ -77,6 +78,7 @@ function FinagoldContent() {
         <CTA />
       </main>
       <Footer />
+      <FloatingAgentChat />
     </div>
   );
 }

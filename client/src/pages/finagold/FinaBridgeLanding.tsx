@@ -9,6 +9,7 @@ import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo.png';
 import Navbar from './components/Navbar';
 import { ModeProvider } from './context/ModeContext';
+import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const GOLD_COLOR = '#EAC26B';
 
@@ -897,6 +898,7 @@ export default function FinaBridgeLanding() {
         <GoldSettlementSection />
         <FinalCTASection />
         <Footer />
+        <FloatingAgentChat />
       </div>
     </ModeProvider>
   );
