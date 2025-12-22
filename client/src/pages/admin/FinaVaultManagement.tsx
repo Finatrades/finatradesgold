@@ -637,16 +637,19 @@ export default function FinaVaultManagement() {
                 {selectedDeposit.documents && selectedDeposit.documents.length > 0 && (
                   <>
                     <Separator />
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Uploaded Documents</Label>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-amber-600" />
+                        <Label className="text-amber-800 font-medium">Attached Documents ({selectedDeposit.documents.length})</Label>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
                         {selectedDeposit.documents.map((doc: any, idx: number) => (
-                          <div key={idx} className="border rounded-lg p-2 bg-gray-50">
+                          <div key={idx} className="border-2 border-amber-300 rounded-lg p-2 bg-white shadow-sm">
                             {typeof doc === 'string' && doc.startsWith('data:image') ? (
                               <img 
                                 src={doc} 
                                 alt={`Document ${idx + 1}`}
-                                className="max-w-full max-h-32 object-contain cursor-pointer rounded mx-auto"
+                                className="w-full h-40 object-contain cursor-pointer rounded hover:opacity-80 transition-opacity"
                                 onClick={() => {
                                   const newWindow = window.open('', '_blank');
                                   if (newWindow) {
@@ -662,14 +665,16 @@ export default function FinaVaultManagement() {
                                 }}
                               />
                             ) : (
-                              <a href={doc.url || doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm">
+                              <a href={doc.url || doc} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline text-sm p-4">
+                                <FileText className="w-5 h-5" />
                                 {doc.name || `Document ${idx + 1}`}
                               </a>
                             )}
+                            <p className="text-xs text-center text-amber-600 mt-1">Doc {idx + 1}</p>
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-center text-gray-400 mt-1">Click images to view full size</p>
+                      <p className="text-xs text-center text-amber-500 mt-2">Click images to view full size in new tab</p>
                     </div>
                   </>
                 )}
