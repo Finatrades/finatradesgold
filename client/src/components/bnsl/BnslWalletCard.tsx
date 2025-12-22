@@ -123,6 +123,63 @@ export default function BnslWalletCard({
   const isInsufficientWithdrawBalance = getWithdrawAmountInGrams() > bnslBalanceGold && withdrawAmount !== '';
   const isValidWithdrawAmount = !isNaN(parseFloat(withdrawAmount)) && parseFloat(withdrawAmount) > 0;
 
+  // Calculate gold bar breakdown
+  const calculateGoldBars = (grams: number): { kg: number; g100: number; g10: number; g1: number } => {
+    if (isNaN(grams) || grams <= 0) return { kg: 0, g100: 0, g10: 0, g1: 0 };
+    
+    let remaining = grams;
+    const kg = Math.floor(remaining / 1000);
+    remaining = remaining % 1000;
+    const g100 = Math.floor(remaining / 100);
+    remaining = remaining % 100;
+    const g10 = Math.floor(remaining / 10);
+    remaining = remaining % 10;
+    const g1 = Math.floor(remaining);
+    
+    return { kg, g100, g10, g1 };
+  };
+
+  const transferBars = calculateGoldBars(getAmountInGrams());
+  const withdrawBars = calculateGoldBars(getWithdrawAmountInGrams());
+
+  const GoldBarSummary = ({ bars, show }: { bars: { kg: number; g100: number; g10: number; g1: number }, show: boolean }) => {
+    if (!show) return null;
+    const hasAnyBars = bars.kg > 0 || bars.g100 > 0 || bars.g10 > 0 || bars.g1 > 0;
+    if (!hasAnyBars) return null;
+    
+    return (
+      <div className="p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 mt-3">
+        <p className="text-xs font-semibold text-amber-800 mb-2">Gold Bar Breakdown:</p>
+        <div className="grid grid-cols-4 gap-2 text-center">
+          {bars.kg > 0 && (
+            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+              <span className="text-lg font-bold text-amber-700">{bars.kg}</span>
+              <p className="text-[10px] text-amber-600 font-medium">1 KG</p>
+            </div>
+          )}
+          {bars.g100 > 0 && (
+            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+              <span className="text-lg font-bold text-amber-700">{bars.g100}</span>
+              <p className="text-[10px] text-amber-600 font-medium">100g</p>
+            </div>
+          )}
+          {bars.g10 > 0 && (
+            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+              <span className="text-lg font-bold text-amber-700">{bars.g10}</span>
+              <p className="text-[10px] text-amber-600 font-medium">10g</p>
+            </div>
+          )}
+          {bars.g1 > 0 && (
+            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+              <span className="text-lg font-bold text-amber-700">{bars.g1}</span>
+              <p className="text-[10px] text-amber-600 font-medium">1g</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <Card className="bg-white shadow-sm border border-border overflow-hidden relative">
@@ -312,6 +369,8 @@ export default function BnslWalletCard({
                    )}
                  </p>
                )}
+               
+               <GoldBarSummary bars={transferBars} show={isValidAmount && !isInsufficientBalance} />
              </div>
 
              <Button 
@@ -403,6 +462,8 @@ export default function BnslWalletCard({
                    )}
                  </p>
                )}
+               
+               <GoldBarSummary bars={withdrawBars} show={isValidWithdrawAmount && !isInsufficientWithdrawBalance} />
              </div>
 
              <Button 
