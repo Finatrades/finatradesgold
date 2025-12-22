@@ -6,19 +6,19 @@ import { useMode } from '../context/ModeContext';
 const content = {
   personal: {
     badge: 'Swiss-Regulated Platform',
-    headline: 'Digital Gold, Designed for Everyday People',
-    subheadline: 'Save, store, and use real gold value through a secure, modern online account.',
-    paragraph: "Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through BNSL. Optional: Join structured B'N'SL plans — lock gold into structured buy back plans for defined durations.",
+    headline: 'Finatrades',
+    subheadline: 'Your Digital Gold, Simplified',
+    paragraph: "Save, store, and use real gold value through a secure, modern online account. Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through BNSL plans.",
     primaryCta: 'Get Started',
     secondaryCta: 'Sign In',
     cardTitle: 'Personal Gold',
     cardType: 'Individual Account',
   },
   business: {
-    badge: 'Swiss-Regulated Business Platform',
-    headline: 'Gold-Backed Infrastructure for Real-World Trade',
-    subheadline: 'Designed for corporates, importers, exporters, trading houses, and institutional partners.',
-    paragraph: 'Finatrades enables businesses to store gold reserves, access standardized vault certificates, and integrate gold value into structured commercial and trade operations. The platform strengthens treasury, compliance, and settlement processes with a secure, auditable infrastructure backed by real physical gold.',
+    badge: 'Swiss-Regulated Platform',
+    headline: 'Finatrades',
+    subheadline: 'Regulated Gold-Backed Solutions',
+    paragraph: 'Designed for corporates, importers, exporters, trading houses, and institutional partners.\n\nThrough a strategic partnership with Wingold & Metals DMCC, Finatrades converts physical gold holdings into digitally recorded, settlement-ready balances within its regulated infrastructure.',
     primaryCta: 'Get Started',
     secondaryCta: 'Sign In',
     cardTitle: 'Corporate Gold',
@@ -77,23 +77,16 @@ export default function Hero() {
                 <span className="text-[#EAC26B] text-sm font-medium">{c.badge}</span>
               </motion.div>
 
-              <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1]">
-                {c.headline.split(' ').map((word, i) => (
-                  <span key={i}>
-                    {word.includes('Gold') || word.includes('Infrastructure') ? (
-                      <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">{word} </span>
-                    ) : (
-                      <span>{word} </span>
-                    )}
-                  </span>
-                ))}
+              <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
+                <span className="text-white">Fina</span>
+                <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">trades</span>
               </motion.h1>
 
               <motion.p variants={itemVariants} className="text-xl text-[#EAC26B]/80 font-medium">
                 {c.subheadline}
               </motion.p>
 
-              <motion.p variants={itemVariants} className="text-gray-400 leading-relaxed max-w-xl">
+              <motion.p variants={itemVariants} className="text-gray-400 leading-relaxed max-w-xl whitespace-pre-line">
                 {c.paragraph}
               </motion.p>
 
