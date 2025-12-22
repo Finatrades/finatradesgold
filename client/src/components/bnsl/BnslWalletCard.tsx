@@ -170,9 +170,9 @@ export default function BnslWalletCard({
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Available to Invest</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">USD Value:</span>
+                  <span className="text-xs text-muted-foreground">AED Value:</span>
                   <span className="text-xl font-bold text-foreground">
-                    ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    {(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} د.إ
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -192,9 +192,9 @@ export default function BnslWalletCard({
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Locked in Plans</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">USD Value:</span>
+                  <span className="text-xs text-muted-foreground">AED Value:</span>
                   <span className="text-xl font-bold text-purple-500">
-                    ${(lockedBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    {(lockedBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} د.إ
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -215,9 +215,9 @@ export default function BnslWalletCard({
                <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Total BNSL Value</p>
                <div className="space-y-1">
                  <div className="flex items-baseline gap-2">
-                   <span className="text-xs text-muted-foreground">USD Value:</span>
+                   <span className="text-xs text-muted-foreground">AED Value:</span>
                    <span className="text-xl font-bold text-green-600">
-                     ${((bnslBalanceGold + lockedBalanceGold) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                     {((bnslBalanceGold + lockedBalanceGold) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} د.إ
                    </span>
                  </div>
                  <div className="flex items-baseline gap-2">
@@ -275,7 +275,7 @@ export default function BnslWalletCard({
                    onClick={() => setCurrency('USD')}
                    className="flex-1"
                  >
-                   USD ($)
+                   AED (د.إ)
                  </Button>
                </div>
                <div className="relative">
@@ -287,7 +287,7 @@ export default function BnslWalletCard({
                    onChange={(e) => setTransferAmount(e.target.value)}
                  />
                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                   <span className="text-muted-foreground text-sm font-bold">{currency === 'Grams' ? 'g' : '$'}</span>
+                   <span className="text-muted-foreground text-sm font-bold">{currency === 'Grams' ? 'g' : 'د.إ'}</span>
                    <Button 
                      size="sm" 
                      variant="ghost" 
@@ -300,12 +300,12 @@ export default function BnslWalletCard({
                </div>
                {isInsufficientBalance ? (
                  <p className="text-xs text-destructive mt-1 font-medium">
-                   Insufficient balance. Maximum available: {finaPayBalanceGold.toFixed(3)} g (≈ ${(finaPayBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})
+                   Insufficient balance. Maximum available: {finaPayBalanceGold.toFixed(3)} g (≈ {(finaPayBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} د.إ)
                  </p>
                ) : (
                  <p className="text-xs text-muted-foreground mt-1">
                    {currency === 'Grams' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
-                     <>≈ ${(parseFloat(transferAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</>
+                     <>≈ {(parseFloat(transferAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} د.إ</>
                    )}
                    {currency === 'USD' && transferAmount && !isNaN(parseFloat(transferAmount)) && (
                      <>≈ {(parseFloat(transferAmount) / currentGoldPrice).toFixed(3)} g</>
@@ -364,7 +364,7 @@ export default function BnslWalletCard({
                    onClick={() => setWithdrawCurrency('USD')}
                    className="flex-1"
                  >
-                   USD ($)
+                   AED (د.إ)
                  </Button>
                </div>
                <div className="relative">
@@ -377,7 +377,7 @@ export default function BnslWalletCard({
                    data-testid="input-withdraw-amount"
                  />
                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                   <span className="text-muted-foreground text-sm font-bold">{withdrawCurrency === 'Grams' ? 'g' : '$'}</span>
+                   <span className="text-muted-foreground text-sm font-bold">{withdrawCurrency === 'Grams' ? 'g' : 'د.إ'}</span>
                    <Button 
                      size="sm" 
                      variant="ghost" 
@@ -391,12 +391,12 @@ export default function BnslWalletCard({
                </div>
                {isInsufficientWithdrawBalance ? (
                  <p className="text-xs text-destructive mt-1 font-medium">
-                   Insufficient balance. Maximum available: {bnslBalanceGold.toFixed(3)} g (≈ ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})
+                   Insufficient balance. Maximum available: {bnslBalanceGold.toFixed(3)} g (≈ {(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} د.إ)
                  </p>
                ) : (
                  <p className="text-xs text-muted-foreground mt-1">
                    {withdrawCurrency === 'Grams' && withdrawAmount && !isNaN(parseFloat(withdrawAmount)) && (
-                     <>≈ ${(parseFloat(withdrawAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</>
+                     <>≈ {(parseFloat(withdrawAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} د.إ</>
                    )}
                    {withdrawCurrency === 'USD' && withdrawAmount && !isNaN(parseFloat(withdrawAmount)) && (
                      <>≈ {(parseFloat(withdrawAmount) / currentGoldPrice).toFixed(3)} g</>
