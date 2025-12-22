@@ -149,6 +149,7 @@ function Router() {
       
       {/* Legacy/Redirects if needed */}
       <Route path="/admin/payments" component={PaymentOperations} />
+      <Route path="/admin/payment-operations" component={PaymentOperations} />
       <Route path="/admin/cards" component={CardManagement} />
       <Route path="/admin/finance" component={TradeFinance} />
       <Route path="/admin/reports" component={FinancialReports} />
