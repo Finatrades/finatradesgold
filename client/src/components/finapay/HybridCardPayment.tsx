@@ -184,15 +184,15 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           style: {
             main: { 
               margin: '0', 
-              padding: '16px',
+              padding: '20px',
               backgroundColor: '#ffffff',
             },
             base: {
               color: '#1f2937',
-              fontSize: '15px',
+              fontSize: '16px',
               fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
               fontWeight: '500',
-              letterSpacing: '0.5px',
+              lineHeight: '1.5',
               '::placeholder': { 
                 color: '#9ca3af',
                 fontWeight: '400',
@@ -207,24 +207,26 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
               borderColor: '#10b981',
             },
             input: {
-              padding: '14px 16px',
-              borderRadius: '12px',
-              borderColor: '#e5e7eb',
-              borderWidth: '2px',
-              backgroundColor: '#fafbff',
-              marginBottom: '12px',
-              transition: 'all 0.2s ease',
-            },
-            cardNumber: {
+              padding: '16px',
+              height: '52px',
+              borderRadius: '10px',
+              borderColor: '#d1d5db',
+              borderWidth: '1.5px',
+              backgroundColor: '#f9fafb',
               marginBottom: '16px',
             },
+            cardNumber: {
+              marginBottom: '20px',
+            },
+            expiry: {
+              marginRight: '12px',
+            },
             label: {
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: '600',
-              color: '#374151',
-              marginBottom: '6px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              color: '#4b5563',
+              marginBottom: '8px',
+              display: 'block',
             },
           },
           onSuccess: () => setCardMounted(true),
@@ -612,8 +614,8 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           <div 
             ref={containerRef}
             id="hybrid-card-input" 
-            className="border-2 border-border rounded-2xl bg-white overflow-hidden shadow-lg"
-            style={{ minHeight: '280px' }}
+            className="border-2 border-border rounded-2xl bg-white overflow-auto shadow-lg"
+            style={{ minHeight: '200px' }}
           >
             {!cardMounted && (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
