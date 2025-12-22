@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, ArrowRightLeft, Lock } from 'lucide-react';
+import { Wallet, ArrowRightLeft, Lock, ArrowDownToLine } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ interface BnslWalletCardProps {
   lockedBalanceGold: number;
   finaPayBalanceGold: number;
   onTransferFromFinaPay: (amount: number) => Promise<boolean>;
+  onWithdrawToFinaPay?: (amount: number) => Promise<boolean>;
   currentGoldPrice: number;
 }
 
@@ -21,14 +22,19 @@ export default function BnslWalletCard({
   lockedBalanceGold, 
   finaPayBalanceGold, 
   onTransferFromFinaPay,
+  onWithdrawToFinaPay,
   currentGoldPrice 
 }: BnslWalletCardProps) {
   const { toast } = useToast();
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [currency, setCurrency] = useState<'Grams' | 'USD'>('Grams');
+  const [withdrawCurrency, setWithdrawCurrency] = useState<'Grams' | 'USD'>('Grams');
 
   const [isTransferring, setIsTransferring] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const handleTransfer = async () => {
     let amountGrams = parseFloat(transferAmount);
@@ -58,10 +64,46 @@ export default function BnslWalletCard({
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!onWithdrawToFinaPay) return;
+    
+    let amountGrams = parseFloat(withdrawAmount);
+    
+    if (withdrawCurrency === 'USD') {
+      amountGrams = amountGrams / currentGoldPrice;
+    }
+
+    if (isNaN(amountGrams) || amountGrams <= 0) {
+      toast({ title: "Invalid Amount", description: "Please enter a valid positive number.", variant: "destructive" });
+      return;
+    }
+    if (amountGrams > bnslBalanceGold) {
+      toast({ title: "Insufficient Balance", description: "Not enough gold in BNSL wallet.", variant: "destructive" });
+      return;
+    }
+    
+    setIsWithdrawing(true);
+    try {
+      const success = await onWithdrawToFinaPay(amountGrams);
+      if (success) {
+        setIsWithdrawModalOpen(false);
+        setWithdrawAmount('');
+      }
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   const getMaxAmount = () => {
     return currency === 'Grams' 
       ? finaPayBalanceGold.toString() 
       : (finaPayBalanceGold * currentGoldPrice).toFixed(2);
+  };
+
+  const getMaxWithdrawAmount = () => {
+    return withdrawCurrency === 'Grams' 
+      ? bnslBalanceGold.toString() 
+      : (bnslBalanceGold * currentGoldPrice).toFixed(2);
   };
 
   const getAmountInGrams = (): number => {
@@ -70,8 +112,16 @@ export default function BnslWalletCard({
     return currency === 'USD' ? amount / currentGoldPrice : amount;
   };
 
+  const getWithdrawAmountInGrams = (): number => {
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount)) return 0;
+    return withdrawCurrency === 'USD' ? amount / currentGoldPrice : amount;
+  };
+
   const isInsufficientBalance = getAmountInGrams() > finaPayBalanceGold && transferAmount !== '';
   const isValidAmount = !isNaN(parseFloat(transferAmount)) && parseFloat(transferAmount) > 0;
+  const isInsufficientWithdrawBalance = getWithdrawAmountInGrams() > bnslBalanceGold && withdrawAmount !== '';
+  const isValidWithdrawAmount = !isNaN(parseFloat(withdrawAmount)) && parseFloat(withdrawAmount) > 0;
 
   return (
     <>
@@ -88,13 +138,27 @@ export default function BnslWalletCard({
               </div>
               BNSL Wallet
             </CardTitle>
-            <Button 
-              size="sm" 
-              className="bg-primary text-white hover:bg-primary/90 font-bold"
-              onClick={() => setIsTransferModalOpen(true)}
-            >
-              <ArrowRightLeft className="w-4 h-4 mr-2" /> Transfer from FinaPay
-            </Button>
+            <div className="flex gap-2">
+              {onWithdrawToFinaPay && bnslBalanceGold > 0 && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10 font-bold"
+                  onClick={() => setIsWithdrawModalOpen(true)}
+                  data-testid="button-withdraw-to-finapay"
+                >
+                  <ArrowDownToLine className="w-4 h-4 mr-2" /> Withdraw to FinaPay
+                </Button>
+              )}
+              <Button 
+                size="sm" 
+                className="bg-primary text-white hover:bg-primary/90 font-bold"
+                onClick={() => setIsTransferModalOpen(true)}
+                data-testid="button-transfer-from-finapay"
+              >
+                <ArrowRightLeft className="w-4 h-4 mr-2" /> Transfer from FinaPay
+              </Button>
+            </div>
           </div>
         </CardHeader>
         
@@ -256,6 +320,98 @@ export default function BnslWalletCard({
                disabled={isTransferring || isInsufficientBalance || !isValidAmount}
              >
                {isTransferring ? 'Transferring...' : 'Confirm Transfer'}
+             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw Modal */}
+      <Dialog open={isWithdrawModalOpen} onOpenChange={setIsWithdrawModalOpen}>
+        <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Withdraw Gold to FinaPay</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Move gold from your BNSL wallet back to your main FinaPay wallet.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+             <div className="p-4 bg-muted rounded-lg border border-border space-y-2">
+               <div className="flex justify-between text-sm">
+                 <span className="text-muted-foreground">Available in BNSL:</span>
+                 <span className="text-primary font-bold">{bnslBalanceGold.toFixed(3)} g</span>
+               </div>
+               <div className="flex justify-between text-sm">
+                 <span className="text-muted-foreground">Current FinaPay Wallet:</span>
+                 <span className="text-foreground font-bold">{finaPayBalanceGold.toFixed(3)} g</span>
+               </div>
+             </div>
+
+             <div className="space-y-2">
+               <Label>Amount to Withdraw</Label>
+               <div className="flex gap-2 mb-2">
+                 <Button 
+                   size="sm" 
+                   variant={withdrawCurrency === 'Grams' ? 'default' : 'outline'} 
+                   onClick={() => setWithdrawCurrency('Grams')}
+                   className="flex-1"
+                 >
+                   Grams (g)
+                 </Button>
+                 <Button 
+                   size="sm" 
+                   variant={withdrawCurrency === 'USD' ? 'default' : 'outline'} 
+                   onClick={() => setWithdrawCurrency('USD')}
+                   className="flex-1"
+                 >
+                   USD ($)
+                 </Button>
+               </div>
+               <div className="relative">
+                 <Input 
+                   type="number" 
+                   placeholder="0.00" 
+                   className={`bg-background pl-4 pr-20 text-lg text-foreground ${isInsufficientWithdrawBalance ? 'border-destructive focus-visible:ring-destructive' : 'border-input'}`}
+                   value={withdrawAmount}
+                   onChange={(e) => setWithdrawAmount(e.target.value)}
+                   data-testid="input-withdraw-amount"
+                 />
+                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                   <span className="text-muted-foreground text-sm font-bold">{withdrawCurrency === 'Grams' ? 'g' : '$'}</span>
+                   <Button 
+                     size="sm" 
+                     variant="ghost" 
+                     className="h-7 px-2 text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/10"
+                     onClick={() => setWithdrawAmount(getMaxWithdrawAmount())}
+                     data-testid="button-max-withdraw"
+                   >
+                     MAX
+                   </Button>
+                 </div>
+               </div>
+               {isInsufficientWithdrawBalance ? (
+                 <p className="text-xs text-destructive mt-1 font-medium">
+                   Insufficient balance. Maximum available: {bnslBalanceGold.toFixed(3)} g (≈ ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})
+                 </p>
+               ) : (
+                 <p className="text-xs text-muted-foreground mt-1">
+                   {withdrawCurrency === 'Grams' && withdrawAmount && !isNaN(parseFloat(withdrawAmount)) && (
+                     <>≈ ${(parseFloat(withdrawAmount) * currentGoldPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</>
+                   )}
+                   {withdrawCurrency === 'USD' && withdrawAmount && !isNaN(parseFloat(withdrawAmount)) && (
+                     <>≈ {(parseFloat(withdrawAmount) / currentGoldPrice).toFixed(3)} g</>
+                   )}
+                 </p>
+               )}
+             </div>
+
+             <Button 
+               className="w-full bg-primary text-white hover:bg-primary/90 font-bold"
+               onClick={handleWithdraw}
+               disabled={isWithdrawing || isInsufficientWithdrawBalance || !isValidWithdrawAmount}
+               data-testid="button-confirm-withdraw"
+             >
+               {isWithdrawing ? 'Withdrawing...' : 'Confirm Withdrawal'}
              </Button>
           </div>
         </DialogContent>

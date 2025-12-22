@@ -194,6 +194,36 @@ export default function BNSL() {
     }
   };
 
+  const handleWithdrawToFinaPay = async (amount: number): Promise<boolean> => {
+    if (!user?.id) return false;
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('POST', '/api/bnsl/wallet/withdraw', {
+        userId: user.id,
+        goldGrams: amount.toFixed(6)
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        await fetchWallets();
+        toast({
+          title: "Withdrawal Successful",
+          description: `Withdrawn ${amount.toFixed(3)}g from BNSL wallet to FinaPay.`
+        });
+        return true;
+      } else {
+        throw new Error(data.message || 'Withdrawal failed');
+      }
+    } catch (err) {
+      toast({
+        title: "Withdrawal Failed",
+        description: err instanceof Error ? err.message : "Could not complete withdrawal",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   const handleCreatePlan = async (newPlanData: Partial<BnslPlan>, signatureData?: { signatureName: string; signedAt: string }) => {
     const startDate = new Date();
     const maturityDate = new Date();
@@ -401,6 +431,7 @@ export default function BNSL() {
           lockedBalanceGold={totalLockedGold}
           finaPayBalanceGold={finaPayGoldBalance}
           onTransferFromFinaPay={handleTransferFromFinaPay}
+          onWithdrawToFinaPay={handleWithdrawToFinaPay}
           currentGoldPrice={currentGoldPrice}
         />
         <div className="flex justify-end -mt-4">
