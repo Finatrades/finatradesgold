@@ -93,7 +93,12 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">{tx.type} {tx.sourceModule === 'bnsl' ? '(BNSL)' : tx.sourceModule === 'Wingold' ? 'Gold Bar' : 'Gold'}</p>
+                        <p className="text-sm font-medium text-foreground">{
+                          // Show "Buy Gold" for deposits that result in gold (crypto deposits, bank deposits converted to gold)
+                          tx.type === 'Deposit' && parseFloat(tx.amountGold || '0') > 0 
+                            ? 'Buy' 
+                            : tx.type
+                        } {tx.sourceModule === 'bnsl' ? '(BNSL)' : tx.sourceModule === 'Wingold' ? 'Gold Bar' : 'Gold'}</p>
                         {isPending && (
                           <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-warning-muted text-warning-muted-foreground border-warning/30">
                             <Clock className="w-3 h-3 mr-1" />
