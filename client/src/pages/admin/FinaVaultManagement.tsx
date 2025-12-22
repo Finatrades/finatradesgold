@@ -92,7 +92,9 @@ export default function FinaVaultManagement() {
   const [adminNotes, setAdminNotes] = useState('');
   const [vaultReference, setVaultReference] = useState('');
   const [verifiedWeight, setVerifiedWeight] = useState('');
-  const [goldPrice, setGoldPrice] = useState('85.22');
+  const [goldPrice, setGoldPrice] = useState('');
+  const [goldPriceMode, setGoldPriceMode] = useState<'live' | 'manual'>('live');
+  const [liveGoldPrice, setLiveGoldPrice] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -126,14 +128,39 @@ export default function FinaVaultManagement() {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch live gold price when deposit modal opens
+  useEffect(() => {
+    if (selectedDeposit) {
+      const fetchLivePrice = async () => {
+        try {
+          const res = await apiRequest('GET', '/api/gold-price');
+          const data = await res.json();
+          if (data.pricePerGram) {
+            setLiveGoldPrice(data.pricePerGram);
+          }
+        } catch (err) {
+          console.error('Failed to fetch gold price:', err);
+        }
+      };
+      fetchLivePrice();
+    }
+  }, [selectedDeposit]);
+
   const handleApproveDeposit = async () => {
     if (!selectedDeposit) return;
     
     const weightToUse = verifiedWeight ? parseFloat(verifiedWeight) : parseFloat(selectedDeposit.totalDeclaredWeightGrams);
-    const priceToUse = parseFloat(goldPrice) || 85.22;
+    const priceToUse = goldPriceMode === 'live' 
+      ? (liveGoldPrice || 0) 
+      : (parseFloat(goldPrice) || 0);
     
     if (weightToUse <= 0) {
       toast.error('Valid verified weight is required');
+      return;
+    }
+    
+    if (priceToUse <= 0) {
+      toast.error('Valid gold price is required');
       return;
     }
     
@@ -264,7 +291,8 @@ export default function FinaVaultManagement() {
     setSelectedDeposit(null);
     setVaultReference('');
     setVerifiedWeight('');
-    setGoldPrice('85.22');
+    setGoldPrice('');
+    setGoldPriceMode('live');
     setAdminNotes('');
     setRejectionReason('');
     setSelectedStatus('');
@@ -730,14 +758,39 @@ export default function FinaVaultManagement() {
                         </div>
                         <div className="space-y-2">
                           <Label>Gold Price (USD/g)</Label>
-                          <Input 
-                            type="number"
-                            step="0.01"
-                            value={goldPrice}
-                            onChange={(e) => setGoldPrice(e.target.value)}
-                            placeholder="85.22"
-                          />
-                          <p className="text-xs text-muted-foreground">Current market price per gram</p>
+                          <RadioGroup 
+                            value={goldPriceMode} 
+                            onValueChange={(v) => setGoldPriceMode(v as 'live' | 'manual')}
+                            className="flex gap-4 mb-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="live" id="price-live" />
+                              <Label htmlFor="price-live" className="cursor-pointer">Live Price</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="manual" id="price-manual" />
+                              <Label htmlFor="price-manual" className="cursor-pointer">Manual</Label>
+                            </div>
+                          </RadioGroup>
+                          {goldPriceMode === 'live' ? (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <p className="text-sm font-medium text-green-800">
+                                ${liveGoldPrice?.toFixed(2) || 'Loading...'} /g
+                              </p>
+                              <p className="text-xs text-green-600">Current live market price</p>
+                            </div>
+                          ) : (
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              value={goldPrice}
+                              onChange={(e) => setGoldPrice(e.target.value)}
+                              placeholder="Enter price per gram"
+                            />
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {goldPriceMode === 'live' ? 'Using live market price' : 'Enter custom price manually'}
+                          </p>
                         </div>
                       </div>
                       <div className="space-y-2">
