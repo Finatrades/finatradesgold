@@ -1,0 +1,258 @@
+Design a complete, fully animated BNSL (Buy Now Sell Later) Landing Page for the Finatrades platform. 
+The design must follow a premium Swiss-fintech aesthetic with a deep black background, soft gold gradients, transparent cards, thin gold edges, smooth micro-animations, subtle particles, and a highly structured layout.
+
+Overall Style:
+• Ultra-premium black and gold theme
+• Clean Swiss typography (UBS/Swiss banking style)
+• Gold neon accents, soft glows, controlled micro-motion
+• Floating particles and golden dust
+• Smooth transitions between sections
+• No crypto elements, only PHYSICAL GOLD references
+• Highly professional and trustworthy look
+
+-----------------------------------------
+SECTION 1 — HERO SECTION (TOP)
+-----------------------------------------
+Create a powerful hero section for the BNSL Plan.
+
+Headline:
+“BNSL – Buy Now Sell Later Plan”
+
+Subheadline:
+“A structured gold holding program with fixed pricing, quarterly payouts, and in-kind settlement.”
+
+Supporting Text:
+“Lock physical gold at a fixed price and receive quarterly payouts in additional gold units. Your entire plan follows the Locked-In Price mechanism established on your start date.”
+
+Visual Elements:
+• Large 3D gold bar cluster hovering with soft glow
+• Animated vault door outline behind gold bars
+• Floating particles and gold sparks rising
+• Gold timeline rings rotating slowly
+
+Badges:
+• “Swiss-Regulated Framework”
+• “Physical Gold • In-Kind Settlement”
+• “Quarterly Payouts”
+
+Primary CTA:
+“Start BNSL Plan”
+
+Secondary CTA:
+“Projection Calculator”
+
+-----------------------------------------
+SECTION 2 — HOW IT WORKS (SNAKE-STYLE ANIMATION)
+-----------------------------------------
+Create a fully animated snake-style workflow illustrating how BNSL works.
+
+Animation:
+• A golden snake line animates step-by-step, glowing at each node.
+• Nodes pulse when active.
+• Text cards fade in with slides.
+• Background stays clean black with gold particles.
+
+Steps:
+
+Step 01 — “Purchase Gold”
+Icon: Gold bars
+Text: “You purchase physical gold which becomes your principal.”
+
+Step 02 — “Locked-In Price Established”
+Icon: Price tag or lock
+Text: “Your gold price becomes fixed for the entire plan duration.”
+
+Step 03 — “Select Tenure”
+Icon: Clock
+Text: “Choose from 12, 24, or 36 months.”
+
+Step 04 — “Quarterly Payouts”
+Icon: Calendar
+Text: “Receive projected payouts in gold units every 3 months.”
+
+Step 05 — “Hold Till Maturity”
+Icon: Shield
+Text: “Your principal stays locked and protected until the maturity date.”
+
+Step 06 — “In-Kind Settlement”
+Icon: Vault door
+Text: “Your principal gold units are returned to your Fina wallet.”
+
+Add a glowing CTA button under this:
+“Estimate Your Returns →”
+
+-----------------------------------------
+SECTION 3 — INTERACTIVE PROJECTION CALCULATOR
+-----------------------------------------
+Place the full projection calculator with animation, inputs, tables, and charts.
+
+Design Requirements:
+• Large transparent glass-card UI
+• Golden neon edges
+• Smooth number transitions
+• Real-time recalculation visuals
+• Graph or bar chart of quarterly payouts
+• Table of payout schedule
+
+Input Fields:
+1) Investment Amount (Gold Units)
+2) Locked-In Price (per gold unit)
+3) Plan Tenure (12 / 24 / 36 months)
+4) Indicative Annual Profit Rate (auto-filled but adjustable)
+
+Micro-copy for all labels, tooltips, warnings:
+(Use all the micro-copy text provided earlier for every input, tooltip, and disclaimer.)
+
+Projection Summary Card:
+• “Locked-In Principal (Gold Units)”
+• “Total Projected Returns (Gold Units)”
+• “Total Gold at Maturity”
+• “Estimated Value at Locked-In Price”
+
+Quarterly Table:
+Fill dynamically based on tenure:
+• Q1 payout (Start Date)
+• Q2 payout (Month 3)
+• Q3 payout (Month 6)
+• Continue based on 12/24/36 month plan
+
+Animation:
+• Table rows slide in with a delay
+• Bars in chart animate upward
+• Gold numbers count-up effect
+
+-----------------------------------------
+SECTION 4 — PLAN COMPARISON CHART
+-----------------------------------------
+Create a comparison section to show difference between all three tenures.
+
+Title:
+“Choose the BNSL Plan That Fits Your Goals”
+
+Plans to Compare:
+• 12-Month BNSL Plan
+• 24-Month BNSL Plan
+• 36-Month BNSL Plan
+
+Each card includes:
+• Tenure duration
+• Indicative Annual Profit Rate:
+  - 8% for 12-month
+  - 10% for 24-month
+  - 12% for 36-month
+• Expected quarterly payouts
+• Locked-In Price principle
+• Early exit penalty highlight
+
+Styling:
+• Premium gold-outline cards that light up on hover
+• Golden glow transitions
+
+-----------------------------------------
+SECTION 5 — BENEFITS HIGHLIGHT
+-----------------------------------------
+Create a premium 4-column benefit row.
+
+Title:
+“Why Users Choose the BNSL Plan”
+
+Benefit 1 — Physical Gold Security
+Icon: Gold shield
+Text: “Your investment stays backed by real physical gold in regulated vaults.”
+
+Benefit 2 — Fixed Price Stability
+Icon: Lock
+Text: “Your gold value stays anchored to the Locked-In Price for the entire plan.”
+
+Benefit 3 — Quarterly Gold Rewards
+Icon: Calendar reward
+Text: “Every 3 months your wallet receives payout in additional gold units.”
+
+Benefit 4 — In-Kind Settlement
+Icon: Vault
+Text: “Your principal is returned exactly in gold units at maturity.”
+
+-----------------------------------------
+SECTION 6 — FAQ SECTION (EXPANDABLE ACCORDION)
+-----------------------------------------
+Create an interactive FAQ with gold-outline accordions.
+
+FAQ Items:
+
+Q: What is the Locked-In Price?
+A: The price at which your gold is valued at the start of your BNSL plan. All returns and settlement values use this fixed price.
+
+Q: How are payouts calculated?
+A: Payouts are based on your principal gold units multiplied by the indicative annual profit rate, divided into quarterly distributions.
+
+Q: What happens at maturity?
+A: Your original gold principal is returned in-kind to your Fina wallet within 3 business days.
+
+Q: What if I exit early?
+A: Early exit results in penalties, forfeiture of future payouts, and valuation at market price.
+
+Q: Are payouts always in gold units?
+A: Yes. All projections, returns, and final settlements are made entirely in gold units.
+
+-----------------------------------------
+SECTION 7 — RISK DISCLOSURE
+-----------------------------------------
+Design a muted black-gold warning box.
+
+Title:
+“Important Risk Disclosures”
+
+Risks to display:
+• Early termination can reduce principal.
+• Rising gold prices do NOT increase your return.
+• Settlement for early exit uses current market price.
+• All future payouts are forfeited upon early exit.
+• Dependent on counterparty performance.
+
+Styling:
+• Subtle gold hazard icon
+• Fine gold border
+• Muted text
+
+-----------------------------------------
+SECTION 8 — T&C MODULE
+-----------------------------------------
+Add a collapsible or linked section for the BNSL Terms & Conditions.
+
+Title:
+“View Full BNSL Terms & Conditions”
+
+Include a modal or pop-up:
+• Scrollable long-form T&C text
+• Auto-format into clean paragraphs
+• Clear disclaimers
+
+-----------------------------------------
+SECTION 9 — FINAL CTA SECTION
+-----------------------------------------
+Strong CTA banner with gold gradient glow.
+
+Headline:
+“Start Your BNSL Gold Plan Today”
+
+Subheadline:
+“Lock your gold at a fixed price and begin earning quarterly payouts.”
+
+Primary CTA:
+“Start BNSL Plan”
+
+Secondary CTA:
+“Speak with Support”
+
+Animation:
+• Pulsing gold glow behind buttons
+• Sparkles rising softly
+
+-----------------------------------------
+
+FINAL REQUIREMENTS:
+• All animations must be smooth, minimal, and premium.
+• No clutter. Large spacing. Luxury feel.
+• Use consistent gold color palette.
+• Every section must transition with fade + slide.
+• Create mobile + desktop responsive versions.
