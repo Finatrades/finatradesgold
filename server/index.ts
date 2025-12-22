@@ -9,6 +9,7 @@ import { storage } from "./storage";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
+import { initializeRedis } from "./redis-client";
 
 // Extend express-session types
 declare module "express-session" {
@@ -114,6 +115,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize Redis connection if configured
+  await initializeRedis();
+  
   // Seed default platform configuration
   try {
     await storage.seedDefaultPlatformConfig();
