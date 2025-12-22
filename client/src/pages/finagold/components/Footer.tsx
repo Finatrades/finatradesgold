@@ -1,5 +1,6 @@
 import { Twitter, Linkedin, Instagram, Facebook } from 'lucide-react';
 import { useMode } from '../context/ModeContext';
+import finatradesLogo from '@/assets/finatrades-logo.png';
 
 const footerLinks = {
   Products: ['FinaVault', 'FinaPay Wallet', 'FinaEarn (BNSL)', 'FinaFinance'],
@@ -24,12 +25,11 @@ export default function Footer() {
         <div className="grid md:grid-cols-6 gap-12 mb-12">
           <div className="md:col-span-2">
             <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#EAC26B] to-[#d4af5a] flex items-center justify-center">
-                  <span className="text-black font-bold text-sm">F</span>
-                </div>
-                <span className="text-xl font-bold text-white tracking-tight">FINATRADES</span>
-              </div>
+              <img 
+                src={finatradesLogo} 
+                alt="Finatrades" 
+                className="h-10 w-auto mb-2"
+              />
               <p className="text-gray-500 text-sm">Swiss-Regulated Gold Platform</p>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">

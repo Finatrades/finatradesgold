@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
+import finatradesLogo from '@/assets/finatrades-logo.png';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -31,15 +32,16 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#EAC26B] to-[#d4af5a] flex items-center justify-center">
-              <span className="text-black font-bold text-lg">F</span>
-            </div>
-            <div>
-              <span className="text-xl font-bold text-white tracking-tight">FINATRADES</span>
-              <p className="text-[10px] text-gray-500 -mt-1">Swiss-Regulated Platform</p>
-            </div>
-          </div>
+          <Link href="/">
+            <a className="flex items-center">
+              <img 
+                src={finatradesLogo} 
+                alt="Finatrades" 
+                className="h-10 w-auto"
+                data-testid="logo-finatrades"
+              />
+            </a>
+          </Link>
 
           <div className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (

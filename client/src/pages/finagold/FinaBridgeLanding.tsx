@@ -6,6 +6,7 @@ import {
   FileCheck, RefreshCw, Eye, Building2, ChevronRight
 } from 'lucide-react';
 import { Link } from 'wouter';
+import finatradesLogo from '@/assets/finatrades-logo.png';
 
 const GOLD_COLOR = '#EAC26B';
 
@@ -860,10 +861,11 @@ function Footer() {
     <footer className="relative py-12 bg-[#050505] border-t border-white/5">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-white">Fina</span>
-            <span className="text-2xl font-bold text-[#EAC26B]">Bridge</span>
-          </div>
+          <Link href="/">
+            <a>
+              <img src={finatradesLogo} alt="Finatrades" className="h-8 w-auto" />
+            </a>
+          </Link>
           <p className="text-sm text-gray-500">
             &copy; {new Date().getFullYear()} Finatrades. All rights reserved.
           </p>
