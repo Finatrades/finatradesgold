@@ -1,0 +1,195 @@
+🚀🔥 FINAVAULT — FULLY ANIMATED LANDING PAGE (BASE44 PROMPT) Premium Swiss-grade Gold Vaulting Platform • Black × Gold Cinematic Theme
+
+Copy–paste directly into Base44 for a world-class animated landing page.
+
+🌟 BASE44 SUPER-PREMIUM ANIMATED LANDING PAGE PROMPT PRODUCT: FinaVault — Digital Gold Reserve Vault
+
+Create a fully animated luxury landing page for “FinaVault”, Finatrades’ gold custody and vaulting system. Design this page with cinematic black & gold motion effects, glowing vault visuals, 3D gold bars, and security animations. This page must feel like a high-security institutional vault platform — Swiss, powerful, modern, elite.
+
+🎥 1. HERO SECTION — CINEMATIC VAULT DOOR ANIMATION Visual Concept (Animated):
+
+Slowly rotating massive vault door with gold reflections
+
+Gold particles swirling around
+
+Laser-scan grid passing over vault surface
+
+Subtle fog/glow behind vault
+
+UI text floating in with soft fade
+
+Hero Text:
+
+Title: FinaVault
+
+Subtitle: Your Digital Gold Reserve Vault
+
+Description: Store, track, verify and manage physical gold with secure, real-time vaulting technology. Backed by world-class vault providers and fully integrated with your FinaWallet.
+
+Buttons (Animated Glow):
+
+Open Vault →
+
+View Certificate →
+
+✨ 2. CORE VALUE PILLARS — ANIMATED GOLD PANELS
+
+Each value card appears with slide-up + gold glow pulse:
+
+Real Physical Gold Custody 3D gold bars rotate slowly.
+
+Digital Ownership Ledger Ledger numbers animate like stock tickers.
+
+Assay & Purity Verification Scanner animation passes across a gold bar.
+
+Instant Wallet Integration Gold units appear inside a glowing digital wallet icon.
+
+🪪 3. GOLD RESERVE CERTIFICATE SECTION — FLOATING DOCUMENTS Animation:
+
+Assay certificate floats in 3D
+
+Vault certificate flips and glows
+
+QR code pulses
+
+Gold data (purity, weight, serial number) animates in as counters
+
+Title:
+
+Full Transparency, Every Gram Verified
+
+Text:
+
+Real certificates, live batch data, bar numbers, and storage details — all digitally accessible.
+
+💼 4. VAULT OPERATIONS — ANIMATED PROCESS FLOW
+
+Create an animated 4-step vaulting process:
+
+Deposit Gold Gold bar slides into vault tray.
+
+Verification & Assay Scanner line moves across bar.
+
+Ledger Recording Digital record appears with glowing checkmark.
+
+Gold Added to FinaWallet Wallet icon fills with gold particles.
+
+Use motion arrows, neon lines, and soft glow transitions.
+
+🔐 5. SECURITY FEATURES — HIGH-TECH ANIMATION Visuals:
+
+Digital lock pulses
+
+Biometrics animation (fingerprint or iris scan)
+
+Encryption particles forming a shield
+
+Security badges rotating in 3D
+
+Text Points:
+
+• Secure Physical Vaults • Tamper-Proof Digital Ledger • Multi-Layer Encryption • Compliance-Ready Architecture
+
+🌍 6. GLOBAL STORAGE NETWORK — ANIMATED MAP Animation:
+
+World map in dark glass
+
+Gold animated lines connect vault locations
+
+Location pins pulsate
+
+“Dubai Vault”, “Geneva Vault”, “Mauritania Mine”, “Singapore Hub”
+
+Section Title:
+
+A Global Network for Gold Storage
+
+🏦 7. REAL-TIME GOLD BALANCE — LIVE UI PREVIEW
+
+Create an interactive-looking mockup of the gold balance interface:
+
+Grams/KG counters animate upward
+
+Line chart animates
+
+Gold deposits appear with sliding cards
+
+“Your Gold Storage” meter fills with gold
+
+🪙 8. FINAVAULT → FINAPAY INTEGRATION
+
+Animated connector line between the two:
+
+Gold particles flow from vault icon → wallet icon
+
+Interchange glowing arrows
+
+Shows seamless fund movement
+
+Text: Deposit physical gold → Instantly usable in your wallet.
+
+🎯 9. CALL TO ACTION — CINEMATIC GOLD ENERGY Animation:
+
+Gold energy pulses across the screen
+
+CTA button glows with metal shine
+
+Background has slow lava-gold movement
+
+Text:
+
+Secure Your Gold with Confidence Manage physical gold on the world’s most advanced digital vaulting platform.
+
+Button: Open Your Vault →
+
+🎨 DESIGN GUIDELINES
+
+Black × Gold as primary theme
+
+Cinematic light streaks
+
+Particle animations
+
+3D gold depth
+
+High-finance Swiss minimalism
+
+Fonts: SF Pro / Inter / Urbanist
+
+Smooth scroll-based animations
+
+Glassmorphism panels with golden borders
+
+📤 OUTPUT SPECS
+
+Desktop & Mobile versions required
+
+Export as PNG + MP4 for animations
+
+Deliver Lottie/JSON if possible
+
+Include UI elements separately (vault door, gold bars, certificates)
+
+🏁 END OF PROMPT
+
+24 days ago
+Base44 AI
+Base44
+
+I'll create a fully animated, cinematic FinaVault landing page with vault door animations, 3D gold effects, security visuals, and premium Swiss-grade design.
+
+Wrote
+Fina Vault Page
+Created a fully animated FinaVault landing page with rotating vault door, particle systems, floating certificates, 4-step vaulting process, security shield animation, global storage map, real-time gold balance UI, and vault-to-wallet integration flow.
+
+24 days ago
+connect page via product section
+
+24 days ago
+Revert this
+Base44 AI
+Base44
+
+Read
+Products Page
+Edited

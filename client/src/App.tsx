@@ -93,6 +93,7 @@ import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 import BNSLLanding from "@/pages/finagold/BNSLLanding";
+import FinaVaultLanding from "@/pages/finagold/FinaVaultLanding";
 
 function Router() {
   return (
@@ -100,6 +101,7 @@ function Router() {
       <Route path="/" component={FinagoldLanding} />
       <Route path="/home-old" component={Home} />
       <Route path="/bnsl-landing" component={BNSLLanding} />
+      <Route path="/finavault-landing" component={FinaVaultLanding} />
       <Route path="/bnsl-explore" component={BNSLExplore} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />

@@ -13,7 +13,7 @@ const content = {
         subtitle: 'Deposit / Buy Gold',
         description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
         cta: 'Explore FinaVault',
-        href: '/finavault',
+        href: '/finavault-landing',
       },
       {
         icon: Wallet,
@@ -42,7 +42,7 @@ const content = {
         subtitle: 'Deposit / Buy Gold',
         description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
         cta: 'Explore FinaVault',
-        href: '/finavault',
+        href: '/finavault-landing',
       },
       {
         icon: Wallet,

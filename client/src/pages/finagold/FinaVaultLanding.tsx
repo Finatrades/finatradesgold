@@ -1,0 +1,973 @@
+import { motion, useInView, AnimatePresence } from 'framer-motion';
+import { useRef, useState, useEffect } from 'react';
+import { 
+  Shield, Lock, Wallet, ArrowRight, CheckCircle, Fingerprint, 
+  Globe, BarChart3, FileCheck, Scan, QrCode, Building2,
+  CircleDot, ChevronRight, Sparkles, MapPin
+} from 'lucide-react';
+import { Link } from 'wouter';
+
+const GOLD_COLOR = '#EAC26B';
+
+function FloatingParticles({ count = 30 }: { count?: number }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {Array.from({ length: count }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 rounded-full"
+          style={{ backgroundColor: `${GOLD_COLOR}40` }}
+          initial={{
+            x: `${Math.random() * 100}%`,
+            y: `${Math.random() * 100}%`,
+            scale: Math.random() * 0.5 + 0.5,
+          }}
+          animate={{
+            y: [null, '-30%', '130%'],
+            opacity: [0, 0.8, 0],
+          }}
+          transition={{
+            duration: Math.random() * 15 + 10,
+            repeat: Infinity,
+            delay: Math.random() * 8,
+            ease: 'linear',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function VaultDoor() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 1, delay: 0.5 }}
+      className="relative w-80 h-80 mx-auto"
+    >
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+        className="absolute inset-0 rounded-full border-2 border-[#EAC26B]/20"
+      />
+      <motion.div
+        animate={{ rotate: -360 }}
+        transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
+        className="absolute inset-4 rounded-full border border-[#EAC26B]/30"
+      />
+      
+      <motion.div
+        animate={{ 
+          boxShadow: [
+            '0 0 30px rgba(234, 194, 107, 0.2)',
+            '0 0 60px rgba(234, 194, 107, 0.4)',
+            '0 0 30px rgba(234, 194, 107, 0.2)',
+          ]
+        }}
+        transition={{ duration: 3, repeat: Infinity }}
+        className="absolute inset-8 rounded-full bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border-4 border-[#EAC26B]/40 flex items-center justify-center"
+      >
+        <motion.div
+          animate={{ rotate: [0, 10, 0, -10, 0] }}
+          transition={{ duration: 8, repeat: Infinity }}
+          className="relative"
+        >
+          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#EAC26B]/20 to-transparent border-2 border-[#EAC26B]/50 flex items-center justify-center">
+            <Lock className="w-12 h-12 text-[#EAC26B]" />
+          </div>
+          
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            className="absolute -inset-4"
+          >
+            {[0, 60, 120, 180, 240, 300].map((deg) => (
+              <div
+                key={deg}
+                className="absolute w-2 h-2 rounded-full bg-[#EAC26B]"
+                style={{
+                  top: '50%',
+                  left: '50%',
+                  transform: `rotate(${deg}deg) translateX(70px) translateY(-50%)`,
+                }}
+              />
+            ))}
+          </motion.div>
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.5, 0] }}
+        transition={{ duration: 3, repeat: Infinity, delay: 1 }}
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: 'conic-gradient(from 0deg, transparent, rgba(234, 194, 107, 0.3), transparent)',
+        }}
+      />
+    </motion.div>
+  );
+}
+
+function HeroSection() {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center py-32 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a0a] to-black" />
+      <FloatingParticles count={40} />
+      
+      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full bg-[#EAC26B]/5 blur-[150px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[#EAC26B]/5 blur-[120px]" />
+
+      <div className="relative z-10 max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
+          >
+            <div className="flex flex-wrap gap-3">
+              {['Swiss-Regulated Custody', 'Physical Gold Storage', 'Real-Time Tracking'].map((badge, i) => (
+                <motion.span
+                  key={badge}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + i * 0.1 }}
+                  className="px-4 py-2 rounded-full text-sm font-medium bg-[#EAC26B]/10 border border-[#EAC26B]/30 text-[#EAC26B]"
+                >
+                  {badge}
+                </motion.span>
+              ))}
+            </div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-5xl md:text-7xl font-bold text-white leading-tight"
+            >
+              Fina
+              <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+                Vault
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-xl md:text-2xl text-gray-300"
+            >
+              Your Digital Gold Reserve Vault
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="text-gray-400 leading-relaxed max-w-xl"
+            >
+              Store, track, verify and manage physical gold with secure, real-time vaulting technology. 
+              Backed by world-class vault providers and fully integrated with your FinaWallet.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-wrap gap-4 pt-4"
+            >
+              <Link href="/finavault">
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30"
+                >
+                  Open Vault
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </motion.a>
+              </Link>
+              <Link href="/verify-certificate">
+                <a className="flex items-center gap-2 border border-[#EAC26B]/40 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all">
+                  <FileCheck className="w-5 h-5" />
+                  View Certificate
+                </a>
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          >
+            <VaultDoor />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ValuePillarsSection() {
+  const pillars = [
+    { 
+      icon: Sparkles, 
+      title: 'Real Physical Gold Custody', 
+      description: 'Every gram is backed by allocated physical gold bars stored in secure vaults.',
+      animation: 'rotate'
+    },
+    { 
+      icon: BarChart3, 
+      title: 'Digital Ownership Ledger', 
+      description: 'Track your holdings in real-time with transparent digital records.',
+      animation: 'ticker'
+    },
+    { 
+      icon: Scan, 
+      title: 'Assay & Purity Verification', 
+      description: 'Each bar undergoes rigorous assay testing with documented purity certification.',
+      animation: 'scan'
+    },
+    { 
+      icon: Wallet, 
+      title: 'Instant Wallet Integration', 
+      description: 'Seamlessly connect your vault holdings to your FinaWallet for transactions.',
+      animation: 'fill'
+    },
+  ];
+
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+      <div className="relative max-w-6xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Core Value Pillars</h2>
+          <p className="text-gray-400 text-lg">The foundation of secure gold custody</p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {pillars.map((pillar, i) => (
+            <motion.div
+              key={pillar.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(234, 194, 107, 0.15)' }}
+              className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-[#EAC26B]/40 transition-all group"
+            >
+              <motion.div
+                animate={pillar.animation === 'rotate' ? { rotateY: [0, 360] } : {}}
+                transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+                className="w-16 h-16 rounded-xl bg-[#EAC26B]/10 flex items-center justify-center mb-4 group-hover:bg-[#EAC26B]/20 transition-colors"
+              >
+                <pillar.icon className="w-8 h-8 text-[#EAC26B]" />
+              </motion.div>
+              <h3 className="text-lg font-semibold text-white mb-2">{pillar.title}</h3>
+              <p className="text-sm text-gray-400">{pillar.description}</p>
+              
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 + 0.3 }}
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#EAC26B]/50 to-transparent origin-left"
+              />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CertificateSection() {
+  return (
+    <section className="relative py-32 bg-black overflow-hidden">
+      <FloatingParticles count={20} />
+      
+      <div className="relative max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white">
+              Full Transparency,{' '}
+              <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+                Every Gram Verified
+              </span>
+            </h2>
+            <p className="text-gray-400 text-lg leading-relaxed">
+              Real certificates, live batch data, bar numbers, and storage details — all digitally accessible. 
+              Every piece of gold in your vault comes with complete documentation.
+            </p>
+            
+            <div className="space-y-4 pt-4">
+              {[
+                { label: 'Assay Certificate', desc: 'Purity verification from accredited refiners' },
+                { label: 'Vault Certificate', desc: 'Proof of secure storage location' },
+                { label: 'Serial Numbers', desc: 'Unique bar identification codes' },
+                { label: 'QR Verification', desc: 'Instant mobile verification' },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-start gap-4"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#EAC26B]/20 flex items-center justify-center shrink-0">
+                    <CheckCircle className="w-4 h-4 text-[#EAC26B]" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">{item.label}</p>
+                    <p className="text-sm text-gray-500">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <motion.div
+              animate={{ y: [0, -10, 0], rotateY: [0, 5, 0] }}
+              transition={{ duration: 6, repeat: Infinity }}
+              className="relative p-8 rounded-2xl bg-gradient-to-br from-[#EAC26B]/10 to-transparent border border-[#EAC26B]/30 backdrop-blur-sm"
+            >
+              <div className="absolute top-4 right-4">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <QrCode className="w-16 h-16 text-[#EAC26B]/50" />
+                </motion.div>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Certificate ID</p>
+                  <p className="text-lg font-mono text-[#EAC26B]">FV-2024-1234567</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Purity</p>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      className="text-2xl font-bold text-white"
+                    >
+                      999.9
+                    </motion.p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Weight</p>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      className="text-2xl font-bold text-white"
+                    >
+                      1 KG
+                    </motion.p>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Serial Number</p>
+                  <p className="font-mono text-gray-300">AU-2024-CH-0089321</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500">Vault Location</p>
+                  <p className="text-gray-300">Geneva Secure Vault</p>
+                </div>
+                
+                <div className="pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-2 text-green-400">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="text-sm font-medium">Verified & Secured</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              animate={{ y: [0, 10, 0], rotateY: [0, -3, 0] }}
+              transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
+              className="absolute -bottom-6 -right-6 w-48 h-32 rounded-xl bg-white/[0.02] border border-white/10 backdrop-blur-sm p-4"
+            >
+              <p className="text-xs text-gray-500">Assay Report</p>
+              <p className="text-sm text-white mt-1">LBMA Certified</p>
+              <div className="mt-2 h-1 bg-[#EAC26B]/30 rounded-full overflow-hidden">
+                <motion.div
+                  animate={{ x: ['-100%', '100%'] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-full w-1/2 bg-[#EAC26B]"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function VaultOperationsSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const [activeStep, setActiveStep] = useState(-1);
+
+  const steps = [
+    { icon: Sparkles, title: 'Deposit Gold', description: 'Gold bar slides into vault tray.' },
+    { icon: Scan, title: 'Verification & Assay', description: 'Scanner line moves across bar.' },
+    { icon: FileCheck, title: 'Ledger Recording', description: 'Digital record appears with glowing checkmark.' },
+    { icon: Wallet, title: 'Gold Added to FinaWallet', description: 'Wallet icon fills with gold particles.' },
+  ];
+
+  useEffect(() => {
+    if (isInView && activeStep < steps.length - 1) {
+      const timer = setTimeout(() => {
+        setActiveStep(prev => prev + 1);
+      }, activeStep === -1 ? 500 : 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isInView, activeStep, steps.length]);
+
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+      <div ref={ref} className="relative max-w-5xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Vault Operations</h2>
+          <p className="text-gray-400 text-lg">A seamless 4-step vaulting process</p>
+        </motion.div>
+
+        <div className="relative">
+          <div className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 hidden md:block">
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: isInView ? 1 : 0 }}
+              transition={{ duration: 1.5, ease: 'easeOut' }}
+              className="h-full bg-gradient-to-r from-[#EAC26B]/20 via-[#EAC26B] to-[#EAC26B]/20 origin-left"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-8">
+            {steps.map((step, i) => {
+              const isActive = activeStep === i;
+              const isCompleted = activeStep > i;
+
+              return (
+                <motion.div
+                  key={step.title}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: isActive || isCompleted ? 1 : 0.4, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.15 }}
+                  className="relative text-center"
+                >
+                  <motion.div
+                    animate={{
+                      scale: isActive ? [1, 1.1, 1] : 1,
+                      boxShadow: isActive 
+                        ? ['0 0 0 0 rgba(234, 194, 107, 0)', '0 0 40px 15px rgba(234, 194, 107, 0.3)', '0 0 20px 5px rgba(234, 194, 107, 0.2)']
+                        : '0 0 0 0 rgba(234, 194, 107, 0)',
+                    }}
+                    transition={{ duration: 1, repeat: isActive ? Infinity : 0, repeatDelay: 1 }}
+                    className={`relative z-10 w-20 h-20 mx-auto rounded-full flex items-center justify-center transition-all duration-500 ${
+                      isActive || isCompleted
+                        ? 'bg-gradient-to-br from-[#EAC26B]/30 to-[#EAC26B]/10 border-2 border-[#EAC26B]'
+                        : 'bg-white/5 border border-white/10'
+                    }`}
+                  >
+                    <step.icon className={`w-8 h-8 transition-colors ${
+                      isActive || isCompleted ? 'text-[#EAC26B]' : 'text-gray-500'
+                    }`} />
+                    
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: isCompleted ? 1 : 0 }}
+                      className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"
+                    >
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </motion.div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: isActive || isCompleted ? 1 : 0.5, y: 0 }}
+                    transition={{ delay: i * 0.15 + 0.2 }}
+                    className="mt-6"
+                  >
+                    <span className={`text-xs font-bold ${isActive ? 'text-[#EAC26B]' : 'text-gray-500'}`}>
+                      Step {i + 1}
+                    </span>
+                    <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-white' : 'text-gray-400'}`}>
+                      {step.title}
+                    </h3>
+                    <p className={`text-sm mt-2 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
+                      {step.description}
+                    </p>
+                  </motion.div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SecuritySection() {
+  const features = [
+    { icon: Lock, title: 'Secure Physical Vaults' },
+    { icon: Shield, title: 'Tamper-Proof Digital Ledger' },
+    { icon: Fingerprint, title: 'Multi-Layer Encryption' },
+    { icon: FileCheck, title: 'Compliance-Ready Architecture' },
+  ];
+
+  return (
+    <section className="relative py-32 bg-black overflow-hidden">
+      <div className="relative max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <motion.div
+              animate={{ 
+                boxShadow: [
+                  '0 0 60px rgba(234, 194, 107, 0.1)',
+                  '0 0 100px rgba(234, 194, 107, 0.2)',
+                  '0 0 60px rgba(234, 194, 107, 0.1)',
+                ]
+              }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="relative w-64 h-64 mx-auto rounded-full bg-gradient-to-br from-[#EAC26B]/10 to-transparent border border-[#EAC26B]/30 flex items-center justify-center"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+                className="absolute inset-4 rounded-full border border-dashed border-[#EAC26B]/20"
+              />
+              
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-32 h-32 rounded-full bg-[#EAC26B]/10 border-2 border-[#EAC26B]/50 flex items-center justify-center"
+              >
+                <Shield className="w-16 h-16 text-[#EAC26B]" />
+              </motion.div>
+              
+              {features.map((f, i) => (
+                <motion.div
+                  key={f.title}
+                  animate={{ 
+                    opacity: [0.5, 1, 0.5],
+                    scale: [0.9, 1, 0.9],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
+                  className="absolute w-12 h-12 rounded-full bg-white/5 border border-[#EAC26B]/30 flex items-center justify-center"
+                  style={{
+                    top: `${50 + 45 * Math.sin((i * Math.PI * 2) / 4)}%`,
+                    left: `${50 + 45 * Math.cos((i * Math.PI * 2) / 4)}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  <f.icon className="w-5 h-5 text-[#EAC26B]" />
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-8"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white">
+              Bank-Grade{' '}
+              <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+                Security
+              </span>
+            </h2>
+            <p className="text-gray-400 text-lg">
+              Your gold is protected by multiple layers of physical and digital security measures.
+            </p>
+            
+            <div className="grid sm:grid-cols-2 gap-4">
+              {features.map((feature, i) => (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/10"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-[#EAC26B]/10 flex items-center justify-center">
+                    <feature.icon className="w-5 h-5 text-[#EAC26B]" />
+                  </div>
+                  <span className="text-white font-medium">{feature.title}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function GlobalNetworkSection() {
+  const locations = [
+    { name: 'Dubai Vault', position: { top: '45%', left: '58%' } },
+    { name: 'Geneva Vault', position: { top: '35%', left: '48%' } },
+    { name: 'Singapore Hub', position: { top: '55%', left: '75%' } },
+    { name: 'Mauritania Mine', position: { top: '48%', left: '42%' } },
+  ];
+
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+      <div className="relative max-w-6xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">A Global Network for Gold Storage</h2>
+          <p className="text-gray-400 text-lg">Secure vault locations worldwide</p>
+        </motion.div>
+
+        <div className="relative aspect-[2/1] rounded-2xl bg-white/[0.02] border border-white/10 overflow-hidden">
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, ${GOLD_COLOR}20 1px, transparent 0)`,
+              backgroundSize: '40px 40px',
+            }} />
+          </div>
+          
+          {locations.map((loc, i) => (
+            <motion.div
+              key={loc.name}
+              initial={{ opacity: 0, scale: 0 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.2 }}
+              className="absolute"
+              style={loc.position}
+            >
+              <motion.div
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                className="absolute inset-0 w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EAC26B]/30"
+              />
+              <div className="relative w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EAC26B] shadow-lg shadow-[#EAC26B]/50">
+                <MapPin className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-[#EAC26B]" />
+              </div>
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-black/50 border border-[#EAC26B]/30 text-[#EAC26B]">
+                  {loc.name}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+          
+          <svg className="absolute inset-0 w-full h-full pointer-events-none">
+            <motion.line
+              x1="48%" y1="35%" x2="58%" y2="45%"
+              stroke={GOLD_COLOR} strokeWidth="1" strokeOpacity="0.3"
+              initial={{ pathLength: 0 }}
+              whileInView={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.5 }}
+            />
+            <motion.line
+              x1="58%" y1="45%" x2="75%" y2="55%"
+              stroke={GOLD_COLOR} strokeWidth="1" strokeOpacity="0.3"
+              initial={{ pathLength: 0 }}
+              whileInView={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.7 }}
+            />
+            <motion.line
+              x1="42%" y1="48%" x2="48%" y2="35%"
+              stroke={GOLD_COLOR} strokeWidth="1" strokeOpacity="0.3"
+              initial={{ pathLength: 0 }}
+              whileInView={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.9 }}
+            />
+          </svg>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LiveBalanceSection() {
+  const [balance, setBalance] = useState(0);
+  const targetBalance = 1234.5678;
+
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const increment = targetBalance / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= targetBalance) {
+        setBalance(targetBalance);
+        clearInterval(timer);
+      } else {
+        setBalance(current);
+      }
+    }, duration / steps);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="relative py-32 bg-black overflow-hidden">
+      <div className="relative max-w-5xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Real-Time Gold Balance</h2>
+          <p className="text-gray-400 text-lg">Track your holdings with precision</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="p-8 rounded-2xl bg-gradient-to-br from-[#EAC26B]/10 to-transparent border border-[#EAC26B]/30 backdrop-blur-sm"
+        >
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center md:text-left">
+              <p className="text-sm text-gray-400 mb-2">Your Gold Storage</p>
+              <div className="text-4xl md:text-5xl font-bold text-[#EAC26B] font-mono">
+                {balance.toFixed(4)}
+              </div>
+              <p className="text-gray-500 mt-1">Grams</p>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-2">Estimated Value</p>
+              <div className="text-3xl font-bold text-white">
+                ${(balance * 85.23).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <p className="text-green-400 text-sm mt-1">+2.34% today</p>
+            </div>
+            
+            <div className="text-center md:text-right">
+              <p className="text-sm text-gray-400 mb-2">Total Bars</p>
+              <div className="text-3xl font-bold text-white">3</div>
+              <p className="text-gray-500 mt-1">Stored in vaults</p>
+            </div>
+          </div>
+          
+          <div className="mt-8 h-32 rounded-xl bg-white/5 p-4">
+            <div className="flex items-end justify-between h-full gap-2">
+              {[40, 55, 45, 60, 50, 70, 65, 80, 75, 90, 85, 95].map((h, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ height: 0 }}
+                  whileInView={{ height: `${h}%` }}
+                  transition={{ delay: i * 0.05, duration: 0.5 }}
+                  className="flex-1 bg-gradient-to-t from-[#EAC26B]/50 to-[#EAC26B] rounded-t"
+                />
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function IntegrationSection() {
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+      <div className="relative max-w-5xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            FinaVault → FinaPay Integration
+          </h2>
+          <p className="text-gray-400 text-lg">Deposit physical gold → Instantly usable in your wallet</p>
+        </motion.div>
+
+        <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="w-40 h-40 rounded-2xl bg-gradient-to-br from-[#EAC26B]/20 to-transparent border border-[#EAC26B]/40 flex flex-col items-center justify-center"
+          >
+            <Lock className="w-12 h-12 text-[#EAC26B] mb-2" />
+            <span className="text-white font-semibold">FinaVault</span>
+          </motion.div>
+
+          <div className="relative w-32 h-8 md:w-48 md:h-8">
+            <motion.div
+              animate={{ x: [0, 20, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <ChevronRight className="w-8 h-8 text-[#EAC26B]" />
+            </motion.div>
+            <motion.div
+              animate={{ scaleX: [0.5, 1, 0.5], opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute inset-y-0 left-0 right-0 my-auto h-0.5 bg-gradient-to-r from-transparent via-[#EAC26B] to-transparent"
+            />
+            
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ x: ['-50%', '150%'], opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }}
+                className="absolute top-1/2 left-0 w-2 h-2 rounded-full bg-[#EAC26B] -translate-y-1/2"
+              />
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="w-40 h-40 rounded-2xl bg-gradient-to-br from-[#EAC26B]/20 to-transparent border border-[#EAC26B]/40 flex flex-col items-center justify-center"
+          >
+            <Wallet className="w-12 h-12 text-[#EAC26B] mb-2" />
+            <span className="text-white font-semibold">FinaPay</span>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinalCTASection() {
+  return (
+    <section className="relative py-32 bg-black overflow-hidden">
+      <FloatingParticles count={30} />
+      
+      <div className="absolute inset-0 flex items-center justify-center">
+        <motion.div
+          animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1] }}
+          transition={{ duration: 5, repeat: Infinity }}
+          className="w-[700px] h-[700px] rounded-full bg-[#EAC26B]/10 blur-[120px]"
+        />
+      </div>
+
+      <div className="relative max-w-4xl mx-auto px-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="space-y-8"
+        >
+          <h2 className="text-4xl md:text-6xl font-bold text-white">
+            Secure Your Gold with{' '}
+            <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+              Confidence
+            </span>
+          </h2>
+          
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Manage physical gold on the world's most advanced digital vaulting platform.
+          </p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="pt-8"
+          >
+            <Link href="/finavault">
+              <motion.a
+                animate={{ boxShadow: ['0 0 0 0 rgba(234, 194, 107, 0)', '0 0 50px 15px rgba(234, 194, 107, 0.25)', '0 0 0 0 rgba(234, 194, 107, 0)'] }}
+                transition={{ duration: 2.5, repeat: Infinity }}
+                className="group inline-flex items-center gap-3 bg-[#EAC26B] text-black px-12 py-6 rounded-full text-lg font-semibold hover:bg-[#d4af5a] transition-all"
+              >
+                Open Your Vault
+                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </motion.a>
+            </Link>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="relative py-12 bg-[#050505] border-t border-white/5">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-white">Fina</span>
+            <span className="text-2xl font-bold text-[#EAC26B]">Vault</span>
+          </div>
+          <p className="text-sm text-gray-500">
+            &copy; {new Date().getFullYear()} Finatrades. All rights reserved.
+          </p>
+          <Link href="/">
+            <a className="text-sm text-gray-400 hover:text-white transition-colors">
+              Back to Home
+            </a>
+          </Link>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export default function FinaVaultLanding() {
+  return (
+    <div className="min-h-screen bg-black text-white" data-testid="finavault-landing">
+      <HeroSection />
+      <ValuePillarsSection />
+      <CertificateSection />
+      <VaultOperationsSection />
+      <SecuritySection />
+      <GlobalNetworkSection />
+      <LiveBalanceSection />
+      <IntegrationSection />
+      <FinalCTASection />
+      <Footer />
+    </div>
+  );
+}
