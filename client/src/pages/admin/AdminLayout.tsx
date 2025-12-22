@@ -23,6 +23,7 @@ import {
   Receipt,
   Mail,
   Database,
+  Paperclip,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/finabridge': ['view_finabridge', 'manage_finabridge'],
   '/admin/bnsl': ['view_bnsl', 'manage_bnsl'],
   '/admin/documents': ['view_reports'],
+  '/admin/attachments': ['view_reports'],
   '/admin/chat': ['view_support', 'manage_support'],
   '/admin/email-notifications': ['manage_settings'],
   '/admin/cms': ['view_cms', 'manage_cms'],
@@ -147,6 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: 'System',
       items: [
         { icon: <Receipt className="w-5 h-5" />, label: 'Documents', href: '/admin/documents' },
+        { icon: <Paperclip className="w-5 h-5" />, label: 'Attachments', href: '/admin/attachments' },
         { icon: <MessageSquare className="w-5 h-5" />, label: 'Support Chat', href: '/admin/chat' },
         { icon: <Mail className="w-5 h-5" />, label: 'Email Notifications', href: '/admin/email-notifications' },
         { icon: <PanelLeft className="w-5 h-5" />, label: 'CMS', href: '/admin/cms' },

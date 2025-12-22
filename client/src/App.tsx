@@ -82,6 +82,7 @@ import PaymentGatewayManagement from "@/pages/admin/PaymentGatewayManagement";
 import PlatformConfiguration from "@/pages/admin/PlatformConfiguration";
 import SecuritySettings from "@/pages/admin/SecuritySettings";
 import DocumentsManagement from "@/pages/admin/DocumentsManagement";
+import AttachmentsManagement from "@/pages/admin/AttachmentsManagement";
 import ReferralManagement from "@/pages/admin/ReferralManagement";
 import AuditLogs from "@/pages/admin/AuditLogs";
 import SystemHealth from "@/pages/admin/SystemHealth";
@@ -139,6 +140,7 @@ function Router() {
       <Route path="/admin/database-backups" component={DatabaseBackups} />
       <Route path="/admin/security" component={SecuritySettings} />
       <Route path="/admin/documents" component={DocumentsManagement} />
+      <Route path="/admin/attachments" component={AttachmentsManagement} />
       <Route path="/admin/email-notifications" component={EmailNotificationsManagement} />
       
       {/* Renamed/Consolidated Modules */}

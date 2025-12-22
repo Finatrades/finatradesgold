@@ -63,7 +63,7 @@ export default function AttachmentsManagement() {
     return matchesSearch && matchesSource;
   });
 
-  const sources = [...new Set(attachments.map(a => a.source))];
+  const sources = Array.from(new Set(attachments.map(a => a.source)));
 
   const handlePrint = (attachment: Attachment) => {
     const printWindow = window.open('', '_blank');
