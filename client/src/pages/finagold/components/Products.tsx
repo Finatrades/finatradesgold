@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
+import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 
 const content = {
@@ -9,30 +10,26 @@ const content = {
       {
         icon: Lock,
         name: 'FinaVault',
-        subtitle: 'Personal Gold Locker',
-        description: 'A secure digital ledger showing your stored gold, certificates, and purity details.',
-        features: ['View total gold in grams', 'See vault location & certificates', 'Track deposits & movements', 'Permanent history records'],
+        subtitle: 'Deposit / Buy Gold',
+        description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
+        cta: 'Explore FinaVault',
+        href: '/finavault',
       },
       {
         icon: Wallet,
         name: 'FinaPay Wallet',
-        subtitle: 'Gold Value View',
-        description: 'Displays your gold in grams and estimated value. Helps plan expenses and savings.',
-        features: ['Real-time gold value', 'Simple platform transfers', 'Clear balance separation', 'Planning for goals'],
+        subtitle: 'Payments & Transfers',
+        description: 'Send and receive payments through the platform, manage your wallet and spend anywhere using your gold-backed debit card.',
+        cta: 'Explore FinaPay Wallet',
+        href: '/finapay',
       },
       {
         icon: TrendingUp,
-        name: 'FinaEarn (BNSL)',
-        subtitle: 'Holding Plans',
-        description: 'Choose defined durations (12, 24, or 36 months) for structured holding.',
-        features: ['12, 24, 36 month plans', 'Transparent terms', 'Dashboard tracking', 'Clear settlement conditions'],
-      },
-      {
-        icon: Building2,
-        name: 'FinaFinance',
-        subtitle: 'View-Only',
-        description: 'Understand how your gold participates in a broader real-world ecosystem.',
-        features: ['Ecosystem visibility', 'Trade flow insights', 'Information access', 'Educational view'],
+        name: 'BNSL',
+        subtitle: "Buy 'N' Sell Gold Plans",
+        description: 'Get substantial margins and guaranteed returns thanks to our BNSL Plans.',
+        cta: 'Explore BNSL',
+        href: '/bnsl',
       },
     ],
   },
@@ -44,28 +41,32 @@ const content = {
         name: 'FinaVault',
         subtitle: 'Corporate Gold Reserve Ledger',
         description: 'Complete visibility across bar numbers, batch origins, purity, and vault locations.',
-        features: ['Multi-entity views', 'Project/client allocation', 'Audit-ready reports', 'Bar & batch traceability'],
+        cta: 'Explore FinaVault',
+        href: '/finavault',
       },
       {
         icon: Wallet,
         name: 'FinaPay Wallet',
         subtitle: 'Operational Gold Dashboard',
         description: 'Real-time value tracking for treasury, risk monitoring, and allocation.',
-        features: ['Multi-user access', 'Business unit transfers', 'Finance team visibility', 'Configurable limits'],
+        cta: 'Explore FinaPay Wallet',
+        href: '/finapay',
       },
       {
         icon: TrendingUp,
         name: 'FinaEarn (BNSL)',
         subtitle: 'Programmatic Holding',
         description: 'Lock gold into structured terms aligned with business cycles.',
-        features: ['Tranche allocation', 'Treasury alignment', 'Consolidated reporting', 'Defined maturity'],
+        cta: 'Explore BNSL',
+        href: '/bnsl',
       },
       {
         icon: Building2,
-        name: 'FinaFinance',
-        subtitle: 'Trade Support Layer',
+        name: 'FinaBridge',
+        subtitle: 'Trade Finance',
         description: 'Documentation and workflows that support trade deals backed by gold value.',
-        features: ['Trade settlements', 'Collateral structures', 'LC/SBLC support', 'Reserve-obligation linking'],
+        cta: 'Explore FinaBridge',
+        href: '/finabridge',
       },
     ],
   },
@@ -147,19 +148,12 @@ export default function Products() {
 
                 <p className="text-gray-400 mb-6 leading-relaxed">{product.description}</p>
 
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  {product.features.map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-gray-500">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#EAC26B]/50" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-
-                <button className="flex items-center gap-2 text-[#EAC26B] text-sm font-medium group/btn">
-                  Learn more
-                  <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                </button>
+                <Link href={product.href}>
+                  <a className="inline-flex items-center gap-2 text-[#EAC26B] text-sm font-medium group/btn hover:underline">
+                    {product.cta}
+                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                  </a>
+                </Link>
               </div>
             </motion.div>
           ))}
