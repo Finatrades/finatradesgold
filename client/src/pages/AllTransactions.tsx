@@ -43,12 +43,12 @@ interface Totals {
 // Helper to convert action types to user-friendly display labels
 const getActionLabel = (actionType: string, module: string): string => {
   const action = actionType?.toUpperCase() || '';
-  // FinaPay deposits that result in gold should show as "Deposit Gold"
-  if (action === 'ADD_FUNDS' && module === 'FinaPay') {
+  // Only FinaVault deposits should show as "Deposit Gold"
+  if (action === 'ADD_FUNDS' && module === 'FinaVault') {
     return 'Deposit Gold';
   }
   if (action === 'ADD_FUNDS') {
-    return 'Deposit Gold';
+    return 'Add Funds';
   }
   // Default: convert underscores to spaces and title case
   return actionType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
