@@ -395,41 +395,73 @@ export default function VaultActivityList() {
   // Check if there are FinaBridge transactions to avoid duplicate entries from Trade Release certificates
   const hasFinaBridgeTransactions = transactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
   
-  // Convert certificates to transaction-like format for display
-  // Only show Digital Ownership certificates (Physical Storage is a companion document)
-  // Exclude Trade Release certificates if there's already a FinaBridge transaction
-  const certificateActivities: VaultTransaction[] = certificates
-    .filter((cert: any) => {
-      // Only include Digital Ownership certificates (Physical Storage is duplicate of same purchase)
-      if (cert.type === 'Digital Ownership') return true;
-      // Only include Trade Release if there's no corresponding transaction
-      if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
-      return false;
-    })
-    .map((cert: any) => ({
-      id: cert.id,
-      type: cert.type === 'Trade Release' ? 'Receive' as const : 'Vault Deposit' as const,
-      status: cert.status === 'Active' ? 'Completed' : cert.status,
-      amountGold: cert.goldGrams,
-      amountUsd: cert.totalValueUsd,
-      goldPriceUsdPerGram: cert.goldPriceUsdPerGram,
-      recipientEmail: null,
-      senderEmail: null,
-      description: `${cert.type} - ${cert.certificateNumber}`,
-      referenceId: cert.certificateNumber,
-      createdAt: cert.issuedAt,
-      completedAt: cert.issuedAt,
-      certificates: [{
-        id: cert.id,
-        certificateNumber: cert.certificateNumber,
-        type: cert.type,
-        status: cert.status,
-        goldGrams: cert.goldGrams,
-      }],
-    }));
+  // Group certificates by transactionId to create consolidated Vault Deposit entries
+  // Each purchase creates both Digital Ownership and Physical Storage certificates
+  const certificatesByTransaction = new Map<string, any[]>();
+  certificates.forEach((cert: any) => {
+    if (cert.type === 'Digital Ownership' || cert.type === 'Physical Storage') {
+      const txId = cert.transactionId || cert.id;
+      if (!certificatesByTransaction.has(txId)) {
+        certificatesByTransaction.set(txId, []);
+      }
+      certificatesByTransaction.get(txId)!.push(cert);
+    } else if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) {
+      // Trade Release certificates are standalone
+      certificatesByTransaction.set(cert.id, [cert]);
+    }
+  });
+  
+  // Create one Vault Deposit entry per certificate group (combining both cert types)
+  const certificateActivities: VaultTransaction[] = Array.from(certificatesByTransaction.values())
+    .map((certGroup: any[]) => {
+      const ownershipCert = certGroup.find(c => c.type === 'Digital Ownership');
+      const storageCert = certGroup.find(c => c.type === 'Physical Storage');
+      const primaryCert = ownershipCert || certGroup[0];
+      const isTradeRelease = primaryCert.type === 'Trade Release';
+      
+      return {
+        id: primaryCert.id,
+        type: isTradeRelease ? 'Receive' as const : 'Vault Deposit' as const,
+        status: primaryCert.status === 'Active' ? 'Completed' : primaryCert.status,
+        amountGold: primaryCert.goldGrams,
+        amountUsd: primaryCert.totalValueUsd,
+        goldPriceUsdPerGram: primaryCert.goldPriceUsdPerGram,
+        recipientEmail: null,
+        senderEmail: null,
+        description: isTradeRelease 
+          ? `Trade Release - ${primaryCert.certificateNumber}`
+          : `Gold Purchase`,
+        referenceId: primaryCert.certificateNumber,
+        createdAt: primaryCert.issuedAt,
+        completedAt: primaryCert.issuedAt,
+        certificates: certGroup.map(c => ({
+          id: c.id,
+          certificateNumber: c.certificateNumber,
+          type: c.type,
+          status: c.status,
+          goldGrams: c.goldGrams,
+        })),
+      };
+    });
+  
+  // Filter out Buy transactions that have certificates (they're shown as Vault Deposit)
+  // Get all transaction IDs that have certificates
+  const transactionIdsWithCerts = new Set(
+    certificates
+      .filter((c: any) => c.transactionId)
+      .map((c: any) => c.transactionId)
+  );
+  
+  // Filter transactions: exclude Buy if it has certificates (shown as Vault Deposit instead)
+  const filteredTxs = transactions.filter((tx: any) => {
+    if (tx.type === 'Buy' && transactionIdsWithCerts.has(tx.id)) {
+      return false; // Skip - represented by Vault Deposit
+    }
+    return true;
+  });
   
   // Combine and sort by date (newest first)
-  const allActivities = [...transactions, ...certificateActivities]
+  const allActivities = [...filteredTxs, ...certificateActivities]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
   const filteredTransactions = allActivities.filter(tx => {
