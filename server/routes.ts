@@ -18,7 +18,7 @@ import {
   insertTradeConfirmationSchema, insertSettlementHoldSchema, insertFinabridgeWalletSchema,
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
-  vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings,
+  vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings, vaultDepositRequests,
   wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests
 } from "@shared/schema";
