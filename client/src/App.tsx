@@ -91,11 +91,13 @@ import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
+import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/finagold" component={FinagoldLanding} />
       <Route path="/bnsl-explore" component={BNSLExplore} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />
