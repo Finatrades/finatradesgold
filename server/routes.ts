@@ -4252,13 +4252,15 @@ export async function registerRoutes(
         });
       });
       
-      // Certificates (Physical Storage, Digital Ownership) - excluding Trade Release since those have transaction records
-      // Check if there are FinaBridge transactions to avoid duplicate entries
+      // Certificates - only show Digital Ownership (not Physical Storage to avoid duplicates)
+      // Digital Ownership and Physical Storage are created together for the same purchase,
+      // so we only show Digital Ownership as the main transaction entry
+      // Trade Release certificates are excluded if there's a corresponding transaction
       const hasFinaBridgeTransactions = regularTransactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
       userCertificates
         .filter(cert => {
-          // Include Physical Storage and Digital Ownership certificates
-          if (['Physical Storage', 'Digital Ownership'].includes(cert.type)) return true;
+          // Only include Digital Ownership certificates (Physical Storage is a companion document)
+          if (cert.type === 'Digital Ownership') return true;
           // Only include Trade Release if there's no corresponding transaction
           if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
           return false;
@@ -4266,12 +4268,10 @@ export async function registerRoutes(
         .forEach(cert => {
           const moduleMap: Record<string, string> = {
             'Trade Release': 'finabridge',
-            'Physical Storage': 'finavault',
             'Digital Ownership': 'finavault'
           };
           const actionMap: Record<string, string> = {
             'Trade Release': 'RECEIVE',
-            'Physical Storage': 'ADD_FUNDS',
             'Digital Ownership': 'ADD_FUNDS'
           };
           unifiedTransactions.push({
