@@ -337,17 +337,11 @@ export default function BnslWalletCard({
                </div>
                <div className="relative">
                  <Input 
-                   type="text"
-                   inputMode="decimal"
+                   type="number" 
                    placeholder="0.00" 
                    className={`bg-background pl-4 pr-20 text-lg text-foreground ${isInsufficientBalance ? 'border-destructive focus-visible:ring-destructive' : 'border-input'}`}
                    value={transferAmount}
-                   onChange={(e) => {
-                     const val = e.target.value;
-                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                       setTransferAmount(val);
-                     }
-                   }}
+                   onChange={(e) => setTransferAmount(e.target.value)}
                  />
                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
                    <span className="text-muted-foreground text-sm font-bold">{currency === 'Grams' ? 'g' : 'د.إ'}</span>
@@ -434,17 +428,11 @@ export default function BnslWalletCard({
                </div>
                <div className="relative">
                  <Input 
-                   type="text"
-                   inputMode="decimal"
+                   type="number" 
                    placeholder="0.00" 
                    className={`bg-background pl-4 pr-20 text-lg text-foreground ${isInsufficientWithdrawBalance ? 'border-destructive focus-visible:ring-destructive' : 'border-input'}`}
                    value={withdrawAmount}
-                   onChange={(e) => {
-                     const val = e.target.value;
-                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                       setWithdrawAmount(val);
-                     }
-                   }}
+                   onChange={(e) => setWithdrawAmount(e.target.value)}
                    data-testid="input-withdraw-amount"
                  />
                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">

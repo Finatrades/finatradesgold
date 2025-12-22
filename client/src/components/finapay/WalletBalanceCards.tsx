@@ -9,22 +9,6 @@ interface WalletBalanceCardsProps {
   onTransfer?: () => void;
 }
 
-// Calculate gold bar breakdown
-const calculateGoldBars = (grams: number): { kg: number; g100: number; g10: number; g1: number } => {
-  if (isNaN(grams) || grams <= 0) return { kg: 0, g100: 0, g10: 0, g1: 0 };
-  
-  let remaining = grams;
-  const kg = Math.floor(remaining / 1000);
-  remaining = remaining % 1000;
-  const g100 = Math.floor(remaining / 100);
-  remaining = remaining % 100;
-  const g10 = Math.floor(remaining / 10);
-  remaining = remaining % 10;
-  const g1 = Math.floor(remaining);
-  
-  return { kg, g100, g10, g1 };
-};
-
 export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalanceCardsProps) {
   const goldValueUsd = wallet.goldBalanceGrams * wallet.goldPriceUsdPerGram;
   const totalAvailableUsd = wallet.usdBalance + goldValueUsd;
@@ -32,10 +16,6 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
   const totalLockedGrams = wallet.goldPriceUsdPerGram > 0 ? totalLockedUsd / wallet.goldPriceUsdPerGram : 0;
   const grandTotalUsd = totalAvailableUsd + totalLockedUsd;
   const grandTotalGoldGrams = wallet.goldBalanceGrams + totalLockedGrams;
-
-  // Gold bar breakdown for available balance
-  const availableBars = calculateGoldBars(wallet.goldBalanceGrams);
-  const hasAvailableBars = availableBars.kg > 0 || availableBars.g100 > 0 || availableBars.g10 > 0 || availableBars.g1 > 0;
 
   return (
     <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
@@ -68,7 +48,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-foreground">
-                  {totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} د.إ
+                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
@@ -78,7 +58,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
                 </span>
                 {wallet.usdBalance > 0 && (
                   <span className="text-xs text-muted-foreground ml-1">
-                    + {wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} د.إ cash
+                    + ${wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} cash
                   </span>
                 )}
               </div>
@@ -99,7 +79,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-purple-500">
-                  {totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} د.إ
+                  ${totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
@@ -126,7 +106,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-purple-500">
-                  {grandTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} د.إ
+                  ${grandTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
@@ -140,39 +120,6 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
         </div>
 
       </div>
-
-      {/* Gold Bar Breakdown */}
-      {hasAvailableBars && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
-          <p className="text-sm font-semibold text-amber-800 mb-3">Your Gold Bar Holdings:</p>
-          <div className="grid grid-cols-4 gap-3 text-center">
-            {availableBars.kg > 0 && (
-              <div className="bg-white rounded-lg p-3 border border-amber-300 shadow-sm">
-                <span className="text-2xl font-bold text-amber-700">{availableBars.kg}</span>
-                <p className="text-xs text-amber-600 font-medium mt-1">1 KG Bar</p>
-              </div>
-            )}
-            {availableBars.g100 > 0 && (
-              <div className="bg-white rounded-lg p-3 border border-amber-300 shadow-sm">
-                <span className="text-2xl font-bold text-amber-700">{availableBars.g100}</span>
-                <p className="text-xs text-amber-600 font-medium mt-1">100g Bar</p>
-              </div>
-            )}
-            {availableBars.g10 > 0 && (
-              <div className="bg-white rounded-lg p-3 border border-amber-300 shadow-sm">
-                <span className="text-2xl font-bold text-amber-700">{availableBars.g10}</span>
-                <p className="text-xs text-amber-600 font-medium mt-1">10g Bar</p>
-              </div>
-            )}
-            {availableBars.g1 > 0 && (
-              <div className="bg-white rounded-lg p-3 border border-amber-300 shadow-sm">
-                <span className="text-2xl font-bold text-amber-700">{availableBars.g1}</span>
-                <p className="text-xs text-amber-600 font-medium mt-1">1g Bar</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
       
       {/* Gold-Backed Disclosure */}
       <GoldBackedDisclosure className="mt-4" />
