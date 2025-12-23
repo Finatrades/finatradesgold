@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
+import { Plus, ShoppingCart, Coins, ArrowUpRight, Send, ArrowDownLeft, Lock } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -13,58 +13,64 @@ import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal
 
 const actions = [
   {
-    title: 'Add Fund',
+    title: 'Add Funds',
     path: '',
-    icon: <Plus className="w-4 h-4" />,
-    gradient: 'from-emerald-500 to-green-600',
-    hoverGradient: 'hover:from-emerald-600 hover:to-green-700',
+    icon: Plus,
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+    cardStyle: 'white',
     requiresKyc: true,
     isModal: true
   },
   {
     title: 'Buy Gold Bar',
     path: '',
-    icon: <ShoppingCart className="w-4 h-4" />,
-    gradient: 'from-fuchsia-400 to-yellow-500',
-    hoverGradient: 'hover:from-purple-500 hover:to-yellow-600',
+    icon: ShoppingCart,
+    iconBg: 'bg-white/20',
+    iconColor: 'text-white',
+    cardStyle: 'green',
     requiresKyc: true,
     isModal: true
   },
   {
-    title: 'Deposit Gold',
-    path: '/finavault?tab=new-request&highlight=deposit',
-    icon: <Database className="w-4 h-4" />,
-    gradient: 'from-teal-500 to-cyan-600',
-    hoverGradient: 'hover:from-teal-600 hover:to-cyan-700',
+    title: 'Sell Gold',
+    path: '/finapay?action=sell',
+    icon: Coins,
+    iconBg: 'bg-pink-100',
+    iconColor: 'text-pink-600',
+    cardStyle: 'white',
     requiresKyc: true,
     isModal: false
   },
   {
-    title: 'Send Payment',
-    path: '',
-    icon: <Send className="w-4 h-4" />,
-    gradient: 'from-purple-500 to-red-500',
-    hoverGradient: 'hover:from-purple-600 hover:to-red-600',
-    requiresKyc: true,
-    isModal: true
-  },
-  {
-    title: 'Request Payment',
-    path: '',
-    icon: <ArrowDownLeft className="w-4 h-4" />,
-    gradient: 'from-pink-500 to-rose-500',
-    hoverGradient: 'hover:from-pink-600 hover:to-rose-600',
-    requiresKyc: true,
-    isModal: true
-  },
-  {
-    title: 'BNSL',
-    path: '/bnsl?step=configure',
-    icon: <TrendingUp className="w-4 h-4" />,
-    gradient: 'from-violet-500 to-purple-600',
-    hoverGradient: 'hover:from-violet-600 hover:to-purple-700',
+    title: 'Withdrawals',
+    path: '/finapay?action=withdraw',
+    icon: ArrowUpRight,
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+    cardStyle: 'white',
     requiresKyc: true,
     isModal: false
+  },
+  {
+    title: 'Send Funds',
+    path: '',
+    icon: Send,
+    iconBg: 'bg-cyan-100',
+    iconColor: 'text-cyan-600',
+    cardStyle: 'white',
+    requiresKyc: true,
+    isModal: true
+  },
+  {
+    title: 'Request Funds',
+    path: '',
+    icon: ArrowDownLeft,
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
+    cardStyle: 'white',
+    requiresKyc: true,
+    isModal: true
   }
 ];
 
@@ -111,7 +117,7 @@ export default function QuickActionsTop() {
     }
     
     if (action.isModal) {
-      if (action.title === 'Add Fund') {
+      if (action.title === 'Add Funds') {
         setDepositModalOpen(true);
         return;
       }
@@ -119,11 +125,11 @@ export default function QuickActionsTop() {
         setBuyGoldModalOpen(true);
         return;
       }
-      if (action.title === 'Send Payment') {
+      if (action.title === 'Send Funds') {
         setSendModalOpen(true);
         return;
       }
-      if (action.title === 'Request Payment') {
+      if (action.title === 'Request Funds') {
         setRequestModalOpen(true);
         return;
       }
@@ -134,9 +140,11 @@ export default function QuickActionsTop() {
 
   return (
     <>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {actions.map((action, index) => {
           const isLocked = action.requiresKyc && !isKycApproved;
+          const IconComponent = action.icon;
+          const isGreen = action.cardStyle === 'green';
           
           return (
             <motion.button
@@ -144,22 +152,28 @@ export default function QuickActionsTop() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: isLocked ? 1 : 1.02 }}
+              whileHover={{ scale: isLocked ? 1 : 1.02, y: isLocked ? 0 : -2 }}
               whileTap={{ scale: isLocked ? 1 : 0.98 }}
               onClick={() => handleAction(action)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium text-sm shadow-md transition-all relative ${
+              className={`relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl font-medium text-sm shadow-sm border transition-all ${
                 isLocked 
-                  ? 'bg-gray-400 cursor-not-allowed opacity-60' 
-                  : `bg-gradient-to-r ${action.gradient} ${action.hoverGradient}`
+                  ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60' 
+                  : isGreen
+                    ? 'bg-gradient-to-br from-green-500 to-emerald-600 border-green-400 text-white shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30'
+                    : 'bg-white border-gray-100 text-gray-700 hover:border-purple-200 hover:shadow-md'
               }`}
-              data-testid={`button-action-${action.title.toLowerCase().replace(' ', '-')}`}
+              data-testid={`button-action-${action.title.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              <span className="flex items-center justify-center w-5 h-5 bg-white/20 rounded">
-                {action.icon}
+              <div className={`flex items-center justify-center w-12 h-12 rounded-full ${isGreen ? 'bg-white/20' : action.iconBg}`}>
+                <IconComponent className={`w-5 h-5 ${isGreen ? 'text-white' : action.iconColor}`} />
+              </div>
+              <span className={`whitespace-nowrap font-semibold ${isGreen ? 'text-white' : 'text-gray-700'}`}>
+                {action.title}
               </span>
-              <span className="whitespace-nowrap">{action.title}</span>
               {isLocked && (
-                <Lock className="w-3 h-3 ml-1 opacity-70" />
+                <div className="absolute top-2 right-2">
+                  <Lock className="w-3.5 h-3.5 text-gray-400" />
+                </div>
               )}
             </motion.button>
           );
