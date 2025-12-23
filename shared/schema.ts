@@ -1682,6 +1682,13 @@ export const tradeRequests = pgTable("trade_requests", {
   
   status: tradeRequestStatusEnum("status").notNull().default('Draft'),
   
+  // Trade Deadlines
+  proposalDeadline: timestamp("proposal_deadline"),
+  settlementDeadline: timestamp("settlement_deadline"),
+  deliveryDeadline: timestamp("delivery_deadline"),
+  reminderSentAt: timestamp("reminder_sent_at"),
+  isOverdue: boolean("is_overdue").default(false),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1781,6 +1788,105 @@ export const settlementHolds = pgTable("settlement_holds", {
 export const insertSettlementHoldSchema = createInsertSchema(settlementHolds).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertSettlementHold = z.infer<typeof insertSettlementHoldSchema>;
 export type SettlementHold = typeof settlementHolds.$inferSelect;
+
+// Partial Settlements - for releasing gold in portions
+export const partialSettlements = pgTable("partial_settlements", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  settlementHoldId: varchar("settlement_hold_id", { length: 255 }).notNull().references(() => settlementHolds.id),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  releasedGoldGrams: decimal("released_gold_grams", { precision: 18, scale: 6 }).notNull(),
+  releasePercentage: decimal("release_percentage", { precision: 5, scale: 2 }).notNull(),
+  reason: text("reason"),
+  milestone: varchar("milestone", { length: 255 }),
+  releasedBy: varchar("released_by", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPartialSettlementSchema = createInsertSchema(partialSettlements).omit({ id: true, createdAt: true });
+export type InsertPartialSettlement = z.infer<typeof insertPartialSettlementSchema>;
+export type PartialSettlement = typeof partialSettlements.$inferSelect;
+
+// Trade Disputes
+export const tradeDisputeStatusEnum = pgEnum('trade_dispute_status', [
+  'Open', 'Under Review', 'Pending Resolution', 'Resolved', 'Escalated', 'Closed'
+]);
+
+export const tradeDisputes = pgTable("trade_disputes", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  disputeRefId: varchar("dispute_ref_id", { length: 50 }).notNull().unique(),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).references(() => dealRooms.id),
+  raisedByUserId: varchar("raised_by_user_id", { length: 255 }).notNull().references(() => users.id),
+  raisedByRole: varchar("raised_by_role", { length: 20 }).notNull(),
+  disputeType: varchar("dispute_type", { length: 100 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  evidenceUrls: text("evidence_urls").array(),
+  requestedResolution: text("requested_resolution"),
+  status: tradeDisputeStatusEnum("status").notNull().default('Open'),
+  priority: varchar("priority", { length: 20 }).default('Medium'),
+  assignedAdminId: varchar("assigned_admin_id", { length: 255 }).references(() => users.id),
+  resolution: text("resolution"),
+  resolvedBy: varchar("resolved_by", { length: 255 }).references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTradeDisputeSchema = createInsertSchema(tradeDisputes).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTradeDispute = z.infer<typeof insertTradeDisputeSchema>;
+export type TradeDispute = typeof tradeDisputes.$inferSelect;
+
+// Trade Dispute Comments
+export const tradeDisputeComments = pgTable("trade_dispute_comments", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  disputeId: varchar("dispute_id", { length: 255 }).notNull().references(() => tradeDisputes.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  userRole: varchar("user_role", { length: 20 }).notNull(),
+  content: text("content").notNull(),
+  attachmentUrl: text("attachment_url"),
+  isInternal: boolean("is_internal").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTradeDisputeCommentSchema = createInsertSchema(tradeDisputeComments).omit({ id: true, createdAt: true });
+export type InsertTradeDisputeComment = z.infer<typeof insertTradeDisputeCommentSchema>;
+export type TradeDisputeComment = typeof tradeDisputeComments.$inferSelect;
+
+// Deal Room Documents - trade-related document uploads
+export const dealRoomDocumentTypeEnum = pgEnum('deal_room_document_type', [
+  'Invoice', 'Bill of Lading', 'Insurance Certificate', 'Certificate of Origin', 
+  'Packing List', 'Quality Certificate', 'Customs Declaration', 'Other'
+]);
+
+export const dealRoomDocumentStatusEnum = pgEnum('deal_room_document_status', [
+  'Pending', 'Verified', 'Rejected', 'Expired'
+]);
+
+export const dealRoomDocuments = pgTable("deal_room_documents", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).notNull().references(() => dealRooms.id),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  uploadedByUserId: varchar("uploaded_by_user_id", { length: 255 }).notNull().references(() => users.id),
+  uploaderRole: varchar("uploader_role", { length: 20 }).notNull(),
+  documentType: dealRoomDocumentTypeEnum("document_type").notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  description: text("description"),
+  status: dealRoomDocumentStatusEnum("status").notNull().default('Pending'),
+  verifiedBy: varchar("verified_by", { length: 255 }).references(() => users.id),
+  verifiedAt: timestamp("verified_at"),
+  verificationNotes: text("verification_notes"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDealRoomDocumentSchema = createInsertSchema(dealRoomDocuments).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDealRoomDocument = z.infer<typeof insertDealRoomDocumentSchema>;
+export type DealRoomDocument = typeof dealRoomDocuments.$inferSelect;
 
 // ============================================
 // DEAL ROOM - TRADE CASE CONVERSATIONS

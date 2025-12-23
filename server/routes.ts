@@ -21,7 +21,8 @@ import {
   vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings, vaultDepositRequests,
   wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
-  goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus
+  goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
+  partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -9788,6 +9789,628 @@ ${message}
       res.json({ message: "Settlement released and gold transferred to exporter" });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release settlement" });
+    }
+  });
+
+  // Cancel settlement hold (admin - return gold to importer)
+  app.post("/api/admin/finabridge/settlement-holds/:id/cancel", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { reason } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const hold = await storage.getSettlementHold(req.params.id);
+      if (!hold) {
+        return res.status(404).json({ message: "Settlement hold not found" });
+      }
+      if (hold.status !== 'Held') {
+        return res.status(400).json({ message: "Settlement hold is not active" });
+      }
+      
+      const lockedAmount = parseFloat(hold.lockedGoldGrams);
+      
+      // Return gold to importer's available balance
+      const importerWallet = await storage.getFinabridgeWallet(hold.importerUserId);
+      if (importerWallet) {
+        await storage.updateFinabridgeWallet(importerWallet.id, {
+          lockedGoldGrams: Math.max(0, parseFloat(importerWallet.lockedGoldGrams) - lockedAmount).toFixed(6),
+          availableGoldGrams: (parseFloat(importerWallet.availableGoldGrams) + lockedAmount).toFixed(6),
+        });
+      }
+      
+      // Clear exporter's incoming locked gold
+      const exporterWallet = await storage.getFinabridgeWallet(hold.exporterUserId);
+      if (exporterWallet) {
+        await storage.updateFinabridgeWallet(exporterWallet.id, {
+          incomingLockedGoldGrams: Math.max(0, parseFloat(exporterWallet.incomingLockedGoldGrams || '0') - lockedAmount).toFixed(6),
+        });
+      }
+      
+      // Update hold status
+      await storage.updateSettlementHold(req.params.id, { status: 'Cancelled' });
+      
+      // Update trade request status
+      await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Cancelled' });
+      
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: hold.importerUserId,
+        action: 'Unlock',
+        goldGrams: lockedAmount,
+        goldPriceUsdPerGram: 0,
+        fromWallet: 'FinaBridge',
+        toWallet: 'FinaBridge',
+        fromStatus: 'Locked',
+        toStatus: 'Available',
+        notes: `Settlement cancelled: ${reason || 'Trade cancelled'}`,
+        createdBy: adminUser.id,
+      });
+      
+      // Audit log
+      await storage.createAuditLog({
+        entityType: "settlement_hold",
+        entityId: req.params.id,
+        actionType: "cancel",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Settlement cancelled, ${lockedAmount}g returned to importer. Reason: ${reason}`,
+      });
+      
+      res.json({ message: "Settlement cancelled and gold returned to importer" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to cancel settlement" });
+    }
+  });
+
+  // Partial settlement release (admin - release portion of gold)
+  app.post("/api/admin/finabridge/settlement-holds/:id/partial-release", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { percentage, reason, milestone } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      if (!percentage || percentage <= 0 || percentage > 100) {
+        return res.status(400).json({ message: "Invalid release percentage (must be 1-100)" });
+      }
+      
+      const hold = await storage.getSettlementHold(req.params.id);
+      if (!hold) {
+        return res.status(404).json({ message: "Settlement hold not found" });
+      }
+      if (hold.status !== 'Held') {
+        return res.status(400).json({ message: "Settlement hold is not active" });
+      }
+      
+      // Calculate released amount
+      const totalLocked = parseFloat(hold.lockedGoldGrams);
+      const releaseGrams = (totalLocked * percentage) / 100;
+      
+      // Check how much has already been released
+      const existingReleases = await db.select().from(partialSettlements).where(eq(partialSettlements.settlementHoldId, hold.id));
+      const totalReleased = existingReleases.reduce((sum, r) => sum + parseFloat(r.releasedGoldGrams), 0);
+      const remaining = totalLocked - totalReleased;
+      
+      if (releaseGrams > remaining) {
+        return res.status(400).json({ message: `Cannot release ${releaseGrams.toFixed(4)}g. Only ${remaining.toFixed(4)}g remaining.` });
+      }
+      
+      // Update importer's locked balance
+      const importerWallet = await storage.getFinabridgeWallet(hold.importerUserId);
+      if (importerWallet) {
+        await storage.updateFinabridgeWallet(importerWallet.id, {
+          lockedGoldGrams: Math.max(0, parseFloat(importerWallet.lockedGoldGrams) - releaseGrams).toFixed(6),
+        });
+      }
+      
+      // Credit exporter's available balance
+      const exporterWallet = await storage.getOrCreateFinabridgeWallet(hold.exporterUserId);
+      await storage.updateFinabridgeWallet(exporterWallet.id, {
+        availableGoldGrams: (parseFloat(exporterWallet.availableGoldGrams) + releaseGrams).toFixed(6),
+        incomingLockedGoldGrams: Math.max(0, parseFloat(exporterWallet.incomingLockedGoldGrams || '0') - releaseGrams).toFixed(6),
+      });
+      
+      // Get trade request for transaction details
+      const tradeRequest = await storage.getTradeRequest(hold.tradeRequestId);
+      const tradeValue = tradeRequest ? parseFloat(tradeRequest.tradeValueUsd) * (percentage / 100) : 0;
+      
+      // Create transaction record for exporter
+      const tx = await storage.createTransaction({
+        userId: hold.exporterUserId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: releaseGrams.toFixed(6),
+        amountUsd: tradeValue.toFixed(2),
+        description: `Partial Trade Settlement (${percentage}%) - ${tradeRequest?.tradeRefId || 'FinaBridge'}${milestone ? ': ' + milestone : ''}`,
+        sourceModule: 'FinaBridge',
+      });
+      
+      // Record partial settlement
+      await db.insert(partialSettlements).values({
+        id: crypto.randomUUID(),
+        settlementHoldId: hold.id,
+        tradeRequestId: hold.tradeRequestId,
+        releasedGoldGrams: releaseGrams.toFixed(6),
+        releasePercentage: percentage.toString(),
+        reason,
+        milestone,
+        releasedBy: adminUser.id,
+        transactionId: tx.id,
+      });
+      
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: hold.exporterUserId,
+        action: 'Transfer_Receive',
+        goldGrams: releaseGrams,
+        goldPriceUsdPerGram: releaseGrams > 0 ? tradeValue / releaseGrams : 0,
+        fromWallet: 'FinaBridge',
+        toWallet: 'FinaBridge',
+        toStatus: 'Available',
+        transactionId: tx.id,
+        counterpartyUserId: hold.importerUserId,
+        notes: `Partial settlement ${percentage}%: ${releaseGrams.toFixed(4)}g${milestone ? ' - ' + milestone : ''}`,
+        createdBy: adminUser.id,
+      });
+      
+      // Audit log
+      await storage.createAuditLog({
+        entityType: "settlement_hold",
+        entityId: hold.id,
+        actionType: "partial_release",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Partial release: ${releaseGrams.toFixed(4)}g (${percentage}%) to exporter. Milestone: ${milestone || 'N/A'}. Reason: ${reason || 'N/A'}`,
+      });
+      
+      // Check if fully released
+      const newTotalReleased = totalReleased + releaseGrams;
+      if (Math.abs(newTotalReleased - totalLocked) < 0.000001) {
+        await storage.updateSettlementHold(hold.id, { status: 'Released' });
+        await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Completed' });
+      }
+      
+      res.json({ 
+        message: `Released ${releaseGrams.toFixed(4)}g (${percentage}%) to exporter`,
+        released: releaseGrams,
+        remaining: remaining - releaseGrams,
+        totalReleased: newTotalReleased,
+      });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release partial settlement" });
+    }
+  });
+
+  // Get partial settlements for a hold
+  app.get("/api/admin/finabridge/settlement-holds/:id/partial-releases", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
+    try {
+      const releases = await db.select().from(partialSettlements).where(eq(partialSettlements.settlementHoldId, req.params.id)).orderBy(desc(partialSettlements.createdAt));
+      res.json({ releases });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get partial releases" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - TRADE DISPUTES
+  // ============================================================================
+
+  // Raise a dispute
+  app.post("/api/finabridge/disputes", ensureAuthenticated, async (req, res) => {
+    try {
+      const { tradeRequestId, dealRoomId, disputeType, subject, description, evidenceUrls, requestedResolution } = req.body;
+      const sessionUserId = req.session?.userId;
+      
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(sessionUserId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const tradeRequest = await storage.getTradeRequest(tradeRequestId);
+      if (!tradeRequest) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      
+      // Verify user is party to the trade and determine role
+      let userRole = '';
+      if (tradeRequest.importerUserId === sessionUserId) {
+        userRole = 'importer';
+      } else {
+        const proposals = await storage.getRequestProposals(tradeRequestId);
+        const isExporter = proposals.some(p => p.exporterUserId === sessionUserId && p.status === 'Accepted');
+        if (isExporter) {
+          userRole = 'exporter';
+        } else {
+          return res.status(403).json({ message: "Not authorized to raise dispute on this trade" });
+        }
+      }
+      
+      const disputeRefId = `DSP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
+      
+      const [dispute] = await db.insert(tradeDisputes).values({
+        id: crypto.randomUUID(),
+        disputeRefId,
+        tradeRequestId,
+        dealRoomId,
+        raisedByUserId: sessionUserId,
+        raisedByRole: userRole,
+        disputeType,
+        subject,
+        description,
+        evidenceUrls,
+        requestedResolution,
+        status: 'Open',
+        priority: 'Medium',
+      }).returning();
+      
+      await storage.createAuditLog({
+        entityType: "trade_dispute",
+        entityId: dispute.id,
+        actionType: "create",
+        actor: sessionUserId,
+        actorRole: userRole,
+        details: `Dispute raised: ${subject}`,
+      });
+      
+      res.json({ dispute, message: "Dispute submitted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to raise dispute" });
+    }
+  });
+
+  // Get user's disputes
+  app.get("/api/finabridge/disputes/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const disputes = await db.select().from(tradeDisputes).where(eq(tradeDisputes.raisedByUserId, req.params.userId)).orderBy(desc(tradeDisputes.createdAt));
+      res.json({ disputes });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get disputes" });
+    }
+  });
+
+  // Get dispute by ID
+  app.get("/api/finabridge/disputes/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
+      if (!dispute) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      
+      // Check if admin with FinaBridge permissions
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin' && (sessionUser.permissions?.includes('view_finabridge') || sessionUser.permissions?.includes('manage_finabridge'));
+      
+      if (!isAdmin) {
+        // Verify user is party to the trade or is the dispute raiser
+        const tradeRequest = await storage.getTradeRequest(dispute.tradeRequestId);
+        if (!tradeRequest) {
+          return res.status(404).json({ message: "Trade not found" });
+        }
+        
+        const isImporter = tradeRequest.importerUserId === sessionUserId;
+        const proposals = await storage.getRequestProposals(dispute.tradeRequestId);
+        const isExporter = proposals.some(p => p.exporterUserId === sessionUserId && p.status === 'Accepted');
+        const isDisputeRaiser = dispute.raisedByUserId === sessionUserId;
+        
+        if (!isImporter && !isExporter && !isDisputeRaiser) {
+          return res.status(403).json({ message: "Not authorized to view this dispute" });
+        }
+      }
+      
+      const comments = await db.select().from(tradeDisputeComments).where(eq(tradeDisputeComments.disputeId, dispute.id)).orderBy(tradeDisputeComments.createdAt);
+      
+      res.json({ dispute, comments });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get dispute" });
+    }
+  });
+
+  // Add comment to dispute
+  app.post("/api/finabridge/disputes/:id/comments", ensureAuthenticated, async (req, res) => {
+    try {
+      const { content, attachmentUrl, isInternal } = req.body;
+      const sessionUserId = req.session?.userId;
+      
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
+      if (!dispute) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      
+      // Check if admin with FinaBridge permissions
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin' && sessionUser.permissions?.includes('manage_finabridge');
+      
+      let userRole = '';
+      if (isAdmin) {
+        userRole = 'admin';
+      } else {
+        // Verify user is party to the trade
+        const tradeRequest = await storage.getTradeRequest(dispute.tradeRequestId);
+        if (!tradeRequest) {
+          return res.status(404).json({ message: "Trade not found" });
+        }
+        
+        if (tradeRequest.importerUserId === sessionUserId) {
+          userRole = 'importer';
+        } else {
+          const proposals = await storage.getRequestProposals(dispute.tradeRequestId);
+          const isExporter = proposals.some(p => p.exporterUserId === sessionUserId && p.status === 'Accepted');
+          if (isExporter) {
+            userRole = 'exporter';
+          } else {
+            return res.status(403).json({ message: "Not authorized to comment on this dispute" });
+          }
+        }
+      }
+      
+      const [comment] = await db.insert(tradeDisputeComments).values({
+        id: crypto.randomUUID(),
+        disputeId: dispute.id,
+        userId: sessionUserId,
+        userRole,
+        content,
+        attachmentUrl,
+        isInternal: isAdmin ? (isInternal || false) : false,
+      }).returning();
+      
+      res.json({ comment });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add comment" });
+    }
+  });
+
+  // Admin: Get all disputes
+  app.get("/api/admin/finabridge/disputes", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
+    try {
+      const disputes = await db.select().from(tradeDisputes).orderBy(desc(tradeDisputes.createdAt));
+      
+      const disputesWithDetails = await Promise.all(disputes.map(async (dispute) => {
+        const tradeRequest = await storage.getTradeRequest(dispute.tradeRequestId);
+        const raisedBy = await storage.getUser(dispute.raisedByUserId);
+        return {
+          ...dispute,
+          tradeRequest: tradeRequest ? { tradeRefId: tradeRequest.tradeRefId, goodsName: tradeRequest.goodsName } : null,
+          raisedBy: raisedBy ? { id: raisedBy.id, email: raisedBy.email, finatradesId: raisedBy.finatradesId } : null,
+        };
+      }));
+      
+      res.json({ disputes: disputesWithDetails });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get disputes" });
+    }
+  });
+
+  // Admin: Update dispute status
+  app.post("/api/admin/finabridge/disputes/:id/status", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { status, assignedAdminId } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
+      if (!dispute) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      
+      await db.update(tradeDisputes).set({
+        status,
+        assignedAdminId: assignedAdminId || dispute.assignedAdminId,
+        updatedAt: new Date(),
+      }).where(eq(tradeDisputes.id, req.params.id));
+      
+      await storage.createAuditLog({
+        entityType: "trade_dispute",
+        entityId: dispute.id,
+        actionType: "update_status",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Status changed to ${status}`,
+      });
+      
+      res.json({ message: "Dispute status updated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update dispute" });
+    }
+  });
+
+  // Admin: Resolve dispute
+  app.post("/api/admin/finabridge/disputes/:id/resolve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { resolution } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
+      if (!dispute) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      
+      await db.update(tradeDisputes).set({
+        status: 'Resolved',
+        resolution,
+        resolvedBy: adminUser.id,
+        resolvedAt: new Date(),
+        updatedAt: new Date(),
+      }).where(eq(tradeDisputes.id, req.params.id));
+      
+      await storage.createAuditLog({
+        entityType: "trade_dispute",
+        entityId: dispute.id,
+        actionType: "resolve",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Dispute resolved: ${resolution}`,
+      });
+      
+      res.json({ message: "Dispute resolved successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to resolve dispute" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - DEAL ROOM DOCUMENTS
+  // ============================================================================
+
+  // Upload document to deal room
+  app.post("/api/deal-rooms/:dealRoomId/documents", ensureAuthenticated, async (req, res) => {
+    try {
+      const { documentType, fileName, fileUrl, fileSize, description, expiresAt } = req.body;
+      const sessionUserId = req.session?.userId;
+      
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+      
+      // Verify user is party to the deal room and determine role
+      let userRole = '';
+      if (dealRoom.importerUserId === sessionUserId) {
+        userRole = 'importer';
+      } else if (dealRoom.exporterUserId === sessionUserId) {
+        userRole = 'exporter';
+      } else if (dealRoom.assignedAdminId === sessionUserId) {
+        userRole = 'admin';
+      } else {
+        return res.status(403).json({ message: "Not authorized to upload to this deal room" });
+      }
+      
+      const [document] = await db.insert(dealRoomDocuments).values({
+        id: crypto.randomUUID(),
+        dealRoomId: dealRoom.id,
+        tradeRequestId: dealRoom.tradeRequestId,
+        uploadedByUserId: sessionUserId,
+        uploaderRole: userRole,
+        documentType,
+        fileName,
+        fileUrl,
+        fileSize,
+        description,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        status: 'Pending',
+      }).returning();
+      
+      res.json({ document, message: "Document uploaded successfully" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
+    }
+  });
+
+  // Get deal room documents
+  app.get("/api/deal-rooms/:dealRoomId/documents", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) {
+        return res.status(404).json({ message: "Deal room not found" });
+      }
+      
+      // Check if admin with FinaBridge permissions
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin' && (sessionUser.permissions?.includes('view_finabridge') || sessionUser.permissions?.includes('manage_finabridge'));
+      
+      // Verify user is party to the deal room or is admin
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized to view documents in this deal room" });
+      }
+      
+      const documents = await db.select().from(dealRoomDocuments).where(eq(dealRoomDocuments.dealRoomId, req.params.dealRoomId)).orderBy(desc(dealRoomDocuments.createdAt));
+      res.json({ documents });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get documents" });
+    }
+  });
+
+  // Admin: Verify document
+  app.post("/api/admin/deal-room-documents/:id/verify", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { status, verificationNotes } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      if (!['Verified', 'Rejected'].includes(status)) {
+        return res.status(400).json({ message: "Status must be Verified or Rejected" });
+      }
+      
+      await db.update(dealRoomDocuments).set({
+        status,
+        verifiedBy: adminUser.id,
+        verifiedAt: new Date(),
+        verificationNotes,
+        updatedAt: new Date(),
+      }).where(eq(dealRoomDocuments.id, req.params.id));
+      
+      res.json({ message: `Document ${status.toLowerCase()}` });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to verify document" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - TRADE DEADLINES
+  // ============================================================================
+
+  // Set trade deadlines
+  app.post("/api/admin/finabridge/requests/:id/deadlines", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { proposalDeadline, settlementDeadline, deliveryDeadline } = req.body;
+      
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      
+      await storage.updateTradeRequest(req.params.id, {
+        proposalDeadline: proposalDeadline ? new Date(proposalDeadline) : null,
+        settlementDeadline: settlementDeadline ? new Date(settlementDeadline) : null,
+        deliveryDeadline: deliveryDeadline ? new Date(deliveryDeadline) : null,
+      });
+      
+      res.json({ message: "Deadlines updated successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update deadlines" });
+    }
+  });
+
+  // Get overdue trades
+  app.get("/api/admin/finabridge/overdue-trades", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
+    try {
+      const now = new Date();
+      const allRequests = await storage.getAllTradeRequests();
+      
+      const overdueTrades = allRequests.filter(r => {
+        if (r.status === 'Completed' || r.status === 'Cancelled') return false;
+        
+        const proposalDeadline = r.proposalDeadline ? new Date(r.proposalDeadline) : null;
+        const settlementDeadline = r.settlementDeadline ? new Date(r.settlementDeadline) : null;
+        const deliveryDeadline = r.deliveryDeadline ? new Date(r.deliveryDeadline) : null;
+        
+        return (proposalDeadline && proposalDeadline < now) ||
+               (settlementDeadline && settlementDeadline < now) ||
+               (deliveryDeadline && deliveryDeadline < now);
+      });
+      
+      res.json({ overdueTrades });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get overdue trades" });
     }
   });
   
