@@ -84,7 +84,7 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
   doc.text(`Gold Sold: ${plan.goldSoldGrams?.toFixed(2)} g`, leftCol, y + 22);
   doc.text(`Enrollment Price: $${plan.enrollmentPriceUsdPerGram?.toFixed(2)} / g`, leftCol, y + 29);
 
-  doc.text(`Margin Rate: ${(plan.marginRateAnnualPercent || 0) * 100}% p.a.`, rightCol, y + 15);
+  doc.text(`Margin Rate: ${plan.agreedMarginAnnualPercent || 0}% p.a.`, rightCol, y + 15);
   doc.text(`Base Price (Deferred): $${plan.basePriceComponentUsd?.toLocaleString()}`, rightCol, y + 22);
   doc.text(`Total Margin: $${plan.totalMarginComponentUsd?.toLocaleString()}`, rightCol, y + 29);
   
@@ -136,7 +136,7 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
   y = res.newY;
   res = addWrappedText(`3.2. Base Price Component: The core value of your sale, known as the Base Price Component, is calculated by multiplying the quantity of gold sold by the Current Market Gold Price at enrollment. This results in an amount of $${plan.basePriceComponentUsd?.toLocaleString()}. This entire sum represents the deferred portion of your payment and will be settled in full upon the Plan's maturity.`, y);
   y = res.newY;
-  res = addWrappedText(`3.3. Margin Component & Quarterly Disbursements: An additional amount, the Margin Component, is added to your total proceeds. For your selected ${plan.tenorMonths}-Month Plan, an annual margin of ${(plan.marginRateAnnualPercent || 0) * 100}% applies to the Base Price Component. The total value of this Margin Component is $${plan.totalMarginComponentUsd?.toLocaleString()}. This amount is not paid as a lump sum; instead, it is distributed to you in equal instalments, known as Quarterly Disbursements. Each fixed monetary disbursement ($${plan.quarterlyMarginUsd?.toLocaleString()}) is automatically converted into physical gold based on the prevailing market price on the disbursement date.`, y);
+  res = addWrappedText(`3.3. Margin Component & Quarterly Disbursements: An additional amount, the Margin Component, is added to your total proceeds. For your selected ${plan.tenorMonths}-Month Plan, an annual margin of ${plan.agreedMarginAnnualPercent || 0}% applies to the Base Price Component. The total value of this Margin Component is $${plan.totalMarginComponentUsd?.toLocaleString()}. This amount is not paid as a lump sum; instead, it is distributed to you in equal instalments, known as Quarterly Disbursements. Each fixed monetary disbursement ($${plan.quarterlyMarginUsd?.toLocaleString()}) is automatically converted into physical gold based on the prevailing market price on the disbursement date.`, y);
   y = res.newY;
   res = addWrappedText("3.4. Base Price Payment at Maturity: At the end of the Plan term, Wingold will settle the Base Price Component. Settlement will be made by crediting your Fina wallet with a quantity of gold grams equivalent to the Base Price Component Value divided by the Current Market Gold Price at Maturity. This credit will be completed within three (3) business days of the Maturity Date.", y);
   y = res.newY + 5;
@@ -188,6 +188,16 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
 
   res = addWrappedText("5.3. Forfeiture of Rights: Upon early termination, all accrued but unpaid future Quarterly Disbursements are immediately forfeited, and you lose entitlement to the deferred Base Price Component payment for the remaining term.", y);
   y = res.newY;
+
+  res = addWrappedText("5.4. Comprehensive Early Termination Example:", y, 10, true);
+  y = res.newY;
+  res = addWrappedText("Original Sale: 100 Gold Grams at $1,000/gram = $100,000 Base Price (deferred). Agreed Margin: 10% p.a. Total Margin: $10,000. Total Sale Proceeds: $110,000. Admin Fee: 1%, Penalty: 5%. Received: 2 Quarterly Disbursements totaling $2,500.", y, 9, false, 5);
+  y = res.newY;
+  res = addWrappedText("Scenario A (Market Price Lower): Current price $900/gram. Base Value = $90,000. Deductions = $9,100. Net = $80,900. Final Gold = 89.89g.", y, 9, false, 5);
+  y = res.newY;
+  res = addWrappedText("Scenario B (Market Price Higher): Current price $1,100/gram. Base Value = $100,000 (original). Deductions = $9,100. Net = $90,900. Final Gold = 82.64g.", y, 9, false, 5);
+  y = res.newY;
+
   res = addWrappedText("5.5. Market Conditions Impact: Early termination typically results in substantial financial loss due to penalties and fee deductions, regardless of market price movements.", y);
   y = res.newY + 5;
 
@@ -196,17 +206,17 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
   y = res.newY;
   res = addWrappedText("By participating, you represent, warrant, and acknowledge that:", y);
   y = res.newY;
-  res = addWrappedText("6.1. Understanding of Transaction Structure: You fully understand that this is an immediate sale of your gold. You acknowledge the deferred payment structure and accept that early termination results in severe penalties.", y, 10, false, 5);
+  res = addWrappedText("6.1. Understanding of Transaction Structure: You fully understand that this is an immediate sale of your gold to Wingold. You acknowledge the deferred payment structure and accept that early termination results in severe penalties.", y, 10, false, 5);
   y = res.newY;
   res = addWrappedText("6.2. Risk Acceptance: You accept all risks associated with the Plan, including variability in physical quantity of margin gold and counterparty performance risk.", y, 10, false, 5);
   y = res.newY;
-  res = addWrappedText("6.3. No Guarantee of Value: You understand that future market value of gold received cannot be guaranteed.", y, 10, false, 5);
+  res = addWrappedText("6.3. No Guarantee of Value: You understand that while the monetary value of the Margin Component disbursements is fixed, the quantity of physical gold delivered varies with market prices.", y, 10, false, 5);
   y = res.newY;
-  res = addWrappedText("6.4. Independent Decision: Your participation is based on your own independent assessment.", y, 10, false, 5);
+  res = addWrappedText("6.4. Independent Decision: Your participation is based on your own independent assessment and is not made in reliance on any guarantee regarding future gold prices.", y, 10, false, 5);
   y = res.newY;
-  res = addWrappedText("6.5. Financial Capacity: You have the financial capacity to sustain the entire Plan term without requiring early access to funds.", y, 10, false, 5);
+  res = addWrappedText("6.5. Financial Capacity: You have the financial capacity to sustain the entire Plan term without requiring early access to the proceeds of the sale.", y, 10, false, 5);
   y = res.newY;
-  res = addWrappedText("6.6. Tax Responsibilities: You are solely responsible for all tax obligations arising from this transaction.", y, 10, false, 5);
+  res = addWrappedText("6.6. Tax Responsibilities: You are solely responsible for understanding and complying with all tax obligations arising from this transaction.", y, 10, false, 5);
   y = res.newY + 5;
 
   // 7. Risks
@@ -217,6 +227,60 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
   res = addWrappedText("7.2. Margin Component Quantity Variability Risk: The physical quantity of gold received from disbursements varies inversely with market price.", y);
   y = res.newY;
   res = addWrappedText("7.3. Market Price Divergence Risk: If market prices rise significantly, you will not benefit from appreciation on the deferred portion of your sale proceeds.", y);
+  y = res.newY;
+  res = addWrappedText("7.4. Counterparty and Performance Risk: Your entitlement represents an unsecured contractual obligation of Wingold and Metals DMCC.", y);
+  y = res.newY;
+  res = addWrappedText("7.5. Platform and Operational Risk: The Plan's administration depends on the continued operation of the Finatrades Platform.", y);
+  y = res.newY;
+  res = addWrappedText("7.6. Regulatory and Legal Risk: Changes in laws or regulations could affect the Plan's structure or availability.", y);
+  y = res.newY;
+  res = addWrappedText("7.7. Liquidity Risk: The Base Price Component is deferred and illiquid for the duration of the Plan term.", y);
+  y = res.newY;
+  res = addWrappedText("7.8. Inflation and Purchasing Power Risk: Inflation during the Plan term will erode the real purchasing power of fixed monetary values.", y);
+  y = res.newY;
+  res = addWrappedText("7.9. No Fiduciary Relationship: Neither Finatrades nor Wingold acts as your fiduciary or investment advisor.", y);
+  y = res.newY;
+  res = addWrappedText("7.10. No Deposit Insurance: The Plan is not covered by any deposit insurance scheme or government guarantee.", y);
+  y = res.newY + 5;
+
+  // 8. Governing Law
+  res = addWrappedText("8. Governing Law and Dispute Resolution", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("8.1. These Terms shall be governed by the substantive laws of Switzerland.", y);
+  y = res.newY;
+  res = addWrappedText("8.2. Any dispute shall be subject to the exclusive jurisdiction of the competent courts of Geneva, Switzerland.", y);
+  y = res.newY;
+  res = addWrappedText("8.3. Finatrades and Wingold reserve the right to submit any dispute to binding ICC arbitration in Geneva.", y);
+  y = res.newY;
+  res = addWrappedText("8.4. Class Action Waiver: You waive any right to participate in a class, collective, or representative action.", y);
+  y = res.newY;
+  res = addWrappedText("8.5. Limitation Period: Any claim must be filed within one (1) year after it arose.", y);
+  y = res.newY + 5;
+
+  // 9. General Provisions
+  res = addWrappedText("9. General Provisions", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("9.1. Entire Agreement: These Terms constitute the entire agreement.", y);
+  y = res.newY;
+  res = addWrappedText("9.2. Amendment Right: Finatrades reserves the right to amend these Terms with 30 days notice.", y);
+  y = res.newY;
+  res = addWrappedText("9.3. Severability: If any provision is unenforceable, it will be limited to the minimum extent necessary.", y);
+  y = res.newY;
+  res = addWrappedText("9.4. Assignment: You may not assign your rights. Finatrades and Wingold may assign their rights without consent.", y);
+  y = res.newY;
+  res = addWrappedText("9.5. Force Majeure: Neither party is liable for failure to perform due to circumstances beyond reasonable control.", y);
+  y = res.newY + 5;
+
+  // 10. Settlement Assurance
+  res = addWrappedText("10. Settlement Assurance", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("Raminvest Holding Ltd (DIFC Registration No. 7030), as the governing entity of the Group ecosystem that includes Wingold & Metals DMCC, provides a limited settlement assurance mechanism supported by verified geological gold reserves held through Boudadiya Services SARL under Mining Permit No. 2265 B2-WOMPOU. According to the independent MKDG Geological Audit Report, the in-situ value of these Proven Reserves was estimated at USD 42.134 Billion as of 15 July 2025. This assurance, formally recognized under DIFC procedures (SR Reference No. SR-646772), serves solely as an internal group mechanism. It is not a banking guarantee, financial insurance, or customer protection product. Your sole contractual counterparty remains Wingold & Metals DMCC.", y, 9);
+  y = res.newY + 5;
+
+  // 11. Contact Information
+  res = addWrappedText("11. Contact Information", y, 12, true);
+  y = res.newY;
+  res = addWrappedText("For questions: Finatrades Platform Support | Email: admin@finatrades.com | Website: www.finatrades.com/contact | Address: Rue Robert-Céard 6, 1204 Geneva, Switzerland", y, 9);
   y = res.newY + 15;
 
   // --- SIGNATURE SECTION ---
