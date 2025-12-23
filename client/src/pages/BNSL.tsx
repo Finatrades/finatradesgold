@@ -58,16 +58,16 @@ function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: Bn
     try {
       const pdfBlob = await generateBnslAgreement({
         planId: plan.id,
-        goldGrams: plan.goldSoldGrams,
-        lockInMonths: plan.lockInMonths,
-        lockedPrice: plan.lockedPricePerGram,
-        marginRate: plan.marginRate,
+        goldGrams: Number(plan.goldSoldGrams),
+        lockInMonths: plan.tenorMonths,
+        lockedPrice: Number(plan.enrollmentPriceUsdPerGram),
+        marginRate: Number(plan.agreedMarginAnnualPercent),
         startDate: new Date(plan.startDate),
         maturityDate: new Date(plan.maturityDate),
-        totalSaleValue: plan.totalSaleValueUsd,
-        baseComponent: plan.basePriceComponentUsd,
-        marginComponent: plan.totalMarginComponentUsd,
-        userName: agreement?.signerName || 'User',
+        totalSaleValue: Number(plan.totalSaleProceedsUsd),
+        baseComponent: Number(plan.basePriceComponentUsd),
+        marginComponent: Number(plan.totalMarginComponentUsd),
+        userName: agreement?.signatureName || 'User',
         signedDate: agreement?.signedAt ? new Date(agreement.signedAt) : new Date()
       });
       
@@ -127,10 +127,10 @@ function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: Bn
                       </div>
                       <div>
                         <h4 className="font-semibold text-foreground">
-                          Plan #{plan.id} - {plan.goldSoldGrams.toFixed(2)}g Gold
+                          Plan #{plan.id} - {Number(plan.goldSoldGrams).toFixed(2)}g Gold
                         </h4>
                         <p className="text-sm text-muted-foreground">
-                          {plan.lockInMonths} months | {plan.marginRate}% margin | 
+                          {plan.tenorMonths} months | {plan.agreedMarginAnnualPercent}% margin | 
                           Signed: {agreement?.signedAt 
                             ? new Date(agreement.signedAt).toLocaleDateString() 
                             : new Date(plan.startDate).toLocaleDateString()}
@@ -158,19 +158,19 @@ function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: Bn
                               <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                   <span className="text-muted-foreground">Gold Sold:</span>
-                                  <span className="ml-2 font-semibold">{plan.goldSoldGrams.toFixed(4)} g</span>
+                                  <span className="ml-2 font-semibold">{Number(plan.goldSoldGrams).toFixed(4)} g</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Lock-in Period:</span>
-                                  <span className="ml-2 font-semibold">{plan.lockInMonths} months</span>
+                                  <span className="ml-2 font-semibold">{plan.tenorMonths} months</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Margin Rate:</span>
-                                  <span className="ml-2 font-semibold">{plan.marginRate}%</span>
+                                  <span className="ml-2 font-semibold">{plan.agreedMarginAnnualPercent}%</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Locked Price:</span>
-                                  <span className="ml-2 font-semibold">${plan.lockedPricePerGram.toFixed(2)}/g</span>
+                                  <span className="ml-2 font-semibold">${Number(plan.enrollmentPriceUsdPerGram).toFixed(2)}/g</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Start Date:</span>
@@ -183,13 +183,13 @@ function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: Bn
                               </div>
                             </div>
                             
-                            {agreement?.signerName && (
+                            {agreement?.signatureName && (
                               <div className="bg-success-muted/50 rounded-lg border border-success/20 p-4 mb-4">
                                 <p className="text-sm font-medium text-success-muted-foreground">
-                                  Signed by: <span className="font-bold">{agreement.signerName}</span>
+                                  Signed by: <span className="font-bold">{agreement.signatureName}</span>
                                 </p>
                                 <p className="text-xs text-success-muted-foreground mt-1">
-                                  Date: {new Date(agreement.signedAt).toLocaleString()} | Version: {agreement.termsVersion || 'V3-2025-12-09'}
+                                  Date: {new Date(agreement.signedAt).toLocaleString()} | Version: {agreement.templateVersion || 'V3-2025-12-09'}
                                 </p>
                               </div>
                             )}
