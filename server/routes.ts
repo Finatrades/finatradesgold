@@ -14663,15 +14663,16 @@ ${message}
     }
   });
 
-  // Download invoice PDF
+  // Download invoice PDF (supports ?inline=1 for in-browser viewing)
   app.get("/api/admin/documents/invoices/:id/download", ensureAdminAsync, async (req, res) => {
     try {
       const result = await downloadInvoicePDF(req.params.id);
       if (result.error) {
         return res.status(404).json({ message: result.error });
       }
+      const isInline = req.query.inline === '1' || req.query.inline === 'true';
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.setHeader('Content-Disposition', `${isInline ? 'inline' : 'attachment'}; filename="${result.filename}"`);
       res.send(result.buffer);
     } catch (error) {
       console.error("Failed to download invoice:", error);
@@ -14679,15 +14680,16 @@ ${message}
     }
   });
 
-  // Download certificate PDF
+  // Download certificate PDF (supports ?inline=1 for in-browser viewing)
   app.get("/api/admin/documents/certificates/:id/download", ensureAdminAsync, async (req, res) => {
     try {
       const result = await downloadCertificatePDF(req.params.id);
       if (result.error) {
         return res.status(404).json({ message: result.error });
       }
+      const isInline = req.query.inline === '1' || req.query.inline === 'true';
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.setHeader('Content-Disposition', `${isInline ? 'inline' : 'attachment'}; filename="${result.filename}"`);
       res.send(result.buffer);
     } catch (error) {
       console.error("Failed to download certificate:", error);
@@ -14903,8 +14905,9 @@ ${message}
       const pdfBuffer = await pdfPromise;
       
       const filename = `finatrades-receipt-${transaction.odooId || transaction.id}-${new Date().toISOString().split('T')[0]}.pdf`;
+      const isInline = req.query.inline === '1' || req.query.inline === 'true';
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Disposition', `${isInline ? 'inline' : 'attachment'}; filename="${filename}"`);
       res.send(pdfBuffer);
       
       // Log the download

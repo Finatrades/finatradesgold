@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, RefreshCw, Download, Mail, FileText, Eye, Receipt, ArrowUpCircle, ArrowDownCircle, Repeat, Wallet } from 'lucide-react';
+import { Search, RefreshCw, Download, Mail, FileText, Eye, Receipt, ArrowUpCircle, ArrowDownCircle, Repeat, Wallet, Printer, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
@@ -203,6 +204,31 @@ export default function DocumentsManagement() {
     }
   };
 
+  // Preview modal state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [previewTitle, setPreviewTitle] = useState<string>('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleViewInvoice = (id: string, invoiceNumber: string) => {
+    setPreviewTitle(`Invoice ${invoiceNumber}`);
+    setPreviewUrl(`/api/admin/documents/invoices/${id}/download?inline=1`);
+    setPreviewOpen(true);
+  };
+
+  const handleViewCertificate = (id: string, certificateNumber: string) => {
+    setPreviewTitle(`Certificate ${certificateNumber || id}`);
+    setPreviewUrl(`/api/admin/documents/certificates/${id}/download?inline=1`);
+    setPreviewOpen(true);
+  };
+
+  const handleViewReceipt = (id: number, odooId: string | null) => {
+    setPreviewTitle(`Receipt ${odooId || `TXN-${id}`}`);
+    setPreviewUrl(`/api/admin/documents/receipts/${id}/download?inline=1`);
+    setPreviewOpen(true);
+  };
+
   const handleDownloadInvoice = (id: string) => {
     window.open(`/api/admin/documents/invoices/${id}/download`, '_blank');
   };
@@ -213,6 +239,12 @@ export default function DocumentsManagement() {
 
   const handleDownloadReceipt = (id: number) => {
     window.open(`/api/admin/documents/receipts/${id}/download`, '_blank');
+  };
+
+  const handlePrint = () => {
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.print();
+    }
   };
 
   const refetch = () => {
@@ -432,8 +464,19 @@ export default function DocumentsManagement() {
                               <div className="flex gap-2">
                                 <Button 
                                   size="sm" 
+                                  variant="default"
+                                  className="bg-purple-600 hover:bg-purple-700"
+                                  onClick={() => handleViewInvoice(invoice.id, invoice.invoiceNumber)}
+                                  title="View Invoice"
+                                  data-testid={`button-view-invoice-${invoice.id}`}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
                                   variant="outline"
                                   onClick={() => handleDownloadInvoice(invoice.id)}
+                                  title="Download Invoice"
                                   data-testid={`button-download-invoice-${invoice.id}`}
                                 >
                                   <Download className="w-4 h-4" />
@@ -443,6 +486,7 @@ export default function DocumentsManagement() {
                                   variant="outline"
                                   onClick={() => resendInvoiceMutation.mutate(invoice.id)}
                                   disabled={resendInvoiceMutation.isPending}
+                                  title="Resend Email"
                                   data-testid={`button-resend-invoice-${invoice.id}`}
                                 >
                                   <Mail className="w-4 h-4" />
@@ -510,8 +554,19 @@ export default function DocumentsManagement() {
                               <div className="flex gap-2">
                                 <Button 
                                   size="sm" 
+                                  variant="default"
+                                  className="bg-purple-600 hover:bg-purple-700"
+                                  onClick={() => handleViewCertificate(delivery.certificateId, delivery.certificateNumber || '')}
+                                  title="View Certificate"
+                                  data-testid={`button-view-cert-${delivery.id}`}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
                                   variant="outline"
                                   onClick={() => handleDownloadCertificate(delivery.certificateId)}
+                                  title="Download Certificate"
                                   data-testid={`button-download-cert-${delivery.id}`}
                                 >
                                   <Download className="w-4 h-4" />
@@ -521,6 +576,7 @@ export default function DocumentsManagement() {
                                   variant="outline"
                                   onClick={() => resendCertificateMutation.mutate(delivery.certificateId)}
                                   disabled={resendCertificateMutation.isPending}
+                                  title="Resend Email"
                                   data-testid={`button-resend-cert-${delivery.id}`}
                                 >
                                   <Mail className="w-4 h-4" />
@@ -605,6 +661,16 @@ export default function DocumentsManagement() {
                               <div className="flex gap-2">
                                 <Button 
                                   size="sm" 
+                                  variant="default"
+                                  className="bg-purple-600 hover:bg-purple-700"
+                                  onClick={() => handleViewReceipt(receipt.id, receipt.odooId)}
+                                  title="View Receipt"
+                                  data-testid={`button-view-receipt-${receipt.id}`}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
                                   variant="outline"
                                   onClick={() => handleDownloadReceipt(receipt.id)}
                                   title="Download Receipt PDF"
@@ -624,6 +690,53 @@ export default function DocumentsManagement() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Document Preview Modal */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+            <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-white">
+                  <FileText className="w-5 h-5" />
+                  {previewTitle}
+                </DialogTitle>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={handlePrint}
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    data-testid="button-print-document"
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    Print
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => window.open(previewUrl, '_blank')}
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    data-testid="button-download-from-preview"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              </div>
+            </DialogHeader>
+            <div className="flex-1 bg-gray-100 p-4 overflow-hidden">
+              {previewUrl && (
+                <iframe
+                  ref={iframeRef}
+                  src={previewUrl}
+                  className="w-full h-full border-0 rounded-lg shadow-lg bg-white"
+                  title={previewTitle}
+                  data-testid="iframe-document-preview"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
