@@ -142,70 +142,84 @@ export default function Hero() {
                 <motion.div
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="relative"
+                  className="relative lg:-mt-8"
                 >
-                  {/* Professional premium card */}
-                  <div className={`w-[380px] h-[240px] mx-auto rounded-3xl bg-gradient-to-br from-[#1a0a30] via-[#2A0055] to-[#0D001E] border ${isPersonal ? 'border-[#8A2BE2]/30' : 'border-[#A342FF]/40'} p-6 shadow-2xl shadow-[#8A2BE2]/25 relative overflow-hidden`}>
+                  {/* Professional premium card - exact replica */}
+                  <div className={`w-[400px] h-[260px] mx-auto rounded-3xl bg-gradient-to-br from-[#3D1A5C] via-[#2A0055] to-[#1a0a30] border ${isPersonal ? 'border-[#8A2BE2]/40' : 'border-[#A342FF]/50'} p-5 shadow-2xl shadow-[#8A2BE2]/30 relative overflow-hidden`}>
                     {/* Animated shimmer effect */}
                     <motion.div
                       animate={{ x: ['-100%', '300%'] }}
                       transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
-                      className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
+                      className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/8 to-transparent skew-x-12"
                     />
                     
-                    {/* Decorative circles */}
-                    <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-[#8A2BE2]/10 blur-2xl" />
-                    <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-[#FF2FBF]/10 blur-2xl" />
-                    
-                    {/* Header with logo and chip */}
-                    <div className="flex justify-between items-start mb-8 relative z-10">
-                      <div className="flex items-center gap-3">
-                        {/* Logo image */}
-                        <img src={finatradesLogo} alt="Finatrades" className="h-8 w-auto brightness-0 invert" />
-                        <span className="text-[#A342FF] text-sm">✦</span>
+                    {/* Header row: Logo + Active badge */}
+                    <div className="flex justify-between items-center mb-4 relative z-10">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#A342FF] text-lg">✦</span>
+                        <span className="text-white font-bold text-lg tracking-wide">FINA<span className="text-[#A342FF]">TRADES</span></span>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-green-400 font-bold uppercase px-3 py-1 bg-green-400/15 rounded-full border border-green-400/30">Active</span>
+                        <span className="text-[#A342FF]">📶</span>
+                      </div>
+                    </div>
+                    
+                    {/* Chip + Card type row */}
+                    <div className="flex items-center gap-4 mb-5 relative z-10">
                       {/* Gold chip */}
-                      <div className="w-14 h-10 rounded-lg bg-gradient-to-br from-[#EAC26B] via-[#F5D98A] to-[#d4af5a] shadow-lg relative overflow-hidden">
-                        <div className="absolute inset-0 flex flex-col justify-center">
-                          <div className="h-[2px] bg-[#b8942d]/50 mx-1" />
-                          <div className="h-[2px] bg-[#b8942d]/50 mx-1 mt-1" />
-                          <div className="h-[2px] bg-[#b8942d]/50 mx-1 mt-1" />
+                      <div className="w-12 h-9 rounded-md bg-gradient-to-br from-[#EAC26B] via-[#F5D98A] to-[#d4af5a] shadow-lg relative overflow-hidden">
+                        <div className="absolute inset-0 flex flex-col justify-center gap-[2px] py-2">
+                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
+                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
+                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
+                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
                         </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-[#A342FF]" />
+                          <span className="text-white font-semibold text-sm tracking-wide">{isPersonal ? 'PERSONAL GOLD' : 'ENTERPRISE GOLD'}</span>
+                        </div>
+                        <p className="text-gray-400 text-[10px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
                       </div>
                     </div>
                     
                     {/* Card number */}
-                    <div className="mb-6 relative z-10">
-                      <p className="text-white/90 text-lg tracking-[0.3em] font-light">•••• •••• •••• 4289</p>
+                    <div className="mb-5 relative z-10">
+                      <p className="text-white text-2xl tracking-[0.15em] font-medium">
+                        {isPersonal ? '4789' : '5892'} <span className="text-white/60">••••</span> <span className="text-white/60">••••</span> {isPersonal ? '3456' : '7821'}
+                      </p>
                     </div>
                     
-                    {/* Card details */}
+                    {/* Bottom row: Card holder + Valid thru + Secured */}
                     <div className="flex justify-between items-end relative z-10">
                       <div className="flex gap-8">
                         <div>
-                          <p className="text-[#A342FF] text-[10px] uppercase tracking-wider font-medium mb-1">Valid Thru</p>
-                          <p className="text-white text-sm font-semibold">12/28</p>
+                          <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Card Holder</p>
+                          <p className="text-white text-sm font-semibold">{isPersonal ? 'FINATRADES USER' : 'FINATRADES CORPORATE'}</p>
                         </div>
                         <div>
-                          <p className="text-[#A342FF] text-[10px] uppercase tracking-wider font-medium mb-1">{isPersonal ? 'Card Holder' : 'Authorized'}</p>
-                          <p className="text-white text-sm font-semibold">{isPersonal ? 'J. SMITH' : 'CORP ADMIN'}</p>
+                          <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Valid Thru</p>
+                          <p className="text-white text-sm font-semibold">12/28</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[#EAC26B] text-xs font-bold tracking-wide">{c.cardType}</p>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full border border-white/20">
+                        <span className="text-white/80 text-[10px]">🔒</span>
+                        <span className="text-white text-[10px] font-semibold tracking-wide">SECURED</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Swiss-Regulated badge */}
+                  {/* Swiss-Regulated Platform badge - red/pink style */}
                   <Link href="/regulatory-information">
                     <motion.a
                       whileHover={{ scale: 1.02 }}
-                      className="absolute -top-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#0D001E] to-[#1a0a30] border border-[#8A2BE2]/40 backdrop-blur-md shadow-xl cursor-pointer hover:border-[#A342FF]/60 transition-colors"
+                      className="absolute -top-4 right-4 sm:right-8 flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-50 border border-red-400 backdrop-blur-md shadow-lg cursor-pointer hover:border-red-500 hover:bg-red-100 transition-colors"
                     >
-                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                      <span className="text-white text-xs font-medium">Swiss-Regulated</span>
-                      <span className="text-[10px] text-green-400 font-bold uppercase px-2 py-0.5 bg-green-400/10 rounded-full">Active</span>
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-red-600 text-xs font-medium">Swiss-Regulated Platform</span>
+                      <span className="text-red-400 text-xs">○</span>
                     </motion.a>
                   </Link>
 
