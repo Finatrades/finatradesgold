@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BnslPlan } from '@/types/bnsl';
-import { ArrowLeft, CheckCircle2, AlertTriangle, PlayCircle, Clock, Hourglass, TrendingUp } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, PlayCircle, Clock, Hourglass, TrendingUp, FileText, Download, Loader2 } from 'lucide-react';
 import EarlyTerminationSimulator from './EarlyTerminationSimulator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { FULL_TERMS_AND_CONDITIONS } from './CreateBnslPlan';
 
 interface BnslPlanDetailProps {
   plan: BnslPlan;
@@ -12,6 +15,27 @@ interface BnslPlanDetailProps {
   onSimulatePayout: (payoutId: string, currentPrice: number) => void;
   onTerminate: (planId: string) => void;
   currentGoldPrice: number;
+}
+
+interface BnslAgreement {
+  id: string;
+  planId: string;
+  userId: string;
+  templateVersion: string;
+  signatureName: string;
+  signedAt: string;
+  termsAndConditions: string | null;
+  planDetails: {
+    tenorMonths: number;
+    goldSoldGrams: number;
+    enrollmentPriceUsdPerGram: number;
+    basePriceComponentUsd: number;
+    totalMarginComponentUsd: number;
+    quarterlyMarginUsd: number;
+    agreedMarginAnnualPercent: number;
+    startDate: string;
+    maturityDate: string;
+  };
 }
 
 export default function BnslPlanDetail({ 
@@ -23,6 +47,32 @@ export default function BnslPlanDetail({
 }: BnslPlanDetailProps) {
   
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [isAgreementOpen, setIsAgreementOpen] = useState(false);
+  const [agreement, setAgreement] = useState<BnslAgreement | null>(null);
+  const [loadingAgreement, setLoadingAgreement] = useState(false);
+
+  const fetchAgreement = async () => {
+    setLoadingAgreement(true);
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('GET', `/api/bnsl/agreements/plan/${plan.id}`);
+      const data = await res.json();
+      if (data.agreement) {
+        setAgreement(data.agreement);
+      }
+    } catch (err) {
+      console.error('Failed to fetch agreement:', err);
+    } finally {
+      setLoadingAgreement(false);
+    }
+  };
+
+  const handleViewAgreement = async () => {
+    if (!agreement) {
+      await fetchAgreement();
+    }
+    setIsAgreementOpen(true);
+  };
 
   // Find next scheduled payout
   const nextPayout = plan.payouts.find(p => p.status === 'Scheduled');
@@ -59,6 +109,19 @@ export default function BnslPlanDetail({
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Plans
         </Button>
         <div className="flex gap-2">
+           <Button 
+             variant="outline" 
+             className="border-primary text-primary hover:bg-primary/10"
+             onClick={handleViewAgreement}
+             disabled={loadingAgreement}
+           >
+             {loadingAgreement ? (
+               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+             ) : (
+               <FileText className="w-4 h-4 mr-2" />
+             )}
+             View Agreement
+           </Button>
            <Button 
              variant="destructive" 
              className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
@@ -211,6 +274,83 @@ export default function BnslPlanDetail({
           onBack();
         }}
       />
+
+      {/* Master Agreement Dialog */}
+      <Dialog open={isAgreementOpen} onOpenChange={setIsAgreementOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              BNSL Master Agreement
+            </DialogTitle>
+            <DialogDescription>
+              {agreement ? (
+                <div className="flex flex-wrap gap-4 text-sm mt-2">
+                  <span>
+                    <strong>Signed by:</strong> {agreement.signatureName}
+                  </span>
+                  <span>
+                    <strong>Signed on:</strong> {new Date(agreement.signedAt).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                  <span>
+                    <strong>Version:</strong> {agreement.templateVersion}
+                  </span>
+                </div>
+              ) : (
+                <span>Loading agreement details...</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-[60vh] w-full rounded border border-border p-6 bg-muted/30">
+              {loadingAgreement ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : agreement?.termsAndConditions ? (
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                  {agreement.termsAndConditions}
+                </pre>
+              ) : (
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                  {FULL_TERMS_AND_CONDITIONS}
+                </pre>
+              )}
+            </ScrollArea>
+          </div>
+
+          <div className="flex justify-between items-center pt-4 border-t border-border mt-4">
+            <div className="text-xs text-muted-foreground">
+              {agreement && (
+                <div className="space-y-1">
+                  <p><strong>Plan ID:</strong> {agreement.planId}</p>
+                  <p><strong>Agreement ID:</strong> {agreement.id}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => window.open(`/api/bnsl/agreements/${agreement?.id}/download`, '_blank')}
+                disabled={!agreement}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </Button>
+              <Button onClick={() => setIsAgreementOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
