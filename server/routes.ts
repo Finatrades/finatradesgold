@@ -8093,8 +8093,8 @@ ${message}
         finapayWallet: updatedFinapay,
         bnslWallet: updatedBnsl,
         narration: {
-          title: "Moved to BNSL (Fixed Entry)",
-          body: depositNarration
+          title: "Gold Locked from FinaPay",
+          body: `Locked ${gramsToLock.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`
         }
       });
     } catch (error) {
@@ -8312,8 +8312,8 @@ ${message}
         finapayWallet: updatedFinapay,
         bnslWallet: updatedBnsl,
         narration: {
-          title: "Withdrawn from BNSL (Current Price)",
-          body: withdrawalNarration
+          title: "Gold Unlocked to FinaPay",
+          body: `${gramsToWithdraw.toFixed(4)}g unlocked at $${currentPrice.toFixed(2)}/g`
         },
         summary: {
           gramsWithdrawn: gramsToWithdraw,

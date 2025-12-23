@@ -117,18 +117,18 @@ export default function BnslHedgedWalletCard({
       
       if (response.ok) {
         toast({ 
-          title: data.narration?.title || "Deposit Successful", 
-          description: data.narration?.body || `Deposited $${amount.toFixed(2)} to BNSL` 
+          title: data.narration?.title || "Gold Locked", 
+          description: data.narration?.body || `Locked $${amount.toFixed(2)} worth of gold from FinaPay` 
         });
         setIsDepositModalOpen(false);
         setDepositAmount('');
         fetchData();
         onRefresh?.();
       } else {
-        toast({ title: "Deposit Failed", description: data.message, variant: "destructive" });
+        toast({ title: "Lock Failed", description: data.message, variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to process deposit", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to lock gold", variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
@@ -147,18 +147,18 @@ export default function BnslHedgedWalletCard({
       
       if (response.ok) {
         toast({ 
-          title: data.narration?.title || "Withdrawal Successful", 
-          description: data.narration?.body || `Withdrawn successfully` 
+          title: data.narration?.title || "Gold Unlocked", 
+          description: data.narration?.body || `Gold unlocked to FinaPay successfully` 
         });
         setIsWithdrawModalOpen(false);
         setSelectedPosition(null);
         fetchData();
         onRefresh?.();
       } else {
-        toast({ title: "Withdrawal Failed", description: data.message, variant: "destructive" });
+        toast({ title: "Unlock Failed", description: data.message, variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to process withdrawal", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to unlock gold", variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
@@ -191,40 +191,45 @@ export default function BnslHedgedWalletCard({
               <div className="p-2 rounded-lg bg-primary/10 text-primary">
                 <Lock className="w-5 h-5" />
               </div>
-              BNSL Hedged Wallet
-              <Badge variant="outline" className="ml-2 text-xs">Fixed Entry</Badge>
+              BNSL Positions
             </CardTitle>
-            <div className="flex gap-2">
-              {activePositions.length > 0 && (
+            <div className="flex items-center gap-4">
+              <div className="text-right border-r border-border pr-4">
+                <p className="text-xs text-muted-foreground">FinaPay Available</p>
+                <p className="font-bold text-primary">{finaPayBalanceGold.toFixed(4)} g</p>
+              </div>
+              <div className="flex gap-2">
+                {activePositions.length > 0 && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary/10 font-bold"
+                    onClick={() => setIsWithdrawModalOpen(true)}
+                    data-testid="button-bnsl-withdraw"
+                  >
+                    <ArrowDownToLine className="w-4 h-4 mr-2" /> Unlock to FinaPay
+                  </Button>
+                )}
                 <Button 
                   size="sm" 
-                  variant="outline"
-                  className="border-primary text-primary hover:bg-primary/10 font-bold"
-                  onClick={() => setIsWithdrawModalOpen(true)}
-                  data-testid="button-bnsl-withdraw"
+                  className="bg-primary text-white hover:bg-primary/90 font-bold"
+                  onClick={() => setIsDepositModalOpen(true)}
+                  data-testid="button-bnsl-deposit"
                 >
-                  <ArrowDownToLine className="w-4 h-4 mr-2" /> Withdraw
+                  <Lock className="w-4 h-4 mr-2" /> Lock from FinaPay
                 </Button>
-              )}
-              <Button 
-                size="sm" 
-                className="bg-primary text-white hover:bg-primary/90 font-bold"
-                onClick={() => setIsDepositModalOpen(true)}
-                data-testid="button-bnsl-deposit"
-              >
-                <ArrowUpFromLine className="w-4 h-4 mr-2" /> Deposit USD
-              </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
         
         <CardContent>
-          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-3 mb-4">
+          <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-lg p-3 mb-4">
             <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-amber-800">
-                <strong>BNSL is a hedged fixed-entry module.</strong> Your principal is locked at the entry gold price. 
-                When you withdraw, conversion happens at today's gold price.
+              <Info className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-purple-800">
+                <strong>Lock gold from your FinaPay wallet</strong> at today's price. When you unlock, 
+                gold returns to FinaPay at current market price. Simple and direct.
               </p>
             </div>
           </div>
@@ -316,7 +321,7 @@ export default function BnslHedgedWalletCard({
                           }}
                           data-testid={`button-withdraw-position-${position.id}`}
                         >
-                          Withdraw
+                          Unlock
                         </Button>
                       </div>
                       {position.depositNarration && (
@@ -336,9 +341,9 @@ export default function BnslHedgedWalletCard({
       <Dialog open={isDepositModalOpen} onOpenChange={setIsDepositModalOpen}>
         <DialogContent className="bg-white border-border text-foreground max-w-md">
           <DialogHeader>
-            <DialogTitle>Deposit to BNSL (Fixed Entry)</DialogTitle>
+            <DialogTitle>Lock Gold from FinaPay</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Enter USD amount to lock in BNSL at the current gold price. Your grams will be locked at this entry price.
+              Lock gold from your FinaPay wallet at today's price. Enter the USD value you want to lock.
             </DialogDescription>
           </DialogHeader>
 
@@ -387,7 +392,7 @@ export default function BnslHedgedWalletCard({
               data-testid="button-confirm-deposit"
             >
               {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {isProcessing ? 'Processing...' : 'Confirm Deposit'}
+              {isProcessing ? 'Processing...' : 'Lock Gold'}
             </Button>
           </div>
         </DialogContent>
@@ -399,9 +404,9 @@ export default function BnslHedgedWalletCard({
       }}>
         <DialogContent className="bg-white border-border text-foreground max-w-md">
           <DialogHeader>
-            <DialogTitle>Withdraw from BNSL</DialogTitle>
+            <DialogTitle>Unlock Gold to FinaPay</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Withdraw your locked gold back to FinaPay at the current market price.
+              Unlock your gold and return it to your FinaPay wallet at today's market price.
             </DialogDescription>
           </DialogHeader>
 
@@ -436,7 +441,7 @@ export default function BnslHedgedWalletCard({
                   data-testid="button-confirm-withdraw"
                 >
                   {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  {isProcessing ? 'Processing...' : 'Withdraw Full Amount'}
+                  {isProcessing ? 'Processing...' : 'Unlock to FinaPay'}
                 </Button>
               </>
             ) : (
