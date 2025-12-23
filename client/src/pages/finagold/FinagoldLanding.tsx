@@ -9,6 +9,7 @@ import Products from './components/Products';
 import Certificates from './components/Certificates';
 import TrustStrip from './components/TrustStrip';
 import CTA from './components/CTA';
+import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
@@ -110,6 +111,7 @@ function FinagoldContent() {
         <Certificates />
         <TrustStrip />
         <CTA />
+        <ContactForm />
       </main>
       <Footer />
       <FloatingAgentChat />

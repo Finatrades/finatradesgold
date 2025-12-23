@@ -548,6 +548,57 @@ export async function registerRoutes(
   });
   
   // ============================================================================
+  // CONTACT FORM (PUBLIC)
+  // ============================================================================
+  
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, phone, company, subject, message } = req.body;
+      
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "Name, email, subject, and message are required" });
+      }
+      
+      // Send email notification to support
+      await sendEmailDirect({
+        to: "support@finatrades.com",
+        subject: `[Contact Form] ${subject} - from ${name}`,
+        text: `
+New contact form submission:
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone || 'Not provided'}
+Company: ${company || 'Not provided'}
+Subject: ${subject}
+
+Message:
+${message}
+        `,
+        html: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #8A2BE2;">New Contact Form Submission</h2>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Name:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${name}</td></tr>
+    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Email:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="mailto:${email}">${email}</a></td></tr>
+    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Phone:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${phone || 'Not provided'}</td></tr>
+    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Company:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${company || 'Not provided'}</td></tr>
+    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Subject:</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td></tr>
+  </table>
+  <h3 style="color: #4B0082; margin-top: 20px;">Message:</h3>
+  <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${message}</div>
+</div>
+        `
+      });
+      
+      res.json({ success: true, message: "Message sent successfully" });
+    } catch (error) {
+      console.error('[Contact Form] Error:', error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // ============================================================================
   // AUTHENTICATION & USER MANAGEMENT
   // ============================================================================
   
