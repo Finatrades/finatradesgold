@@ -8583,7 +8583,7 @@ ${message}
     }
   });
   
-  // Create BNSL plan (locks gold from BNSL wallet)
+  // Create BNSL plan (locks gold directly from FinaPay wallet)
   app.post("/api/bnsl/plans", ensureAuthenticated, async (req, res) => {
     try {
       // Auto-generate contractId if not provided
@@ -8605,50 +8605,58 @@ ${message}
       });
       const goldGrams = parseFloat(planData.goldSoldGrams);
       
-      // Get BNSL wallet and verify sufficient funds
-      const bnslWallet = await storage.getOrCreateBnslWallet(planData.userId);
-      const availableGold = parseFloat(bnslWallet.availableGoldGrams);
+      // Get FinaPay wallet and verify sufficient funds (directly from FinaPay, not BNSL wallet)
+      const finaPayWallet = await storage.getWallet(planData.userId);
+      if (!finaPayWallet) {
+        return res.status(400).json({ message: "FinaPay wallet not found" });
+      }
+      const availableGold = parseFloat(finaPayWallet.goldGrams);
       
       if (availableGold < goldGrams) {
         return res.status(400).json({ 
-          message: `Insufficient BNSL wallet balance. Available: ${availableGold.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g`
+          message: `Insufficient FinaPay balance. Available: ${availableGold.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g`
         });
       }
       
-      // Lock gold: move from available to locked
-      const newAvailable = availableGold - goldGrams;
-      const newLocked = parseFloat(bnslWallet.lockedGoldGrams) + goldGrams;
-      await storage.updateBnslWallet(bnslWallet.id, {
-        availableGoldGrams: newAvailable.toFixed(6),
-        lockedGoldGrams: newLocked.toFixed(6)
-      });
+      // Get BNSL wallet for lifecycle tracking
+      const bnslWallet = await storage.getOrCreateBnslWallet(planData.userId);
+      const originalLocked = parseFloat(bnslWallet.lockedGoldGrams);
       
-      // Create the plan
-      const plan = await storage.createBnslPlan(planData);
+      // Perform atomic-like operations with rollback on failure
+      let walletUpdated = false;
+      let bnslWalletUpdated = false;
+      let plan: any = null;
       
-      // Update vault holdings - mark gold as locked for BNSL
-      const vaultHoldings = await storage.getUserVaultHoldings(planData.userId);
-      let remainingToLock = goldGrams;
-      
-      for (const holding of vaultHoldings) {
-        if (remainingToLock <= 0) break;
-        const holdingGold = parseFloat(holding.goldGrams);
-        if (holdingGold > 0) {
-          const lockAmount = Math.min(holdingGold, remainingToLock);
-          // Reduce vault holding by locked amount
-          await storage.updateVaultHolding(holding.id, {
-            goldGrams: (holdingGold - lockAmount).toFixed(6)
+      try {
+        // Step 1: Lock gold from FinaPay wallet
+        const newFinaPayBalance = availableGold - goldGrams;
+        await storage.updateWallet(finaPayWallet.id, {
+          goldGrams: newFinaPayBalance.toFixed(6)
+        });
+        walletUpdated = true;
+        
+        // Step 2: Track locked gold in BNSL wallet for lifecycle management
+        const newLocked = originalLocked + goldGrams;
+        await storage.updateBnslWallet(bnslWallet.id, {
+          lockedGoldGrams: newLocked.toFixed(6)
+        });
+        bnslWalletUpdated = true;
+        
+        // Step 3: Create the plan
+        plan = await storage.createBnslPlan(planData);
+      } catch (err) {
+        // Rollback on failure
+        if (walletUpdated) {
+          await storage.updateWallet(finaPayWallet.id, {
+            goldGrams: availableGold.toFixed(6)
           });
-          remainingToLock -= lockAmount;
-          
-          // Update related certificates to "Updated" status
-          const certificates = await storage.getUserActiveCertificates(planData.userId);
-          for (const cert of certificates) {
-            if (cert.vaultHoldingId === holding.id) {
-              await storage.updateCertificate(cert.id, { status: 'Updated' });
-            }
-          }
         }
+        if (bnslWalletUpdated) {
+          await storage.updateBnslWallet(bnslWallet.id, {
+            lockedGoldGrams: originalLocked.toFixed(6)
+          });
+        }
+        throw err;
       }
       
       // Create a new certificate for the BNSL-locked gold
@@ -8678,7 +8686,7 @@ ${message}
         })
         .catch(err => console.error('[Routes] BNSL Lock certificate error:', err));
       
-      // Record ledger entry for BNSL lock
+      // Record ledger entry for BNSL lock (from FinaPay)
       const enrollmentPriceVal = parseFloat(planData.enrollmentPriceUsdPerGram);
       const { vaultLedgerService } = await import('./vault-ledger-service');
       await vaultLedgerService.recordLedgerEntry({
@@ -8686,12 +8694,12 @@ ${message}
         action: 'BNSL_Lock',
         goldGrams: goldGrams,
         goldPriceUsdPerGram: enrollmentPriceVal,
-        fromWallet: 'BNSL',
+        fromWallet: 'FinaPay',
         toWallet: 'BNSL',
         fromStatus: 'Available',
         toStatus: 'Locked_BNSL',
         bnslPlanId: plan.id,
-        notes: `Locked ${goldGrams.toFixed(4)}g for BNSL contract ${plan.contractId}`,
+        notes: `Locked ${goldGrams.toFixed(4)}g from FinaPay for BNSL contract ${plan.contractId}`,
         createdBy: 'system',
       });
 

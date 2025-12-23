@@ -758,7 +758,7 @@ export default function BNSL() {
 
             <TabsContent value="create" id="bnsl-create-section" className={`mt-0 animate-in fade-in slide-in-from-bottom-2 transition-all duration-500 ${highlightCreate ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50' : ''}`}>
                <CreateBnslPlan 
-                 bnslWalletBalance={bnslWalletBalance} 
+                 finaPayBalanceGold={finaPayGoldBalance} 
                  currentGoldPrice={currentGoldPrice}
                  onSuccess={handleCreatePlan}
                />
