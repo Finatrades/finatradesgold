@@ -166,22 +166,22 @@ export default function BnslPlanDetail({
             </div>
             
             {/* New Daily Accrual Card */}
-            <div className="bg-secondary/10 -m-2 p-2 rounded-lg border border-secondary/20">
+            <div className="bg-primary/10 -m-2 p-2 rounded-lg border border-primary/20">
               <div className="flex items-center gap-2 mb-1">
-                 <Hourglass className="w-3 h-3 text-secondary animate-pulse" />
-                 <p className="text-xs text-secondary uppercase tracking-wider">Accrued Margin</p>
+                 <Hourglass className="w-3 h-3 text-primary animate-pulse" />
+                 <p className="text-xs text-primary uppercase tracking-wider">Accrued Margin</p>
               </div>
               <p className="text-2xl font-bold text-foreground">${accruedMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               <p className="text-xs text-muted-foreground mt-1">
                  Daily: ${dailyMarginUsd.toFixed(2)}
                  <span className="ml-1 text-muted-foreground/50">|</span>
-                 <span className="ml-1 text-secondary">Unpaid</span>
+                 <span className="ml-1 text-primary">Unpaid</span>
               </p>
             </div>
 
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Paid Margin</p>
-              <p className="text-2xl font-bold text-secondary">{plan.paidMarginGrams.toFixed(3)} g</p>
+              <p className="text-2xl font-bold text-primary">{plan.paidMarginGrams.toFixed(3)} g</p>
               <p className="text-xs text-muted-foreground mt-1">${plan.paidMarginUsd.toLocaleString()} Value</p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function BnslPlanDetail({
                  You have sold this gold to Wingold. You no longer own it. You hold a contractual right to receive 
                  (1) Quarterly Margin in gold grams and (2) Base Price Component settlement at maturity.
                  <br/><br/>
-                 <span className="text-secondary font-medium">Note:</span> Margin accrues daily but is disbursed only on the scheduled quarterly dates.
+                 <span className="text-primary font-medium">Note:</span> Margin accrues daily but is disbursed only on the scheduled quarterly dates.
                </p>
              </div>
           </div>
@@ -242,7 +242,7 @@ export default function BnslPlanDetail({
                        ? `$${payout.marketPriceUsdPerGram.toFixed(2)}` 
                        : '-'}
                    </td>
-                   <td className="p-4 font-bold text-secondary">
+                   <td className="p-4 font-bold text-primary">
                      {payout.gramsCredited ? `${payout.gramsCredited.toFixed(4)} g` : '-'}
                    </td>
                    <td className="p-4 pr-6 text-right">

@@ -71,11 +71,11 @@ export default function BnslPlanList({ plans, onViewPlan }: BnslPlanListProps) {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin</p>
-                    <p className="font-bold text-secondary">${plan.totalMarginComponentUsd.toLocaleString()}</p>
+                    <p className="font-bold text-primary">${plan.totalMarginComponentUsd.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Received (g)</p>
-                    <p className="font-bold text-secondary">{plan.paidMarginGrams.toFixed(3)} g</p>
+                    <p className="font-bold text-primary">{plan.paidMarginGrams.toFixed(3)} g</p>
                   </div>
                 </div>
 

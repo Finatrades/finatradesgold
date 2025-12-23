@@ -530,7 +530,7 @@ export default function BNSL() {
                   </div>
                   <div>
                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin Received</p>
-                     <p className="text-xl font-bold text-secondary">
+                     <p className="text-xl font-bold text-primary">
                        {plans.reduce((sum, p) => sum + p.paidMarginGrams, 0).toFixed(3)} g
                      </p>
                   </div>
