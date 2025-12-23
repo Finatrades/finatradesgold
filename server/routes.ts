@@ -8,7 +8,7 @@ import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
   insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
-  insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertBnslAgreementSchema, insertTradeCaseSchema,
+  insertBnslPayoutSchema, insertBnslEarlyTerminationSchema, insertBnslAgreementSchema, insertFinabridgeAgreementSchema, insertTradeCaseSchema,
   insertTradeDocumentSchema, insertChatSessionSchema, insertChatMessageSchema,
   insertAuditLogSchema, insertContentPageSchema, insertContentBlockSchema,
   insertTemplateSchema, insertMediaAssetSchema, 
@@ -7612,6 +7612,54 @@ ${message}
     } catch (error) {
       console.error('Failed to download BNSL agreement:', error);
       res.status(500).json({ message: "Failed to generate agreement PDF" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE AGREEMENTS - T&C ACCEPTANCE TRACKING
+  // ============================================================================
+  
+  // Get user's FinaBridge agreements
+  app.get("/api/finabridge/agreements/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const agreements = await storage.getUserFinabridgeAgreements(req.params.userId);
+      res.json({ agreements });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get user agreements" });
+    }
+  });
+  
+  // Get all FinaBridge agreements (admin)
+  app.get("/api/admin/finabridge/agreements", ensureAdminAsync, async (req, res) => {
+    try {
+      const agreements = await storage.getAllFinabridgeAgreements();
+      res.json({ agreements });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get agreements" });
+    }
+  });
+  
+  // Get single agreement by ID
+  app.get("/api/finabridge/agreements/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const agreement = await storage.getFinabridgeAgreement(req.params.id);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+      res.json({ agreement });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get agreement" });
+    }
+  });
+  
+  // Create FinaBridge agreement
+  app.post("/api/finabridge/agreements", ensureAuthenticated, async (req, res) => {
+    try {
+      const agreementData = insertFinabridgeAgreementSchema.parse(req.body);
+      const agreement = await storage.createFinabridgeAgreement(agreementData);
+      res.json({ agreement });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create agreement" });
     }
   });
   
