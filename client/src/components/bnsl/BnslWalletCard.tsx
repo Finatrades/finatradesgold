@@ -230,7 +230,7 @@ export default function BnslWalletCard({
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">AED Value:</span>
                   <span className="text-xl font-bold text-foreground">
-                    <AEDAmount amount={bnslBalanceGold * currentGoldPrice} />
+                    <AEDAmount amount={bnslBalanceGold * currentGoldPrice * 3.67} />
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -252,7 +252,7 @@ export default function BnslWalletCard({
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-muted-foreground">AED Value:</span>
                   <span className="text-xl font-bold text-purple-500">
-                    <AEDAmount amount={lockedBalanceGold * currentGoldPrice} />
+                    <AEDAmount amount={lockedBalanceGold * currentGoldPrice * 3.67} />
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -275,7 +275,7 @@ export default function BnslWalletCard({
                  <div className="flex items-baseline gap-2">
                    <span className="text-xs text-muted-foreground">AED Value:</span>
                    <span className="text-xl font-bold text-green-600">
-                     <AEDAmount amount={(bnslBalanceGold + lockedBalanceGold) * currentGoldPrice} />
+                     <AEDAmount amount={(bnslBalanceGold + lockedBalanceGold) * currentGoldPrice * 3.67} />
                    </span>
                  </div>
                  <div className="flex items-baseline gap-2">
