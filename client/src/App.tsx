@@ -114,6 +114,7 @@ function Router() {
       <ScrollToTop />
       <Switch>
       <Route path="/" component={FinagoldLanding} />
+      <Route path="/finagold" component={FinagoldLanding} />
       <Route path="/home-old" component={Home} />
       <Route path="/bnsl-landing" component={BNSLLanding} />
       <Route path="/finavault-landing" component={FinaVaultLanding} />

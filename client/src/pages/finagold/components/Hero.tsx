@@ -223,16 +223,16 @@ export default function Hero() {
                   </div>
 
                   {/* Swiss-Regulated Platform badge - red/pink style */}
-                  <Link href="/regulatory-information">
-                    <motion.a
+                  <a href="#contact">
+                    <motion.div
                       whileHover={{ scale: 1.02 }}
                       className="absolute -top-4 right-4 sm:right-8 flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-50 border border-red-400 backdrop-blur-md shadow-lg cursor-pointer hover:border-red-500 hover:bg-red-100 transition-colors"
                     >
                       <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                       <span className="text-red-600 text-xs font-medium">Swiss-Regulated Platform</span>
                       <span className="text-red-400 text-xs">○</span>
-                    </motion.a>
-                  </Link>
+                    </motion.div>
+                  </a>
 
                 </motion.div>
 

@@ -870,11 +870,9 @@ function FinalCTASection() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </motion.a>
             </Link>
-            <Link href="/support">
-              <a className="flex items-center gap-2 border border-[#EAC26B]/40 text-white px-10 py-5 rounded-full text-lg font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all">
-                Speak with Support
-              </a>
-            </Link>
+            <a href="#contact" className="flex items-center gap-2 border border-[#8A2BE2]/40 text-white px-10 py-5 rounded-full text-lg font-semibold hover:bg-white/5 hover:border-[#8A2BE2]/60 transition-all">
+              Speak with Support
+            </a>
           </motion.div>
         </motion.div>
       </div>
