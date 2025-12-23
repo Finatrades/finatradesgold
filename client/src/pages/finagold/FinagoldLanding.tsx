@@ -104,10 +104,10 @@ function FinagoldContent() {
       <Navbar />
       <main>
         <Hero />
-        <ValueProps />
-        <WhoItsFor />
-        <HowItWorks />
         <Products />
+        <HowItWorks />
+        <WhoItsFor />
+        <ValueProps />
         <Certificates />
         <TrustStrip />
         <CTA />
