@@ -11,12 +11,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   BarChart3, PlusCircle, Briefcase, Loader2, RefreshCw, 
   ArrowLeftRight, Package, Send, Eye, Check, X, Wallet,
-  CreditCard, Truck, Ship, Plane, Train, Shield, FileText, MessageCircle
+  CreditCard, Truck, Ship, Plane, Train, Shield, FileText, MessageCircle, Info, Download, CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import FinaBridgeDisclaimerModal from '@/components/finabridge/FinaBridgeDisclaimerModal';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 import DealRoom from '@/components/finabridge/DealRoom';
@@ -87,6 +87,279 @@ interface FinabridgeWallet {
   userId: string;
   availableGoldGrams: string;
   lockedGoldGrams: string;
+}
+
+interface FinabridgeAgreement {
+  id: string;
+  userId: string;
+  templateVersion: string;
+  signatureName: string;
+  signedAt: string;
+  role: string;
+  termsAndConditions: string | null;
+  acceptanceDetails: any;
+  createdAt: string;
+}
+
+// FinaBridge T&C Full Text
+const FINABRIDGE_TERMS_AND_CONDITIONS = `FINABRIDGE TRADE FINANCE PLATFORM
+TERMS AND CONDITIONS
+Version: V1-2025-12-23
+
+1. PLATFORM OVERVIEW
+FinaBridge is Finatrades' proprietary B2B trade finance platform that facilitates international commodity trade through gold-backed settlements. The platform connects importers and exporters, providing a secure framework for trade execution with settlement assurance backed by verified geological gold reserves.
+
+2. ELIGIBILITY
+2.1 Business Account Requirement: FinaBridge is exclusively available to verified Business Account holders.
+2.2 KYC Compliance: All participants must complete Enhanced KYC verification before accessing FinaBridge features.
+2.3 Role Selection: Users must declare their role (Importer, Exporter, or Both) upon first access.
+
+3. SETTLEMENT ASSURANCE MECHANISM
+3.1 Gold-Backed Collateralization: All trade transactions on FinaBridge are collateralized with gold holdings in the user's FinaBridge wallet.
+3.2 Settlement Assurance Backing: Finatrades maintains settlement assurance through verified geological gold reserves (Boudadiya Services SARL, Mining Permit 2265 B2-WOMPOU) with an estimated value of USD 42.134 Billion. This is an internal group mechanism, NOT a banking guarantee.
+3.3 Lock Period: Gold collateral remains locked in the user's FinaBridge wallet until trade completion or mutual agreement to release.
+
+4. TRADE REQUEST PROCESS
+4.1 Importers may create trade requests specifying goods, quantity, value, and shipping requirements.
+4.2 Trade values are recorded in USD for reference purposes, with actual settlement occurring in gold grams.
+4.3 Exporters may submit proposals responding to trade requests with pricing, timeline, and shipping details.
+
+5. DEAL ROOMS
+5.1 Upon proposal acceptance, a secure Deal Room is created for direct communication between trade parties.
+5.2 All Deal Room communications are logged and may be used for dispute resolution purposes.
+5.3 Document sharing within Deal Rooms is subject to platform security protocols.
+
+6. SETTLEMENT PROCESS
+6.1 Upon verified delivery and acceptance of goods, gold collateral is transferred from Importer's to Exporter's FinaBridge wallet.
+6.2 Settlement finality occurs upon mutual confirmation or administrative determination.
+6.3 Disputes must be raised within 7 business days of goods delivery.
+
+7. FEES AND CHARGES
+7.1 Platform fees are deducted from the gold collateral at the time of settlement.
+7.2 Current fee schedules are displayed within the platform and may be updated with 30 days notice.
+7.3 Early termination or trade cancellation may incur additional fees as specified in the platform configuration.
+
+8. RISK DISCLOSURE
+8.1 Trade finance involves inherent risks including counterparty risk, shipping risk, and market volatility.
+8.2 Gold price fluctuations may affect the USD equivalent value of settlements.
+8.3 Finatrades does not guarantee successful trade completion and acts solely as a facilitating platform.
+
+9. DISPUTE RESOLUTION
+9.1 All disputes shall first be addressed through platform mediation.
+9.2 Unresolved disputes may be escalated to binding arbitration under UAE law.
+9.3 The platform reserves the right to freeze associated gold holdings during dispute resolution.
+
+10. AMENDMENT AND TERMINATION
+10.1 These terms may be amended with 30 days written notice to users.
+10.2 Continued use of the platform after amendment constitutes acceptance of new terms.
+10.3 Users may terminate participation by settling all outstanding trades and withdrawing gold holdings.
+
+By accepting these terms, you acknowledge that you have read, understood, and agree to be bound by all provisions herein.
+
+© 2025 Finatrades. All Rights Reserved.
+`;
+
+// FinaBridge Agreements Section Component
+function FinaBridgeAgreementsSection({ userId }: { userId?: string }) {
+  const [agreements, setAgreements] = useState<FinabridgeAgreement[]>([]);
+  const [selectedAgreement, setSelectedAgreement] = useState<FinabridgeAgreement | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    
+    async function fetchAgreements() {
+      try {
+        const response = await fetch(`/api/finabridge/agreements/user/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAgreements(data.agreements || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch agreements:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchAgreements();
+  }, [userId]);
+
+  const handleDownloadPdf = (agreement: FinabridgeAgreement) => {
+    // Generate a simple text-based PDF download
+    const content = `
+FINABRIDGE TRADE FINANCE AGREEMENT
+===================================
+
+Agreement ID: ${agreement.id}
+Template Version: ${agreement.templateVersion}
+Role: ${agreement.role.toUpperCase()}
+
+PARTICIPANT SIGNATURE
+---------------------
+Signed by: ${agreement.signatureName}
+Date & Time: ${new Date(agreement.signedAt).toLocaleString()}
+Created: ${new Date(agreement.createdAt).toLocaleString()}
+
+TERMS AND CONDITIONS
+--------------------
+${agreement.termsAndConditions || FINABRIDGE_TERMS_AND_CONDITIONS}
+
+---
+This document is a legally binding agreement generated by Finatrades.
+By signing, you acknowledge that you have read, understood, and agree to all terms.
+
+© 2025 Finatrades. All Rights Reserved.
+`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FinaBridge-Agreement-${agreement.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white shadow-sm border border-border">
+        <CardContent className="p-6 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white shadow-sm border border-border">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <FileText className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-foreground">Your Signed Agreements</h3>
+            <p className="text-sm text-muted-foreground">View and download your FinaBridge T&C agreements</p>
+          </div>
+        </div>
+
+        {agreements.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">No signed agreements yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Accept the FinaBridge Terms & Conditions to create your first agreement</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {agreements.map(agreement => (
+              <div 
+                key={agreement.id}
+                className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-success-muted flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-success" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground">
+                        FinaBridge T&C - {agreement.role.charAt(0).toUpperCase() + agreement.role.slice(1)} Role
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Version: {agreement.templateVersion} | 
+                        Signed: {new Date(agreement.signedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedAgreement(agreement)}
+                          data-testid={`button-view-agreement-${agreement.id}`}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <DialogHeader>
+                          <DialogTitle>FinaBridge Agreement - {agreement.role.charAt(0).toUpperCase() + agreement.role.slice(1)}</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-y-auto">
+                          <div className="bg-muted/30 rounded-lg border border-border p-4 mb-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Agreement ID:</span>
+                                <span className="ml-2 font-semibold">{agreement.id.slice(0, 8)}...</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Role:</span>
+                                <span className="ml-2 font-semibold">{agreement.role.charAt(0).toUpperCase() + agreement.role.slice(1)}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Version:</span>
+                                <span className="ml-2 font-semibold">{agreement.templateVersion}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Signed:</span>
+                                <span className="ml-2 font-semibold">{new Date(agreement.signedAt).toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-success-muted/50 rounded-lg border border-success/20 p-4 mb-4">
+                            <p className="text-sm font-medium text-success-muted-foreground">
+                              Signed by: <span className="font-bold">{agreement.signatureName}</span>
+                            </p>
+                            <p className="text-xs text-success-muted-foreground mt-1">
+                              Date: {new Date(agreement.signedAt).toLocaleString()} | Version: {agreement.templateVersion}
+                            </p>
+                          </div>
+
+                          <div className="bg-muted/30 rounded-lg border border-border p-6 max-h-[50vh] overflow-y-auto">
+                            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                              {agreement.termsAndConditions || FINABRIDGE_TERMS_AND_CONDITIONS}
+                            </pre>
+                          </div>
+                        </div>
+                        <div className="pt-4 border-t border-border">
+                          <Button onClick={() => handleDownloadPdf(agreement)} data-testid="button-download-pdf">
+                            <Download className="w-4 h-4 mr-2" />
+                            Download Agreement
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDownloadPdf(agreement)}
+                      data-testid={`button-download-${agreement.id}`}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Master Agreement Reference:</strong> Current terms apply at the time of acceptance. 
+            Each signed agreement records the specific version accepted.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function FinaBridge() {
@@ -790,6 +1063,9 @@ export default function FinaBridge() {
               </TabsTrigger>
               <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <MessageCircle className="w-4 h-4 mr-2" /> Deal Rooms
+              </TabsTrigger>
+              <TabsTrigger value="terms" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
+                <Info className="w-4 h-4 mr-2" /> Terms & Info
               </TabsTrigger>
             </TabsList>
 
@@ -1510,6 +1786,10 @@ export default function FinaBridge() {
                 </Card>
               )}
             </TabsContent>
+
+            <TabsContent value="terms" className="mt-0">
+              <FinaBridgeAgreementsSection userId={user?.id} />
+            </TabsContent>
           </Tabs>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1522,6 +1802,9 @@ export default function FinaBridge() {
               </TabsTrigger>
               <TabsTrigger value="dealrooms" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
                 <MessageCircle className="w-4 h-4 mr-2" /> Deal Rooms
+              </TabsTrigger>
+              <TabsTrigger value="terms" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md">
+                <Info className="w-4 h-4 mr-2" /> Terms & Info
               </TabsTrigger>
             </TabsList>
 
@@ -1812,6 +2095,10 @@ export default function FinaBridge() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="terms" className="mt-0">
+              <FinaBridgeAgreementsSection userId={user?.id} />
             </TabsContent>
           </Tabs>
         )}
