@@ -3020,7 +3020,7 @@ export type BuyGoldRequest = typeof buyGoldRequests.$inferSelect;
 export const platformConfigCategoryEnum = pgEnum('platform_config_category', [
   'gold_pricing', 'transaction_limits', 'deposit_limits', 'withdrawal_limits',
   'p2p_limits', 'bnsl_settings', 'finabridge_settings', 'payment_fees',
-  'kyc_settings', 'system_settings', 'vault_settings', 'referral_settings'
+  'kyc_settings', 'system_settings', 'vault_settings', 'referral_settings', 'finacard_settings'
 ]);
 
 export const platformConfig = pgTable("platform_config", {
@@ -3309,3 +3309,74 @@ export const insuranceCertificates = pgTable("insurance_certificates", {
 export const insertInsuranceCertificateSchema = createInsertSchema(insuranceCertificates).omit({ id: true, createdAt: true });
 export type InsertInsuranceCertificate = z.infer<typeof insertInsuranceCertificateSchema>;
 export type InsuranceCertificate = typeof insuranceCertificates.$inferSelect;
+
+// ============================================
+// FINACARD - GOLD-BACKED DEBIT CARDS
+// ============================================
+
+export const finacardStatusEnum = pgEnum('finacard_status', [
+  'Pending', 'Active', 'Frozen', 'Expired', 'Cancelled', 'Replaced'
+]);
+
+export const finacardTypeEnum = pgEnum('finacard_type', [
+  'Virtual', 'Physical'
+]);
+
+export const finacards = pgTable("finacards", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  cardType: finacardTypeEnum("card_type").notNull().default('Virtual'),
+  status: finacardStatusEnum("status").notNull().default('Pending'),
+  lastFourDigits: varchar("last_four_digits", { length: 4 }),
+  expiryMonth: integer("expiry_month"),
+  expiryYear: integer("expiry_year"),
+  cardholderName: varchar("cardholder_name", { length: 100 }),
+  marqetaCardToken: varchar("marqeta_card_token", { length: 255 }),
+  marqetaUserToken: varchar("marqeta_user_token", { length: 255 }),
+  dailySpendLimitUsd: decimal("daily_spend_limit_usd", { precision: 18, scale: 2 }).default('1000'),
+  monthlySpendLimitUsd: decimal("monthly_spend_limit_usd", { precision: 18, scale: 2 }).default('10000'),
+  isContactlessEnabled: boolean("is_contactless_enabled").notNull().default(true),
+  isOnlineEnabled: boolean("is_online_enabled").notNull().default(true),
+  isAtmEnabled: boolean("is_atm_enabled").notNull().default(true),
+  billingAddressId: varchar("billing_address_id", { length: 255 }),
+  activatedAt: timestamp("activated_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFinacardSchema = createInsertSchema(finacards).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFinacard = z.infer<typeof insertFinacardSchema>;
+export type Finacard = typeof finacards.$inferSelect;
+
+// FinaCard Transactions
+export const finacardTransactionTypeEnum = pgEnum('finacard_transaction_type', [
+  'Purchase', 'ATM_Withdrawal', 'Refund', 'Chargeback', 'Fee'
+]);
+
+export const finacardTransactionStatusEnum = pgEnum('finacard_transaction_status', [
+  'Pending', 'Approved', 'Declined', 'Settled', 'Reversed'
+]);
+
+export const finacardTransactions = pgTable("finacard_transactions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  cardId: varchar("card_id", { length: 255 }).notNull().references(() => finacards.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  type: finacardTransactionTypeEnum("type").notNull(),
+  status: finacardTransactionStatusEnum("status").notNull().default('Pending'),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }).notNull(),
+  merchantName: varchar("merchant_name", { length: 255 }),
+  merchantCategory: varchar("merchant_category", { length: 100 }),
+  merchantLocation: varchar("merchant_location", { length: 255 }),
+  marqetaTransactionToken: varchar("marqeta_transaction_token", { length: 255 }),
+  authorizationCode: varchar("authorization_code", { length: 50 }),
+  declineReason: text("decline_reason"),
+  settledAt: timestamp("settled_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertFinacardTransactionSchema = createInsertSchema(finacardTransactions).omit({ id: true, createdAt: true });
+export type InsertFinacardTransaction = z.infer<typeof insertFinacardTransactionSchema>;
+export type FinacardTransaction = typeof finacardTransactions.$inferSelect;
