@@ -6443,7 +6443,22 @@ ${message}
           purchasePriceUsdPerGram: pricePerGram.toString(),
         });
 
-        // Generate certificate
+        // Generate Digital Ownership Certificate (from Finatrades)
+        const docCertNumber = await storage.generateCertificateNumber('Digital Ownership');
+        const digitalCert = await storage.createCertificate({
+          certificateNumber: docCertNumber,
+          userId: request.userId,
+          vaultHoldingId: holding.id,
+          type: 'Digital Ownership',
+          status: 'Active',
+          goldGrams: finalWeightGrams.toString(),
+          goldPriceUsdPerGram: pricePerGram.toString(),
+          totalValueUsd: totalValue.toFixed(2),
+          issuer: 'Finatrades',
+          vaultLocation: request.vaultLocation,
+        });
+        
+        // Generate Physical Storage Certificate (from Wingold & Metals DMCC)
         const certificateNumber = await storage.generateCertificateNumber('Physical Storage');
         const certificate = await storage.createCertificate({
           certificateNumber,
@@ -6506,6 +6521,7 @@ ${message}
 
         updates.vaultHoldingId = holding.id;
         updates.certificateId = certificate.id;
+        updates.digitalCertificateId = digitalCert.id;
         updates.storedAt = new Date();
         updates.vaultInternalReference = `WG-${Date.now().toString(36).toUpperCase()}`;
       }
