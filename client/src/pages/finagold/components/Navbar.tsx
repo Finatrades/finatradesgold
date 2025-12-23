@@ -62,8 +62,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? 'bg-black/90 backdrop-blur-xl border-b border-[#EAC26B]/10' 
-          : 'bg-black/50 backdrop-blur-md'
+          ? 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] backdrop-blur-xl border-b border-[#8A2BE2]/20' 
+          : 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]'
       }`}
       data-testid="finagold-navbar"
     >
@@ -109,33 +109,33 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
-            <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
+            <div className="flex bg-white/10 rounded-full p-1 border border-white/20">
               <button
                 onClick={() => setMode('personal')}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   isPersonal
-                    ? 'bg-[#EAC26B] text-black shadow-lg shadow-[#EAC26B]/20'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-[#F97316] text-white shadow-lg shadow-[#F97316]/30'
+                    : 'text-white/70 hover:text-white'
                 }`}
                 data-testid="toggle-personal"
               >
-                Personal
+                <span className="text-xs">👤</span> Personal
               </button>
               <button
                 onClick={() => setMode('business')}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   !isPersonal
-                    ? 'bg-[#EAC26B] text-black shadow-lg shadow-[#EAC26B]/20'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-white text-[#4B0082] shadow-lg'
+                    : 'text-white/70 hover:text-white'
                 }`}
                 data-testid="toggle-business"
               >
-                Business
+                <span className="text-xs">💼</span> Business
               </button>
             </div>
             <Link href="/login">
               <a
-                className="text-gray-300 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
+                className="text-white/80 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
                 data-testid="btn-sign-in"
               >
                 Sign In
@@ -143,7 +143,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
             </Link>
             <Link href="/register">
               <a
-                className="bg-[#EAC26B] text-black px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-colors shadow-lg shadow-[#EAC26B]/20"
+                className="bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:from-[#EA580C] hover:to-[#DC2626] transition-colors shadow-lg shadow-[#F97316]/30"
                 data-testid="btn-get-started"
               >
                 Get Started

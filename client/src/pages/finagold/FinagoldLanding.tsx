@@ -21,7 +21,7 @@ function FinagoldContent() {
   }, []);
 
   return (
-    <div className="finagold-landing min-h-screen bg-black text-white antialiased selection:bg-[#EAC26B] selection:text-black">
+    <div className="finagold-landing min-h-screen bg-[#FAFBFF] text-[#0D0D0D] antialiased selection:bg-[#8A2BE2] selection:text-white">
       <style>{`
         .finagold-landing {
           /* Gold accent colors */
