@@ -228,9 +228,9 @@ export default function BnslWalletCard({
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Available to Invest</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">AED Value:</span>
+                  <span className="text-xs text-muted-foreground">USD Value:</span>
                   <span className="text-xl font-bold text-foreground">
-                    <AEDAmount amount={bnslBalanceGold * currentGoldPrice * 3.67} />
+                    ${(bnslBalanceGold * currentGoldPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -250,9 +250,9 @@ export default function BnslWalletCard({
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Locked in Plans</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">AED Value:</span>
+                  <span className="text-xs text-muted-foreground">USD Value:</span>
                   <span className="text-xl font-bold text-purple-500">
-                    <AEDAmount amount={lockedBalanceGold * currentGoldPrice * 3.67} />
+                    ${(lockedBalanceGold * currentGoldPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -273,9 +273,9 @@ export default function BnslWalletCard({
                <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Total BNSL Value</p>
                <div className="space-y-1">
                  <div className="flex items-baseline gap-2">
-                   <span className="text-xs text-muted-foreground">AED Value:</span>
+                   <span className="text-xs text-muted-foreground">USD Value:</span>
                    <span className="text-xl font-bold text-green-600">
-                     <AEDAmount amount={(bnslBalanceGold + lockedBalanceGold) * currentGoldPrice * 3.67} />
+                     ${((bnslBalanceGold + lockedBalanceGold) * currentGoldPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                    </span>
                  </div>
                  <div className="flex items-baseline gap-2">
