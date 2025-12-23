@@ -14743,6 +14743,186 @@ ${message}
     }
   });
 
+  // Get all transaction receipts for evidence/auditing
+  app.get("/api/admin/documents/transaction-receipts", ensureAdminAsync, async (req, res) => {
+    try {
+      const allTransactions = await storage.getAllTransactions();
+      
+      // Enrich with user info
+      const transactionsWithUsers = await Promise.all(
+        allTransactions.map(async (tx) => {
+          const user = await storage.getUser(tx.userId);
+          return {
+            ...tx,
+            userName: user ? `${user.firstName} ${user.lastName}` : null,
+            userEmail: user?.email || null,
+          };
+        })
+      );
+      
+      // Sort by date descending
+      transactionsWithUsers.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      res.json({ transactions: transactionsWithUsers });
+    } catch (error) {
+      console.error("Failed to get transaction receipts:", error);
+      res.status(400).json({ message: "Failed to get transaction receipts" });
+    }
+  });
+
+  // Download transaction receipt PDF
+  app.get("/api/admin/documents/receipts/:id/download", ensureAdminAsync, async (req, res) => {
+    try {
+      const transactionId = parseInt(req.params.id);
+      const transaction = await storage.getTransaction(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      const user = await storage.getUser(transaction.userId);
+      const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
+      const userEmail = user?.email || 'Unknown';
+      
+      // Generate PDF using PDFKit
+      const PDFDocument = (await import('pdfkit')).default;
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      
+      const pdfPromise = new Promise<Buffer>((resolve) => {
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+      });
+      
+      // Header
+      doc.fontSize(24).fillColor('#4B0082').text('FINATRADES', { align: 'center' });
+      doc.fontSize(12).fillColor('#666').text('Gold-Backed Digital Finance', { align: 'center' });
+      doc.moveDown(2);
+      
+      // Receipt Title
+      doc.fontSize(18).fillColor('#000').text('TRANSACTION RECEIPT', { align: 'center' });
+      doc.moveDown();
+      
+      // Receipt details box
+      doc.fontSize(10).fillColor('#666').text('Receipt ID:', 50);
+      doc.fontSize(12).fillColor('#000').text(transaction.odooId || `TXN-${transaction.id}`, 150, doc.y - 12);
+      doc.moveDown(0.5);
+      
+      doc.fontSize(10).fillColor('#666').text('Date:', 50);
+      doc.fontSize(12).fillColor('#000').text(new Date(transaction.createdAt).toLocaleString(), 150, doc.y - 12);
+      doc.moveDown(0.5);
+      
+      doc.fontSize(10).fillColor('#666').text('Status:', 50);
+      doc.fontSize(12).fillColor(transaction.status === 'Completed' || transaction.status === 'Approved' ? '#22c55e' : '#f59e0b')
+        .text(transaction.status, 150, doc.y - 12);
+      doc.moveDown(2);
+      
+      // Customer Details
+      doc.fontSize(14).fillColor('#4B0082').text('Customer Details');
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ddd');
+      doc.moveDown(0.5);
+      
+      doc.fontSize(10).fillColor('#666').text('Name:', 50);
+      doc.fontSize(12).fillColor('#000').text(userName, 150, doc.y - 12);
+      doc.moveDown(0.5);
+      
+      doc.fontSize(10).fillColor('#666').text('Email:', 50);
+      doc.fontSize(12).fillColor('#000').text(userEmail, 150, doc.y - 12);
+      doc.moveDown(0.5);
+      
+      if (user?.finatradesId) {
+        doc.fontSize(10).fillColor('#666').text('Finatrades ID:', 50);
+        doc.fontSize(12).fillColor('#000').text(user.finatradesId, 150, doc.y - 12);
+        doc.moveDown(0.5);
+      }
+      doc.moveDown();
+      
+      // Transaction Details
+      doc.fontSize(14).fillColor('#4B0082').text('Transaction Details');
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ddd');
+      doc.moveDown(0.5);
+      
+      doc.fontSize(10).fillColor('#666').text('Type:', 50);
+      doc.fontSize(12).fillColor('#000').text(transaction.type || 'N/A', 150, doc.y - 12);
+      doc.moveDown(0.5);
+      
+      if (transaction.sourceModule) {
+        doc.fontSize(10).fillColor('#666').text('Module:', 50);
+        doc.fontSize(12).fillColor('#000').text(transaction.sourceModule, 150, doc.y - 12);
+        doc.moveDown(0.5);
+      }
+      
+      if (transaction.description) {
+        doc.fontSize(10).fillColor('#666').text('Description:', 50);
+        doc.fontSize(12).fillColor('#000').text(transaction.description, 150, doc.y - 12);
+        doc.moveDown(0.5);
+      }
+      doc.moveDown();
+      
+      // Financial Details
+      doc.fontSize(14).fillColor('#4B0082').text('Financial Details');
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ddd');
+      doc.moveDown(0.5);
+      
+      if (transaction.amountGold) {
+        doc.fontSize(10).fillColor('#666').text('Gold Amount:', 50);
+        doc.fontSize(14).fillColor('#000').text(`${parseFloat(transaction.amountGold).toFixed(4)} grams`, 150, doc.y - 14);
+        doc.moveDown(0.5);
+      }
+      
+      if (transaction.amountUsd) {
+        doc.fontSize(10).fillColor('#666').text('USD Value:', 50);
+        doc.fontSize(14).fillColor('#000').text(`$${parseFloat(transaction.amountUsd).toLocaleString()}`, 150, doc.y - 14);
+        doc.moveDown(0.5);
+        
+        // AED value
+        const aedValue = parseFloat(transaction.amountUsd) * 3.67;
+        doc.fontSize(10).fillColor('#666').text('AED Value:', 50);
+        doc.fontSize(14).fillColor('#000').text(`Dh ${aedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 150, doc.y - 14);
+        doc.moveDown(0.5);
+      }
+      
+      if (transaction.goldPriceAtTransaction) {
+        doc.fontSize(10).fillColor('#666').text('Gold Price:', 50);
+        doc.fontSize(12).fillColor('#000').text(`$${parseFloat(transaction.goldPriceAtTransaction).toFixed(2)} per gram`, 150, doc.y - 12);
+        doc.moveDown(0.5);
+      }
+      
+      // Footer
+      doc.moveDown(3);
+      doc.fontSize(10).fillColor('#666').text('This is an official transaction receipt generated by Finatrades.', { align: 'center' });
+      doc.text('For any queries, please contact support@finatrades.com', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(8).text(`Generated on: ${new Date().toISOString()}`, { align: 'center' });
+      
+      doc.end();
+      
+      const pdfBuffer = await pdfPromise;
+      
+      const filename = `finatrades-receipt-${transaction.odooId || transaction.id}-${new Date().toISOString().split('T')[0]}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(pdfBuffer);
+      
+      // Log the download
+      await storage.createAuditLog({
+        entityType: "transaction_receipt",
+        entityId: String(transaction.id),
+        actionType: "download",
+        actor: (req as any).adminUser?.id || 'admin',
+        actorRole: "admin",
+        details: `Downloaded receipt for transaction ${transaction.odooId || transaction.id}`,
+      });
+      
+    } catch (error) {
+      console.error("Failed to download transaction receipt:", error);
+      res.status(400).json({ message: "Failed to download transaction receipt" });
+    }
+  });
+
   // Get all platform attachments (from vault deposits, KYC, etc.)
   app.get("/api/admin/attachments", ensureAdminAsync, async (req, res) => {
     try {

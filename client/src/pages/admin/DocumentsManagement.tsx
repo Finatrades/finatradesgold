@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, RefreshCw, Download, Mail, FileText, Eye } from 'lucide-react';
+import { Search, RefreshCw, Download, Mail, FileText, Eye, Receipt, ArrowUpCircle, ArrowDownCircle, Repeat, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -47,6 +47,23 @@ interface CertificateDelivery {
   goldGrams?: string;
 }
 
+interface TransactionReceipt {
+  id: number;
+  odooId: string | null;
+  odooName: string | null;
+  userId: number;
+  type: string;
+  status: string;
+  amountGold: string | null;
+  amountUsd: string | null;
+  goldPriceAtTransaction: string | null;
+  description: string | null;
+  sourceModule: string | null;
+  createdAt: string;
+  userName?: string;
+  userEmail?: string;
+}
+
 export default function DocumentsManagement() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -73,6 +90,18 @@ export default function DocumentsManagement() {
         headers: { 'X-Admin-User-Id': user?.id || '' }
       });
       if (!res.ok) throw new Error('Failed to fetch deliveries');
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: receiptsData, isLoading: receiptsLoading, refetch: refetchReceipts } = useQuery<{ transactions: TransactionReceipt[] }>({
+    queryKey: ['/api/admin/documents/transaction-receipts'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/documents/transaction-receipts', {
+        headers: { 'X-Admin-User-Id': user?.id || '' }
+      });
+      if (!res.ok) throw new Error('Failed to fetch transaction receipts');
       return res.json();
     },
     enabled: !!user?.id,
@@ -122,6 +151,7 @@ export default function DocumentsManagement() {
 
   const invoices = invoicesData?.invoices || [];
   const deliveries = deliveriesData?.deliveries || [];
+  const receipts = receiptsData?.transactions || [];
 
   const filteredInvoices = invoices.filter((inv) => {
     const matchesSearch = 
@@ -139,6 +169,23 @@ export default function DocumentsManagement() {
       (del.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     const matchesStatus = statusFilter === 'all' || del.status === statusFilter;
     return matchesSearch && matchesStatus;
+  });
+
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  
+  const filteredReceipts = receipts.filter((rec) => {
+    const matchesSearch = 
+      (rec.odooId?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (rec.odooName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (rec.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (rec.userEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (rec.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    const matchesStatus = statusFilter === 'all' || rec.status === statusFilter;
+    const typeFilterLower = typeFilter.toLowerCase();
+    const matchesType = typeFilter === 'all' || 
+      rec.type?.toLowerCase().includes(typeFilterLower) || 
+      rec.sourceModule?.toLowerCase().includes(typeFilterLower);
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   const getStatusBadge = (status: string) => {
@@ -164,9 +211,14 @@ export default function DocumentsManagement() {
     window.open(`/api/admin/documents/certificates/${id}/download`, '_blank');
   };
 
+  const handleDownloadReceipt = (id: number) => {
+    window.open(`/api/admin/documents/receipts/${id}/download`, '_blank');
+  };
+
   const refetch = () => {
     refetchInvoices();
     refetchDeliveries();
+    refetchReceipts();
   };
 
   const invoiceStats = {
@@ -179,6 +231,54 @@ export default function DocumentsManagement() {
     total: deliveries.length,
     sent: deliveries.filter(d => d.status === 'Sent' || d.status === 'Resent').length,
     failed: deliveries.filter(d => d.status === 'Failed').length,
+  };
+
+  const receiptStats = {
+    total: receipts.length,
+    completed: receipts.filter(r => r.status === 'Completed' || r.status === 'Approved').length,
+    pending: receipts.filter(r => r.status === 'Pending').length,
+  };
+
+  const getTypeIcon = (type: string, sourceModule: string | null) => {
+    const module = sourceModule?.toLowerCase() || type.toLowerCase();
+    if (module.includes('deposit') || type.toLowerCase().includes('deposit')) {
+      return <ArrowDownCircle className="w-4 h-4 text-green-600" />;
+    }
+    if (module.includes('withdrawal') || type.toLowerCase().includes('withdrawal')) {
+      return <ArrowUpCircle className="w-4 h-4 text-red-600" />;
+    }
+    if (module.includes('transfer') || type.toLowerCase().includes('transfer')) {
+      return <Repeat className="w-4 h-4 text-blue-600" />;
+    }
+    if (module.includes('bnsl') || type.toLowerCase().includes('bnsl')) {
+      return <Wallet className="w-4 h-4 text-purple-600" />;
+    }
+    return <Receipt className="w-4 h-4 text-gray-600" />;
+  };
+
+  const getTypeBadge = (type: string, sourceModule: string | null) => {
+    const displayType = type || sourceModule || 'Unknown';
+    let bgColor = 'bg-gray-100 text-gray-800';
+    
+    if (displayType.toLowerCase().includes('deposit')) {
+      bgColor = 'bg-green-100 text-green-800';
+    } else if (displayType.toLowerCase().includes('withdrawal')) {
+      bgColor = 'bg-red-100 text-red-800';
+    } else if (displayType.toLowerCase().includes('transfer')) {
+      bgColor = 'bg-blue-100 text-blue-800';
+    } else if (displayType.toLowerCase().includes('buy')) {
+      bgColor = 'bg-emerald-100 text-emerald-800';
+    } else if (displayType.toLowerCase().includes('sell')) {
+      bgColor = 'bg-orange-100 text-orange-800';
+    } else if (displayType.toLowerCase().includes('bnsl')) {
+      bgColor = 'bg-purple-100 text-purple-800';
+    } else if (displayType.toLowerCase().includes('vault')) {
+      bgColor = 'bg-yellow-100 text-yellow-800';
+    } else if (displayType.toLowerCase().includes('bridge') || displayType.toLowerCase().includes('trade')) {
+      bgColor = 'bg-indigo-100 text-indigo-800';
+    }
+    
+    return <Badge className={`${bgColor} hover:${bgColor} border-none`}>{displayType}</Badge>;
   };
 
   return (
@@ -194,7 +294,7 @@ export default function DocumentsManagement() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm text-gray-500">Total Invoices</div>
@@ -215,6 +315,12 @@ export default function DocumentsManagement() {
           </Card>
           <Card>
             <CardContent className="pt-6">
+              <div className="text-sm text-gray-500">Transaction Receipts</div>
+              <div className="text-2xl font-bold text-purple-600">{receiptStats.total}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
               <div className="text-sm text-gray-500">Failed Deliveries</div>
               <div className="text-2xl font-bold text-red-600">{invoiceStats.failed + deliveryStats.failed}</div>
             </CardContent>
@@ -222,14 +328,18 @@ export default function DocumentsManagement() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="invoices" data-testid="tab-invoices">
               <FileText className="w-4 h-4 mr-2" />
               Invoices ({invoices.length})
             </TabsTrigger>
             <TabsTrigger value="certificates" data-testid="tab-certificates">
               <Mail className="w-4 h-4 mr-2" />
-              Certificate Deliveries ({deliveries.length})
+              Certificates ({deliveries.length})
+            </TabsTrigger>
+            <TabsTrigger value="receipts" data-testid="tab-receipts">
+              <Receipt className="w-4 h-4 mr-2" />
+              Transaction Receipts ({receipts.length})
             </TabsTrigger>
           </TabsList>
 
@@ -254,9 +364,29 @@ export default function DocumentsManagement() {
                 <SelectItem value="Generated">Generated</SelectItem>
                 <SelectItem value="Failed">Failed</SelectItem>
                 <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
                 <SelectItem value="Resent">Resent</SelectItem>
               </SelectContent>
             </Select>
+            {activeTab === 'receipts' && (
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[180px]" data-testid="select-type">
+                  <SelectValue placeholder="Transaction Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Buy">Buy Gold</SelectItem>
+                  <SelectItem value="Sell">Sell Gold</SelectItem>
+                  <SelectItem value="Deposit">Deposit</SelectItem>
+                  <SelectItem value="Withdrawal">Withdrawal</SelectItem>
+                  <SelectItem value="Transfer">Transfer</SelectItem>
+                  <SelectItem value="bnsl">BNSL</SelectItem>
+                  <SelectItem value="vault">Vault</SelectItem>
+                  <SelectItem value="finabridge">Trade Finance</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <TabsContent value="invoices" className="mt-4">
@@ -394,6 +524,93 @@ export default function DocumentsManagement() {
                                   data-testid={`button-resend-cert-${delivery.id}`}
                                 >
                                   <Mail className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="receipts" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="w-5 h-5" />
+                  Transaction Receipts for Evidence
+                </CardTitle>
+                <p className="text-sm text-gray-500">Download transaction receipts as PDF for auditing and evidence purposes</p>
+              </CardHeader>
+              <CardContent>
+                {receiptsLoading ? (
+                  <div className="text-center py-8 text-gray-500">Loading transaction receipts...</div>
+                ) : filteredReceipts.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">No transaction receipts found</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4 font-medium text-gray-500">Transaction ID</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-500">User</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-500">Type</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-500">Amount</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-500">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredReceipts.map((receipt) => (
+                          <tr key={receipt.id} className="border-b hover:bg-gray-50" data-testid={`row-receipt-${receipt.id}`}>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                {getTypeIcon(receipt.type, receipt.sourceModule)}
+                                <div>
+                                  <div className="font-mono text-sm">{receipt.odooId || `TXN-${receipt.id}`}</div>
+                                  {receipt.odooName && (
+                                    <div className="text-xs text-gray-500">{receipt.odooName}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-medium">{receipt.userName || `User #${receipt.userId}`}</div>
+                              <div className="text-sm text-gray-500">{receipt.userEmail || '-'}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              {getTypeBadge(receipt.type, receipt.sourceModule)}
+                            </td>
+                            <td className="py-3 px-4">
+                              {receipt.amountUsd && (
+                                <div className="font-medium">${parseFloat(receipt.amountUsd).toLocaleString()}</div>
+                              )}
+                              {receipt.amountGold && (
+                                <div className="text-sm text-gray-500">{parseFloat(receipt.amountGold).toFixed(4)}g gold</div>
+                              )}
+                              {receipt.goldPriceAtTransaction && (
+                                <div className="text-xs text-gray-400">@ ${parseFloat(receipt.goldPriceAtTransaction).toFixed(2)}/g</div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">{getStatusBadge(receipt.status)}</td>
+                            <td className="py-3 px-4 text-sm text-gray-500">
+                              {format(new Date(receipt.createdAt), 'MMM dd, yyyy HH:mm')}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleDownloadReceipt(receipt.id)}
+                                  title="Download Receipt PDF"
+                                  data-testid={`button-download-receipt-${receipt.id}`}
+                                >
+                                  <Download className="w-4 h-4" />
                                 </Button>
                               </div>
                             </td>
