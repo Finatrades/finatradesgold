@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
+import finatradesLogo from '@/assets/finatrades-logo-dark.png';
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -100,17 +101,18 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       >
         <div className="flex flex-col h-full">
           
-          <div className="h-20 flex items-center justify-between px-6 border-b border-border">
+          <div className="h-20 flex items-center justify-between px-4 border-b border-border bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]">
             <Link href="/">
-              <div className="flex items-center gap-3 cursor-pointer" data-testid="sidebar-logo">
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">F</span>
-                </div>
-                <span className="text-xl font-bold text-foreground">Finatrades</span>
+              <div className="flex items-center cursor-pointer" data-testid="sidebar-logo">
+                <img 
+                  src={finatradesLogo} 
+                  alt="Finatrades" 
+                  className="h-10 w-auto"
+                />
               </div>
             </Link>
             <button 
-              className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
+              className="lg:hidden p-2 text-white/70 hover:text-white"
               onClick={() => setIsOpen(false)}
             >
               <X className="w-5 h-5" />
