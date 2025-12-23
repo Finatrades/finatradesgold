@@ -8272,6 +8272,7 @@ ${message}
         transferTxId = transferTx.id;
 
         // Create ledger entry for audit trail
+        const newFinaPayBalance = freshFinapayGold + gramsToWithdraw;
         await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'BNSL_To_FinaPay',
@@ -8282,6 +8283,7 @@ ${message}
           toWallet: 'FinaPay',
           fromStatus: 'Locked_BNSL',
           toStatus: 'Available',
+          balanceAfterGrams: newFinaPayBalance.toFixed(6),
           transactionId: transferTx.id,
           notes: `BNSL Hedged Withdrawal: ${gramsToWithdraw.toFixed(4)}g. Entry: $${entryPrice.toFixed(2)}/g, Exit: $${currentPrice.toFixed(2)}/g, Value: $${withdrawUsdValue.toFixed(2)}`,
           createdBy: 'system',
