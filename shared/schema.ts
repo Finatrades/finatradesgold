@@ -2,7 +2,7 @@
 
 
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1049,7 +1049,12 @@ export const ledgerActionEnum = pgEnum('ledger_action', [
   'Adjustment',                 // Manual adjustment by admin
   'Pending_Deposit',            // Deposit awaiting verification
   'Pending_Confirm',            // Pending deposit confirmed
-  'Pending_Reject'              // Pending deposit rejected
+  'Pending_Reject',             // Pending deposit rejected
+  'Physical_Delivery',          // Physical gold delivery
+  'Vault_Transfer',             // Transfer between vault locations
+  'Gift_Send',                  // Gold gift sent
+  'Gift_Receive',               // Gold gift received
+  'Storage_Fee'                 // Storage fee deduction
 ]);
 
 // Wallet types for tracking source/destination
@@ -3038,3 +3043,218 @@ export const backupAuditLogs = pgTable("backup_audit_logs", {
 export const insertBackupAuditLogSchema = createInsertSchema(backupAuditLogs).omit({ id: true, createdAt: true });
 export type InsertBackupAuditLog = z.infer<typeof insertBackupAuditLogSchema>;
 export type BackupAuditLog = typeof backupAuditLogs.$inferSelect;
+
+// ============================================
+// FINAVAULT - PHYSICAL DELIVERY REQUESTS
+// ============================================
+
+export const physicalDeliveryStatusEnum = pgEnum('physical_delivery_status', [
+  'Pending', 'Processing', 'Shipped', 'In Transit', 'Delivered', 'Cancelled', 'Failed'
+]);
+
+export const physicalDeliveryRequests = pgTable("physical_delivery_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 50 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }).notNull(),
+  deliveryAddress: text("delivery_address").notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  country: varchar("country", { length: 100 }).notNull(),
+  postalCode: varchar("postal_code", { length: 20 }),
+  phone: varchar("phone", { length: 50 }).notNull(),
+  specialInstructions: text("special_instructions"),
+  deliveryMethod: varchar("delivery_method", { length: 50 }).default('Insured Courier'),
+  estimatedDeliveryDays: integer("estimated_delivery_days"),
+  shippingFeeUsd: decimal("shipping_fee_usd", { precision: 18, scale: 2 }).default('0'),
+  insuranceFeeUsd: decimal("insurance_fee_usd", { precision: 18, scale: 2 }).default('0'),
+  status: varchar("status", { length: 50 }).notNull().default('Pending'),
+  trackingNumber: varchar("tracking_number", { length: 100 }),
+  courierName: varchar("courier_name", { length: 100 }),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
+  adminNotes: text("admin_notes"),
+  processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPhysicalDeliveryRequestSchema = createInsertSchema(physicalDeliveryRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPhysicalDeliveryRequest = z.infer<typeof insertPhysicalDeliveryRequestSchema>;
+export type PhysicalDeliveryRequest = typeof physicalDeliveryRequests.$inferSelect;
+
+// ============================================
+// FINAVAULT - GOLD BAR INVENTORY
+// ============================================
+
+export const goldBarStatusEnum = pgEnum('gold_bar_status', [
+  'Available', 'Allocated', 'Reserved', 'In Transit', 'Delivered'
+]);
+
+export const goldBars = pgTable("gold_bars", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  serialNumber: varchar("serial_number", { length: 100 }).notNull().unique(),
+  weightGrams: decimal("weight_grams", { precision: 18, scale: 6 }).notNull(),
+  purity: varchar("purity", { length: 10 }).notNull().default('999.9'),
+  refiner: varchar("refiner", { length: 100 }).notNull(),
+  vaultLocation: varchar("vault_location", { length: 100 }).notNull(),
+  zone: varchar("zone", { length: 50 }),
+  status: varchar("status", { length: 50 }).notNull().default('Available'),
+  allocatedToUserId: varchar("allocated_to_user_id", { length: 255 }).references(() => users.id),
+  allocatedAt: timestamp("allocated_at"),
+  purchasePricePerGram: decimal("purchase_price_per_gram", { precision: 18, scale: 6 }),
+  purchaseDate: date("purchase_date"),
+  assayCertificateUrl: text("assay_certificate_url"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertGoldBarSchema = createInsertSchema(goldBars).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertGoldBar = z.infer<typeof insertGoldBarSchema>;
+export type GoldBar = typeof goldBars.$inferSelect;
+
+// ============================================
+// FINAVAULT - STORAGE FEES
+// ============================================
+
+export const storageFeeStatusEnum = pgEnum('storage_fee_status', [
+  'Pending', 'Paid', 'Overdue', 'Waived'
+]);
+
+export const storageFees = pgTable("storage_fees", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  billingPeriodStart: date("billing_period_start").notNull(),
+  billingPeriodEnd: date("billing_period_end").notNull(),
+  averageGoldGrams: decimal("average_gold_grams", { precision: 18, scale: 6 }).notNull(),
+  feeRatePercent: decimal("fee_rate_percent", { precision: 5, scale: 4 }).notNull(),
+  feeAmountUsd: decimal("fee_amount_usd", { precision: 18, scale: 2 }).notNull(),
+  feeAmountGoldGrams: decimal("fee_amount_gold_grams", { precision: 18, scale: 6 }),
+  status: varchar("status", { length: 50 }).notNull().default('Pending'),
+  paidAt: timestamp("paid_at"),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  transactionId: varchar("transaction_id", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertStorageFeeSchema = createInsertSchema(storageFees).omit({ id: true, createdAt: true });
+export type InsertStorageFee = z.infer<typeof insertStorageFeeSchema>;
+export type StorageFee = typeof storageFees.$inferSelect;
+
+// ============================================
+// FINAVAULT - VAULT LOCATIONS
+// ============================================
+
+export const vaultLocations = pgTable("vault_locations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  country: varchar("country", { length: 100 }).notNull(),
+  timezone: varchar("timezone", { length: 50 }),
+  capacityKg: decimal("capacity_kg", { precision: 18, scale: 2 }),
+  currentHoldingsKg: decimal("current_holdings_kg", { precision: 18, scale: 2 }).default('0'),
+  insuranceProvider: varchar("insurance_provider", { length: 100 }),
+  insurancePolicyNumber: varchar("insurance_policy_number", { length: 100 }),
+  insuranceCoverageUsd: decimal("insurance_coverage_usd", { precision: 18, scale: 2 }),
+  securityLevel: varchar("security_level", { length: 50 }).default('High'),
+  isActive: boolean("is_active").default(true),
+  operatingHours: text("operating_hours"),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertVaultLocationSchema = createInsertSchema(vaultLocations).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertVaultLocation = z.infer<typeof insertVaultLocationSchema>;
+export type VaultLocation = typeof vaultLocations.$inferSelect;
+
+// ============================================
+// FINAVAULT - VAULT TRANSFERS
+// ============================================
+
+export const vaultTransferStatusEnum = pgEnum('vault_transfer_status', [
+  'Pending', 'Approved', 'In Transit', 'Completed', 'Rejected', 'Cancelled'
+]);
+
+export const vaultTransfers = pgTable("vault_transfers", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 50 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  fromLocation: varchar("from_location", { length: 100 }).notNull(),
+  toLocation: varchar("to_location", { length: 100 }).notNull(),
+  transferFeeUsd: decimal("transfer_fee_usd", { precision: 18, scale: 2 }).default('0'),
+  reason: text("reason"),
+  status: varchar("status", { length: 50 }).notNull().default('Pending'),
+  approvedBy: varchar("approved_by", { length: 255 }).references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  completedAt: timestamp("completed_at"),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertVaultTransferSchema = createInsertSchema(vaultTransfers).omit({ id: true, createdAt: true });
+export type InsertVaultTransfer = z.infer<typeof insertVaultTransferSchema>;
+export type VaultTransfer = typeof vaultTransfers.$inferSelect;
+
+// ============================================
+// FINAVAULT - GOLD GIFTS
+// ============================================
+
+export const goldGiftStatusEnum = pgEnum('gold_gift_status', [
+  'Pending', 'Sent', 'Claimed', 'Expired', 'Cancelled'
+]);
+
+export const goldGifts = pgTable("gold_gifts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 50 }).notNull().unique(),
+  senderUserId: varchar("sender_user_id", { length: 255 }).notNull().references(() => users.id),
+  recipientUserId: varchar("recipient_user_id", { length: 255 }).references(() => users.id),
+  recipientEmail: varchar("recipient_email", { length: 255 }),
+  recipientPhone: varchar("recipient_phone", { length: 50 }),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }).notNull(),
+  message: text("message"),
+  occasion: varchar("occasion", { length: 100 }),
+  giftCertificateUrl: text("gift_certificate_url"),
+  status: varchar("status", { length: 50 }).notNull().default('Pending'),
+  claimedAt: timestamp("claimed_at"),
+  expiresAt: timestamp("expires_at"),
+  senderTransactionId: varchar("sender_transaction_id", { length: 255 }),
+  recipientTransactionId: varchar("recipient_transaction_id", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertGoldGiftSchema = createInsertSchema(goldGifts).omit({ id: true, createdAt: true });
+export type InsertGoldGift = z.infer<typeof insertGoldGiftSchema>;
+export type GoldGift = typeof goldGifts.$inferSelect;
+
+// ============================================
+// FINAVAULT - INSURANCE CERTIFICATES
+// ============================================
+
+export const insuranceCertificates = pgTable("insurance_certificates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  certificateNumber: varchar("certificate_number", { length: 50 }).notNull().unique(),
+  vaultLocation: varchar("vault_location", { length: 100 }).notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  coverageAmountUsd: decimal("coverage_amount_usd", { precision: 18, scale: 2 }).notNull(),
+  premiumUsd: decimal("premium_usd", { precision: 18, scale: 2 }),
+  insurerName: varchar("insurer_name", { length: 100 }).notNull(),
+  policyNumber: varchar("policy_number", { length: 100 }),
+  coverageStart: date("coverage_start").notNull(),
+  coverageEnd: date("coverage_end").notNull(),
+  certificateUrl: text("certificate_url"),
+  status: varchar("status", { length: 50 }).notNull().default('Active'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertInsuranceCertificateSchema = createInsertSchema(insuranceCertificates).omit({ id: true, createdAt: true });
+export type InsertInsuranceCertificate = z.infer<typeof insertInsuranceCertificateSchema>;
+export type InsuranceCertificate = typeof insuranceCertificates.$inferSelect;

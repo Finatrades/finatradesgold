@@ -22,7 +22,8 @@ import {
   wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
-  partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments
+  partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments,
+  physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -6800,6 +6801,842 @@ ${message}
     } catch (error) {
       console.error('Update withdrawal request error:', error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update withdrawal request" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - PHYSICAL DELIVERY REQUESTS
+  // ============================================================================
+
+  // User: Create physical delivery request
+  app.post("/api/vault/physical-delivery", ensureAuthenticated, async (req, res) => {
+    try {
+      const { userId, goldGrams, deliveryAddress, city, country, postalCode, phone, specialInstructions, deliveryMethod } = req.body;
+      
+      const sessionUserId = req.session?.userId;
+      if (sessionUserId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check available gold balance
+      const ownership = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
+      const availableGold = ownership[0] ? parseFloat(ownership[0].availableGrams) : 0;
+      const requestedGrams = parseFloat(goldGrams);
+      
+      if (requestedGrams > availableGold) {
+        return res.status(400).json({ message: `Insufficient gold. Available: ${availableGold.toFixed(4)}g` });
+      }
+      
+      const goldPrice = await getGoldPricePerGram();
+      const refNumber = `PDR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
+      
+      // Calculate fees (example: $50 base + $10 per 100g)
+      const shippingFee = 50 + Math.ceil(requestedGrams / 100) * 10;
+      const insuranceFee = requestedGrams * goldPrice * 0.005; // 0.5% insurance
+      
+      const [request] = await db.insert(physicalDeliveryRequests).values({
+        id: crypto.randomUUID(),
+        referenceNumber: refNumber,
+        userId,
+        goldGrams: requestedGrams.toFixed(6),
+        goldPriceUsdPerGram: goldPrice.toFixed(6),
+        deliveryAddress,
+        city,
+        country,
+        postalCode,
+        phone,
+        specialInstructions,
+        deliveryMethod: deliveryMethod || 'Insured Courier',
+        shippingFeeUsd: shippingFee.toFixed(2),
+        insuranceFeeUsd: insuranceFee.toFixed(2),
+        status: 'Pending',
+      }).returning();
+      
+      await storage.createAuditLog({
+        entityType: "physical_delivery",
+        entityId: request.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: `Physical delivery request: ${requestedGrams}g to ${city}, ${country}`,
+      });
+      
+      res.json({ request, message: "Physical delivery request submitted" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create delivery request" });
+    }
+  });
+
+  // User: Get physical delivery requests
+  app.get("/api/vault/physical-deliveries/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const requests = await db.select().from(physicalDeliveryRequests).where(eq(physicalDeliveryRequests.userId, req.params.userId)).orderBy(desc(physicalDeliveryRequests.createdAt));
+      res.json({ requests });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get delivery requests" });
+    }
+  });
+
+  // Admin: Get all physical delivery requests
+  app.get("/api/admin/vault/physical-deliveries", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const requests = await db.select().from(physicalDeliveryRequests).orderBy(desc(physicalDeliveryRequests.createdAt));
+      const enriched = await Promise.all(requests.map(async (r) => {
+        const user = await storage.getUser(r.userId);
+        return { ...r, user: user ? { email: user.email, firstName: user.firstName, lastName: user.lastName } : null };
+      }));
+      res.json({ requests: enriched });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get delivery requests" });
+    }
+  });
+
+  // Admin: Update physical delivery status
+  app.patch("/api/admin/vault/physical-delivery/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { status, trackingNumber, courierName, estimatedDeliveryDays, adminNotes } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const [request] = await db.select().from(physicalDeliveryRequests).where(eq(physicalDeliveryRequests.id, req.params.id));
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      const updates: any = { status, updatedAt: new Date() };
+      if (trackingNumber) updates.trackingNumber = trackingNumber;
+      if (courierName) updates.courierName = courierName;
+      if (estimatedDeliveryDays) updates.estimatedDeliveryDays = estimatedDeliveryDays;
+      if (adminNotes) updates.adminNotes = adminNotes;
+      
+      if (status === 'Shipped') {
+        updates.shippedAt = new Date();
+        updates.processedBy = adminUser.id;
+        
+        // Deduct gold from user's balance
+        const goldGrams = parseFloat(request.goldGrams);
+        const wallet = await storage.getWallet(request.userId);
+        if (wallet) {
+          await storage.updateWallet(wallet.id, {
+            goldGrams: Math.max(0, parseFloat(wallet.goldGrams) - goldGrams).toFixed(6),
+          });
+        }
+        
+        // Record ledger entry
+        const { vaultLedgerService } = await import('./vault-ledger-service');
+        await vaultLedgerService.recordLedgerEntry({
+          userId: request.userId,
+          action: 'Physical_Delivery',
+          goldGrams,
+          goldPriceUsdPerGram: parseFloat(request.goldPriceUsdPerGram),
+          fromWallet: 'FinaPay',
+          toWallet: 'External',
+          fromStatus: 'Available',
+          toStatus: 'Delivered',
+          notes: `Physical delivery ${request.referenceNumber} - ${courierName} ${trackingNumber}`,
+          createdBy: adminUser.id,
+        });
+      }
+      
+      if (status === 'Delivered') {
+        updates.deliveredAt = new Date();
+      }
+      
+      await db.update(physicalDeliveryRequests).set(updates).where(eq(physicalDeliveryRequests.id, req.params.id));
+      
+      await storage.createAuditLog({
+        entityType: "physical_delivery",
+        entityId: request.id,
+        actionType: "update_status",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Status changed to ${status}`,
+      });
+      
+      res.json({ message: "Delivery request updated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update delivery request" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - GOLD BAR INVENTORY
+  // ============================================================================
+
+  // User: Get allocated gold bars
+  app.get("/api/vault/gold-bars/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const bars = await db.select().from(goldBars).where(eq(goldBars.allocatedToUserId, req.params.userId));
+      res.json({ bars });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get gold bars" });
+    }
+  });
+
+  // Admin: Get all gold bars
+  app.get("/api/admin/vault/gold-bars", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const bars = await db.select().from(goldBars).orderBy(desc(goldBars.createdAt));
+      res.json({ bars });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get gold bars" });
+    }
+  });
+
+  // Admin: Add gold bar
+  app.post("/api/admin/vault/gold-bars", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { serialNumber, weightGrams, purity, refiner, vaultLocation, zone, purchasePricePerGram, assayCertificateUrl, notes } = req.body;
+      
+      const [bar] = await db.insert(goldBars).values({
+        id: crypto.randomUUID(),
+        serialNumber,
+        weightGrams: parseFloat(weightGrams).toFixed(6),
+        purity: purity || '999.9',
+        refiner,
+        vaultLocation,
+        zone,
+        status: 'Available',
+        purchasePricePerGram: purchasePricePerGram ? parseFloat(purchasePricePerGram).toFixed(6) : null,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        assayCertificateUrl,
+        notes,
+      }).returning();
+      
+      res.json({ bar, message: "Gold bar added to inventory" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to add gold bar" });
+    }
+  });
+
+  // Admin: Allocate gold bar to user
+  app.post("/api/admin/vault/gold-bars/:id/allocate", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      const [bar] = await db.select().from(goldBars).where(eq(goldBars.id, req.params.id));
+      if (!bar) {
+        return res.status(404).json({ message: "Gold bar not found" });
+      }
+      if (bar.status !== 'Available') {
+        return res.status(400).json({ message: "Gold bar is not available for allocation" });
+      }
+      
+      await db.update(goldBars).set({
+        allocatedToUserId: userId,
+        allocatedAt: new Date(),
+        status: 'Allocated',
+        updatedAt: new Date(),
+      }).where(eq(goldBars.id, req.params.id));
+      
+      res.json({ message: "Gold bar allocated to user" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to allocate gold bar" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - STORAGE FEES
+  // ============================================================================
+
+  // User: Get storage fees
+  app.get("/api/vault/storage-fees/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const fees = await db.select().from(storageFees).where(eq(storageFees.userId, req.params.userId)).orderBy(desc(storageFees.createdAt));
+      res.json({ fees });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get storage fees" });
+    }
+  });
+
+  // Admin: Get all storage fees
+  app.get("/api/admin/vault/storage-fees", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const fees = await db.select().from(storageFees).orderBy(desc(storageFees.createdAt));
+      res.json({ fees });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get storage fees" });
+    }
+  });
+
+  // Admin: Generate monthly storage fees
+  app.post("/api/admin/vault/storage-fees/generate", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { month, year, feeRatePercent } = req.body;
+      const rate = parseFloat(feeRatePercent) || 0.0833; // Default 1% annual = 0.0833% monthly
+      
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
+      const periodStart = startDate.toISOString().split('T')[0];
+      const periodEnd = endDate.toISOString().split('T')[0];
+      
+      // Check if fees already generated for this period
+      const existingFees = await db.select({ count: sql<number>`COUNT(*)` })
+        .from(storageFees)
+        .where(eq(storageFees.billingPeriodStart, periodStart));
+      
+      if (existingFees[0]?.count > 0) {
+        return res.status(400).json({ 
+          message: `Storage fees already generated for ${month}/${year}. Found ${existingFees[0].count} existing records.` 
+        });
+      }
+      
+      // Get all users with vault holdings
+      const ownerships = await db.select().from(vaultOwnershipSummary);
+      const goldPrice = await getGoldPricePerGram();
+      
+      let generated = 0;
+      let skipped = 0;
+      for (const ownership of ownerships) {
+        const avgGold = parseFloat(ownership.totalGoldGrams);
+        if (avgGold <= 0) {
+          skipped++;
+          continue;
+        }
+        
+        const feeUsd = avgGold * goldPrice * (rate / 100);
+        const feeGold = avgGold * (rate / 100);
+        
+        await db.insert(storageFees).values({
+          id: crypto.randomUUID(),
+          userId: ownership.userId,
+          billingPeriodStart: periodStart,
+          billingPeriodEnd: periodEnd,
+          averageGoldGrams: avgGold.toFixed(6),
+          feeRatePercent: rate.toFixed(4),
+          feeAmountUsd: feeUsd.toFixed(2),
+          feeAmountGoldGrams: feeGold.toFixed(6),
+          status: 'Pending',
+        });
+        generated++;
+      }
+      
+      res.json({ 
+        message: `Generated ${generated} storage fee records for ${month}/${year}`,
+        details: { generated, skipped, period: `${periodStart} to ${periodEnd}` }
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to generate storage fees" });
+    }
+  });
+
+  // Admin: Mark storage fee as paid
+  app.patch("/api/admin/vault/storage-fees/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { status, paymentMethod, notes } = req.body;
+      
+      const updates: any = { status };
+      if (status === 'Paid') {
+        updates.paidAt = new Date();
+        updates.paymentMethod = paymentMethod;
+      }
+      if (notes) updates.notes = notes;
+      
+      await db.update(storageFees).set(updates).where(eq(storageFees.id, req.params.id));
+      
+      res.json({ message: "Storage fee updated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update storage fee" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - VAULT LOCATIONS
+  // ============================================================================
+
+  // Get all vault locations
+  app.get("/api/vault/locations", ensureAuthenticated, async (req, res) => {
+    try {
+      const locations = await db.select().from(vaultLocations).where(eq(vaultLocations.isActive, true));
+      res.json({ locations });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get vault locations" });
+    }
+  });
+
+  // Admin: Get all vault locations (including inactive)
+  app.get("/api/admin/vault/locations", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const locations = await db.select().from(vaultLocations).orderBy(vaultLocations.name);
+      res.json({ locations });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get vault locations" });
+    }
+  });
+
+  // Admin: Create vault location
+  app.post("/api/admin/vault/locations", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { name, code, address, city, country, timezone, capacityKg, insuranceProvider, insurancePolicyNumber, insuranceCoverageUsd, securityLevel, operatingHours, contactEmail, contactPhone } = req.body;
+      
+      const [location] = await db.insert(vaultLocations).values({
+        id: crypto.randomUUID(),
+        name,
+        code: code.toUpperCase(),
+        address,
+        city,
+        country,
+        timezone,
+        capacityKg: capacityKg ? parseFloat(capacityKg).toFixed(2) : null,
+        insuranceProvider,
+        insurancePolicyNumber,
+        insuranceCoverageUsd: insuranceCoverageUsd ? parseFloat(insuranceCoverageUsd).toFixed(2) : null,
+        securityLevel: securityLevel || 'High',
+        operatingHours,
+        contactEmail,
+        contactPhone,
+        isActive: true,
+      }).returning();
+      
+      res.json({ location, message: "Vault location created" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create vault location" });
+    }
+  });
+
+  // Admin: Update vault location
+  app.patch("/api/admin/vault/locations/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const updates = { ...req.body, updatedAt: new Date() };
+      await db.update(vaultLocations).set(updates).where(eq(vaultLocations.id, req.params.id));
+      res.json({ message: "Vault location updated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update vault location" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - VAULT TRANSFERS
+  // ============================================================================
+
+  // User: Request vault transfer
+  app.post("/api/vault/transfers", ensureAuthenticated, async (req, res) => {
+    try {
+      const { userId, goldGrams, fromLocation, toLocation, reason } = req.body;
+      
+      const sessionUserId = req.session?.userId;
+      if (sessionUserId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const refNumber = `VT-${Date.now().toString(36).toUpperCase()}`;
+      const transferFee = 25; // Example flat fee
+      
+      const [transfer] = await db.insert(vaultTransfers).values({
+        id: crypto.randomUUID(),
+        referenceNumber: refNumber,
+        userId,
+        goldGrams: parseFloat(goldGrams).toFixed(6),
+        fromLocation,
+        toLocation,
+        transferFeeUsd: transferFee.toFixed(2),
+        reason,
+        status: 'Pending',
+      }).returning();
+      
+      res.json({ transfer, message: "Vault transfer request submitted" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create transfer request" });
+    }
+  });
+
+  // User: Get vault transfers
+  app.get("/api/vault/transfers/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const transfers = await db.select().from(vaultTransfers).where(eq(vaultTransfers.userId, req.params.userId)).orderBy(desc(vaultTransfers.createdAt));
+      res.json({ transfers });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transfers" });
+    }
+  });
+
+  // Admin: Get all vault transfers
+  app.get("/api/admin/vault/transfers", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const transfers = await db.select().from(vaultTransfers).orderBy(desc(vaultTransfers.createdAt));
+      res.json({ transfers });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transfers" });
+    }
+  });
+
+  // Admin: Update vault transfer
+  app.patch("/api/admin/vault/transfers/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { status, adminNotes } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const [transfer] = await db.select().from(vaultTransfers).where(eq(vaultTransfers.id, req.params.id));
+      if (!transfer) {
+        return res.status(404).json({ message: "Transfer not found" });
+      }
+      
+      const updates: any = { status };
+      if (status === 'Approved') {
+        updates.approvedBy = adminUser.id;
+        updates.approvedAt = new Date();
+      }
+      if (status === 'Completed') {
+        updates.completedAt = new Date();
+        
+        // Record ledger entry for vault transfer completion
+        const { vaultLedgerService } = await import('./vault-ledger-service');
+        const goldPrice = await getGoldPricePerGram();
+        await vaultLedgerService.recordLedgerEntry({
+          userId: transfer.userId,
+          action: 'Vault_Transfer',
+          goldGrams: parseFloat(transfer.goldGrams),
+          goldPriceUsdPerGram: goldPrice,
+          fromWallet: 'FinaPay',
+          toWallet: 'FinaPay',
+          fromStatus: 'Available',
+          toStatus: 'Available',
+          notes: `Vault transfer ${transfer.referenceNumber}: ${transfer.fromLocation} → ${transfer.toLocation}`,
+          createdBy: adminUser.id,
+        });
+        
+        await storage.createAuditLog({
+          entityType: "vault_transfer",
+          entityId: transfer.id,
+          actionType: "complete",
+          actor: adminUser.id,
+          actorRole: "admin",
+          details: `Transfer ${transfer.goldGrams}g from ${transfer.fromLocation} to ${transfer.toLocation} completed`,
+        });
+      }
+      if (adminNotes) updates.adminNotes = adminNotes;
+      
+      await db.update(vaultTransfers).set(updates).where(eq(vaultTransfers.id, req.params.id));
+      
+      res.json({ message: "Transfer request updated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update transfer" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - GOLD GIFTS
+  // ============================================================================
+
+  // User: Send gold gift
+  app.post("/api/vault/gifts", ensureAuthenticated, async (req, res) => {
+    try {
+      const { senderUserId, recipientEmail, recipientPhone, goldGrams, message, occasion } = req.body;
+      
+      const sessionUserId = req.session?.userId;
+      if (sessionUserId !== senderUserId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const grams = parseFloat(goldGrams);
+      if (isNaN(grams) || grams <= 0) {
+        return res.status(400).json({ message: "Invalid gold amount" });
+      }
+      
+      // Check sender's balance
+      const wallet = await storage.getWallet(senderUserId);
+      if (!wallet || parseFloat(wallet.goldGrams) < grams) {
+        return res.status(400).json({ message: "Insufficient gold balance" });
+      }
+      
+      const goldPrice = await getGoldPricePerGram();
+      const refNumber = `GIFT-${Date.now().toString(36).toUpperCase()}`;
+      
+      // Check if recipient exists
+      let recipientUserId = null;
+      if (recipientEmail) {
+        const recipient = await storage.getUserByEmail(recipientEmail);
+        if (recipient) recipientUserId = recipient.id;
+      }
+      
+      // Deduct from sender's wallet
+      await storage.updateWallet(wallet.id, {
+        goldGrams: (parseFloat(wallet.goldGrams) - grams).toFixed(6),
+      });
+      
+      // Record ledger entry for sender
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: senderUserId,
+        action: 'Gift_Send',
+        goldGrams: grams,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'FinaPay',
+        toWallet: recipientUserId ? 'FinaPay' : 'External',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        counterpartyUserId: recipientUserId || undefined,
+        notes: `Gift to ${recipientEmail || recipientPhone}: ${refNumber}`,
+        createdBy: senderUserId,
+      });
+      
+      // Create sender transaction
+      const senderTx = await storage.createTransaction({
+        userId: senderUserId,
+        type: 'Send',
+        status: 'Completed',
+        amountGold: grams.toFixed(6),
+        amountUsd: (grams * goldPrice).toFixed(2),
+        description: `Gold gift to ${recipientEmail || recipientPhone}: ${message || occasion || ''}`.substring(0, 255),
+        sourceModule: 'FinaVault',
+      });
+      
+      const [gift] = await db.insert(goldGifts).values({
+        id: crypto.randomUUID(),
+        referenceNumber: refNumber,
+        senderUserId,
+        recipientUserId,
+        recipientEmail,
+        recipientPhone,
+        goldGrams: grams.toFixed(6),
+        goldPriceUsdPerGram: goldPrice.toFixed(6),
+        message,
+        occasion,
+        status: recipientUserId ? 'Sent' : 'Pending',
+        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+        senderTransactionId: senderTx.id,
+      }).returning();
+      
+      // If recipient exists, credit immediately
+      if (recipientUserId) {
+        const recipientWallet = await storage.getOrCreateWallet(recipientUserId);
+        await storage.updateWallet(recipientWallet.id, {
+          goldGrams: (parseFloat(recipientWallet.goldGrams) + grams).toFixed(6),
+        });
+        
+        // Record ledger entry for recipient
+        await vaultLedgerService.recordLedgerEntry({
+          userId: recipientUserId,
+          action: 'Gift_Receive',
+          goldGrams: grams,
+          goldPriceUsdPerGram: goldPrice,
+          fromWallet: 'FinaPay',
+          toWallet: 'FinaPay',
+          fromStatus: 'Available',
+          toStatus: 'Available',
+          counterpartyUserId: senderUserId,
+          notes: `Gift from ${senderUserId}: ${refNumber}`,
+          createdBy: senderUserId,
+        });
+        
+        const recipientTx = await storage.createTransaction({
+          userId: recipientUserId,
+          type: 'Receive',
+          status: 'Completed',
+          amountGold: grams.toFixed(6),
+          amountUsd: (grams * goldPrice).toFixed(2),
+          description: `Gold gift received`,
+          sourceModule: 'FinaVault',
+        });
+        
+        await db.update(goldGifts).set({
+          status: 'Claimed',
+          claimedAt: new Date(),
+          recipientTransactionId: recipientTx.id,
+        }).where(eq(goldGifts.id, gift.id));
+      }
+      
+      res.json({ gift, message: "Gold gift sent successfully" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send gift" });
+    }
+  });
+
+  // User: Get sent/received gifts
+  app.get("/api/vault/gifts/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const sent = await db.select().from(goldGifts).where(eq(goldGifts.senderUserId, req.params.userId)).orderBy(desc(goldGifts.createdAt));
+      const received = await db.select().from(goldGifts).where(eq(goldGifts.recipientUserId, req.params.userId)).orderBy(desc(goldGifts.createdAt));
+      res.json({ sent, received });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get gifts" });
+    }
+  });
+
+  // User: Claim gift (for new users)
+  app.post("/api/vault/gifts/:id/claim", ensureAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const sessionUserId = req.session?.userId;
+      if (sessionUserId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const [gift] = await db.select().from(goldGifts).where(eq(goldGifts.id, req.params.id));
+      if (!gift) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
+      if (gift.status !== 'Pending' && gift.status !== 'Sent') {
+        return res.status(400).json({ message: "Gift cannot be claimed" });
+      }
+      
+      // Check expiration
+      if (gift.expiresAt && new Date(gift.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Gift has expired" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (gift.recipientEmail && user?.email !== gift.recipientEmail) {
+        return res.status(403).json({ message: "This gift is not for you" });
+      }
+      
+      const grams = parseFloat(gift.goldGrams);
+      const goldPrice = parseFloat(gift.goldPriceUsdPerGram);
+      
+      // Credit recipient
+      const recipientWallet = await storage.getOrCreateWallet(userId);
+      await storage.updateWallet(recipientWallet.id, {
+        goldGrams: (parseFloat(recipientWallet.goldGrams) + grams).toFixed(6),
+      });
+      
+      // Record ledger entry for recipient
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId,
+        action: 'Gift_Receive',
+        goldGrams: grams,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'External',
+        toWallet: 'FinaPay',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        counterpartyUserId: gift.senderUserId,
+        notes: `Gift claimed: ${gift.referenceNumber}`,
+        createdBy: userId,
+      });
+      
+      const recipientTx = await storage.createTransaction({
+        userId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: grams.toFixed(6),
+        amountUsd: (grams * goldPrice).toFixed(2),
+        description: `Gold gift claimed`,
+        sourceModule: 'FinaVault',
+      });
+      
+      await db.update(goldGifts).set({
+        status: 'Claimed',
+        recipientUserId: userId,
+        claimedAt: new Date(),
+        recipientTransactionId: recipientTx.id,
+      }).where(eq(goldGifts.id, gift.id));
+      
+      res.json({ message: "Gift claimed successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to claim gift" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - INSURANCE CERTIFICATES
+  // ============================================================================
+
+  // User: Get insurance certificates
+  app.get("/api/vault/insurance/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const certs = await db.select().from(insuranceCertificates).where(eq(insuranceCertificates.userId, req.params.userId)).orderBy(desc(insuranceCertificates.createdAt));
+      res.json({ certificates: certs });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get insurance certificates" });
+    }
+  });
+
+  // Admin: Generate insurance certificate
+  app.post("/api/admin/vault/insurance", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { userId, vaultLocation, goldGrams, insurerName, policyNumber, coverageStart, coverageEnd, premiumUsd } = req.body;
+      
+      const goldPrice = await getGoldPricePerGram();
+      const coverageAmount = parseFloat(goldGrams) * goldPrice * 1.1; // 110% coverage
+      const certNumber = `INS-${Date.now().toString(36).toUpperCase()}`;
+      
+      const [cert] = await db.insert(insuranceCertificates).values({
+        id: crypto.randomUUID(),
+        userId,
+        certificateNumber: certNumber,
+        vaultLocation,
+        goldGrams: parseFloat(goldGrams).toFixed(6),
+        coverageAmountUsd: coverageAmount.toFixed(2),
+        premiumUsd: premiumUsd ? parseFloat(premiumUsd).toFixed(2) : null,
+        insurerName,
+        policyNumber,
+        coverageStart,
+        coverageEnd,
+        status: 'Active',
+      }).returning();
+      
+      res.json({ certificate: cert, message: "Insurance certificate generated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to generate insurance certificate" });
+    }
+  });
+
+  // Admin: Get all insurance certificates
+  app.get("/api/admin/vault/insurance", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const certs = await db.select().from(insuranceCertificates).orderBy(desc(insuranceCertificates.createdAt));
+      res.json({ certificates: certs });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get insurance certificates" });
+    }
+  });
+
+  // ============================================================================
+  // FINAVAULT - RECONCILIATION REPORT
+  // ============================================================================
+
+  // Admin: Get vault reconciliation report
+  app.get("/api/admin/vault/reconciliation", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      // Get total physical inventory
+      const barsResult = await db.select({
+        totalBars: sql<number>`COUNT(*)`,
+        totalWeight: sql<string>`COALESCE(SUM(CAST(weight_grams AS DECIMAL)), 0)`,
+        allocatedWeight: sql<string>`COALESCE(SUM(CASE WHEN status = 'Allocated' THEN CAST(weight_grams AS DECIMAL) ELSE 0 END), 0)`,
+        availableWeight: sql<string>`COALESCE(SUM(CASE WHEN status = 'Available' THEN CAST(weight_grams AS DECIMAL) ELSE 0 END), 0)`,
+      }).from(goldBars);
+      
+      // Get total digital holdings
+      const ownershipResult = await db.select({
+        totalDigital: sql<string>`COALESCE(SUM(CAST(total_gold_grams AS DECIMAL)), 0)`,
+        totalUsers: sql<number>`COUNT(*)`,
+      }).from(vaultOwnershipSummary);
+      
+      // Get pending operations
+      const pendingDeliveries = await db.select({ count: sql<number>`COUNT(*)` }).from(physicalDeliveryRequests).where(eq(physicalDeliveryRequests.status, 'Pending'));
+      const pendingTransfers = await db.select({ count: sql<number>`COUNT(*)` }).from(vaultTransfers).where(eq(vaultTransfers.status, 'Pending'));
+      
+      const physicalTotal = parseFloat(barsResult[0]?.totalWeight || '0');
+      const digitalTotal = parseFloat(ownershipResult[0]?.totalDigital || '0');
+      const discrepancy = physicalTotal - digitalTotal;
+      const coverageRatio = digitalTotal > 0 ? (physicalTotal / digitalTotal) * 100 : 100;
+      
+      res.json({
+        report: {
+          generatedAt: new Date().toISOString(),
+          physical: {
+            totalBars: barsResult[0]?.totalBars || 0,
+            totalWeightGrams: physicalTotal,
+            allocatedGrams: parseFloat(barsResult[0]?.allocatedWeight || '0'),
+            availableGrams: parseFloat(barsResult[0]?.availableWeight || '0'),
+          },
+          digital: {
+            totalUsersWithHoldings: ownershipResult[0]?.totalUsers || 0,
+            totalDigitalGrams: digitalTotal,
+          },
+          reconciliation: {
+            discrepancyGrams: discrepancy,
+            coverageRatio: coverageRatio.toFixed(2) + '%',
+            status: Math.abs(discrepancy) < 0.01 ? 'Balanced' : discrepancy > 0 ? 'Over-collateralized' : 'Under-collateralized',
+          },
+          pendingOperations: {
+            deliveryRequests: pendingDeliveries[0]?.count || 0,
+            transferRequests: pendingTransfers[0]?.count || 0,
+          },
+        },
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to generate reconciliation report" });
     }
   });
   

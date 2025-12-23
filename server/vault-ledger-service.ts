@@ -29,7 +29,12 @@ export type LedgerAction =
   | 'Adjustment'
   | 'Pending_Deposit'
   | 'Pending_Confirm'
-  | 'Pending_Reject';
+  | 'Pending_Reject'
+  | 'Physical_Delivery'
+  | 'Vault_Transfer'
+  | 'Gift_Send'
+  | 'Gift_Receive'
+  | 'Storage_Fee';
 
 export type WalletType = 'FinaPay' | 'BNSL' | 'FinaBridge' | 'External';
 export type OwnershipStatus = 'Available' | 'Locked_BNSL' | 'Reserved_Trade' | 'Pending_Deposit' | 'Pending_Withdrawal';
@@ -123,8 +128,8 @@ export class VaultLedgerService {
   }
 
   private calculateNewBalance(currentBalance: number, action: LedgerAction, goldGrams: number): number {
-    const creditActions: LedgerAction[] = ['Deposit', 'Transfer_Receive', 'Payout_Credit', 'Adjustment'];
-    const debitActions: LedgerAction[] = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
+    const creditActions: LedgerAction[] = ['Deposit', 'Transfer_Receive', 'Payout_Credit', 'Adjustment', 'Gift_Receive'];
+    const debitActions: LedgerAction[] = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction', 'Physical_Delivery', 'Gift_Send', 'Storage_Fee'];
     
     if (creditActions.includes(action)) {
       return currentBalance + goldGrams;
@@ -289,6 +294,47 @@ export class VaultLedgerService {
           ...updates,
           totalGoldGrams: (parseFloat(summary.totalGoldGrams) - grams).toFixed(6),
           pendingGrams: (parseFloat(summary.pendingGrams) - grams).toFixed(6),
+        };
+        break;
+
+      case 'Physical_Delivery':
+        updates = {
+          ...updates,
+          totalGoldGrams: (parseFloat(summary.totalGoldGrams) - grams).toFixed(6),
+          availableGrams: (parseFloat(summary.availableGrams) - grams).toFixed(6),
+          finaPayGrams: (parseFloat(summary.finaPayGrams) - grams).toFixed(6),
+        };
+        break;
+
+      case 'Vault_Transfer':
+        // Vault transfer doesn't change ownership - gold stays with user but moves location
+        // No balance changes needed
+        break;
+
+      case 'Gift_Send':
+        updates = {
+          ...updates,
+          totalGoldGrams: (parseFloat(summary.totalGoldGrams) - grams).toFixed(6),
+          availableGrams: (parseFloat(summary.availableGrams) - grams).toFixed(6),
+          finaPayGrams: (parseFloat(summary.finaPayGrams) - grams).toFixed(6),
+        };
+        break;
+
+      case 'Gift_Receive':
+        updates = {
+          ...updates,
+          totalGoldGrams: (parseFloat(summary.totalGoldGrams) + grams).toFixed(6),
+          availableGrams: (parseFloat(summary.availableGrams) + grams).toFixed(6),
+          finaPayGrams: (parseFloat(summary.finaPayGrams) + grams).toFixed(6),
+        };
+        break;
+
+      case 'Storage_Fee':
+        updates = {
+          ...updates,
+          totalGoldGrams: (parseFloat(summary.totalGoldGrams) - grams).toFixed(6),
+          availableGrams: (parseFloat(summary.availableGrams) - grams).toFixed(6),
+          finaPayGrams: (parseFloat(summary.finaPayGrams) - grams).toFixed(6),
         };
         break;
     }
