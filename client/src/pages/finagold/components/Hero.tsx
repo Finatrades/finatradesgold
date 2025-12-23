@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Phone, Shield, CheckCircle } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
+import finatradesLogo from '@/assets/finatrades-logo.png';
 
 const content = {
   personal: {
@@ -143,46 +144,68 @@ export default function Hero() {
                   transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
                   className="relative"
                 >
-                  {/* Dark purple card */}
-                  <div className={`w-[340px] h-52 mx-auto rounded-3xl bg-gradient-to-br from-[#2A0055] to-[#0D001E] border ${isPersonal ? 'border-[#8A2BE2]/40' : 'border-[#8A2BE2]/60'} p-6 shadow-2xl shadow-[#8A2BE2]/20 relative overflow-hidden`}>
+                  {/* Professional premium card */}
+                  <div className={`w-[380px] h-[240px] mx-auto rounded-3xl bg-gradient-to-br from-[#1a0a30] via-[#2A0055] to-[#0D001E] border ${isPersonal ? 'border-[#8A2BE2]/30' : 'border-[#A342FF]/40'} p-6 shadow-2xl shadow-[#8A2BE2]/25 relative overflow-hidden`}>
+                    {/* Animated shimmer effect */}
                     <motion.div
-                      animate={{ x: ['-100%', '250%'] }}
-                      transition={{ duration: 4, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
-                      className="absolute inset-0 w-1/4 bg-gradient-to-r from-transparent via-[#8A2BE2]/25 to-transparent skew-x-12"
+                      animate={{ x: ['-100%', '300%'] }}
+                      transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
+                      className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
                     />
                     
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <p className="text-[#A342FF] text-xs font-bold tracking-wider">✦ FINATRADES</p>
-                        <p className="text-gray-400 text-[10px] mt-0.5">{c.cardTitle}</p>
+                    {/* Decorative circles */}
+                    <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-[#8A2BE2]/10 blur-2xl" />
+                    <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-[#FF2FBF]/10 blur-2xl" />
+                    
+                    {/* Header with logo and chip */}
+                    <div className="flex justify-between items-start mb-8 relative z-10">
+                      <div className="flex items-center gap-3">
+                        <img src={finatradesLogo} alt="Finatrades" className="h-10 w-auto" />
                       </div>
-                      <div className="w-12 h-9 rounded-md bg-gradient-to-br from-[#EAC26B] to-[#d4af5a] shadow-lg" />
+                      {/* Gold chip */}
+                      <div className="w-14 h-10 rounded-lg bg-gradient-to-br from-[#EAC26B] via-[#F5D98A] to-[#d4af5a] shadow-lg relative overflow-hidden">
+                        <div className="absolute inset-0 flex flex-col justify-center">
+                          <div className="h-[2px] bg-[#b8942d]/50 mx-1" />
+                          <div className="h-[2px] bg-[#b8942d]/50 mx-1 mt-1" />
+                          <div className="h-[2px] bg-[#b8942d]/50 mx-1 mt-1" />
+                        </div>
+                      </div>
                     </div>
                     
-                    <div className="space-y-4">
-                      <p className="text-white/70 text-sm tracking-[0.25em] font-mono">•••• •••• •••• 4289</p>
-                      <div className="flex gap-10">
+                    {/* Card number */}
+                    <div className="mb-6 relative z-10">
+                      <p className="text-white/90 text-lg tracking-[0.3em] font-light">•••• •••• •••• 4289</p>
+                    </div>
+                    
+                    {/* Card details */}
+                    <div className="flex justify-between items-end relative z-10">
+                      <div className="flex gap-8">
                         <div>
-                          <p className="text-gray-500 text-[10px] uppercase tracking-wider">Valid Thru</p>
-                          <p className="text-white text-sm font-medium">12/28</p>
+                          <p className="text-[#A342FF] text-[10px] uppercase tracking-wider font-medium mb-1">Valid Thru</p>
+                          <p className="text-white text-sm font-semibold">12/28</p>
                         </div>
                         <div>
-                          <p className="text-gray-500 text-[10px] uppercase tracking-wider">{isPersonal ? 'Account Holder' : 'Authorized'}</p>
-                          <p className="text-white text-sm font-medium">{isPersonal ? 'J. Smith' : 'Corp Admin'}</p>
+                          <p className="text-[#A342FF] text-[10px] uppercase tracking-wider font-medium mb-1">{isPersonal ? 'Card Holder' : 'Authorized'}</p>
+                          <p className="text-white text-sm font-semibold">{isPersonal ? 'J. SMITH' : 'CORP ADMIN'}</p>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="absolute bottom-4 right-4 text-[10px] text-gray-600 font-medium">
-                      {c.cardType}
+                      <div className="text-right">
+                        <p className="text-[#EAC26B] text-xs font-bold tracking-wide">{c.cardType}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="absolute -top-3 right-4 flex items-center gap-2 px-4 py-2 rounded-full bg-black/90 border border-[#EAC26B]/30 backdrop-blur-sm shadow-xl">
-                    <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                    <span className="text-white text-xs font-medium">Swiss-Regulated</span>
-                    <span className="text-[10px] text-green-400 font-bold uppercase">Active</span>
-                  </div>
+                  {/* Swiss-Regulated badge */}
+                  <Link href="/regulatory-information">
+                    <motion.a
+                      whileHover={{ scale: 1.02 }}
+                      className="absolute -top-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#0D001E] to-[#1a0a30] border border-[#8A2BE2]/40 backdrop-blur-md shadow-xl cursor-pointer hover:border-[#A342FF]/60 transition-colors"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-white text-xs font-medium">Swiss-Regulated</span>
+                      <span className="text-[10px] text-green-400 font-bold uppercase px-2 py-0.5 bg-green-400/10 rounded-full">Active</span>
+                    </motion.a>
+                  </Link>
 
                 </motion.div>
 
