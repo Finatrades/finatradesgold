@@ -678,6 +678,7 @@ export default function FinaVault() {
                               <thead className="bg-gray-50 border-b">
                                 <tr>
                                   <th className="text-left p-4 font-medium">Date</th>
+                                  <th className="text-left p-4 font-medium">Ref ID</th>
                                   <th className="text-left p-4 font-medium">Action</th>
                                   <th className="text-left p-4 font-medium">Status</th>
                                   <th className="text-left p-4 font-medium">From</th>
@@ -691,6 +692,15 @@ export default function FinaVault() {
                                   <tr key={entry.id} className="hover:bg-gray-50">
                                     <td className="p-4 text-muted-foreground">
                                       {new Date(entry.createdAt).toLocaleDateString()}
+                                    </td>
+                                    <td className="p-4">
+                                      <span className="font-mono text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                                        {entry.transactionId 
+                                          ? entry.transactionId.substring(0, 8).toUpperCase()
+                                          : entry.certificateId 
+                                          ? entry.certificateId.substring(0, 8).toUpperCase()
+                                          : entry.id.substring(0, 8).toUpperCase()}
+                                      </span>
                                     </td>
                                     <td className="p-4">
                                       <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
