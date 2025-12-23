@@ -184,23 +184,6 @@ export default function Hero() {
                     <span className="text-[10px] text-green-400 font-bold uppercase">Active</span>
                   </div>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="absolute -bottom-4 left-4 right-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-gray-500 text-[10px] uppercase tracking-wider">Gold Balance</p>
-                        <p className="text-white text-lg font-bold">142.85 <span className="text-[#EAC26B] text-sm">grams</span></p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-gray-500 text-[10px] uppercase tracking-wider">Est. Value</p>
-                        <p className="text-[#EAC26B] text-lg font-bold">$10,247</p>
-                      </div>
-                    </div>
-                  </motion.div>
                 </motion.div>
 
                 <div className="absolute inset-0 -z-10">
