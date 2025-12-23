@@ -188,6 +188,14 @@ export default function FinaPayManagement() {
   const [otpTargetId, setOtpTargetId] = useState('');
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
   
+  // Quick Credit state
+  const [quickCreditEmail, setQuickCreditEmail] = useState('');
+  const [quickCreditGoldGrams, setQuickCreditGoldGrams] = useState('');
+  const [quickCreditUsd, setQuickCreditUsd] = useState('');
+  const [quickCreditReason, setQuickCreditReason] = useState('');
+  const [quickCreditType, setQuickCreditType] = useState<'Credit' | 'Debit'>('Credit');
+  const [quickCreditLoading, setQuickCreditLoading] = useState(false);
+  
   const [bankAccountDialogOpen, setBankAccountDialogOpen] = useState(false);
   const [editingBankAccount, setEditingBankAccount] = useState<any>(null);
   const [bankAccountForm, setBankAccountForm] = useState({
@@ -687,6 +695,10 @@ export default function FinaPayManagement() {
               <Coins className="w-4 h-4 mr-2" />
               Buy Gold ({buyGoldRequests.length})
             </TabsTrigger>
+            <TabsTrigger value="quick-credit" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
+              <Plus className="w-4 h-4 mr-2" />
+              Quick Credit
+            </TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -1067,6 +1079,140 @@ export default function FinaPayManagement() {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="quick-credit">
+              <h2 className="text-lg font-semibold mb-4">Quick Credit / Debit User Wallet</h2>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="max-w-md space-y-4">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                      <strong>Admin Tool:</strong> Directly add or remove gold/USD from a user's wallet for testing purposes.
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="quickCreditEmail">User Email *</Label>
+                      <Input
+                        id="quickCreditEmail"
+                        type="email"
+                        value={quickCreditEmail}
+                        onChange={(e) => setQuickCreditEmail(e.target.value)}
+                        placeholder="user@example.com"
+                        data-testid="input-quick-credit-email"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="quickCreditType">Action Type</Label>
+                      <Select value={quickCreditType} onValueChange={(v) => setQuickCreditType(v as 'Credit' | 'Debit')}>
+                        <SelectTrigger data-testid="select-quick-credit-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Credit">Credit (Add funds)</SelectItem>
+                          <SelectItem value="Debit">Debit (Remove funds)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="quickCreditGold">Gold (grams)</Label>
+                        <Input
+                          id="quickCreditGold"
+                          type="number"
+                          step="0.0001"
+                          value={quickCreditGoldGrams}
+                          onChange={(e) => setQuickCreditGoldGrams(e.target.value)}
+                          placeholder="0.0000"
+                          data-testid="input-quick-credit-gold"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="quickCreditUsd">USD Amount</Label>
+                        <Input
+                          id="quickCreditUsd"
+                          type="number"
+                          step="0.01"
+                          value={quickCreditUsd}
+                          onChange={(e) => setQuickCreditUsd(e.target.value)}
+                          placeholder="0.00"
+                          data-testid="input-quick-credit-usd"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="quickCreditReason">Reason *</Label>
+                      <Textarea
+                        id="quickCreditReason"
+                        value={quickCreditReason}
+                        onChange={(e) => setQuickCreditReason(e.target.value)}
+                        placeholder="e.g., Testing deposit, Manual correction..."
+                        rows={2}
+                        data-testid="input-quick-credit-reason"
+                      />
+                    </div>
+                    
+                    <Button
+                      onClick={async () => {
+                        if (!quickCreditEmail || !quickCreditReason) {
+                          toast.error("Please enter email and reason");
+                          return;
+                        }
+                        if (!quickCreditGoldGrams && !quickCreditUsd) {
+                          toast.error("Please enter gold grams or USD amount");
+                          return;
+                        }
+                        
+                        setQuickCreditLoading(true);
+                        try {
+                          const userRes = await fetch(`/api/admin/users?email=${encodeURIComponent(quickCreditEmail)}`, {
+                            credentials: 'include',
+                            headers: { 'X-Admin-User-Id': currentUser?.id || '' }
+                          });
+                          const userData = await userRes.json();
+                          const targetUser = userData.users?.find((u: any) => u.email.toLowerCase() === quickCreditEmail.toLowerCase());
+                          
+                          if (!targetUser) {
+                            toast.error("User not found with that email");
+                            return;
+                          }
+                          
+                          await apiRequest('POST', '/api/admin/finapay/wallet-adjustment', {
+                            userId: targetUser.id,
+                            adjustmentType: quickCreditType,
+                            goldGrams: quickCreditGoldGrams || '0',
+                            amountUsd: quickCreditUsd || '0',
+                            reason: quickCreditReason,
+                            internalNotes: `Quick Credit by admin: ${quickCreditType}`
+                          });
+                          
+                          toast.success(`Successfully ${quickCreditType.toLowerCase()}ed wallet for ${targetUser.email}`);
+                          setQuickCreditEmail('');
+                          setQuickCreditGoldGrams('');
+                          setQuickCreditUsd('');
+                          setQuickCreditReason('');
+                          fetchData();
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to adjust wallet");
+                        } finally {
+                          setQuickCreditLoading(false);
+                        }
+                      }}
+                      disabled={quickCreditLoading || !quickCreditEmail || !quickCreditReason || (!quickCreditGoldGrams && !quickCreditUsd)}
+                      className="w-full"
+                      data-testid="button-submit-quick-credit"
+                    >
+                      {quickCreditLoading ? (
+                        <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                      ) : (
+                        <><Plus className="w-4 h-4 mr-2" /> {quickCreditType} Wallet</>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </div>
         </Tabs>
