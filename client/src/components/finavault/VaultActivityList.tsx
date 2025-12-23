@@ -540,9 +540,12 @@ export default function VaultActivityList() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{
                         // Deposit Physical Gold for actual physical vault deposits
-                        tx.description?.includes('Physical Gold Deposit') 
+                        tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')
                           ? 'Deposit Physical Gold'
-                          // Acquire Gold for bank/card/crypto purchases shown as Vault Deposit
+                          // Physical deposits with 1 cert (only Physical Storage, no Digital Ownership pair from purchase)
+                          : tx.type === 'Vault Deposit' && tx.certificates.length === 1 && tx.certificates[0]?.type === 'Physical Storage'
+                          ? 'Deposit Physical Gold'
+                          // Acquire Gold for bank/card/crypto purchases shown as Vault Deposit (have both cert types)
                           : tx.type === 'Vault Deposit' && tx.description === 'Gold Purchase'
                           ? 'Acquire Gold'
                           : tx.type
