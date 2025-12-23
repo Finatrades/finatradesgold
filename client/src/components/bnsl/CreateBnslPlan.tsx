@@ -30,7 +30,7 @@ interface PlanTemplate {
 }
 
 interface CreateBnslPlanProps {
-  finaPayBalanceGold: number;
+  hedgedGoldBalance: number;
   currentGoldPrice: number;
   onSuccess: (plan: Partial<BnslPlan>, signatureData: { signatureName: string; signedAt: string }) => void;
 }
@@ -219,7 +219,7 @@ CUSTOMER ACCEPTANCE
 By proceeding with enrolment, I acknowledge that I have read, understood, and unconditionally agree to all the Terms and Conditions above. I specifically acknowledge the immediate sale of my gold, the deferred payment structure, the severe penalties for early termination, and all associated risks.
 `;
 
-export default function CreateBnslPlan({ finaPayBalanceGold, currentGoldPrice, onSuccess }: CreateBnslPlanProps) {
+export default function CreateBnslPlan({ hedgedGoldBalance, currentGoldPrice, onSuccess }: CreateBnslPlanProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -305,15 +305,15 @@ export default function CreateBnslPlan({ finaPayBalanceGold, currentGoldPrice, o
   };
 
   const isValidSignature = signatureName.trim().length >= 3;
-  const canSubmit = agreedToTerms && amount > 0 && amount <= finaPayBalanceGold && hasDownloadedDraft && isValidSignature && hasScrolledTerms;
+  const canSubmit = agreedToTerms && amount > 0 && amount <= hedgedGoldBalance && hasDownloadedDraft && isValidSignature && hasScrolledTerms;
 
   const handleSubmit = () => {
     if (amount <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid gold amount.", variant: "destructive" });
       return;
     }
-    if (amount > finaPayBalanceGold) {
-      toast({ title: "Insufficient Balance", description: "You do not have enough gold in your FinaPay wallet.", variant: "destructive" });
+    if (amount > hedgedGoldBalance) {
+      toast({ title: "Insufficient Balance", description: "You do not have enough hedged gold. Lock more gold first.", variant: "destructive" });
       return;
     }
     if (!agreedToTerms) {
@@ -376,8 +376,8 @@ export default function CreateBnslPlan({ finaPayBalanceGold, currentGoldPrice, o
                 <Wallet className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Available in FinaPay</p>
-                <p className="font-bold text-foreground" data-testid="text-bnsl-balance">{finaPayBalanceGold.toFixed(3)} g</p>
+                <p className="text-sm text-muted-foreground">Available Hedged Gold</p>
+                <p className="font-bold text-foreground" data-testid="text-bnsl-balance">{hedgedGoldBalance.toFixed(3)} g</p>
               </div>
             </div>
             <div className="text-right">
@@ -393,15 +393,15 @@ export default function CreateBnslPlan({ finaPayBalanceGold, currentGoldPrice, o
                 type="number" 
                 value={goldAmount}
                 onChange={(e) => setGoldAmount(e.target.value)}
-                className={`bg-background h-14 text-xl font-bold pr-12 ${amount > finaPayBalanceGold ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
+                className={`bg-background h-14 text-xl font-bold pr-12 ${amount > hedgedGoldBalance ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
                 data-testid="input-gold-amount"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">g</span>
             </div>
-            {amount > finaPayBalanceGold && (
+            {amount > hedgedGoldBalance && (
               <div className="flex items-center gap-2 text-sm text-red-500 font-medium" data-testid="error-insufficient-balance">
                 <AlertTriangle className="w-4 h-4" />
-                <span>Insufficient balance. You only have {finaPayBalanceGold.toFixed(3)}g available in FinaPay.</span>
+                <span>Insufficient balance. You only have {hedgedGoldBalance.toFixed(3)}g hedged gold available.</span>
               </div>
             )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -695,7 +695,7 @@ export default function CreateBnslPlan({ finaPayBalanceGold, currentGoldPrice, o
           <p className="font-medium">To proceed, please complete the following:</p>
           <ul className="list-disc list-inside space-y-1 ml-2">
             {amount <= 0 && <li>Enter a valid gold amount</li>}
-            {amount > finaPayBalanceGold && <li>Reduce amount or add more gold to your FinaPay wallet</li>}
+            {amount > hedgedGoldBalance && <li>Reduce amount or lock more gold from FinaPay first</li>}
             {!hasDownloadedDraft && <li>Download and review the draft agreement</li>}
             {!hasScrolledTerms && <li>Read through the full Terms & Conditions</li>}
             {!agreedToTerms && <li>Agree to the Terms & Conditions</li>}
