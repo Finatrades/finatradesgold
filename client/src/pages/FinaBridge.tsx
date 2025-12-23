@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import FinaBridgeDisclaimerModal from '@/components/finabridge/FinaBridgeDisclaimerModal';
+import FinaBridgeDisclaimerModal, { FINABRIDGE_TERMS_AND_CONDITIONS, FINABRIDGE_TERMS_VERSION } from '@/components/finabridge/FinaBridgeDisclaimerModal';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 import DealRoom from '@/components/finabridge/DealRoom';
 import DealRoomList from '@/components/finabridge/DealRoomList';
@@ -100,64 +100,6 @@ interface FinabridgeAgreement {
   acceptanceDetails: any;
   createdAt: string;
 }
-
-// FinaBridge T&C Full Text
-const FINABRIDGE_TERMS_AND_CONDITIONS = `FINABRIDGE TRADE FINANCE PLATFORM
-TERMS AND CONDITIONS
-Version: V1-2025-12-23
-
-1. PLATFORM OVERVIEW
-FinaBridge is Finatrades' proprietary B2B trade finance platform that facilitates international commodity trade through gold-backed settlements. The platform connects importers and exporters, providing a secure framework for trade execution with settlement assurance backed by verified geological gold reserves.
-
-2. ELIGIBILITY
-2.1 Business Account Requirement: FinaBridge is exclusively available to verified Business Account holders.
-2.2 KYC Compliance: All participants must complete Enhanced KYC verification before accessing FinaBridge features.
-2.3 Role Selection: Users must declare their role (Importer, Exporter, or Both) upon first access.
-
-3. SETTLEMENT ASSURANCE MECHANISM
-3.1 Gold-Backed Collateralization: All trade transactions on FinaBridge are collateralized with gold holdings in the user's FinaBridge wallet.
-3.2 Settlement Assurance Backing: Finatrades maintains settlement assurance through verified geological gold reserves (Boudadiya Services SARL, Mining Permit 2265 B2-WOMPOU) with an estimated value of USD 42.134 Billion. This is an internal group mechanism, NOT a banking guarantee.
-3.3 Lock Period: Gold collateral remains locked in the user's FinaBridge wallet until trade completion or mutual agreement to release.
-
-4. TRADE REQUEST PROCESS
-4.1 Importers may create trade requests specifying goods, quantity, value, and shipping requirements.
-4.2 Trade values are recorded in USD for reference purposes, with actual settlement occurring in gold grams.
-4.3 Exporters may submit proposals responding to trade requests with pricing, timeline, and shipping details.
-
-5. DEAL ROOMS
-5.1 Upon proposal acceptance, a secure Deal Room is created for direct communication between trade parties.
-5.2 All Deal Room communications are logged and may be used for dispute resolution purposes.
-5.3 Document sharing within Deal Rooms is subject to platform security protocols.
-
-6. SETTLEMENT PROCESS
-6.1 Upon verified delivery and acceptance of goods, gold collateral is transferred from Importer's to Exporter's FinaBridge wallet.
-6.2 Settlement finality occurs upon mutual confirmation or administrative determination.
-6.3 Disputes must be raised within 7 business days of goods delivery.
-
-7. FEES AND CHARGES
-7.1 Platform fees are deducted from the gold collateral at the time of settlement.
-7.2 Current fee schedules are displayed within the platform and may be updated with 30 days notice.
-7.3 Early termination or trade cancellation may incur additional fees as specified in the platform configuration.
-
-8. RISK DISCLOSURE
-8.1 Trade finance involves inherent risks including counterparty risk, shipping risk, and market volatility.
-8.2 Gold price fluctuations may affect the USD equivalent value of settlements.
-8.3 Finatrades does not guarantee successful trade completion and acts solely as a facilitating platform.
-
-9. DISPUTE RESOLUTION
-9.1 All disputes shall first be addressed through platform mediation.
-9.2 Unresolved disputes may be escalated to binding arbitration under UAE law.
-9.3 The platform reserves the right to freeze associated gold holdings during dispute resolution.
-
-10. AMENDMENT AND TERMINATION
-10.1 These terms may be amended with 30 days written notice to users.
-10.2 Continued use of the platform after amendment constitutes acceptance of new terms.
-10.3 Users may terminate participation by settling all outstanding trades and withdrawing gold holdings.
-
-By accepting these terms, you acknowledge that you have read, understood, and agree to be bound by all provisions herein.
-
-© 2025 Finatrades. All Rights Reserved.
-`;
 
 // FinaBridge Agreements Section Component
 function FinaBridgeAgreementsSection({ userId }: { userId?: string }) {

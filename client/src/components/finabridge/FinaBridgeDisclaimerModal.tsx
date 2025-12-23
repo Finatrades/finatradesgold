@@ -5,9 +5,118 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, Shield, Scale, FileText, ArrowLeft, Package, Ship, ArrowLeftRight } from 'lucide-react';
+import { AlertTriangle, Shield, Scale, FileText, ArrowLeft, Package, Ship, ArrowLeftRight, Loader2 } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 type FinaBridgeRole = 'importer' | 'exporter' | 'both';
+
+export const FINABRIDGE_TERMS_VERSION = 'V1-2025-12-23';
+
+export const FINABRIDGE_TERMS_AND_CONDITIONS = `FINABRIDGE – TRADE FINANCE TERMS & CONDITIONS
+Version: ${FINABRIDGE_TERMS_VERSION}
+Gold-Backed Trade Infrastructure
+
+1. INTRODUCTION
+1.1. Finatrades provides a regulated Gold-Backed Trade Infrastructure designed for corporates, importers, exporters, trading houses, and institutional partners.
+1.2. FinaBridge is a Gold-Backed Trade Infrastructure enabling structured trade support for buyers and sellers through verified gold-backed value, transparent documentation, and coordinated settlement flows for international trade operations.
+1.3. Through a strategic partnership with Wingold & Metals DMCC, Finatrades transforms physical gold into a settlement-ready solution for importers and exporters.
+1.4. Finatrades does not hold, receive, store, or process fiat currency. All trade funds are converted into gold, and only gold is held, allocated, transferred, or settled.
+1.5. All gold transactions—purchase, sale, conversion, withdrawal, settlement, and buy-back—are carried out exclusively by Wingold & Metals DMCC, the licensed precious metals operator. Finatrades does not buy, sell, refine, store, or take title to gold at any time.
+
+2. ROLE OF FINATRADES
+2.1. Finatrades provides digital infrastructure, documentation workflows, verification tools, dashboards, allocation systems, and settlement coordination for trade operations.
+2.2. Finatrades does not:
+  • Act as a party to the commercial transaction between Importer and Exporter
+  • Receive or hold customer fiat currency
+  • Act as a custodian of gold
+  • Act as a bank, trustee, broker, or financial institution
+  • Guarantee or insure performance of the Importer or Exporter
+2.3. The Importer and Exporter enter into their own independent Commercial Contract, and Finatrades only facilitates the structured gold-backed settlement process through digital infrastructure.
+
+3. TRADE SETTLEMENT THROUGH GOLD
+3.1. The Importer may settle the value of the underlying trade by converting funds into gold on the Platform.
+3.2. Once purchased, gold is allocated to the Importer and stored in a secure third-party vault arranged by Wingold & Metals DMCC on the Importer's behalf.
+3.3. Settlement occurs by transferring allocated gold from the Importer to the Exporter via the Finatrades Platform, subject to the Exporter's confirmation of shipment or fulfillment of contract conditions.
+3.4. At no point does Finatrades hold fiat currency or gold.
+
+3.5. GOLD LOCKING MECHANISM & CONDITIONAL RELEASE
+3.5.1. Locking of Gold Upon Agreement: Upon conclusion of a binding commercial agreement between the Importer and Exporter using the Platform, the Importer irrevocably and unconditionally authorizes Wingold & Metals DMCC to automatically place a lock ("Gold Lock") on the specific quantity of gold allocated for that transaction.
+3.5.2. Effect of the Gold Lock:
+  • The gold shall be held in a restricted account and cannot be accessed, withdrawn, transferred, or used for any other transaction by the Importer.
+  • The gold shall not be released to the Exporter until all release conditions are met.
+  • The Gold Lock serves as a digital escrow mechanism but does not constitute a transfer of title.
+3.5.3. Conditions for Release to Exporter:
+  • Documentary Proof: The Exporter must upload valid shipment documents or proof of delivery.
+  • Importer's Release Instruction: The Importer must provide a final electronic instruction to release the gold.
+3.5.4. Transaction Cancellation: Once a transaction is initiated and gold is locked, it cannot be unilaterally cancelled by either party. Cancellation requires the written consent of the other party or a valid court order.
+
+4. EXPORTER SETTLEMENT OPTIONS
+Option A – Settlement in Gold: Receive title transfer of the allocated gold directly into the Exporter's gold account.
+Option B – Cash-Out Conversion: Wingold & Metals DMCC will purchase the allocated gold from the Exporter at the prevailing market rate and transfer the corresponding fiat value to the Exporter's designated bank account.
+Gold Pricing: All gold transactions shall be executed at the current gold price displayed on the Platform at the time of request. The price shown at confirmation is final, binding, and conclusive.
+
+5. GOLD HANDLING AND CUSTODY
+5.1. All gold trading, allocation, storage, custody, buy-back, and settlement is conducted solely by Wingold & Metals DMCC.
+5.2. Gold is held in secure vault facilities approved by Wingold & Metals DMCC.
+5.3. Finatrades does not take possession of gold or act as custodian.
+
+6. COMPLIANCE AND KYC/AML REQUIREMENTS
+6.1. Users must complete KYC and AML verification before using FinaBridge.
+6.2. Additional compliance checks may be required by Wingold & Metals DMCC prior to gold allocation or settlement.
+6.3. Finatrades reserves the right to suspend or decline a transaction if compliance risk is detected.
+
+7. FEE ALLOCATION AND RESPONSIBILITY
+7.1. Platform Fees (Finatrades): The Importer and Exporter shall agree in their Commercial Contract who shall bear the Finatrades platform fees. If not otherwise specified, platform fees shall be shared equally.
+7.2. Gold-Related Fees (Wingold & Metals DMCC): All fees related to gold conversion, storage, buy-back, spreads, and transaction execution are determined and charged exclusively by Wingold & Metals DMCC.
+7.3. Transaction Fee Transparency: All applicable fees will be displayed before transaction confirmation.
+7.4. Indemnification: The Importer and Exporter jointly agree to indemnify and hold harmless Finatrades and Wingold & Metals DMCC from any claims arising from fee allocation disagreements.
+
+8. NO RESPONSIBILITY FOR COMMERCIAL DISPUTES
+8.1. Product quality issues, delivery delays, quantity disputes, non-performance, or any contractual disagreement between Importer and Exporter are outside the scope of Finatrades and Wingold & Metals DMCC.
+8.2. Finatrades does not mediate or resolve disputes related to the Commercial Contract.
+
+9. PLATFORM FEES
+9.1. Finatrades may charge platform, processing, coordination, documentation, or administrative fees.
+9.2. All fees related to gold conversion, buy-back, storage, or spreads are determined exclusively by Wingold & Metals DMCC.
+
+10. ELECTRONIC INSTRUCTIONS AND RECORDS
+10.1. All instructions submitted via the Platform are considered valid and binding.
+10.2. System records, logs, certificates, and digital allocation notices constitute valid and enforceable evidence of transactions and settlement instructions.
+
+11. LIABILITY AND LIMITATIONS
+11.1. Finatrades' liability is strictly limited to the platform fees collected for the specific transaction.
+11.2. Finatrades shall not be liable for:
+  • Any gold market price fluctuation
+  • Commercial disputes between Importer and Exporter
+  • Delays caused by banks, service providers, or compliance checks
+  • Indirect, incidental, or consequential losses
+11.3. Wingold & Metals DMCC is exclusively responsible for all gold-related operations.
+
+12. SANCTIONS, RESTRICTED PRODUCTS & PROHIBITED ORIGINS
+12.1. Prohibited and Illegal Trading: The trading of illegal, prohibited, or restricted products and commodities is strictly forbidden on this Platform.
+12.2. Sanctioned Countries, Entities & Individuals: You shall not trade, sell, source, receive, transport, or otherwise engage with any product originating from, or linked to, any country, entity, individual, or organization that is subject to international sanctions, embargoes, or AML/CFT restrictions.
+12.3. Restricted Jurisdictions and High-Risk Territories: You agree not to engage with sanctioned persons, banned companies, blacklisted suppliers, restricted geographical origins, or high-risk jurisdictions including but not limited to: Iran, North Korea (DPRK), Syria, Cuba, Sudan, South Sudan, Yemen, Afghanistan, Russia, Belarus, Myanmar (Burma), Venezuela, Crimea, Donetsk, Luhansk, Zaporizhzhia, Kherson.
+12.4. Dynamic Sanctions List: Finatrades may, at its sole discretion, expand, update, or modify the list of restricted jurisdictions without prior notice.
+12.5. Suspension & Reporting of Violations: Any attempt to conduct a transaction involving prohibited goods will result in immediate suspension or termination of Platform access, without refund, and may be reported to relevant regulatory or law-enforcement authorities.
+12.6. User Responsibility for Legal Compliance: It is solely your responsibility to ensure continuous compliance with all applicable local, national, and international laws.
+12.7. Liability Exclusion: Finatrades Finance SA, Wingold & Metals DMCC, and all associated partners shall not be liable for any consequences arising from your engagement in prohibited or high-risk activities, termination of platform access, regulatory actions, or losses due to seizure, blocking, freezing, cancellation, or delay of any transaction due to sanctions or compliance issues.
+12.8. Right to Reject Transactions: Finatrades and its partners reserve the absolute right to reject, suspend, block, or delay any transaction, customer, shipment, gold settlement, or instruction if any compliance risk, sanctions match, or suspicious activity is identified—without obligation to disclose the basis of such decision.
+
+13. GOVERNING LAW
+13.1. These Terms are governed by the laws applicable to Finatrades Finance SA (Switzerland), unless otherwise mandated by regulatory requirements.
+
+14. ACCEPTANCE
+By using FinaBridge, the Importer and Exporter confirm that they:
+  • Have read and understood these Terms and Conditions
+  • Agree to be bound by all provisions herein
+  • Acknowledge the roles and responsibilities of Finatrades and Wingold & Metals DMCC
+  • Accept the fee structure and liability limitations
+  • Confirm compliance with all applicable laws and regulations
+
+---
+End of Terms & Conditions
+`;
 
 interface FinaBridgeDisclaimerModalProps {
   open: boolean;
@@ -18,10 +127,33 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
   const [accepted, setAccepted] = useState(false);
   const [showFullTerms, setShowFullTerms] = useState(false);
   const [selectedRole, setSelectedRole] = useState<FinaBridgeRole | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
     if (accepted && selectedRole) {
-      onAccept(selectedRole);
+      setSaving(true);
+      try {
+        await apiRequest('POST', '/api/finabridge-agreements', {
+          termsVersion: FINABRIDGE_TERMS_VERSION,
+          termsText: FINABRIDGE_TERMS_AND_CONDITIONS,
+          role: selectedRole,
+        });
+        toast({
+          title: 'Agreement Saved',
+          description: 'Your FinaBridge Terms & Conditions agreement has been recorded.',
+        });
+        onAccept(selectedRole);
+      } catch (error) {
+        console.error('Failed to save agreement:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to save agreement. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -347,12 +479,21 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
               
               <Button 
                 onClick={handleAccept}
-                disabled={!accepted || !selectedRole}
+                disabled={!accepted || !selectedRole || saving}
                 className="w-full bg-gradient-to-r from-purple-500 to-purple-500 hover:from-purple-600 hover:to-fuchsia-600 text-white font-semibold disabled:opacity-50"
                 data-testid="button-accept-disclaimer"
               >
-                <Scale className="w-4 h-4 mr-2" />
-                Accept & Continue
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving Agreement...
+                  </>
+                ) : (
+                  <>
+                    <Scale className="w-4 h-4 mr-2" />
+                    Accept & Continue
+                  </>
+                )}
               </Button>
             </div>
           </div>
