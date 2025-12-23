@@ -20,7 +20,8 @@ import {
   insertSecuritySettingsSchema,
   vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings, vaultDepositRequests,
   wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
-  withdrawalRequests, cryptoPaymentRequests, buyGoldRequests
+  withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
+  goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -12030,6 +12031,544 @@ ${message}
       res.json({ requests });
     } catch (error) {
       res.status(400).json({ message: "Failed to get peer requests" });
+    }
+  });
+
+  // ============================================================================
+  // FINAPAY - QR PAYMENT INVOICES
+  // ============================================================================
+
+  // Create QR payment invoice (for receiving specific amount)
+  app.post("/api/finapay/qr-invoice", ensureAuthenticated, async (req, res) => {
+    try {
+      const { goldGrams, amountUsd, description } = req.body;
+      
+      // Use authenticated session user as merchant (security fix)
+      const sessionUserId = (req.session as any)?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const merchant = await storage.getUser(sessionUserId);
+      if (!merchant) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if account is frozen
+      const [accountStatus] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, sessionUserId));
+      if (accountStatus?.isFrozen) {
+        return res.status(403).json({ message: "Account is frozen. Cannot create invoices." });
+      }
+      
+      // Get current gold price
+      let goldPrice: number;
+      try {
+        goldPrice = await getGoldPricePerGram();
+      } catch {
+        goldPrice = 139.44;
+      }
+      
+      // Generate unique invoice code
+      const invoiceCode = `QR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Calculate gold grams if amount is in USD
+      let calculatedGoldGrams = goldGrams ? parseFloat(goldGrams) : null;
+      let calculatedAmountUsd = amountUsd ? parseFloat(amountUsd) : null;
+      
+      if (calculatedAmountUsd && !calculatedGoldGrams) {
+        calculatedGoldGrams = calculatedAmountUsd / goldPrice;
+      } else if (calculatedGoldGrams && !calculatedAmountUsd) {
+        calculatedAmountUsd = calculatedGoldGrams * goldPrice;
+      }
+      
+      // Set expiry to 30 minutes
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      
+      // Create invoice in database
+      const invoiceId = crypto.randomUUID();
+      await db.insert(qrPaymentInvoices).values({
+        id: invoiceId,
+        invoiceCode,
+        merchantId: merchant.id,
+        goldGrams: calculatedGoldGrams?.toFixed(6) || null,
+        amountUsd: calculatedAmountUsd?.toFixed(2) || null,
+        goldPriceAtCreation: goldPrice.toFixed(2),
+        description,
+        status: 'Active',
+        expiresAt,
+      });
+      
+      // Generate QR code
+      const qrPayload = `FTQR:${invoiceCode}`;
+      const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
+      
+      res.json({ 
+        invoice: {
+          id: invoiceId,
+          invoiceCode,
+          goldGrams: calculatedGoldGrams,
+          amountUsd: calculatedAmountUsd,
+          goldPrice,
+          description,
+          expiresAt,
+        },
+        qrCodeDataUrl 
+      });
+    } catch (error) {
+      console.error('[QR Invoice] Create error:', error);
+      res.status(400).json({ message: "Failed to create QR invoice" });
+    }
+  });
+
+  // Get QR invoice by code
+  app.get("/api/finapay/qr-invoice/:code", async (req, res) => {
+    try {
+      const [invoice] = await db.select().from(qrPaymentInvoices).where(eq(qrPaymentInvoices.invoiceCode, req.params.code));
+      
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      // Check if expired
+      if (invoice.expiresAt && new Date(invoice.expiresAt) < new Date() && invoice.status === 'Active') {
+        await db.update(qrPaymentInvoices).set({ status: 'Expired' }).where(eq(qrPaymentInvoices.id, invoice.id));
+        return res.status(400).json({ message: "Invoice has expired" });
+      }
+      
+      // Get merchant info
+      const merchant = await storage.getUser(invoice.merchantId);
+      
+      res.json({ 
+        invoice: {
+          ...invoice,
+          merchant: merchant ? {
+            id: merchant.id,
+            firstName: merchant.firstName,
+            lastName: merchant.lastName,
+            finatradesId: merchant.finatradesId,
+          } : null
+        }
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get invoice" });
+    }
+  });
+
+  // Pay QR invoice
+  app.post("/api/finapay/qr-invoice/:code/pay", ensureAuthenticated, async (req, res) => {
+    try {
+      // Use authenticated session user as payer (security fix)
+      const sessionUserId = (req.session as any)?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const [invoice] = await db.select().from(qrPaymentInvoices).where(eq(qrPaymentInvoices.invoiceCode, req.params.code));
+      
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (invoice.status !== 'Active') {
+        return res.status(400).json({ message: `Invoice is ${invoice.status.toLowerCase()}` });
+      }
+      
+      if (invoice.expiresAt && new Date(invoice.expiresAt) < new Date()) {
+        await db.update(qrPaymentInvoices).set({ status: 'Expired' }).where(eq(qrPaymentInvoices.id, invoice.id));
+        return res.status(400).json({ message: "Invoice has expired" });
+      }
+      
+      // Check if payer account is frozen
+      const [payerAccountStatus] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, sessionUserId));
+      if (payerAccountStatus?.isFrozen) {
+        return res.status(403).json({ message: "Your account is frozen. Cannot make payments." });
+      }
+      
+      const payer = await storage.getUser(sessionUserId);
+      const merchant = await storage.getUser(invoice.merchantId);
+      
+      if (!payer || !merchant) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (payer.id === merchant.id) {
+        return res.status(400).json({ message: "Cannot pay your own invoice" });
+      }
+      
+      // Check payer wallet
+      const payerWallet = await storage.getWallet(payer.id);
+      const merchantWallet = await storage.getWallet(merchant.id);
+      
+      if (!payerWallet || !merchantWallet) {
+        return res.status(400).json({ message: "Wallet not found" });
+      }
+      
+      // Get current gold price
+      let goldPrice: number;
+      try {
+        goldPrice = await getGoldPricePerGram();
+      } catch {
+        goldPrice = parseFloat(invoice.goldPriceAtCreation || '139.44');
+      }
+      
+      // Calculate gold amount
+      const goldGrams = parseFloat(invoice.goldGrams || '0') || (parseFloat(invoice.amountUsd || '0') / goldPrice);
+      const payerGoldBalance = parseFloat(payerWallet.goldGrams?.toString() || '0');
+      
+      if (payerGoldBalance < goldGrams) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${payerGoldBalance.toFixed(4)}g, need ${goldGrams.toFixed(4)}g` });
+      }
+      
+      // Execute transfer
+      const referenceNumber = `QRPAY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Debit payer gold
+      await storage.updateWallet(payerWallet.id, {
+        goldGrams: (payerGoldBalance - goldGrams).toFixed(6)
+      });
+      
+      // Credit merchant gold
+      const merchantGoldBalance = parseFloat(merchantWallet.goldGrams?.toString() || '0');
+      await storage.updateWallet(merchantWallet.id, {
+        goldGrams: (merchantGoldBalance + goldGrams).toFixed(6)
+      });
+      
+      // Create transactions
+      const payerTx = await storage.createTransaction({
+        userId: payer.id,
+        type: 'Send',
+        status: 'Completed',
+        amountGold: goldGrams.toFixed(6),
+        amountUsd: (goldGrams * goldPrice).toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        recipientEmail: merchant.email,
+        recipientUserId: merchant.id,
+        description: invoice.description || `QR Payment to ${merchant.firstName} ${merchant.lastName}`,
+        referenceId: referenceNumber,
+        sourceModule: 'finapay',
+        completedAt: new Date(),
+      });
+      
+      const merchantTx = await storage.createTransaction({
+        userId: merchant.id,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: goldGrams.toFixed(6),
+        amountUsd: (goldGrams * goldPrice).toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        senderEmail: payer.email,
+        description: invoice.description || `QR Payment from ${payer.firstName} ${payer.lastName}`,
+        referenceId: referenceNumber,
+        sourceModule: 'finapay',
+        completedAt: new Date(),
+      });
+      
+      // Update invoice
+      await db.update(qrPaymentInvoices).set({
+        status: 'Paid',
+        payerId: payer.id,
+        paidAt: new Date(),
+        paidTransactionId: merchantTx.id,
+        updatedAt: new Date(),
+      }).where(eq(qrPaymentInvoices.id, invoice.id));
+      
+      // Record ledger entries
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: payer.id,
+        action: 'Transfer_Send',
+        goldGrams,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'FinaPay',
+        toWallet: 'External',
+        transactionId: payerTx.id,
+        counterpartyUserId: merchant.id,
+        notes: `QR Payment: ${goldGrams.toFixed(4)}g to ${merchant.firstName} ${merchant.lastName}`,
+        createdBy: 'system',
+      });
+      
+      await vaultLedgerService.recordLedgerEntry({
+        userId: merchant.id,
+        action: 'Transfer_Receive',
+        goldGrams,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'FinaPay',
+        toWallet: 'FinaPay',
+        toStatus: 'Available',
+        transactionId: merchantTx.id,
+        counterpartyUserId: payer.id,
+        notes: `QR Payment: ${goldGrams.toFixed(4)}g from ${payer.firstName} ${payer.lastName}`,
+        createdBy: 'system',
+      });
+      
+      // Emit sync events
+      emitLedgerEvent(payer.id, { type: 'balance_update', module: 'finapay', action: 'qr_payment_sent', data: { goldGrams } });
+      emitLedgerEvent(merchant.id, { type: 'balance_update', module: 'finapay', action: 'qr_payment_received', data: { goldGrams } });
+      
+      res.json({ 
+        transaction: payerTx,
+        message: `Successfully paid ${goldGrams.toFixed(4)}g gold to ${merchant.firstName} ${merchant.lastName}` 
+      });
+    } catch (error) {
+      console.error('[QR Payment] Error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Payment failed" });
+    }
+  });
+
+  // ============================================================================
+  // ADMIN - WALLET ADJUSTMENTS & ACCOUNT CONTROLS
+  // ============================================================================
+
+  // Admin: Adjust user wallet (credit/debit gold)
+  app.post("/api/admin/finapay/wallet-adjustment", ensureAdminAsync, requirePermission('manage_transactions'), async (req, res) => {
+    try {
+      const { userId, adjustmentType, goldGrams, amountUsd, reason, internalNotes } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const wallet = await storage.getWallet(userId);
+      if (!wallet) {
+        return res.status(400).json({ message: "Wallet not found" });
+      }
+      
+      // Get gold price
+      let goldPrice: number;
+      try {
+        goldPrice = await getGoldPricePerGram();
+      } catch {
+        goldPrice = 139.44;
+      }
+      
+      const referenceNumber = `ADJ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const adjustGrams = parseFloat(goldGrams || '0');
+      const adjustUsd = parseFloat(amountUsd || '0');
+      
+      let newGoldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
+      let newUsdBalance = parseFloat(wallet.usdBalance?.toString() || '0');
+      let transactionType: 'Deposit' | 'Withdrawal' = 'Deposit';
+      
+      if (adjustmentType === 'Credit') {
+        newGoldBalance += adjustGrams;
+        newUsdBalance += adjustUsd;
+        transactionType = 'Deposit';
+      } else if (adjustmentType === 'Debit') {
+        if (adjustGrams > newGoldBalance) {
+          return res.status(400).json({ message: `Cannot debit ${adjustGrams}g gold. User only has ${newGoldBalance.toFixed(4)}g` });
+        }
+        if (adjustUsd > newUsdBalance) {
+          return res.status(400).json({ message: `Cannot debit $${adjustUsd}. User only has $${newUsdBalance.toFixed(2)}` });
+        }
+        newGoldBalance -= adjustGrams;
+        newUsdBalance -= adjustUsd;
+        transactionType = 'Withdrawal';
+      } else if (adjustmentType === 'Correction') {
+        // Correction sets the balance directly
+        newGoldBalance = adjustGrams;
+        newUsdBalance = adjustUsd;
+      }
+      
+      // Update wallet
+      await storage.updateWallet(wallet.id, {
+        goldGrams: newGoldBalance.toFixed(6),
+        usdBalance: newUsdBalance.toFixed(2),
+      });
+      
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId,
+        type: transactionType,
+        status: 'Completed',
+        amountGold: adjustGrams.toFixed(6),
+        amountUsd: adjustUsd > 0 ? adjustUsd.toFixed(2) : (adjustGrams * goldPrice).toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        description: `Admin ${adjustmentType}: ${reason}`,
+        referenceId: referenceNumber,
+        sourceModule: 'admin',
+        completedAt: new Date(),
+      });
+      
+      // Record wallet adjustment
+      await db.insert(walletAdjustments).values({
+        id: crypto.randomUUID(),
+        referenceNumber,
+        userId,
+        adjustmentType,
+        goldGrams: adjustGrams.toFixed(6),
+        amountUsd: adjustUsd.toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        reason,
+        internalNotes,
+        executedBy: adminUser.id,
+        transactionId: transaction.id,
+      });
+      
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      if (adjustGrams > 0) {
+        await vaultLedgerService.recordLedgerEntry({
+          userId,
+          action: adjustmentType === 'Credit' ? 'Deposit' : 'Withdrawal',
+          goldGrams: adjustGrams,
+          goldPriceUsdPerGram: goldPrice,
+          fromWallet: adjustmentType === 'Credit' ? 'External' : 'FinaPay',
+          toWallet: adjustmentType === 'Credit' ? 'FinaPay' : 'External',
+          transactionId: transaction.id,
+          notes: `Admin ${adjustmentType}: ${reason}`,
+          createdBy: adminUser.id,
+        });
+      }
+      
+      // Audit log
+      await storage.createAuditLog({
+        entityType: "wallet_adjustment",
+        entityId: referenceNumber,
+        actionType: adjustmentType.toLowerCase(),
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `${adjustmentType} adjustment for user ${user.firstName} ${user.lastName}: ${adjustGrams}g gold, $${adjustUsd}. Reason: ${reason}`,
+      });
+      
+      // Emit sync event
+      emitLedgerEvent(userId, { type: 'balance_update', module: 'finapay', action: 'admin_adjustment', data: { adjustmentType, goldGrams: adjustGrams } });
+      
+      res.json({ 
+        adjustment: { referenceNumber, adjustmentType, goldGrams: adjustGrams, amountUsd: adjustUsd },
+        transaction,
+        message: `Successfully applied ${adjustmentType} adjustment` 
+      });
+    } catch (error) {
+      console.error('[Wallet Adjustment] Error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Adjustment failed" });
+    }
+  });
+
+  // Admin: Get wallet adjustments history
+  app.get("/api/admin/finapay/wallet-adjustments", ensureAdminAsync, requirePermission('view_transactions', 'manage_transactions'), async (req, res) => {
+    try {
+      const adjustments = await db.select().from(walletAdjustments).orderBy(desc(walletAdjustments.createdAt)).limit(100);
+      res.json({ adjustments });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get adjustments" });
+    }
+  });
+
+  // Admin: Freeze/unfreeze user account
+  app.post("/api/admin/users/:userId/freeze", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { freeze, reason } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if account status exists
+      const [existing] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, userId));
+      
+      if (existing) {
+        await db.update(userAccountStatus).set({
+          isFrozen: freeze,
+          frozenAt: freeze ? new Date() : null,
+          frozenBy: freeze ? adminUser.id : null,
+          frozenReason: freeze ? reason : null,
+          updatedAt: new Date(),
+        }).where(eq(userAccountStatus.userId, userId));
+      } else {
+        await db.insert(userAccountStatus).values({
+          id: crypto.randomUUID(),
+          userId,
+          isFrozen: freeze,
+          frozenAt: freeze ? new Date() : null,
+          frozenBy: freeze ? adminUser.id : null,
+          frozenReason: freeze ? reason : null,
+        });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "user_account",
+        entityId: userId,
+        actionType: freeze ? "freeze" : "unfreeze",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: freeze ? `Account frozen: ${reason}` : "Account unfrozen",
+      });
+      
+      res.json({ 
+        success: true,
+        message: freeze ? "Account frozen successfully" : "Account unfrozen successfully"
+      });
+    } catch (error) {
+      console.error('[Account Freeze] Error:', error);
+      res.status(400).json({ message: "Failed to update account status" });
+    }
+  });
+
+  // Admin: Get user account status
+  app.get("/api/admin/users/:userId/account-status", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const [status] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, userId));
+      
+      res.json({ 
+        status: status || { 
+          userId, 
+          isFrozen: false, 
+          dailyTransferLimitUsd: '10000', 
+          monthlyTransferLimitUsd: '100000' 
+        } 
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get account status" });
+    }
+  });
+
+  // Admin: Update user transfer limits
+  app.post("/api/admin/users/:userId/transfer-limits", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { dailyLimit, monthlyLimit } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const [existing] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, userId));
+      
+      if (existing) {
+        await db.update(userAccountStatus).set({
+          dailyTransferLimitUsd: dailyLimit.toString(),
+          monthlyTransferLimitUsd: monthlyLimit.toString(),
+          updatedAt: new Date(),
+        }).where(eq(userAccountStatus.userId, userId));
+      } else {
+        await db.insert(userAccountStatus).values({
+          id: crypto.randomUUID(),
+          userId,
+          dailyTransferLimitUsd: dailyLimit.toString(),
+          monthlyTransferLimitUsd: monthlyLimit.toString(),
+        });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "user_account",
+        entityId: userId,
+        actionType: "update_limits",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Updated transfer limits: Daily $${dailyLimit}, Monthly $${monthlyLimit}`,
+      });
+      
+      res.json({ success: true, message: "Transfer limits updated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update limits" });
     }
   });
 

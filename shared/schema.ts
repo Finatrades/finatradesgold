@@ -837,6 +837,116 @@ export type InsertWithdrawalRequest = z.infer<typeof insertWithdrawalRequestSche
 export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
 
 // ============================================
+// FINAPAY - GOLD REQUESTS (P2P Request Money)
+// ============================================
+
+export const goldRequestStatusEnum = pgEnum('gold_request_status', ['Pending', 'Fulfilled', 'Cancelled', 'Expired', 'Rejected']);
+
+export const goldRequests = pgTable("gold_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  requesterId: varchar("requester_id", { length: 255 }).notNull().references(() => users.id),
+  payerId: varchar("payer_id", { length: 255 }).references(() => users.id), // Who is being asked to pay
+  payerEmail: varchar("payer_email", { length: 255 }), // If payer is not yet a user
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }), // USD equivalent at time of request
+  goldPriceAtRequest: decimal("gold_price_at_request", { precision: 12, scale: 2 }),
+  reason: text("reason"),
+  memo: text("memo"),
+  status: goldRequestStatusEnum("status").notNull().default('Pending'),
+  expiresAt: timestamp("expires_at"), // Request expiration
+  fulfilledAt: timestamp("fulfilled_at"),
+  fulfilledTransactionId: varchar("fulfilled_transaction_id", { length: 255 }).references(() => transactions.id),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelReason: text("cancel_reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertGoldRequestSchema = createInsertSchema(goldRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertGoldRequest = z.infer<typeof insertGoldRequestSchema>;
+export type GoldRequest = typeof goldRequests.$inferSelect;
+
+// ============================================
+// FINAPAY - QR PAYMENT INVOICES
+// ============================================
+
+export const qrPaymentStatusEnum = pgEnum('qr_payment_status', ['Active', 'Paid', 'Expired', 'Cancelled']);
+
+export const qrPaymentInvoices = pgTable("qr_payment_invoices", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  invoiceCode: varchar("invoice_code", { length: 100 }).notNull().unique(), // Short code for QR
+  merchantId: varchar("merchant_id", { length: 255 }).notNull().references(() => users.id),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
+  goldPriceAtCreation: decimal("gold_price_at_creation", { precision: 12, scale: 2 }),
+  description: text("description"),
+  status: qrPaymentStatusEnum("status").notNull().default('Active'),
+  payerId: varchar("payer_id", { length: 255 }).references(() => users.id),
+  paidAt: timestamp("paid_at"),
+  paidTransactionId: varchar("paid_transaction_id", { length: 255 }).references(() => transactions.id),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertQrPaymentInvoiceSchema = createInsertSchema(qrPaymentInvoices).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertQrPaymentInvoice = z.infer<typeof insertQrPaymentInvoiceSchema>;
+export type QrPaymentInvoice = typeof qrPaymentInvoices.$inferSelect;
+
+// ============================================
+// ADMIN - WALLET ADJUSTMENTS
+// ============================================
+
+export const walletAdjustmentTypeEnum = pgEnum('wallet_adjustment_type', ['Credit', 'Debit', 'Freeze', 'Unfreeze', 'Correction']);
+
+export const walletAdjustments = pgTable("wallet_adjustments", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  adjustmentType: walletAdjustmentTypeEnum("adjustment_type").notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  reason: text("reason").notNull(),
+  internalNotes: text("internal_notes"),
+  approvedBy: varchar("approved_by", { length: 255 }).references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  executedBy: varchar("executed_by", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWalletAdjustmentSchema = createInsertSchema(walletAdjustments).omit({ id: true, createdAt: true });
+export type InsertWalletAdjustment = z.infer<typeof insertWalletAdjustmentSchema>;
+export type WalletAdjustment = typeof walletAdjustments.$inferSelect;
+
+// ============================================
+// USER ACCOUNT STATUS (Freeze/Suspend)
+// ============================================
+
+export const userAccountStatus = pgTable("user_account_status", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  isFrozen: boolean("is_frozen").notNull().default(false),
+  frozenAt: timestamp("frozen_at"),
+  frozenBy: varchar("frozen_by", { length: 255 }).references(() => users.id),
+  frozenReason: text("frozen_reason"),
+  dailyTransferLimitUsd: decimal("daily_transfer_limit_usd", { precision: 18, scale: 2 }).default('10000'),
+  monthlyTransferLimitUsd: decimal("monthly_transfer_limit_usd", { precision: 18, scale: 2 }).default('100000'),
+  dailyTransferUsedUsd: decimal("daily_transfer_used_usd", { precision: 18, scale: 2 }).default('0'),
+  monthlyTransferUsedUsd: decimal("monthly_transfer_used_usd", { precision: 18, scale: 2 }).default('0'),
+  lastDailyReset: timestamp("last_daily_reset").defaultNow(),
+  lastMonthlyReset: timestamp("last_monthly_reset").defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserAccountStatusSchema = createInsertSchema(userAccountStatus).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUserAccountStatus = z.infer<typeof insertUserAccountStatusSchema>;
+export type UserAccountStatus = typeof userAccountStatus.$inferSelect;
+
+// ============================================
 // FINAVAULT - GOLD STORAGE
 // ============================================
 
