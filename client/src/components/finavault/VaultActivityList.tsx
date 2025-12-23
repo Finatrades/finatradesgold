@@ -463,13 +463,15 @@ export default function VaultActivityList() {
   );
   
   // Filter transactions: exclude Buy/Deposit if it has certificates (shown as Vault Deposit instead)
-  const filteredTxs = transactions.filter((tx: any) => {
-    // Skip Buy and Deposit transactions that have certificates - they're shown as Vault Deposit
-    if ((tx.type === 'Buy' || tx.type === 'Deposit') && transactionIdsWithCerts.has(tx.id)) {
-      return false; // Skip - represented by Vault Deposit
-    }
-    return true;
-  });
+  // Backend now provides certificates directly for vault deposits
+  const filteredTxs = transactions
+    .filter((tx: any) => {
+      // Skip Buy and Deposit transactions that have certificates - they're shown as Vault Deposit
+      if ((tx.type === 'Buy' || tx.type === 'Deposit') && transactionIdsWithCerts.has(tx.id)) {
+        return false; // Skip - represented by Vault Deposit
+      }
+      return true;
+    });
   
   // Combine and sort by date (newest first)
   const allActivities = [...filteredTxs, ...certificateActivities]

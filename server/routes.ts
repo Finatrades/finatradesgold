@@ -5892,22 +5892,50 @@ ${message}
       });
       
       // Convert vault deposit requests to transaction-like format
-      const vaultDepositTxs = vaultDepositReqs.map(dep => ({
-        id: dep.id,
-        userId: dep.userId,
-        type: 'Vault Deposit' as const,
-        status: dep.status === 'Stored' || dep.status === 'Approved' ? 'Completed' : dep.status === 'Rejected' ? 'Cancelled' : 'Pending',
-        amountGold: dep.verifiedWeightGrams || dep.totalDeclaredWeightGrams,
-        amountUsd: null,
-        goldPriceUsdPerGram: null,
-        recipientEmail: null,
-        senderEmail: null,
-        description: `Physical Gold Deposit - ${dep.vaultLocation}`,
-        referenceId: dep.referenceNumber,
-        createdAt: dep.createdAt,
-        completedAt: dep.storedAt || dep.reviewedAt,
-        certificates: []
-      }));
+      // Include certificates associated with the vault deposit (by matching vaultHoldingId)
+      const vaultDepositTxs = vaultDepositReqs.map(dep => {
+        // Find certificates that belong to this vault deposit
+        // Match by vaultHoldingId if available, or by gold amount for physical deposits
+        const depositGold = parseFloat(String(dep.verifiedWeightGrams || dep.totalDeclaredWeightGrams || 0));
+        const matchingCerts = certificates.filter(c => {
+          // First check vaultHoldingId match
+          if (dep.vaultHoldingId && c.vaultHoldingId === dep.vaultHoldingId) {
+            return true;
+          }
+          // For physical deposits without vaultHoldingId, match by gold amount
+          const certGold = parseFloat(String(c.goldGrams || 0));
+          return Math.abs(depositGold - certGold) < 0.01 && !c.transactionId;
+        });
+        
+        // Get USD value from the Digital Ownership certificate if available
+        const ownershipCert = matchingCerts.find(c => c.type === 'Digital Ownership');
+        const storageCert = matchingCerts.find(c => c.type === 'Physical Storage');
+        const usdValue = ownershipCert?.totalValueUsd || storageCert?.totalValueUsd || null;
+        const goldPrice = ownershipCert?.goldPriceUsdPerGram || storageCert?.goldPriceUsdPerGram || null;
+        
+        return {
+          id: dep.id,
+          userId: dep.userId,
+          type: 'Vault Deposit' as const,
+          status: dep.status === 'Stored' || dep.status === 'Approved' ? 'Completed' : dep.status === 'Rejected' ? 'Cancelled' : 'Pending',
+          amountGold: dep.verifiedWeightGrams || dep.totalDeclaredWeightGrams,
+          amountUsd: usdValue,
+          goldPriceUsdPerGram: goldPrice,
+          recipientEmail: null,
+          senderEmail: null,
+          description: `Physical Gold Deposit - ${dep.vaultLocation}`,
+          referenceId: dep.referenceNumber,
+          createdAt: dep.createdAt,
+          completedAt: dep.storedAt || dep.reviewedAt,
+          certificates: matchingCerts.map(c => ({
+            id: c.id,
+            certificateNumber: c.certificateNumber,
+            type: c.type,
+            status: c.status,
+            goldGrams: c.goldGrams
+          }))
+        };
+      });
       
       // Convert vault withdrawal requests to transaction-like format
       const vaultWithdrawalTxs = vaultWithdrawalReqs.map(wd => ({
