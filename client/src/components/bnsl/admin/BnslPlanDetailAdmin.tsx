@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock, AlertTriangle, FileText, TrendingUp, DollarSign, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertTriangle, FileText, TrendingUp, DollarSign, Calendar, Loader2 } from 'lucide-react';
 import { BnslPlan, BnslEarlyTerminationRequest, AuditLogEntry, BnslMarginPayout } from '@/types/bnsl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -76,7 +76,11 @@ export default function BnslPlanDetailAdmin({
 
   const simulation = calculateEarlyTermination(parseFloat(simulationPrice) || currentMarketPrice);
 
-  const handleProcessPayout = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSettling, setIsSettling] = useState(false);
+  const [isCompletingMaturity, setIsCompletingMaturity] = useState(false);
+
+  const handleProcessPayout = async () => {
     if (!payoutToProcess) return;
     
     const price = parseFloat(payoutPrice);
@@ -85,27 +89,93 @@ export default function BnslPlanDetailAdmin({
       return;
     }
 
-    const gramsCredited = payoutToProcess.monetaryAmountUsd / price;
+    setIsProcessing(true);
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('POST', `/api/admin/bnsl/payouts/${payoutToProcess.id}/process`, {
+        marketPriceUsdPerGram: price
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success(data.message || "Payout processed and gold credited to user's wallet");
+        setPayoutToProcess(null);
+        // Trigger refresh via parent callback
+        onUpdatePayout(plan.id, payoutToProcess.id, {
+          status: 'Paid',
+          marketPriceUsdPerGram: price,
+          gramsCredited: data.gramsCredited,
+          paidAt: new Date().toISOString()
+        });
+      } else {
+        toast.error(data.message || "Failed to process payout");
+      }
+    } catch (error) {
+      console.error('Payout processing error:', error);
+      toast.error("Failed to process payout");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCompleteMaturity = async () => {
+    const price = currentMarketPrice;
+    if (price <= 0) {
+      toast.error("Invalid market price");
+      return;
+    }
+
+    setIsCompletingMaturity(true);
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('POST', `/api/admin/bnsl/plans/${plan.id}/complete-maturity`, {
+        marketPriceUsdPerGram: price
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success(data.message || "Plan completed and gold credited to user's wallet");
+        onUpdatePlanStatus(plan.id, 'Completed');
+      } else {
+        toast.error(data.message || "Failed to complete maturity");
+      }
+    } catch (error) {
+      console.error('Maturity completion error:', error);
+      toast.error("Failed to complete maturity");
+    } finally {
+      setIsCompletingMaturity(false);
+    }
+  };
+
+  const handleSettleTermination = async () => {
+    if (!plan.earlyTermination) return;
     
-    onUpdatePayout(plan.id, payoutToProcess.id, {
-      status: 'Paid',
-      marketPriceUsdPerGram: price,
-      gramsCredited: gramsCredited,
-      paidAt: new Date().toISOString()
-    });
-    
-    onAddAuditLog({
-      id: crypto.randomUUID(),
-      planId: plan.id,
-      actor: 'Admin User',
-      actorRole: 'Ops',
-      actionType: 'PayoutPaid',
-      timestamp: new Date().toISOString(),
-      details: `Processed quarterly margin payout #${payoutToProcess.sequence}. Credited ${gramsCredited.toFixed(4)}g Gold.`
-    });
-    
-    setPayoutToProcess(null);
-    toast.success("Payout processed successfully");
+    const price = currentMarketPrice;
+    if (price <= 0) {
+      toast.error("Invalid market price");
+      return;
+    }
+
+    setIsSettling(true);
+    try {
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('POST', `/api/admin/bnsl/early-termination/${plan.id}/settle`, {
+        marketPriceUsdPerGram: price
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success(data.message || "Early termination settled and gold credited");
+        onUpdatePlanStatus(plan.id, 'Early Terminated');
+      } else {
+        toast.error(data.message || "Failed to settle termination");
+      }
+    } catch (error) {
+      console.error('Settlement error:', error);
+      toast.error("Failed to settle early termination");
+    } finally {
+      setIsSettling(false);
+    }
   };
 
   const handleCreateSimulation = () => {
@@ -281,6 +351,25 @@ export default function BnslPlanDetailAdmin({
                            <span>Remaining: ${plan.remainingMarginUsd.toLocaleString()}</span>
                         </div>
                      </div>
+                     
+                     {(plan.status === 'Active' || plan.status === 'Maturing') && new Date(plan.maturityDate) <= new Date() && (
+                       <div className="mt-6 pt-6 border-t">
+                         <Button 
+                           className="w-full bg-green-600 hover:bg-green-700" 
+                           onClick={handleCompleteMaturity}
+                           disabled={isCompletingMaturity}
+                         >
+                           {isCompletingMaturity ? (
+                             <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                           ) : (
+                             <>Complete Maturity & Credit Base Price</>
+                           )}
+                         </Button>
+                         <p className="text-xs text-gray-500 mt-2 text-center">
+                           This will credit ${plan.basePriceComponentUsd.toLocaleString()} worth of gold to user's wallet at current market price
+                         </p>
+                       </div>
+                     )}
                   </CardContent>
                 </Card>
 
@@ -340,9 +429,14 @@ export default function BnslPlanDetailAdmin({
                              </Badge>
                            </td>
                            <td className="p-3 text-right">
-                             {payout.status === 'Scheduled' && (
-                               <Button size="sm" variant="outline" onClick={() => { setPayoutToProcess(payout); setPayoutPrice(currentMarketPrice.toString()); }}>
-                                 Process Payout
+                             {(payout.status === 'Scheduled' || payout.status === 'Processing') && (
+                               <Button 
+                                 size="sm" 
+                                 variant={payout.status === 'Processing' ? 'default' : 'outline'}
+                                 className={payout.status === 'Processing' ? 'bg-orange-500 hover:bg-orange-600' : ''}
+                                 onClick={() => { setPayoutToProcess(payout); setPayoutPrice(currentMarketPrice.toString()); }}
+                               >
+                                 {payout.status === 'Processing' ? 'Complete Payout' : 'Process Payout'}
                                </Button>
                              )}
                            </td>
@@ -401,6 +495,25 @@ export default function BnslPlanDetailAdmin({
                         <div className="flex gap-2 mt-6 pt-6 border-t">
                            <Button variant="destructive" className="w-full">Reject Request</Button>
                            <Button className="w-full bg-green-600 hover:bg-green-700" onClick={handleApproveTermination}>Approve Termination</Button>
+                        </div>
+                      )}
+                      
+                      {(plan.earlyTermination.status === 'Approved' || plan.earlyTermination.status === 'Under Review') && (
+                        <div className="mt-6 pt-6 border-t">
+                           <Button 
+                             className="w-full bg-purple-600 hover:bg-purple-700" 
+                             onClick={handleSettleTermination}
+                             disabled={isSettling}
+                           >
+                             {isSettling ? (
+                               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing Settlement...</>
+                             ) : (
+                               <>Settle & Credit Gold to User</>
+                             )}
+                           </Button>
+                           <p className="text-xs text-gray-500 mt-2 text-center">
+                             This will credit {plan.earlyTermination.finalGoldGrams.toFixed(4)}g to user's wallet
+                           </p>
                         </div>
                       )}
                    </CardContent>
@@ -528,8 +641,14 @@ export default function BnslPlanDetailAdmin({
              </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPayoutToProcess(null)}>Cancel</Button>
-            <Button className="bg-green-600 hover:bg-green-700" onClick={handleProcessPayout}>Confirm Payout</Button>
+            <Button variant="outline" onClick={() => setPayoutToProcess(null)} disabled={isProcessing}>Cancel</Button>
+            <Button className="bg-green-600 hover:bg-green-700" onClick={handleProcessPayout} disabled={isProcessing}>
+              {isProcessing ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+              ) : (
+                <>Confirm & Credit Gold</>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -843,6 +843,58 @@ ${message}
     });
   }, 60000); // Clean every minute
 
+  // BNSL Auto-Processing: Check for due payouts daily (runs every 6 hours)
+  setInterval(async () => {
+    try {
+      console.log('[BNSL Auto-Process] Checking for due payouts and mature plans...');
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Get all active plans
+      const allPlans = await storage.getAllBnslPlans();
+      const activePlans = allPlans.filter(p => p.status === 'Active');
+      
+      let payoutsProcessed = 0;
+      let plansMatured = 0;
+      
+      for (const plan of activePlans) {
+        // Check if plan has reached maturity
+        const maturityDate = new Date(plan.maturityDate);
+        maturityDate.setHours(0, 0, 0, 0);
+        
+        if (maturityDate <= today && plan.status === 'Active') {
+          // Mark plan as Maturing (admin needs to process final settlement)
+          await storage.updateBnslPlan(plan.id, { status: 'Maturing' });
+          plansMatured++;
+          console.log(`[BNSL Auto-Process] Plan ${plan.contractId} marked as Maturing`);
+        }
+        
+        // Check for due payouts
+        const payouts = await storage.getPlanPayouts(plan.id);
+        for (const payout of payouts) {
+          if (payout.status !== 'Scheduled') continue;
+          
+          const payoutDate = new Date(payout.scheduledDate);
+          payoutDate.setHours(0, 0, 0, 0);
+          
+          // Mark overdue payouts as Processing (admin needs to manually process)
+          if (payoutDate <= today) {
+            await storage.updateBnslPayout(payout.id, { status: 'Processing' });
+            payoutsProcessed++;
+            console.log(`[BNSL Auto-Process] Payout #${payout.sequence} for plan ${plan.contractId} marked as Processing`);
+          }
+        }
+      }
+      
+      if (payoutsProcessed > 0 || plansMatured > 0) {
+        console.log(`[BNSL Auto-Process] Marked ${payoutsProcessed} payouts as Processing, ${plansMatured} plans as Maturing`);
+      }
+    } catch (error) {
+      console.error('[BNSL Auto-Process] Error:', error);
+    }
+  }, 6 * 60 * 60 * 1000); // Run every 6 hours
+
   // Login with rate limiting
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -7612,6 +7664,446 @@ ${message}
     } catch (error) {
       console.error('Failed to download BNSL agreement:', error);
       res.status(500).json({ message: "Failed to generate agreement PDF" });
+    }
+  });
+
+  // ============================================================================
+  // BNSL PAYOUT PROCESSING & SETTLEMENT (Admin)
+  // ============================================================================
+  
+  // Admin: Process a BNSL payout - credits gold to user's FinaPay wallet
+  app.post("/api/admin/bnsl/payouts/:id/process", ensureAdminAsync, requirePermission('manage_bnsl'), async (req, res) => {
+    try {
+      const { marketPriceUsdPerGram } = req.body;
+      
+      if (!marketPriceUsdPerGram || parseFloat(marketPriceUsdPerGram) <= 0) {
+        return res.status(400).json({ message: "Valid market price is required" });
+      }
+      
+      const price = parseFloat(marketPriceUsdPerGram);
+      
+      // Get the payout
+      const payout = await storage.getBnslPayout(req.params.id);
+      if (!payout) {
+        return res.status(404).json({ message: "Payout not found" });
+      }
+      
+      if (payout.status === 'Paid') {
+        return res.status(400).json({ message: "Payout has already been processed" });
+      }
+      
+      // Get the plan
+      const plan = await storage.getBnslPlan(payout.planId);
+      if (!plan) {
+        return res.status(404).json({ message: "Associated BNSL plan not found" });
+      }
+      
+      // Calculate gold grams to credit
+      const monetaryAmount = parseFloat(payout.monetaryAmountUsd);
+      const gramsCredited = monetaryAmount / price;
+      
+      // Credit gold to user's FinaPay wallet
+      const wallet = await storage.getWallet(plan.userId);
+      if (!wallet) {
+        return res.status(404).json({ message: "User FinaPay wallet not found" });
+      }
+      
+      const currentGold = parseFloat(wallet.goldGrams);
+      const newGoldBalance = currentGold + gramsCredited;
+      
+      await storage.updateWallet(wallet.id, {
+        goldGrams: newGoldBalance.toFixed(6)
+      });
+      
+      // Update payout status
+      const updatedPayout = await storage.updateBnslPayout(payout.id, {
+        status: 'Paid',
+        marketPriceUsdPerGram: price.toFixed(2),
+        gramsCredited: gramsCredited.toFixed(6),
+        paidAt: new Date()
+      });
+      
+      // Update plan's paid margin tracking
+      const currentPaidMarginUsd = parseFloat(plan.paidMarginUsd || '0');
+      const currentPaidMarginGrams = parseFloat(plan.paidMarginGrams || '0');
+      await storage.updateBnslPlan(plan.id, {
+        paidMarginUsd: (currentPaidMarginUsd + monetaryAmount).toFixed(2),
+        paidMarginGrams: (currentPaidMarginGrams + gramsCredited).toFixed(6),
+        remainingMarginUsd: (parseFloat(plan.remainingMarginUsd || '0') - monetaryAmount).toFixed(2)
+      });
+      
+      // Create transaction record
+      await storage.createTransaction({
+        userId: plan.userId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: gramsCredited.toFixed(6),
+        amountUsd: monetaryAmount.toFixed(2),
+        goldPriceUsdPerGram: price.toFixed(2),
+        description: `BNSL Quarterly Margin Payout #${payout.sequence} - ${plan.contractId}`,
+        sourceModule: 'bnsl',
+        bnslPlanId: plan.id,
+        bnslPayoutId: payout.id
+      });
+      
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: plan.userId,
+        action: 'Payout_Credit',
+        goldGrams: gramsCredited,
+        goldPriceUsdPerGram: price,
+        fromWallet: 'BNSL',
+        toWallet: 'FinaPay',
+        fromStatus: 'Locked_BNSL',
+        toStatus: 'Available',
+        bnslPlanId: plan.id,
+        bnslPayoutId: payout.id,
+        notes: `BNSL Margin Payout #${payout.sequence}: ${gramsCredited.toFixed(4)}g credited at $${price}/g`,
+        createdBy: 'admin',
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "bnsl",
+        entityId: plan.id,
+        actionType: "update",
+        actor: req.session?.userId || 'admin',
+        actorRole: "admin",
+        details: `Processed payout #${payout.sequence}: ${gramsCredited.toFixed(4)}g at $${price}/g`,
+      });
+      
+      // Emit real-time sync event
+      emitLedgerEvent(plan.userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'payout_processed',
+        data: { goldGrams: gramsCredited, planId: plan.id, payoutId: payout.id },
+      });
+      
+      // Send notification email
+      const user = await storage.getUser(plan.userId);
+      if (user?.email) {
+        await sendEmail(user.email, EMAIL_TEMPLATES.BNSL_PAYOUT, {
+          user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          plan_id: plan.contractId,
+          payout_number: payout.sequence.toString(),
+          gold_grams: gramsCredited.toFixed(4),
+          usd_value: monetaryAmount.toFixed(2),
+          market_price: price.toFixed(2),
+          dashboard_url: `${req.protocol}://${req.get('host')}/bnsl`
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        payout: updatedPayout,
+        gramsCredited,
+        message: `Payout processed: ${gramsCredited.toFixed(4)}g credited to wallet`
+      });
+    } catch (error) {
+      console.error('BNSL payout processing error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process payout" });
+    }
+  });
+  
+  // Admin: Complete BNSL plan maturity - credits Base Price Component as gold
+  app.post("/api/admin/bnsl/plans/:id/complete-maturity", ensureAdminAsync, requirePermission('manage_bnsl'), async (req, res) => {
+    try {
+      const { marketPriceUsdPerGram } = req.body;
+      
+      if (!marketPriceUsdPerGram || parseFloat(marketPriceUsdPerGram) <= 0) {
+        return res.status(400).json({ message: "Valid market price is required" });
+      }
+      
+      const price = parseFloat(marketPriceUsdPerGram);
+      
+      // Get the plan
+      const plan = await storage.getBnslPlan(req.params.id);
+      if (!plan) {
+        return res.status(404).json({ message: "BNSL plan not found" });
+      }
+      
+      if (plan.status === 'Completed') {
+        return res.status(400).json({ message: "Plan has already been completed" });
+      }
+      
+      if (plan.status !== 'Active' && plan.status !== 'Maturing') {
+        return res.status(400).json({ message: `Cannot complete plan with status: ${plan.status}` });
+      }
+      
+      // Calculate gold grams to credit (Base Price Component / current price)
+      const basePriceComponent = parseFloat(plan.basePriceComponentUsd);
+      const goldGramsToCredit = basePriceComponent / price;
+      
+      // Credit gold to user's FinaPay wallet
+      const wallet = await storage.getWallet(plan.userId);
+      if (!wallet) {
+        return res.status(404).json({ message: "User FinaPay wallet not found" });
+      }
+      
+      const currentGold = parseFloat(wallet.goldGrams);
+      const newGoldBalance = currentGold + goldGramsToCredit;
+      
+      await storage.updateWallet(wallet.id, {
+        goldGrams: newGoldBalance.toFixed(6)
+      });
+      
+      // Unlock gold from BNSL wallet (reduce locked balance)
+      const bnslWallet = await storage.getOrCreateBnslWallet(plan.userId);
+      const goldSold = parseFloat(plan.goldSoldGrams);
+      const currentLocked = parseFloat(bnslWallet.lockedGoldGrams);
+      const newLocked = Math.max(0, currentLocked - goldSold);
+      
+      await storage.updateBnslWallet(bnslWallet.id, {
+        lockedGoldGrams: newLocked.toFixed(6)
+      });
+      
+      // Update plan status to Completed
+      const updatedPlan = await storage.updateBnslPlan(plan.id, {
+        status: 'Completed'
+      });
+      
+      // Create transaction record
+      await storage.createTransaction({
+        userId: plan.userId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: goldGramsToCredit.toFixed(6),
+        amountUsd: basePriceComponent.toFixed(2),
+        goldPriceUsdPerGram: price.toFixed(2),
+        description: `BNSL Maturity Settlement - Base Price Component - ${plan.contractId}`,
+        sourceModule: 'bnsl',
+        bnslPlanId: plan.id
+      });
+      
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: plan.userId,
+        action: 'BNSL_Unlock',
+        goldGrams: goldGramsToCredit,
+        goldPriceUsdPerGram: price,
+        fromWallet: 'BNSL',
+        toWallet: 'FinaPay',
+        fromStatus: 'Locked_BNSL',
+        toStatus: 'Available',
+        bnslPlanId: plan.id,
+        notes: `BNSL Maturity Settlement: ${goldGramsToCredit.toFixed(4)}g Base Price credited at $${price}/g`,
+        createdBy: 'admin',
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "bnsl",
+        entityId: plan.id,
+        actionType: "update",
+        actor: req.session?.userId || 'admin',
+        actorRole: "admin",
+        details: `Plan completed: ${goldGramsToCredit.toFixed(4)}g Base Price credited at maturity`,
+      });
+      
+      // Emit real-time sync event
+      emitLedgerEvent(plan.userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'maturity_completed',
+        data: { goldGrams: goldGramsToCredit, planId: plan.id },
+      });
+      
+      // Send notification email
+      const user = await storage.getUser(plan.userId);
+      if (user?.email) {
+        await sendEmail(user.email, EMAIL_TEMPLATES.BNSL_PLAN_COMPLETED, {
+          user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          plan_id: plan.contractId,
+          gold_grams: goldGramsToCredit.toFixed(4),
+          base_price_usd: basePriceComponent.toFixed(2),
+          market_price: price.toFixed(2),
+          total_margin_received: plan.paidMarginGrams,
+          dashboard_url: `${req.protocol}://${req.get('host')}/bnsl`
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        plan: updatedPlan,
+        goldGramsToCredit,
+        message: `Maturity completed: ${goldGramsToCredit.toFixed(4)}g credited to wallet`
+      });
+    } catch (error) {
+      console.error('BNSL maturity completion error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to complete maturity" });
+    }
+  });
+  
+  // Admin: Settle early termination - credits calculated gold to user's wallet
+  app.post("/api/admin/bnsl/early-termination/:planId/settle", ensureAdminAsync, requirePermission('manage_bnsl'), async (req, res) => {
+    try {
+      const { marketPriceUsdPerGram } = req.body;
+      
+      if (!marketPriceUsdPerGram || parseFloat(marketPriceUsdPerGram) <= 0) {
+        return res.status(400).json({ message: "Valid market price is required" });
+      }
+      
+      const price = parseFloat(marketPriceUsdPerGram);
+      
+      // Get the plan
+      const plan = await storage.getBnslPlan(req.params.planId);
+      if (!plan) {
+        return res.status(404).json({ message: "BNSL plan not found" });
+      }
+      
+      // Get early termination request
+      const termination = await storage.getBnslEarlyTermination(req.params.planId);
+      if (!termination) {
+        return res.status(404).json({ message: "Early termination request not found" });
+      }
+      
+      if (termination.status === 'Settled') {
+        return res.status(400).json({ message: "Termination has already been settled" });
+      }
+      
+      // Calculate settlement per T&C formula
+      const goldSold = parseFloat(plan.goldSoldGrams);
+      const enrollmentPrice = parseFloat(plan.enrollmentPriceUsdPerGram);
+      const basePriceComponent = parseFloat(plan.basePriceComponentUsd);
+      const totalMarginComponent = parseFloat(plan.totalMarginComponentUsd);
+      const totalSaleProceeds = basePriceComponent + totalMarginComponent;
+      
+      // Use fee percentages from termination request or plan defaults
+      const adminFeePercent = parseFloat(termination.adminFeePercent || plan.adminFeePercent || '0.50') / 100;
+      const penaltyPercent = parseFloat(termination.penaltyPercent || plan.earlyTerminationFeePercent || '2.00') / 100;
+      const paidMarginUsd = parseFloat(plan.paidMarginUsd || '0');
+      
+      // Step 1: Base Price Valuation
+      const baseValueUsd = price < enrollmentPrice 
+        ? goldSold * price 
+        : basePriceComponent;
+      
+      // Step 2: Calculate deductions
+      const adminFeeUsd = totalSaleProceeds * adminFeePercent;
+      const penaltyUsd = totalSaleProceeds * penaltyPercent;
+      const reimbursementUsd = paidMarginUsd; // Reimburse all paid margins
+      const totalDeductions = adminFeeUsd + penaltyUsd + reimbursementUsd;
+      
+      // Step 3: Final settlement
+      const netValueUsd = Math.max(0, baseValueUsd - totalDeductions);
+      const finalGoldGrams = netValueUsd > 0 ? netValueUsd / price : 0;
+      
+      // Credit gold to user's FinaPay wallet
+      const wallet = await storage.getWallet(plan.userId);
+      if (!wallet) {
+        return res.status(404).json({ message: "User FinaPay wallet not found" });
+      }
+      
+      if (finalGoldGrams > 0) {
+        const currentGold = parseFloat(wallet.goldGrams);
+        const newGoldBalance = currentGold + finalGoldGrams;
+        
+        await storage.updateWallet(wallet.id, {
+          goldGrams: newGoldBalance.toFixed(6)
+        });
+      }
+      
+      // Unlock gold from BNSL wallet
+      const bnslWallet = await storage.getOrCreateBnslWallet(plan.userId);
+      const currentLocked = parseFloat(bnslWallet.lockedGoldGrams);
+      const newLocked = Math.max(0, currentLocked - goldSold);
+      
+      await storage.updateBnslWallet(bnslWallet.id, {
+        lockedGoldGrams: newLocked.toFixed(6)
+      });
+      
+      // Update termination status
+      await storage.updateBnslEarlyTermination(termination.id, {
+        status: 'Settled',
+        currentMarketPriceUsdPerGram: price.toFixed(2),
+        basePriceComponentValueUsd: baseValueUsd.toFixed(2),
+        totalDeductionsUsd: totalDeductions.toFixed(2),
+        netValueUsd: netValueUsd.toFixed(2),
+        finalGoldGrams: finalGoldGrams.toFixed(6),
+        decidedAt: new Date(),
+        decidedBy: req.session?.userId || 'admin'
+      });
+      
+      // Update plan status
+      await storage.updateBnslPlan(plan.id, {
+        status: 'Early Terminated'
+      });
+      
+      // Cancel remaining payouts
+      const payouts = await storage.getPlanPayouts(plan.id);
+      for (const payout of payouts) {
+        if (payout.status === 'Scheduled') {
+          await storage.updateBnslPayout(payout.id, { status: 'Cancelled' });
+        }
+      }
+      
+      // Create transaction record
+      await storage.createTransaction({
+        userId: plan.userId,
+        type: 'Receive',
+        status: 'Completed',
+        amountGold: finalGoldGrams.toFixed(6),
+        amountUsd: netValueUsd.toFixed(2),
+        goldPriceUsdPerGram: price.toFixed(2),
+        description: `BNSL Early Termination Settlement - ${plan.contractId}`,
+        sourceModule: 'bnsl',
+        bnslPlanId: plan.id
+      });
+      
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: plan.userId,
+        action: 'BNSL_Unlock',
+        goldGrams: finalGoldGrams,
+        goldPriceUsdPerGram: price,
+        fromWallet: 'BNSL',
+        toWallet: 'FinaPay',
+        fromStatus: 'Locked_BNSL',
+        toStatus: 'Available',
+        bnslPlanId: plan.id,
+        notes: `BNSL Early Termination: ${finalGoldGrams.toFixed(4)}g settled (after ${(totalDeductions).toFixed(2)} USD deductions)`,
+        createdBy: 'admin',
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "bnsl",
+        entityId: plan.id,
+        actionType: "update",
+        actor: req.session?.userId || 'admin',
+        actorRole: "admin",
+        details: `Early termination settled: ${finalGoldGrams.toFixed(4)}g credited after $${totalDeductions.toFixed(2)} deductions`,
+      });
+      
+      // Emit real-time sync event
+      emitLedgerEvent(plan.userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'early_termination_settled',
+        data: { goldGrams: finalGoldGrams, planId: plan.id, netValueUsd },
+      });
+      
+      res.json({ 
+        success: true, 
+        settlement: {
+          baseValueUsd,
+          adminFeeUsd,
+          penaltyUsd,
+          reimbursementUsd,
+          totalDeductions,
+          netValueUsd,
+          finalGoldGrams,
+          marketPrice: price
+        },
+        message: `Early termination settled: ${finalGoldGrams.toFixed(4)}g credited to wallet`
+      });
+    } catch (error) {
+      console.error('BNSL early termination settlement error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to settle early termination" });
     }
   });
 
