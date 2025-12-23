@@ -8063,7 +8063,7 @@ ${message}
           fromWallet: 'FinaPay',
           toWallet: 'BNSL',
           fromStatus: 'Available',
-          toStatus: 'Locked',
+          toStatus: 'Locked_BNSL',
           transactionId: transferTx.id,
           notes: `BNSL Hedged Deposit: ${gramsToLock.toFixed(4)}g locked at entry price $${goldPrice.toFixed(2)}/g. Position ID: ${position.id}`,
           createdBy: 'system',
