@@ -23,9 +23,7 @@ export default function CTA() {
   const c = content[mode];
 
   return (
-    <section className="relative py-32 overflow-hidden" data-testid="cta-section">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-black to-black" />
-
+    <section className="relative py-32 overflow-hidden bg-gradient-to-b from-[#F4F6FC] to-[#EDE9FE]" data-testid="cta-section">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         whileInView={{ opacity: 1, scale: 1 }}
@@ -33,7 +31,7 @@ export default function CTA() {
         transition={{ duration: 1 }}
         className="absolute inset-0 flex items-center justify-center"
       >
-        <div className="w-[700px] h-[700px] bg-[#EAC26B]/8 rounded-full blur-[150px]" />
+        <div className="w-[700px] h-[700px] bg-[#8A2BE2]/8 rounded-full blur-[150px]" />
       </motion.div>
 
       <div className="relative max-w-4xl mx-auto px-6 text-center">
@@ -42,7 +40,7 @@ export default function CTA() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="p-12 md:p-16 rounded-[32px] bg-gradient-to-br from-white/[0.05] to-transparent border border-[#EAC26B]/25 backdrop-blur-sm relative overflow-hidden"
+          className="p-12 md:p-16 rounded-[32px] bg-gradient-to-br from-[#2A0055] to-[#0D001E] border-2 border-[#8A2BE2]/40 shadow-2xl shadow-[#8A2BE2]/20 relative overflow-hidden"
         >
           <motion.div
             animate={{ 
@@ -85,7 +83,7 @@ export default function CTA() {
                 <motion.a
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/25 cursor-pointer"
+                  className="group flex items-center gap-2 bg-[#F97316] text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#EA580C] transition-all shadow-lg shadow-[#F97316]/25 cursor-pointer"
                   data-testid="cta-primary"
                 >
                   {c.primaryCta}
@@ -96,7 +94,7 @@ export default function CTA() {
                 <motion.a
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="group flex items-center gap-2 border border-white/20 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/5 hover:border-white/30 transition-all cursor-pointer"
+                  className="group flex items-center gap-2 border border-white/30 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/10 hover:border-white/50 transition-all cursor-pointer"
                   data-testid="cta-secondary"
                 >
                   <c.secondaryIcon className="w-4 h-4" />

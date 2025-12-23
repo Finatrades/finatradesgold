@@ -94,8 +94,9 @@ export default function Products() {
   const c = content[mode];
 
   return (
-    <section id="products" className="relative py-24 bg-black" data-testid="products-section">
-      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#EAC26B]/3 to-transparent" />
+    <section id="products" className="relative py-24 bg-gradient-to-b from-[#EDE9FE] to-[#F4F6FC]" data-testid="products-section">
+      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
+      <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px]" />
 
       <div className="relative max-w-7xl mx-auto px-6">
         <motion.div
@@ -109,7 +110,7 @@ export default function Products() {
             key={mode}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-4xl md:text-5xl font-bold text-white mb-4"
+            className="text-4xl md:text-5xl font-bold text-[#0D0D0D] mb-4"
           >
             {c.title}
           </motion.h2>
@@ -128,28 +129,28 @@ export default function Products() {
               key={`${mode}-${product.name}`}
               variants={cardVariants}
               whileHover={{ y: -6 }}
-              className="group p-8 rounded-3xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] hover:border-[#EAC26B]/30 transition-all duration-300 relative overflow-hidden"
+              className="group p-8 rounded-3xl bg-white border-2 border-[#8A2BE2]/10 hover:border-[#8A2BE2]/40 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300 relative overflow-hidden"
               data-testid={`product-card-${product.name.toLowerCase()}`}
             >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-[#EAC26B]/5 to-transparent" />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-[#8A2BE2]/5 to-transparent" />
 
               <div className="relative">
                 <div className="flex items-start gap-5 mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-[#EAC26B]/10 flex items-center justify-center group-hover:bg-[#EAC26B]/20 transition-colors shrink-0">
-                    <product.icon className="w-7 h-7 text-[#EAC26B]" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#8A2BE2]/10 to-[#FF2FBF]/10 flex items-center justify-center group-hover:from-[#8A2BE2]/20 group-hover:to-[#FF2FBF]/20 transition-colors shrink-0">
+                    <product.icon className="w-7 h-7 text-[#8A2BE2]" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-white group-hover:text-[#EAC26B] transition-colors">
+                    <h3 className="text-xl font-semibold text-[#0D0D0D] group-hover:text-[#8A2BE2] transition-colors">
                       {product.name}
                     </h3>
-                    <p className="text-[#EAC26B]/70 text-sm font-medium">{product.subtitle}</p>
+                    <p className="text-[#8A2BE2]/70 text-sm font-medium">{product.subtitle}</p>
                   </div>
                 </div>
 
-                <p className="text-gray-400 mb-6 leading-relaxed">{product.description}</p>
+                <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
 
                 <Link href={product.href}>
-                  <a className="inline-flex items-center gap-2 text-[#EAC26B] text-sm font-medium group/btn hover:underline">
+                  <a className="inline-flex items-center gap-2 text-[#F97316] text-sm font-semibold group/btn hover:text-[#EA580C]">
                     {product.cta}
                     <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                   </a>

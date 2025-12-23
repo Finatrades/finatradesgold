@@ -28,7 +28,7 @@ export default function TrustStrip() {
   const c = content[mode];
 
   return (
-    <section className="relative py-16 bg-black border-y border-white/5" data-testid="trust-strip">
+    <section className="relative py-16 bg-gradient-to-r from-[#2A0055] via-[#4B0082] to-[#2A0055]" data-testid="trust-strip">
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -62,10 +62,10 @@ export default function TrustStrip() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="flex items-center gap-3 group"
             >
-              <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-[#EAC26B]/10 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
                 <item.icon className="w-5 h-5 text-[#EAC26B]" />
               </div>
-              <span className="text-gray-400 text-sm font-medium group-hover:text-white transition-colors">
+              <span className="text-white/80 text-sm font-medium group-hover:text-white transition-colors">
                 {item.label}
               </span>
             </motion.div>
