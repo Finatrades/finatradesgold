@@ -395,16 +395,17 @@ export default function VaultActivityList() {
   // Check if there are FinaBridge transactions to avoid duplicate entries from Trade Release certificates
   const hasFinaBridgeTransactions = transactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
   
-  // Group certificates by transactionId to create consolidated Vault Deposit entries
+  // Group certificates by transactionId (for purchases) or vaultHoldingId (for physical deposits)
   // Each purchase creates both Digital Ownership and Physical Storage certificates
   const certificatesByTransaction = new Map<string, any[]>();
   certificates.forEach((cert: any) => {
     if (cert.type === 'Digital Ownership' || cert.type === 'Physical Storage') {
-      const txId = cert.transactionId || cert.id;
-      if (!certificatesByTransaction.has(txId)) {
-        certificatesByTransaction.set(txId, []);
+      // Use transactionId first, then vaultHoldingId for physical deposits, then cert.id as fallback
+      const groupKey = cert.transactionId || (cert.vaultHoldingId ? `vault-${cert.vaultHoldingId}` : cert.id);
+      if (!certificatesByTransaction.has(groupKey)) {
+        certificatesByTransaction.set(groupKey, []);
       }
-      certificatesByTransaction.get(txId)!.push(cert);
+      certificatesByTransaction.get(groupKey)!.push(cert);
     } else if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) {
       // Trade Release certificates are standalone
       certificatesByTransaction.set(cert.id, [cert]);
@@ -412,13 +413,14 @@ export default function VaultActivityList() {
   });
   
   // Create one Vault Deposit entry per certificate group (combining both cert types)
-  // Skip standalone Physical Storage certificates without transactionId - these are physical deposits
-  // that already appear in the transactions array
+  // Skip certificates without transactionId that have vaultHoldingId - these are physical deposits
+  // that already appear in the transactions array with their certificates attached
   const certificateActivities: VaultTransaction[] = Array.from(certificatesByTransaction.values())
     .filter((certGroup: any[]) => {
-      // Skip if it's a single Physical Storage certificate without a transactionId
-      // These are physical vault deposits that are already shown from the transactions array
-      if (certGroup.length === 1 && certGroup[0].type === 'Physical Storage' && !certGroup[0].transactionId) {
+      // Skip physical vault deposit certificates (no transactionId, but have vaultHoldingId)
+      // These are already shown from the transactions array with certificates attached
+      const firstCert = certGroup[0];
+      if (!firstCert.transactionId && firstCert.vaultHoldingId) {
         return false;
       }
       return true;
