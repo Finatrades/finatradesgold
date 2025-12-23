@@ -151,6 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: <Users className="w-5 h-5" />, label: 'User Management', href: '/admin/users' },
         { icon: <UserCog className="w-5 h-5" />, label: 'Employees', href: '/admin/employees' },
         { icon: <ShieldAlert className="w-5 h-5" />, label: 'KYC Reviews', href: '/admin/kyc' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Document Expiry', href: '/admin/document-expiry' },
         { icon: <Shield className="w-5 h-5" />, label: 'AML Management', href: '/admin/aml' },
         { icon: <Shield className="w-5 h-5" />, label: 'Compliance', href: '/admin/compliance' },
       ]
@@ -161,6 +162,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: <ArrowRightLeft className="w-5 h-5" />, label: 'Transactions', href: '/admin/transactions' },
         { icon: <FileText className="w-5 h-5" />, label: 'Account Statements', href: '/admin/account-statements' },
         { icon: <CreditCard className="w-5 h-5" />, label: 'Payment Gateways', href: '/admin/payment-gateways' },
+        { icon: <DollarSign className="w-5 h-5" />, label: 'Binance Pay', href: '/admin/binance-pay' },
         { icon: <DollarSign className="w-5 h-5" />, label: 'Fee Management', href: '/admin/fees' },
       ]
     },

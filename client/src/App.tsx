@@ -100,6 +100,8 @@ import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
 import AMLManagement from "@/pages/admin/AMLManagement";
+import BinancePayAdmin from "@/pages/admin/BinancePayAdmin";
+import DocumentExpiryAdmin from "@/pages/admin/DocumentExpiryAdmin";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
@@ -166,6 +168,8 @@ function Router() {
       <Route path="/admin/attachments" component={AttachmentsManagement} />
       <Route path="/admin/email-notifications" component={EmailNotificationsManagement} />
       <Route path="/admin/aml" component={AMLManagement} />
+      <Route path="/admin/binance-pay" component={BinancePayAdmin} />
+      <Route path="/admin/document-expiry" component={DocumentExpiryAdmin} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />

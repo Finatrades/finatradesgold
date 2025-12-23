@@ -112,6 +112,23 @@ interface SettlementHold {
   createdAt: string;
 }
 
+interface TradeDispute {
+  id: string;
+  tradeRequestId: string;
+  raisedByUserId: string;
+  category: string;
+  description: string;
+  status: string;
+  resolution: string | null;
+  assignedAdminId: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  tradeRequest?: { tradeRefId: string; goodsName: string } | null;
+  raisedBy?: { id: string; email: string; finatradesId: string | null } | null;
+}
+
 export default function FinaBridgeManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -137,6 +154,11 @@ export default function FinaBridgeManagement() {
     hold: SettlementHold;
     request: TradeRequest;
   } | null>(null);
+  const [disputes, setDisputes] = useState<TradeDispute[]>([]);
+  const [selectedDispute, setSelectedDispute] = useState<TradeDispute | null>(null);
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false);
+  const [resolution, setResolution] = useState('');
+  const [resolvingDispute, setResolvingDispute] = useState(false);
 
   const STANDARD_DOCUMENTS = [
     { key: 'company_registration', label: 'Company Registration Certificate' },
@@ -208,6 +230,52 @@ export default function FinaBridgeManagement() {
     }
   };
 
+  const fetchDisputes = async () => {
+    try {
+      const res = await apiRequest('GET', '/api/admin/finabridge/disputes');
+      const data = await res.json();
+      setDisputes(data.disputes || []);
+    } catch (err) {
+      console.error('Failed to load disputes:', err);
+    }
+  };
+
+  const handleOpenDispute = (dispute: TradeDispute) => {
+    setSelectedDispute(dispute);
+    setResolution(dispute.resolution || '');
+    setDisputeDialogOpen(true);
+  };
+
+  const handleUpdateDisputeStatus = async (disputeId: string, status: string) => {
+    try {
+      await apiRequest('POST', `/api/admin/finabridge/disputes/${disputeId}/status`, { status });
+      toast({ title: 'Success', description: 'Dispute status updated' });
+      fetchDisputes();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update dispute status', variant: 'destructive' });
+    }
+  };
+
+  const handleResolveDispute = async () => {
+    if (!selectedDispute || !resolution.trim()) {
+      toast({ title: 'Error', description: 'Please provide a resolution', variant: 'destructive' });
+      return;
+    }
+    setResolvingDispute(true);
+    try {
+      await apiRequest('POST', `/api/admin/finabridge/disputes/${selectedDispute.id}/resolve`, { resolution });
+      toast({ title: 'Success', description: 'Dispute resolved successfully' });
+      setDisputeDialogOpen(false);
+      setSelectedDispute(null);
+      setResolution('');
+      fetchDisputes();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to resolve dispute', variant: 'destructive' });
+    } finally {
+      setResolvingDispute(false);
+    }
+  };
+
   const openReleaseDialog = (hold: SettlementHold, request: TradeRequest) => {
     setReleaseConfirmDialog({ hold, request });
   };
@@ -236,12 +304,14 @@ export default function FinaBridgeManagement() {
     fetchDisclaimerUsers();
     fetchDealRooms();
     fetchSettlementHolds();
+    fetchDisputes();
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchRequests();
       fetchDisclaimerUsers();
       fetchDealRooms();
       fetchSettlementHolds();
+      fetchDisputes();
     }, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
@@ -438,6 +508,7 @@ export default function FinaBridgeManagement() {
             <TabsTrigger value="active">Active Trades</TabsTrigger>
             <TabsTrigger value="dealrooms">Deal Rooms ({dealRooms.length})</TabsTrigger>
             <TabsTrigger value="disclaimer">Disclaimer Acceptance</TabsTrigger>
+            <TabsTrigger value="disputes">Disputes ({disputes.filter(d => d.status !== 'Resolved').length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="mt-4">
@@ -699,7 +770,169 @@ export default function FinaBridgeManagement() {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="disputes" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  Trade Disputes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {disputes.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <AlertCircle className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                    <p className="font-medium">No disputes found</p>
+                    <p className="text-sm">Disputes will appear here when users raise issues with their trades.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {disputes.map((dispute) => (
+                      <Card 
+                        key={dispute.id} 
+                        className="hover:border-secondary/50 transition-colors cursor-pointer"
+                        onClick={() => handleOpenDispute(dispute)}
+                        data-testid={`row-dispute-${dispute.id}`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className={`p-2 rounded-lg ${dispute.status === 'Resolved' ? 'bg-green-100' : dispute.status === 'Under Investigation' ? 'bg-yellow-100' : 'bg-red-100'}`}>
+                                <AlertCircle className={`w-5 h-5 ${dispute.status === 'Resolved' ? 'text-green-600' : dispute.status === 'Under Investigation' ? 'text-yellow-600' : 'text-red-600'}`} />
+                              </div>
+                              <div>
+                                <h3 className="font-bold">{dispute.tradeRequest?.tradeRefId || 'Unknown Trade'}</h3>
+                                <p className="text-sm text-muted-foreground">{dispute.category}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Raised by: {dispute.raisedBy?.email || 'Unknown'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground">{new Date(dispute.createdAt).toLocaleDateString()}</p>
+                              </div>
+                              <Badge className={
+                                dispute.status === 'Resolved' ? 'bg-green-100 text-green-700' :
+                                dispute.status === 'Under Investigation' ? 'bg-yellow-100 text-yellow-700' :
+                                dispute.status === 'Open' ? 'bg-red-100 text-red-700' :
+                                'bg-gray-100 text-gray-700'
+                              }>
+                                {dispute.status}
+                              </Badge>
+                              <Button size="sm" variant="ghost" data-testid={`button-view-dispute-${dispute.id}`}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        <Dialog open={disputeDialogOpen} onOpenChange={(open) => { if (!open) { setDisputeDialogOpen(false); setSelectedDispute(null); setResolution(''); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5" />
+                Dispute Details
+              </DialogTitle>
+            </DialogHeader>
+            {selectedDispute && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Trade Reference</p>
+                    <p className="font-medium">{selectedDispute.tradeRequest?.tradeRefId || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <Badge className={
+                      selectedDispute.status === 'Resolved' ? 'bg-green-100 text-green-700' :
+                      selectedDispute.status === 'Under Investigation' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }>
+                      {selectedDispute.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Category</p>
+                    <p className="font-medium">{selectedDispute.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Raised By</p>
+                    <p className="font-medium">{selectedDispute.raisedBy?.email || 'Unknown'}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm mb-1">Description</p>
+                  <p className="text-sm p-3 bg-muted/50 rounded-lg">{selectedDispute.description}</p>
+                </div>
+                
+                {selectedDispute.status !== 'Resolved' && (
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleUpdateDisputeStatus(selectedDispute.id, 'Under Investigation')}
+                        disabled={selectedDispute.status === 'Under Investigation'}
+                        data-testid="button-investigate"
+                      >
+                        Start Investigation
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleUpdateDisputeStatus(selectedDispute.id, 'Escalated')}
+                        data-testid="button-escalate"
+                      >
+                        Escalate
+                      </Button>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Resolution</label>
+                      <textarea
+                        value={resolution}
+                        onChange={(e) => setResolution(e.target.value)}
+                        className="w-full mt-1 p-3 border rounded-lg text-sm"
+                        rows={3}
+                        placeholder="Enter resolution details..."
+                        data-testid="input-resolution"
+                      />
+                    </div>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={handleResolveDispute}
+                      disabled={resolvingDispute || !resolution.trim()}
+                      data-testid="button-resolve"
+                    >
+                      {resolvingDispute ? 'Resolving...' : 'Resolve Dispute'}
+                    </Button>
+                  </div>
+                )}
+                
+                {selectedDispute.status === 'Resolved' && selectedDispute.resolution && (
+                  <div className="border-t pt-4">
+                    <p className="text-muted-foreground text-sm mb-1">Resolution</p>
+                    <p className="text-sm p-3 bg-green-50 rounded-lg border border-green-200">{selectedDispute.resolution}</p>
+                    {selectedDispute.resolvedAt && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Resolved on {new Date(selectedDispute.resolvedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
