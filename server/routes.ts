@@ -3229,29 +3229,44 @@ ${message}
 
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    // This endpoint uses the same pattern as kyc-test3 which works
-    const results: any = { submissions: [] };
     try {
-      const kycAml = await storage.getAllKycSubmissions();
-      const kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
+      // Fetch all KYC types with individual error handling
+      let kycAmlArray: any[] = [];
+      let personalArray: any[] = [];
+      let corporateArray: any[] = [];
       
-      const personal = await storage.getAllFinatradesPersonalKyc();
-      const personalArray = Array.isArray(personal) ? personal : [];
+      try {
+        const kycAml = await storage.getAllKycSubmissions();
+        kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
+      } catch (e: any) {
+        console.error("Error fetching KYC AML submissions:", e);
+      }
       
-      const corporate = await storage.getAllFinatradesCorporateKyc();
-      const corporateArray = Array.isArray(corporate) ? corporate : [];
+      try {
+        const personal = await storage.getAllFinatradesPersonalKyc();
+        personalArray = Array.isArray(personal) ? personal : [];
+      } catch (e: any) {
+        console.error("Error fetching personal KYC:", e);
+      }
+      
+      try {
+        const corporate = await storage.getAllFinatradesCorporateKyc();
+        corporateArray = Array.isArray(corporate) ? corporate : [];
+      } catch (e: any) {
+        console.error("Error fetching corporate KYC:", e);
+      }
       
       // Simple normalization without complex operations
       const allSubmissions: any[] = [];
       
       // Add kycAml submissions
       for (const s of kycAmlArray) {
-        allSubmissions.push({ ...s, kycType: 'kycAml' });
+        if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
       }
       
       // Add personal submissions
       for (const s of personalArray) {
-        allSubmissions.push({
+        if (s) allSubmissions.push({
           ...s,
           tier: 'finatrades_personal',
           kycType: 'finatrades_personal',
@@ -3261,7 +3276,7 @@ ${message}
       
       // Add corporate submissions - use companyName as fullName for display
       for (const s of corporateArray) {
-        allSubmissions.push({
+        if (s) allSubmissions.push({
           ...s,
           tier: 'finatrades_corporate',
           kycType: 'finatrades_corporate',
@@ -3277,11 +3292,11 @@ ${message}
         return dateB - dateA;
       });
       
-      results.submissions = allSubmissions;
-    } catch (e: any) {
-      results.error = e?.message || String(e);
+      return res.json({ submissions: allSubmissions });
+    } catch (error: any) {
+      console.error("KYC endpoint error:", error);
+      return res.status(500).json({ message: "Failed to fetch KYC submissions", error: error?.message });
     }
-    return res.json(results);
   });
 
   // ============================================================================
