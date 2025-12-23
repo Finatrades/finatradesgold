@@ -412,7 +412,17 @@ export default function VaultActivityList() {
   });
   
   // Create one Vault Deposit entry per certificate group (combining both cert types)
+  // Skip standalone Physical Storage certificates without transactionId - these are physical deposits
+  // that already appear in the transactions array
   const certificateActivities: VaultTransaction[] = Array.from(certificatesByTransaction.values())
+    .filter((certGroup: any[]) => {
+      // Skip if it's a single Physical Storage certificate without a transactionId
+      // These are physical vault deposits that are already shown from the transactions array
+      if (certGroup.length === 1 && certGroup[0].type === 'Physical Storage' && !certGroup[0].transactionId) {
+        return false;
+      }
+      return true;
+    })
     .map((certGroup: any[]) => {
       const ownershipCert = certGroup.find(c => c.type === 'Digital Ownership');
       const storageCert = certGroup.find(c => c.type === 'Physical Storage');
