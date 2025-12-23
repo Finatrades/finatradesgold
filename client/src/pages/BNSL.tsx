@@ -35,7 +35,7 @@ import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
 import BnslWalletCard from '@/components/bnsl/BnslWalletCard';
 import BnslPlanList from '@/components/bnsl/BnslPlanList';
 import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
-import CreateBnslPlan from '@/components/bnsl/CreateBnslPlan';
+import CreateBnslPlan, { FULL_TERMS_AND_CONDITIONS } from '@/components/bnsl/CreateBnslPlan';
 import { Card, CardContent } from '@/components/ui/card';
 
 import { useLocation, useSearch } from 'wouter';
@@ -280,6 +280,7 @@ export default function BNSL() {
             templateVersion: 'V3-2025-12-09',
             signatureName: signatureData.signatureName,
             signedAt: signatureData.signedAt,
+            termsAndConditions: FULL_TERMS_AND_CONDITIONS,
             planDetails: {
               tenorMonths,
               goldSoldGrams,

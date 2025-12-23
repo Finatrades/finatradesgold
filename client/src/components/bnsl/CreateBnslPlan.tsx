@@ -35,7 +35,7 @@ interface CreateBnslPlanProps {
   onSuccess: (plan: Partial<BnslPlan>, signatureData: { signatureName: string; signedAt: string }) => void;
 }
 
-const FULL_TERMS_AND_CONDITIONS = `TERMS AND CONDITIONS FOR BNSL - BUY NOW SELL LATER PLAN
+export const FULL_TERMS_AND_CONDITIONS = `TERMS AND CONDITIONS FOR BNSL - BUY NOW SELL LATER PLAN
 Last Updated: 09/12/2025, V3
 
 1. INTRODUCTION AND ACCEPTANCE

@@ -1413,6 +1413,8 @@ export const bnslAgreements = pgTable("bnsl_agreements", {
   signatureName: varchar("signature_name", { length: 255 }).notNull(),
   signedAt: timestamp("signed_at").notNull(),
   
+  termsAndConditions: text("terms_and_conditions"),
+  
   pdfPath: text("pdf_path"),
   pdfFileName: varchar("pdf_file_name", { length: 255 }),
   
