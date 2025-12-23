@@ -166,11 +166,14 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-bold text-foreground text-sm">{
-                            // Show "Buy Gold" for deposits that result in gold
-                            tx.type === 'Deposit' && tx.amountGrams && tx.amountGrams > 0 
-                              ? 'Buy' 
-                              : tx.type
-                          } {tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}</p>
+                            // Deposit Physical Gold for FinaVault physical deposits
+                            tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
+                              ? 'Deposit Physical Gold'
+                              // Acquire Gold for bank/card/crypto deposits that result in gold
+                              : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
+                              ? 'Acquire Gold' 
+                              : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`
+                          }</p>
                           {tx.status === 'Completed' && (tx.type === 'Send' || tx.type === 'Receive') && (
                              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">P2P</span>
                           )}
