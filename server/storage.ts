@@ -1,7 +1,7 @@
 import { 
   users, wallets, transactions, vaultHoldings, kycSubmissions,
   bnslPlans, bnslPayouts, bnslEarlyTerminations, bnslWallets,
-  bnslPlanTemplates, bnslTemplateVariants, bnslAgreements,
+  bnslPlanTemplates, bnslTemplateVariants, bnslAgreements, finabridgeAgreements,
   tradeCases, tradeDocuments,
   tradeRequests, tradeProposals, forwardedProposals, tradeConfirmations,
   finabridgeWallets, settlementHolds, dealRooms, dealRoomMessages,
@@ -31,6 +31,7 @@ import {
   type BnslPlanTemplate, type InsertBnslPlanTemplate,
   type BnslTemplateVariant, type InsertBnslTemplateVariant,
   type BnslAgreement, type InsertBnslAgreement,
+  type FinabridgeAgreement, type InsertFinabridgeAgreement,
   type TradeCase, type InsertTradeCase,
   type TradeDocument, type InsertTradeDocument,
   type TradeRequest, type InsertTradeRequest,
@@ -300,6 +301,12 @@ export interface IStorage {
   getAllBnslAgreements(): Promise<BnslAgreement[]>;
   createBnslAgreement(agreement: InsertBnslAgreement): Promise<BnslAgreement>;
   updateBnslAgreement(id: string, updates: Partial<BnslAgreement>): Promise<BnslAgreement | undefined>;
+  
+  // FinaBridge Agreements
+  getFinabridgeAgreement(id: string): Promise<FinabridgeAgreement | undefined>;
+  getUserFinabridgeAgreements(userId: string): Promise<FinabridgeAgreement[]>;
+  getAllFinabridgeAgreements(): Promise<FinabridgeAgreement[]>;
+  createFinabridgeAgreement(agreement: InsertFinabridgeAgreement): Promise<FinabridgeAgreement>;
   
   // Trade Cases
   getTradeCase(id: string): Promise<TradeCase | undefined>;
@@ -990,6 +997,25 @@ export class DatabaseStorage implements IStorage {
   async updateBnslAgreement(id: string, updates: Partial<BnslAgreement>): Promise<BnslAgreement | undefined> {
     const [agreement] = await db.update(bnslAgreements).set(updates).where(eq(bnslAgreements.id, id)).returning();
     return agreement || undefined;
+  }
+
+  // FinaBridge Agreements
+  async getFinabridgeAgreement(id: string): Promise<FinabridgeAgreement | undefined> {
+    const [agreement] = await db.select().from(finabridgeAgreements).where(eq(finabridgeAgreements.id, id));
+    return agreement || undefined;
+  }
+
+  async getUserFinabridgeAgreements(userId: string): Promise<FinabridgeAgreement[]> {
+    return await db.select().from(finabridgeAgreements).where(eq(finabridgeAgreements.userId, userId)).orderBy(desc(finabridgeAgreements.createdAt));
+  }
+
+  async getAllFinabridgeAgreements(): Promise<FinabridgeAgreement[]> {
+    return await db.select().from(finabridgeAgreements).orderBy(desc(finabridgeAgreements.createdAt));
+  }
+
+  async createFinabridgeAgreement(insertAgreement: InsertFinabridgeAgreement): Promise<FinabridgeAgreement> {
+    const [agreement] = await db.insert(finabridgeAgreements).values(insertAgreement).returning();
+    return agreement;
   }
 
   // Trade Cases
