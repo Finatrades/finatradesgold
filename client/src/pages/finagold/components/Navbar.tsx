@@ -74,7 +74,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
               <img 
                 src={finatradesLogo} 
                 alt="Finatrades" 
-                className="h-10 w-auto"
+                className="h-10 w-auto brightness-0 invert"
                 data-testid="logo-finatrades"
               />
             </a>
