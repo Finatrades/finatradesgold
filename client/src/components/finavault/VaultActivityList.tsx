@@ -538,7 +538,15 @@ export default function VaultActivityList() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{tx.type}</span>
+                      <span className="font-medium">{
+                        // Deposit Physical Gold for actual physical vault deposits
+                        tx.description?.includes('Physical Gold Deposit') 
+                          ? 'Deposit Physical Gold'
+                          // Acquire Gold for bank/card/crypto purchases shown as Vault Deposit
+                          : tx.type === 'Vault Deposit' && tx.description === 'Gold Purchase'
+                          ? 'Acquire Gold'
+                          : tx.type
+                      }</span>
                       {tx.certificates.length > 0 && (
                         <Badge variant="outline" className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30">
                           <Award className="w-3 h-3 mr-1" />
