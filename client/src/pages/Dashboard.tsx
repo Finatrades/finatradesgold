@@ -103,9 +103,17 @@ export default function Dashboard() {
         )}
 
         {/* Header Section */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back, {userName}</h1>
-          <p className="text-gray-500 text-sm">Here's an overview of your portfolio performance</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {userName}</h1>
+            <p className="text-gray-500 text-sm">Here's an overview of your portfolio performance</p>
+          </div>
+          {user.finatradesId && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-xl">
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Finatrades ID</span>
+              <span className="text-sm font-bold text-purple-700 font-mono">{user.finatradesId}</span>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
