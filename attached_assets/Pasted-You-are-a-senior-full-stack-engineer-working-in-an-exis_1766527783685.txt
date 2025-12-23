@@ -1,0 +1,132 @@
+You are a senior full-stack engineer working in an existing Finatrades codebase (FinaPay + FinaVault + BNSL).
+Implement the BNSL module end-to-end with audit-ready logic. Do NOT add crypto terms. BNSL is “Gold Price Fix + Hold”.
+
+GOAL
+When a user moves value from FinaPay → BNSL, the system:
+1) Locks gold grams in FinaVault as BNSL_LOCKED
+2) Fixes the entry price per gram (locked_price_per_gram)
+3) Shows a stable “locked USD value” during the plan
+4) On maturity or early exit (if allowed), unlocks grams back to FinaPay and revalues at current price
+5) Writes immutable ledger + audit log events
+6) Generates/update certificates status (Ownership certificate marked “Restricted” during lock; Storage certificate unchanged)
+7) Adds clear UI narration for users + admin
+
+BUSINESS RULES
+- User balance model:
+  - FinaPay shows spendable grams (available_grams) + USD display
+  - FinaVault has buckets:
+    - available_grams
+    - locked_bnsl_grams
+    - reserved_trade_grams (existing)
+- BNSL is NOT interest, NOT yield, NOT lending.
+- Locked value display:
+  locked_value_usd = locked_grams * locked_price_per_gram (fixed for the plan)
+- Exit value at unlock:
+  exit_value_usd = locked_grams * current_price_per_gram (revalued at exit)
+- Optional “holding benefit” is allowed only as separate “loyalty allocation” in grams (no promises, configurable, default OFF).
+
+DATA MODEL (create migrations if missing)
+Tables:
+1) bnsl_plans:
+   - id, name, duration_days, early_exit_allowed (bool), early_exit_fee_bps (int default 0),
+   - benefit_bps (int default 0), is_active
+2) bnsl_positions:
+   - id, user_id, plan_id, status ENUM('ACTIVE','MATURED','EARLY_EXIT','CANCELLED'),
+   - entry_price_per_gram (decimal),
+   - locked_grams (decimal),
+   - locked_value_usd (decimal),
+   - start_at, maturity_at, end_at nullable,
+   - benefit_grams (decimal default 0),
+   - created_at, updated_at
+3) vault_ledger_entries (use existing if present):
+   - add types: 'BNSL_LOCK','BNSL_UNLOCK','BNSL_BENEFIT'
+   - store grams_delta, usd_reference, price_per_gram_reference, related_position_id
+4) audit_logs (use existing):
+   - log BNSL_ACTIVATED, BNSL_MATURED, BNSL_EARLY_EXIT, BNSL_UNLOCKED
+
+API ENDPOINTS (REST)
+- GET /api/bnsl/plans  -> list active plans
+- POST /api/bnsl/activate
+  body: { planId, amountUsd? , grams? }
+  behavior:
+   a) determine grams: if amountUsd provided -> grams = amountUsd / current_price_per_gram (rounded to platform precision)
+   b) validate user has sufficient FinaPay available_grams
+   c) create bnsl_position with entry_price_per_gram=current_price_per_gram
+   d) move grams from finapay available to finavault locked_bnsl_grams
+   e) create ledger entry BNSL_LOCK + audit log
+   f) return position + updated balances + narration strings
+
+- POST /api/bnsl/withdraw (maturity or early exit)
+  body: { positionId }
+  behavior:
+   a) load position; validate ownership + status ACTIVE
+   b) determine now and if matured (now >= maturity_at)
+   c) if not matured and early_exit_allowed=false -> reject
+   d) compute exit_value_usd = locked_grams * current_price_per_gram
+   e) compute optional fee if early exit: fee_usd = exit_value_usd * early_exit_fee_bps/10000
+      (fee handled as separate ledger line; do not “burn” user gold, just record fee in USD reference and/or grams deduction only if your policy does it—default record-only)
+   f) unlock grams: decrease finavault locked_bnsl_grams; increase finapay available_grams
+   g) if benefit_bps > 0 and (matured): benefit_grams = locked_grams * benefit_bps/10000 (credit as separate allocation from platform reserve) 
+   h) write ledger BNSL_UNLOCK (and BNSL_BENEFIT if applicable) + audit log
+   i) update certificates: ownership certificate status back to “Active”; during lock show “Restricted”
+   j) return updated balances + position + narration
+
+- GET /api/bnsl/positions -> list user positions (active/history)
+- GET /api/bnsl/positions/:id -> details including entry price, locked value, maturity, current price, exit estimate
+
+PRICING SERVICE
+Use existing gold price feed. If price API fails, use fallback:
+- last_known_price stored in DB + timestamp
+- block activation/withdraw if stale beyond threshold (e.g., 15 min), show error:
+  “Price temporarily unavailable. Please try again shortly.”
+
+TRANSACTIONAL INTEGRITY
+All activate/withdraw operations must be atomic:
+- Use DB transactions
+- Row-level locks on wallet/vault balances
+- Prevent double-withdraw
+
+UI (User)
+Create/Update screens:
+1) BNSL Plans List (cards):
+   - Plan name, duration, early exit allowed, “Fixed Price Lock”
+2) Activate modal:
+   - input USD or grams, show converted grams and locked value
+   - show narration:
+     “Your gold will be locked at today’s price and cannot be transferred until maturity.”
+3) Positions:
+   - Active: locked grams, fixed entry price, locked USD value, maturity date, “Estimated value today” (using current price as reference)
+   - Withdraw button only when eligible
+
+UI (Admin)
+Admin panel page:
+- View all positions
+- Filter by status, plan, date
+- Inspect ledger + audit trail
+- Manual override (optional, behind role) to force unlock with reason (creates special audit log)
+
+NARRATION STRINGS (must be consistent)
+- On activate:
+  “BNSL Activated: {locked_grams}g locked at ${entry_price}/g. Locked value ${locked_value_usd}. Transfer/sell disabled until {maturity_date}.”
+- On withdraw:
+  “BNSL Closed: {locked_grams}g released. Current price ${current_price}/g. Reference value ${exit_value_usd}. (No guaranteed returns.)”
+
+TESTS
+Add automated tests:
+- activate with USD amount
+- activate with grams
+- insufficient balance
+- withdraw before maturity when early_exit_allowed=false
+- withdraw on maturity
+- double-withdraw prevented
+- price feed fallback behavior
+
+DELIVERABLES
+- DB migrations
+- API routes + controllers/services
+- UI pages/components
+- Ledger + audit log integration
+- Unit/integration tests
+- Ensure lint/build passes
+
+Start by scanning the codebase to reuse existing wallet/vault/ledger models and patterns, then implement only what’s missing.
