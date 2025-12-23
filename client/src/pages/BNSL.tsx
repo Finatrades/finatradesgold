@@ -4,12 +4,235 @@ import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2, Coins } from 'lucide-react';
+import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2, Coins, FileText, Eye, Download, CheckCircle } from 'lucide-react';
 import { BnslPlan, BnslPlanStatus, BnslMarginPayout } from '@/types/bnsl';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useBnsl } from '@/context/BnslContext';
 import { generateBnslAgreement } from '@/utils/generateBnslPdf';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+// Components - import early for use in SignedAgreementsSection
+import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
+import BnslWalletCard from '@/components/bnsl/BnslWalletCard';
+import BnslPlanList from '@/components/bnsl/BnslPlanList';
+import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
+import CreateBnslPlan, { FULL_TERMS_AND_CONDITIONS } from '@/components/bnsl/CreateBnslPlan';
+import { Card, CardContent } from '@/components/ui/card';
+
+// Signed Agreements Section Component
+function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: BnslPlan[] }) {
+  const [agreements, setAgreements] = useState<any[]>([]);
+  const [selectedAgreement, setSelectedAgreement] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    
+    async function fetchAgreements() {
+      try {
+        const response = await fetch(`/api/bnsl/agreements/user/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAgreements(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch agreements:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchAgreements();
+  }, [userId]);
+
+  const activePlansWithAgreements = plans.filter(p => 
+    p.status === 'Active' || p.status === 'Matured' || p.status === 'Early Terminated'
+  );
+
+  const getAgreementForPlan = (planId: number) => {
+    return agreements.find(a => a.planId === planId);
+  };
+
+  const handleDownloadPdf = async (plan: BnslPlan, agreement: any) => {
+    try {
+      const pdfBlob = await generateBnslAgreement({
+        planId: plan.id,
+        goldGrams: plan.goldSoldGrams,
+        lockInMonths: plan.lockInMonths,
+        lockedPrice: plan.lockedPricePerGram,
+        marginRate: plan.marginRate,
+        startDate: new Date(plan.startDate),
+        maturityDate: new Date(plan.maturityDate),
+        totalSaleValue: plan.totalSaleValueUsd,
+        baseComponent: plan.basePriceComponentUsd,
+        marginComponent: plan.totalMarginComponentUsd,
+        userName: agreement?.signerName || 'User',
+        signedDate: agreement?.signedAt ? new Date(agreement.signedAt) : new Date()
+      });
+      
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BNSL-Agreement-Plan-${plan.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white shadow-sm border border-border">
+        <CardContent className="p-6 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white shadow-sm border border-border">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <FileText className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-foreground">Your Signed Agreements</h3>
+            <p className="text-sm text-muted-foreground">View and download your BNSL plan agreements</p>
+          </div>
+        </div>
+
+        {activePlansWithAgreements.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">No signed agreements yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Create a BNSL plan to generate your first agreement</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {activePlansWithAgreements.map(plan => {
+              const agreement = getAgreementForPlan(plan.id);
+              return (
+                <div 
+                  key={plan.id}
+                  className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-success-muted flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-success" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-foreground">
+                          Plan #{plan.id} - {plan.goldSoldGrams.toFixed(2)}g Gold
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {plan.lockInMonths} months | {plan.marginRate}% margin | 
+                          Signed: {agreement?.signedAt 
+                            ? new Date(agreement.signedAt).toLocaleDateString() 
+                            : new Date(plan.startDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedAgreement({ plan, agreement })}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                          <DialogHeader>
+                            <DialogTitle>BNSL Agreement - Plan #{plan.id}</DialogTitle>
+                          </DialogHeader>
+                          <div className="flex-1 overflow-y-auto">
+                            <div className="bg-muted/30 rounded-lg border border-border p-4 mb-4">
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">Gold Sold:</span>
+                                  <span className="ml-2 font-semibold">{plan.goldSoldGrams.toFixed(4)} g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Lock-in Period:</span>
+                                  <span className="ml-2 font-semibold">{plan.lockInMonths} months</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Margin Rate:</span>
+                                  <span className="ml-2 font-semibold">{plan.marginRate}%</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Locked Price:</span>
+                                  <span className="ml-2 font-semibold">${plan.lockedPricePerGram.toFixed(2)}/g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Start Date:</span>
+                                  <span className="ml-2 font-semibold">{new Date(plan.startDate).toLocaleDateString()}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Maturity Date:</span>
+                                  <span className="ml-2 font-semibold">{new Date(plan.maturityDate).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {agreement?.signerName && (
+                              <div className="bg-success-muted/50 rounded-lg border border-success/20 p-4 mb-4">
+                                <p className="text-sm font-medium text-success-muted-foreground">
+                                  Signed by: <span className="font-bold">{agreement.signerName}</span>
+                                </p>
+                                <p className="text-xs text-success-muted-foreground mt-1">
+                                  Date: {new Date(agreement.signedAt).toLocaleString()} | Version: {agreement.termsVersion || 'V3-2025-12-09'}
+                                </p>
+                              </div>
+                            )}
+
+                            <div className="bg-muted/30 rounded-lg border border-border p-6 max-h-[50vh] overflow-y-auto">
+                              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                                {agreement?.termsAndConditions || FULL_TERMS_AND_CONDITIONS}
+                              </pre>
+                            </div>
+                          </div>
+                          <div className="pt-4 border-t border-border">
+                            <Button onClick={() => handleDownloadPdf(plan, agreement)}>
+                              <Download className="w-4 h-4 mr-2" />
+                              Download PDF
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDownloadPdf(plan, agreement)}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Master Agreement Reference:</strong> Version V3-2025-12-09 | 
+            All agreements are governed by the terms accepted at the time of plan creation.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 // Helper: Calculate daily margin for a plan
 function calculateDailyMargin(plan: BnslPlan): number {
@@ -29,14 +252,6 @@ function calculateAccruedMargin(plan: BnslPlan): number {
   const dailyMargin = calculateDailyMargin(plan);
   return Math.min(dailyMargin * daysSinceStart, plan.totalMarginComponentUsd);
 }
-
-// Components
-import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
-import BnslWalletCard from '@/components/bnsl/BnslWalletCard';
-import BnslPlanList from '@/components/bnsl/BnslPlanList';
-import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
-import CreateBnslPlan, { FULL_TERMS_AND_CONDITIONS } from '@/components/bnsl/CreateBnslPlan';
-import { Card, CardContent } from '@/components/ui/card';
 
 import { useLocation, useSearch } from 'wouter';
 
@@ -552,30 +767,7 @@ export default function BNSL() {
             </TabsContent>
 
             <TabsContent value="terms" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
-               <Card className="bg-white shadow-sm border border-border">
-                 <CardContent className="p-6">
-                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Info className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-foreground">BNSL Master Agreement</h3>
-                        <p className="text-sm text-muted-foreground">Version: V3-2025-12-09 | Last Updated: December 9, 2025</p>
-                      </div>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg border border-border p-6 max-h-[60vh] overflow-y-auto">
-                      <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-                        {FULL_TERMS_AND_CONDITIONS}
-                      </pre>
-                    </div>
-                    <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <p className="text-sm text-muted-foreground">
-                        <strong className="text-foreground">Note:</strong> By enrolling in any BNSL plan, you agree to be bound by these terms and conditions. 
-                        A copy of your signed agreement is saved and can be viewed from your plan details at any time.
-                      </p>
-                    </div>
-                 </CardContent>
-               </Card>
+               <SignedAgreementsSection userId={user?.id} plans={plans} />
             </TabsContent>
           </Tabs>
         )}
