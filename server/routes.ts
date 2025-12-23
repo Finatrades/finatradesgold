@@ -8054,6 +8054,7 @@ ${message}
         transferTxId = transferTx.id;
 
         // Create ledger entry for audit trail
+        const balanceAfterGrams = freshAvailableGold - gramsToLock;
         await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'FinaPay_To_BNSL',
@@ -8064,6 +8065,7 @@ ${message}
           toWallet: 'BNSL',
           fromStatus: 'Available',
           toStatus: 'Locked_BNSL',
+          balanceAfterGrams: balanceAfterGrams.toFixed(6),
           transactionId: transferTx.id,
           notes: `BNSL Hedged Deposit: ${gramsToLock.toFixed(4)}g locked at entry price $${goldPrice.toFixed(2)}/g. Position ID: ${position.id}`,
           createdBy: 'system',
