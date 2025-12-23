@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 // Components - import early for use in SignedAgreementsSection
 import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
-import BnslWalletCard from '@/components/bnsl/BnslWalletCard';
 import BnslHedgedWalletCard from '@/components/bnsl/BnslHedgedWalletCard';
 import BnslPlanList from '@/components/bnsl/BnslPlanList';
 import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
@@ -641,16 +640,6 @@ export default function BNSL() {
             </div>
           </div>
         </div>
-
-        {/* WALLET STRIP */}
-        <BnslWalletCard 
-          bnslBalanceGold={bnslWalletBalance}
-          lockedBalanceGold={totalLockedGold}
-          finaPayBalanceGold={finaPayGoldBalance}
-          onTransferFromFinaPay={handleTransferFromFinaPay}
-          onWithdrawToFinaPay={handleWithdrawToFinaPay}
-          currentGoldPrice={currentGoldPrice}
-        />
 
         {/* HEDGED WALLET - Fixed Entry Price Module */}
         <BnslHedgedWalletCard 
