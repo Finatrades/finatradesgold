@@ -2084,6 +2084,68 @@ ${message}
     }
   });
 
+  // Admin Pending Counts for Sidebar Badges
+  app.get("/api/admin/pending-counts", ensureAdminAsync, async (req, res) => {
+    try {
+      const [kycSubmissions, allTransactions, allDepositRequests] = await Promise.all([
+        storage.getAllKycSubmissions(),
+        storage.getAllTransactions(),
+        storage.getAllDepositRequests()
+      ]);
+
+      const pendingKyc = kycSubmissions.filter(k => k.status === 'In Progress').length;
+      const pendingTransactions = allTransactions.filter(tx => tx.status === 'Pending').length;
+      const pendingDeposits = allDepositRequests.filter(d => d.status === 'Pending' || d.status === 'Under Review').length;
+      
+      let pendingWithdrawals = 0;
+      let pendingVaultRequests = 0;
+      let pendingTradeCases = 0;
+      let pendingBnslRequests = 0;
+      let unreadChats = 0;
+
+      try {
+        const allWithdrawals = await db.select().from(withdrawalRequests);
+        pendingWithdrawals = allWithdrawals.filter((w: any) => 
+          w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing'
+        ).length;
+      } catch (e) { /* table may not exist */ }
+
+      try {
+        const allVaultRequests = await db.select().from(vaultHoldings);
+        pendingVaultRequests = allVaultRequests.filter((v: any) => v.status === 'pending' || v.status === 'processing').length;
+      } catch (e) { /* table may not exist */ }
+
+      try {
+        const allTrades = await db.select().from(tradeCases);
+        pendingTradeCases = allTrades.filter((t: any) => t.status === 'pending_review' || t.status === 'open').length;
+      } catch (e) { /* table may not exist */ }
+
+      try {
+        const allBnsl = await db.select().from(bnslPlans);
+        pendingBnslRequests = allBnsl.filter((b: any) => b.status === 'Pending Termination' || b.status === 'Pending').length;
+      } catch (e) { /* table may not exist */ }
+
+      try {
+        const allChats = await db.select().from(chatSessions);
+        unreadChats = allChats.filter((c: any) => c.status === 'active' || c.status === 'waiting').length;
+      } catch (e) { /* table may not exist */ }
+
+      res.json({
+        pendingKyc,
+        pendingTransactions,
+        pendingDeposits,
+        pendingWithdrawals,
+        pendingVaultRequests,
+        pendingTradeCases,
+        pendingBnslRequests,
+        unreadChats
+      });
+    } catch (error) {
+      console.error("Failed to get pending counts:", error);
+      res.status(400).json({ message: "Failed to get pending counts" });
+    }
+  });
+
   // System Health Check (Admin)
   app.get("/api/admin/system-health", ensureAdminAsync, async (req, res) => {
     const startTime = process.hrtime();

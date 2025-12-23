@@ -26,6 +26,7 @@ import {
   Paperclip,
   X
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -82,6 +83,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: pendingCounts } = useQuery({
+    queryKey: ['/api/admin/pending-counts'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/pending-counts');
+      if (!res.ok) return null;
+      return res.json();
+    },
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
   const employeePermissions: string[] = employeeData?.employee?.permissions || [];
   // If no employee record exists, this is an original admin account with full access
   // Also grant full access if the employee role is super_admin
@@ -109,6 +121,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!user || user.role !== 'admin' || (!adminPortal && !isAdminSession)) {
     return <Redirect to="/admin/login" />;
   }
+
+  const getBadgeCount = (href: string): number => {
+    if (!pendingCounts) return 0;
+    const countMap: Record<string, number> = {
+      '/admin/kyc': pendingCounts.pendingKyc || 0,
+      '/admin/transactions': pendingCounts.pendingTransactions || 0,
+      '/admin/finapay': pendingCounts.pendingDeposits + pendingCounts.pendingWithdrawals || 0,
+      '/admin/vault': pendingCounts.pendingVaultRequests || 0,
+      '/admin/finabridge': pendingCounts.pendingTradeCases || 0,
+      '/admin/bnsl': pendingCounts.pendingBnslRequests || 0,
+      '/admin/chat': pendingCounts.unreadChats || 0,
+    };
+    return countMap[href] || 0;
+  };
 
   const menuSections = [
     {
@@ -210,24 +236,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <p className="px-4 text-xs font-semibold text-primary uppercase tracking-wider mb-3">
                     {section.title}
                   </p>
-                  {visibleItems.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <div 
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                          isActive(item.href) 
-                            ? 'bg-primary text-primary-foreground shadow-md' 
-                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                        }`}
-                        onClick={() => setSidebarOpen(false)}
-                        data-testid={`admin-sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
-                      >
-                        <div className={isActive(item.href) ? 'text-primary-foreground' : ''}>
-                          {item.icon}
+                  {visibleItems.map((item) => {
+                    const badgeCount = getBadgeCount(item.href);
+                    return (
+                      <Link key={item.href} href={item.href}>
+                        <div 
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
+                            isActive(item.href) 
+                              ? 'bg-primary text-primary-foreground shadow-md' 
+                              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                          }`}
+                          onClick={() => setSidebarOpen(false)}
+                          data-testid={`admin-sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
+                        >
+                          <div className={isActive(item.href) ? 'text-primary-foreground' : ''}>
+                            {item.icon}
+                          </div>
+                          <span className="font-medium text-sm flex-1">{item.label}</span>
+                          {badgeCount > 0 && (
+                            <Badge 
+                              variant="destructive" 
+                              className={`min-w-[20px] h-5 px-1.5 text-[10px] font-bold ${
+                                isActive(item.href) 
+                                  ? 'bg-white text-primary' 
+                                  : 'bg-destructive text-destructive-foreground'
+                              }`}
+                            >
+                              {badgeCount > 99 ? '99+' : badgeCount}
+                            </Badge>
+                          )}
                         </div>
-                        <span className="font-medium text-sm">{item.label}</span>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               );
             })}
