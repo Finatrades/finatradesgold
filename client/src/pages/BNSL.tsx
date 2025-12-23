@@ -21,7 +21,7 @@ import CreateBnslPlan, { FULL_TERMS_AND_CONDITIONS } from '@/components/bnsl/Cre
 import { Card, CardContent } from '@/components/ui/card';
 
 // Signed Agreements Section Component
-function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: BnslPlan[] }) {
+function SignedAgreementsSection({ userId, plans }: { userId?: string; plans: BnslPlan[] }) {
   const [agreements, setAgreements] = useState<any[]>([]);
   const [selectedAgreement, setSelectedAgreement] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,36 +47,36 @@ function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: Bn
   }, [userId]);
 
   const activePlansWithAgreements = plans.filter(p => 
-    p.status === 'Active' || p.status === 'Matured' || p.status === 'Early Terminated'
+    p.status === 'Active' || p.status === 'Completed' || p.status === 'Early Terminated'
   );
 
-  const getAgreementForPlan = (planId: number) => {
+  const getAgreementForPlan = (planId: string) => {
     return agreements.find(a => a.planId === planId);
   };
 
   const handleDownloadPdf = async (plan: BnslPlan, agreement: any) => {
     try {
-      const pdfBlob = await generateBnslAgreement({
-        planId: plan.id,
-        goldGrams: Number(plan.goldSoldGrams),
-        lockInMonths: plan.tenorMonths,
-        lockedPrice: Number(plan.enrollmentPriceUsdPerGram),
-        marginRate: Number(plan.agreedMarginAnnualPercent),
-        startDate: new Date(plan.startDate),
-        maturityDate: new Date(plan.maturityDate),
-        totalSaleValue: Number(plan.totalSaleProceedsUsd),
-        baseComponent: Number(plan.basePriceComponentUsd),
-        marginComponent: Number(plan.totalMarginComponentUsd),
-        userName: agreement?.signatureName || 'User',
-        signedDate: agreement?.signedAt ? new Date(agreement.signedAt) : new Date()
-      });
+      const planData = {
+        id: plan.id,
+        tenorMonths: plan.tenorMonths,
+        goldSoldGrams: Number(plan.goldSoldGrams),
+        enrollmentPriceUsdPerGram: Number(plan.enrollmentPriceUsdPerGram),
+        agreedMarginAnnualPercent: Number(plan.agreedMarginAnnualPercent),
+        basePriceComponentUsd: Number(plan.basePriceComponentUsd),
+        totalMarginComponentUsd: Number(plan.totalMarginComponentUsd),
+        totalSaleProceedsUsd: Number(plan.totalSaleProceedsUsd),
+        startDate: plan.startDate,
+        maturityDate: plan.maturityDate
+      };
       
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `BNSL-Agreement-Plan-${plan.id}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const user = { name: agreement?.signatureName || 'User' };
+      const signatureData = agreement?.signatureName ? {
+        signatureName: agreement.signatureName,
+        signedAt: agreement.signedAt
+      } : undefined;
+      
+      const doc = generateBnslAgreement(planData, user, signatureData);
+      doc.save(`BNSL-Agreement-Plan-${plan.id}.pdf`);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
     }
@@ -225,8 +225,8 @@ function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: Bn
 
         <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
           <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Master Agreement Reference:</strong> Version V3-2025-12-09 | 
-            All agreements are governed by the terms accepted at the time of plan creation.
+            <strong className="text-foreground">Master Agreement Reference:</strong> Current terms apply at the time of plan creation. 
+            Each signed agreement records the specific version accepted.
           </p>
         </div>
       </CardContent>
