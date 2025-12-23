@@ -32,7 +32,7 @@ const content = {
       { icon: FileText, number: '07', title: 'Reporting & Audit Controls', description: 'Access detailed reports for accounting, governance, and external audits.' },
     ],
     cta: 'Explore Business Platform',
-    ctaHref: '/dashboard',
+    ctaHref: '/register?type=business',
   },
 };
 

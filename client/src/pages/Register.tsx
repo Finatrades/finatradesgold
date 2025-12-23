@@ -17,7 +17,11 @@ export default function Register() {
   const { login } = useAuth();
   const [, setLocation] = useLocation();
   
-  const [accountType, setAccountType] = useState<AccountType>('personal');
+  // Read initial account type from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialType = urlParams.get('type') === 'business' ? 'business' : 'personal';
+  
+  const [accountType, setAccountType] = useState<AccountType>(initialType);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
