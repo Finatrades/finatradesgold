@@ -159,8 +159,13 @@ export default function Hero() {
                     
                     {/* Header with logo and chip */}
                     <div className="flex justify-between items-start mb-8 relative z-10">
-                      <div className="flex items-center gap-3">
-                        <img src={finatradesLogo} alt="Finatrades" className="h-10 w-auto" />
+                      <div className="flex items-center gap-2">
+                        {/* White and purple text logo */}
+                        <span className="text-xl font-bold">
+                          <span className="text-white">Fina</span>
+                          <span className="text-[#A342FF]">trades</span>
+                        </span>
+                        <span className="text-[#A342FF] text-lg">✦</span>
                       </div>
                       {/* Gold chip */}
                       <div className="w-14 h-10 rounded-lg bg-gradient-to-br from-[#EAC26B] via-[#F5D98A] to-[#d4af5a] shadow-lg relative overflow-hidden">
