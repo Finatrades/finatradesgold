@@ -465,7 +465,8 @@ export async function registerRoutes(
       const finabridgeGoldGrams = parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0');
       const finabridgeGoldValueUsd = finabridgeGoldGrams * goldPrice;
       
-      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance + finabridgeGoldValueUsd;
+      // Total Portfolio: wallet gold (which equals vault holdings - same gold, not double counted) + USD balance + FinaBridge gold
+      const totalPortfolioUsd = (walletGoldGrams * goldPrice) + walletUsdBalance + finabridgeGoldValueUsd;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
       // Include both 'Pending' and 'Under Review' statuses as pending
