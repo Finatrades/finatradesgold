@@ -35,8 +35,7 @@ interface CreateBnslPlanProps {
   onSuccess: (plan: Partial<BnslPlan>, signatureData: { signatureName: string; signedAt: string }) => void;
 }
 
-const FULL_TERMS_AND_CONDITIONS = `
-TERMS AND CONDITIONS FOR BNSL - BUY NOW SELL LATER PLAN
+const FULL_TERMS_AND_CONDITIONS = `TERMS AND CONDITIONS FOR BNSL - BUY NOW SELL LATER PLAN
 Last Updated: 09/12/2025, V3
 
 1. INTRODUCTION AND ACCEPTANCE
@@ -75,7 +74,7 @@ c) Total Sale Proceeds: The sum of the Base Price Component and the Margin Compo
 
 4. MATURITY
 
-4.1. Maturity Definition: The Plan reaches maturity at the end of the selected term.
+4.1. Maturity Definition: The Plan reaches maturity at the end of the selected term (12, 24, or 36 months from the start date).
 
 4.2. Automatic Settlement Process: Upon maturity, settlement of your Base Price Component occurs automatically without requiring any action from you.
 
@@ -83,7 +82,7 @@ c) Total Sale Proceeds: The sum of the Base Price Component and the Margin Compo
 
 4.4. Timing of Settlement: The credit of these gold grams to your Fina wallet will be completed within three (3) business days of the Maturity Date. You will receive notification confirming the settlement.
 
-4.5. Post-Maturity Status: After maturity and settlement, your relationship under this Plan terminates. You may continue to hold the gold grams in your Fina wallet subject to the Platform's general terms and conditions.
+4.5. Post-Maturity Status: After maturity and settlement, your relationship under this Plan terminates. You may continue to hold the gold grams in your Fina wallet subject to the Platform's general terms and conditions, or you may choose to sell, transfer, or utilize them according to Platform functionalities.
 
 5. EARLY TERMINATION & BREACH OF CONTRACT
 
@@ -92,49 +91,132 @@ c) Total Sale Proceeds: The sum of the Base Price Component and the Margin Compo
 5.2. Settlement Calculation upon Early Termination: The final settlement in gold in grams is determined as follows:
 
 Step 1: Base Price Component Valuation. The value of your original Base Price Component is calculated based on the current market price.
-- If current market price < Enrollment Price: Base Price Component is valued at current lower market price.
-- If current market price >= Enrollment Price: Base Price Component is valued at original face value.
+- If the current market price of gold is LOWER than the Price at your enrollment (which established your Base Price Component), your Base Price Component is valued at the current lower market price.
+- If the current market price of gold is EQUAL TO or HIGHER than your enrollment Price, your Base Price Component is valued at its original face value (the Base Price Component).
 
 Step 2: Deduction of Fees. The total value from Step 1 has the following deductions applied:
-- Administrative Fee: 1% of Total Sale Proceeds
-- Early Withdrawal Penalty: 5% of Total Sale Proceeds
-- Reimbursement of Quarterly Disbursements: The gross monetary value of all Margin Component disbursements received to date.
+- Administrative Fee: A fee of 1% of the original Total Sale Proceeds or a fixed fee as specified.
+- Early Withdrawal Penalty: A penalty fee of 5% of the original Total Sale Proceeds.
+- Reimbursement of Quarterly Disbursements: The gross monetary value of all Margin Component disbursements you have received to date is deducted.
 
 Step 3: Final In-Kind Settlement.
-The remaining value after deductions is used to purchase gold at the current market price and credited to your Fina wallet.
-Final Gold Grams = (Base Price Component Value - Sum of All Deductions) / Current Market Price of Gold.
+The remaining value after deductions is used to purchase gold at the current market price. The resulting quantity of gold in grams is credited to your Fina wallet.
+Final Gold Grams = (Base Price Component Value from Step 1 - Sum of All Deductions from Step 2) / Current Market Price of Gold.
 
-5.3. Forfeiture of Rights: Upon early termination, all accrued but unpaid future Quarterly Disbursements are immediately forfeited, and you lose entitlement to the deferred Base Price Component payment for the remaining term.
+5.3. Forfeiture of Rights: Upon early termination:
+- All accrued but unpaid future Quarterly Disbursements of the Margin Component are immediately and irrevocably forfeited.
+- You lose any entitlement to the deferred Base Price Component payment for the remaining term.
+- Wingold's obligation to provide Quarterly Disbursements ceases completely.
 
-5.4. Market Conditions Impact: Early termination typically results in substantial financial loss due to penalties and fee deductions, regardless of market price movements.
+5.4. Comprehensive Early Termination Example:
+Original Sale: 100 Gold Grams.
+Price at Enrollment: $1,000/gram.
+Base Price Component: 100g × $1,000 = $100,000 (deferred).
+Agreed Margin: 10% p.a.
+Total Margin Component: $10,000.
+Total Sale Proceeds: $110,000.
+Administrative Fee: 1% of Total Sale Proceeds.
+Early Withdrawal Penalty: 5% of Total Sale Proceeds.
+Received: 2 Quarterly Disbursements totaling $2,500.
+
+Scenario A (Market Price Lower at Termination):
+Current Market Price: $900/gram.
+Step 1: Current price ($900) < Enrollment Price ($1,000). Base Price Component Value = 100 × $900 = $90,000.
+Step 2: Admin Fee (1% of $110,000) = $1,100 + Penalty (5% of $110,000) = $5,500 + Reimbursement ($2,500) = Total Deductions $9,100.
+Step 3: Net Value = $90,000 - $9,100 = $80,900.
+Final Gold Grams = $80,900 / $900 = 89.89 Gold Grams.
+
+Scenario B (Market Price Higher at Termination):
+Current Market Price: $1,100/gram.
+Step 1: Current price ($1,100) > Enrollment Price ($1,000). Base Price Component Value = $100,000 (original face value).
+Step 2: Deductions (same as above) = $9,100.
+Step 3: Net Value = $100,000 - $9,100 = $90,900.
+Final Gold Grams = $90,900 / $1,100 = 82.64 Gold Grams.
+
+The above is for illustrative purposes only and does not represent the actual figures for any specific plan or cost.
+
+5.5. Market Conditions Impact: The example demonstrates that early termination typically results in substantial financial loss due to the combination of penalties, fee deductions, and reimbursement of Margin Component disbursements, regardless of market price movements.
 
 6. PARTICIPANT REPRESENTATIONS AND WARRANTIES
 
 By participating, you represent, warrant, and acknowledge that:
 
-6.1. Understanding of Transaction Structure: You fully understand that this is an immediate sale of your gold. You acknowledge the deferred payment structure and accept that early termination results in severe penalties.
+6.1. Understanding of Transaction Structure: You fully understand and accept that this is an immediate sale of your gold to Wingold. You acknowledge the deferred payment structure, whereby the Base Price Component is paid at maturity and the Margin Component is paid through variable quarterly disbursements of physical gold, the quantity of which depends on the prevailing market price at each distribution date. You further accept that early termination results in severe penalties, reimbursement of disbursements received, and potential significant loss of value.
 
-6.2. Risk Acceptance: You accept all risks associated with the Plan, including variability in physical quantity of margin gold and counterparty performance risk.
+6.2. Risk Acceptance: You accept all risks associated with the Plan, including but not limited to: variability in the physical quantity of gold received from Margin Component disbursements; the severe financial consequences of early termination; and the counterparty performance risk associated with Wingold and Metals DMCC fulfilling its deferred payment obligations.
 
-6.3. No Guarantee of Value: You understand that future market value of gold received cannot be guaranteed.
+6.3. No Guarantee of Value: You understand that while the monetary value of the Margin Component disbursements is fixed, the quantity of physical gold delivered varies with market prices, and the future market value of all gold received cannot be guaranteed.
 
-6.4. Independent Decision: Your participation is based on your own independent assessment.
+6.4. Independent Decision: Your participation is based on your own independent assessment of the terms and is not made in reliance on any guarantee, warranty, or representation regarding future gold prices or investment returns.
 
-6.5. Financial Capacity: You have the financial capacity to sustain the entire Plan term without requiring early access to funds.
+6.5. Financial Capacity: You have the financial capacity to sustain the entire Plan term without requiring early access to the proceeds of the sale, understanding that accessing the deferred Base Price Component early incurs substantial financial loss.
 
-6.6. Tax Responsibilities: You are solely responsible for all tax obligations arising from this transaction.
+6.6. Tax Responsibilities: You are solely responsible for understanding, declaring, and complying with all tax obligations arising from the sale of gold, the receipt of Margin Component disbursements, and the final settlement of the Base Price Component in your jurisdiction of residence.
 
 7. RISKS AND DISCLAIMER
 
-7.1. Early Termination Financial Risk: Exiting before maturity constitutes a breach and will result in substantial financial loss.
+7.1. Early Termination Financial Risk: Exiting the Plan before maturity constitutes a breach of contract and will result in substantial financial loss through the combined effect of administrative fees, early termination penalties, and the mandatory reimbursement of all Margin Component disbursements already received. The illustrative example in Section 5.4 demonstrates that even where a greater quantity of gold is returned, it represents a significant net loss of value.
 
-7.2. Margin Component Quantity Variability Risk: The physical quantity of gold received from disbursements varies inversely with market price.
+7.2. Margin Component Quantity Variability Risk: The physical quantity of gold grams you receive from each quarterly disbursement is inversely related to the prevailing Market Price Gold Price on the payment date. Lower gold prices result in more grams being delivered for the fixed monetary disbursement, while higher gold prices result in fewer grams. This variability means you cannot predict the exact physical quantity of gold you will accumulate from these disbursements over the Plan term.
 
-7.3. Market Price Divergence Risk: If market prices rise significantly, you will not benefit from appreciation on the deferred portion of your sale proceeds.
+7.3. Market Price Divergence Risk: Your Base Price Component is valued at the Current Market Gold Price fixed at your enrollment. If market prices rise significantly above this price during the Plan term, you will not benefit from this appreciation on the deferred portion of your sale proceeds. Conversely, this mechanism protects the nominal value of your Base Price Component if market prices fall.
 
-7.4. Counterparty Risk: Your contractual claims are against Wingold. In the event of Wingold's insolvency, your ability to receive payments may be impaired.
+7.4. Counterparty and Performance Risk: Your entitlement to the deferred Base Price Component and future Margin Component disbursements represents an unsecured contractual obligation of Wingold and Metals DMCC. The Plan's fulfillment depends entirely on Wingold's continuing financial stability and operational capability. Any insolvency, default, or operational failure could result in a partial or total loss of your entitlements.
 
-7.5. Regulatory Risk: Changes in laws or regulations may affect the Plan or your ability to participate.
+7.5. Platform and Operational Risk: The Plan's administration, including disbursements and settlement, depends on the continued operation and technical functionality of the Finatrades Platform. Any prolonged disruption, cyber-attack, technical failure, or cessation of Platform operations could delay or prevent access to your account, the processing of disbursements, or the final settlement.
+
+7.6. Regulatory and Legal Risk: Changes in laws, regulations, or their interpretation in Switzerland, the UAE, or other relevant jurisdictions could affect the Plan's structure, the tax treatment of transactions, its legality, or its continued availability.
+
+7.7. Liquidity Risk: The Base Price Component of your sale proceeds is deferred and illiquid for the duration of the Plan term. You cannot access this value before maturity without triggering the severe early termination penalties, representing a complete lack of liquidity for this portion of your capital for the Plan's duration.
+
+7.8. Inflation and Purchasing Power Risk: While the monetary value of the deferred Base Price Component is fixed, inflation during the Plan term will erode its real purchasing power. Similarly, the fixed monetary value of the Margin Component disbursements will lose purchasing power over time due to inflation.
+
+7.9. No Fiduciary Relationship: Neither Finatrades nor Wingold and Metals DMCC acts as your fiduciary, investment advisor, or financial planner in providing this Plan. You are solely responsible for your decision to participate.
+
+7.10. No Deposit Insurance: The Plan is a commercial sale and purchase contract. It is not a bank deposit, loan, or regulated investment product and is not covered by any deposit insurance scheme, government guarantee, or investor protection program.
+
+8. GOVERNING LAW AND DISPUTE RESOLUTION
+
+8.1. Governing Law: These Terms shall be governed by the substantive laws of Switzerland.
+
+8.2. Exclusive Jurisdiction: Any dispute shall be subject to the exclusive jurisdiction of the competent courts of Geneva, Switzerland.
+
+8.3. Arbitration Alternative: Finatrades and Wingold reserve the right to submit any dispute to binding ICC arbitration in Geneva, in English, with one arbitrator.
+
+8.4. Class Action Waiver: You waive any right to participate in a class, collective, or representative action.
+
+8.5. Limitation Period: Any claim must be filed within one (1) year after it arose.
+
+9. GENERAL PROVISIONS
+
+9.1. Entire Agreement: These Terms constitute the entire agreement.
+
+9.2. Amendment Right: Finatrades reserves the right to amend these Terms. Material changes will be communicated at least thirty (30) days in advance.
+
+9.3. Severability: If any provision is unenforceable, it will be limited to the minimum extent necessary.
+
+9.4. Assignment: You may not assign your rights. Finatrades and Wingold may assign their rights without your consent.
+
+9.5. Force Majeure: Neither party is liable for failure to perform due to circumstances beyond reasonable control.
+
+10. SETTLEMENT ASSURANCE
+
+Raminvest Holding Ltd (DIFC Registration No. 7030), as the governing entity of the Group ecosystem that includes Wingold & Metals DMCC, provides a limited settlement assurance mechanism supported by verified geological gold reserves held through Boudadiya Services SARL under Mining Permit No. 2265 B2-WOMPOU. According to the independent MKDG Geological Audit Report, the in-situ value of these Proven Reserves was estimated at USD 42.134 Billion (USD 42,134,363,570) as of 15 July 2025, based on a gold spot price of USD 3,327.93 per ounce. This assurance, formally recognized under DIFC procedures (SR Reference No. SR-646772), serves solely as an internal group mechanism under which, in the unlikely event Wingold & Metals DMCC cannot meet a specific settlement obligation under this Plan, Raminvest may authorize monetization of corresponding reserves exclusively to discharge that single obligation. It is not a banking guarantee, financial insurance, or customer protection product, and no continuing or residual liability remains with Raminvest thereafter. By participating, you acknowledge this mechanism as a risk-mitigation feature of the ecosystem, while your sole contractual counterparty for all Plan obligations remains Wingold & Metals DMCC.
+
+11. CONTACT INFORMATION
+
+For questions regarding these Terms or the BNSL Plan:
+Finatrades Platform Support
+Email: admin@finatrades.com
+Website: www.finatrades.com/contact
+Address: Rue Robert-Céard 6, 1204 Geneva, Switzerland
+
+For specific questions about the gold sale or payment obligations:
+Contact Wingold and Metals DMCC through the Platform messaging system.
+
+CUSTOMER ACCEPTANCE
+
+By proceeding with enrolment, I acknowledge that I have read, understood, and unconditionally agree to all the Terms and Conditions above. I specifically acknowledge the immediate sale of my gold, the deferred payment structure, the severe penalties for early termination, and all associated risks.
 `;
 
 export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, onSuccess }: CreateBnslPlanProps) {
