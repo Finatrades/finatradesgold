@@ -19,7 +19,7 @@ import {
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
   vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings, vaultDepositRequests,
-  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
+  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, bnslPositions, tradeCases,
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments,
@@ -7890,6 +7890,482 @@ ${message}
     } catch (error) {
       console.error('BNSL withdraw error:', error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to withdraw from BNSL wallet" });
+    }
+  });
+
+  // ============================================================================
+  // BNSL HEDGED/FIXED PRICE MODULE - Deposit and Withdraw with Entry Price Locking
+  // ============================================================================
+
+  // Get user's BNSL positions
+  app.get("/api/bnsl/positions/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const positions = await db.select().from(bnslPositions).where(eq(bnslPositions.userId, userId)).orderBy(desc(bnslPositions.createdAt));
+      res.json({ positions });
+    } catch (error) {
+      console.error('Get BNSL positions error:', error);
+      res.status(400).json({ message: "Failed to get BNSL positions" });
+    }
+  });
+
+  // BNSL Hedged Deposit - Transfer from FinaPay to BNSL with fixed entry price
+  app.post("/api/bnsl/hedged/deposit", ensureAuthenticated, async (req, res) => {
+    try {
+      const { planId, amountUsd } = req.body;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      if (!amountUsd || parseFloat(amountUsd) <= 0) {
+        return res.status(400).json({ message: "Invalid deposit amount" });
+      }
+
+      const depositAmount = parseFloat(amountUsd);
+
+      // 1. Fetch current gold price (entry price) BEFORE transaction
+      let goldPrice: number;
+      let priceSource = 'live';
+      try {
+        goldPrice = await getGoldPricePerGram();
+      } catch {
+        goldPrice = 85.00;
+        priceSource = 'fallback';
+        console.warn('[BNSL Hedged] Using fallback gold price');
+      }
+
+      // 2. Calculate grams to lock at entry price
+      const gramsToLock = depositAmount / goldPrice;
+
+      // 3. Pre-validate wallets before transaction
+      const finapayWallet = await storage.getWallet(userId);
+      if (!finapayWallet) {
+        return res.status(404).json({ message: "FinaPay wallet not found" });
+      }
+
+      const availableGold = parseFloat(finapayWallet.goldGrams);
+      if (availableGold < gramsToLock) {
+        return res.status(400).json({ 
+          message: `Insufficient gold balance. You need ${gramsToLock.toFixed(4)}g but have ${availableGold.toFixed(4)}g`,
+          required: gramsToLock,
+          available: availableGold
+        });
+      }
+
+      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
+      const currentLockedGrams = parseFloat(bnslWallet.lockedGoldGrams || '0');
+      const currentWeightedAvg = parseFloat(bnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
+
+      // 4. Create narration for deposit
+      const depositNarration = `You moved $${depositAmount.toFixed(2)} from FinaPay to BNSL. Entry gold price was $${goldPrice.toFixed(2)}/g, so ${gramsToLock.toFixed(4)}g were locked. Your BNSL principal is now fixed at the entry price. Withdrawal will be calculated at the gold price on the withdrawal date.`;
+
+      // 5. Calculate new weighted average entry price
+      const newLockedTotal = currentLockedGrams + gramsToLock;
+      let newWeightedAvg: number;
+      if (currentLockedGrams === 0) {
+        newWeightedAvg = goldPrice;
+      } else {
+        newWeightedAvg = ((currentLockedGrams * currentWeightedAvg) + (gramsToLock * goldPrice)) / newLockedTotal;
+      }
+      const newPrincipalFixed = newLockedTotal * newWeightedAvg;
+
+      // 6. ATOMIC TRANSACTION - All wallet updates with row locking for concurrency safety
+      const { bnslWallets } = await import('@shared/schema');
+      let position: any;
+      let transferTxId: string;
+
+      await db.transaction(async (tx) => {
+        // Lock and re-read FinaPay wallet inside transaction
+        const [lockedFinapayWallet] = await tx.select()
+          .from(wallets)
+          .where(eq(wallets.id, finapayWallet.id))
+          .for('update');
+        
+        const freshAvailableGold = parseFloat(lockedFinapayWallet.goldGrams);
+        if (freshAvailableGold < gramsToLock) {
+          throw new Error(`Insufficient gold balance. You need ${gramsToLock.toFixed(4)}g but have ${freshAvailableGold.toFixed(4)}g`);
+        }
+
+        // Lock and re-read BNSL wallet inside transaction
+        const [lockedBnslWallet] = await tx.select()
+          .from(bnslWallets)
+          .where(eq(bnslWallets.id, bnslWallet.id))
+          .for('update');
+        
+        const freshLockedGrams = parseFloat(lockedBnslWallet.lockedGoldGrams || '0');
+        const freshWeightedAvg = parseFloat(lockedBnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
+        
+        // Recalculate with fresh values inside transaction
+        const freshNewLockedTotal = freshLockedGrams + gramsToLock;
+        let freshNewWeightedAvg: number;
+        if (freshLockedGrams === 0) {
+          freshNewWeightedAvg = goldPrice;
+        } else {
+          freshNewWeightedAvg = ((freshLockedGrams * freshWeightedAvg) + (gramsToLock * goldPrice)) / freshNewLockedTotal;
+        }
+        const freshNewPrincipalFixed = freshNewLockedTotal * freshNewWeightedAvg;
+
+        // Debit from FinaPay wallet
+        await tx.update(wallets)
+          .set({
+            goldGrams: (freshAvailableGold - gramsToLock).toFixed(6),
+            updatedAt: new Date()
+          })
+          .where(eq(wallets.id, finapayWallet.id));
+
+        // Credit to BNSL wallet with updated weighted average
+        await tx.update(bnslWallets)
+          .set({
+            lockedGoldGrams: freshNewLockedTotal.toFixed(6),
+            entryPriceUsdPerGramWeightedAvg: freshNewWeightedAvg.toFixed(2),
+            usdPrincipalFixedDisplay: freshNewPrincipalFixed.toFixed(2),
+            updatedAt: new Date()
+          })
+          .where(eq(bnslWallets.id, bnslWallet.id));
+
+        // Create BNSL position record
+        const [newPosition] = await tx.insert(bnslPositions).values({
+          userId,
+          planId: planId || null,
+          depositUsd: depositAmount.toFixed(2),
+          entryPriceUsdPerGram: goldPrice.toFixed(2),
+          gramsLocked: gramsToLock.toFixed(6),
+          gramsRemaining: gramsToLock.toFixed(6),
+          status: 'Active',
+          depositNarration,
+          priceSource
+        }).returning();
+        position = newPosition;
+
+        // Create transaction record
+        const [transferTx] = await tx.insert(transactions).values({
+          userId,
+          type: 'Send',
+          status: 'Completed',
+          amountGold: gramsToLock.toFixed(6),
+          amountUsd: depositAmount.toFixed(2),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          description: `BNSL Hedged Deposit: ${gramsToLock.toFixed(4)}g locked at $${goldPrice.toFixed(2)}/g`,
+          sourceModule: 'bnsl'
+        }).returning();
+        transferTxId = transferTx.id;
+
+        // Create ledger entry for audit trail
+        await tx.insert(vaultLedgerEntries).values({
+          userId,
+          action: 'FinaPay_To_BNSL',
+          goldGrams: gramsToLock.toFixed(6),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          valueUsd: depositAmount.toFixed(2),
+          fromWallet: 'FinaPay',
+          toWallet: 'BNSL',
+          fromStatus: 'Available',
+          toStatus: 'Locked',
+          transactionId: transferTx.id,
+          notes: `BNSL Hedged Deposit: ${gramsToLock.toFixed(4)}g locked at entry price $${goldPrice.toFixed(2)}/g. Position ID: ${position.id}`,
+          createdBy: 'system',
+        });
+      });
+
+      // 7. Get updated wallets (outside transaction for fresh read)
+      const updatedFinapay = await storage.getWallet(userId);
+      const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
+
+      // 8. Emit real-time sync event
+      emitLedgerEvent(userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'bnsl_hedged_deposit',
+        data: { 
+          goldGrams: gramsToLock, 
+          amountUsd: depositAmount,
+          entryPrice: goldPrice,
+          positionId: position.id
+        },
+      });
+
+      res.json({
+        success: true,
+        position,
+        finapayWallet: updatedFinapay,
+        bnslWallet: updatedBnsl,
+        narration: {
+          title: "Moved to BNSL (Fixed Entry)",
+          body: depositNarration
+        }
+      });
+    } catch (error) {
+      console.error('BNSL hedged deposit error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process BNSL deposit" });
+    }
+  });
+
+  // BNSL Hedged Withdraw - Transfer from BNSL back to FinaPay at current price
+  app.post("/api/bnsl/hedged/withdraw", ensureAuthenticated, async (req, res) => {
+    try {
+      const { positionId, withdrawMode, amountGrams } = req.body;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      if (!positionId) {
+        return res.status(400).json({ message: "Position ID is required" });
+      }
+
+      // 1. Get and validate position
+      const [position] = await db.select().from(bnslPositions).where(eq(bnslPositions.id, positionId));
+      if (!position) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+
+      if (position.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized: This position belongs to another user" });
+      }
+
+      if (position.status === 'Completed' || position.status === 'Cancelled') {
+        return res.status(400).json({ message: "This position has already been closed" });
+      }
+
+      const gramsRemaining = parseFloat(position.gramsRemaining);
+      let gramsToWithdraw: number;
+
+      if (withdrawMode === 'FULL' || !amountGrams) {
+        gramsToWithdraw = gramsRemaining;
+      } else {
+        gramsToWithdraw = parseFloat(amountGrams);
+        if (gramsToWithdraw > gramsRemaining) {
+          return res.status(400).json({ 
+            message: `Cannot withdraw ${gramsToWithdraw.toFixed(4)}g. Only ${gramsRemaining.toFixed(4)}g remaining in position.`
+          });
+        }
+      }
+
+      if (gramsToWithdraw <= 0) {
+        return res.status(400).json({ message: "Invalid withdrawal amount" });
+      }
+
+      // 2. Fetch current gold price (withdrawal price) BEFORE transaction
+      let currentPrice: number;
+      let priceSource = 'live';
+      try {
+        currentPrice = await getGoldPricePerGram();
+      } catch {
+        currentPrice = 85.00;
+        priceSource = 'fallback';
+        console.warn('[BNSL Hedged] Using fallback gold price for withdrawal');
+      }
+
+      // 3. Calculate USD value at current price
+      const entryPrice = parseFloat(position.entryPriceUsdPerGram);
+      const withdrawUsdValue = gramsToWithdraw * currentPrice;
+      const entryUsdValue = gramsToWithdraw * entryPrice;
+      const priceDiff = currentPrice - entryPrice;
+      const gainLoss = withdrawUsdValue - entryUsdValue;
+
+      // 4. Create withdrawal narration
+      const gainLossText = gainLoss >= 0 
+        ? `You gained $${Math.abs(gainLoss).toFixed(2)} due to price increase.`
+        : `You received $${Math.abs(gainLoss).toFixed(2)} less due to price decrease.`;
+      
+      const withdrawalNarration = `You withdrew ${gramsToWithdraw.toFixed(4)}g from BNSL back to FinaPay. Entry price was $${entryPrice.toFixed(2)}/g, today's price is $${currentPrice.toFixed(2)}/g. Value today = $${withdrawUsdValue.toFixed(2)}. ${gainLossText} Your remaining BNSL principal remains fixed at entry price.`;
+
+      // 5. Pre-fetch wallet data
+      const finapayWallet = await storage.getWallet(userId);
+      if (!finapayWallet) {
+        return res.status(404).json({ message: "FinaPay wallet not found" });
+      }
+
+      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
+      const currentLockedGrams = parseFloat(bnslWallet.lockedGoldGrams || '0');
+      const newLockedTotal = Math.max(0, currentLockedGrams - gramsToWithdraw);
+      const weightedAvg = parseFloat(bnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
+      const newPrincipalFixed = Math.max(0, newLockedTotal * weightedAvg);
+      const currentFinapayGold = parseFloat(finapayWallet.goldGrams);
+      const newGramsRemaining = gramsRemaining - gramsToWithdraw;
+      const newStatus = newGramsRemaining <= 0.000001 ? 'Completed' : 'PartiallyWithdrawn';
+
+      // 6. ATOMIC TRANSACTION - All wallet updates with row locking for concurrency safety
+      const { bnslWallets } = await import('@shared/schema');
+      let transferTxId: string;
+
+      await db.transaction(async (tx) => {
+        // Lock and re-read BNSL wallet inside transaction
+        const [lockedBnslWallet] = await tx.select()
+          .from(bnslWallets)
+          .where(eq(bnslWallets.id, bnslWallet.id))
+          .for('update');
+        
+        const freshLockedGrams = parseFloat(lockedBnslWallet.lockedGoldGrams || '0');
+        const freshWeightedAvg = parseFloat(lockedBnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
+        const freshNewLockedTotal = Math.max(0, freshLockedGrams - gramsToWithdraw);
+        const freshNewPrincipalFixed = Math.max(0, freshNewLockedTotal * freshWeightedAvg);
+
+        // Lock and re-read FinaPay wallet inside transaction
+        const [lockedFinapayWallet] = await tx.select()
+          .from(wallets)
+          .where(eq(wallets.id, finapayWallet.id))
+          .for('update');
+        
+        const freshFinapayGold = parseFloat(lockedFinapayWallet.goldGrams);
+
+        // Lock and re-read position inside transaction
+        const [lockedPosition] = await tx.select()
+          .from(bnslPositions)
+          .where(eq(bnslPositions.id, positionId))
+          .for('update');
+        
+        const freshGramsRemaining = parseFloat(lockedPosition.gramsRemaining);
+        if (gramsToWithdraw > freshGramsRemaining) {
+          throw new Error(`Cannot withdraw ${gramsToWithdraw.toFixed(4)}g. Only ${freshGramsRemaining.toFixed(4)}g remaining in position.`);
+        }
+        const freshNewGramsRemaining = Math.max(0, freshGramsRemaining - gramsToWithdraw);
+        const freshNewStatus = freshNewGramsRemaining <= 0.000001 ? 'Completed' : 'PartiallyWithdrawn';
+
+        // Debit from BNSL wallet
+        await tx.update(bnslWallets)
+          .set({
+            lockedGoldGrams: freshNewLockedTotal.toFixed(6),
+            usdPrincipalFixedDisplay: freshNewPrincipalFixed.toFixed(2),
+            updatedAt: new Date()
+          })
+          .where(eq(bnslWallets.id, bnslWallet.id));
+
+        // Credit to FinaPay wallet
+        await tx.update(wallets)
+          .set({
+            goldGrams: (freshFinapayGold + gramsToWithdraw).toFixed(6),
+            updatedAt: new Date()
+          })
+          .where(eq(wallets.id, finapayWallet.id));
+
+        // Update position
+        await tx.update(bnslPositions)
+          .set({
+            gramsRemaining: freshNewGramsRemaining.toFixed(6),
+            status: freshNewStatus,
+            withdrawalPriceUsdPerGram: currentPrice.toFixed(2),
+            withdrawalUsdValue: withdrawUsdValue.toFixed(2),
+            withdrawnAt: new Date(),
+            withdrawalNarration,
+            updatedAt: new Date()
+          })
+          .where(eq(bnslPositions.id, positionId));
+
+        // Create transaction record
+        const [transferTx] = await tx.insert(transactions).values({
+          userId,
+          type: 'Receive',
+          status: 'Completed',
+          amountGold: gramsToWithdraw.toFixed(6),
+          amountUsd: withdrawUsdValue.toFixed(2),
+          goldPriceUsdPerGram: currentPrice.toFixed(2),
+          description: `BNSL Hedged Withdrawal: ${gramsToWithdraw.toFixed(4)}g at $${currentPrice.toFixed(2)}/g (entry was $${entryPrice.toFixed(2)}/g)`,
+          sourceModule: 'bnsl'
+        }).returning();
+        transferTxId = transferTx.id;
+
+        // Create ledger entry for audit trail
+        await tx.insert(vaultLedgerEntries).values({
+          userId,
+          action: 'BNSL_To_FinaPay',
+          goldGrams: gramsToWithdraw.toFixed(6),
+          goldPriceUsdPerGram: currentPrice.toFixed(2),
+          valueUsd: withdrawUsdValue.toFixed(2),
+          fromWallet: 'BNSL',
+          toWallet: 'FinaPay',
+          fromStatus: 'Locked',
+          toStatus: 'Available',
+          transactionId: transferTx.id,
+          notes: `BNSL Hedged Withdrawal: ${gramsToWithdraw.toFixed(4)}g. Entry: $${entryPrice.toFixed(2)}/g, Exit: $${currentPrice.toFixed(2)}/g, Value: $${withdrawUsdValue.toFixed(2)}`,
+          createdBy: 'system',
+        });
+      });
+
+      // 7. Get updated data (outside transaction for fresh read)
+      const [updatedPosition] = await db.select().from(bnslPositions).where(eq(bnslPositions.id, positionId));
+      const updatedFinapay = await storage.getWallet(userId);
+      const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
+
+      // 8. Emit real-time sync event
+      emitLedgerEvent(userId, {
+        type: 'balance_update',
+        module: 'bnsl',
+        action: 'bnsl_hedged_withdraw',
+        data: { 
+          goldGrams: gramsToWithdraw,
+          entryPrice,
+          currentPrice,
+          withdrawValue: withdrawUsdValue,
+          gainLoss,
+          positionId
+        },
+      });
+
+      res.json({
+        success: true,
+        position: updatedPosition,
+        finapayWallet: updatedFinapay,
+        bnslWallet: updatedBnsl,
+        narration: {
+          title: "Withdrawn from BNSL (Current Price)",
+          body: withdrawalNarration
+        },
+        summary: {
+          gramsWithdrawn: gramsToWithdraw,
+          entryPricePerGram: entryPrice,
+          currentPricePerGram: currentPrice,
+          withdrawValueUsd: withdrawUsdValue,
+          entryValueUsd: entryUsdValue,
+          gainLossUsd: gainLoss,
+          priceChange: priceDiff
+        }
+      });
+    } catch (error) {
+      console.error('BNSL hedged withdraw error:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process BNSL withdrawal" });
+    }
+  });
+
+  // Get BNSL wallet summary with live market value calculation
+  app.get("/api/bnsl/wallet/summary/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
+      const lockedGrams = parseFloat(bnslWallet.lockedGoldGrams || '0');
+      const entryPriceWeightedAvg = parseFloat(bnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
+      const fixedPrincipal = parseFloat(bnslWallet.usdPrincipalFixedDisplay || '0');
+
+      // Get current gold price for "Withdraw Value Today"
+      let currentPrice: number;
+      try {
+        currentPrice = await getGoldPricePerGram();
+      } catch {
+        currentPrice = 85.00;
+      }
+
+      const withdrawValueToday = lockedGrams * currentPrice;
+      const unrealizedGainLoss = withdrawValueToday - fixedPrincipal;
+
+      res.json({
+        wallet: bnslWallet,
+        summary: {
+          lockedGoldGrams: lockedGrams,
+          fixedPrincipalUsd: fixedPrincipal,
+          entryPriceWeightedAvg,
+          currentPricePerGram: currentPrice,
+          withdrawValueTodayUsd: withdrawValueToday,
+          unrealizedGainLossUsd: unrealizedGainLoss,
+          notice: "BNSL is a hedged fixed-entry module. Your principal is locked at the entry gold price. When you withdraw, conversion happens at today's gold price."
+        }
+      });
+    } catch (error) {
+      console.error('Get BNSL wallet summary error:', error);
+      res.status(400).json({ message: "Failed to get BNSL wallet summary" });
     }
   });
   

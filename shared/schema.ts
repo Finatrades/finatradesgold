@@ -1373,12 +1373,17 @@ export type VaultWithdrawalRequest = typeof vaultWithdrawalRequests.$inferSelect
 // BNSL - BUY NOW SELL LATER
 // ============================================
 
-// BNSL Wallets - Dedicated wallet for BNSL operations
+// BNSL Wallets - Dedicated wallet for BNSL operations (Hedged/Fixed Price Module)
 export const bnslWallets = pgTable("bnsl_wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
   availableGoldGrams: decimal("available_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   lockedGoldGrams: decimal("locked_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  
+  // Hedged/Fixed Entry Module Fields
+  entryPriceUsdPerGramWeightedAvg: decimal("entry_price_usd_per_gram_weighted_avg", { precision: 12, scale: 2 }).default('0'),
+  usdPrincipalFixedDisplay: decimal("usd_principal_fixed_display", { precision: 18, scale: 2 }).default('0'),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1386,6 +1391,52 @@ export const bnslWallets = pgTable("bnsl_wallets", {
 export const insertBnslWalletSchema = createInsertSchema(bnslWallets).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertBnslWallet = z.infer<typeof insertBnslWalletSchema>;
 export type BnslWallet = typeof bnslWallets.$inferSelect;
+
+// BNSL Position Status Enum
+export const bnslPositionStatusEnum = pgEnum('bnsl_position_status', ['Active', 'Completed', 'Cancelled', 'PartiallyWithdrawn']);
+
+// BNSL Positions - Individual deposit positions with fixed entry price
+export const bnslPositions = pgTable("bnsl_positions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  planId: varchar("plan_id", { length: 255 }).references(() => bnslPlans.id),
+  
+  // Deposit details
+  depositUsd: decimal("deposit_usd", { precision: 18, scale: 2 }).notNull(),
+  entryPriceUsdPerGram: decimal("entry_price_usd_per_gram", { precision: 12, scale: 2 }).notNull(),
+  gramsLocked: decimal("grams_locked", { precision: 18, scale: 6 }).notNull(),
+  gramsRemaining: decimal("grams_remaining", { precision: 18, scale: 6 }).notNull(),
+  
+  // Timing
+  startAt: timestamp("start_at").notNull().defaultNow(),
+  endAt: timestamp("end_at"),
+  
+  // Status
+  status: bnslPositionStatusEnum("status").notNull().default('Active'),
+  
+  // Earnings (optional based on plan)
+  earningsGrams: decimal("earnings_grams", { precision: 18, scale: 6 }).default('0'),
+  earningsUsd: decimal("earnings_usd", { precision: 18, scale: 2 }).default('0'),
+  
+  // Withdrawal details (filled on withdrawal)
+  withdrawalPriceUsdPerGram: decimal("withdrawal_price_usd_per_gram", { precision: 12, scale: 2 }),
+  withdrawalUsdValue: decimal("withdrawal_usd_value", { precision: 18, scale: 2 }),
+  withdrawnAt: timestamp("withdrawn_at"),
+  
+  // Narration for user
+  depositNarration: text("deposit_narration"),
+  withdrawalNarration: text("withdrawal_narration"),
+  
+  // Price source tracking
+  priceSource: varchar("price_source", { length: 50 }).default('live'),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBnslPositionSchema = createInsertSchema(bnslPositions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBnslPosition = z.infer<typeof insertBnslPositionSchema>;
+export type BnslPosition = typeof bnslPositions.$inferSelect;
 
 // BNSL Plan Templates - Admin-configurable plan types
 export const bnslTemplateStatusEnum = pgEnum('bnsl_template_status', ['Active', 'Inactive', 'Draft']);

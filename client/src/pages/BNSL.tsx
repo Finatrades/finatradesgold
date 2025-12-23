@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 // Components - import early for use in SignedAgreementsSection
 import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
 import BnslWalletCard from '@/components/bnsl/BnslWalletCard';
+import BnslHedgedWalletCard from '@/components/bnsl/BnslHedgedWalletCard';
 import BnslPlanList from '@/components/bnsl/BnslPlanList';
 import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
 import CreateBnslPlan, { FULL_TERMS_AND_CONDITIONS } from '@/components/bnsl/CreateBnslPlan';
@@ -650,6 +651,14 @@ export default function BNSL() {
           onWithdrawToFinaPay={handleWithdrawToFinaPay}
           currentGoldPrice={currentGoldPrice}
         />
+
+        {/* HEDGED WALLET - Fixed Entry Price Module */}
+        <BnslHedgedWalletCard 
+          finaPayBalanceGold={finaPayGoldBalance}
+          currentGoldPrice={currentGoldPrice}
+          onRefresh={refreshPlans}
+        />
+        
         <div className="flex justify-end -mt-4">
             <Button variant="link" size="sm" className="text-muted-foreground hover:text-primary" onClick={() => setLocation('/finapay')}>
                 Need more funds? Go to FinaPay Wallet &rarr;
