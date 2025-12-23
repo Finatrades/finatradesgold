@@ -6,7 +6,6 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
 import FinaVault from "@/pages/FinaVault";
 import FinaPay from "@/pages/FinaPay";
 import BNSL from "@/pages/BNSL";
@@ -115,7 +114,6 @@ function Router() {
       <Switch>
       <Route path="/" component={FinagoldLanding} />
       <Route path="/finagold" component={FinagoldLanding} />
-      <Route path="/home-old" component={Home} />
       <Route path="/bnsl-landing" component={BNSLLanding} />
       <Route path="/finavault-landing" component={FinaVaultLanding} />
       <Route path="/finabridge-landing" component={FinaBridgeLanding} />
