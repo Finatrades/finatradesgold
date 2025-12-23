@@ -1442,6 +1442,34 @@ export const insertBnslAgreementSchema = createInsertSchema(bnslAgreements).omit
 export type InsertBnslAgreement = z.infer<typeof insertBnslAgreementSchema>;
 export type BnslAgreement = typeof bnslAgreements.$inferSelect;
 
+// FinaBridge Agreements - Signed T&C storage for trade finance
+export const finabridgeAgreements = pgTable("finabridge_agreements", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  templateVersion: varchar("template_version", { length: 50 }).notNull().default('V1-2025-12-23'),
+  signatureName: varchar("signature_name", { length: 255 }).notNull(),
+  signedAt: timestamp("signed_at").notNull(),
+  
+  role: varchar("role", { length: 50 }).notNull(), // 'importer', 'exporter', 'both'
+  termsAndConditions: text("terms_and_conditions"),
+  
+  acceptanceDetails: json("acceptance_details").$type<{
+    role: string;
+    acceptedSections: string[];
+    ipAddress?: string;
+    userAgent?: string;
+  }>(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertFinabridgeAgreementSchema = createInsertSchema(finabridgeAgreements).omit({ id: true, createdAt: true }).extend({
+  signedAt: z.union([z.date(), z.string().transform(s => new Date(s))]),
+});
+export type InsertFinabridgeAgreement = z.infer<typeof insertFinabridgeAgreementSchema>;
+export type FinabridgeAgreement = typeof finabridgeAgreements.$inferSelect;
+
 // ============================================
 // FINABRIDGE - TRADE FINANCE
 // ============================================
