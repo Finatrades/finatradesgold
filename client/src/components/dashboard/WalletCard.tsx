@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Wallet, Plus, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
+import { AEDAmount } from '@/components/ui/DirhamSymbol';
 
 interface WalletCardProps {
   goldGrams?: number;
@@ -37,7 +38,7 @@ export default function WalletCard({ goldGrams = 0, usdBalance = 0, goldPrice = 
            </p>
            <div className="flex gap-4 text-sm text-white/70">
              <span data-testid="text-wallet-usd-value">≈ ${goldValueUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-             <span>≈ د.إ {goldValueAed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+             <span>≈ <AEDAmount amount={goldValueAed} /></span>
            </div>
            {usdBalance > 0 && (
              <p className="text-xs text-white/60 mt-1">+ ${usdBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD cash</p>

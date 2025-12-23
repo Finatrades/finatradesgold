@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
+import { AEDAmount } from '@/components/ui/DirhamSymbol';
 
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 import DashboardWalletCards from '@/components/dashboard/DashboardWalletCards';
@@ -25,7 +26,7 @@ function formatGrams(grams: number): string {
 
 interface KpiBoxProps {
   title: string;
-  value: string;
+  value: React.ReactNode;
   subtitle: string;
   secondaryValue?: string;
   tertiaryValue?: string;
@@ -40,7 +41,7 @@ function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, i
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs text-gray-500 mb-2">{title}</p>
-          <p className={`text-xl font-bold ${valueColor} mb-1`}>{value}</p>
+          <div className={`text-xl font-bold ${valueColor} mb-1`}>{value}</div>
           {secondaryValue && (
             <p className="text-sm font-medium text-gray-600 mb-1">{secondaryValue}</p>
           )}
@@ -142,7 +143,7 @@ export default function Dashboard() {
                       />
                       <KpiBox
                         title="Total Gold Value (AED)"
-                        value={`د.إ ${formatNumber(availableGoldValueUsd * 3.67)}`}
+                        value={<AEDAmount amount={availableGoldValueUsd * 3.67} />}
                         subtitle="Worth in AED"
                         icon={<DollarSign className="w-5 h-5 text-blue-600" />}
                         iconBg="bg-blue-50"
