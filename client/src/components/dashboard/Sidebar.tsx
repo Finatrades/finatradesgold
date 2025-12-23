@@ -101,13 +101,13 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       >
         <div className="flex flex-col h-full">
           
-          <div className="h-20 flex items-center justify-between px-4 border-b border-border bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]">
+          <div className="h-16 flex items-center justify-between px-3 border-b border-border bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]">
             <Link href="/">
               <div className="flex items-center cursor-pointer" data-testid="sidebar-logo">
                 <img 
                   src={finatradesLogo} 
                   alt="Finatrades" 
-                  className="h-10 w-auto"
+                  className="h-8 w-auto object-contain"
                 />
               </div>
             </Link>
