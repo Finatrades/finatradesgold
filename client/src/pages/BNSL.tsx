@@ -553,12 +553,27 @@ export default function BNSL() {
 
             <TabsContent value="terms" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
                <Card className="bg-white shadow-sm border border-border">
-                 <CardContent className="p-12 text-center text-muted-foreground">
-                    <Info className="w-16 h-16 mx-auto mb-4 opacity-20 text-foreground" />
-                    <h3 className="text-lg font-bold text-foreground mb-2">BNSL Master Agreement</h3>
-                    <p className="max-w-md mx-auto">
-                      Full terms and conditions of the Buy Now Sell Later program, including risk disclosures, legal title transfer details, and dispute resolution mechanisms.
-                    </p>
+                 <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Info className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground">BNSL Master Agreement</h3>
+                        <p className="text-sm text-muted-foreground">Version: V3-2025-12-09 | Last Updated: December 9, 2025</p>
+                      </div>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg border border-border p-6 max-h-[60vh] overflow-y-auto">
+                      <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                        {FULL_TERMS_AND_CONDITIONS}
+                      </pre>
+                    </div>
+                    <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                      <p className="text-sm text-muted-foreground">
+                        <strong className="text-foreground">Note:</strong> By enrolling in any BNSL plan, you agree to be bound by these terms and conditions. 
+                        A copy of your signed agreement is saved and can be viewed from your plan details at any time.
+                      </p>
+                    </div>
                  </CardContent>
                </Card>
             </TabsContent>
