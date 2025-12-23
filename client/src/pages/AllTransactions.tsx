@@ -43,6 +43,10 @@ interface Totals {
 // Helper to convert action types to user-friendly display labels
 const getActionLabel = (actionType: string, module: string): string => {
   const action = actionType?.toUpperCase() || '';
+  // Physical gold deposits from FinaVault
+  if (action === 'DEPOSIT_PHYSICAL_GOLD') {
+    return 'Deposit Physical Gold';
+  }
   // Only FinaVault deposits should show as "Deposit Gold"
   if (action === 'ADD_FUNDS' && module === 'FinaVault') {
     return 'Deposit Gold';

@@ -4341,7 +4341,7 @@ ${message}
           id: dep.id,
           userId: dep.userId,
           module: 'finavault',
-          actionType: 'ADD_FUNDS',
+          actionType: 'DEPOSIT_PHYSICAL_GOLD',
           grams: goldWeight,
           usd: null,
           usdPerGram: null,
