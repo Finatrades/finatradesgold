@@ -539,7 +539,7 @@ export default function FinaVault() {
                 <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex flex-wrap">
                   <TabsTrigger 
                     value="vault-activity"
-                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                     data-testid="tab-vault-activity"
                   >
                     <History className="w-4 h-4 mr-2" />
@@ -547,28 +547,28 @@ export default function FinaVault() {
                   </TabsTrigger>
                   <TabsTrigger 
                     value="my-deposits"
-                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                   >
                     <Database className="w-4 h-4 mr-2" />
                     Deposit Requests
                   </TabsTrigger>
                   <TabsTrigger 
                     value="new-request"
-                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                   >
                     <PlusCircle className="w-4 h-4 mr-2" />
                     New Deposit
                   </TabsTrigger>
                   <TabsTrigger 
                     value="cash-out"
-                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                   >
                     <Banknote className="w-4 h-4 mr-2" />
                     Cash Out
                   </TabsTrigger>
                   <TabsTrigger 
                     value="ownership-ledger"
-                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                     data-testid="tab-ownership-ledger"
                   >
                     <Lock className="w-4 h-4 mr-2" />
@@ -576,7 +576,7 @@ export default function FinaVault() {
                   </TabsTrigger>
                   <TabsTrigger 
                     value="certificates"
-                    className="flex-1 md:flex-none data-[state=active]:bg-secondary data-[state=active]:text-white"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                     data-testid="tab-certificates"
                   >
                     <Award className="w-4 h-4 mr-2" />
