@@ -140,12 +140,23 @@ export default function Hero() {
                 className="relative"
               >
                 <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="relative lg:-mt-8"
+                  animate={{ 
+                    y: [0, -12, 0],
+                    rotate: [0, 0.5, 0, -0.5, 0]
+                  }}
+                  transition={{ 
+                    y: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+                    rotate: { duration: 6, repeat: Infinity, ease: 'easeInOut' }
+                  }}
+                  whileHover={{ 
+                    scale: 1.03,
+                    y: -15,
+                    transition: { duration: 0.3 }
+                  }}
+                  className="relative lg:-mt-8 cursor-pointer"
                 >
                   {/* Professional premium card - exact replica */}
-                  <div className={`w-[400px] h-[260px] mx-auto rounded-3xl bg-gradient-to-br from-[#3D1A5C] via-[#2A0055] to-[#1a0a30] border ${isPersonal ? 'border-[#8A2BE2]/40' : 'border-[#A342FF]/50'} p-5 shadow-2xl shadow-[#8A2BE2]/30 relative overflow-hidden`}>
+                  <div className={`w-[400px] h-[260px] mx-auto rounded-3xl bg-gradient-to-br from-[#3D1A5C] via-[#2A0055] to-[#1a0a30] border-2 ${isPersonal ? 'border-[#8A2BE2]/60 hover:border-[#A342FF]' : 'border-[#A342FF]/70 hover:border-[#FF2FBF]'} p-5 shadow-2xl shadow-[#8A2BE2]/40 hover:shadow-[#8A2BE2]/60 relative overflow-hidden transition-all duration-300`}>
                     {/* Animated shimmer effect */}
                     <motion.div
                       animate={{ x: ['-100%', '300%'] }}
