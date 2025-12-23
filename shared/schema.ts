@@ -958,12 +958,13 @@ export const certificateTypeEnum = pgEnum('certificate_type', [
   'Trade Lock',           // Finatrades - issued when FinaBridge reserve is created
   'Trade Release'         // Finatrades - issued when FinaBridge trade settles
 ]);
-export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred']);
+export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred', 'Locked_BNSL']);
 
 export const vaultHoldings = pgTable("vault_holdings", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  lockedBnslGrams: decimal("locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   vaultLocation: varchar("vault_location", { length: 255 }).notNull().default('Dubai - Wingold & Metals DMCC'),
   wingoldStorageRef: varchar("wingold_storage_ref", { length: 100 }),
   storageFeesAnnualPercent: decimal("storage_fees_annual_percent", { precision: 5, scale: 2 }).notNull().default('0.5'),
@@ -1395,21 +1396,29 @@ export type BnslWallet = typeof bnslWallets.$inferSelect;
 // BNSL Position Status Enum
 export const bnslPositionStatusEnum = pgEnum('bnsl_position_status', ['Active', 'Completed', 'Cancelled', 'PartiallyWithdrawn']);
 
-// BNSL Positions - Individual deposit positions with fixed entry price
+// BNSL Positions - Individual deposit positions with fixed entry price (Hedging Module)
 export const bnslPositions = pgTable("bnsl_positions", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   planId: varchar("plan_id", { length: 255 }).references(() => bnslPlans.id),
+  vaultHoldingId: varchar("vault_holding_id", { length: 255 }).references(() => vaultHoldings.id),
+  certificateId: varchar("certificate_id", { length: 255 }).references(() => certificates.id),
   
   // Deposit details
   depositUsd: decimal("deposit_usd", { precision: 18, scale: 2 }).notNull(),
   entryPriceUsdPerGram: decimal("entry_price_usd_per_gram", { precision: 12, scale: 2 }).notNull(),
   gramsLocked: decimal("grams_locked", { precision: 18, scale: 6 }).notNull(),
   gramsRemaining: decimal("grams_remaining", { precision: 18, scale: 6 }).notNull(),
+  fixedValueUsd: decimal("fixed_value_usd", { precision: 18, scale: 2 }).notNull(),
   
   // Timing
   startAt: timestamp("start_at").notNull().defaultNow(),
+  maturityAt: timestamp("maturity_at"),
   endAt: timestamp("end_at"),
+  
+  // Hedging rules
+  earlyExitAllowed: boolean("early_exit_allowed").notNull().default(false),
+  earlyExitPenaltyPercent: decimal("early_exit_penalty_percent", { precision: 5, scale: 2 }).default('0'),
   
   // Status
   status: bnslPositionStatusEnum("status").notNull().default('Active'),
@@ -1422,6 +1431,7 @@ export const bnslPositions = pgTable("bnsl_positions", {
   withdrawalPriceUsdPerGram: decimal("withdrawal_price_usd_per_gram", { precision: 12, scale: 2 }),
   withdrawalUsdValue: decimal("withdrawal_usd_value", { precision: 18, scale: 2 }),
   withdrawnAt: timestamp("withdrawn_at"),
+  exitType: varchar("exit_type", { length: 50 }),
   
   // Narration for user
   depositNarration: text("deposit_narration"),

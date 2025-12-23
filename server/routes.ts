@@ -8026,14 +8026,62 @@ ${message}
           })
           .where(eq(bnslWallets.id, bnslWallet.id));
 
-        // Create BNSL position record
+        // Update vault holdings - track locked BNSL grams
+        let vaultHoldingId: string | null = null;
+        let certificateId: string | null = null;
+        
+        const userVaultHoldings = await tx.select()
+          .from(vaultHoldings)
+          .where(eq(vaultHoldings.userId, userId))
+          .for('update');
+        
+        if (userVaultHoldings.length > 0) {
+          const holding = userVaultHoldings[0];
+          vaultHoldingId = holding.id;
+          const currentLockedBnsl = parseFloat(holding.lockedBnslGrams || '0');
+          
+          await tx.update(vaultHoldings)
+            .set({
+              lockedBnslGrams: (currentLockedBnsl + gramsToLock).toFixed(6),
+              updatedAt: new Date()
+            })
+            .where(eq(vaultHoldings.id, holding.id));
+          
+          // Update active certificate status to Locked_BNSL
+          const [activeCert] = await tx.select()
+            .from(certificates)
+            .where(and(
+              eq(certificates.userId, userId),
+              eq(certificates.status, 'Active'),
+              eq(certificates.type, 'Digital Ownership')
+            ))
+            .for('update');
+          
+          if (activeCert) {
+            certificateId = activeCert.id;
+            await tx.update(certificates)
+              .set({
+                status: 'Locked_BNSL',
+                updatedAt: new Date()
+              })
+              .where(eq(certificates.id, activeCert.id));
+          }
+        }
+
+        // Calculate fixed USD value at entry price
+        const fixedValueUsd = gramsToLock * goldPrice;
+
+        // Create BNSL position record with vault/certificate links
         const [newPosition] = await tx.insert(bnslPositions).values({
           userId,
           planId: planId || null,
+          vaultHoldingId,
+          certificateId,
           depositUsd: depositAmount.toFixed(2),
           entryPriceUsdPerGram: goldPrice.toFixed(2),
           gramsLocked: gramsToLock.toFixed(6),
           gramsRemaining: gramsToLock.toFixed(6),
+          fixedValueUsd: fixedValueUsd.toFixed(2),
           status: 'Active',
           depositNarration,
           priceSource
@@ -8245,7 +8293,8 @@ ${message}
           })
           .where(eq(wallets.id, finapayWallet.id));
 
-        // Update position
+        // Update position with exit type
+        const exitType = freshNewGramsRemaining <= 0.000001 ? 'Full' : 'Partial';
         await tx.update(bnslPositions)
           .set({
             gramsRemaining: freshNewGramsRemaining.toFixed(6),
@@ -8254,9 +8303,40 @@ ${message}
             withdrawalUsdValue: withdrawUsdValue.toFixed(2),
             withdrawnAt: new Date(),
             withdrawalNarration,
+            exitType,
             updatedAt: new Date()
           })
           .where(eq(bnslPositions.id, positionId));
+
+        // Update vault holdings - reduce locked BNSL grams
+        if (lockedPosition.vaultHoldingId) {
+          const [holding] = await tx.select()
+            .from(vaultHoldings)
+            .where(eq(vaultHoldings.id, lockedPosition.vaultHoldingId))
+            .for('update');
+          
+          if (holding) {
+            const currentLockedBnsl = parseFloat(holding.lockedBnslGrams || '0');
+            const newLockedBnsl = Math.max(0, currentLockedBnsl - gramsToWithdraw);
+            
+            await tx.update(vaultHoldings)
+              .set({
+                lockedBnslGrams: newLockedBnsl.toFixed(6),
+                updatedAt: new Date()
+              })
+              .where(eq(vaultHoldings.id, holding.id));
+          }
+        }
+
+        // If position is fully completed, restore certificate status to Active
+        if (freshNewStatus === 'Completed' && lockedPosition.certificateId) {
+          await tx.update(certificates)
+            .set({
+              status: 'Active',
+              updatedAt: new Date()
+            })
+            .where(eq(certificates.id, lockedPosition.certificateId));
+        }
 
         // Create transaction record
         const [transferTx] = await tx.insert(transactions).values({
