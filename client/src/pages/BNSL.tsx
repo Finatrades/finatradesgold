@@ -34,7 +34,7 @@ function SignedAgreementsSection({ userId, plans }: { userId?: number; plans: Bn
         const response = await fetch(`/api/bnsl/agreements/user/${userId}`);
         if (response.ok) {
           const data = await response.json();
-          setAgreements(data);
+          setAgreements(data.agreements || []);
         }
       } catch (error) {
         console.error('Failed to fetch agreements:', error);
