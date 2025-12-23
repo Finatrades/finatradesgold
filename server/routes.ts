@@ -5823,13 +5823,28 @@ ${message}
       // Get all transactions for this user
       const allTransactions = await storage.getUserTransactions(userId);
       
-      // Filter to vault-relevant transaction types
-      const vaultTypes = ['Buy', 'Sell', 'Send', 'Receive', 'Deposit', 'Withdrawal'];
-      const vaultTransactions = allTransactions.filter(tx => vaultTypes.includes(tx.type));
-      
-      // Get vault deposit and withdrawal requests
+      // Get vault deposit and withdrawal requests first
       const vaultDepositReqs = await storage.getUserVaultDepositRequests(userId);
       const vaultWithdrawalReqs = await storage.getUserVaultWithdrawalRequests(userId);
+      
+      // Create a set of vault deposit reference numbers to exclude from wallet transactions
+      // This prevents duplication between wallet "Deposit" transactions and vault deposit requests
+      const vaultDepositRefs = new Set(vaultDepositReqs.map(dep => dep.referenceNumber));
+      
+      // Filter to vault-relevant transaction types, excluding duplicates from vault deposits
+      const vaultTypes = ['Buy', 'Sell', 'Send', 'Receive', 'Deposit', 'Withdrawal'];
+      const vaultTransactions = allTransactions.filter(tx => {
+        // Include only vault-relevant types
+        if (!vaultTypes.includes(tx.type)) return false;
+        
+        // Exclude 'Deposit' transactions that are linked to vault deposit requests
+        // These are shown separately as 'Vault Deposit' entries
+        if (tx.type === 'Deposit' && tx.description?.includes('FinaVault')) {
+          return false;
+        }
+        
+        return true;
+      });
       
       // Get holdings and certificates
       const holdings = await storage.getUserVaultHoldings(userId);
