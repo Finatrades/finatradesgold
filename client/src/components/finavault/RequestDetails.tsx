@@ -132,31 +132,33 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
               </div>
             </div>
           ) : (
-            <div className="relative flex justify-between">
+            <div className="relative flex justify-between px-4 py-2">
               {STATUS_STEPS.map((step, index) => {
                 const completed = isStepComplete(step);
                 const current = isStepCurrent(step);
                 
                 return (
                   <div key={step} className="flex flex-col items-center relative z-10 w-full">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors duration-300 ${
-                      completed || current 
-                        ? 'bg-secondary border-secondary text-white' 
-                        : 'bg-muted border-border text-muted-foreground'
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-3 transition-all duration-300 shadow-md ${
+                      completed 
+                        ? 'bg-gradient-to-br from-purple-600 to-purple-800 border-purple-500 text-white shadow-purple-200' 
+                        : current
+                        ? 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-400 text-white shadow-purple-200 ring-4 ring-purple-100'
+                        : 'bg-gray-100 border-gray-300 text-gray-400'
                     }`}>
-                      {completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                      {completed ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
                     </div>
-                    <span className={`text-xs mt-2 text-center max-w-[100px] font-medium transition-colors duration-300 ${
-                      current ? 'text-secondary' : completed ? 'text-foreground' : 'text-muted-foreground'
+                    <span className={`text-xs mt-3 text-center max-w-[100px] font-semibold transition-colors duration-300 ${
+                      current ? 'text-purple-700' : completed ? 'text-purple-600' : 'text-gray-400'
                     }`}>
                       {step}
                     </span>
                     
                     {/* Progress Bar Line */}
                     {index < STATUS_STEPS.length - 1 && (
-                      <div className="absolute top-4 left-1/2 w-full h-[2px] -z-10 bg-muted">
+                      <div className="absolute top-5 left-1/2 w-full h-1 -z-10 bg-gray-200 rounded-full">
                         <div 
-                          className="h-full bg-secondary transition-all duration-500"
+                          className="h-full bg-gradient-to-r from-purple-600 to-purple-500 rounded-full transition-all duration-500"
                           style={{ width: isStepComplete(STATUS_STEPS[index + 1]) ? '100%' : '0%' }}
                         />
                       </div>
