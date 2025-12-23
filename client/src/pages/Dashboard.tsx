@@ -163,7 +163,6 @@ export default function Dashboard() {
                 {(() => {
                   const availableGoldGrams = totals.walletGoldGrams || 0;
                   const availableGoldValueUsd = availableGoldGrams * goldPrice;
-                  const availableGoldValueAed = availableGoldValueUsd * 3.67;
                   return (
                     <>
                       <KpiBox
@@ -177,12 +176,18 @@ export default function Dashboard() {
                         valueColor="text-purple-600"
                       />
                       <KpiBox
-                        title="Total Gold Value"
-                        value={<AEDAmount amount={availableGoldValueAed} />}
-                        subtitle="Worth in AED"
-                        icon={<Coins className="w-5 h-5 text-green-600" />}
+                        title="Total Gold Value (USD)"
+                        value={`$${formatNumber(availableGoldValueUsd)}`}
+                        subtitle="Worth in USD"
+                        icon={<DollarSign className="w-5 h-5 text-green-600" />}
                         iconBg="bg-green-50"
-                        valueColor="text-green-600"
+                      />
+                      <KpiBox
+                        title="Total Gold Value (AED)"
+                        value={<AEDAmount amount={availableGoldValueUsd * 3.67} />}
+                        subtitle="Worth in AED"
+                        icon={<DollarSign className="w-5 h-5 text-blue-600" />}
+                        iconBg="bg-blue-50"
                       />
                     </>
                   );
@@ -191,7 +196,7 @@ export default function Dashboard() {
                 {/* Row 2 */}
                 <KpiBox
                   title="Total Portfolio"
-                  value={<AEDAmount amount={totals.totalPortfolioUsd * 3.67} />}
+                  value={`$${formatNumber(totals.totalPortfolioUsd)}`}
                   subtitle="Overall investment"
                   icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
                   iconBg="bg-purple-50"
@@ -207,7 +212,7 @@ export default function Dashboard() {
                 />
                 <KpiBox
                   title="Total Profit"
-                  value={<><span className="text-green-600">+</span><AEDAmount amount={totals.bnslTotalProfit * 3.67} /></>}
+                  value={`+$${formatNumber(totals.bnslTotalProfit)}`}
                   subtitle="ROI from BNSL"
                   icon={<Coins className="w-5 h-5 text-purple-600" />}
                   iconBg="bg-purple-50"
