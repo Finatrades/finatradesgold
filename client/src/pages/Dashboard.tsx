@@ -183,8 +183,9 @@ export default function Dashboard() {
                 <div className="w-full">
                   <CreditCardPreview 
                     userName={fullName.toUpperCase()}
-                    cardNumber="4532  ••••  ••••  0003"
+                    cardNumber="4789  ••••  ••••  3456"
                     expiry="12/28"
+                    cardType={isBusinessUser ? 'business' : 'personal'}
                   />
                 </div>
               </div>
