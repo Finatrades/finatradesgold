@@ -150,7 +150,16 @@ export default function FinaVaultHistory() {
     return 'text-blue-600';
   };
 
-  const formatAction = (action: string) => {
+  const formatAction = (action: string, entry?: LedgerEntry) => {
+    // For Deposit actions, show proper labels based on source
+    if (action === 'Deposit') {
+      // Physical vault deposits
+      if (entry?.notes?.includes('FinaVault') || entry?.notes?.includes('physical') || entry?.notes?.includes('Physical')) {
+        return 'Deposit Physical Gold';
+      }
+      // Bank/card/crypto purchases
+      return 'Acquire Gold';
+    }
     return action.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
   };
 
@@ -220,12 +229,12 @@ export default function FinaVaultHistory() {
                           </div>
                           <div>
                             <p className="font-semibold text-foreground">
-                              {formatAction(entry.action)}
+                              {formatAction(entry.action, entry)}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {entry.fromWallet && entry.toWallet 
+                              {entry.notes || (entry.fromWallet && entry.toWallet 
                                 ? `${entry.fromWallet} → ${entry.toWallet}`
-                                : entry.notes || 'Gold movement'}
+                                : 'Gold movement')}
                             </p>
                           </div>
                         </div>
