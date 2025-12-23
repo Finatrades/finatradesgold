@@ -4181,11 +4181,15 @@ ${message}
           .map(c => c.transactionId)
       );
       
-      // Regular transactions (FinaPay) - exclude Buy/Deposit transactions that have certificates
+      // Regular transactions (FinaPay) - exclude Buy/Deposit transactions that have certificates or are vault deposits
       regularTransactions
         .filter(tx => {
           // Skip Buy and Deposit transactions that have certificates (they're shown as ADD_FUNDS from certificate)
           if ((tx.type === 'Buy' || tx.type === 'Deposit') && transactionIdsWithCerts.has(tx.id)) {
+            return false;
+          }
+          // Skip Deposit transactions that are linked to vault deposits (they're shown separately as vault_deposit entries)
+          if (tx.type === 'Deposit' && tx.description?.includes('FinaVault')) {
             return false;
           }
           return true;
@@ -4314,22 +4318,26 @@ ${message}
         });
       });
       
-      // Vault deposits
+      // Vault deposits - physical gold deposited and converted to digital
       vaultDepositReqs.forEach(dep => {
+        const goldWeight = dep.verifiedWeightGrams || dep.totalDeclaredWeightGrams || dep.goldGrams;
+        const isStored = dep.status === 'Stored' || dep.status === 'Approved';
         unifiedTransactions.push({
           id: dep.id,
           userId: dep.userId,
           module: 'finavault',
           actionType: 'ADD_FUNDS',
-          grams: dep.goldGrams,
+          grams: goldWeight,
           usd: null,
           usdPerGram: null,
-          status: dep.status === 'Stored' || dep.status === 'Approved' ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
+          status: isStored ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
           referenceId: dep.referenceNumber,
-          description: 'Vault Deposit',
+          description: isStored 
+            ? `Physical gold ${goldWeight}g deposited & converted to digital` 
+            : `Vault Deposit - ${dep.vaultLocation || 'Pending'}`,
           counterpartyUserId: null,
           createdAt: dep.createdAt,
-          completedAt: dep.processedAt,
+          completedAt: dep.processedAt || dep.storedAt,
           sourceType: 'vault_deposit'
         });
       });
