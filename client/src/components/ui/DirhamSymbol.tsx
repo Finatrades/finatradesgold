@@ -5,27 +5,22 @@ interface DirhamSymbolProps {
   size?: number | string;
 }
 
-export const AED_SYMBOL = 'Dh';
+export const AED_SYMBOL = 'AED';
 
 export function DirhamSymbol({ className = '', size = '1em' }: DirhamSymbolProps) {
   return (
-    <svg 
-      viewBox="0 0 24 32" 
-      fill="currentColor" 
+    <span 
       style={{ 
-        width: size, 
-        height: size, 
-        display: 'inline-block', 
-        verticalAlign: 'baseline',
-        marginRight: '0.15em'
+        fontSize: size, 
+        display: 'inline',
+        marginRight: '0.25em',
+        fontWeight: 600
       }}
       className={className}
       aria-label="AED"
     >
-      <path d="M4 4h2c6.627 0 12 5.373 12 12s-5.373 12-12 12H4V4zm2 4v16h0c4.418 0 8-3.582 8-8s-3.582-8-8-8z" />
-      <rect x="0" y="11" width="18" height="2.5" rx="1" />
-      <rect x="0" y="18" width="18" height="2.5" rx="1" />
-    </svg>
+      AED
+    </span>
   );
 }
 
