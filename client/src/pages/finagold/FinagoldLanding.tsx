@@ -10,7 +10,6 @@ import AboutSection from './components/AboutSection';
 import SwissStandards from './components/SwissStandards';
 import Products from './components/Products';
 import Certificates from './components/Certificates';
-import TrustStrip from './components/TrustStrip';
 import CTA from './components/CTA';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
@@ -115,7 +114,6 @@ function FinagoldContent() {
         <WhoItsFor />
         <ValueProps />
         <Certificates />
-        <TrustStrip />
         <CTA />
         <ContactForm />
       </main>
