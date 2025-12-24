@@ -1409,7 +1409,7 @@ export const bnslPositions = pgTable("bnsl_positions", {
   entryPriceUsdPerGram: decimal("entry_price_usd_per_gram", { precision: 12, scale: 2 }).notNull(),
   gramsLocked: decimal("grams_locked", { precision: 18, scale: 6 }).notNull(),
   gramsRemaining: decimal("grams_remaining", { precision: 18, scale: 6 }).notNull(),
-  fixedValueUsd: decimal("fixed_value_usd", { precision: 18, scale: 2 }).notNull(),
+  fixedValueUsd: decimal("fixed_value_usd", { precision: 18, scale: 2 }).default('0'),
   
   // Timing
   startAt: timestamp("start_at").notNull().defaultNow(),
