@@ -3375,10 +3375,12 @@ ${message}
     try {
       const personal = await storage.getAllFinatradesPersonalKyc();
       const corporate = await storage.getAllFinatradesCorporateKyc();
-      // Return raw arrays directly
-      return res.json({ submissions: [...personal, ...corporate] });
+      // Convert to plain objects using JSON parse/stringify cycle
+      const plainPersonal = JSON.parse(JSON.stringify(personal));
+      const plainCorporate = JSON.parse(JSON.stringify(corporate));
+      return res.json({ submissions: [...plainPersonal, ...plainCorporate] });
     } catch (error: any) {
-      return res.status(500).json({ error: error?.message });
+      return res.status(500).json({ error: error?.message, stack: error?.stack?.slice(0, 500) });
     }
   });
 
