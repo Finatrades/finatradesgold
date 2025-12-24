@@ -5,22 +5,22 @@ import finatradesLogo from '@/assets/finatrades-logo.png';
 
 const footerLinks = {
   Products: [
-    { label: 'FinaVault', href: '/finagold/finavault' },
-    { label: 'FinaPay Wallet', href: '/finagold/finapay' },
-    { label: 'FinaEarn (BNSL)', href: '/finagold/bnsl' },
-    { label: 'FinaBridge', href: '/finagold/finabridge' },
+    { label: 'FinaVault', href: '/finagold/finavault', businessOnly: false },
+    { label: 'FinaPay Wallet', href: '/finagold/finapay', businessOnly: false },
+    { label: 'FinaEarn (BNSL)', href: '/finagold/bnsl', businessOnly: false },
+    { label: 'FinaBridge', href: '/finagold/finabridge', businessOnly: true },
   ],
   Company: [
-    { label: 'About Us', href: '#about' },
-    { label: 'Careers', href: '#' },
-    { label: 'Press', href: '#' },
-    { label: 'Contact', href: '#contact' },
+    { label: 'About Us', href: '#about', businessOnly: false },
+    { label: 'Careers', href: '#', businessOnly: false },
+    { label: 'Press', href: '#', businessOnly: false },
+    { label: 'Contact', href: '#contact', businessOnly: false },
   ],
   Legal: [
-    { label: 'Terms of Service', href: '/terms' },
-    { label: 'Privacy Policy', href: '/privacy' },
-    { label: 'Disclaimer', href: '/disclaimer' },
-    { label: 'Cookies', href: '#' },
+    { label: 'Terms of Service', href: '/terms', businessOnly: false },
+    { label: 'Privacy Policy', href: '/privacy', businessOnly: false },
+    { label: 'Disclaimer', href: '/disclaimer', businessOnly: false },
+    { label: 'Cookies', href: '#', businessOnly: false },
   ],
 };
 
@@ -65,32 +65,35 @@ export default function Footer() {
             </div>
           </div>
 
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category} id={category === 'Legal' ? 'legal' : undefined}>
-              <h4 className="text-white font-semibold mb-4 text-sm">{category}</h4>
-              <ul className="space-y-3">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    {link.href.startsWith('#') ? (
-                      <a
-                        href={link.href}
-                        className="text-white/60 text-sm hover:text-white transition-colors"
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        href={link.href}
-                        className="text-white/60 text-sm hover:text-white transition-colors"
-                      >
-                        {link.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {Object.entries(footerLinks).map(([category, links]) => {
+            const filteredLinks = links.filter(link => !link.businessOnly || !isPersonal);
+            return (
+              <div key={category} id={category === 'Legal' ? 'legal' : undefined}>
+                <h4 className="text-white font-semibold mb-4 text-sm">{category}</h4>
+                <ul className="space-y-3">
+                  {filteredLinks.map((link) => (
+                    <li key={link.label}>
+                      {link.href.startsWith('#') ? (
+                        <a
+                          href={link.href}
+                          className="text-white/60 text-sm hover:text-white transition-colors"
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className="text-white/60 text-sm hover:text-white transition-colors"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
 
         <div className="pt-8 border-t border-white/20">
