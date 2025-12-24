@@ -45,136 +45,202 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
 
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center py-32 overflow-hidden">
+    <section className="relative min-h-[90vh] flex items-center py-24 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]" />
+      <FloatingParticles count={30} />
       
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-96 h-96 rounded-full bg-purple-100/40 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-[500px] h-[500px] rounded-full bg-pink-100/30 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-purple-50/50 blur-3xl" />
-      </div>
+      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-purple-100/40 blur-[150px]" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-100/30 blur-[120px]" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="space-y-8"
-        >
-          <div className="flex flex-wrap justify-center gap-3 mb-8">
-            {['Swiss-Regulated Framework', 'Physical Gold • In-Kind Settlement', 'Quarterly Payouts'].map((badge, i) => (
-              <motion.span
-                key={badge}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 + i * 0.1 }}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 text-purple-700"
-              >
-                {badge}
-              </motion.span>
-            ))}
-          </div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
-          >
-            BNSL – Buy Now{' '}
-            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-              Sell Later
-            </span>{' '}
-            Plan
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto"
-          >
-            A structured gold holding program with fixed pricing, quarterly payouts, and in-kind settlement.
-          </motion.p>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-gray-500 max-w-2xl mx-auto leading-relaxed"
-          >
-            Lock physical gold at a fixed price and receive quarterly payouts in additional gold units. 
-            Your entire plan follows the Locked-In Price mechanism established on your start date.
-          </motion.p>
-
+      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="flex flex-wrap justify-center gap-4 pt-8"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6"
           >
-            <Link href="/dashboard/bnsl/create" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:from-purple-700 hover:to-pink-600 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-200">
-              Start BNSL Plan
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <a
-              href="#calculator"
-              className="flex items-center gap-2 border-2 border-purple-200 text-purple-600 px-8 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-300 transition-all"
-            >
-              <BarChart3 className="w-5 h-5" />
-              Projection Calculator
-            </a>
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.8, duration: 1 }}
-          className="relative mt-20"
-        >
-          <div className="relative w-64 h-48 mx-auto">
             <motion.div
-              animate={{ 
-                rotateY: [0, 10, 0, -10, 0],
-                y: [0, -10, 0],
-              }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute inset-0 flex items-center justify-center"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50"
             >
-              <div className="relative">
-                {[0, 1, 2].map((i) => (
+              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center">
+                <Coins className="w-3 h-3 text-white" />
+              </div>
+              <span className="text-sm font-medium text-purple-700">Buy 'N' SeLL Gold Plans</span>
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight"
+            >
+              BNSL –{' '}
+              <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+                Buy Now
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+                Sell Later
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-lg text-gray-700 font-medium"
+            >
+              Lock the worth of your physical gold into a structured plan 
+              with fixed pricing and secure buy back margin.
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-gray-600 leading-relaxed max-w-lg"
+            >
+              Finatrades BNSL lets you place the worth of your gold into a defined term, 
+              receive quarterly growth, and keep your principal safely stored in regulated 
+              vaults until maturity.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex flex-wrap gap-3"
+            >
+              {[
+                { icon: Shield, label: 'Swiss-Regulated Framework' },
+                { icon: Lock, label: 'Physical Gold • Vault Custody' },
+                { icon: Sparkles, label: 'Fixed Price • Quarterly Growth' },
+              ].map((badge, i) => (
+                <span
+                  key={badge.label}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-white border border-gray-200 text-gray-600"
+                >
+                  <badge.icon className="w-4 h-4 text-purple-500" />
+                  {badge.label}
+                </span>
+              ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-wrap gap-4 pt-4"
+            >
+              <Link href="/dashboard/bnsl/create" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/30">
+                Start BNSL Plan
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <a
+                href="#how-it-works"
+                className="flex items-center gap-2 border border-purple-300 text-purple-700 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-400 transition-all"
+              >
+                View How It Works
+                <ChevronDown className="w-5 h-5" />
+              </a>
+            </motion.div>
+          </motion.div>
+
+          {/* Vault Visual */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="hidden lg:flex justify-center"
+          >
+            <div className="relative">
+              {/* Floating tooltip */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="absolute -top-8 right-0 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm shadow-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <span>Principal gold worth locked</span>
+                </div>
+                <span className="text-gray-400 text-xs">until maturity</span>
+                <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gray-900 rotate-45" />
+              </motion.div>
+
+              {/* Vault */}
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+                className="relative w-64 h-72 rounded-2xl bg-gradient-to-br from-gray-800 via-gray-900 to-black p-6 shadow-2xl"
+              >
+                {/* Gold bars on sides */}
+                <div className="absolute -left-3 top-1/4 flex flex-col gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ x: [-2, 2, -2] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                      className="w-6 h-10 rounded bg-gradient-to-b from-amber-400 to-amber-600 shadow-lg"
+                    />
+                  ))}
+                </div>
+                <div className="absolute -right-3 top-1/4 flex flex-col gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ x: [2, -2, 2] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                      className="w-6 h-10 rounded bg-gradient-to-b from-amber-400 to-amber-600 shadow-lg"
+                    />
+                  ))}
+                </div>
+
+                {/* Lock mechanism */}
+                <div className="flex flex-col items-center justify-center h-full">
                   <motion.div
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1 + i * 0.2 }}
-                    className="absolute w-32 h-16 rounded-lg bg-gradient-to-br from-purple-400 via-purple-500 to-pink-500 shadow-xl"
-                    style={{
-                      transform: `translateY(${i * -12}px) translateX(${i * 8}px) rotateX(20deg) rotateY(-15deg)`,
-                      boxShadow: '0 20px 40px rgba(138, 43, 226, 0.3)',
-                    }}
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                    className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg border-4 border-amber-400"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-lg" />
+                    <Lock className="w-10 h-10 text-amber-900" />
                   </motion.div>
+                  
+                  {/* Vault lines */}
+                  <div className="absolute top-6 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gray-700 rounded" />
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gray-700 rounded" />
+                </div>
+              </motion.div>
+
+              {/* Bottom badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+                className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-amber-200 border border-amber-300 shadow-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-600" />
+                  <span className="text-amber-800 text-sm font-medium">Gold Worth Locked & Secured</span>
+                </div>
+              </motion.div>
+
+              {/* Carousel dots */}
+              <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 flex gap-2">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
+                  />
                 ))}
               </div>
-            </motion.div>
-            
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-0 border border-purple-200 rounded-full"
-              style={{ transform: 'scale(1.5)' }}
-            />
-            <motion.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-0 border border-purple-100 rounded-full"
-              style={{ transform: 'scale(2)' }}
-            />
-          </div>
-        </motion.div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
