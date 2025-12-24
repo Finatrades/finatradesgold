@@ -577,11 +577,11 @@ export default function BNSLManagement() {
              <TabsTrigger value="plans" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                All Plans
              </TabsTrigger>
-             <TabsTrigger value="terminations" className="rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 py-3 px-1 relative">
+             <TabsTrigger value="terminations" className="rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 py-3 px-1 flex items-center gap-2">
                Early Terminations
-               {plans.filter(p => p.earlyTermination?.status === 'Requested').length > 0 && (
-                 <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                   {plans.filter(p => p.earlyTermination?.status === 'Requested').length}
+               {plans.filter(p => p.earlyTermination?.status === 'Requested' || p.earlyTermination?.status === 'Pending' || p.status === 'Early Termination Requested').length > 0 && (
+                 <span className="bg-purple-600 text-white text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center">
+                   {plans.filter(p => p.earlyTermination?.status === 'Requested' || p.earlyTermination?.status === 'Pending' || p.status === 'Early Termination Requested').length}
                  </span>
                )}
              </TabsTrigger>
