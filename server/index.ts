@@ -10,6 +10,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import { getRedisClient } from "./redis-client";
+import helmet from "helmet";
 
 // Extend express-session types
 declare module "express-session" {
@@ -24,6 +25,32 @@ const app = express();
 
 // Trust proxy for production (required for secure cookies behind Replit's reverse proxy)
 app.set('trust proxy', 1);
+
+// Security headers with helmet
+const isProduction = process.env.NODE_ENV === 'production';
+app.use(helmet({
+  contentSecurityPolicy: isProduction ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "wss:", "https:"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  } : false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  xContentTypeOptions: true,
+  xFrameOptions: { action: "deny" },
+}));
 
 // Session configuration with PostgreSQL store
 const PgSession = connectPgSimple(session);
@@ -76,6 +103,53 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// CSRF Protection: Require custom header for state-changing requests
+// This prevents CSRF attacks since browsers won't add custom headers to cross-origin requests
+app.use((req, res, next) => {
+  const isStateChangingMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+  const isApiRoute = req.path.startsWith('/api/');
+  
+  // Endpoints that don't require CSRF header (webhooks, public auth, external callbacks)
+  const csrfExemptPaths = [
+    // Authentication (public endpoints)
+    '/api/auth/login',
+    '/api/auth/register', 
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/send-verification',
+    '/api/auth/verify-email',
+    '/api/admin/login',
+    // MFA verification (stateless with challenge token)
+    '/api/mfa/verify',
+    // Public/read-like endpoints
+    '/api/contact',
+    '/api/gold-price',
+    '/api/geo-restriction/check',
+    '/api/platform-config/public',
+    '/api/cms/pages',
+    '/api/branding',
+    '/api/fees',
+    '/api/verify-certificate',
+    // External webhooks (no browser context)
+    '/api/webhooks',
+    '/api/binancepay/webhook',
+    '/api/ngenius/webhook',
+    '/api/stripe/webhook',
+  ];
+  
+  const isExempt = csrfExemptPaths.some(path => req.path.startsWith(path));
+  
+  if (isStateChangingMethod && isApiRoute && !isExempt) {
+    const csrfHeader = req.headers['x-requested-with'];
+    if (csrfHeader !== 'XMLHttpRequest') {
+      return res.status(403).json({ 
+        message: 'CSRF validation failed. Please refresh the page and try again.' 
+      });
+    }
+  }
+  next();
+});
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

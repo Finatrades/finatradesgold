@@ -80,6 +80,133 @@ import {
   logBackupAction,
   getBackupAuditLogs
 } from "./backup-service";
+import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
+
+// ============================================================================
+// IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
+// ============================================================================
+
+interface IdempotencyResult {
+  status: number;
+  body: unknown;
+}
+
+const IDEMPOTENCY_TTL = 24 * 60 * 60; // 24 hours
+const LOCK_TTL = 30; // 30 second lock for in-progress requests
+
+// In-memory lock map for when Redis is unavailable
+const inMemoryLocks = new Map<string, { inProgress: boolean; result?: IdempotencyResult }>();
+
+async function acquireIdempotencyLock(key: string): Promise<{ acquired: boolean; cachedResult?: IdempotencyResult }> {
+  const redis = getRedisClient();
+  const lockKey = `idempotency:lock:${key}`;
+  const resultKey = `idempotency:result:${key}`;
+  
+  if (redis) {
+    try {
+      // Check for existing result first
+      const existingResult = await redis.get(resultKey);
+      if (existingResult) {
+        return { acquired: false, cachedResult: JSON.parse(existingResult) };
+      }
+      
+      // Try to acquire lock atomically with SETNX
+      const acquired = await redis.set(lockKey, 'processing', 'EX', LOCK_TTL, 'NX');
+      return { acquired: acquired === 'OK' };
+    } catch (error) {
+      console.error('[Idempotency] Redis error:', error);
+    }
+  }
+  
+  // Fallback to in-memory
+  const cached = inMemoryLocks.get(key);
+  if (cached?.result) {
+    return { acquired: false, cachedResult: cached.result };
+  }
+  if (cached?.inProgress) {
+    return { acquired: false };
+  }
+  inMemoryLocks.set(key, { inProgress: true });
+  return { acquired: true };
+}
+
+async function storeIdempotencyResult(key: string, status: number, body: unknown): Promise<void> {
+  const redis = getRedisClient();
+  const lockKey = `idempotency:lock:${key}`;
+  const resultKey = `idempotency:result:${key}`;
+  const result: IdempotencyResult = { status, body };
+  
+  if (redis) {
+    try {
+      await redis.setex(resultKey, IDEMPOTENCY_TTL, JSON.stringify(result));
+      await redis.del(lockKey);
+      return;
+    } catch (error) {
+      console.error('[Idempotency] Redis store error:', error);
+    }
+  }
+  
+  // Fallback to in-memory
+  inMemoryLocks.set(key, { inProgress: false, result });
+  setTimeout(() => inMemoryLocks.delete(key), IDEMPOTENCY_TTL * 1000);
+}
+
+async function releaseIdempotencyLock(key: string): Promise<void> {
+  const redis = getRedisClient();
+  const lockKey = `idempotency:lock:${key}`;
+  
+  if (redis) {
+    try {
+      await redis.del(lockKey);
+    } catch {}
+  }
+  inMemoryLocks.delete(key);
+}
+
+function idempotencyMiddleware(req: Request, res: Response, next: NextFunction) {
+  const idempotencyKey = req.headers['x-idempotency-key'] as string;
+  
+  if (!idempotencyKey) {
+    return next();
+  }
+  
+  // Validate key format (should be UUID-like or alphanumeric)
+  if (!/^[a-zA-Z0-9-_]{8,64}$/.test(idempotencyKey)) {
+    return res.status(400).json({ message: 'Invalid idempotency key format' });
+  }
+  
+  // Create composite key with user ID and request path
+  const userId = req.session?.userId || 'anonymous';
+  const compositeKey = `${userId}:${req.path}:${idempotencyKey}`;
+  
+  acquireIdempotencyLock(compositeKey).then(({ acquired, cachedResult }) => {
+    if (cachedResult) {
+      console.log(`[Idempotency] Returning cached response for key: ${idempotencyKey}`);
+      return res.status(cachedResult.status).json(cachedResult.body);
+    }
+    
+    if (!acquired) {
+      // Request in progress, return conflict
+      return res.status(409).json({ message: 'Request already in progress. Please wait.' });
+    }
+    
+    // Store original json method to capture response
+    const originalJson = res.json.bind(res);
+    res.json = function(body: unknown) {
+      storeIdempotencyResult(compositeKey, res.statusCode, body);
+      return originalJson(body);
+    };
+    
+    // Handle errors - release lock on request failure
+    res.on('close', () => {
+      if (!res.writableEnded) {
+        releaseIdempotencyLock(compositeKey);
+      }
+    });
+    
+    next();
+  }).catch(() => next());
+}
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -4183,7 +4310,7 @@ ${message}
   // app.patch("/api/wallet/:id") - INTENTIONALLY REMOVED
   
   // Create transaction - all transactions start as Pending and require admin approval
-  app.post("/api/transactions", ensureAuthenticated, async (req, res) => {
+  app.post("/api/transactions", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
       // Force all transactions to start as Pending (requires admin authorization)
@@ -7929,7 +8056,7 @@ ${message}
   });
 
   // Transfer gold from FinaPay wallet to BNSL wallet
-  app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, async (req, res) => {
+  app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, goldGrams } = req.body;
       
@@ -8028,7 +8155,7 @@ ${message}
   });
 
   // Transfer gold from BNSL wallet to FinaPay wallet (withdraw)
-  app.post("/api/bnsl/wallet/withdraw", ensureAuthenticated, async (req, res) => {
+  app.post("/api/bnsl/wallet/withdraw", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, goldGrams } = req.body;
       
@@ -8344,7 +8471,7 @@ ${message}
   });
   
   // Create BNSL plan (locks gold from BNSL wallet)
-  app.post("/api/bnsl/plans", ensureAuthenticated, async (req, res) => {
+  app.post("/api/bnsl/plans", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       // Auto-generate contractId if not provided
       const contractId = req.body.contractId || `BNSL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -9392,7 +9519,7 @@ ${message}
   });
   
   // Create deposit request (User) - PROTECTED
-  app.post("/api/deposit-requests", ensureAuthenticated, async (req, res) => {
+  app.post("/api/deposit-requests", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       // Generate reference number
       const referenceNumber = `DEP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -9746,7 +9873,7 @@ ${message}
   });
   
   // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification
-  app.post("/api/withdrawal-requests", ensureAuthenticated, async (req, res) => {
+  app.post("/api/withdrawal-requests", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd, ...bankDetails } = req.body;
       
@@ -19843,7 +19970,7 @@ ${message}
   // ============================================
 
   // User: Submit buy gold request
-  app.post("/api/buy-gold/submit", async (req, res) => {
+  app.post("/api/buy-gold/submit", idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd, wingoldReferenceId, receiptFileUrl, receiptFileName } = req.body;
       
