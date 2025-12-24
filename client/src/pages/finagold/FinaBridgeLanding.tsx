@@ -604,64 +604,204 @@ function HeroSection() {
             </motion.div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="hidden lg:block"
-          >
-            <div className="relative p-8 rounded-3xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-xl">
-              <div className="absolute -top-3 -right-3 w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center shadow-lg">
-                <RefreshCw className="w-8 h-8 text-white" />
+        </div>
+        
+        {/* Trade Flow Animation */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.8 }}
+          className="mt-16"
+        >
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-[#0D001E] via-[#1a0a30] to-[#0D001E] p-8">
+            <div className="relative h-[320px] w-full">
+              <svg 
+                className="absolute inset-0 w-full h-full" 
+                viewBox="0 0 800 250" 
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <defs>
+                  <linearGradient id="heroTopPathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.2" />
+                    <stop offset="50%" stopColor="#EC4899" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0.2" />
+                  </linearGradient>
+                  <linearGradient id="heroBottomPathGradient" x1="100%" y1="0%" x2="0%" y2="0%">
+                    <stop offset="0%" stopColor="#EC4899" stopOpacity="0.2" />
+                    <stop offset="50%" stopColor="#8A2BE2" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#EC4899" stopOpacity="0.2" />
+                  </linearGradient>
+                  <linearGradient id="heroGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FCD34D" />
+                    <stop offset="50%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#D97706" />
+                  </linearGradient>
+                  <filter id="heroGlow">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                
+                {/* Top curved path */}
+                <motion.path
+                  d="M 80 125 Q 250 30, 400 60 Q 550 90, 720 125"
+                  fill="none"
+                  stroke="url(#heroTopPathGradient)"
+                  strokeWidth="2"
+                  filter="url(#heroGlow)"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 3, ease: 'easeOut' }}
+                />
+                
+                {/* Bottom curved path */}
+                <motion.path
+                  d="M 720 125 Q 550 220, 400 190 Q 250 160, 80 125"
+                  fill="none"
+                  stroke="url(#heroBottomPathGradient)"
+                  strokeWidth="2"
+                  filter="url(#heroGlow)"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 3, ease: 'easeOut', delay: 0.5 }}
+                />
+                
+                {/* Animated gold bars (slow) */}
+                {[0, 1, 2].map((i) => (
+                  <motion.g key={`hero-gold-${i}`}>
+                    <motion.rect
+                      x="70"
+                      y="120"
+                      width="20"
+                      height="10"
+                      rx="2"
+                      fill="url(#heroGoldGradient)"
+                      filter="url(#heroGlow)"
+                      animate={{
+                        x: [70, 710],
+                        y: [120, 50, 50, 120],
+                        opacity: [0, 1, 1, 0],
+                      }}
+                      transition={{
+                        duration: 10,
+                        repeat: Infinity,
+                        delay: i * 3,
+                        ease: 'linear',
+                      }}
+                    />
+                  </motion.g>
+                ))}
+                
+                {/* Animated ships (slow) */}
+                {[0, 1, 2].map((i) => (
+                  <motion.g key={`hero-ship-${i}`}>
+                    <motion.path
+                      d="M 0 0 L 16 0 L 20 8 L -4 8 Z"
+                      fill="#60A5FA"
+                      filter="url(#heroGlow)"
+                      animate={{
+                        x: [710, 70],
+                        y: [120, 190, 190, 120],
+                        opacity: [0, 1, 1, 0],
+                      }}
+                      transition={{
+                        duration: 10,
+                        repeat: Infinity,
+                        delay: i * 3 + 1.5,
+                        ease: 'linear',
+                      }}
+                    />
+                  </motion.g>
+                ))}
+                
+                {/* Importer node */}
+                <motion.g initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3 }}>
+                  <circle cx="80" cy="125" r="30" fill="#1a0a30" stroke="url(#heroTopPathGradient)" strokeWidth="2" />
+                  <motion.circle cx="80" cy="125" r="35" fill="none" stroke="#8A2BE2" strokeWidth="1" opacity="0.3"
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  />
+                </motion.g>
+                
+                {/* FinaBridge hub */}
+                <motion.g initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.5 }}>
+                  <circle cx="400" cy="125" r="40" fill="url(#heroTopPathGradient)" opacity="0.2" />
+                  <circle cx="400" cy="125" r="35" fill="#1a0a30" stroke="url(#heroTopPathGradient)" strokeWidth="3" />
+                  <motion.circle cx="400" cy="125" r="45" fill="none" stroke="url(#heroTopPathGradient)" strokeWidth="2" opacity="0.5"
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.2, 0.5] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  />
+                </motion.g>
+                
+                {/* Exporter node */}
+                <motion.g initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3 }}>
+                  <circle cx="720" cy="125" r="30" fill="#1a0a30" stroke="url(#heroBottomPathGradient)" strokeWidth="2" />
+                  <motion.circle cx="720" cy="125" r="35" fill="none" stroke="#EC4899" strokeWidth="1" opacity="0.3"
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+                  />
+                </motion.g>
+              </svg>
+              
+              {/* Labels */}
+              <div className="absolute left-[5%] top-1/2 -translate-y-1/2 text-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-purple-900/50 border border-purple-500/50 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <span className="text-purple-300 text-xs font-medium">Importer</span>
+                  <span className="text-gray-500 text-[10px]">Receives Goods</span>
+                </div>
               </div>
               
-              <div className="flex items-center justify-between gap-6 py-8">
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <div className="px-4 py-2 rounded-lg border-2 border-purple-200 text-purple-600 font-medium text-sm">
-                    Import
+              <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 text-center z-10">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <Globe className="w-7 h-7 text-white" />
                   </div>
-                </motion.div>
-                
-                <motion.div
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <div className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 text-white font-medium text-sm shadow-lg">
-                    Bridge
-                  </div>
-                </motion.div>
-                
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <div className="px-4 py-2 rounded-lg border-2 border-pink-200 text-pink-600 font-medium text-sm">
-                    Export
-                  </div>
-                </motion.div>
+                  <span className="text-white text-sm font-bold">FinaBridge</span>
+                  <span className="text-gray-400 text-[10px]">Trade Finance Hub</span>
+                </div>
               </div>
-
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between">
-                <motion.div
-                  animate={{ x: [-2, 2, -2] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                  className="w-2 h-2 rounded-full bg-purple-300"
-                />
-                <motion.div
-                  animate={{ x: [2, -2, 2] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                  className="w-2 h-2 rounded-full bg-pink-300"
-                />
+              
+              <div className="absolute right-[5%] top-1/2 -translate-y-1/2 text-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-pink-900/50 border border-pink-500/50 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-pink-400" />
+                  </div>
+                  <span className="text-pink-300 text-xs font-medium">Exporter</span>
+                  <span className="text-gray-500 text-[10px]">Ships Goods</span>
+                </div>
               </div>
+              
+              {/* Flow labels */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2 }}
+                className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-900/30 border border-amber-500/30"
+              >
+                <Coins className="w-3 h-3 text-amber-400" />
+                <span className="text-amber-300 text-[10px] font-medium">Gold Payment Flow</span>
+                <ArrowRight className="w-3 h-3 text-amber-400" />
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2.2 }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-900/30 border border-blue-500/30"
+              >
+                <ArrowRight className="w-3 h-3 text-blue-400 rotate-180" />
+                <span className="text-blue-300 text-[10px] font-medium">Goods Shipment Flow</span>
+                <Ship className="w-3 h-3 text-blue-400" />
+              </motion.div>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -1861,7 +2001,6 @@ function FinaBridgeContent() {
       <WhyUseFinaBridgeSection />
       <RiskManagementSection />
       <DealRoomSection />
-      <TradeFlowAnimation />
       <DocumentManagementSection />
       <SecuritySection />
       <GoldSettlementSection />
