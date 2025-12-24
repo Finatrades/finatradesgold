@@ -189,15 +189,9 @@ function HeroSection() {
             transition={{ delay: 0.6 }}
             className="flex flex-wrap justify-center gap-4 pt-8"
           >
-            <Link href="/finapay">
-              <motion.a
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30"
-              >
-                Open Wallet
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
+            <Link href="/finapay" className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[#EAC26B]/30">
+              Open Wallet
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
               href="#transactions"
@@ -802,15 +796,9 @@ function FinalCTASection() {
             transition={{ delay: 0.2 }}
             className="pt-8"
           >
-            <Link href="/finapay">
-              <motion.a
-                animate={{ boxShadow: ['0 0 0 0 rgba(234, 194, 107, 0)', '0 0 50px 15px rgba(234, 194, 107, 0.25)', '0 0 0 0 rgba(234, 194, 107, 0)'] }}
-                transition={{ duration: 2.5, repeat: Infinity }}
-                className="group inline-flex items-center gap-3 bg-[#EAC26B] text-black px-12 py-6 rounded-full text-lg font-semibold hover:bg-[#d4af5a] transition-all"
-              >
-                Open FinaPay Wallet
-                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
+            <Link href="/finapay" className="group inline-flex items-center gap-3 bg-[#EAC26B] text-black px-12 py-6 rounded-full text-lg font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30">
+              Open FinaPay Wallet
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>
         </motion.div>

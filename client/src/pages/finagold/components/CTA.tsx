@@ -79,27 +79,13 @@ export default function CTA() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/register">
-                <motion.a
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="group flex items-center gap-2 bg-[#F97316] text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#EA580C] transition-all shadow-lg shadow-[#F97316]/25 cursor-pointer"
-                  data-testid="cta-primary"
-                >
-                  {c.primaryCta}
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </motion.a>
+              <Link href="/register" className="group flex items-center gap-2 bg-[#F97316] text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#EA580C] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 cursor-pointer" data-testid="cta-primary">
+                {c.primaryCta}
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/login">
-                <motion.a
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="group flex items-center gap-2 border border-white/30 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/10 hover:border-white/50 transition-all cursor-pointer"
-                  data-testid="cta-secondary"
-                >
-                  <c.secondaryIcon className="w-4 h-4" />
-                  {c.secondaryCta}
-                </motion.a>
+              <Link href="/login" className="group flex items-center gap-2 border border-white/30 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/10 hover:border-white/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer" data-testid="cta-secondary">
+                <c.secondaryIcon className="w-4 h-4" />
+                {c.secondaryCta}
               </Link>
             </div>
           </div>

@@ -148,15 +148,9 @@ export default function Products() {
                 {product.description}
               </p>
 
-              <Link href={product.href}>
-                <motion.a
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] transition-all shadow-md shadow-[#FF2FBF]/20 cursor-pointer"
-                >
-                  {product.cta}
-                  <ArrowRight className="w-4 h-4" />
-                </motion.a>
+              <Link href={product.href} className="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20 cursor-pointer">
+                {product.cta}
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </motion.div>
           ))}

@@ -111,15 +111,9 @@ function HeroSection() {
             transition={{ delay: 0.6 }}
             className="flex flex-wrap justify-center gap-4 pt-8"
           >
-            <Link href="/bnsl">
-              <motion.a
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30"
-              >
-                Start BNSL Plan
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
+            <Link href="/bnsl" className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[#EAC26B]/30">
+              Start BNSL Plan
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
               href="#calculator"
@@ -583,14 +577,12 @@ function PlanComparisonSection() {
                 ))}
               </ul>
 
-              <Link href="/bnsl">
-                <a className={`block w-full py-3 rounded-full text-center font-semibold transition-all ${
-                  plan.featured
-                    ? 'bg-[#EAC26B] text-black hover:bg-[#d4af5a]'
-                    : 'border border-[#EAC26B]/40 text-white hover:bg-[#EAC26B]/10'
-                }`}>
-                  Select Plan
-                </a>
+              <Link href="/bnsl" className={`block w-full py-3 rounded-full text-center font-semibold transition-all ${
+                plan.featured
+                  ? 'bg-[#EAC26B] text-black hover:bg-[#d4af5a]'
+                  : 'border border-[#EAC26B]/40 text-white hover:bg-[#EAC26B]/10'
+              }`}>
+                Select Plan
               </Link>
             </motion.div>
           ))}
@@ -860,15 +852,9 @@ function FinalCTASection() {
             transition={{ delay: 0.2 }}
             className="flex flex-wrap justify-center gap-4 pt-4"
           >
-            <Link href="/bnsl">
-              <motion.a
-                animate={{ boxShadow: ['0 0 0 0 rgba(234, 194, 107, 0)', '0 0 40px 10px rgba(234, 194, 107, 0.2)', '0 0 0 0 rgba(234, 194, 107, 0)'] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="group flex items-center gap-2 bg-[#EAC26B] text-black px-10 py-5 rounded-full text-lg font-semibold hover:bg-[#d4af5a] transition-all"
-              >
-                Start BNSL Plan
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
+            <Link href="/bnsl" className="group flex items-center gap-2 bg-[#EAC26B] text-black px-10 py-5 rounded-full text-lg font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30">
+              Start BNSL Plan
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a href="#contact" className="flex items-center gap-2 border border-[#8A2BE2]/40 text-white px-10 py-5 rounded-full text-lg font-semibold hover:bg-white/5 hover:border-[#8A2BE2]/60 transition-all">
               Speak with Support

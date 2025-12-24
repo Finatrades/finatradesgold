@@ -324,11 +324,9 @@ export default function HowItWorks() {
             transition={{ duration: 2, repeat: Infinity }}
             className="inline-block rounded-full"
           >
-            <Link href={c.ctaHref}>
-              <a className="group inline-flex items-center gap-3 bg-[#F97316] text-white px-10 py-5 rounded-full text-base font-semibold hover:bg-[#EA580C] transition-all shadow-lg shadow-[#F97316]/30">
-                {c.cta}
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </a>
+            <Link href={c.ctaHref} className="group inline-flex items-center gap-3 bg-[#F97316] text-white px-10 py-5 rounded-full text-base font-semibold hover:bg-[#EA580C] transition-all shadow-lg shadow-[#F97316]/30">
+              {c.cta}
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>
         </motion.div>

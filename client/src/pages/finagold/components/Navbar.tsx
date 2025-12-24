@@ -69,15 +69,13 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
     >
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link href="/">
-            <a className="flex items-center">
-              <img 
-                src={finatradesLogo} 
-                alt="Finatrades" 
-                className="h-10 w-auto brightness-0 invert"
-                data-testid="logo-finatrades"
-              />
-            </a>
+          <Link href="/" className="flex items-center">
+            <img 
+              src={finatradesLogo} 
+              alt="Finatrades" 
+              className="h-10 w-auto brightness-0 invert"
+              data-testid="logo-finatrades"
+            />
           </Link>
 
           <div className="hidden lg:flex items-center gap-1">
@@ -92,17 +90,17 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                   {link.label}
                 </a>
               ) : (
-                <Link key={link.href} href={link.href}>
-                  <a
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      isActive(link.href)
-                        ? 'bg-white/10 text-white border border-white/20'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                    data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    {link.label}
-                  </a>
+                <Link 
+                  key={link.href} 
+                  href={link.href}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive(link.href)
+                      ? 'bg-white/10 text-white border border-white/20'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                  data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  {link.label}
                 </Link>
               )
             ))}
@@ -133,21 +131,19 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 <span className="text-xs">💼</span> Business
               </button>
             </div>
-            <Link href="/login">
-              <a
-                className="text-white/80 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
-                data-testid="btn-sign-in"
-              >
-                Sign In
-              </a>
+            <Link 
+              href="/login"
+              className="text-white/80 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
+              data-testid="btn-sign-in"
+            >
+              Sign In
             </Link>
-            <Link href="/register">
-              <a
-                className="bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:from-[#EA580C] hover:to-[#DC2626] transition-colors shadow-lg shadow-[#F97316]/30"
-                data-testid="btn-get-started"
-              >
-                Get Started
-              </a>
+            <Link 
+              href="/register"
+              className="bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:from-[#EA580C] hover:to-[#DC2626] transition-colors shadow-lg shadow-[#F97316]/30"
+              data-testid="btn-get-started"
+            >
+              Get Started
             </Link>
           </div>
 
@@ -180,17 +176,17 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                       {link.label}
                     </a>
                   ) : (
-                    <Link key={link.href} href={link.href}>
-                      <a
-                        className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                          isActive(link.href)
-                            ? 'bg-white/10 text-white border border-white/20'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        {link.label}
-                      </a>
+                    <Link 
+                      key={link.href} 
+                      href={link.href}
+                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                        isActive(link.href)
+                          ? 'bg-white/10 text-white border border-white/20'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {link.label}
                     </Link>
                   )
                 ))}
@@ -216,15 +212,17 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     Business
                   </button>
                 </div>
-                <Link href="/login">
-                  <a className="block border border-white/20 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center">
-                    Sign In
-                  </a>
+                <Link 
+                  href="/login"
+                  className="block border border-white/20 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center"
+                >
+                  Sign In
                 </Link>
-                <Link href="/register">
-                  <a className="block bg-[#EAC26B] text-black px-6 py-3 rounded-full text-sm font-semibold w-full text-center">
-                    Get Started
-                  </a>
+                <Link 
+                  href="/register"
+                  className="block bg-[#EAC26B] text-black px-6 py-3 rounded-full text-sm font-semibold w-full text-center"
+                >
+                  Get Started
                 </Link>
               </div>
             </motion.div>
