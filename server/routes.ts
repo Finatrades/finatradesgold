@@ -3338,6 +3338,55 @@ ${message}
     }
   });
 
+  // Test7: Find the exact record that fails serialization
+  app.get("/api/admin/kyc-test7", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    const results: any = { success: true, tested: { kycAml: [], personal: [], corporate: [] }, errors: [] };
+    
+    try {
+      const kycAml = await storage.getAllKycSubmissions();
+      for (let i = 0; i < kycAml.length; i++) {
+        try {
+          JSON.stringify(kycAml[i]);
+          results.tested.kycAml.push({ index: i, id: kycAml[i]?.id, status: 'ok' });
+        } catch (e: any) {
+          results.errors.push({ type: 'kycAml', index: i, id: kycAml[i]?.id, error: e?.message });
+        }
+      }
+    } catch (e: any) {
+      results.errors.push({ type: 'kycAml', error: 'fetch failed: ' + e?.message });
+    }
+    
+    try {
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      for (let i = 0; i < personal.length; i++) {
+        try {
+          JSON.stringify(personal[i]);
+          results.tested.personal.push({ index: i, id: personal[i]?.id, status: 'ok' });
+        } catch (e: any) {
+          results.errors.push({ type: 'personal', index: i, id: personal[i]?.id, error: e?.message });
+        }
+      }
+    } catch (e: any) {
+      results.errors.push({ type: 'personal', error: 'fetch failed: ' + e?.message });
+    }
+    
+    try {
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      for (let i = 0; i < corporate.length; i++) {
+        try {
+          JSON.stringify(corporate[i]);
+          results.tested.corporate.push({ index: i, id: corporate[i]?.id, status: 'ok' });
+        } catch (e: any) {
+          results.errors.push({ type: 'corporate', index: i, id: corporate[i]?.id, error: e?.message });
+        }
+      }
+    } catch (e: any) {
+      results.errors.push({ type: 'corporate', error: 'fetch failed: ' + e?.message });
+    }
+    
+    return res.json(results);
+  });
+
   // Test5: Exact same logic as main endpoint but with step-by-step tracking
   app.get("/api/admin/kyc-test5", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     const steps: string[] = [];
