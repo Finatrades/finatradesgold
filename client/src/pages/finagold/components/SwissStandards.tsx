@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import RegulatoryModal from './RegulatoryModal';
 
 export default function SwissStandards() {
+  const [showModal, setShowModal] = useState(false);
+
   return (
     <section className="py-28 bg-gradient-to-b from-[#F8FAFC] to-[#FAFBFF] relative overflow-hidden">
       <div className="absolute inset-0">
@@ -33,12 +37,15 @@ export default function SwissStandards() {
           
           <Button
             variant="outline"
+            onClick={() => setShowModal(true)}
             className="rounded-full px-10 py-4 text-lg border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300"
           >
             View Regulatory Information
           </Button>
         </motion.div>
       </div>
+
+      <RegulatoryModal open={showModal} onOpenChange={setShowModal} />
     </section>
   );
 }
