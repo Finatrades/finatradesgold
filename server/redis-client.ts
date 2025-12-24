@@ -4,7 +4,14 @@ let redisClient: Redis | null = null;
 
 function cleanRedisUrl(rawUrl: string): string {
   let url = rawUrl.trim();
-  if (url.startsWith('REDIS_URL=')) {
+  // Handle nested REDIS_URL= prefixes (can occur multiple times)
+  while (url.startsWith('REDIS_URL=')) {
+    url = url.substring('REDIS_URL='.length);
+  }
+  // Remove surrounding quotes
+  url = url.replace(/^["']|["']$/g, '');
+  // Handle case where quotes contain REDIS_URL= again
+  while (url.startsWith('REDIS_URL=')) {
     url = url.substring('REDIS_URL='.length);
   }
   url = url.replace(/^["']|["']$/g, '');
