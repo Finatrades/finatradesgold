@@ -112,6 +112,7 @@ import BNSLLanding from "@/pages/finagold/BNSLLanding";
 import FinaVaultLanding from "@/pages/finagold/FinaVaultLanding";
 import FinaBridgeLanding from "@/pages/finagold/FinaBridgeLanding";
 import FinaPayLanding from "@/pages/finagold/FinaPayLanding";
+import PrivacyPolicy from "@/pages/finagold/PrivacyPolicy";
 
 function Router() {
   return (
@@ -124,6 +125,7 @@ function Router() {
       <Route path="/finagold/finapay" component={FinaPayLanding} />
       <Route path="/finagold/finavault" component={FinaVaultLanding} />
       <Route path="/finagold/finabridge" component={FinaBridgeLanding} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/bnsl-landing" component={BNSLLanding} />
       <Route path="/finavault-landing" component={FinaVaultLanding} />
       <Route path="/finabridge-landing" component={FinaBridgeLanding} />
