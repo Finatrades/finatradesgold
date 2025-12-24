@@ -3372,15 +3372,55 @@ ${message}
 
   // Test9: Return raw arrays directly without any processing - minimal test
   app.get("/api/admin/kyc-test9", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    const debug: any = { step: 0 };
     try {
+      debug.step = 1;
       const personal = await storage.getAllFinatradesPersonalKyc();
+      debug.step = 2;
+      debug.personalCount = personal?.length;
+      
+      debug.step = 3;
       const corporate = await storage.getAllFinatradesCorporateKyc();
-      // Convert to plain objects using JSON parse/stringify cycle
-      const plainPersonal = JSON.parse(JSON.stringify(personal));
-      const plainCorporate = JSON.parse(JSON.stringify(corporate));
-      return res.json({ submissions: [...plainPersonal, ...plainCorporate] });
+      debug.step = 4;
+      debug.corporateCount = corporate?.length;
+      
+      // Try to stringify each array separately
+      debug.step = 5;
+      let personalJson: string;
+      try {
+        personalJson = JSON.stringify(personal);
+        debug.personalJsonLength = personalJson.length;
+      } catch (e: any) {
+        debug.personalStringifyError = e?.message;
+        return res.status(500).json(debug);
+      }
+      
+      debug.step = 6;
+      let corporateJson: string;
+      try {
+        corporateJson = JSON.stringify(corporate);
+        debug.corporateJsonLength = corporateJson.length;
+      } catch (e: any) {
+        debug.corporateStringifyError = e?.message;
+        return res.status(500).json(debug);
+      }
+      
+      debug.step = 7;
+      const plainPersonal = JSON.parse(personalJson);
+      debug.step = 8;
+      const plainCorporate = JSON.parse(corporateJson);
+      
+      debug.step = 9;
+      const combined = [...plainPersonal, ...plainCorporate];
+      debug.combinedCount = combined.length;
+      
+      debug.step = 10;
+      debug.success = true;
+      return res.json({ submissions: combined });
     } catch (error: any) {
-      return res.status(500).json({ error: error?.message, stack: error?.stack?.slice(0, 500) });
+      debug.error = error?.message;
+      debug.stack = error?.stack?.slice(0, 500);
+      return res.status(500).json(debug);
     }
   });
 
