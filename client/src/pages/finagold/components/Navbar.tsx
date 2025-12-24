@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, Globe, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo.png';
@@ -22,10 +22,10 @@ const universalLinks: NavLink[] = [
 
 const productLinks: NavLink[] = [
   { label: 'Home', href: '/' },
-  { label: 'FinaVault', href: '/finavault-landing' },
-  { label: 'FinaPay', href: '/finapay-landing' },
-  { label: 'BNSL', href: '/bnsl-landing' },
-  { label: 'FinaBridge', href: '/finabridge-landing', businessOnly: true },
+  { label: 'FinaVault', href: '/finagold/finavault' },
+  { label: 'FinaPay', href: '/finagold/finapay' },
+  { label: 'BNSL', href: '/finagold/bnsl' },
+  { label: 'FinaBridge', href: '/finagold/finabridge', businessOnly: true },
 ];
 
 interface NavbarProps {
@@ -51,7 +51,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
   const isActive = (href: string) => {
     if (href.startsWith('#')) return false;
-    if (href === '/') return location === '/';
+    if (href === '/') return location === '/' || location === '/finagold';
     return location.startsWith(href);
   };
 
@@ -62,18 +62,18 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? 'bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm' 
-          : 'bg-white/80 backdrop-blur-md'
+          ? 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] shadow-lg shadow-purple-900/20' 
+          : 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]'
       }`}
       data-testid="finagold-navbar"
     >
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center">
             <img 
               src={finatradesLogo} 
               alt="Finatrades" 
-              className="h-10 w-auto"
+              className="h-8 w-auto"
               data-testid="logo-finatrades"
             />
           </Link>
@@ -84,7 +84,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                  className="px-4 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
                   data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {link.label}
@@ -93,10 +93,10 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 <Link 
                   key={link.href} 
                   href={link.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     isActive(link.href)
-                      ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
                   }`}
                   data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
@@ -106,14 +106,22 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
             ))}
           </div>
 
-          <div className="hidden lg:flex items-center gap-4">
-            <div className="flex bg-gray-100 rounded-full p-1 border border-gray-200">
+          <div className="hidden lg:flex items-center gap-3">
+            {/* Language selector */}
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer">
+              <Globe className="w-4 h-4" />
+              <span className="text-sm">EN</span>
+              <ChevronDown className="w-3 h-3" />
+            </div>
+
+            {/* Personal/Business Toggle */}
+            <div className="flex bg-white/10 rounded-full p-0.5 border border-white/20">
               <button
                 onClick={() => setMode('personal')}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   isPersonal
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                    : 'text-white/70 hover:text-white'
                 }`}
                 data-testid="toggle-personal"
               >
@@ -121,26 +129,27 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
               </button>
               <button
                 onClick={() => setMode('business')}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   !isPersonal
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                    : 'text-white/70 hover:text-white'
                 }`}
                 data-testid="toggle-business"
               >
                 <span className="text-xs">💼</span> Business
               </button>
             </div>
+
             <Link 
               href="/sign-in"
-              className="text-gray-600 hover:text-gray-900 px-4 py-2.5 text-sm font-medium transition-colors"
+              className="text-white hover:text-white/80 px-4 py-2 text-sm font-medium transition-colors border border-white/30 rounded-full hover:bg-white/10"
               data-testid="btn-sign-in"
             >
               Sign In
             </Link>
             <Link 
               href="/get-started"
-              className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg shadow-purple-200"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
               data-testid="btn-get-started"
             >
               Get Started
@@ -149,7 +158,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden text-gray-700 p-2"
+            className="lg:hidden text-white p-2"
             data-testid="mobile-menu-toggle"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -162,7 +171,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden mt-4 pb-4 border-t border-gray-200 pt-4"
+              className="lg:hidden mt-4 pb-4 border-t border-white/20 pt-4"
             >
               <div className="flex flex-col gap-2">
                 {visibleLinks.map((link) => (
@@ -170,7 +179,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     <a
                       key={link.href}
                       href={link.href}
-                      className="px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all"
+                      className="px-4 py-3 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all"
                       onClick={() => setMobileOpen(false)}
                     >
                       {link.label}
@@ -181,8 +190,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                       href={link.href}
                       className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                         isActive(link.href)
-                          ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          ? 'bg-purple-600 text-white'
+                          : 'text-white/80 hover:text-white hover:bg-white/10'
                       }`}
                       onClick={() => setMobileOpen(false)}
                     >
@@ -195,8 +204,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     onClick={() => setMode('personal')}
                     className={`flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                       isPersonal
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
-                        : 'bg-gray-100 text-gray-600 border border-gray-200'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                        : 'bg-white/10 text-white/70 border border-white/20'
                     }`}
                   >
                     Personal
@@ -205,8 +214,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     onClick={() => setMode('business')}
                     className={`flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                       !isPersonal
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
-                        : 'bg-gray-100 text-gray-600 border border-gray-200'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                        : 'bg-white/10 text-white/70 border border-white/20'
                     }`}
                   >
                     Business
@@ -214,13 +223,13 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 </div>
                 <Link 
                   href="/sign-in"
-                  className="block border border-gray-200 text-gray-700 px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center hover:bg-gray-50"
+                  className="block border border-white/30 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center hover:bg-white/10"
                 >
                   Sign In
                 </Link>
                 <Link 
                   href="/get-started"
-                  className="block bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-full text-sm font-semibold w-full text-center"
+                  className="block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full text-sm font-semibold w-full text-center"
                 >
                   Get Started
                 </Link>
