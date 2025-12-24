@@ -20,8 +20,8 @@ import { Link } from 'wouter';
 interface Transaction {
   id: string;
   userId: string;
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Swap' | 'Deposit' | 'Withdrawal' | 'Buy Gold Bar' | 'Crypto Deposit' | 'Trade Finance' | 'BNSL';
-  status: 'Draft' | 'Pending' | 'Pending Verification' | 'Approved' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled' | 'Rejected' | 'Under Review' | 'Pending Review' | 'Pending Termination';
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Swap' | 'Deposit' | 'Withdrawal' | 'Buy Gold Bar' | 'Crypto Deposit' | 'Trade Finance' | 'BNSL' | 'Vault Deposit';
+  status: 'Draft' | 'Pending' | 'Pending Verification' | 'Approved' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled' | 'Rejected' | 'Under Review' | 'Pending Review' | 'Pending Termination' | 'Submitted';
   amountGold: string | null;
   amountUsd: string | null;
   amountEur: string | null;
@@ -260,6 +260,11 @@ export default function Transactions() {
       'Deposit': 'bg-purple-100 text-purple-800',
       'Withdrawal': 'bg-pink-100 text-pink-800',
       'Swap': 'bg-cyan-100 text-cyan-800',
+      'Crypto Deposit': 'bg-orange-100 text-orange-800',
+      'Buy Gold Bar': 'bg-yellow-100 text-yellow-800',
+      'Trade Finance': 'bg-indigo-100 text-indigo-800',
+      'BNSL': 'bg-teal-100 text-teal-800',
+      'Vault Deposit': 'bg-amber-100 text-amber-800',
     };
     return <Badge className={`${colors[type] || 'bg-gray-100 text-gray-800'} border-none`}>{type}</Badge>;
   };
@@ -339,6 +344,9 @@ export default function Transactions() {
               <SelectItem value="Draft">Draft</SelectItem>
               <SelectItem value="Pending">Pending</SelectItem>
               <SelectItem value="Pending Verification">Pending Verification</SelectItem>
+              <SelectItem value="Pending Review">Pending Review</SelectItem>
+              <SelectItem value="Pending Termination">Pending Termination</SelectItem>
+              <SelectItem value="Under Review">Under Review</SelectItem>
               <SelectItem value="Approved">Approved</SelectItem>
               <SelectItem value="Processing">Processing</SelectItem>
               <SelectItem value="Completed">Completed</SelectItem>
@@ -348,17 +356,22 @@ export default function Transactions() {
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[150px]" data-testid="select-type">
+            <SelectTrigger className="w-[180px]" data-testid="select-type">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Buy">Buy</SelectItem>
-              <SelectItem value="Sell">Sell</SelectItem>
-              <SelectItem value="Send">Send</SelectItem>
-              <SelectItem value="Receive">Receive</SelectItem>
-              <SelectItem value="Deposit">Deposit</SelectItem>
+              <SelectItem value="Buy">Buy Gold</SelectItem>
+              <SelectItem value="Sell">Sell Gold</SelectItem>
+              <SelectItem value="Send">Send (P2P)</SelectItem>
+              <SelectItem value="Receive">Receive (P2P)</SelectItem>
+              <SelectItem value="Deposit">Deposit (Bank)</SelectItem>
               <SelectItem value="Withdrawal">Withdrawal</SelectItem>
+              <SelectItem value="Crypto Deposit">Crypto Deposit</SelectItem>
+              <SelectItem value="Buy Gold Bar">Buy Gold Bar</SelectItem>
+              <SelectItem value="Trade Finance">Trade Finance</SelectItem>
+              <SelectItem value="BNSL">BNSL</SelectItem>
+              <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
               <SelectItem value="Swap">Swap</SelectItem>
             </SelectContent>
           </Select>
