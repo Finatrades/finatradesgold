@@ -13,6 +13,7 @@ import Certificates from './components/Certificates';
 import CTA from './components/CTA';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
+import CookieConsent from './components/CookieConsent';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 function FinagoldContent() {
@@ -118,6 +119,7 @@ function FinagoldContent() {
         <ContactForm />
       </main>
       <Footer />
+      <CookieConsent />
       <FloatingAgentChat />
     </div>
   );
