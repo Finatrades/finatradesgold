@@ -17,7 +17,6 @@ import {
   Send,
   X,
   Gift,
-  Bell,
   HelpCircle,
   Settings
 } from 'lucide-react';
@@ -55,7 +54,6 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
   const accountMenuItems: MenuItem[] = [
     { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
     { icon: <Gift className="w-5 h-5" />, label: 'Referral', href: '/referral' },
-    { icon: <Bell className="w-5 h-5" />, label: 'Notifications', href: '/notifications' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/profile' },
     { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/settings' },

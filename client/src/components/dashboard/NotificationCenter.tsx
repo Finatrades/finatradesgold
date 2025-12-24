@@ -1,17 +1,76 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Check, Trash2, X, Info, CheckCircle2, AlertTriangle, XCircle, ArrowRightLeft } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, X, Info, CheckCircle2, AlertTriangle, XCircle, ArrowRightLeft, Wallet, Database, TrendingUp, Shield, RefreshCw, Filter, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNotifications, Notification, NotificationType } from '@/context/NotificationContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
+
+interface Notification {
+  id: string;
+  userId: string;
+  type: 'transaction' | 'kyc' | 'bnsl' | 'vault' | 'security' | 'system' | 'referral';
+  title: string;
+  message: string;
+  isRead: boolean;
+  priority: 'low' | 'medium' | 'high';
+  actionUrl?: string;
+  createdAt: string;
+}
 
 export default function NotificationCenter() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState<string>('all');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside
+  const { data, isLoading, refetch } = useQuery<{ notifications: Notification[] }>({
+    queryKey: ['notifications', user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${user?.id}/notifications`);
+      if (!res.ok) throw new Error('Failed to fetch notifications');
+      return res.json();
+    },
+    enabled: !!user?.id && isOpen,
+    refetchInterval: isOpen ? 30000 : false,
+  });
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const res = await fetch(`/api/notifications/${notificationId}/read`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to mark as read');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/users/${user?.id}/notifications/read-all`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to mark all as read');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('All notifications marked as read');
+    },
+  });
+
+  const deleteNotificationMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const res = await fetch(`/api/notifications/${notificationId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete notification');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -22,14 +81,34 @@ export default function NotificationCenter() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getIcon = (type: NotificationType) => {
+  const notifications = data?.notifications || [];
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const filteredNotifications = notifications.filter(n => {
+    if (filter === 'all') return true;
+    if (filter === 'unread') return !n.isRead;
+    return n.type === filter;
+  });
+
+  const getIcon = (type: string) => {
     switch (type) {
-      case 'success': return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5 text-purple-500" />;
-      case 'error': return <XCircle className="w-5 h-5 text-red-500" />;
-      case 'transaction': return <ArrowRightLeft className="w-5 h-5 text-blue-500" />;
-      default: return <Info className="w-5 h-5 text-secondary" />;
+      case 'transaction': return <Wallet className="w-4 h-4 text-blue-500" />;
+      case 'kyc': return <Shield className="w-4 h-4 text-purple-500" />;
+      case 'bnsl': return <TrendingUp className="w-4 h-4 text-green-500" />;
+      case 'vault': return <Database className="w-4 h-4 text-yellow-500" />;
+      case 'security': return <Shield className="w-4 h-4 text-red-500" />;
+      case 'referral': return <CheckCircle2 className="w-4 h-4 text-pink-500" />;
+      case 'success': return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'warning': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case 'error': return <XCircle className="w-4 h-4 text-red-500" />;
+      default: return <Info className="w-4 h-4 text-secondary" />;
     }
+  };
+
+  const getPriorityDot = (priority: string) => {
+    if (priority === 'high') return 'bg-red-500';
+    if (priority === 'medium') return 'bg-yellow-500';
+    return null;
   };
 
   return (
@@ -41,7 +120,9 @@ export default function NotificationCenter() {
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 border border-background animate-pulse" data-testid="badge-unread-count" />
+          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center" data-testid="badge-unread-count">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
         )}
       </button>
 
@@ -52,16 +133,16 @@ export default function NotificationCenter() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 md:w-96 bg-popover border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+            className="absolute right-0 mt-2 w-[360px] md:w-[420px] bg-popover border border-border rounded-xl shadow-xl z-50 overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
+            <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary/10 to-secondary/10">
               <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-primary" />
                 <h3 className="font-bold text-foreground">Notifications</h3>
                 {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-secondary text-white text-xs font-bold">
-                    {unreadCount}
-                  </span>
+                  <Badge className="bg-primary text-white text-xs">
+                    {unreadCount} new
+                  </Badge>
                 )}
               </div>
               <div className="flex gap-1">
@@ -69,67 +150,154 @@ export default function NotificationCenter() {
                   variant="ghost" 
                   size="icon" 
                   className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  onClick={markAllAsRead}
-                  title="Mark all as read"
-                  data-testid="button-mark-all-read"
+                  onClick={() => refetch()}
+                  title="Refresh"
+                  data-testid="button-refresh-notifications"
                 >
-                  <Check className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4" />
                 </Button>
+                {unreadCount > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => markAllAsReadMutation.mutate()}
+                    disabled={markAllAsReadMutation.isPending}
+                    title="Mark all as read"
+                    data-testid="button-mark-all-read"
+                  >
+                    <CheckCheck className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={clearAll}
-                  title="Clear all"
-                  data-testid="button-clear-all-notifications"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsOpen(false)}
+                  title="Close"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
-            {/* List */}
+            <div className="px-3 py-2 border-b border-border bg-muted/30">
+              <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+                {['all', 'unread', 'transaction', 'security', 'system'].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                      filter === f 
+                        ? 'bg-primary text-white' 
+                        : 'bg-muted text-muted-foreground hover:text-foreground'
+                    }`}
+                    data-testid={`filter-${f}`}
+                  >
+                    {f === 'all' ? 'All' : 
+                     f === 'unread' ? `Unread (${unreadCount})` :
+                     f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <ScrollArea className="h-[400px]">
-              {notifications.length === 0 ? (
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-full py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mt-2">Loading notifications...</p>
+                </div>
+              ) : filteredNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-12 text-center text-muted-foreground">
                   <Bell className="w-12 h-12 mb-3 opacity-20" />
-                  <p>No notifications yet</p>
+                  <p className="font-medium">No notifications</p>
+                  <p className="text-sm mt-1">
+                    {filter === 'all' ? "You're all caught up!" : "No notifications match this filter"}
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-border" data-testid="notification-list">
-                  {notifications.map((notification) => (
-                    <div 
-                      key={notification.id}
-                      className={`p-4 hover:bg-muted/50 transition-colors flex gap-4 cursor-pointer ${!notification.read ? 'bg-secondary/5' : ''}`}
-                      onClick={() => markAsRead(notification.id)}
-                      data-testid={`notification-item-${notification.id}`}
-                    >
-                      <div className="shrink-0 mt-1">
-                        {getIcon(notification.type)}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex justify-between items-start">
-                          <h4 className={`text-sm font-medium ${!notification.read ? 'text-foreground font-bold' : 'text-foreground/80'}`}>
-                            {notification.title}
-                          </h4>
-                          <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                            {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
-                          </span>
+                  <AnimatePresence>
+                    {filteredNotifications.map((notification) => (
+                      <motion.div 
+                        key={notification.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, x: -50 }}
+                        className={`p-3 hover:bg-muted/50 transition-colors group ${!notification.isRead ? 'bg-primary/5' : ''}`}
+                        data-testid={`notification-item-${notification.id}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                            {getIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <h4 className={`text-sm font-medium truncate ${!notification.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                  {notification.title}
+                                </h4>
+                                {!notification.isRead && (
+                                  <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                                )}
+                                {getPriorityDot(notification.priority) && (
+                                  <span className={`w-2 h-2 rounded-full ${getPriorityDot(notification.priority)} shrink-0`} />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                {!notification.isRead && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markAsReadMutation.mutate(notification.id);
+                                    }}
+                                    title="Mark as read"
+                                    data-testid={`button-mark-read-${notification.id}`}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </Button>
+                                )}
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-6 w-6 hover:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotificationMutation.mutate(notification.id);
+                                  }}
+                                  title="Delete"
+                                  data-testid={`button-delete-${notification.id}`}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <span className="text-[10px] text-muted-foreground/70 mt-1 block">
+                              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground leading-snug">
-                          {notification.message}
-                        </p>
-                      </div>
-                      {!notification.read && (
-                        <div className="shrink-0 self-center">
-                          <div className="w-2 h-2 rounded-full bg-secondary" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               )}
             </ScrollArea>
+
+            {notifications.length > 0 && (
+              <div className="p-3 border-t border-border bg-muted/30 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Showing {filteredNotifications.length} of {notifications.length} notifications
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
