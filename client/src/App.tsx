@@ -80,6 +80,7 @@ import FeeManagement from "@/pages/admin/FeeManagement";
 import FinancialReports from "@/pages/admin/FinancialReports";
 import AccountStatements from "@/pages/admin/AccountStatements";
 import DatabaseBackups from "@/pages/admin/DatabaseBackups";
+import GeoRestrictions from "@/pages/admin/GeoRestrictions";
 import BNSLExplore from "@/pages/BNSLExplore";
 import FinaVaultHistory from "@/pages/FinaVaultHistory";
 import FinaBridgeRequests from "@/pages/FinaBridgeRequests";
@@ -169,6 +170,7 @@ function Router() {
       <Route path="/admin/payment-gateways" component={PaymentGatewayManagement} />
       <Route path="/admin/platform-config" component={PlatformConfiguration} />
       <Route path="/admin/database-backups" component={DatabaseBackups} />
+      <Route path="/admin/geo-restrictions" component={GeoRestrictions} />
       <Route path="/admin/security" component={SecuritySettings} />
       <Route path="/admin/documents" component={DocumentsManagement} />
       <Route path="/admin/attachments" component={AttachmentsManagement} />

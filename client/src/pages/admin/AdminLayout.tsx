@@ -25,7 +25,8 @@ import {
   Database,
   Paperclip,
   X,
-  Gift
+  Gift,
+  Globe
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/security': ['manage_settings'],
   '/admin/platform-config': ['manage_settings'],
   '/admin/database-backups': ['manage_settings'],
+  '/admin/geo-restrictions': ['manage_settings'],
   '/admin/settings': ['manage_settings'],
   '/admin/referrals': ['view_users', 'manage_users'],
 };
@@ -185,6 +187,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/admin/security' },
         { icon: <Settings className="w-5 h-5" />, label: 'Platform Config', href: '/admin/platform-config' },
         { icon: <Database className="w-5 h-5" />, label: 'Database Backups', href: '/admin/database-backups' },
+        { icon: <Globe className="w-5 h-5" />, label: 'Geo Restrictions', href: '/admin/geo-restrictions' },
         { icon: <Settings className="w-5 h-5" />, label: 'Settings', href: '/admin/settings' },
       ]
     }
