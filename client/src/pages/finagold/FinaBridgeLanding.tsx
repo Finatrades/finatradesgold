@@ -9,7 +9,7 @@ import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo.png';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import { ModeProvider } from './context/ModeContext';
+import { ModeProvider, useMode } from './context/ModeContext';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const PRIMARY_COLOR = '#9333ea';
@@ -1234,47 +1234,102 @@ function FinalCTASection() {
 }
 
 
+function FinaBridgeContent() {
+  const { isPersonal, setMode } = useMode();
+  
+  if (isPersonal) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] flex flex-col">
+        <Navbar variant="products" />
+        <div className="flex-1 flex items-center justify-center px-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-lg text-center"
+          >
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-6">
+              <Building2 className="w-10 h-10 text-purple-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              FinaBridge is for{' '}
+              <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+                Business
+              </span>{' '}
+              Users
+            </h1>
+            <p className="text-gray-600 mb-8">
+              FinaBridge provides trade finance solutions for importers and exporters. 
+              Switch to Business mode to access cross-border trade financing, gold-backed settlements, 
+              and document management features.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <button
+                onClick={() => setMode('business')}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full font-semibold hover:opacity-90 transition-all shadow-lg shadow-purple-200"
+              >
+                Switch to Business Mode
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-full font-semibold hover:bg-gray-50 transition-all"
+              >
+                Back to Home
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="finabridge-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-gray-900" data-testid="finabridge-landing">
+      <style>{`
+        .finabridge-landing {
+          --purple-600: #9333ea;
+          --pink-500: #ec4899;
+          --purple-100: #f3e8ff;
+          --pink-100: #fce7f3;
+          --primary: #9333ea;
+          --primary-foreground: #ffffff;
+          --ring: #9333ea;
+          --accent: #ec4899;
+          --accent-foreground: #ffffff;
+          --muted: #f3f4f6;
+          --muted-foreground: #6b7280;
+          --input: #f9fafb;
+          --border: #e5e7eb;
+          --background: #ffffff;
+          --foreground: #111827;
+          --card: #ffffff;
+          --card-foreground: #111827;
+          --popover: #ffffff;
+          --popover-foreground: #111827;
+        }
+      `}</style>
+      <Navbar variant="products" />
+      <HeroSection />
+      <ValuePillarsSection />
+      <TradeFlowAnimation />
+      <FeaturesShowcaseSection />
+      <DealRoomSection />
+      <GlobalTradeMapSection />
+      <DocumentManagementSection />
+      <SecuritySection />
+      <GoldSettlementSection />
+      <FinalCTASection />
+      <Footer />
+      <FloatingAgentChat />
+    </div>
+  );
+}
+
 export default function FinaBridgeLanding() {
   return (
     <ModeProvider>
-      <div className="finabridge-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-gray-900" data-testid="finabridge-landing">
-        <style>{`
-          .finabridge-landing {
-            --purple-600: #9333ea;
-            --pink-500: #ec4899;
-            --purple-100: #f3e8ff;
-            --pink-100: #fce7f3;
-            --primary: #9333ea;
-            --primary-foreground: #ffffff;
-            --ring: #9333ea;
-            --accent: #ec4899;
-            --accent-foreground: #ffffff;
-            --muted: #f3f4f6;
-            --muted-foreground: #6b7280;
-            --input: #f9fafb;
-            --border: #e5e7eb;
-            --background: #ffffff;
-            --foreground: #111827;
-            --card: #ffffff;
-            --card-foreground: #111827;
-            --popover: #ffffff;
-            --popover-foreground: #111827;
-          }
-        `}</style>
-        <Navbar variant="products" />
-        <HeroSection />
-        <ValuePillarsSection />
-        <TradeFlowAnimation />
-        <FeaturesShowcaseSection />
-        <DealRoomSection />
-        <GlobalTradeMapSection />
-        <DocumentManagementSection />
-        <SecuritySection />
-        <GoldSettlementSection />
-        <FinalCTASection />
-        <Footer />
-        <FloatingAgentChat />
-      </div>
+      <FinaBridgeContent />
     </ModeProvider>
   );
 }
