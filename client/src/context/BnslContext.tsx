@@ -196,6 +196,7 @@ export function BnslProvider({ children }: { children: ReactNode }) {
       if (data.plans) {
         const transformedPlans = await Promise.all(data.plans.map(async (plan: any) => {
           let payouts: any[] = [];
+          let earlyTermination: any = undefined;
           
           try {
             const payoutsRes = await apiRequest('GET', `/api/bnsl/payouts/${plan.id}`);
@@ -203,6 +204,14 @@ export function BnslProvider({ children }: { children: ReactNode }) {
             payouts = payoutsData.payouts || [];
           } catch (e) {
             console.error('Failed to fetch payouts for plan', plan.id);
+          }
+          
+          try {
+            const terminationRes = await apiRequest('GET', `/api/bnsl/early-termination/${plan.id}`);
+            const terminationData = await terminationRes.json();
+            earlyTermination = terminationData.termination;
+          } catch (e) {
+            console.error('Failed to fetch early termination for plan', plan.id);
           }
           
           let planUser = plan.user;
@@ -215,7 +224,7 @@ export function BnslProvider({ children }: { children: ReactNode }) {
             }
           }
           
-          return transformDbPlanToFrontend(plan, payouts, undefined, planUser);
+          return transformDbPlanToFrontend(plan, payouts, earlyTermination, planUser);
         }));
         
         setAllPlans(transformedPlans);

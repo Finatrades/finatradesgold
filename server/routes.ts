@@ -8514,6 +8514,16 @@ ${message}
     }
   });
   
+  // Get early termination by plan ID
+  app.get("/api/bnsl/early-termination/:planId", ensureAuthenticated, async (req, res) => {
+    try {
+      const termination = await storage.getBnslEarlyTermination(req.params.planId);
+      res.json({ termination: termination || null });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get early termination" });
+    }
+  });
+
   // Create early termination
   app.post("/api/bnsl/early-termination", ensureAuthenticated, async (req, res) => {
     try {
