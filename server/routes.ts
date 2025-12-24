@@ -22,7 +22,9 @@ import {
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments,
-  physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates
+  physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates,
+  tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
+  tradeRequests, tradeProposals, settlementHolds
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -11357,6 +11359,248 @@ ${message}
       res.json({ message: "Dispute resolved successfully" });
     } catch (error) {
       res.status(400).json({ message: "Failed to resolve dispute" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - SHIPMENT TRACKING
+  // ============================================================================
+
+  // Get shipment for trade request
+  app.get("/api/finabridge/shipments/:tradeRequestId", ensureAuthenticated, async (req, res) => {
+    try {
+      const [shipment] = await db.select().from(tradeShipments)
+        .where(eq(tradeShipments.tradeRequestId, req.params.tradeRequestId));
+      
+      if (!shipment) {
+        return res.json({ shipment: null });
+      }
+      
+      const milestones = await db.select().from(shipmentMilestones)
+        .where(eq(shipmentMilestones.shipmentId, shipment.id))
+        .orderBy(shipmentMilestones.createdAt);
+      
+      res.json({ shipment: { ...shipment, milestones } });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get shipment" });
+    }
+  });
+
+  // Create/update shipment (admin)
+  app.post("/api/admin/finabridge/shipments", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { 
+        tradeRequestId, dealRoomId, trackingNumber, courierName, status,
+        estimatedShipDate, actualShipDate, estimatedArrivalDate, actualArrivalDate,
+        originPort, destinationPort, currentLocation, customsStatus, notes
+      } = req.body;
+      
+      const [existing] = await db.select().from(tradeShipments)
+        .where(eq(tradeShipments.tradeRequestId, tradeRequestId));
+      
+      if (existing) {
+        const [updated] = await db.update(tradeShipments).set({
+          trackingNumber, courierName, status, estimatedShipDate: estimatedShipDate ? new Date(estimatedShipDate) : null,
+          actualShipDate: actualShipDate ? new Date(actualShipDate) : null, estimatedArrivalDate: estimatedArrivalDate ? new Date(estimatedArrivalDate) : null,
+          actualArrivalDate: actualArrivalDate ? new Date(actualArrivalDate) : null, originPort, destinationPort, currentLocation, customsStatus, notes,
+          updatedAt: new Date()
+        }).where(eq(tradeShipments.id, existing.id)).returning();
+        res.json({ shipment: updated });
+      } else {
+        const [shipment] = await db.insert(tradeShipments).values({
+          id: crypto.randomUUID(), tradeRequestId, dealRoomId, trackingNumber, courierName, status: status || 'Pending',
+          estimatedShipDate: estimatedShipDate ? new Date(estimatedShipDate) : null, actualShipDate: actualShipDate ? new Date(actualShipDate) : null,
+          estimatedArrivalDate: estimatedArrivalDate ? new Date(estimatedArrivalDate) : null, actualArrivalDate: actualArrivalDate ? new Date(actualArrivalDate) : null,
+          originPort, destinationPort, currentLocation, customsStatus, notes
+        }).returning();
+        res.json({ shipment });
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update shipment" });
+    }
+  });
+
+  // Add shipment milestone (admin)
+  app.post("/api/admin/finabridge/shipments/:shipmentId/milestones", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { milestone, status, location, description } = req.body;
+      const [created] = await db.insert(shipmentMilestones).values({
+        id: crypto.randomUUID(), shipmentId: req.params.shipmentId, milestone, status: status || 'completed',
+        location, description, completedAt: status === 'completed' ? new Date() : null
+      }).returning();
+      res.json({ milestone: created });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add milestone" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - TRADE CERTIFICATES
+  // ============================================================================
+
+  // Get certificates for trade
+  app.get("/api/finabridge/certificates/:tradeRequestId", ensureAuthenticated, async (req, res) => {
+    try {
+      const certificates = await db.select().from(tradeCertificates)
+        .where(eq(tradeCertificates.tradeRequestId, req.params.tradeRequestId))
+        .orderBy(desc(tradeCertificates.createdAt));
+      res.json({ certificates });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get certificates" });
+    }
+  });
+
+  // Generate certificate (admin)
+  app.post("/api/finabridge/certificates", ensureAuthenticated, async (req, res) => {
+    try {
+      const { tradeRequestId, type } = req.body;
+      const tradeRequest = await storage.getTradeRequest(tradeRequestId);
+      if (!tradeRequest) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      
+      const certNumber = `TC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const [certificate] = await db.insert(tradeCertificates).values({
+        id: crypto.randomUUID(), tradeRequestId, certificateNumber: certNumber, type,
+        importerUserId: tradeRequest.importerUserId, tradeValueUsd: tradeRequest.tradeValueUsd,
+        settlementGoldGrams: tradeRequest.settlementGoldGrams, goodsDescription: tradeRequest.goodsName,
+        incoterms: tradeRequest.incoterms, signedBy: 'Finatrades Admin'
+      }).returning();
+      res.json({ certificate });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to generate certificate" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - EXPORTER RATINGS & TRUST SCORES
+  // ============================================================================
+
+  // Get exporter trust score
+  app.get("/api/finabridge/exporter/:userId/trust-score", ensureAuthenticated, async (req, res) => {
+    try {
+      let [trustScore] = await db.select().from(exporterTrustScores)
+        .where(eq(exporterTrustScores.exporterUserId, req.params.userId));
+      
+      if (!trustScore) {
+        [trustScore] = await db.insert(exporterTrustScores).values({
+          id: crypto.randomUUID(), exporterUserId: req.params.userId, trustScore: 50, verificationLevel: 'Unverified'
+        }).returning();
+      }
+      res.json({ trustScore });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get trust score" });
+    }
+  });
+
+  // Submit rating
+  app.post("/api/finabridge/ratings", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+      
+      const { exporterUserId, tradeRequestId, overallRating, qualityRating, communicationRating, deliveryRating, review } = req.body;
+      
+      const [rating] = await db.insert(exporterRatings).values({
+        id: crypto.randomUUID(), exporterUserId, importerUserId: sessionUserId, tradeRequestId,
+        overallRating, qualityRating, communicationRating, deliveryRating, review
+      }).returning();
+      
+      // Update trust score
+      const ratings = await db.select().from(exporterRatings).where(eq(exporterRatings.exporterUserId, exporterUserId));
+      const avgRating = ratings.reduce((sum, r) => sum + r.overallRating, 0) / ratings.length;
+      const trustScoreValue = Math.min(100, Math.round(avgRating * 20));
+      
+      await db.update(exporterTrustScores).set({
+        averageRating: avgRating.toFixed(2), totalRatings: ratings.length, trustScore: trustScoreValue, updatedAt: new Date()
+      }).where(eq(exporterTrustScores.exporterUserId, exporterUserId));
+      
+      res.json({ rating, message: "Rating submitted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to submit rating" });
+    }
+  });
+
+  // Get exporter ratings
+  app.get("/api/finabridge/exporter/:userId/ratings", ensureAuthenticated, async (req, res) => {
+    try {
+      const ratings = await db.select().from(exporterRatings)
+        .where(eq(exporterRatings.exporterUserId, req.params.userId))
+        .orderBy(desc(exporterRatings.createdAt));
+      res.json({ ratings });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get ratings" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - TRADE RISK ASSESSMENTS
+  // ============================================================================
+
+  // Get risk assessment for trade
+  app.get("/api/finabridge/risk-assessment/:tradeRequestId", ensureAuthenticated, async (req, res) => {
+    try {
+      const [assessment] = await db.select().from(tradeRiskAssessments)
+        .where(eq(tradeRiskAssessments.tradeRequestId, req.params.tradeRequestId));
+      res.json({ assessment });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get risk assessment" });
+    }
+  });
+
+  // Create/update risk assessment (admin)
+  app.post("/api/admin/finabridge/risk-assessment", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const { tradeRequestId, riskScore, riskLevel, importerKycStatus, exporterKycStatus, countryRisk, valueRisk, exporterHistoryRisk, riskFactors, mitigationNotes, isFlagged, flagReason } = req.body;
+      
+      const [existing] = await db.select().from(tradeRiskAssessments).where(eq(tradeRiskAssessments.tradeRequestId, tradeRequestId));
+      
+      if (existing) {
+        const [updated] = await db.update(tradeRiskAssessments).set({
+          riskScore, riskLevel, importerKycStatus, exporterKycStatus, countryRisk, valueRisk, exporterHistoryRisk, riskFactors, mitigationNotes, isFlagged, flagReason, assessedBy: adminUser.id, assessedAt: new Date()
+        }).where(eq(tradeRiskAssessments.id, existing.id)).returning();
+        res.json({ assessment: updated });
+      } else {
+        const [assessment] = await db.insert(tradeRiskAssessments).values({
+          id: crypto.randomUUID(), tradeRequestId, riskScore, riskLevel, importerKycStatus, exporterKycStatus, countryRisk, valueRisk, exporterHistoryRisk, riskFactors, mitigationNotes, isFlagged, flagReason, assessedBy: adminUser.id
+        }).returning();
+        res.json({ assessment });
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update risk assessment" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE - TRADE ANALYTICS
+  // ============================================================================
+
+  app.get("/api/admin/finabridge/analytics", ensureAdminAsync, requirePermission('view_finabridge'), async (req, res) => {
+    try {
+      const tradeRequestsList = await db.select().from(tradeRequests);
+      const proposals = await db.select().from(tradeProposals);
+      const settlements = await db.select().from(settlementHolds);
+      const disputes = await db.select().from(tradeDisputes);
+      
+      const totalTrades = tradeRequestsList.length;
+      const activeTrades = tradeRequestsList.filter(t => t.status === 'Submitted' || t.status === 'In Deal Room').length;
+      const completedTrades = tradeRequestsList.filter(t => t.status === 'Completed' || t.status === 'Settled').length;
+      const totalValueUsd = tradeRequestsList.reduce((sum, t) => sum + parseFloat(t.tradeValueUsd || '0'), 0);
+      const totalGoldGrams = tradeRequestsList.reduce((sum, t) => sum + parseFloat(t.settlementGoldGrams || '0'), 0);
+      const avgTradeValue = totalTrades > 0 ? totalValueUsd / totalTrades : 0;
+      const successRate = totalTrades > 0 ? (completedTrades / totalTrades) * 100 : 0;
+      const openDisputes = disputes.filter(d => d.status !== 'Resolved' && d.status !== 'Closed').length;
+      
+      res.json({
+        analytics: {
+          totalTrades, activeTrades, completedTrades, totalValueUsd, totalGoldGrams, avgTradeValue, successRate,
+          totalProposals: proposals.length, activeSettlements: settlements.filter(s => s.status === 'Locked').length,
+          openDisputes, monthlyTrends: []
+        }
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get analytics" });
     }
   });
 

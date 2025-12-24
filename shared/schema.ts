@@ -3290,3 +3290,189 @@ export const insuranceCertificates = pgTable("insurance_certificates", {
 export const insertInsuranceCertificateSchema = createInsertSchema(insuranceCertificates).omit({ id: true, createdAt: true });
 export type InsertInsuranceCertificate = z.infer<typeof insertInsuranceCertificateSchema>;
 export type InsuranceCertificate = typeof insuranceCertificates.$inferSelect;
+
+// ============================================
+// FINABRIDGE - SHIPMENT TRACKING
+// ============================================
+
+export const tradeShipmentStatusEnum = pgEnum('trade_shipment_status', [
+  'Pending', 'Preparing', 'Shipped', 'In Transit', 'Customs Clearance', 'Out for Delivery', 'Delivered', 'Delayed', 'Cancelled'
+]);
+
+export const tradeShipments = pgTable("trade_shipments", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).references(() => dealRooms.id),
+  
+  trackingNumber: varchar("tracking_number", { length: 100 }),
+  courierName: varchar("courier_name", { length: 100 }),
+  
+  status: tradeShipmentStatusEnum("status").notNull().default('Pending'),
+  
+  estimatedShipDate: timestamp("estimated_ship_date"),
+  actualShipDate: timestamp("actual_ship_date"),
+  estimatedArrivalDate: timestamp("estimated_arrival_date"),
+  actualArrivalDate: timestamp("actual_arrival_date"),
+  
+  originPort: varchar("origin_port", { length: 255 }),
+  destinationPort: varchar("destination_port", { length: 255 }),
+  currentLocation: varchar("current_location", { length: 255 }),
+  
+  customsStatus: varchar("customs_status", { length: 100 }),
+  customsClearanceDate: timestamp("customs_clearance_date"),
+  customsDocuments: text("customs_documents"),
+  
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTradeShipmentSchema = createInsertSchema(tradeShipments).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTradeShipment = z.infer<typeof insertTradeShipmentSchema>;
+export type TradeShipment = typeof tradeShipments.$inferSelect;
+
+// Shipment Milestones - tracking each step
+export const shipmentMilestones = pgTable("shipment_milestones", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  shipmentId: varchar("shipment_id", { length: 255 }).notNull().references(() => tradeShipments.id),
+  
+  milestone: varchar("milestone", { length: 100 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default('pending'),
+  location: varchar("location", { length: 255 }),
+  description: text("description"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertShipmentMilestoneSchema = createInsertSchema(shipmentMilestones).omit({ id: true, createdAt: true });
+export type InsertShipmentMilestone = z.infer<typeof insertShipmentMilestoneSchema>;
+export type ShipmentMilestone = typeof shipmentMilestones.$inferSelect;
+
+// ============================================
+// FINABRIDGE - TRADE CERTIFICATES
+// ============================================
+
+export const tradeCertificateTypeEnum = pgEnum('trade_certificate_type', [
+  'Trade Confirmation', 'Settlement Certificate', 'Completion Certificate', 'Insurance Certificate'
+]);
+
+export const tradeCertificates = pgTable("trade_certificates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  
+  certificateNumber: varchar("certificate_number", { length: 50 }).notNull().unique(),
+  type: tradeCertificateTypeEnum("type").notNull(),
+  
+  importerUserId: varchar("importer_user_id", { length: 255 }).notNull().references(() => users.id),
+  exporterUserId: varchar("exporter_user_id", { length: 255 }).references(() => users.id),
+  
+  tradeValueUsd: decimal("trade_value_usd", { precision: 18, scale: 2 }).notNull(),
+  settlementGoldGrams: decimal("settlement_gold_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  goodsDescription: text("goods_description"),
+  incoterms: varchar("incoterms", { length: 50 }),
+  
+  issuedAt: timestamp("issued_at").notNull().defaultNow(),
+  validUntil: timestamp("valid_until"),
+  
+  certificateUrl: text("certificate_url"),
+  signedBy: varchar("signed_by", { length: 255 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTradeCertificateSchema = createInsertSchema(tradeCertificates).omit({ id: true, createdAt: true });
+export type InsertTradeCertificate = z.infer<typeof insertTradeCertificateSchema>;
+export type TradeCertificate = typeof tradeCertificates.$inferSelect;
+
+// ============================================
+// FINABRIDGE - EXPORTER RATINGS
+// ============================================
+
+export const exporterRatings = pgTable("exporter_ratings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  exporterUserId: varchar("exporter_user_id", { length: 255 }).notNull().references(() => users.id),
+  importerUserId: varchar("importer_user_id", { length: 255 }).notNull().references(() => users.id),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  
+  overallRating: integer("overall_rating").notNull(),
+  qualityRating: integer("quality_rating"),
+  communicationRating: integer("communication_rating"),
+  deliveryRating: integer("delivery_rating"),
+  
+  review: text("review"),
+  isVerified: boolean("is_verified").default(false),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertExporterRatingSchema = createInsertSchema(exporterRatings).omit({ id: true, createdAt: true });
+export type InsertExporterRating = z.infer<typeof insertExporterRatingSchema>;
+export type ExporterRating = typeof exporterRatings.$inferSelect;
+
+// Exporter Trust Score - aggregated stats
+export const exporterTrustScores = pgTable("exporter_trust_scores", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  exporterUserId: varchar("exporter_user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  
+  totalTrades: integer("total_trades").notNull().default(0),
+  completedTrades: integer("completed_trades").notNull().default(0),
+  disputedTrades: integer("disputed_trades").notNull().default(0),
+  cancelledTrades: integer("cancelled_trades").notNull().default(0),
+  
+  averageRating: decimal("average_rating", { precision: 3, scale: 2 }).default('0'),
+  totalRatings: integer("total_ratings").notNull().default(0),
+  
+  totalTradeValueUsd: decimal("total_trade_value_usd", { precision: 18, scale: 2 }).default('0'),
+  averageDeliveryDays: integer("average_delivery_days"),
+  
+  trustScore: integer("trust_score").notNull().default(0),
+  verificationLevel: varchar("verification_level", { length: 50 }).default('Unverified'),
+  verifiedAt: timestamp("verified_at"),
+  
+  lastTradeAt: timestamp("last_trade_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertExporterTrustScoreSchema = createInsertSchema(exporterTrustScores).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertExporterTrustScore = z.infer<typeof insertExporterTrustScoreSchema>;
+export type ExporterTrustScore = typeof exporterTrustScores.$inferSelect;
+
+// ============================================
+// FINABRIDGE - TRADE RISK SCORING
+// ============================================
+
+export const tradeRiskLevelEnum = pgEnum('trade_risk_level', [
+  'Low', 'Medium', 'High', 'Critical'
+]);
+
+export const tradeRiskAssessments = pgTable("trade_risk_assessments", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  
+  riskScore: integer("risk_score").notNull(),
+  riskLevel: tradeRiskLevelEnum("risk_level").notNull(),
+  
+  importerKycStatus: varchar("importer_kyc_status", { length: 50 }),
+  exporterKycStatus: varchar("exporter_kyc_status", { length: 50 }),
+  
+  countryRisk: varchar("country_risk", { length: 50 }),
+  valueRisk: varchar("value_risk", { length: 50 }),
+  exporterHistoryRisk: varchar("exporter_history_risk", { length: 50 }),
+  
+  riskFactors: json("risk_factors"),
+  mitigationNotes: text("mitigation_notes"),
+  
+  assessedBy: varchar("assessed_by", { length: 255 }).references(() => users.id),
+  assessedAt: timestamp("assessed_at").notNull().defaultNow(),
+  
+  isFlagged: boolean("is_flagged").default(false),
+  flagReason: text("flag_reason"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTradeRiskAssessmentSchema = createInsertSchema(tradeRiskAssessments).omit({ id: true, createdAt: true });
+export type InsertTradeRiskAssessment = z.infer<typeof insertTradeRiskAssessmentSchema>;
+export type TradeRiskAssessment = typeof tradeRiskAssessments.$inferSelect;
