@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
-import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award, FileText } from 'lucide-react';
+import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award, FileText, DollarSign, Package, Shield, Truck, Download, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -176,6 +176,54 @@ export default function FinaVault() {
       if (!res.ok) return { pricePerGram: 85 };
       return res.json();
     }
+  });
+
+  // Fetch storage fees for the user
+  const { data: storageFeesData } = useQuery({
+    queryKey: ['storage-fees', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { fees: [] };
+      const res = await fetch(`/api/vault/storage-fees/${user.id}`);
+      if (!res.ok) return { fees: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch allocated gold bars for the user
+  const { data: goldBarsData } = useQuery({
+    queryKey: ['gold-bars', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { bars: [] };
+      const res = await fetch(`/api/vault/gold-bars/${user.id}`);
+      if (!res.ok) return { bars: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch insurance certificates for the user
+  const { data: insuranceData } = useQuery({
+    queryKey: ['insurance', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { certificates: [] };
+      const res = await fetch(`/api/vault/insurance/${user.id}`);
+      if (!res.ok) return { certificates: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch physical delivery requests for the user
+  const { data: physicalDeliveriesData } = useQuery({
+    queryKey: ['physical-deliveries', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { requests: [] };
+      const res = await fetch(`/api/vault/physical-deliveries/${user.id}`);
+      if (!res.ok) return { requests: [] };
+      return res.json();
+    },
+    enabled: !!user?.id
   });
 
   // Transform API deposit requests to match frontend type
@@ -583,6 +631,38 @@ export default function FinaVault() {
                     Certificates
                   </TabsTrigger>
                   <TabsTrigger 
+                    value="storage-fees"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
+                    data-testid="tab-storage-fees"
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Storage Fees
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="gold-bars"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
+                    data-testid="tab-gold-bars"
+                  >
+                    <Package className="w-4 h-4 mr-2" />
+                    My Gold Bars
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="deliveries"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
+                    data-testid="tab-deliveries"
+                  >
+                    <Truck className="w-4 h-4 mr-2" />
+                    Deliveries
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="insurance"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
+                    data-testid="tab-insurance"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Insurance
+                  </TabsTrigger>
+                  <TabsTrigger 
                     value="terms"
                     className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                     data-testid="tab-terms"
@@ -767,6 +847,299 @@ export default function FinaVault() {
 
                 <TabsContent value="certificates" className="mt-0">
                   <CertificatesView />
+                </TabsContent>
+
+                {/* Storage Fees Tab */}
+                <TabsContent value="storage-fees" className="mt-0">
+                  <Card className="bg-white border">
+                    <CardHeader className="border-b">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <DollarSign className="w-5 h-5 text-primary" />
+                        Storage Fee History
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">View your vault storage fees and payment history</p>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {(storageFeesData?.fees || []).length === 0 ? (
+                        <div className="p-12 text-center">
+                          <DollarSign className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                          <h3 className="text-lg font-bold mb-2">No Storage Fees Yet</h3>
+                          <p className="text-muted-foreground">
+                            Storage fees are calculated monthly based on your vault holdings. You'll see your fee history here once fees are applied.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50 border-b">
+                              <tr>
+                                <th className="text-left p-4 font-medium">Billing Period</th>
+                                <th className="text-left p-4 font-medium">Gold Balance</th>
+                                <th className="text-left p-4 font-medium">Fee Rate</th>
+                                <th className="text-right p-4 font-medium">Fee Amount</th>
+                                <th className="text-center p-4 font-medium">Status</th>
+                                <th className="text-left p-4 font-medium">Paid Date</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                              {(storageFeesData?.fees || []).map((fee: any) => (
+                                <tr key={fee.id} className="hover:bg-gray-50">
+                                  <td className="p-4">
+                                    {new Date(fee.billingPeriodStart).toLocaleDateString()} - {new Date(fee.billingPeriodEnd).toLocaleDateString()}
+                                  </td>
+                                  <td className="p-4 font-medium">
+                                    {parseFloat(fee.goldGramsAtBilling || 0).toFixed(4)} g
+                                  </td>
+                                  <td className="p-4 text-muted-foreground">
+                                    {parseFloat(fee.feeRatePercent || 0).toFixed(2)}% annual
+                                  </td>
+                                  <td className="p-4 text-right font-bold">
+                                    ${parseFloat(fee.feeAmountUsd || 0).toFixed(2)}
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                      fee.status === 'Paid' ? 'bg-green-100 text-green-700' : 
+                                      fee.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 
+                                      'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {fee.status === 'Paid' && <CheckCircle className="w-3 h-3 mr-1" />}
+                                      {fee.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
+                                      {fee.status}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-muted-foreground">
+                                    {fee.paidAt ? new Date(fee.paidAt).toLocaleDateString() : '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Gold Bars Tab */}
+                <TabsContent value="gold-bars" className="mt-0">
+                  <Card className="bg-white border">
+                    <CardHeader className="border-b">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Package className="w-5 h-5 text-primary" />
+                        My Allocated Gold Bars
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">View details of gold bars allocated to your account</p>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {(goldBarsData?.bars || []).length === 0 ? (
+                        <div className="p-12 text-center">
+                          <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                          <h3 className="text-lg font-bold mb-2">No Gold Bars Allocated</h3>
+                          <p className="text-muted-foreground">
+                            Once you deposit physical gold into the vault, specific gold bars will be allocated to your account with their serial numbers and details.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+                          {(goldBarsData?.bars || []).map((bar: any) => (
+                            <div key={bar.id} className="p-4 rounded-lg border bg-gradient-to-br from-amber-50 to-yellow-50">
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <p className="text-xs text-muted-foreground uppercase">Serial Number</p>
+                                  <p className="font-mono font-bold">{bar.serialNumber}</p>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  bar.status === 'Allocated' ? 'bg-green-100 text-green-700' : 
+                                  bar.status === 'Available' ? 'bg-blue-100 text-blue-700' : 
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {bar.status}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Weight</p>
+                                  <p className="font-semibold">{parseFloat(bar.weightGrams || 0).toFixed(2)} g</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Purity</p>
+                                  <p className="font-semibold">{bar.purity || '999.9'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Refinery</p>
+                                  <p className="font-semibold">{bar.refinery || 'N/A'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Vault Location</p>
+                                  <p className="font-semibold">{bar.vaultLocation || 'Dubai'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Deliveries Tab */}
+                <TabsContent value="deliveries" className="mt-0">
+                  <Card className="bg-white border">
+                    <CardHeader className="border-b">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Truck className="w-5 h-5 text-primary" />
+                        Physical Delivery Requests
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">Track your physical gold delivery requests</p>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {(physicalDeliveriesData?.requests || []).length === 0 ? (
+                        <div className="p-12 text-center">
+                          <Truck className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                          <h3 className="text-lg font-bold mb-2">No Delivery Requests</h3>
+                          <p className="text-muted-foreground">
+                            You haven't requested any physical gold deliveries yet. Contact support to request physical delivery of your gold.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50 border-b">
+                              <tr>
+                                <th className="text-left p-4 font-medium">Reference</th>
+                                <th className="text-left p-4 font-medium">Gold Amount</th>
+                                <th className="text-left p-4 font-medium">Delivery Address</th>
+                                <th className="text-center p-4 font-medium">Status</th>
+                                <th className="text-left p-4 font-medium">Tracking</th>
+                                <th className="text-left p-4 font-medium">Created</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                              {(physicalDeliveriesData?.requests || []).map((delivery: any) => (
+                                <tr key={delivery.id} className="hover:bg-gray-50">
+                                  <td className="p-4 font-mono text-xs">
+                                    {delivery.referenceNumber || delivery.id.substring(0, 8).toUpperCase()}
+                                  </td>
+                                  <td className="p-4 font-medium">
+                                    {parseFloat(delivery.goldGrams || 0).toFixed(4)} g
+                                  </td>
+                                  <td className="p-4 text-muted-foreground max-w-xs truncate">
+                                    {delivery.deliveryAddress || 'Not specified'}
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    <div className="flex flex-col items-center gap-1">
+                                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                        delivery.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
+                                        delivery.status === 'Shipped' ? 'bg-blue-100 text-blue-700' : 
+                                        delivery.status === 'Processing' ? 'bg-purple-100 text-purple-700' : 
+                                        delivery.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 
+                                        delivery.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 
+                                        'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {delivery.status === 'Delivered' && <CheckCircle className="w-3 h-3 mr-1" />}
+                                        {delivery.status === 'Shipped' && <Truck className="w-3 h-3 mr-1" />}
+                                        {delivery.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
+                                        {delivery.status}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="p-4">
+                                    {delivery.trackingNumber ? (
+                                      <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                                        {delivery.trackingNumber}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </td>
+                                  <td className="p-4 text-muted-foreground">
+                                    {new Date(delivery.createdAt).toLocaleDateString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Insurance Tab */}
+                <TabsContent value="insurance" className="mt-0">
+                  <Card className="bg-white border">
+                    <CardHeader className="border-b">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-primary" />
+                        Insurance Coverage
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">View your gold insurance certificates and coverage details</p>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      {(insuranceData?.certificates || []).length === 0 ? (
+                        <div className="text-center py-8">
+                          <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                          <h3 className="text-lg font-bold mb-2">Insurance Coverage</h3>
+                          <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                            All gold stored in FinaVault is covered by comprehensive insurance through our partnership with Wingold and Metals DMCC.
+                          </p>
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4 max-w-md mx-auto">
+                            <div className="flex items-center gap-2 text-green-700 mb-2">
+                              <CheckCircle className="w-5 h-5" />
+                              <span className="font-semibold">Your Gold is Insured</span>
+                            </div>
+                            <p className="text-sm text-green-600">
+                              Coverage includes theft, fire, natural disasters, and transit damage. Individual certificates are issued upon request.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {(insuranceData?.certificates || []).map((cert: any) => (
+                            <div key={cert.id} className="p-4 rounded-lg border bg-gradient-to-br from-green-50 to-emerald-50">
+                              <div className="flex items-start justify-between mb-4">
+                                <div>
+                                  <p className="text-xs text-muted-foreground uppercase">Certificate Number</p>
+                                  <p className="font-mono font-bold">{cert.certificateNumber}</p>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  cert.status === 'Active' ? 'bg-green-100 text-green-700' : 
+                                  cert.status === 'Expired' ? 'bg-red-100 text-red-700' : 
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {cert.status}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Provider</p>
+                                  <p className="font-semibold">{cert.provider || 'Wingold'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Coverage Amount</p>
+                                  <p className="font-semibold">${parseFloat(cert.coverageAmountUsd || 0).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Valid From</p>
+                                  <p className="font-semibold">{new Date(cert.validFrom).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Valid Until</p>
+                                  <p className="font-semibold">{new Date(cert.validUntil).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                              <div className="mt-4 flex justify-end">
+                                <Button variant="outline" size="sm" className="gap-2">
+                                  <Download className="w-4 h-4" />
+                                  Download Certificate
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="terms" className="mt-0">

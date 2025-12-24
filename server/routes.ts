@@ -6723,6 +6723,60 @@ ${message}
         details: `Status changed to ${status}`,
       });
 
+      // Send email notification to user
+      const user = await storage.getUser(request.userId);
+      if (user?.email) {
+        try {
+          if (status === 'Stored' || status === 'Stored in Vault') {
+            const finalWeightGrams = verifiedWeightGrams != null ? parseFloat(String(verifiedWeightGrams)) : parseFloat(request.totalDeclaredWeightGrams);
+            const pricePerGram = goldPriceUsdPerGram != null ? parseFloat(String(goldPriceUsdPerGram)) : 85.22;
+            const totalValue = finalWeightGrams * pricePerGram;
+            await sendEmail({
+              to: user.email,
+              subject: 'Your Gold Deposit Has Been Stored - FinaVault',
+              html: `
+                <h2>Gold Deposit Confirmed</h2>
+                <p>Dear ${user.firstName || 'Valued Customer'},</p>
+                <p>Great news! Your gold deposit has been verified and stored in our secure vault.</p>
+                <table style="border-collapse: collapse; margin: 20px 0;">
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reference:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.referenceNumber}</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Verified Weight:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${finalWeightGrams.toFixed(4)} grams</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Value:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">$${totalValue.toFixed(2)} USD</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Vault Location:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.vaultLocation}</td></tr>
+                </table>
+                <p>Your FinaPay wallet has been credited with the gold. You can now view your certificates in the FinaVault section.</p>
+                <p>Thank you for choosing Finatrades!</p>
+              `,
+            });
+          } else if (status === 'Rejected') {
+            await sendEmail({
+              to: user.email,
+              subject: 'Vault Deposit Request Update - FinaVault',
+              html: `
+                <h2>Deposit Request Update</h2>
+                <p>Dear ${user.firstName || 'Valued Customer'},</p>
+                <p>We regret to inform you that your vault deposit request could not be processed.</p>
+                <table style="border-collapse: collapse; margin: 20px 0;">
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reference:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.referenceNumber}</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reason:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${rejectionReason || 'Please contact support for details'}</td></tr>
+                </table>
+                <p>If you have questions, please contact our support team.</p>
+              `,
+            });
+            // Create in-app notification
+            await storage.createNotification({
+              userId: request.userId,
+              title: 'Vault Deposit Rejected',
+              message: `Your deposit request ${request.referenceNumber} was rejected: ${rejectionReason || 'Contact support for details'}`,
+              type: 'warning',
+              link: '/finavault',
+            });
+          }
+        } catch (emailErr) {
+          console.error('Email notification failed:', emailErr);
+        }
+      }
+
       res.json({ request: updatedRequest });
     } catch (error) {
       console.error('Update deposit request error:', error);
@@ -6927,6 +6981,61 @@ ${message}
         actorRole: "admin",
         details: `Status changed to ${status}`,
       });
+
+      // Send email notification to user
+      const user = await storage.getUser(request.userId);
+      if (user?.email) {
+        try {
+          const goldGrams = parseFloat(request.goldGrams);
+          const totalValue = parseFloat(request.totalValueUsd);
+          
+          if (status === 'Completed') {
+            await sendEmail({
+              to: user.email,
+              subject: 'Withdrawal Completed - FinaVault',
+              html: `
+                <h2>Withdrawal Completed Successfully</h2>
+                <p>Dear ${user.firstName || 'Valued Customer'},</p>
+                <p>Your withdrawal request has been processed and completed.</p>
+                <table style="border-collapse: collapse; margin: 20px 0;">
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reference:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.referenceNumber}</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Gold Amount:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${goldGrams.toFixed(4)} grams</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Value:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">$${totalValue.toFixed(2)} USD</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Withdrawal Method:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.withdrawalMethod}</td></tr>
+                  ${transactionReference ? `<tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Transaction Ref:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${transactionReference}</td></tr>` : ''}
+                </table>
+                <p>Thank you for using Finatrades!</p>
+              `,
+            });
+          } else if (status === 'Rejected') {
+            await sendEmail({
+              to: user.email,
+              subject: 'Withdrawal Request Update - FinaVault',
+              html: `
+                <h2>Withdrawal Request Update</h2>
+                <p>Dear ${user.firstName || 'Valued Customer'},</p>
+                <p>We regret to inform you that your withdrawal request could not be processed.</p>
+                <table style="border-collapse: collapse; margin: 20px 0;">
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reference:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.referenceNumber}</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Amount:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${goldGrams.toFixed(4)} grams ($${totalValue.toFixed(2)})</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reason:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${rejectionReason || 'Please contact support for details'}</td></tr>
+                </table>
+                <p>Your gold remains in your FinaPay wallet. If you have questions, please contact our support team.</p>
+              `,
+            });
+            // Create in-app notification
+            await storage.createNotification({
+              userId: request.userId,
+              title: 'Withdrawal Rejected',
+              message: `Your withdrawal request ${request.referenceNumber} was rejected: ${rejectionReason || 'Contact support for details'}`,
+              type: 'warning',
+              link: '/finavault',
+            });
+          }
+        } catch (emailErr) {
+          console.error('Email notification failed:', emailErr);
+        }
+      }
 
       res.json({ request: updatedRequest });
     } catch (error) {
