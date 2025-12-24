@@ -32,7 +32,7 @@ const faqCategories = [
       },
       {
         q: 'What are the withdrawal limits?',
-        a: 'Withdrawal limits depend on your KYC verification level. Basic verified users can withdraw up to $5,000/day. Enhanced verification increases this to $50,000/day.'
+        a: 'Withdrawal limits depend on your verification level. Basic verified users can withdraw up to $5,000/day. Enhanced verification increases this to $50,000/day.'
       },
       {
         q: 'How long do P2P transfers take?',
