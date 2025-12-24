@@ -3370,6 +3370,18 @@ ${message}
     }
   });
 
+  // Test9: Return raw arrays directly without any processing - minimal test
+  app.get("/api/admin/kyc-test9", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    try {
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      // Return raw arrays directly
+      return res.json({ submissions: [...personal, ...corporate] });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message });
+    }
+  });
+
   // Test7: Find the exact record that fails serialization
   app.get("/api/admin/kyc-test7", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     const results: any = { success: true, tested: { kycAml: [], personal: [], corporate: [] }, errors: [] };
