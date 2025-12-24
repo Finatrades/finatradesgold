@@ -120,11 +120,17 @@ function Router() {
       <Switch>
       <Route path="/" component={FinagoldLanding} />
       <Route path="/finagold" component={FinagoldLanding} />
+      <Route path="/finagold/bnsl" component={BNSLLanding} />
+      <Route path="/finagold/finapay" component={FinaPayLanding} />
+      <Route path="/finagold/finavault" component={FinaVaultLanding} />
+      <Route path="/finagold/finabridge" component={FinaBridgeLanding} />
       <Route path="/bnsl-landing" component={BNSLLanding} />
       <Route path="/finavault-landing" component={FinaVaultLanding} />
       <Route path="/finabridge-landing" component={FinaBridgeLanding} />
       <Route path="/finapay-landing" component={FinaPayLanding} />
       <Route path="/bnsl-explore" component={BNSLExplore} />
+      <Route path="/get-started" component={Register} />
+      <Route path="/sign-in" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/login" component={Login} />
