@@ -377,7 +377,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Available in BNSL Wallet</p>
-                <p className="font-bold text-foreground" data-testid="text-bnsl-balance">${(bnslWalletBalance * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p className="font-bold text-foreground" data-testid="text-bnsl-balance">{bnslWalletBalance.toFixed(3)} g</p>
               </div>
             </div>
             <div className="text-right">
@@ -401,7 +401,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             {amount > bnslWalletBalance && (
               <div className="flex items-center gap-2 text-sm text-red-500 font-medium" data-testid="error-insufficient-balance">
                 <AlertTriangle className="w-4 h-4" />
-                <span>Insufficient balance. You only have ${(bnslWalletBalance * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} available in your BNSL Wallet.</span>
+                <span>Insufficient balance. You only have {bnslWalletBalance.toFixed(3)}g available in your BNSL Wallet.</span>
               </div>
             )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

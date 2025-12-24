@@ -127,7 +127,7 @@ function SignedAgreementsSection({ userId, plans }: { userId?: string; plans: Bn
                       </div>
                       <div>
                         <h4 className="font-semibold text-foreground">
-                          Plan #{plan.id} - ${Number(plan.basePriceComponentUsd).toLocaleString()} Principal
+                          Plan #{plan.id} - {Number(plan.goldSoldGrams).toFixed(2)}g Gold
                         </h4>
                         <p className="text-sm text-muted-foreground">
                           {plan.tenorMonths} months | {plan.agreedMarginAnnualPercent}% margin | 
@@ -157,8 +157,8 @@ function SignedAgreementsSection({ userId, plans }: { userId?: string; plans: Bn
                             <div className="bg-muted/30 rounded-lg border border-border p-4 mb-4">
                               <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                  <span className="text-muted-foreground">Principal:</span>
-                                  <span className="ml-2 font-semibold">${Number(plan.basePriceComponentUsd).toLocaleString()}</span>
+                                  <span className="text-muted-foreground">Gold Sold:</span>
+                                  <span className="ml-2 font-semibold">{Number(plan.goldSoldGrams).toFixed(4)} g</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Lock-in Period:</span>
@@ -169,8 +169,8 @@ function SignedAgreementsSection({ userId, plans }: { userId?: string; plans: Bn
                                   <span className="ml-2 font-semibold">{plan.agreedMarginAnnualPercent}%</span>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">Total Margin:</span>
-                                  <span className="ml-2 font-semibold">${Number(plan.totalMarginComponentUsd).toLocaleString()}</span>
+                                  <span className="text-muted-foreground">Locked Price:</span>
+                                  <span className="ml-2 font-semibold">${Number(plan.enrollmentPriceUsdPerGram).toFixed(2)}/g</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Start Date:</span>

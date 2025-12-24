@@ -62,20 +62,20 @@ export default function BnslPlanList({ plans, onViewPlan }: BnslPlanListProps) {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 flex-1">
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Principal</p>
-                    <p className="font-bold text-foreground">${Number(plan.basePriceComponentUsd).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Gold Sold</p>
+                    <p className="font-bold text-foreground">{plan.goldSoldGrams.toFixed(2)} g</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Deferred Base</p>
+                    <p className="font-bold text-foreground">${plan.basePriceComponentUsd.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin</p>
-                    <p className="font-bold text-foreground">${Number(plan.totalMarginComponentUsd).toLocaleString()}</p>
+                    <p className="font-bold text-primary">${plan.totalMarginComponentUsd.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Margin Paid</p>
-                    <p className="font-bold text-primary">${Number(plan.paidMarginUsd).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Value</p>
-                    <p className="font-bold text-primary">${Number(plan.totalSaleProceedsUsd).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Received (g)</p>
+                    <p className="font-bold text-primary">{plan.paidMarginGrams.toFixed(3)} g</p>
                   </div>
                 </div>
 

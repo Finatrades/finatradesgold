@@ -226,9 +226,20 @@ export default function BnslWalletCard({
             {/* Available Balance */}
             <div className="bg-muted p-4 rounded-xl border border-border">
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Available to Invest</p>
-              <span className="text-2xl font-bold text-foreground">
-                <AEDAmount amount={bnslBalanceGold * currentGoldPrice} />
-              </span>
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-muted-foreground">USD Value:</span>
+                  <span className="text-xl font-bold text-foreground">
+                    ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                  <span className="text-base font-semibold text-fuchsia-600">
+                    {bnslBalanceGold.toFixed(4)} g
+                  </span>
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground mt-2">
                 Funds available for creating new BNSL plans.
               </p>
@@ -237,9 +248,20 @@ export default function BnslWalletCard({
             {/* Locked Funds */}
             <div className="bg-muted p-4 rounded-xl border border-border">
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Locked in Plans</p>
-              <span className="text-2xl font-bold text-purple-500">
-                <AEDAmount amount={lockedBalanceGold * currentGoldPrice} />
-              </span>
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-muted-foreground">USD Value:</span>
+                  <span className="text-xl font-bold text-purple-500">
+                    ${(lockedBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                  <span className="text-base font-semibold text-purple-500/80">
+                    {lockedBalanceGold.toFixed(4)} g
+                  </span>
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
                 <Lock className="w-3 h-3" />
                 Active plans currently earning structured rewards.
@@ -249,9 +271,20 @@ export default function BnslWalletCard({
             {/* Total Value */}
             <div className="bg-muted p-4 rounded-xl border border-border">
                <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Total BNSL Value</p>
-               <span className="text-2xl font-bold text-green-600">
-                 <AEDAmount amount={(bnslBalanceGold + lockedBalanceGold) * currentGoldPrice} />
-               </span>
+               <div className="space-y-1">
+                 <div className="flex items-baseline gap-2">
+                   <span className="text-xs text-muted-foreground">USD Value:</span>
+                   <span className="text-xl font-bold text-green-600">
+                     ${((bnslBalanceGold + lockedBalanceGold) * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                   </span>
+                 </div>
+                 <div className="flex items-baseline gap-2">
+                   <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                   <span className="text-base font-semibold text-foreground">
+                     {(bnslBalanceGold + lockedBalanceGold).toFixed(4)} g
+                   </span>
+                 </div>
+               </div>
             </div>
 
           </div>

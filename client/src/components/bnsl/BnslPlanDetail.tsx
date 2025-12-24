@@ -155,14 +155,14 @@ export default function BnslPlanDetail({
         <CardContent className="p-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Principal (USD)</p>
-              <p className="text-2xl font-bold text-foreground">${Number(plan.basePriceComponentUsd).toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground mt-1">Locked-in value</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Gold Sold</p>
+              <p className="text-2xl font-bold text-foreground">{plan.goldSoldGrams.toFixed(2)} g</p>
+              <p className="text-xs text-muted-foreground mt-1">@ ${plan.enrollmentPriceUsdPerGram.toFixed(2)}/g</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin (USD)</p>
-              <p className="text-2xl font-bold text-foreground">${Number(plan.totalMarginComponentUsd).toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground mt-1">Expected earnings</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Deferred Base (USD)</p>
+              <p className="text-2xl font-bold text-foreground">${plan.basePriceComponentUsd.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">Paid at Maturity</p>
             </div>
             
             {/* New Daily Accrual Card */}
