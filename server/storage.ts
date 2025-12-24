@@ -832,10 +832,6 @@ export class DatabaseStorage implements IStorage {
     ).orderBy(desc(peerTransfers.createdAt));
   }
 
-  async getAllPeerTransfers(): Promise<PeerTransfer[]> {
-    return await db.select().from(peerTransfers).orderBy(desc(peerTransfers.createdAt));
-  }
-
   async createBnslPlan(insertPlan: InsertBnslPlan): Promise<BnslPlan> {
     const [plan] = await db.insert(bnslPlans).values(insertPlan).returning();
     return plan;
