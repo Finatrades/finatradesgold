@@ -473,6 +473,15 @@ export const EMAIL_TEMPLATES = {
   TRADE_CASE_REJECTED: 'trade_case_rejected',
   TRADE_CASE_COMPLETED: 'trade_case_completed',
   
+  // FinaBridge Trade Proposals & Settlements
+  FINABRIDGE_NEW_PROPOSAL: 'finabridge_new_proposal',
+  FINABRIDGE_PROPOSAL_ACCEPTED: 'finabridge_proposal_accepted',
+  FINABRIDGE_PROPOSAL_DECLINED: 'finabridge_proposal_declined',
+  FINABRIDGE_SHIPMENT_UPDATE: 'finabridge_shipment_update',
+  FINABRIDGE_SETTLEMENT_LOCKED: 'finabridge_settlement_locked',
+  FINABRIDGE_SETTLEMENT_RELEASED: 'finabridge_settlement_released',
+  FINABRIDGE_DEAL_ROOM_CREATED: 'finabridge_deal_room_created',
+  
   // Documents & Certificates
   CERTIFICATE_DELIVERY: 'certificate_delivery',
   INVOICE_DELIVERY: 'invoice_delivery',
@@ -2012,6 +2021,206 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'case_id', description: 'Trade case ID' },
       { name: 'total_value', description: 'Total trade value' },
       { name: 'completion_date', description: 'Completion date' },
+    ],
+    status: 'published' as const,
+  },
+  // FinaBridge Trade Proposals & Settlements
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_NEW_PROPOSAL,
+    name: 'New Trade Proposal Received',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'New proposal for your trade request {{trade_ref}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">New Trade Proposal</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>You've received a new proposal for your trade request!</p>
+          <div style="background: #f3e8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Proposed Price:</td><td style="text-align: right;">\${{proposed_price}}</td></tr>
+              <tr><td style="padding: 8px 0;">Delivery Terms:</td><td style="text-align: right;">{{delivery_terms}}</td></tr>
+              <tr><td style="padding: 8px 0;">Exporter:</td><td style="text-align: right;">{{exporter_name}}</td></tr>
+            </table>
+          </div>
+          <p>Review this proposal in your FinaBridge dashboard to accept or negotiate.</p>
+          <p style="text-align: center; margin-top: 20px;">
+            <a href="{{dashboard_url}}" style="background: #8b5cf6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Proposal</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'proposed_price', description: 'Proposed trade price' },
+      { name: 'delivery_terms', description: 'Delivery terms' },
+      { name: 'exporter_name', description: 'Exporter name' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_PROPOSAL_ACCEPTED,
+    name: 'Trade Proposal Accepted',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Your proposal has been accepted - {{trade_ref}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Proposal Accepted!</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>Great news! Your trade proposal has been accepted by the importer.</p>
+          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Trade Value:</td><td style="text-align: right;">\${{trade_value}}</td></tr>
+              <tr><td style="padding: 8px 0;">Settlement Gold:</td><td style="text-align: right;">{{gold_grams}}g</td></tr>
+            </table>
+          </div>
+          <p>A Deal Room has been created for this trade. Visit your dashboard to proceed with the next steps.</p>
+          <p style="text-align: center; margin-top: 20px;">
+            <a href="{{dashboard_url}}" style="background: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Go to Deal Room</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'gold_grams', description: 'Settlement gold in grams' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_SHIPMENT_UPDATE,
+    name: 'Shipment Status Update',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Shipment update for {{trade_ref}} - {{shipment_status}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Shipment Update</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>There's an update on your trade shipment.</p>
+          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Status:</td><td style="text-align: right; color: #1d4ed8; font-weight: bold;">{{shipment_status}}</td></tr>
+              <tr><td style="padding: 8px 0;">Tracking Number:</td><td style="text-align: right;">{{tracking_number}}</td></tr>
+              <tr><td style="padding: 8px 0;">Location:</td><td style="text-align: right;">{{current_location}}</td></tr>
+            </table>
+          </div>
+          <p style="text-align: center; margin-top: 20px;">
+            <a href="{{dashboard_url}}" style="background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Track Shipment</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'shipment_status', description: 'Current shipment status' },
+      { name: 'tracking_number', description: 'Shipment tracking number' },
+      { name: 'current_location', description: 'Current location' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_SETTLEMENT_LOCKED,
+    name: 'Settlement Gold Locked',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Gold locked for trade {{trade_ref}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Settlement Gold Locked</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>Gold has been locked in escrow for your trade.</p>
+          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Gold Locked:</td><td style="text-align: right; font-weight: bold;">{{gold_grams}}g</td></tr>
+              <tr><td style="padding: 8px 0;">USD Value:</td><td style="text-align: right;">\${{usd_value}}</td></tr>
+              <tr><td style="padding: 8px 0;">Lock Expires:</td><td style="text-align: right;">{{expiry_date}}</td></tr>
+            </table>
+          </div>
+          <p>This gold will be held securely until shipment is confirmed or the trade is completed.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'gold_grams', description: 'Gold locked in grams' },
+      { name: 'usd_value', description: 'USD value' },
+      { name: 'expiry_date', description: 'Lock expiry date' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_SETTLEMENT_RELEASED,
+    name: 'Settlement Gold Released',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Gold released for trade {{trade_ref}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Gold Released!</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>The settlement gold for your trade has been released to the exporter.</p>
+          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Gold Released:</td><td style="text-align: right; font-weight: bold;">{{gold_grams}}g</td></tr>
+              <tr><td style="padding: 8px 0;">USD Value:</td><td style="text-align: right;">\${{usd_value}}</td></tr>
+              <tr><td style="padding: 8px 0;">Released To:</td><td style="text-align: right;">{{exporter_name}}</td></tr>
+            </table>
+          </div>
+          <p>Your trade has been successfully completed. Thank you for using FinaBridge!</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'gold_grams', description: 'Gold released in grams' },
+      { name: 'usd_value', description: 'USD value' },
+      { name: 'exporter_name', description: 'Exporter name' },
     ],
     status: 'published' as const,
   },
