@@ -5,6 +5,7 @@ import Hero from './components/Hero';
 import ValueProps from './components/ValueProps';
 import WhoItsFor from './components/WhoItsFor';
 import HowItWorks from './components/HowItWorks';
+import FinatradesAdvantage from './components/FinatradesAdvantage';
 import Products from './components/Products';
 import Certificates from './components/Certificates';
 import TrustStrip from './components/TrustStrip';
@@ -106,6 +107,7 @@ function FinagoldContent() {
         <Hero />
         <Products />
         <HowItWorks />
+        <FinatradesAdvantage />
         <WhoItsFor />
         <ValueProps />
         <Certificates />
