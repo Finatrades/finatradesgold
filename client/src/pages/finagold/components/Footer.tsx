@@ -10,12 +10,6 @@ const footerLinks = {
     { label: 'FinaEarn (BNSL)', href: '/finagold/bnsl', businessOnly: false },
     { label: 'FinaBridge', href: '/finagold/finabridge', businessOnly: true },
   ],
-  Company: [
-    { label: 'About Us', href: '#about', businessOnly: false },
-    { label: 'Careers', href: '#', businessOnly: false },
-    { label: 'Press', href: '#', businessOnly: false },
-    { label: 'Contact', href: '#contact', businessOnly: false },
-  ],
   Legal: [
     { label: 'Terms of Service', href: '/terms', businessOnly: false },
     { label: 'Privacy Policy', href: '/privacy', businessOnly: false },
@@ -37,7 +31,7 @@ export default function Footer() {
   return (
     <footer id="contact" className="relative py-16 bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]" data-testid="footer">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-5 gap-12 mb-12">
+        <div className="grid md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-2">
             <div className="mb-6">
               <img 
