@@ -1714,9 +1714,7 @@ function FinaBridgeContent() {
       <WhatIsFinaBridgeSection />
       <WhyUseFinaBridgeSection />
       <RiskManagementSection />
-      <FeaturesShowcaseSection />
       <DealRoomSection />
-      <GlobalTradeMapSection />
       <DocumentManagementSection />
       <SecuritySection />
       <GoldSettlementSection />
