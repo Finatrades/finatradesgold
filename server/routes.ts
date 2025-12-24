@@ -3338,6 +3338,38 @@ ${message}
     }
   });
 
+  // Test8: Debug the actual counts and why test7 shows 0 kycAml
+  app.get("/api/admin/kyc-test8", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    const results: any = { step: 0 };
+    
+    try {
+      results.step = 1;
+      const kycAml = await storage.getAllKycSubmissions();
+      results.step = 2;
+      results.kycAmlType = typeof kycAml;
+      results.kycAmlIsArray = Array.isArray(kycAml);
+      results.kycAmlLength = kycAml?.length;
+      
+      results.step = 3;
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      results.step = 4;
+      results.personalLength = personal?.length;
+      
+      results.step = 5;
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      results.step = 6;
+      results.corporateLength = corporate?.length;
+      
+      results.step = 7;
+      results.success = true;
+      return res.json(results);
+    } catch (error: any) {
+      results.error = error?.message;
+      results.stack = error?.stack?.slice(0, 500);
+      return res.status(500).json(results);
+    }
+  });
+
   // Test7: Find the exact record that fails serialization
   app.get("/api/admin/kyc-test7", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     const results: any = { success: true, tested: { kycAml: [], personal: [], corporate: [] }, errors: [] };
