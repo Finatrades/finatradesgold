@@ -12,6 +12,7 @@ import { AEDAmount, AED_SYMBOL } from '@/components/ui/DirhamSymbol';
 interface BnslWalletCardProps {
   bnslBalanceGold: number;
   lockedBalanceGold: number;
+  lockedValueUsd?: number;
   finaPayBalanceGold: number;
   onTransferFromFinaPay: (amount: number) => Promise<boolean>;
   onWithdrawToFinaPay?: (amount: number) => Promise<boolean>;
@@ -20,7 +21,8 @@ interface BnslWalletCardProps {
 
 export default function BnslWalletCard({ 
   bnslBalanceGold, 
-  lockedBalanceGold, 
+  lockedBalanceGold,
+  lockedValueUsd, 
   finaPayBalanceGold, 
   onTransferFromFinaPay,
   onWithdrawToFinaPay,
@@ -245,18 +247,21 @@ export default function BnslWalletCard({
               </p>
             </div>
 
-            {/* Locked Funds */}
-            <div className="bg-muted p-4 rounded-xl border border-border">
+            {/* Locked Funds - USD Value is FIXED at enrollment price */}
+            <div className="bg-muted p-4 rounded-xl border border-border relative overflow-hidden">
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-purple-400" />
+              </div>
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Locked in Plans</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">USD Value:</span>
+                  <span className="text-xs text-muted-foreground">USD Value (Locked):</span>
                   <span className="text-xl font-bold text-purple-500">
-                    ${(lockedBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${(lockedValueUsd ?? (lockedBalanceGold * currentGoldPrice)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                  <span className="text-xs text-muted-foreground">Gold Sold:</span>
                   <span className="text-base font-semibold text-purple-500/80">
                     {lockedBalanceGold.toFixed(4)} g
                   </span>
@@ -264,7 +269,7 @@ export default function BnslWalletCard({
               </div>
               <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
                 <Lock className="w-3 h-3" />
-                Active plans currently earning structured rewards.
+                Value locked at enrollment price (not live price).
               </p>
             </div>
 

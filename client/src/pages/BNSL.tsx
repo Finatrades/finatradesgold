@@ -342,6 +342,9 @@ export default function BNSL() {
   
   // Use real locked balance from BNSL wallet, fallback to calculated from plans
   const totalLockedGold = lockedBnslBalance > 0 ? lockedBnslBalance : plans.reduce((sum, p) => p.status === 'Active' ? sum + p.goldSoldGrams : sum, 0);
+  
+  // Calculate locked USD value using enrollment price (not current price)
+  const totalLockedValueUsd = plans.reduce((sum, p) => p.status === 'Active' ? sum + p.basePriceComponentUsd : sum, 0);
 
   // Daily margin calculations
   const totalDailyMargin = plans.reduce((sum, p) => sum + calculateDailyMargin(p), 0);
@@ -645,6 +648,7 @@ export default function BNSL() {
         <BnslWalletCard 
           bnslBalanceGold={bnslWalletBalance}
           lockedBalanceGold={totalLockedGold}
+          lockedValueUsd={totalLockedValueUsd}
           finaPayBalanceGold={finaPayGoldBalance}
           onTransferFromFinaPay={handleTransferFromFinaPay}
           onWithdrawToFinaPay={handleWithdrawToFinaPay}
