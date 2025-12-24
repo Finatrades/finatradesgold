@@ -12,7 +12,7 @@ interface ModeContextType {
 const ModeContext = createContext<ModeContextType | undefined>(undefined);
 
 export function ModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<Mode>('personal');
+  const [mode, setMode] = useState<Mode>('business');
 
   return (
     <ModeContext.Provider value={{ 
