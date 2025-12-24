@@ -3320,6 +3320,73 @@ ${message}
     return res.json(results);
   });
 
+  // Test5: Exact same logic as main endpoint but with step-by-step tracking
+  app.get("/api/admin/kyc-test5", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    const steps: string[] = [];
+    try {
+      steps.push("1. Starting");
+      
+      let kycAmlArray: any[] = [];
+      let personalArray: any[] = [];
+      let corporateArray: any[] = [];
+      
+      const kycAml = await storage.getAllKycSubmissions();
+      kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
+      steps.push(`2. Fetched ${kycAmlArray.length} kycAml`);
+      
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      personalArray = Array.isArray(personal) ? personal : [];
+      steps.push(`3. Fetched ${personalArray.length} personal`);
+      
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      corporateArray = Array.isArray(corporate) ? corporate : [];
+      steps.push(`4. Fetched ${corporateArray.length} corporate`);
+      
+      const allSubmissions: any[] = [];
+      
+      for (let i = 0; i < kycAmlArray.length; i++) {
+        const s = kycAmlArray[i];
+        if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
+      }
+      steps.push(`5. Processed ${allSubmissions.length} kycAml items`);
+      
+      for (let i = 0; i < personalArray.length; i++) {
+        const s = personalArray[i];
+        if (s) allSubmissions.push({
+          ...s,
+          tier: 'finatrades_personal',
+          kycType: 'finatrades_personal',
+          accountType: 'personal',
+        });
+      }
+      steps.push(`6. Processed personal, total now ${allSubmissions.length}`);
+      
+      for (let i = 0; i < corporateArray.length; i++) {
+        const s = corporateArray[i];
+        if (s) allSubmissions.push({
+          ...s,
+          tier: 'finatrades_corporate',
+          kycType: 'finatrades_corporate',
+          accountType: 'business',
+          fullName: s?.companyName || null,
+        });
+      }
+      steps.push(`7. Processed corporate, total now ${allSubmissions.length}`);
+      
+      allSubmissions.sort((a, b) => {
+        const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      steps.push(`8. Sorted submissions`);
+      
+      steps.push(`9. About to serialize ${allSubmissions.length} items`);
+      return res.json({ success: true, steps, submissionCount: allSubmissions.length, submissions: allSubmissions });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, steps, error: error?.message, stack: error?.stack });
+    }
+  });
+
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
