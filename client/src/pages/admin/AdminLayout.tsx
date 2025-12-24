@@ -24,7 +24,8 @@ import {
   Mail,
   Database,
   Paperclip,
-  X
+  X,
+  Gift
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/platform-config': ['manage_settings'],
   '/admin/database-backups': ['manage_settings'],
   '/admin/settings': ['manage_settings'],
+  '/admin/referrals': ['view_users', 'manage_users'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -151,6 +153,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: <UserCog className="w-5 h-5" />, label: 'Employees', href: '/admin/employees' },
         { icon: <ShieldAlert className="w-5 h-5" />, label: 'KYC Reviews', href: '/admin/kyc' },
         { icon: <Shield className="w-5 h-5" />, label: 'Compliance', href: '/admin/compliance' },
+        { icon: <Gift className="w-5 h-5" />, label: 'Referrals', href: '/admin/referrals' },
       ]
     },
     {
