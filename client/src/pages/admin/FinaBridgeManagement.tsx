@@ -679,7 +679,7 @@ export default function FinaBridgeManagement() {
                                 <div className="text-right">
                                   <p className="font-bold">${parseFloat(room.tradeRequest?.tradeValueUsd || '0').toLocaleString()}</p>
                                   {room.unreadCount && Number(room.unreadCount) > 0 && (
-                                    <Badge className="bg-red-500 text-white">{room.unreadCount} unread</Badge>
+                                    <span className="bg-purple-600 text-white text-[11px] font-semibold rounded-full px-2 py-0.5">{room.unreadCount} unread</span>
                                   )}
                                 </div>
                                 <Badge className={room.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>

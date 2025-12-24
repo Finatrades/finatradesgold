@@ -106,7 +106,9 @@ export default function TradeFinance() {
                <div className="text-2xl font-bold">CHF {(cases.reduce((acc, c) => acc + (c.valueUsd || 0), 0) / 1000000).toFixed(1)}M</div>
                <p className="text-xs text-gray-500 mt-1">{cases.length} Active Supply Chain Deals</p>
                <div className="mt-4 flex gap-2">
-                 <Badge variant="secondary">{cases.filter(c => c.status === 'Under Review' || c.status === 'Funded – Docs Pending').length} Pending Review</Badge>
+                 <span className="bg-purple-600 text-white text-[11px] font-semibold rounded-full px-2.5 py-1 flex items-center justify-center">
+                   {cases.filter(c => c.status === 'Under Review' || c.status === 'Funded – Docs Pending').length} Pending Review
+                 </span>
                  <Badge variant="outline">0 Defaults</Badge>
                </div>
              </CardContent>

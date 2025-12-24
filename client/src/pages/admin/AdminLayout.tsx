@@ -257,16 +257,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           </div>
                           <span className="font-medium text-sm flex-1">{item.label}</span>
                           {badgeCount > 0 && (
-                            <Badge 
-                              variant="destructive" 
-                              className={`min-w-[20px] h-5 px-1.5 text-[10px] font-bold ${
+                            <span 
+                              className={`min-w-[22px] h-[22px] px-1.5 text-[11px] font-semibold rounded-full flex items-center justify-center ${
                                 isActive(item.href) 
-                                  ? 'bg-white text-primary' 
-                                  : 'bg-destructive text-destructive-foreground'
+                                  ? 'bg-white/90 text-purple-700' 
+                                  : 'bg-purple-600 text-white'
                               }`}
                             >
                               {badgeCount > 99 ? '99+' : badgeCount}
-                            </Badge>
+                            </span>
                           )}
                         </div>
                       </Link>

@@ -404,14 +404,18 @@ export default function FinaVaultManagement() {
                 <ArrowDownCircle className="w-4 h-4" />
                 Deposit Requests
                 {pendingDeposits.length > 0 && (
-                  <Badge variant="destructive" className="ml-1">{pendingDeposits.length}</Badge>
+                  <span className="bg-purple-600 text-white text-[11px] font-semibold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center ml-1">
+                    {pendingDeposits.length}
+                  </span>
                 )}
               </TabsTrigger>
               <TabsTrigger value="withdrawals" className="flex items-center gap-2">
                 <ArrowUpCircle className="w-4 h-4" />
                 Withdrawal Requests
                 {pendingWithdrawals.length > 0 && (
-                  <Badge variant="destructive" className="ml-1">{pendingWithdrawals.length}</Badge>
+                  <span className="bg-purple-600 text-white text-[11px] font-semibold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center ml-1">
+                    {pendingWithdrawals.length}
+                  </span>
                 )}
               </TabsTrigger>
             </TabsList>
