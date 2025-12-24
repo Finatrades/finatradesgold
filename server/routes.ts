@@ -9542,8 +9542,8 @@ ${message}
     }
   });
   
-  // Get all withdrawal requests (Admin)
-  app.get("/api/admin/withdrawal-requests", async (req, res) => {
+  // Get all withdrawal requests (Admin) - PROTECTED: requires admin authentication
+  app.get("/api/admin/withdrawal-requests", ensureAdminAsync, requirePermission('manage_withdrawals', 'view_transactions'), async (req, res) => {
     try {
       const requests = await storage.getAllWithdrawalRequests();
       res.json({ requests });
@@ -9552,10 +9552,15 @@ ${message}
     }
   });
   
-  // Create withdrawal request (User)
-  app.post("/api/withdrawal-requests", async (req, res) => {
+  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification
+  app.post("/api/withdrawal-requests", ensureAuthenticated, async (req, res) => {
     try {
       const { userId, amountUsd, ...bankDetails } = req.body;
+      
+      // SECURITY: Verify user can only create withdrawal for themselves
+      if (req.session?.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to create withdrawal for another user" });
+      }
       
       // Check user has sufficient balance
       const wallet = await storage.getWallet(userId);
@@ -12779,8 +12784,8 @@ ${message}
   // FINAPAY - PEER TRANSFERS (SEND/REQUEST MONEY)
   // ============================================================================
 
-  // Search user by email or Finatrades ID
-  app.get("/api/finapay/search-user", async (req, res) => {
+  // Search user by email or Finatrades ID - PROTECTED: requires authentication
+  app.get("/api/finapay/search-user", ensureAuthenticated, async (req, res) => {
     try {
       const { identifier } = req.query;
       if (!identifier || typeof identifier !== 'string') {
@@ -12809,10 +12814,15 @@ ${message}
     }
   });
 
-  // Send money to another user (USD or Gold)
-  app.post("/api/finapay/send", async (req, res) => {
+  // Send money to another user (USD or Gold) - PROTECTED: requires authentication + sender verification
+  app.post("/api/finapay/send", ensureAuthenticated, async (req, res) => {
     try {
       const { senderId, recipientIdentifier, amountUsd, amountGold, assetType, channel, memo } = req.body;
+      
+      // SECURITY: Verify sender matches authenticated session
+      if (req.session?.userId !== senderId) {
+        return res.status(403).json({ message: "Not authorized to send from this account" });
+      }
       
       // Determine asset type (default to USD for backward compatibility)
       const isGoldTransfer = assetType === 'GOLD' || (amountGold && !amountUsd);
@@ -12829,6 +12839,25 @@ ${message}
       const sender = await storage.getUser(senderId);
       if (!sender) {
         return res.status(404).json({ message: "Sender not found" });
+      }
+      
+      // SECURITY: Check if gold is BNSL-locked before allowing transfer
+      if (isGoldTransfer) {
+        const bnslPlans = await storage.getUserBnslPlans(senderId);
+        const activePlans = bnslPlans.filter((p: any) => p.status === 'Active' || p.status === 'Pending');
+        const totalLockedGrams = activePlans.reduce((sum: number, p: any) => sum + parseFloat(p.goldGrams || '0'), 0);
+        
+        const senderWalletCheck = await storage.getWallet(senderId);
+        const availableGold = parseFloat(senderWalletCheck?.goldGrams?.toString() || '0');
+        const requestedGold = parseFloat(amountGold);
+        
+        if (availableGold - totalLockedGrams < requestedGold) {
+          return res.status(400).json({ 
+            message: `Insufficient available gold. ${totalLockedGrams.toFixed(4)}g is locked in BNSL plans.`,
+            lockedGrams: totalLockedGrams.toFixed(4),
+            availableGrams: (availableGold - totalLockedGrams).toFixed(4)
+          });
+        }
       }
       
       // Find recipient by email or Finatrades ID
@@ -13474,13 +13503,18 @@ ${message}
     }
   });
 
-  // Decline a money request
-  app.post("/api/finapay/requests/:id/decline", async (req, res) => {
+  // Decline a money request - PROTECTED: requires authentication + ownership check
+  app.post("/api/finapay/requests/:id/decline", ensureAuthenticated, async (req, res) => {
     try {
       const request = await storage.getPeerRequest(req.params.id);
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
+      }
+      
+      // SECURITY: Only the payee (person being asked) can decline
+      if (request.payeeId !== req.session?.userId) {
+        return res.status(403).json({ message: "Not authorized to decline this request" });
       }
       
       if (request.status !== 'Pending') {
@@ -13498,18 +13532,18 @@ ${message}
     }
   });
 
-  // Cancel a money request (by requester)
-  app.post("/api/finapay/requests/:id/cancel", async (req, res) => {
+  // Cancel a money request (by requester) - PROTECTED: requires authentication
+  app.post("/api/finapay/requests/:id/cancel", ensureAuthenticated, async (req, res) => {
     try {
-      const { userId } = req.body;
       const request = await storage.getPeerRequest(req.params.id);
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
       }
       
-      if (request.requesterId !== userId) {
-        return res.status(403).json({ message: "Not authorized" });
+      // SECURITY: Only the requester can cancel their own request (use session, not body)
+      if (request.requesterId !== req.session?.userId) {
+        return res.status(403).json({ message: "Not authorized to cancel this request" });
       }
       
       if (request.status !== 'Pending') {
@@ -13527,8 +13561,8 @@ ${message}
     }
   });
 
-  // Get QR code for receiving money (user's profile QR)
-  app.get("/api/finapay/qr/:userId", async (req, res) => {
+  // Get QR code for receiving money (user's profile QR) - PROTECTED: requires owner or admin
+  app.get("/api/finapay/qr/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
       if (!user || !user.finatradesId) {
