@@ -331,6 +331,26 @@ export default function BnslWalletCard({
           </div>
 
           <div className="space-y-4 py-4">
+             {/* USD Reference Price Display */}
+             <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200 dark:border-green-800">
+               <p className="text-xs text-green-600 dark:text-green-400 uppercase tracking-wider mb-2 font-medium">USD Reference Price (Will Be Locked)</p>
+               <div className="flex justify-between items-baseline">
+                 <span className="text-sm text-muted-foreground">Gold Price per Gram:</span>
+                 <span className="text-lg font-bold text-green-700 dark:text-green-300">${currentGoldPrice.toFixed(2)}</span>
+               </div>
+               {isValidAmount && !isInsufficientBalance && (
+                 <div className="flex justify-between items-baseline mt-2 pt-2 border-t border-green-200 dark:border-green-700">
+                   <span className="text-sm text-muted-foreground">Total USD Value to Lock:</span>
+                   <span className="text-xl font-bold text-green-700 dark:text-green-300">
+                     ${(currency === 'Grams' 
+                       ? parseFloat(transferAmount) * currentGoldPrice 
+                       : parseFloat(transferAmount)
+                     ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                   </span>
+                 </div>
+               )}
+             </div>
+
              <div className="p-4 bg-muted rounded-lg border border-border space-y-2">
                <div className="flex justify-between text-sm">
                  <span className="text-muted-foreground">Available in FinaPay:</span>
@@ -436,6 +456,33 @@ export default function BnslWalletCard({
           </div>
 
           <div className="space-y-4 py-4">
+             {/* USD Reference Price Comparison */}
+             <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+               <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2 font-medium">USD Reference Price Comparison</p>
+               <div className="space-y-2">
+                 {availableValueUsd != null && bnslBalanceGold > 0 && (
+                   <div className="flex justify-between items-baseline">
+                     <span className="text-sm text-muted-foreground">Locked Reference (per gram):</span>
+                     <span className="text-base font-bold text-purple-600">${(availableValueUsd / bnslBalanceGold).toFixed(2)}</span>
+                   </div>
+                 )}
+                 <div className="flex justify-between items-baseline">
+                   <span className="text-sm text-muted-foreground">Current Market (per gram):</span>
+                   <span className="text-base font-bold text-green-600">${currentGoldPrice.toFixed(2)}</span>
+                 </div>
+                 {availableValueUsd != null && bnslBalanceGold > 0 && (
+                   <div className="flex justify-between items-baseline pt-2 border-t border-blue-200 dark:border-blue-700">
+                     <span className="text-sm text-muted-foreground">Price Change:</span>
+                     <span className={`text-base font-bold ${currentGoldPrice >= (availableValueUsd / bnslBalanceGold) ? 'text-green-600' : 'text-red-600'}`}>
+                       {currentGoldPrice >= (availableValueUsd / bnslBalanceGold) ? '+' : ''}
+                       ${(currentGoldPrice - (availableValueUsd / bnslBalanceGold)).toFixed(2)} 
+                       ({((currentGoldPrice - (availableValueUsd / bnslBalanceGold)) / (availableValueUsd / bnslBalanceGold) * 100).toFixed(1)}%)
+                     </span>
+                   </div>
+                 )}
+               </div>
+             </div>
+
              <div className="p-4 bg-muted rounded-lg border border-border space-y-2">
                <div className="flex justify-between text-sm">
                  <span className="text-muted-foreground">Available in BNSL:</span>
