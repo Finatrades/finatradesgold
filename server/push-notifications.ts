@@ -132,6 +132,18 @@ export async function unregisterDeviceToken(userId: string, token: string): Prom
     ));
 }
 
+export async function unregisterAllDeviceTokens(userId: string): Promise<number> {
+  const result = await db
+    .update(pushDeviceTokens)
+    .set({ isActive: false })
+    .where(and(
+      eq(pushDeviceTokens.userId, userId),
+      eq(pushDeviceTokens.isActive, true)
+    ));
+  
+  return result.rowCount || 0;
+}
+
 export async function getUserDeviceTokens(userId: string): Promise<string[]> {
   const tokens = await db
     .select({ token: pushDeviceTokens.token })

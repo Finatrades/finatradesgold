@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import type { User } from '@shared/schema';
 import { prefetchDashboardData, clearQueryCache } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
+import { pushNotificationManager } from '@/lib/pushNotificationManager';
 
 interface MfaChallenge {
   requiresMfa: boolean;
@@ -18,7 +19,7 @@ interface AuthContextType {
   adminLogin: (email: string, password: string) => Promise<MfaChallenge | null>;
   verifyMfa: (challengeToken: string, token: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   loading: boolean;
   setUser?: (user: User | null) => void;
@@ -231,15 +232,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await pushNotificationManager.performLogoutCleanup();
+    
     clearQueryCache();
     setUser(null);
+    pushNotificationManager.setUser(null);
     setAdminPortal(false);
     localStorage.removeItem('fina_user_id');
     sessionStorage.removeItem('adminPortalSession');
     sessionStorage.removeItem('pendingAdminLogin');
     
-    // Also call server logout to destroy session
     fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     
     setLocation('/');

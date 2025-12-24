@@ -20367,6 +20367,20 @@ ${message}
     }
   });
 
+  // Unregister all device tokens for user (used during logout)
+  app.post("/api/push/unregister-all", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any)?.user?.id;
+      const { unregisterAllDeviceTokens } = await import('./push-notifications');
+      const count = await unregisterAllDeviceTokens(userId);
+      
+      res.json({ success: true, devicesUnregistered: count });
+    } catch (error) {
+      console.error("Failed to unregister all push devices:", error);
+      res.status(500).json({ message: "Failed to unregister devices" });
+    }
+  });
+
   // ============================================
   // PLATFORM CONFIGURATION
   // ============================================

@@ -1,15 +1,24 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useSyncExternalStore } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from './use-toast';
+import { pushNotificationManager } from '@/lib/pushNotificationManager';
 
 export function usePushNotifications() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isRegistered, setIsRegistered] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+  
+  const isRegistered = useSyncExternalStore(
+    (callback) => pushNotificationManager.subscribe(callback),
+    () => pushNotificationManager.getIsRegistered()
+  );
+
+  useEffect(() => {
+    pushNotificationManager.setUser(user ? { id: user.id } : null);
+  }, [user]);
 
   useEffect(() => {
     const checkSupport = async () => {
@@ -44,6 +53,10 @@ export function usePushNotifications() {
       await PushNotifications.register();
 
       await PushNotifications.addListener('registration', async (token) => {
+        if (!pushNotificationManager.canRegister()) {
+          console.log('User logged out or logging out, skipping push token registration');
+          return;
+        }
         try {
           const platform = Capacitor.getPlatform() as 'ios' | 'android';
           await apiRequest('POST', '/api/push/register', {
@@ -51,7 +64,8 @@ export function usePushNotifications() {
             platform,
             deviceName: `${platform} device`
           });
-          setIsRegistered(true);
+          pushNotificationManager.setCurrentToken(token.value);
+          pushNotificationManager.setIsRegistered(true);
         } catch (error) {
           console.error('Failed to register push token:', error);
         }
@@ -83,29 +97,14 @@ export function usePushNotifications() {
   }, [user, toast]);
 
   const unregisterFromPushNotifications = useCallback(async () => {
-    if (!Capacitor.isNativePlatform()) {
-      return;
-    }
-
-    try {
-      await PushNotifications.removeAllListeners();
-      setIsRegistered(false);
-    } catch (error) {
-      console.error('Failed to unregister push notifications:', error);
-    }
+    await pushNotificationManager.performLogoutCleanup();
   }, []);
 
   useEffect(() => {
     if (user && isSupported && !isRegistered) {
       registerForPushNotifications();
     }
-    
-    return () => {
-      if (isRegistered) {
-        unregisterFromPushNotifications();
-      }
-    };
-  }, [user, isSupported, isRegistered, registerForPushNotifications, unregisterFromPushNotifications]);
+  }, [user, isSupported, isRegistered, registerForPushNotifications]);
 
   return {
     isSupported,
