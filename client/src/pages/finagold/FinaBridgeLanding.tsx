@@ -658,7 +658,7 @@ function HeroSection() {
                     transition={{ duration: 2, ease: 'easeOut', delay: 0.3 }}
                   />
                   
-                  {/* Animated gold bars */}
+                  {/* Animated gold bars - Importer to Exporter (left to right, top path) */}
                   {[0, 1].map((i) => (
                     <motion.rect
                       key={`gold-${i}`}
@@ -669,34 +669,34 @@ function HeroSection() {
                       rx="2"
                       fill="url(#heroGoldGradient)"
                       animate={{
-                        x: [35, 355],
-                        y: [96, 46, 46, 96],
-                        opacity: [0, 1, 1, 0],
+                        x: [35, 200, 355],
+                        y: [96, 46, 96],
+                        opacity: [0, 1, 0],
                       }}
                       transition={{
-                        duration: 8,
+                        duration: 6,
                         repeat: Infinity,
-                        delay: i * 4,
+                        delay: i * 3,
                         ease: 'linear',
                       }}
                     />
                   ))}
                   
-                  {/* Animated ships */}
+                  {/* Animated ships - Exporter to Importer (right to left, bottom path) */}
                   {[0, 1].map((i) => (
                     <motion.path
                       key={`ship-${i}`}
                       d="M 0 0 L 10 0 L 12 5 L -2 5 Z"
                       fill="#60A5FA"
                       animate={{
-                        x: [355, 35],
-                        y: [96, 146, 146, 96],
-                        opacity: [0, 1, 1, 0],
+                        x: [355, 200, 35],
+                        y: [96, 146, 96],
+                        opacity: [0, 1, 0],
                       }}
                       transition={{
-                        duration: 8,
+                        duration: 6,
                         repeat: Infinity,
-                        delay: i * 4 + 2,
+                        delay: i * 3 + 1.5,
                         ease: 'linear',
                       }}
                     />
