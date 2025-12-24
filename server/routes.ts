@@ -7527,20 +7527,6 @@ ${message}
     }
   });
 
-  // Admin: Get all gold gifts
-  app.get("/api/admin/vault/gifts", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
-    try {
-      const gifts = await db.select().from(goldGifts).orderBy(desc(goldGifts.createdAt));
-      const enriched = await Promise.all(gifts.map(async (g) => {
-        const sender = await storage.getUser(g.senderUserId);
-        return { ...g, sender: sender ? { email: sender.email, firstName: sender.firstName, lastName: sender.lastName } : null };
-      }));
-      res.json({ gifts: enriched });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get gold gifts" });
-    }
-  });
-
   // ============================================================================
   // FINAVAULT - INSURANCE CERTIFICATES
   // ============================================================================

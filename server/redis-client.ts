@@ -2,7 +2,6 @@ import Redis from 'ioredis';
 
 let redisClient: Redis | null = null;
 let isConnected = false;
-let isReadOnly = false;
 
 export function getRedisClient(): Redis | null {
   if (redisClient) return redisClient;
@@ -85,29 +84,17 @@ export async function cache<T>(
     }
     
     const data = await fetchFn();
-    if (!isReadOnly) {
-      try {
-        await redis.setex(key, ttlSeconds, JSON.stringify(data));
-      } catch (setError: any) {
-        if (setError.message?.includes('NOPERM')) {
-          isReadOnly = true;
-        }
-      }
-    }
+    await redis.setex(key, ttlSeconds, JSON.stringify(data));
     return data;
   } catch (error: any) {
-    if (error.message?.includes('NOPERM')) {
-      isReadOnly = true;
-    } else {
-      console.error('[Redis Cache] Error:', error.message);
-    }
+    console.error('[Redis Cache] Error:', error.message);
     return fetchFn();
   }
 }
 
 export async function invalidateCache(pattern: string): Promise<void> {
   const redis = getRedisClient();
-  if (!redis || isReadOnly) return;
+  if (!redis) return;
   
   try {
     const keys = await redis.keys(pattern);
@@ -116,26 +103,18 @@ export async function invalidateCache(pattern: string): Promise<void> {
       console.log(`[Redis Cache] Invalidated ${keys.length} keys matching: ${pattern}`);
     }
   } catch (error: any) {
-    if (error.message?.includes('NOPERM')) {
-      isReadOnly = true;
-    } else {
-      console.error('[Redis Cache] Invalidation error:', error.message);
-    }
+    console.error('[Redis Cache] Invalidation error:', error.message);
   }
 }
 
 export async function setCache(key: string, value: any, ttlSeconds: number = 300): Promise<void> {
   const redis = getRedisClient();
-  if (!redis || isReadOnly) return;
+  if (!redis) return;
   
   try {
     await redis.setex(key, ttlSeconds, JSON.stringify(value));
   } catch (error: any) {
-    if (error.message?.includes('NOPERM')) {
-      isReadOnly = true;
-    } else {
-      console.error('[Redis Cache] Set error:', error.message);
-    }
+    console.error('[Redis Cache] Set error:', error.message);
   }
 }
 
@@ -166,7 +145,7 @@ export async function checkRateLimit(
 ): Promise<RateLimitResult> {
   const redis = getRedisClient();
   
-  if (!redis || isReadOnly) {
+  if (!redis) {
     return { allowed: true, remaining: maxRequests, resetTime: Date.now() + windowSeconds * 1000 };
   }
   
@@ -192,19 +171,14 @@ export async function checkRateLimit(
       retryAfter: allowed ? undefined : ttl > 0 ? ttl : windowSeconds,
     };
   } catch (error: any) {
-    if (error.message?.includes('NOPERM')) {
-      console.warn('[Redis] Read-only connection detected, disabling write operations');
-      isReadOnly = true;
-    } else {
-      console.error('[Redis RateLimit] Error:', error.message);
-    }
+    console.error('[Redis RateLimit] Error:', error.message);
     return { allowed: true, remaining: maxRequests, resetTime: Date.now() + windowSeconds * 1000 };
   }
 }
 
 export async function incrementCounter(key: string, ttlSeconds?: number): Promise<number> {
   const redis = getRedisClient();
-  if (!redis || isReadOnly) return 0;
+  if (!redis) return 0;
   
   try {
     const count = await redis.incr(key);
@@ -213,36 +187,28 @@ export async function incrementCounter(key: string, ttlSeconds?: number): Promis
     }
     return count;
   } catch (error: any) {
-    if (error.message?.includes('NOPERM')) {
-      isReadOnly = true;
-    } else {
-      console.error('[Redis Counter] Error:', error.message);
-    }
+    console.error('[Redis Counter] Error:', error.message);
     return 0;
   }
 }
 
 export async function acquireLock(key: string, ttlSeconds: number = 30): Promise<boolean> {
   const redis = getRedisClient();
-  if (!redis || isReadOnly) return true;
+  if (!redis) return true;
   
   try {
     const lockKey = `lock:${key}`;
     const result = await redis.set(lockKey, '1', 'EX', ttlSeconds, 'NX');
     return result === 'OK';
   } catch (error: any) {
-    if (error.message?.includes('NOPERM')) {
-      isReadOnly = true;
-    } else {
-      console.error('[Redis Lock] Error:', error.message);
-    }
+    console.error('[Redis Lock] Error:', error.message);
     return true;
   }
 }
 
 export async function releaseLock(key: string): Promise<void> {
   const redis = getRedisClient();
-  if (!redis || isReadOnly) return;
+  if (!redis) return;
   
   try {
     await redis.del(`lock:${key}`);

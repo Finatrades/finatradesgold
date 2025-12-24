@@ -46,7 +46,6 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/users': ['view_users', 'manage_users'],
   '/admin/employees': ['manage_employees'],
   '/admin/kyc': ['view_kyc', 'manage_kyc'],
-  '/admin/aml': ['view_kyc', 'manage_kyc'],
   '/admin/compliance': ['view_kyc', 'manage_kyc'],
   '/admin/transactions': ['view_transactions', 'manage_transactions'],
   '/admin/payment-gateways': ['manage_deposits', 'manage_withdrawals'],
@@ -151,7 +150,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: <Users className="w-5 h-5" />, label: 'User Management', href: '/admin/users' },
         { icon: <UserCog className="w-5 h-5" />, label: 'Employees', href: '/admin/employees' },
         { icon: <ShieldAlert className="w-5 h-5" />, label: 'KYC Reviews', href: '/admin/kyc' },
-        { icon: <Shield className="w-5 h-5" />, label: 'AML Management', href: '/admin/aml' },
         { icon: <Shield className="w-5 h-5" />, label: 'Compliance', href: '/admin/compliance' },
       ]
     },
