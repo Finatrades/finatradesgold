@@ -71,8 +71,17 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
       setReferenceNumber(data.request.referenceNumber);
       setStep('submitted');
       toast.success("Withdrawal request submitted");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to submit withdrawal request");
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to submit withdrawal request";
+      toast.error(errorMessage, {
+        description: errorMessage.includes('balance') 
+          ? 'Please check your available balance and try again.'
+          : 'Please try again or contact support if the problem persists.',
+        action: {
+          label: 'Retry',
+          onClick: () => handleSubmit(),
+        },
+      });
     } finally {
       setSubmitting(false);
     }
@@ -208,30 +217,52 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
             </div>
           </div>
         ) : step === 'submitted' ? (
-          <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-foreground">Withdrawal Request Submitted</h3>
+          <div className="py-6 space-y-6">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-success-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-10 h-10 text-success" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Withdrawal Request Submitted!</h3>
               <p className="text-sm text-muted-foreground mt-2">
-                Your withdrawal request is being processed.
+                Your request is now being reviewed by our team.
               </p>
             </div>
-            <div className="flex justify-center gap-4">
-              <div className="bg-muted/30 rounded-lg p-4">
-                <p className="text-xs text-muted-foreground">Reference Number</p>
-                <p className="font-mono font-bold text-lg">{referenceNumber}</p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Reference Number</p>
+                <p className="font-mono font-bold text-lg text-primary">{referenceNumber}</p>
               </div>
-              <div className="bg-muted/30 rounded-lg p-4">
-                <p className="text-xs text-muted-foreground">Amount</p>
-                <p className="font-mono font-bold text-lg">${parseFloat(amount).toFixed(2)}</p>
+              <div className="bg-success-muted border border-success/20 rounded-xl p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Amount</p>
+                <p className="font-mono font-bold text-lg text-success">${parseFloat(amount).toFixed(2)}</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              You will receive an email notification once the withdrawal is processed.
-              <br />Funds typically arrive within 2-5 business days.
-            </p>
+            
+            <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" /> What Happens Next?
+              </h4>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                  <span>Our team will review and verify your withdrawal request</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                  <span>Once approved, funds will be sent to your bank account</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                  <span>You'll receive an email and notification when completed (2-5 business days)</span>
+                </li>
+              </ol>
+            </div>
+            
+            <div className="bg-info-muted text-info-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>You can track your withdrawal status in the Transaction History section of your dashboard.</p>
+            </div>
           </div>
         ) : null}
 

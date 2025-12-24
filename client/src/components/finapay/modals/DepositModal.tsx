@@ -387,8 +387,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       setReferenceNumber(data.request.referenceNumber);
       setStep('submitted');
       toast.success("Deposit request submitted");
-    } catch (error) {
-      toast.error("Failed to submit deposit request");
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to submit deposit request";
+      toast.error(errorMessage, {
+        description: 'Please check your details and try again, or contact support if the problem persists.',
+        action: {
+          label: 'Retry',
+          onClick: () => handleSubmit(),
+        },
+      });
     } finally {
       setSubmitting(false);
     }
@@ -1168,24 +1175,55 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             </div>
           </div>
         ) : step === 'submitted' ? (
-          <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-success-muted rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-success" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-foreground">Deposit Request Submitted</h3>
+          <div className="py-6 space-y-6">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-success-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-10 h-10 text-success" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Request Submitted Successfully!</h3>
               <p className="text-sm text-muted-foreground mt-2">
-                Your deposit request has been submitted for review.
+                Your deposit is now being processed by our team.
               </p>
             </div>
-            <div className="bg-muted/30 rounded-lg p-4 inline-block">
-              <p className="text-xs text-muted-foreground">Reference Number</p>
-              <p className="font-mono font-bold text-lg">{referenceNumber}</p>
+            
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Your Reference Number</p>
+              <p className="font-mono font-bold text-xl text-primary">{referenceNumber}</p>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(referenceNumber);
+                  toast.success("Reference copied!");
+                }}
+                className="text-xs text-primary hover:underline mt-2 flex items-center justify-center gap-1 mx-auto"
+              >
+                <Copy className="w-3 h-3" /> Copy Reference
+              </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Please complete your bank transfer and include this reference number in your payment description.
-              <br />Your wallet will be credited once the funds are received and verified.
-            </p>
+            
+            <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" /> What Happens Next?
+              </h4>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                  <span>Complete your bank transfer with the reference number in the description</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                  <span>Our team will verify your payment (1-3 business days)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                  <span>You'll receive a notification when your gold is credited</span>
+                </li>
+              </ol>
+            </div>
+            
+            <div className="bg-info-muted text-info-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
+              <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>You can track your deposit status in the Transaction History section of your dashboard.</p>
+            </div>
           </div>
         ) : null}
 

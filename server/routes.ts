@@ -5631,6 +5631,7 @@ ${message}
       
       // Handle deposit requests
       if (sourceTable === 'depositRequests') {
+        const depositReq = await storage.getDepositRequest(req.params.id);
         await storage.updateDepositRequest(req.params.id, { status: 'Rejected', reviewedAt: new Date() });
         
         await storage.createAuditLog({
@@ -5642,12 +5643,32 @@ ${message}
           details: `Deposit request rejected - Reason: ${reason || 'Not specified'}`,
         });
         
+        // Notify user about rejection
+        if (depositReq) {
+          await storage.createNotification({
+            userId: depositReq.userId,
+            title: 'Deposit Request Rejected',
+            message: `Your deposit request (${depositReq.referenceNumber}) has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
+            type: 'warning',
+            read: false,
+          });
+          
+          emitLedgerEvent(depositReq.userId, {
+            type: 'deposit_rejected',
+            module: 'finapay',
+            action: 'deposit_rejected',
+            data: { referenceNumber: depositReq.referenceNumber, reason },
+          });
+        }
+        
         return res.json({ message: 'Deposit request rejected' });
       }
       
       // Handle withdrawal requests
       if (sourceTable === 'withdrawalRequests') {
         try {
+          const [withdrawalReq] = await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.id, req.params.id)).limit(1);
+          
           await db.update(withdrawalRequests)
             .set({ status: 'Rejected' })
             .where(eq(withdrawalRequests.id, req.params.id));
@@ -5661,6 +5682,24 @@ ${message}
             details: `Withdrawal request rejected - Reason: ${reason || 'Not specified'}`,
           });
           
+          // Notify user about rejection
+          if (withdrawalReq) {
+            await storage.createNotification({
+              userId: withdrawalReq.userId,
+              title: 'Withdrawal Request Rejected',
+              message: `Your withdrawal request (${withdrawalReq.referenceNumber}) has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
+              type: 'warning',
+              read: false,
+            });
+            
+            emitLedgerEvent(withdrawalReq.userId, {
+              type: 'withdrawal_rejected',
+              module: 'finapay',
+              action: 'withdrawal_rejected',
+              data: { referenceNumber: withdrawalReq.referenceNumber, reason },
+            });
+          }
+          
           return res.json({ message: 'Withdrawal request rejected' });
         } catch (e) {
           return res.status(400).json({ message: "Failed to reject withdrawal request" });
@@ -5670,6 +5709,8 @@ ${message}
       // Handle crypto payment requests
       if (sourceTable === 'cryptoPaymentRequests') {
         try {
+          const [cryptoReq] = await db.select().from(cryptoPaymentRequests).where(eq(cryptoPaymentRequests.id, req.params.id)).limit(1);
+          
           await db.update(cryptoPaymentRequests)
             .set({ status: 'Rejected' })
             .where(eq(cryptoPaymentRequests.id, req.params.id));
@@ -5682,6 +5723,24 @@ ${message}
             actorRole: "admin",
             details: `Crypto payment request rejected - Reason: ${reason || 'Not specified'}`,
           });
+          
+          // Notify user about rejection
+          if (cryptoReq) {
+            await storage.createNotification({
+              userId: cryptoReq.userId,
+              title: 'Crypto Deposit Rejected',
+              message: `Your crypto deposit has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
+              type: 'warning',
+              read: false,
+            });
+            
+            emitLedgerEvent(cryptoReq.userId, {
+              type: 'crypto_rejected',
+              module: 'finapay',
+              action: 'crypto_deposit_rejected',
+              data: { reason },
+            });
+          }
           
           return res.json({ message: 'Crypto payment request rejected' });
         } catch (e) {
