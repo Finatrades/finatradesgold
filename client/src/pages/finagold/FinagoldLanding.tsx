@@ -9,7 +9,6 @@ import FinatradesAdvantage from './components/FinatradesAdvantage';
 import AboutSection from './components/AboutSection';
 import SwissStandards from './components/SwissStandards';
 import Products from './components/Products';
-import Certificates from './components/Certificates';
 import CTA from './components/CTA';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
@@ -115,7 +114,6 @@ function FinagoldContent() {
         <SwissStandards />
         <WhoItsFor />
         <ValueProps />
-        <Certificates />
         <CTA />
         <ContactForm />
       </main>
