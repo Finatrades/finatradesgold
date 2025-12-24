@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
 import { db, pool } from "./db";
 import crypto from "crypto";
-import { checkRateLimit as redisCheckRateLimit, isRedisConnected } from "./redis-client";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
@@ -788,17 +787,7 @@ ${message}
   const LOGIN_RATE_WINDOW = LOGIN_RATE_WINDOW_SECONDS * 1000; // 15 minutes in ms
   
   async function checkLoginRateLimitAsync(identifier: string): Promise<{ allowed: boolean; remainingAttempts: number; retryAfter?: number }> {
-    // Use Redis rate limiting if available
-    if (isRedisConnected()) {
-      const result = await redisCheckRateLimit(identifier, LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW_SECONDS);
-      return {
-        allowed: result.allowed,
-        remainingAttempts: result.remaining,
-        retryAfter: result.retryAfter
-      };
-    }
-    
-    // Fallback to in-memory rate limiting
+    // Use in-memory rate limiting
     return checkLoginRateLimit(identifier);
   }
   

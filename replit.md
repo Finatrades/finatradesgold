@@ -80,12 +80,6 @@ The platform uses a client-server architecture with a React frontend and an Expr
 - **Drizzle ORM**: For database interactions.
 - **connect-pg-simple**: PostgreSQL session store.
 
-**Redis (Optional):**
-- **Upstash Redis**: For distributed caching and rate limiting across multiple instances.
-- **Configuration**: Set `REDIS_URL` secret to enable. Gracefully falls back to in-memory when not configured.
-- **Features**: Gold price caching, distributed rate limiting for login endpoints, cache utilities.
-- **Client**: `server/redis-client.ts` provides caching, rate limiting, counters, and distributed locking functions.
-
 **UI Framework:**
 - **Radix UI**: Accessible component primitives.
 - **shadcn/ui**: Pre-built component library.

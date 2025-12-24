@@ -1,6 +1,5 @@
 import { db } from "./db";
 import { paymentGatewaySettings } from "@shared/schema";
-import { getCache, setCache, isRedisConnected } from "./redis-client";
 
 interface GoldPriceData {
   pricePerGram: number;
@@ -27,7 +26,6 @@ let cachedPrice: CachedPrice | null = null;
 let lastKnownPrice: GoldPriceData | null = null; // Keep last successful price as fallback
 let cacheDurationMs = 5 * 60 * 1000; // 5 minutes default
 
-const REDIS_GOLD_PRICE_KEY = 'gold:price:current';
 
 // Default fallback price when no cached data available
 const DEFAULT_FALLBACK_PRICE: GoldPriceData = {
@@ -177,23 +175,6 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
     return cachedPrice.data;
   }
   
-  // Check Redis cache (distributed cache for multi-instance)
-  if (isRedisConnected()) {
-    try {
-      const redisPrice = await getCache<GoldPriceData>(REDIS_GOLD_PRICE_KEY);
-      if (redisPrice) {
-        console.log('[GoldPrice] Retrieved from Redis cache');
-        cachedPrice = {
-          data: redisPrice,
-          expiresAt: new Date(Date.now() + cacheDurationMs)
-        };
-        return redisPrice;
-      }
-    } catch (err) {
-      console.error('[GoldPrice] Redis cache read error:', err);
-    }
-  }
-  
   try {
     let priceData: GoldPriceData;
     
@@ -215,11 +196,6 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
       expiresAt: new Date(Date.now() + cacheDurationMs)
     };
     
-    // Save to Redis cache (async, don't block)
-    if (isRedisConnected()) {
-      setCache(REDIS_GOLD_PRICE_KEY, priceData, Math.floor(cacheDurationMs / 1000)).catch(() => {});
-    }
-    
     // Save as last known price for future fallback
     lastKnownPrice = priceData;
     
@@ -240,11 +216,6 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
         data: priceData,
         expiresAt: new Date(Date.now() + cacheDurationMs)
       };
-      
-      // Save to Redis cache (async, don't block)
-      if (isRedisConnected()) {
-        setCache(REDIS_GOLD_PRICE_KEY, priceData, Math.floor(cacheDurationMs / 1000)).catch(() => {});
-      }
       
       lastKnownPrice = priceData;
       
