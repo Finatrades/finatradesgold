@@ -612,13 +612,55 @@ function CalculatorSection() {
 
 function PlanComparisonSection() {
   const plans = [
-    { tenure: 12, rate: 8, label: '12-Month Plan', description: 'Short-term structured holding' },
-    { tenure: 24, rate: 10, label: '24-Month Plan', description: 'Balanced growth strategy', featured: true },
-    { tenure: 36, rate: 12, label: '36-Month Plan', description: 'Maximum return potential' },
+    { 
+      tenure: 12, 
+      rate: 10, 
+      category: 'SHORT TERM',
+      description: 'Shorter duration',
+      quarters: 4,
+      features: [
+        'Indicative ~10% growth p.a.',
+        '4 quarterly growth cycles',
+        'Returned worth based on Locked-In Price',
+        'Ideal for near-term goals',
+      ],
+    },
+    { 
+      tenure: 24, 
+      rate: 11, 
+      category: 'BALANCED',
+      description: 'Medium duration',
+      quarters: 8,
+      featured: true,
+      features: [
+        'Indicative ~11% growth p.a.',
+        '8 quarterly growth cycles',
+        'Ideal for stable medium-term goals',
+        'Most popular choice',
+      ],
+    },
+    { 
+      tenure: 36, 
+      rate: 12, 
+      category: 'LONG TERM',
+      description: 'Highest projected growth',
+      quarters: 12,
+      features: [
+        'Indicative ~12% growth p.a.',
+        '12 quarterly growth cycles',
+        'Designed for long-term accumulation',
+        'Maximum growth potential',
+      ],
+    },
   ];
 
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-10 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-pink-100/20 blur-3xl" />
+      </div>
+
       <div className="relative max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -626,10 +668,16 @@ function PlanComparisonSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Choose the BNSL Plan That Fits Your Goals
+          <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
+            Plan Options
+          </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Choose Your{' '}
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+              BNSL Plan
+            </span>
           </h2>
-          <p className="text-gray-400 text-lg">Compare tenure options and projected returns</p>
+          <p className="text-gray-600 text-lg">Select the tenure that aligns with your gold accumulation goals.</p>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -640,49 +688,88 @@ function PlanComparisonSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(234, 194, 107, 0.15)' }}
-              className={`relative p-8 rounded-2xl border transition-all duration-300 ${
+              whileHover={{ y: -8 }}
+              className={`relative bg-white p-8 rounded-3xl border transition-all duration-300 shadow-lg ${
                 plan.featured
-                  ? 'bg-gradient-to-br from-[#EAC26B]/15 to-transparent border-[#EAC26B]/50'
-                  : 'bg-white/[0.02] border-white/10 hover:border-[#EAC26B]/30'
+                  ? 'border-purple-300 shadow-purple-100'
+                  : 'border-gray-100 hover:border-purple-200'
               }`}
             >
               {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#EAC26B] rounded-full text-black text-xs font-semibold">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full text-white text-xs font-bold uppercase tracking-wide">
                   Most Popular
                 </div>
               )}
 
               <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-white mb-2">{plan.label}</h3>
-                <p className="text-sm text-gray-400">{plan.description}</p>
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  {plan.category}
+                </span>
               </div>
 
-              <div className="text-center mb-6">
-                <div className="text-5xl font-bold text-[#EAC26B]">{plan.rate}%</div>
-                <p className="text-gray-400 text-sm">Indicative Annual Rate</p>
+              <div className="flex justify-center mb-4">
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center border-4 ${
+                  plan.featured 
+                    ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50' 
+                    : 'border-purple-200 bg-purple-50'
+                }`}>
+                  <span className={`text-4xl font-bold ${plan.featured ? 'text-purple-600' : 'text-purple-500'}`}>
+                    {plan.tenure}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-center text-gray-600 mb-6">{plan.description}</p>
+
+              <div className="text-center mb-4">
+                <div className="text-5xl font-black bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+                  ~{plan.rate}%
+                </div>
+                <p className="text-gray-500 text-sm">p.a. growth in gold worth</p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                  <span>Growth Cycles</span>
+                  <span className="font-semibold">{plan.quarters} quarters</span>
+                </div>
+                <div className="flex gap-1">
+                  {Array.from({ length: 12 }).map((_, j) => (
+                    <div 
+                      key={j} 
+                      className={`h-2 flex-1 rounded-full ${
+                        j < plan.quarters 
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                          : 'bg-gray-200'
+                      }`} 
+                    />
+                  ))}
+                </div>
               </div>
 
               <ul className="space-y-3 mb-8">
-                {[
-                  `${plan.tenure / 3} quarterly payouts`,
-                  'Locked-In Price protection',
-                  'In-kind gold settlement',
-                  'Early exit penalties apply',
-                ].map((item, j) => (
-                  <li key={j} className="flex items-center gap-2 text-sm text-gray-300">
-                    <Sparkles className="w-4 h-4 text-[#EAC26B]" />
-                    {item}
+                {plan.features.map((feature, j) => (
+                  <li key={j} className="flex items-start gap-2 text-sm text-gray-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 flex-shrink-0" />
+                    {feature}
                   </li>
                 ))}
               </ul>
 
-              <Link href="/bnsl" className={`block w-full py-3 rounded-full text-center font-semibold transition-all ${
-                plan.featured
-                  ? 'bg-[#EAC26B] text-black hover:bg-[#d4af5a]'
-                  : 'border border-[#EAC26B]/40 text-white hover:bg-[#EAC26B]/10'
-              }`}>
-                Select Plan
+              <Link href="/dashboard/bnsl/create">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full py-3.5 rounded-xl text-center font-semibold transition-all flex items-center justify-center gap-2 ${
+                    plan.featured
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
+                      : 'border-2 border-purple-200 text-purple-600 hover:bg-purple-50'
+                  }`}
+                  data-testid={`btn-select-${plan.tenure}`}
+                >
+                  Select {plan.tenure}-Month Plan
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
               </Link>
             </motion.div>
           ))}
