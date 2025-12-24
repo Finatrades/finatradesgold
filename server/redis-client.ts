@@ -19,14 +19,17 @@ function cleanRedisUrl(rawUrl: string): string {
 }
 
 export function getRedisClient(): Redis | null {
-  if (!process.env.REDIS_URL) {
-    console.log('[Redis] No REDIS_URL configured, using in-memory fallback');
+  // Use UPSTASH_REDIS_URL first (user-provided), fallback to REDIS_URL
+  const rawUrl = process.env.UPSTASH_REDIS_URL || process.env.REDIS_URL;
+  
+  if (!rawUrl) {
+    console.log('[Redis] No UPSTASH_REDIS_URL or REDIS_URL configured, using in-memory fallback');
     return null;
   }
 
   if (!redisClient) {
     try {
-      const redisUrl = cleanRedisUrl(process.env.REDIS_URL);
+      const redisUrl = cleanRedisUrl(rawUrl);
       console.log('[Redis] Connecting to:', redisUrl.replace(/:[^:@]+@/, ':****@'));
       
       redisClient = new Redis(redisUrl, {
