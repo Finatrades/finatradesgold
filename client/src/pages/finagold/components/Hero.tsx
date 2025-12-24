@@ -76,11 +76,16 @@ export default function Hero() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
-              {/* Pink badge */}
-              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#FF2FBF]/30">
-                <span className="text-[#FF2FBF] text-xs">✦</span>
-                <span className="text-[#FF2FBF] text-sm font-medium">{c.badge}</span>
-                <span className="text-[#FF2FBF] text-xs">○</span>
+              {/* Red regulatory badge - links to legal */}
+              <motion.div variants={itemVariants}>
+                <a 
+                  href="#legal" 
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-red-300 hover:border-red-400 hover:bg-red-50 transition-all cursor-pointer"
+                >
+                  <span className="text-red-500 text-sm font-bold">+</span>
+                  <span className="text-red-500 text-sm font-medium">{c.badge}</span>
+                  <span className="text-red-400 text-xs">○</span>
+                </a>
               </motion.div>
 
               {/* Pink/Magenta gradient title */}

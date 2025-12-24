@@ -51,7 +51,7 @@ export default function Footer() {
           </div>
 
           {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
+            <div key={category} id={category === 'Legal' ? 'legal' : undefined}>
               <h4 className="text-gray-900 font-semibold mb-4 text-sm">{category}</h4>
               <ul className="space-y-3">
                 {links.map((link) => (
