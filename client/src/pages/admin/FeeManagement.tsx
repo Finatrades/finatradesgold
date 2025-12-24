@@ -37,8 +37,19 @@ export default function FeeManagement() {
   const [createOpen, setCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('FinaPay');
   
-  const [formData, setFormData] = useState({
-    module: 'FinaPay' as const,
+  const [formData, setFormData] = useState<{
+    module: 'FinaPay' | 'FinaVault' | 'BNSL' | 'FinaBridge';
+    feeKey: string;
+    feeName: string;
+    description: string;
+    feeType: string;
+    feeValue: string;
+    minAmount: string;
+    maxAmount: string;
+    isActive: boolean;
+    displayOrder: number;
+  }>({
+    module: 'FinaPay',
     feeKey: '',
     feeName: '',
     description: '',
@@ -104,13 +115,20 @@ export default function FeeManagement() {
     setSaving(true);
     try {
       const { apiRequest } = await import('@/lib/queryClient');
-      await apiRequest('PUT', `/api/admin/fees/${editingFee.id}`, formData);
+      const updateData = {
+        ...formData,
+        minAmount: formData.minAmount || null,
+        maxAmount: formData.maxAmount || null,
+      };
+      await apiRequest('PUT', `/api/admin/fees/${editingFee.id}`, updateData);
       toast.success('Fee updated successfully');
       setEditingFee(null);
       resetForm();
       fetchFees();
-    } catch (err) {
-      toast.error('Failed to update fee');
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to update fee';
+      toast.error(errorMessage);
+      console.error('Fee update error:', err);
     } finally {
       setSaving(false);
     }
