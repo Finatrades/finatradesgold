@@ -69,12 +69,15 @@ export default function Hero() {
               className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
                     <Shield className="w-5 h-5 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Regulatory Information</h3>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Trusted & Regulated</h3>
+                    <p className="text-xs text-gray-500">Complete Regulatory and Legal Information</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowRegulatory(false)}
@@ -83,29 +86,91 @@ export default function Hero() {
                   <X className="w-4 h-4 text-gray-600" />
                 </button>
               </div>
-              <div className="p-6 space-y-4">
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900">Swiss Regulatory Framework</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    Finatrades operates under the Swiss regulatory framework, ensuring the highest standards of compliance, security, and transparency for all gold-backed financial services.
-                  </p>
+              <div className="p-6 space-y-6">
+                {/* Company Information */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 text-base">About Finatrades Finance SA</h4>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-gray-500 text-xs">Full Legal Name</p>
+                        <p className="text-gray-900 font-medium">Finatrades Finance SA</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Website</p>
+                        <p className="text-gray-900 font-medium">finatrades.com</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-gray-500 text-xs">Registered Office</p>
+                        <p className="text-gray-900 font-medium">Rue Robert-CÉARD 6, 1204, GENEVA</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Canton</p>
+                        <p className="text-gray-900 font-medium">GENEVA</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Company Number (UID)</p>
+                        <p className="text-gray-900 font-medium">CHE-422.960.092</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Date of Formation</p>
+                        <p className="text-gray-900 font-medium">29.01.2019</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Type of Corporation</p>
+                        <p className="text-gray-900 font-medium">Société Anonyme LLC</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900">Gold Custody & Storage</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    All physical gold is stored in LBMA-accredited vaults with full insurance coverage. Each gram of gold is allocated and audited regularly by independent third parties.
-                  </p>
+
+                {/* License Confirmation */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 bg-red-100 rounded text-red-700 text-xs font-semibold">FINMA</div>
+                    <h4 className="font-semibold text-gray-900 text-base">License Confirmation</h4>
+                  </div>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <p className="text-xs text-purple-800 font-medium mb-2">SO-FIT Member No.: 1186</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      Finatrades Finance SA ("Finatrades") is an authorized member of d'Organisme de Surveillance pour Intermédiaires Financiers & Trustees (SO-FIT), and as such is subject to supervision by SO-FIT, a supervisory body officially recognized by the Swiss Financial Market Supervisory Authority (FINMA).
+                    </p>
+                    <p className="text-sm text-gray-700 leading-relaxed mt-3">
+                      Finatrades' activities, including provision of its digital barter and payment platform, are carried out in compliance with the Swiss Federal Anti-Money Laundering Act (AMLA) and other applicable Swiss and international financial regulations.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900">Compliance Standards</h4>
+
+                {/* AML Compliance */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 text-base">Anti-Money Laundering (AML)</h4>
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    We maintain strict KYC/AML compliance in accordance with Swiss FINMA guidelines and international anti-money laundering standards.
+                    Finatrades Finance SA is subject to the Swiss Federal Anti-Money Laundering Act (AMLA) and operates in full alignment with the Financial Action Task Force (FATF) Recommendations.
                   </p>
+                  <div className="space-y-3">
+                    {[
+                      { title: 'Customer Due Diligence (CDD)', desc: 'Mandatory identity verification of all customers and beneficial owners, including documentation of source of funds.' },
+                      { title: 'Enhanced Due Diligence (EDD)', desc: 'Additional scrutiny for Politically Exposed Persons (PEPs), high-risk jurisdictions, and complex structures.' },
+                      { title: 'Ongoing Monitoring', desc: 'Continuous review of transactions to detect and report unusual or suspicious activity.' },
+                      { title: 'Record Retention', desc: 'Secure storage of customer and transaction records for the statutory retention period.' },
+                      { title: 'Employee Training', desc: 'Regular AML/CFT training for all relevant employees.' },
+                      { title: 'Risk-Based Approach', desc: 'Application of the Wolfsberg Principles and international best practices.' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                          <p className="text-xs text-gray-600">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Contact */}
                 <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                  <p className="text-xs text-gray-500">
-                    <strong>Disclaimer:</strong> Services availability may vary by jurisdiction. This is not investment advice. Please consult with a financial advisor before making investment decisions.
-                  </p>
+                  <p className="text-sm text-gray-700 font-medium mb-1">Compliance Contact</p>
+                  <p className="text-xs text-gray-600">For compliance-related inquiries: support@finatrades.com</p>
                 </div>
               </div>
             </motion.div>
