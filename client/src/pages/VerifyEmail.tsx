@@ -172,7 +172,7 @@ export default function VerifyEmail() {
                   variant="ghost"
                   onClick={handleResend}
                   disabled={isResending || countdown > 0}
-                  className="text-secondary hover:text-secondary/80"
+                  className="text-primary hover:text-primary/80"
                   data-testid="button-resend"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${isResending ? 'animate-spin' : ''}`} />

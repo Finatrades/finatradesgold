@@ -825,7 +825,7 @@ export default function FinaBridge() {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary/10 rounded-lg border border-secondary/20 text-secondary">
+            <div className="p-2 bg-purple-100 rounded-lg border border-purple-200 text-primary">
               <BarChart3 className="w-6 h-6" />
             </div>
             <div>
@@ -1038,7 +1038,7 @@ export default function FinaBridge() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className="p-2 bg-secondary/10 rounded-lg">
-                              <Package className="w-5 h-5 text-secondary" />
+                              <Package className="w-5 h-5 text-primary" />
                             </div>
                             <div>
                               <h3 className="font-bold">{request.tradeRefId}</h3>
@@ -1642,7 +1642,7 @@ export default function FinaBridge() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                                   <div>
                                     <span className="text-muted-foreground">Quote:</span>
-                                    <span className="font-semibold ml-1 text-secondary">${parseFloat(proposal.quotePrice).toLocaleString()}</span>
+                                    <span className="font-semibold ml-1 text-primary">${parseFloat(proposal.quotePrice).toLocaleString()}</span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Timeline:</span>
@@ -1774,7 +1774,7 @@ export default function FinaBridge() {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-4">
                             <div className="p-3 bg-secondary/10 rounded-lg">
-                              <Package className="w-6 h-6 text-secondary" />
+                              <Package className="w-6 h-6 text-primary" />
                             </div>
                             <div>
                               <h3 className="font-bold text-lg">{request.tradeRefId}</h3>
@@ -1782,7 +1782,7 @@ export default function FinaBridge() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-xl text-secondary">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
+                            <p className="font-bold text-xl text-primary">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
                             <p className="text-sm text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold settlement</p>
                           </div>
                         </div>
@@ -1918,7 +1918,7 @@ export default function FinaBridge() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className={`p-2 rounded-lg ${proposal.status === 'Modification Requested' ? 'bg-purple-100' : 'bg-secondary/10'}`}>
-                              <Send className={`w-5 h-5 ${proposal.status === 'Modification Requested' ? 'text-fuchsia-600' : 'text-secondary'}`} />
+                              <Send className={`w-5 h-5 ${proposal.status === 'Modification Requested' ? 'text-fuchsia-600' : 'text-primary'}`} />
                             </div>
                             <div>
                               <h3 className="font-bold">{proposal.tradeRequest?.tradeRefId}</h3>
@@ -2265,7 +2265,7 @@ export default function FinaBridge() {
                 <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-secondary transition-colors cursor-pointer bg-white">
                   <label className="cursor-pointer text-center">
                     <FileText className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <span className="text-sm text-secondary font-medium">Click to upload documents</span>
+                    <span className="text-sm text-primary font-medium">Click to upload documents</span>
                     <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC (Max 10MB each)</p>
                     <input
                       type="file"
@@ -2530,7 +2530,7 @@ export default function FinaBridge() {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-secondary" />
+                <FileText className="w-5 h-5 text-primary" />
                 Proposal Details
               </DialogTitle>
             </DialogHeader>
@@ -2539,7 +2539,7 @@ export default function FinaBridge() {
                 <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/5 rounded-lg border">
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Quote Price</p>
-                    <p className="text-2xl font-bold text-secondary">${parseFloat(viewingProposal.quotePrice).toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-primary">${parseFloat(viewingProposal.quotePrice).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Timeline</p>

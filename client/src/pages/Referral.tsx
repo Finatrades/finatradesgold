@@ -158,8 +158,8 @@ export default function Referral() {
 
           <Card className="p-5 bg-gradient-to-br from-secondary/10 to-secondary/5 border-secondary/20" data-testid="card-total-referrals">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center">
-                <Users className="w-6 h-6 text-secondary" />
+              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                <Users className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Referrals</p>
@@ -211,7 +211,7 @@ export default function Referral() {
               <Card className="p-6" data-testid="card-referral-code">
                 <CardHeader className="p-0 pb-4">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-secondary" />
+                    <Sparkles className="w-5 h-5 text-primary" />
                     Your Referral Code
                   </CardTitle>
                   <CardDescription>Share this code with friends to invite them</CardDescription>
@@ -296,8 +296,8 @@ export default function Referral() {
                     onClick={handleShare}
                     data-testid="button-share-native"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center mr-3">
-                      <MessageSquare className="w-5 h-5 text-secondary" />
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                      <MessageSquare className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">Share via Apps</p>
@@ -424,7 +424,7 @@ export default function Referral() {
               <Card className="p-6" data-testid="card-your-rewards">
                 <CardHeader className="p-0 pb-4">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Gift className="w-5 h-5 text-secondary" />
+                    <Gift className="w-5 h-5 text-primary" />
                     Your Rewards
                   </CardTitle>
                 </CardHeader>
@@ -471,12 +471,12 @@ export default function Referral() {
 
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center">
-                          <Gift className="w-4 h-4 text-secondary" />
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                          <Gift className="w-4 h-4 text-primary" />
                         </div>
                         <span className="font-medium">Friend gets</span>
                       </div>
-                      <span className="font-bold text-secondary">${data?.stats.refereeBonusUsd || 5} bonus</span>
+                      <span className="font-bold text-primary">${data?.stats.refereeBonusUsd || 5} bonus</span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">

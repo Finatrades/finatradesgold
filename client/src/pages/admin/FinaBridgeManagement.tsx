@@ -384,8 +384,8 @@ export default function FinaBridgeManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary/10 rounded-lg">
-              <Briefcase className="w-6 h-6 text-secondary" />
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Briefcase className="w-6 h-6 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">FinaBridge Management</h1>
@@ -462,8 +462,8 @@ export default function FinaBridgeManagement() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="p-2 bg-secondary/10 rounded-lg">
-                            <Package className="w-5 h-5 text-secondary" />
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <Package className="w-5 h-5 text-primary" />
                           </div>
                           <div>
                             <h3 className="font-bold">{request.tradeRefId}</h3>
@@ -663,8 +663,8 @@ export default function FinaBridgeManagement() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
-                                <div className="p-2 bg-secondary/10 rounded-lg">
-                                  <MessageCircle className="w-5 h-5 text-secondary" />
+                                <div className="p-2 bg-purple-100 rounded-lg">
+                                  <MessageCircle className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
                                   <h3 className="font-bold">{room.tradeRequest?.tradeRefId || 'Unknown'}</h3>

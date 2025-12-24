@@ -1086,7 +1086,7 @@ export default function FinaPayManagement() {
                   </div>
                   <div>
                     <p className="text-gray-500">Gold to Credit</p>
-                    <p className="font-bold text-xl text-secondary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
+                    <p className="font-bold text-xl text-primary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Network</p>

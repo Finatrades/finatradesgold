@@ -905,7 +905,7 @@ export default function FinaVaultManagement() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">USD Value</p>
-                      <p className="text-xl font-bold text-secondary">
+                      <p className="text-xl font-bold text-primary">
                         ${(parseFloat(selectedWithdrawal.goldGrams) * parseFloat(selectedWithdrawal.goldPriceUsdPerGram)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </p>
                     </div>

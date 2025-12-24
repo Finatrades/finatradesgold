@@ -619,7 +619,7 @@ export default function BNSL() {
         {/* TOP BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-secondary/10 rounded-lg border border-secondary/20 text-secondary">
+             <div className="p-2 bg-purple-100 rounded-lg border border-purple-200 text-primary">
                 <TrendingUp className="w-6 h-6" />
              </div>
              <div>
@@ -642,7 +642,7 @@ export default function BNSL() {
             </div>
             <div className="hidden md:block text-right border-l border-border pl-4">
                <p className="text-xs text-muted-foreground uppercase tracking-wider">Gold Spot</p>
-               <p className="text-secondary font-bold font-mono">${currentGoldPrice.toFixed(2)} <span className="text-xs text-muted-foreground">/g</span></p>
+               <p className="text-primary font-bold font-mono">${currentGoldPrice.toFixed(2)} <span className="text-xs text-muted-foreground">/g</span></p>
             </div>
             <div className="p-2 bg-muted rounded-full hover:bg-muted/80 cursor-pointer">
                <Info className="w-5 h-5 text-muted-foreground" />

@@ -157,7 +157,7 @@ export default function Profile() {
               
               <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-secondary">24</p>
+                  <p className="text-2xl font-bold text-primary">24</p>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Trades</p>
                 </div>
                 <div>

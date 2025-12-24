@@ -20,7 +20,7 @@ export default function FinaCard() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-sm font-medium mb-4"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100 border border-purple-200 text-primary text-sm font-medium mb-4"
           >
             <Sparkles className="w-4 h-4" /> Coming Soon to Your Region
           </motion.div>
@@ -144,7 +144,7 @@ export default function FinaCard() {
                <thead>
                  <tr className="border-b border-border">
                    <th className="py-4 px-6 text-muted-foreground font-medium w-1/3">Feature</th>
-                   <th className="py-4 px-6 text-secondary font-bold w-1/3 bg-secondary/5 rounded-t-xl text-center">FinaCard Metal</th>
+                   <th className="py-4 px-6 text-primary font-bold w-1/3 bg-purple-50 rounded-t-xl text-center">FinaCard Metal</th>
                    <th className="py-4 px-6 text-muted-foreground font-medium w-1/3 text-center">Traditional Bank</th>
                  </tr>
                </thead>
