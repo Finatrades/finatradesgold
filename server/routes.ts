@@ -3416,7 +3416,8 @@ ${message}
       
       debug.step = 10;
       debug.success = true;
-      return res.json({ submissions: combined });
+      // Return debug info only, not the actual data
+      return res.json(debug);
     } catch (error: any) {
       debug.error = error?.message;
       debug.stack = error?.stack?.slice(0, 500);
