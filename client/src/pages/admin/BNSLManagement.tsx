@@ -640,13 +640,197 @@ export default function BNSLManagement() {
                <BnslTemplatesManager />
              </TabsContent>
              
-             {/* Other tabs placeholders */}
+             {/* Risk & Exposure Dashboard */}
              <TabsContent value="risk">
-                <Card>
-                  <CardContent className="p-8 text-center text-gray-500">
-                    Risk dashboard implementation coming next.
-                  </CardContent>
-                </Card>
+                <div className="space-y-6">
+                  {/* Risk Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-orange-200 bg-orange-50">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-orange-100 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 text-orange-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-orange-700 font-medium">Total Gold Locked</p>
+                            <p className="text-xl font-bold text-orange-800">
+                              {plans.reduce((sum, p) => p.status === 'Active' ? sum + p.goldSoldGrams : sum, 0).toFixed(2)}g
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <Clock className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-blue-700 font-medium">Pending Payouts</p>
+                            <p className="text-xl font-bold text-blue-800">
+                              {plans.reduce((sum, p) => sum + (p.payouts?.filter(pay => pay.status === 'Scheduled' || pay.status === 'Processing').length || 0), 0)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-red-200 bg-red-50">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-red-100 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 text-red-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-red-700 font-medium">Maturing Soon (30 days)</p>
+                            <p className="text-xl font-bold text-red-800">
+                              {plans.filter(p => {
+                                if (p.status !== 'Active') return false;
+                                const maturity = new Date(p.maturityDate);
+                                const daysToMaturity = Math.ceil((maturity.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                                return daysToMaturity <= 30 && daysToMaturity > 0;
+                              }).length}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Exposure by Tenor */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Exposure by Tenor</CardTitle>
+                      <CardDescription>Total liability breakdown by plan duration</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {Array.from(new Set(plans.filter(p => p.status === 'Active' || p.status === 'Maturing').map(p => p.tenorMonths)))
+                          .sort((a, b) => a - b)
+                          .map(tenor => {
+                          const tenorPlans = plans.filter(p => p.tenorMonths === tenor && (p.status === 'Active' || p.status === 'Maturing'));
+                          const totalBase = tenorPlans.reduce((sum, p) => sum + p.basePriceComponentUsd, 0);
+                          const totalMargin = tenorPlans.reduce((sum, p) => sum + p.totalMarginComponentUsd, 0);
+                          const totalGold = tenorPlans.reduce((sum, p) => sum + p.goldSoldGrams, 0);
+                          
+                          return (
+                            <div key={tenor} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 flex items-center justify-center bg-purple-100 rounded-lg">
+                                  <span className="font-bold text-purple-700">{tenor}M</span>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">{tenorPlans.length} Plan{tenorPlans.length !== 1 ? 's' : ''}</p>
+                                  <p className="text-sm text-gray-500">{totalGold.toFixed(2)}g locked</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-gray-900">${(totalBase + totalMargin).toLocaleString()}</p>
+                                <p className="text-xs text-gray-500">Base: ${totalBase.toLocaleString()} | Margin: ${totalMargin.toLocaleString()}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {plans.filter(p => p.status === 'Active' || p.status === 'Maturing').length === 0 && (
+                          <div className="text-center py-8 text-gray-500">No active plans to analyze</div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Upcoming Payouts */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Upcoming Payouts (Next 30 Days)</CardTitle>
+                      <CardDescription>Quarterly margin payouts requiring processing</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {plans.flatMap(p => 
+                          (p.payouts || [])
+                            .filter(pay => {
+                              if (pay.status !== 'Scheduled' && pay.status !== 'Processing') return false;
+                              const payDate = new Date(pay.scheduledDate);
+                              const daysUntil = Math.ceil((payDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                              return daysUntil <= 30;
+                            })
+                            .map(pay => ({ ...pay, plan: p }))
+                        )
+                        .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
+                        .slice(0, 10)
+                        .map(pay => (
+                          <div key={pay.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                            <div className="flex items-center gap-3">
+                              <Badge variant={pay.status === 'Processing' ? 'destructive' : 'outline'} className="text-xs">
+                                {pay.status}
+                              </Badge>
+                              <div>
+                                <p className="font-medium text-sm">{pay.plan.contractId} - Payout #{pay.sequence}</p>
+                                <p className="text-xs text-gray-500">{new Date(pay.scheduledDate).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-600">${Number(pay.monetaryAmountUsd).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {plans.flatMap(p => p.payouts || []).filter(pay => pay.status === 'Scheduled' || pay.status === 'Processing').length === 0 && (
+                          <div className="text-center py-8 text-gray-500">No upcoming payouts</div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Plans Maturing Soon */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Plans Maturing Soon</CardTitle>
+                      <CardDescription>Plans reaching maturity within 60 days</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {plans
+                          .filter(p => {
+                            if (p.status !== 'Active' && p.status !== 'Maturing') return false;
+                            const maturity = new Date(p.maturityDate);
+                            const daysToMaturity = Math.ceil((maturity.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                            return daysToMaturity <= 60;
+                          })
+                          .sort((a, b) => new Date(a.maturityDate).getTime() - new Date(b.maturityDate).getTime())
+                          .map(plan => {
+                            const daysToMaturity = Math.ceil((new Date(plan.maturityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                            return (
+                              <div key={plan.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => handleOpenPlan(plan.id)}>
+                                <div className="flex items-center gap-3">
+                                  <Badge variant={daysToMaturity <= 7 ? 'destructive' : daysToMaturity <= 30 ? 'default' : 'outline'} className="text-xs">
+                                    {daysToMaturity <= 0 ? 'OVERDUE' : `${daysToMaturity} days`}
+                                  </Badge>
+                                  <div>
+                                    <p className="font-medium text-sm">{plan.contractId}</p>
+                                    <p className="text-xs text-gray-500">{plan.participant.name} • {plan.goldSoldGrams}g</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold">${plan.basePriceComponentUsd.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-500">Due: {new Date(plan.maturityDate).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {plans.filter(p => {
+                          if (p.status !== 'Active' && p.status !== 'Maturing') return false;
+                          const maturity = new Date(p.maturityDate);
+                          const daysToMaturity = Math.ceil((maturity.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                          return daysToMaturity <= 60;
+                        }).length === 0 && (
+                          <div className="text-center py-8 text-gray-500">No plans maturing soon</div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
              </TabsContent>
 
              <TabsContent value="audit">
