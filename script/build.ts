@@ -1,6 +1,7 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
+import { execSync } from "child_process";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -34,6 +35,15 @@ const allowlist = [
 
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
+
+  // Sync database schema before building
+  console.log("syncing database schema...");
+  try {
+    execSync("npm run db:push", { stdio: "inherit" });
+    console.log("database schema synced successfully");
+  } catch (error) {
+    console.error("Warning: Database sync failed, continuing with build...");
+  }
 
   console.log("building client...");
   await viteBuild();
