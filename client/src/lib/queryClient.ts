@@ -3,7 +3,22 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    
+    // Convert technical errors to user-friendly messages
+    let friendlyMessage = text;
+    if (res.status === 403 && text.includes('CSRF')) {
+      friendlyMessage = 'Your session may have expired. Please refresh the page and try again.';
+    } else if (res.status === 401) {
+      friendlyMessage = 'Please log in to continue.';
+    } else if (res.status === 429) {
+      friendlyMessage = 'Too many requests. Please wait a moment and try again.';
+    } else if (res.status === 500) {
+      friendlyMessage = 'Something went wrong on our end. Please try again later.';
+    } else if (res.status === 409) {
+      friendlyMessage = 'This action is already being processed. Please wait.';
+    }
+    
+    throw new Error(friendlyMessage);
   }
 }
 

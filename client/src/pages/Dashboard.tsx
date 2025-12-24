@@ -13,6 +13,7 @@ import CreditCardPreview from '@/components/dashboard/CreditCardPreview';
 import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import CertificatesCard from '@/components/dashboard/CertificatesCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
+import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
 
 function formatNumber(num: number, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -63,6 +64,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading, tradeCounts, finaBridge } = useDashboardData();
   const [showAssuranceDialog, setShowAssuranceDialog] = useState(false);
+  const { showOnboarding, completeOnboarding } = useOnboarding();
 
   if (!user) return null;
   
@@ -316,6 +318,10 @@ export default function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {showOnboarding && (
+        <OnboardingTour onComplete={completeOnboarding} />
+      )}
     </DashboardLayout>
   );
 }

@@ -39,14 +39,14 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
   const mainMenuItems: MenuItem[] = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
     { icon: <Receipt className="w-5 h-5" />, label: 'All Transactions', href: '/transactions' },
-    { icon: <Wallet className="w-5 h-5" />, label: 'FinaPay', href: '/finapay' },
-    { icon: <Database className="w-5 h-5" />, label: 'FinaVault', href: '/finavault' },
-    { icon: <History className="w-5 h-5" />, label: 'Vault History', href: '/finavault/history' },
-    { icon: <TrendingUp className="w-5 h-5" />, label: 'BNSL', href: '/bnsl' },
+    { icon: <Wallet className="w-5 h-5" />, label: 'Wallet', href: '/finapay' },
+    { icon: <Database className="w-5 h-5" />, label: 'Gold Storage', href: '/finavault' },
+    { icon: <History className="w-5 h-5" />, label: 'Storage History', href: '/finavault/history' },
+    { icon: <TrendingUp className="w-5 h-5" />, label: 'Buy Now, Sell Later', href: '/bnsl' },
   ];
 
   const businessMenuItems: MenuItem[] = accountType === 'business' ? [
-    { icon: <BarChart3 className="w-5 h-5" />, label: 'FinaBridge', href: '/finabridge' },
+    { icon: <BarChart3 className="w-5 h-5" />, label: 'Trade Finance', href: '/finabridge' },
     { icon: <FileText className="w-5 h-5" />, label: 'Trade Requests', href: '/finabridge/requests' },
     { icon: <Send className="w-5 h-5" />, label: 'Proposals', href: '/finabridge/proposals' },
   ] : [];

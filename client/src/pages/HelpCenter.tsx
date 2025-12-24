@@ -100,8 +100,8 @@ const faqCategories = [
         a: 'Click "Forgot Password" on the login page. Enter your email to receive a reset link. Links expire after 1 hour.'
       },
       {
-        q: 'How do I complete KYC verification?',
-        a: 'Go to Profile or click "Verify Identity" in the sidebar. You\'ll need to provide ID documents, proof of address, and complete a liveness check.'
+        q: 'How do I verify my identity?',
+        a: 'Go to Profile or click "Verify Identity" in the sidebar. You\'ll need to provide ID documents, proof of address, and complete a quick selfie check. Most verifications are approved within 24 hours.'
       },
       {
         q: 'Is my data secure?',
