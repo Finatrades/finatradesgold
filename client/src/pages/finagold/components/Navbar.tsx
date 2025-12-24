@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Globe, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo.png';
@@ -107,13 +107,6 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
-            {/* Language selector */}
-            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer">
-              <Globe className="w-4 h-4" />
-              <span className="text-sm">EN</span>
-              <ChevronDown className="w-3 h-3" />
-            </div>
-
             {/* Personal/Business Toggle */}
             <div className="flex bg-white/10 rounded-full p-0.5 border border-white/20">
               <button
