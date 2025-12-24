@@ -2905,6 +2905,30 @@ export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 export type UserPreferences = typeof userPreferences.$inferSelect;
 
 // ============================================
+// PUSH NOTIFICATION DEVICE TOKENS
+// ============================================
+
+export const devicePlatformEnum = pgEnum('device_platform', [
+  'ios', 'android', 'web'
+]);
+
+export const pushDeviceTokens = pgTable("push_device_tokens", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  token: text("token").notNull(),
+  platform: devicePlatformEnum("platform").notNull(),
+  deviceName: varchar("device_name", { length: 255 }),
+  deviceId: varchar("device_id", { length: 255 }),
+  isActive: boolean("is_active").notNull().default(true),
+  lastUsedAt: timestamp("last_used_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPushDeviceTokenSchema = createInsertSchema(pushDeviceTokens).omit({ id: true, createdAt: true, lastUsedAt: true });
+export type InsertPushDeviceToken = z.infer<typeof insertPushDeviceTokenSchema>;
+export type PushDeviceToken = typeof pushDeviceTokens.$inferSelect;
+
+// ============================================
 // CRYPTO WALLET CONFIGURATIONS (Admin managed)
 // ============================================
 

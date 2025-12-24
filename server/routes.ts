@@ -20306,6 +20306,68 @@ ${message}
   });
 
   // ============================================
+  // PUSH NOTIFICATION DEVICE TOKENS
+  // ============================================
+
+  // Register device token for push notifications
+  app.post("/api/push/register", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any)?.user?.id;
+      const { token, platform, deviceName, deviceId } = req.body;
+      
+      if (!token || !platform) {
+        return res.status(400).json({ message: "Token and platform are required" });
+      }
+      
+      if (!['ios', 'android', 'web'].includes(platform)) {
+        return res.status(400).json({ message: "Invalid platform. Must be ios, android, or web" });
+      }
+      
+      const { registerDeviceToken } = await import('./push-notifications');
+      await registerDeviceToken(userId, token, platform, deviceName, deviceId);
+      
+      res.json({ success: true, message: "Device registered for push notifications" });
+    } catch (error) {
+      console.error("Failed to register push device:", error);
+      res.status(500).json({ message: "Failed to register device for push notifications" });
+    }
+  });
+
+  // Unregister device token
+  app.post("/api/push/unregister", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any)?.user?.id;
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+      
+      const { unregisterDeviceToken } = await import('./push-notifications');
+      await unregisterDeviceToken(userId, token);
+      
+      res.json({ success: true, message: "Device unregistered from push notifications" });
+    } catch (error) {
+      console.error("Failed to unregister push device:", error);
+      res.status(500).json({ message: "Failed to unregister device" });
+    }
+  });
+
+  // Get user's registered devices
+  app.get("/api/push/devices", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any)?.user?.id;
+      const { getUserDeviceTokens } = await import('./push-notifications');
+      const tokens = await getUserDeviceTokens(userId);
+      
+      res.json({ devices: tokens.length, hasDevices: tokens.length > 0 });
+    } catch (error) {
+      console.error("Failed to get push devices:", error);
+      res.status(500).json({ message: "Failed to get registered devices" });
+    }
+  });
+
+  // ============================================
   // PLATFORM CONFIGURATION
   // ============================================
 
