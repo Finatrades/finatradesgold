@@ -1639,9 +1639,9 @@ function FinaBridgeContent() {
   
   if (isPersonal) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] flex flex-col">
+      <div className="min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]">
         <Navbar variant="products" />
-        <div className="flex-1 flex items-center justify-center px-6">
+        <div className="flex items-center justify-center px-6 py-32" style={{ minHeight: 'calc(100vh - 180px)' }}>
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
