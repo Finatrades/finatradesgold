@@ -840,19 +840,25 @@ export default function BNSLManagement() {
                  </CardHeader>
                  <CardContent>
                     <div className="space-y-0">
-                       {auditLogs.map((log) => (
-                         <div key={log.id} className="flex gap-4 p-3 border-b last:border-0 hover:bg-gray-50">
-                            <div className="text-xs text-gray-500 w-32 shrink-0">
-                               {new Date(log.timestamp).toLocaleString()}
-                            </div>
-                            <div>
-                               <p className="font-medium text-sm text-gray-900">
-                                 <span className="font-bold">{log.actor}</span> ({log.actorRole}) - {log.actionType}
-                               </p>
-                               <p className="text-sm text-gray-600">{log.details}</p>
-                            </div>
+                       {auditLogs.length === 0 ? (
+                         <div className="text-center py-8 text-gray-500">
+                           No BNSL audit logs found. Actions like plan creation, status changes, and payouts will appear here.
                          </div>
-                       ))}
+                       ) : (
+                         auditLogs.map((log) => (
+                           <div key={log.id} className="flex gap-4 p-3 border-b last:border-0 hover:bg-gray-50">
+                              <div className="text-xs text-gray-500 w-32 shrink-0">
+                                 {new Date(log.timestamp).toLocaleString()}
+                              </div>
+                              <div>
+                                 <p className="font-medium text-sm text-gray-900">
+                                   <span className="font-bold">{log.actor}</span> ({log.actorRole}) - {log.actionType}
+                                 </p>
+                                 <p className="text-sm text-gray-600">{log.details}</p>
+                              </div>
+                           </div>
+                         ))
+                       )}
                     </div>
                  </CardContent>
                </Card>

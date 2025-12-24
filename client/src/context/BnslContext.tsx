@@ -163,6 +163,29 @@ export function BnslProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const refreshAuditLogs = useCallback(async () => {
+    try {
+      const response = await apiRequest('GET', '/api/admin/audit-logs');
+      const data = await response.json();
+      
+      if (data.logs) {
+        const bnslLogs = data.logs.filter((log: any) => log.entityType === 'bnsl');
+        const transformedLogs: AuditLogEntry[] = bnslLogs.map((log: any) => ({
+          id: log.id,
+          planId: log.entityId,
+          timestamp: log.timestamp,
+          actionType: log.action,
+          actor: log.actorName || log.actor || 'System',
+          actorRole: log.actorRole || 'Admin',
+          details: log.details || ''
+        }));
+        setAuditLogs(transformedLogs);
+      }
+    } catch (err) {
+      console.error('Failed to fetch BNSL audit logs:', err);
+    }
+  }, []);
+
   const refreshAllPlans = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -197,13 +220,15 @@ export function BnslProvider({ children }: { children: ReactNode }) {
         
         setAllPlans(transformedPlans);
       }
+      
+      await refreshAuditLogs();
     } catch (err) {
       console.error('Failed to fetch all BNSL plans:', err);
       setError('Failed to load BNSL plans');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshAuditLogs]);
 
   useEffect(() => {
     if (user?.id) {
