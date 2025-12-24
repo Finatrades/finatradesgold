@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
-import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award } from 'lucide-react';
+import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -582,6 +582,14 @@ export default function FinaVault() {
                     <Award className="w-4 h-4 mr-2" />
                     Certificates
                   </TabsTrigger>
+                  <TabsTrigger 
+                    value="terms"
+                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
+                    data-testid="tab-terms"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Terms & Conditions
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="vault-activity" className="mt-0">
@@ -759,6 +767,125 @@ export default function FinaVault() {
 
                 <TabsContent value="certificates" className="mt-0">
                   <CertificatesView />
+                </TabsContent>
+
+                <TabsContent value="terms" className="mt-0">
+                  <Card className="bg-white border border-border">
+                    <CardHeader className="border-b border-border">
+                      <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <FileText className="w-5 h-5 text-primary" />
+                        </div>
+                        Vault Storage & Account Terms & Conditions
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Finatrades Platform – in Partnership with Wingold and Metals DMCC
+                      </p>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="prose prose-sm max-w-none space-y-6 text-foreground">
+                        
+                        <section className="bg-muted/50 p-4 rounded-lg border border-border">
+                          <h3 className="text-lg font-semibold mb-3">Preamble</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            These Terms govern the custody, accounting, and management of gold recorded on the Finatrades platform ("Finatrades," "Platform," "we," "us"), operated in partnership with its subsidiary Wingold and Metals DMCC ("Wingold"), which acts as the physical gold custodian and vault operator. By accepting these Terms, the Customer expressly understands and agrees that they are engaging in a gold-backed digital vault ledger and account service (FinaVault) and not a physical gold trading or investment service.
+                          </p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">1. Gold Storage, Custody & Ownership</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            The Customer acquires and holds gold through the Finatrades platform, with physical custody and vault operations performed exclusively by Wingold. Legal title to the gold shall at all times remain vested in the Customer, subject to these Terms. Finatrades shall maintain detailed allocated account records within FinaVault, including gold weight, purity, transaction history, and balance statements, representing the Customer's undivided proportional interest in the total pooled gold holdings.
+                          </p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">2. Operational Rights & Gold Pooling Mechanism</h3>
+                          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+                            <p><strong>2.1</strong> The Customer hereby irrevocably grants Finatrades and Wingold full right, authority, and discretion to hold, pool, allocate, re-allocate, and administratively manage all customer gold within their integrated vaulting, custody, and accounting infrastructure, including recording, settlement, and reconciliation through FinaVault.</p>
+                            <p><strong>2.2</strong> Operational use may include, without limitation, internal vault management, settlement of customer gold sale instructions, liquidity balancing, collateral support for internal credit arrangements, financing, leasing, or other lawful commercial or operational activities undertaken by Wingold in its capacity as gold custodian and bullion operator, without affecting the Customer's equivalent gold entitlement.</p>
+                            <p><strong>2.3</strong> Finatrades and Wingold shall at all times maintain a book-entry obligation, reflected within FinaVault, recognizing the Customer's entitlement to an equivalent quantity of gold (by weight) and equivalent purity (by fineness). The Customer's rights are strictly limited to gold value and account-based entitlement and do not extend to any claim over specific gold bars, serial numbers, refinery batches, or physical delivery.</p>
+                            <p><strong>2.4</strong> The Customer unconditionally waives and releases Finatrades and Wingold from any and all claims arising from the pooling, commingling, reallocation, or internal operational management of customer gold, including any allegation of conversion or misuse, provided that the Customer's equivalent gold balance continues to be accurately recorded within FinaVault.</p>
+                            <p><strong>2.5</strong> The gold pooling and operational structure described herein is fundamental to the commercial model, pricing, and functionality of FinaVault. No additional consent shall be required from the Customer for such operational use.</p>
+                          </div>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">3. Cash-Out, Gold Sale & Settlement (No Physical Gold Withdrawal)</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            The Customer expressly acknowledges and agrees that physical withdrawal or delivery of gold is not available under FinaVault. Any exit, redemption, or realization of value shall occur solely through the sale of gold via the Finatrades platform at prevailing market prices. Upon execution of a sale instruction, the corresponding quantity of gold shall be debited from the Customer's FinaVault balance, and the net cash proceeds, after applicable fees and charges, shall be credited or transferred according to the Customer's instructions.
+                          </p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">4. Gold Vaulting, Custodianship & Internal Movement</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Physical gold corresponding to aggregated customer balances is held under the custody and control of Wingold in approved gold vaults or bonded facilities selected at Wingold's discretion. Internal movement, relocation, rebalancing, or substitution of physical gold may occur at any time for operational, security, liquidity, or commercial reasons. Such activities shall not affect customer gold balances recorded within FinaVault.
+                          </p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">5. Statements & Gold Account Records</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Finatrades shall provide periodic electronic account statements through FinaVault reflecting the Customer's gold balance, transactions, fees, and valuation. The Customer is responsible for reviewing statements and notifying Finatrades of any discrepancies within thirty (30) days of issuance. Failure to do so shall constitute final and binding acceptance of the gold account records.
+                          </p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">6. Compliance, AML/CFT & Platform Controls</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            All services relating to gold custody and sale are subject to applicable UAE AML/CFT laws and regulations. The Customer shall provide all required information, documentation, and ongoing updates as requested. Finatrades may, without liability, suspend access to FinaVault, restrict gold transactions, delay cash settlement, or terminate the relationship where any compliance, regulatory, or reputational risk is identified.
+                          </p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">7. Gold Storage Fees, Platform Charges & Deductions</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Fees applicable to gold vault storage, custody, and platform services shall be determined and displayed on the Finatrades platform at the time of selection. By proceeding, the Customer expressly acknowledges, accepts, and agrees to such fees. Fees shall be automatically settled through deduction from the Customer's account, resulting in a proportional reduction of the gold balance recorded in FinaVault, reflecting the value of the fees applied.
+                          </p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">8. Liability & Indemnity</h3>
+                          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+                            <p><strong>8.1</strong> Wingold's aggregate liability for any and all claims arising out of or relating to these Terms shall be limited strictly to the direct market value of the Stored Gold affected.</p>
+                            <p><strong>8.2</strong> In no event shall Wingold be liable for any indirect, incidental, consequential, special, or punitive damages, including loss of profit, opportunity, or market value.</p>
+                            <p><strong>8.3</strong> Wingold shall not be liable for any delay, loss, or damage resulting from force majeure events, acts of government or regulators, war, terrorism, inherent vice of the gold, market volatility, or the acts or omissions of any third-party custodian, carrier, or service provider.</p>
+                            <p><strong>8.4</strong> The Customer shall fully indemnify and hold Wingold harmless against all claims, liabilities, losses, and expenses arising from the Customer's breach of these Terms or the provision of inaccurate or misleading information.</p>
+                          </div>
+                        </section>
+
+                        <section className="bg-warning-muted p-4 rounded-lg border border-warning/20">
+                          <h3 className="text-lg font-semibold mb-3 text-warning-muted-foreground">9. Risk Disclosure & Customer Acknowledgement</h3>
+                          <p className="text-sm text-warning-muted-foreground leading-relaxed mb-3">
+                            The Customer expressly acknowledges and accepts that:
+                          </p>
+                          <ul className="list-disc list-inside space-y-2 text-sm text-warning-muted-foreground">
+                            <li>(a) Gold is held within a pooled custodial structure;</li>
+                            <li>(b) No physical gold delivery or withdrawal rights exist;</li>
+                            <li>(c) Value realization occurs solely through the sale of gold via the Platform;</li>
+                            <li>(d) Finatrades relies on Wingold as its gold custodian and bullion operator; and</li>
+                            <li>(e) The market value of gold is volatile and subject to fluctuation.</li>
+                          </ul>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">10. Duration & Termination</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            This Agreement shall remain in effect until terminated. The Customer may terminate by requesting final withdrawal and settling all outstanding fees. Wingold may terminate this Agreement upon thirty (30) days' written notice, or immediately for cause, including fee non-payment or compliance-related concerns.
+                          </p>
+                        </section>
+
+                        <section className="bg-muted/50 p-4 rounded-lg border border-border">
+                          <h3 className="text-lg font-semibold mb-3">11. Governing Law & Jurisdiction</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            These Terms shall be governed by and construed in accordance with the laws of the United Arab Emirates as applied in the Emirate of Dubai. The Courts of the Dubai International Financial Centre (DIFC) shall have exclusive jurisdiction to resolve any dispute arising herefrom.
+                          </p>
+                        </section>
+
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
               </Tabs>
             </motion.div>
