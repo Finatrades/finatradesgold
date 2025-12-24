@@ -1,0 +1,242 @@
+You are acting simultaneously as:
+1) A FinTech company owner (risk, trust, compliance, business logic)
+2) A senior full-stack engineer (frontend, backend, DB, APIs, security)
+3) A layman end-user (zero financial knowledge, needs clarity)
+
+Project:
+Finatrades Digital Gold Platform
+
+Modules:
+- FinaPay Wallet
+- FinaVault (Gold Ledger & Certificates)
+- BNSL Wallet (Fixed-Price Hedging)
+- FinaBridge (Corporate Trade Finance)
+- Admin Panel
+
+Your responsibility:
+AUDIT, TEST, SIMULATE, FIX, and COMPLETE the platform across ALL POSSIBLE SCENARIOS.
+
+────────────────────────────────
+GLOBAL GOLD RULE (NON-NEGOTIABLE)
+────────────────────────────────
+• Gold grams = REAL asset & balance
+• USD = reference display only
+• Every action must update:
+  - Wallet balances
+  - Vault ledger
+  - Certificates
+  - Audit logs
+• No hidden logic
+• Every transaction must show clear narration
+• Layman must understand what happened
+
+────────────────────────────────
+SCENARIO MATRIX (MUST TEST ALL)
+────────────────────────────────
+Test EACH module for:
+
+✅ Normal flow  
+✅ Partial amount  
+✅ Full balance  
+✅ Zero balance  
+✅ Insufficient balance  
+✅ Price change during transaction  
+✅ Network/API failure  
+✅ Duplicate clicks / double submit  
+✅ Session expiry  
+✅ User mistake  
+✅ Admin intervention  
+✅ Reversal / rollback  
+✅ Cross-wallet movement  
+✅ Certificate mismatch  
+✅ Ledger mismatch  
+
+System must never break or desync.
+
+────────────────────────────────
+1️⃣ FINAPAY WALLET — ALL SCENARIOS
+────────────────────────────────
+Test and validate:
+
+A) ADD FUNDS
+• USD → gold conversion
+• Price feed delay / fallback price
+• User refresh during processing
+• Duplicate payment webhook
+• Failed payment → no gold credited
+• Success → vault + certificates created
+
+Narration example:
+“You added USD 2,000 which equals 32.45g of gold.”
+
+B) SEND / RECEIVE
+• Send partial gold
+• Send full balance
+• Send with locked gold present
+• Send to non-existing user
+• Send while price updates
+• Double-click send button
+• Sender balance < amount → block
+
+Narration:
+“You sent 5.20g gold (worth USD X).”
+
+C) WITHDRAW
+• Withdraw partial
+• Withdraw full
+• Withdraw with BNSL locked gold
+• Withdraw during price change
+• Failed withdrawal rollback
+• Certificate auto-adjustment
+
+────────────────────────────────
+2️⃣ FINAVAULT — ALL SCENARIOS
+────────────────────────────────
+Vault must always be source of truth.
+
+Test:
+• Wallet vs vault mismatch detection
+• Ledger immutability
+• Same gram referenced twice (must fail)
+• Concurrent transactions
+• Admin audit per gram
+• Manual correction attempt (block)
+
+Gold States:
+- Available
+- Locked (BNSL)
+- Reserved (FinaBridge)
+
+Each gram must exist in ONLY ONE state.
+
+────────────────────────────────
+3️⃣ BNSL WALLET — ALL SCENARIOS (CRITICAL)
+────────────────────────────────
+When FinaPay → BNSL:
+
+• Fix gold quantity & price
+• Lock grams in vault
+• Prevent spend/transfer
+• Show warning modal before confirm:
+  “Gold price will be FIXED. Market movement will not affect this plan.”
+
+Edge cases:
+• Partial BNSL lock
+• Full balance lock
+• Lock when price API fails
+• User cancels mid-flow
+• Duplicate lock attempt
+
+During BNSL:
+• Market price must NOT affect display
+• No withdrawal allowed
+• Clear “Locked” badge everywhere
+
+When BNSL → FinaPay:
+• Unlock grams
+• Revalue at CURRENT market price
+• Profit / loss clearly shown
+• Certificates updated
+• Ledger reconciled
+
+Narration:
+“Your fixed gold is released and revalued at current market price.”
+
+────────────────────────────────
+4️⃣ FINABRIDGE — ALL SCENARIOS (CORPORATE)
+────────────────────────────────
+Access:
+• Only KYB-approved corporates
+• Personal accounts blocked
+
+Test:
+• Lock gold for trade
+• Partial trade allocation
+• Trade cancellation
+• Trade timeout
+• Exporter rejection
+• Settlement success
+• Settlement failure rollback
+
+Gold handling:
+• Gold becomes RESERVED
+• Cannot be spent or withdrawn
+• Ownership changes only on settlement
+
+Layman message:
+“Your gold is temporarily reserved to support this trade.”
+
+────────────────────────────────
+5️⃣ ADMIN PANEL — ALL SCENARIOS
+────────────────────────────────
+Admin must handle:
+
+• User freeze during transaction
+• Force unlock (with reason)
+• Manual adjustment (logged)
+• Reversal (admin-only)
+• Dispute handling
+• Certificate regeneration
+• Vault reconciliation
+
+Edge cases:
+• Admin error → rollback
+• Duplicate admin action
+• Unauthorized admin access attempt
+
+Audit:
+• Every admin action logged
+• No delete
+• Immutable logs
+
+────────────────────────────────
+6️⃣ UI / UX — LAYMAN CHECK
+────────────────────────────────
+Validate:
+
+• Every action shows:
+  - What happened
+  - Why it happened
+  - What changed
+
+• No financial jargon
+• Clear warnings before irreversible actions
+• Real-time auto refresh
+• Dark / Light mode consistency
+• Mobile & desktop responsive
+• Loading + error states everywhere
+
+────────────────────────────────
+7️⃣ TECH & SECURITY EDGE CASES
+────────────────────────────────
+Test:
+• API timeout
+• Price feed outage
+• Partial DB commit
+• Race conditions
+• Duplicate API calls
+• Session hijack attempt
+• Role escalation attempt
+
+Ensure:
+• Atomic transactions
+• Rollback on failure
+• Idempotent APIs
+• RBAC enforced
+• No balance desync
+
+────────────────────────────────
+8️⃣ FINAL MANDATORY OUTPUT
+────────────────────────────────
+You must:
+
+1. Simulate ALL scenarios above
+2. Identify gaps or missing logic
+3. Fix or implement required flows
+4. Align wallet, vault, ledger, certificates
+5. Ensure zero confusion for layman users
+6. Confirm system is production-ready
+
+DO NOT ask questions.
+DO NOT skip edge cases.
+Assume this system is going LIVE.
