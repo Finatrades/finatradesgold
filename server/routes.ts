@@ -18480,8 +18480,8 @@ ${message}
   // REFERRALS
   // ============================================
 
-  // Get all referrals (Admin)
-  app.get("/api/admin/referrals", async (req, res) => {
+  // Get all referrals (Admin) - PROTECTED
+  app.get("/api/admin/referrals", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
     try {
       const referrals = await storage.getAllReferrals();
       res.json({ referrals });
@@ -18490,8 +18490,8 @@ ${message}
     }
   });
 
-  // Get single referral
-  app.get("/api/admin/referrals/:id", async (req, res) => {
+  // Get single referral - PROTECTED
+  app.get("/api/admin/referrals/:id", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
     try {
       const referral = await storage.getReferral(req.params.id);
       if (!referral) {
@@ -18503,8 +18503,8 @@ ${message}
     }
   });
 
-  // Update referral (Admin)
-  app.patch("/api/admin/referrals/:id", async (req, res) => {
+  // Update referral (Admin) - PROTECTED
+  app.patch("/api/admin/referrals/:id", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const referral = await storage.updateReferral(req.params.id, req.body);
       if (!referral) {
@@ -18773,8 +18773,8 @@ ${message}
   // AUDIT LOGS
   // ============================================
 
-  // Get all audit logs (Admin) - with resolved names
-  app.get("/api/admin/audit-logs", async (req, res) => {
+  // Get all audit logs (Admin) - PROTECTED - with resolved names
+  app.get("/api/admin/audit-logs", ensureAdminAsync, requirePermission('view_transactions', 'manage_settings'), async (req, res) => {
     try {
       const logs = await storage.getAllAuditLogs();
       
