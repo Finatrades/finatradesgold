@@ -1,12 +1,33 @@
 import { Twitter, Linkedin, Instagram, Facebook } from 'lucide-react';
+import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo.png';
 
 const footerLinks = {
-  Products: ['FinaVault', 'FinaPay Wallet', 'FinaEarn (BNSL)', 'FinaFinance'],
-  Company: ['About Us', 'Careers', 'Press', 'Contact'],
-  Legal: ['Terms of Service', 'Privacy Policy', 'Compliance', 'Cookies'],
-  Support: ['Help Center', 'Documentation', 'API', 'Status'],
+  Products: [
+    { label: 'FinaVault', href: '/finagold/finavault' },
+    { label: 'FinaPay Wallet', href: '/finagold/finapay' },
+    { label: 'FinaEarn (BNSL)', href: '/finagold/bnsl' },
+    { label: 'FinaBridge', href: '/finagold/finabridge' },
+  ],
+  Company: [
+    { label: 'About Us', href: '#about' },
+    { label: 'Careers', href: '#' },
+    { label: 'Press', href: '#' },
+    { label: 'Contact', href: '#contact' },
+  ],
+  Legal: [
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Compliance', href: '#legal' },
+    { label: 'Cookies', href: '#' },
+  ],
+  Support: [
+    { label: 'Help Center', href: '/help-center' },
+    { label: 'Documentation', href: '#' },
+    { label: 'API', href: '#' },
+    { label: 'Status', href: '#' },
+  ],
 };
 
 const socialIcons = [
@@ -55,13 +76,22 @@ export default function Footer() {
               <h4 className="text-white font-semibold mb-4 text-sm">{category}</h4>
               <ul className="space-y-3">
                 {links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-white/60 text-sm hover:text-white transition-colors"
-                    >
-                      {link}
-                    </a>
+                  <li key={link.label}>
+                    {link.href.startsWith('#') ? (
+                      <a
+                        href={link.href}
+                        className="text-white/60 text-sm hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-white/60 text-sm hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
