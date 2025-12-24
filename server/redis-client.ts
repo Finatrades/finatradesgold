@@ -2,6 +2,15 @@ import Redis from 'ioredis';
 
 let redisClient: Redis | null = null;
 
+function cleanRedisUrl(rawUrl: string): string {
+  let url = rawUrl.trim();
+  if (url.startsWith('REDIS_URL=')) {
+    url = url.substring('REDIS_URL='.length);
+  }
+  url = url.replace(/^["']|["']$/g, '');
+  return url;
+}
+
 export function getRedisClient(): Redis | null {
   if (!process.env.REDIS_URL) {
     console.log('[Redis] No REDIS_URL configured, using in-memory fallback');
@@ -10,11 +19,14 @@ export function getRedisClient(): Redis | null {
 
   if (!redisClient) {
     try {
-      redisClient = new Redis(process.env.REDIS_URL, {
+      const redisUrl = cleanRedisUrl(process.env.REDIS_URL);
+      console.log('[Redis] Connecting to:', redisUrl.replace(/:[^:@]+@/, ':****@'));
+      
+      redisClient = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         retryDelayOnFailover: 100,
         lazyConnect: true,
-        tls: process.env.REDIS_URL.includes('upstash.io') ? {} : undefined,
+        tls: redisUrl.includes('upstash.io') ? {} : undefined,
       });
 
       redisClient.on('connect', () => {
