@@ -22,12 +22,6 @@ const footerLinks = {
     { label: 'Compliance', href: '#legal' },
     { label: 'Cookies', href: '#' },
   ],
-  Support: [
-    { label: 'Help Center', href: '/help-center' },
-    { label: 'Documentation', href: '#' },
-    { label: 'API', href: '#' },
-    { label: 'Status', href: '#' },
-  ],
 };
 
 const socialIcons = [
@@ -43,7 +37,7 @@ export default function Footer() {
   return (
     <footer id="contact" className="relative py-16 bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]" data-testid="footer">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-6 gap-12 mb-12">
+        <div className="grid md:grid-cols-5 gap-12 mb-12">
           <div className="md:col-span-2">
             <div className="mb-6">
               <img 

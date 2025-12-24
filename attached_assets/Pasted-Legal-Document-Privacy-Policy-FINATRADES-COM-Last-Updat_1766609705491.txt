@@ -1,0 +1,108 @@
+Legal Document
+Privacy Policy
+FINATRADES.COM • Last Updated: 21/11/2025
+
+This Privacy Policy ("Policy") describes the principles and practices followed by Finatrades Finance SA, Rue Robert Céard 6, 1204 Geneva, Switzerland ("Finatrades", "we", "us", "our"), regarding the collection, use, processing, disclosure, and protection of your personal data.
+
+We process your personal data in strict compliance with the Swiss Federal Act on Data Protection (FADP) and its corresponding ordinances. Where applicable, and particularly concerning the personal data of individuals located in the European Economic Area (EEA), we also adhere to the provisions of the European Union General Data Protection Regulation (EU GDPR).
+
+By using the Finatrades Platform, you acknowledge that you have read and understood how we process your personal data as described in this Policy.
+
+1.
+DATA CONTROLLER & CONTACT INFORMATION
+The data controller responsible for your personal data is:
+
+Finatrades Finance SA
+
+Rue Robert Céard 6
+
+1204 Geneva
+
+Switzerland
+
+Email for Data Privacy Inquiries: info@finatrades.com
+
+2.
+CATEGORIES OF PERSONAL DATA WE COLLECT
+To provide our services and meet our legal obligations, we collect and process the following categories of personal data:
+
+Identification and KYC Data: Full name, date of birth, nationality, government-issued identification numbers (e.g., passport, national ID), copies of identity documents, and photographs.
+Contact Information: Residential address, email address, telephone number.
+Financial and Background Information: Source of wealth and funds, bank account details, payment card information, and professional background as required for our "know-your-customer" (KYC) and anti-money laundering (AML) checks.
+Gold Transaction Data: Details of your gold deposits, purchases, sales, and all transactions involving Gold Certificates, including counterparty information, dates, amounts, and vaulting records.
+Technical and Usage Data: IP address, device identifier, browser type, operating system, log data, pages visited, and other information collected through cookies and similar tracking technologies.
+Communication Data: Records of your communications with us, including support tickets, emails, and chat logs.
+3.
+PURPOSES & LEGAL BASIS FOR PROCESSING
+We process your personal data for the following purposes and based on the corresponding legal grounds:
+
+Purpose	Legal Basis (under FADP/GDPR)
+To onboard you as a customer and perform KYC/AML checks	Legal Obligation by Law & Legitimate Interest
+To provide Platform services (issuing/managing Gold Certificates, facilitating payments through 3rd party)	Performance as stated on Platform
+To prevent, detect, and investigate fraud, money laundering, and other financial crimes	Legitimate Interest & Legal Obligation by Law
+To communicate with you and provide customer support	Performance as stated on Platform & Legitimate Interest
+To ensure the security and integrity of our IT systems and the Platform	Legitimate Interest
+To comply with ongoing regulatory reporting and record-keeping requirements	Legal Obligation by Law
+4.
+DISCLOSURE OF PERSONAL DATA TO THIRD PARTIES
+We may share your personal data with the following categories of recipients, strictly where necessary and under contractual obligations of confidentiality:
+
+Regulatory and Governmental Authorities: Swiss Financial Market Supervisory Authority (FINMA), self-regulatory organizations (SROs), the Swiss Money Laundering Reporting Office (MROS), tax authorities, and other competent bodies, as required by law.
+Service Providers (Processors): Entities that process data on our instructions, including:
+• KYC/AML & Identity Verification Vendors
+• Vault Operators & Assayers (for gold deposit and storage verification)
+• Cloud Hosting and IT Infrastructure Providers
+• Auditors, Legal Advisors, and Compliance Consultants
+• Customer Relationship Management (CRM) and Communication Platforms
+Financial Institutions: Correspondent banks and payment processors to facilitate fiat currency transactions.
+Other Users: As an integral part of our service, when you initiate a payment using a Gold Certificate, certain necessary data (e.g., your registered name and the transaction details) will be disclosed to the recipient User to enable the transaction and for their record-keeping.
+5.
+INTERNATIONAL DATA TRANSFERS
+Your personal data may be transferred to and processed in countries outside Switzerland. We ensure all such international data transfers are conducted lawfully and protected through appropriate legal safeguards, which may include transferring to countries with officially recognized adequate data protection standards, or where necessary to fulfill legal obligations, establish legal claims, or defend our legitimate interests in accordance with applicable data protection laws.
+
+6.
+YOUR DATA SUBJECT RIGHTS
+Under the FADP and, where applicable, the GDPR, you have the following rights regarding your personal data:
+
+Right of Access: You can request a copy of the personal data we hold about you.
+Right to Rectification: You can request correction of inaccurate or incomplete data.
+Right to Erasure (Right to be Forgotten): You can request the deletion of your data, subject to our legal obligations to retain it (e.g., under Swiss AML law).
+Right to Restriction of Processing: You can request that we temporarily halt the processing of your data under certain conditions.
+Right to Data Portability: You have the right to receive your data in a structured, machine-readable format.
+Right to Object: You can object to the processing of your data based on our legitimate interests.
+To exercise any of these rights, please contact us at info@finatrades.com. We will respond to your request within 30 days.
+
+7.
+DATA RETENTION PERIODS
+We retain your personal data only for as long as necessary to fulfill the purposes outlined in this Policy, unless a longer retention period is required or permitted by law. In accordance with Swiss Anti-Money Laundering Law, we are required to retain your identification data, transaction records, and business correspondence for a minimum of ten (10) years after the termination of our business relationship or the execution of an individual transaction.
+
+8.
+DATA SECURITY MEASURES
+We implement robust technical and organizational measures to protect your personal data from unauthorized access, loss, misuse, or alteration. These measures include:
+
+•
+Encryption of data in transit (using TLS/SSL protocols) and at rest.
+•
+Multi-Factor Authentication (MFA) for access to the Platform and our internal systems.
+•
+Strict physical and logical access controls to our premises and IT infrastructure.
+•
+Regular security testing, vulnerability assessments, and penetration tests.
+•
+Comprehensive logging and monitoring to detect and respond to security incidents.
+Despite these measures, no method of transmission over the Internet or electronic storage is 100% secure. Therefore, we cannot guarantee its absolute security.
+
+9.
+USE OF COOKIES AND SIMILAR TECHNOLOGIES
+Our Platform uses cookies to ensure essential functionality, enhance security, and analyze user behavior to improve our services.
+
+Essential Cookies: Required for the Platform to function (e.g., login sessions, security).
+Analytical/Performance Cookies: Allow us to analyze how users interact with our site to improve its performance.
+Functionality Cookies: Remember your preferences to personalize your experience.
+You can manage your cookie preferences through your browser settings. Please note that disabling certain cookies may impact the functionality of the Platform.
+
+10.
+POLICY UPDATES & NOTIFICATION
+We may update this Privacy Policy from time to time to reflect changes in our practices, services, or legal obligations. The updated version will be indicated by a "Last Revised" date at the top of this page and will be effective immediately upon posting. We will notify you of any material changes via email or a prominent notice on our Platform. Your continued use of our services after such notification constitutes your acceptance of the updated Policy.
+
+Back to Home
