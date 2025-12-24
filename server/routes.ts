@@ -607,7 +607,8 @@ ${message}
   // Register new user
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      const { referralCode, ...restBody } = req.body;
+      const userData = insertUserSchema.parse(restBody);
       const existingUser = await storage.getUserByEmail(userData.email);
       
       if (existingUser) {
@@ -646,6 +647,25 @@ ${message}
         eurBalance: "0",
       });
       
+      // Handle referral code if provided
+      if (referralCode) {
+        try {
+          const referral = await storage.getReferralByCode(referralCode);
+          if (referral && referral.status === 'Active' && !referral.referredId) {
+            // Link the referral to this new user
+            await storage.updateReferral(referral.id, {
+              referredId: user.id,
+              referredEmail: user.email,
+              status: 'Pending', // Will be marked as Completed after first deposit
+            });
+            console.log(`[Registration] Linked referral ${referralCode} to new user ${user.email}`);
+          }
+        } catch (refError) {
+          console.error('[Registration] Referral linking failed:', refError);
+          // Don't fail registration if referral linking fails
+        }
+      }
+      
       // Create audit log
       await storage.createAuditLog({
         entityType: "user",
@@ -653,7 +673,7 @@ ${message}
         actionType: "create",
         actor: user.id,
         actorRole: "user",
-        details: "User registered - pending email verification",
+        details: referralCode ? `User registered with referral code ${referralCode}` : "User registered - pending email verification",
       });
       
       // Send verification email (wrapped in try-catch to prevent registration failure)
@@ -18408,6 +18428,79 @@ ${message}
       res.json({ referrals });
     } catch (error) {
       res.status(500).json({ message: "Failed to get referrals" });
+    }
+  });
+
+  // Get user's referral stats and code (creates one if doesn't exist)
+  app.get("/api/referrals/:userId/stats", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get all referrals created by this user
+      const userReferrals = await storage.getUserReferrals(userId);
+      
+      // Find the user's active referral code (the one they share)
+      let activeReferral = userReferrals.find(r => r.status === 'Active' && !r.referredId);
+      
+      // If no active code exists, create one
+      if (!activeReferral) {
+        const code = `REF-${user.firstName?.substring(0, 3).toUpperCase() || 'FIN'}${Date.now().toString(36).toUpperCase().slice(-4)}`;
+        activeReferral = await storage.createReferral({
+          referrerId: userId,
+          referralCode: code,
+          status: 'Active',
+        });
+      }
+
+      // Get referral settings from platform config
+      const configs = await storage.getAllPlatformConfigs();
+      const configMap: Record<string, string> = {};
+      configs.forEach(c => { configMap[c.configKey] = c.configValue; });
+      
+      const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
+      const refereeBonusUsd = parseFloat(configMap['referee_bonus_usd'] || '5');
+      const maxReferrals = parseInt(configMap['max_referrals_per_user'] || '50');
+
+      // Calculate stats
+      const completedReferrals = userReferrals.filter(r => r.status === 'Completed');
+      const totalReferrals = userReferrals.filter(r => r.referredId).length;
+      const totalEarnedUsd = completedReferrals.reduce((sum, r) => sum + parseFloat(r.rewardAmount || '0'), 0);
+
+      // Get current gold price to convert USD reward to grams
+      const goldPrice = await storage.getCurrentGoldPrice();
+      const goldPricePerGram = goldPrice ? parseFloat(goldPrice.pricePerGram) : 95;
+      const rewardPerReferralGrams = referrerBonusUsd / goldPricePerGram;
+      const totalEarnedGrams = totalEarnedUsd / goldPricePerGram;
+
+      res.json({
+        referralCode: activeReferral.referralCode,
+        stats: {
+          totalReferrals,
+          completedReferrals: completedReferrals.length,
+          totalEarnedUsd,
+          totalEarnedGrams,
+          rewardPerReferralUsd: referrerBonusUsd,
+          rewardPerReferralGrams,
+          refereeBonusUsd,
+          maxReferrals,
+          remainingReferrals: maxReferrals - totalReferrals,
+        },
+        referrals: userReferrals.filter(r => r.referredId).map(r => ({
+          id: r.id,
+          referredEmail: r.referredEmail,
+          status: r.status,
+          rewardAmount: r.rewardAmount,
+          createdAt: r.createdAt,
+          completedAt: r.completedAt,
+        })),
+      });
+    } catch (error) {
+      console.error('[Referral Stats Error]', error);
+      res.status(500).json({ message: "Failed to get referral stats" });
     }
   });
 

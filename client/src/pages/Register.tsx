@@ -17,9 +17,10 @@ export default function Register() {
   const { login } = useAuth();
   const [, setLocation] = useLocation();
   
-  // Read initial account type from URL query parameter
+  // Read initial account type and referral code from URL query parameters
   const urlParams = new URLSearchParams(window.location.search);
   const initialType = urlParams.get('type') === 'business' ? 'business' : 'personal';
+  const referralCode = urlParams.get('ref') || '';
   
   const [accountType, setAccountType] = useState<AccountType>(initialType);
   const [showPassword, setShowPassword] = useState(false);
@@ -224,6 +225,7 @@ export default function Register() {
           profilePhoto: profilePhoto,
           role: 'user',
           kycStatus: 'Not Started',
+          ...(referralCode && { referralCode }),
           ...(accountType === 'business' && {
             companyName: formData.companyName,
             registrationNumber: formData.registrationNumber,
@@ -259,6 +261,12 @@ export default function Register() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Create Your Account</h1>
           <p className="text-muted-foreground">Join Finatrades today</p>
+          {referralCode && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success-muted text-success-muted-foreground text-sm">
+              <span>Using referral code:</span>
+              <span className="font-mono font-semibold">{referralCode}</span>
+            </div>
+          )}
         </div>
 
         <Card className="p-6">
