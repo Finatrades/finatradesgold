@@ -103,6 +103,7 @@ import SystemHealth from "@/pages/admin/SystemHealth";
 import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
+import UserPreferencesManagement from "@/pages/admin/UserPreferencesManagement";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
@@ -172,6 +173,7 @@ function Router() {
       <Route path="/admin/documents" component={DocumentsManagement} />
       <Route path="/admin/attachments" component={AttachmentsManagement} />
       <Route path="/admin/email-notifications" component={EmailNotificationsManagement} />
+      <Route path="/admin/user-preferences" component={UserPreferencesManagement} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />

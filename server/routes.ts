@@ -18605,6 +18605,83 @@ ${message}
     }
   });
 
+  // ============================================
+  // USER PREFERENCES
+  // ============================================
+
+  // Get user preferences
+  app.get("/api/users/:userId/preferences", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const preferences = await storage.getOrCreateUserPreferences(req.params.userId);
+      res.json({ preferences });
+    } catch (error) {
+      console.error('[Preferences Error]', error);
+      res.status(500).json({ message: "Failed to get preferences" });
+    }
+  });
+
+  // Update user preferences
+  app.put("/api/users/:userId/preferences", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const updates = req.body;
+      
+      // Ensure preferences exist first
+      await storage.getOrCreateUserPreferences(userId);
+      
+      // Update preferences
+      const preferences = await storage.updateUserPreferences(userId, updates);
+      if (!preferences) {
+        return res.status(404).json({ message: "Preferences not found" });
+      }
+      
+      res.json({ preferences, message: "Settings saved successfully" });
+    } catch (error) {
+      console.error('[Preferences Error]', error);
+      res.status(500).json({ message: "Failed to save preferences" });
+    }
+  });
+
+  // Admin: Get all user preferences (for admin management)
+  app.get("/api/admin/user-preferences", ensureAdminAsync, async (req, res) => {
+    try {
+      // Get all users with their preferences
+      const allUsers = await storage.getAllUsers();
+      const usersWithPrefs = await Promise.all(
+        allUsers.map(async (user) => {
+          const prefs = await storage.getUserPreferences(user.id);
+          return {
+            userId: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            preferences: prefs || null,
+          };
+        })
+      );
+      res.json({ users: usersWithPrefs });
+    } catch (error) {
+      console.error('[Admin Preferences Error]', error);
+      res.status(500).json({ message: "Failed to get user preferences" });
+    }
+  });
+
+  // Admin: Update any user's preferences
+  app.put("/api/admin/users/:userId/preferences", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const updates = req.body;
+      
+      await storage.getOrCreateUserPreferences(userId);
+      const preferences = await storage.updateUserPreferences(userId, updates);
+      
+      res.json({ preferences, message: "User preferences updated" });
+    } catch (error) {
+      console.error('[Admin Preferences Error]', error);
+      res.status(500).json({ message: "Failed to update user preferences" });
+    }
+  });
+
   // Mark notification as read - with ownership verification
   app.post("/api/notifications/:notificationId/read", async (req, res) => {
     try {

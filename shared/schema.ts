@@ -2873,6 +2873,37 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 
 // ============================================
+// USER PREFERENCES
+// ============================================
+
+export const userPreferences = pgTable("user_preferences", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  // Notification preferences
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  pushNotifications: boolean("push_notifications").notNull().default(true),
+  transactionAlerts: boolean("transaction_alerts").notNull().default(true),
+  priceAlerts: boolean("price_alerts").notNull().default(true),
+  securityAlerts: boolean("security_alerts").notNull().default(true),
+  marketingEmails: boolean("marketing_emails").notNull().default(false),
+  // Display preferences
+  displayCurrency: varchar("display_currency", { length: 10 }).notNull().default('USD'),
+  language: varchar("language", { length: 10 }).notNull().default('en'),
+  theme: varchar("theme", { length: 20 }).notNull().default('system'),
+  compactMode: boolean("compact_mode").notNull().default(false),
+  // Privacy preferences
+  showBalance: boolean("show_balance").notNull().default(true),
+  twoFactorReminder: boolean("two_factor_reminder").notNull().default(true),
+  // Timestamps
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
+export type UserPreferences = typeof userPreferences.$inferSelect;
+
+// ============================================
 // CRYPTO WALLET CONFIGURATIONS (Admin managed)
 // ============================================
 

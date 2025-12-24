@@ -94,6 +94,8 @@ import {
   type FinatradesCorporateKyc, type InsertFinatradesCorporateKyc,
   notifications,
   type Notification, type InsertNotification,
+  userPreferences,
+  type UserPreferences, type InsertUserPreferences,
   cryptoWalletConfigs, cryptoPaymentRequests,
   type CryptoWalletConfig, type InsertCryptoWalletConfig,
   type CryptoPaymentRequest, type InsertCryptoPaymentRequest,
@@ -652,6 +654,12 @@ export interface IStorage {
   markAllNotificationsRead(userId: string): Promise<void>;
   deleteNotification(id: string): Promise<boolean>;
   deleteAllNotifications(userId: string): Promise<void>;
+  
+  // User Preferences
+  getUserPreferences(userId: string): Promise<UserPreferences | undefined>;
+  createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences>;
+  updateUserPreferences(userId: string, updates: Partial<UserPreferences>): Promise<UserPreferences | undefined>;
+  getOrCreateUserPreferences(userId: string): Promise<UserPreferences>;
   
   // Platform Configuration
   getPlatformConfig(key: string): Promise<PlatformConfig | undefined>;
@@ -2918,6 +2926,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAllNotifications(userId: string): Promise<void> {
     await db.delete(notifications).where(eq(notifications.userId, userId));
+  }
+
+  // ============================================
+  // USER PREFERENCES
+  // ============================================
+
+  async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
+    const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId));
+    return prefs || undefined;
+  }
+
+  async createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences> {
+    const [newPrefs] = await db.insert(userPreferences).values(preferences).returning();
+    return newPrefs;
+  }
+
+  async updateUserPreferences(userId: string, updates: Partial<UserPreferences>): Promise<UserPreferences | undefined> {
+    const [prefs] = await db.update(userPreferences)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userPreferences.userId, userId))
+      .returning();
+    return prefs || undefined;
+  }
+
+  async getOrCreateUserPreferences(userId: string): Promise<UserPreferences> {
+    let prefs = await this.getUserPreferences(userId);
+    if (!prefs) {
+      prefs = await this.createUserPreferences({ userId });
+    }
+    return prefs;
   }
 
   // ============================================

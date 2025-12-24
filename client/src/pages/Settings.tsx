@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -11,96 +11,109 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 
-interface UserPreferences {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    transactions: boolean;
-    marketing: boolean;
-    priceAlerts: boolean;
-    securityAlerts: boolean;
-  };
-  display: {
-    currency: 'USD' | 'AED' | 'EUR';
-    language: 'en' | 'ar';
-    theme: 'light' | 'dark' | 'system';
-    compactMode: boolean;
-  };
-  privacy: {
-    showBalance: boolean;
-    twoFactorReminder: boolean;
-  };
+interface UserPreferencesData {
+  id: string;
+  userId: string;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  transactionAlerts: boolean;
+  priceAlerts: boolean;
+  securityAlerts: boolean;
+  marketingEmails: boolean;
+  displayCurrency: string;
+  language: string;
+  theme: string;
+  compactMode: boolean;
+  showBalance: boolean;
+  twoFactorReminder: boolean;
 }
 
 export default function Settings() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
-  const [isSaving, setIsSaving] = useState(false);
 
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    notifications: {
-      email: true,
-      push: true,
-      transactions: true,
-      marketing: false,
-      priceAlerts: true,
-      securityAlerts: true,
+  const { data, isLoading } = useQuery<{ preferences: UserPreferencesData }>({
+    queryKey: ['preferences', user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${user?.id}/preferences`);
+      if (!res.ok) throw new Error('Failed to fetch preferences');
+      return res.json();
     },
-    display: {
-      currency: 'USD',
-      language: 'en',
-      theme: (theme as 'light' | 'dark' | 'system') || 'system',
-      compactMode: false,
+    enabled: !!user?.id,
+  });
+
+  const [localPrefs, setLocalPrefs] = useState<UserPreferencesData | null>(null);
+
+  useEffect(() => {
+    if (data?.preferences) {
+      setLocalPrefs(data.preferences);
+      if (data.preferences.theme && data.preferences.theme !== theme) {
+        setTheme(data.preferences.theme);
+      }
+    }
+  }, [data]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (updates: Partial<UserPreferencesData>) => {
+      const res = await fetch(`/api/users/${user?.id}/preferences`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error('Failed to save preferences');
+      return res.json();
     },
-    privacy: {
-      showBalance: true,
-      twoFactorReminder: true,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['preferences'] });
+      toast.success('Settings saved successfully');
+      if (result.preferences?.theme) {
+        setTheme(result.preferences.theme);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to save settings');
     },
   });
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      if (preferences.display.theme !== theme) {
-        setTheme(preferences.display.theme);
-      }
-      toast.success('Settings saved successfully');
-    } catch {
-      toast.error('Failed to save settings');
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSave = () => {
+    if (!localPrefs) return;
+    saveMutation.mutate({
+      emailNotifications: localPrefs.emailNotifications,
+      pushNotifications: localPrefs.pushNotifications,
+      transactionAlerts: localPrefs.transactionAlerts,
+      priceAlerts: localPrefs.priceAlerts,
+      securityAlerts: localPrefs.securityAlerts,
+      marketingEmails: localPrefs.marketingEmails,
+      displayCurrency: localPrefs.displayCurrency,
+      language: localPrefs.language,
+      theme: localPrefs.theme,
+      compactMode: localPrefs.compactMode,
+      showBalance: localPrefs.showBalance,
+      twoFactorReminder: localPrefs.twoFactorReminder,
+    });
   };
 
-  const updateNotification = (key: keyof UserPreferences['notifications'], value: boolean) => {
-    setPreferences(prev => ({
-      ...prev,
-      notifications: { ...prev.notifications, [key]: value }
-    }));
-  };
-
-  const updateDisplay = (key: keyof UserPreferences['display'], value: any) => {
-    setPreferences(prev => ({
-      ...prev,
-      display: { ...prev.display, [key]: value }
-    }));
-  };
-
-  const updatePrivacy = (key: keyof UserPreferences['privacy'], value: boolean) => {
-    setPreferences(prev => ({
-      ...prev,
-      privacy: { ...prev.privacy, [key]: value }
-    }));
+  const updatePref = <K extends keyof UserPreferencesData>(key: K, value: UserPreferencesData[K]) => {
+    setLocalPrefs(prev => prev ? { ...prev, [key]: value } : null);
   };
 
   if (!user) return null;
+
+  if (isLoading || !localPrefs) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -116,8 +129,8 @@ export default function Settings() {
             </h1>
             <p className="text-muted-foreground mt-1">Customize your Finatrades experience</p>
           </div>
-          <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-settings">
-            {isSaving ? (
+          <Button onClick={handleSave} disabled={saveMutation.isPending} data-testid="button-save-settings">
+            {saveMutation.isPending ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
             ) : (
               <><Save className="w-4 h-4 mr-2" /> Save Changes</>
@@ -145,8 +158,8 @@ export default function Settings() {
                 </div>
               </div>
               <Switch 
-                checked={preferences.notifications.email}
-                onCheckedChange={(v) => updateNotification('email', v)}
+                checked={localPrefs.emailNotifications}
+                onCheckedChange={(v) => updatePref('emailNotifications', v)}
                 data-testid="switch-email-notifications"
               />
             </div>
@@ -162,8 +175,8 @@ export default function Settings() {
                 </div>
               </div>
               <Switch 
-                checked={preferences.notifications.push}
-                onCheckedChange={(v) => updateNotification('push', v)}
+                checked={localPrefs.pushNotifications}
+                onCheckedChange={(v) => updatePref('pushNotifications', v)}
                 data-testid="switch-push-notifications"
               />
             </div>
@@ -177,8 +190,9 @@ export default function Settings() {
                   <span className="text-sm">Transaction Alerts</span>
                 </div>
                 <Switch 
-                  checked={preferences.notifications.transactions}
-                  onCheckedChange={(v) => updateNotification('transactions', v)}
+                  checked={localPrefs.transactionAlerts}
+                  onCheckedChange={(v) => updatePref('transactionAlerts', v)}
+                  data-testid="switch-transaction-alerts"
                 />
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
@@ -187,8 +201,9 @@ export default function Settings() {
                   <span className="text-sm">Price Alerts</span>
                 </div>
                 <Switch 
-                  checked={preferences.notifications.priceAlerts}
-                  onCheckedChange={(v) => updateNotification('priceAlerts', v)}
+                  checked={localPrefs.priceAlerts}
+                  onCheckedChange={(v) => updatePref('priceAlerts', v)}
+                  data-testid="switch-price-alerts"
                 />
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
@@ -197,8 +212,9 @@ export default function Settings() {
                   <span className="text-sm">Security Alerts</span>
                 </div>
                 <Switch 
-                  checked={preferences.notifications.securityAlerts}
-                  onCheckedChange={(v) => updateNotification('securityAlerts', v)}
+                  checked={localPrefs.securityAlerts}
+                  onCheckedChange={(v) => updatePref('securityAlerts', v)}
+                  data-testid="switch-security-alerts"
                 />
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
@@ -207,8 +223,9 @@ export default function Settings() {
                   <span className="text-sm">Marketing & News</span>
                 </div>
                 <Switch 
-                  checked={preferences.notifications.marketing}
-                  onCheckedChange={(v) => updateNotification('marketing', v)}
+                  checked={localPrefs.marketingEmails}
+                  onCheckedChange={(v) => updatePref('marketingEmails', v)}
+                  data-testid="switch-marketing-emails"
                 />
               </div>
             </div>
@@ -228,8 +245,8 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Display Currency</Label>
                 <Select 
-                  value={preferences.display.currency}
-                  onValueChange={(v) => updateDisplay('currency', v)}
+                  value={localPrefs.displayCurrency}
+                  onValueChange={(v) => updatePref('displayCurrency', v)}
                 >
                   <SelectTrigger data-testid="select-currency">
                     <SelectValue />
@@ -246,8 +263,8 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Language</Label>
                 <Select 
-                  value={preferences.display.language}
-                  onValueChange={(v) => updateDisplay('language', v)}
+                  value={localPrefs.language}
+                  onValueChange={(v) => updatePref('language', v)}
                 >
                   <SelectTrigger data-testid="select-language">
                     <SelectValue />
@@ -266,27 +283,27 @@ export default function Settings() {
               <Label className="text-base">Theme</Label>
               <div className="grid grid-cols-3 gap-3">
                 <Button
-                  variant={preferences.display.theme === 'light' ? 'default' : 'outline'}
+                  variant={localPrefs.theme === 'light' ? 'default' : 'outline'}
                   className="h-auto py-4 flex-col gap-2"
-                  onClick={() => updateDisplay('theme', 'light')}
+                  onClick={() => updatePref('theme', 'light')}
                   data-testid="button-theme-light"
                 >
                   <Sun className="w-5 h-5" />
                   <span>Light</span>
                 </Button>
                 <Button
-                  variant={preferences.display.theme === 'dark' ? 'default' : 'outline'}
+                  variant={localPrefs.theme === 'dark' ? 'default' : 'outline'}
                   className="h-auto py-4 flex-col gap-2"
-                  onClick={() => updateDisplay('theme', 'dark')}
+                  onClick={() => updatePref('theme', 'dark')}
                   data-testid="button-theme-dark"
                 >
                   <Moon className="w-5 h-5" />
                   <span>Dark</span>
                 </Button>
                 <Button
-                  variant={preferences.display.theme === 'system' ? 'default' : 'outline'}
+                  variant={localPrefs.theme === 'system' ? 'default' : 'outline'}
                   className="h-auto py-4 flex-col gap-2"
-                  onClick={() => updateDisplay('theme', 'system')}
+                  onClick={() => updatePref('theme', 'system')}
                   data-testid="button-theme-system"
                 >
                   <SettingsIcon className="w-5 h-5" />
@@ -301,8 +318,8 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">Show more information in less space</p>
               </div>
               <Switch 
-                checked={preferences.display.compactMode}
-                onCheckedChange={(v) => updateDisplay('compactMode', v)}
+                checked={localPrefs.compactMode}
+                onCheckedChange={(v) => updatePref('compactMode', v)}
                 data-testid="switch-compact-mode"
               />
             </div>
@@ -321,7 +338,7 @@ export default function Settings() {
             <div className="flex items-center justify-between p-4 rounded-lg border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  {preferences.privacy.showBalance ? (
+                  {localPrefs.showBalance ? (
                     <Eye className="w-5 h-5 text-primary" />
                   ) : (
                     <EyeOff className="w-5 h-5 text-muted-foreground" />
@@ -333,8 +350,8 @@ export default function Settings() {
                 </div>
               </div>
               <Switch 
-                checked={preferences.privacy.showBalance}
-                onCheckedChange={(v) => updatePrivacy('showBalance', v)}
+                checked={localPrefs.showBalance}
+                onCheckedChange={(v) => updatePref('showBalance', v)}
                 data-testid="switch-show-balance"
               />
             </div>
@@ -350,8 +367,8 @@ export default function Settings() {
                 </div>
               </div>
               <Switch 
-                checked={preferences.privacy.twoFactorReminder}
-                onCheckedChange={(v) => updatePrivacy('twoFactorReminder', v)}
+                checked={localPrefs.twoFactorReminder}
+                onCheckedChange={(v) => updatePref('twoFactorReminder', v)}
                 data-testid="switch-2fa-reminder"
               />
             </div>
