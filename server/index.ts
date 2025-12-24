@@ -9,6 +9,7 @@ import { storage } from "./storage";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
+import { getRedisClient } from "./redis-client";
 
 // Extend express-session types
 declare module "express-session" {
@@ -114,6 +115,19 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize Redis connection
+  try {
+    const redis = getRedisClient();
+    if (redis) {
+      await redis.ping();
+      console.log('[Redis] Connected and ready');
+    } else {
+      console.log('[Redis] Using in-memory fallback');
+    }
+  } catch (error) {
+    console.warn('[Redis] Connection failed, using in-memory fallback:', error);
+  }
+
   // Seed default platform configuration
   try {
     await storage.seedDefaultPlatformConfig();
