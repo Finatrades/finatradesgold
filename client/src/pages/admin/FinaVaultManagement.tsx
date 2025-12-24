@@ -971,7 +971,7 @@ export default function FinaVaultManagement() {
                   </div>
                 )}
 
-                {(selectedWithdrawal.status === 'Pending' || selectedWithdrawal.status === 'Processing') ? (
+                {(selectedWithdrawal.status === 'Pending' || selectedWithdrawal.status === 'Processing' || selectedWithdrawal.status === 'Submitted') ? (
                   <>
                     <Separator />
                     <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
