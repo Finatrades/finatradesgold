@@ -14,6 +14,7 @@ import CTA from './components/CTA';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
+import GeoRestrictionNotice from './components/GeoRestrictionNotice';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 function FinagoldContent() {
@@ -119,6 +120,7 @@ function FinagoldContent() {
         <ContactForm />
       </main>
       <Footer />
+      <GeoRestrictionNotice />
       <CookieConsent />
       <FloatingAgentChat />
     </div>

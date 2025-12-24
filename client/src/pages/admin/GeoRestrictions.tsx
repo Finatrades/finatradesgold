@@ -213,6 +213,15 @@ export default function GeoRestrictions() {
 
   const restrictions: GeoRestriction[] = restrictionsData?.restrictions || [];
   const settings: GeoRestrictionSettings | null = settingsData?.settings;
+  
+  const defaultSettings = {
+    isEnabled: false,
+    defaultMessage: 'Our services are not available in your region. Please contact support for more information.',
+    showNoticeOnLanding: true,
+    blockAccess: false,
+  };
+  
+  const currentSettings = settings || defaultSettings;
 
   const handleCountrySelect = (code: string) => {
     const country = COMMON_COUNTRIES.find(c => c.code === code);
@@ -393,11 +402,10 @@ export default function GeoRestrictions() {
               <p className="text-sm text-muted-foreground">Turn on IP-based country detection and restrictions</p>
             </div>
             <Switch
-              checked={settings?.isEnabled ?? false}
+              checked={currentSettings.isEnabled}
               onCheckedChange={checked => updateSettingsMutation.mutate({ 
-                ...settings, 
+                ...currentSettings, 
                 isEnabled: checked,
-                defaultMessage: settings?.defaultMessage || 'Our services are not available in your region.'
               })}
               data-testid="switch-enable-restrictions"
             />
@@ -408,12 +416,12 @@ export default function GeoRestrictions() {
               <p className="text-sm text-muted-foreground">Display a notice banner for restricted users</p>
             </div>
             <Switch
-              checked={settings?.showNoticeOnLanding ?? true}
+              checked={currentSettings.showNoticeOnLanding}
               onCheckedChange={checked => updateSettingsMutation.mutate({ 
-                ...settings, 
+                ...currentSettings, 
                 showNoticeOnLanding: checked 
               })}
-              disabled={!settings?.isEnabled}
+              disabled={!currentSettings.isEnabled}
               data-testid="switch-show-notice"
             />
           </div>
@@ -423,26 +431,22 @@ export default function GeoRestrictions() {
               <p className="text-sm text-muted-foreground">Prevent restricted users from accessing the site entirely</p>
             </div>
             <Switch
-              checked={settings?.blockAccess ?? false}
+              checked={currentSettings.blockAccess}
               onCheckedChange={checked => updateSettingsMutation.mutate({ 
-                ...settings, 
+                ...currentSettings, 
                 blockAccess: checked 
               })}
-              disabled={!settings?.isEnabled}
+              disabled={!currentSettings.isEnabled}
               data-testid="switch-block-access"
             />
           </div>
           <div className="space-y-2">
             <Label>Default Restriction Message</Label>
             <Textarea
-              value={settings?.defaultMessage || ''}
-              onChange={e => {
-                if (settings) {
-                  updateSettingsMutation.mutate({ ...settings, defaultMessage: e.target.value });
-                }
-              }}
+              value={currentSettings.defaultMessage}
+              onChange={e => updateSettingsMutation.mutate({ ...currentSettings, defaultMessage: e.target.value })}
               placeholder="Message shown to restricted users"
-              disabled={!settings?.isEnabled}
+              disabled={!currentSettings.isEnabled}
               data-testid="textarea-default-message"
             />
           </div>
