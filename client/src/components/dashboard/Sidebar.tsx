@@ -15,7 +15,8 @@ import {
   History,
   FileText,
   Send,
-  X
+  X,
+  Gift
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -50,6 +51,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
   const accountMenuItems: MenuItem[] = [
     { icon: <CreditCard className="w-5 h-5" />, label: 'FinaCard', href: '/finacard' },
+    { icon: <Gift className="w-5 h-5" />, label: 'Referral', href: '/referral' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', href: '/profile' },
     { icon: <Shield className="w-5 h-5" />, label: 'Security', href: '/security' },
   ];

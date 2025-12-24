@@ -59,6 +59,7 @@ function ProtectedRoute({ path, component: Component }: { path: string, componen
 
 import Profile from "@/pages/Profile";
 import Security from "@/pages/Security";
+import Referral from "@/pages/Referral";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import KYCReview from "@/pages/admin/KYCReview";
 import UserManagement from "@/pages/admin/UserManagement";
@@ -142,6 +143,7 @@ function Router() {
       <ProtectedRoute path="/finacard" component={FinaCard} />
       <ProtectedRoute path="/profile" component={Profile} />
       <ProtectedRoute path="/security" component={Security} />
+      <ProtectedRoute path="/referral" component={Referral} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />
