@@ -185,18 +185,18 @@ function HeroSection() {
               transition={{ delay: 0.5 }}
               className="flex flex-wrap gap-4 pt-4"
             >
-              <Link href="/finapay" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/30">
+              <Link href="/get-started" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/30">
                 <Wallet className="w-5 h-5" />
                 Open Wallet
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <a
-                href="#transactions"
+              <Link
+                href="/sign-in"
                 className="flex items-center gap-2 border border-purple-300 text-purple-700 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-400 transition-all"
               >
                 <RefreshCw className="w-5 h-5" />
                 View Transactions
-              </a>
+              </Link>
             </motion.div>
           </motion.div>
 
@@ -482,10 +482,10 @@ function GoldCardSection() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <button className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 transition-all shadow-lg shadow-purple-500/30">
+              <Link href="/sign-in" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 transition-all shadow-lg shadow-purple-500/30">
                 Join Waitlist
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </Link>
             </motion.div>
           </motion.div>
 
@@ -1082,7 +1082,7 @@ function FinalCTASection() {
             transition={{ delay: 0.2 }}
             className="pt-8"
           >
-            <Link href="/finapay" className="group inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-12 py-6 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/30">
+            <Link href="/get-started" className="group inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-12 py-6 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/30">
               Open FinaPay Wallet
               <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Link>

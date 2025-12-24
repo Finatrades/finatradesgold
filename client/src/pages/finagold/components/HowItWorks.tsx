@@ -17,7 +17,7 @@ const content = {
       { icon: Clock, number: '06', title: 'Optional: Join Holding Plans (BNSL)', description: 'Lock gold into structured holding plans for defined durations.' },
     ],
     cta: 'Explore Personal Platform',
-    ctaHref: '/dashboard',
+    ctaHref: '/sign-in',
   },
   business: {
     title: 'How It Works',
@@ -32,7 +32,7 @@ const content = {
       { icon: FileText, number: '07', title: 'Reporting & Audit Controls', description: 'Access detailed reports for accounting, governance, and external audits.' },
     ],
     cta: 'Explore Business Platform',
-    ctaHref: '/register?type=business',
+    ctaHref: '/sign-in',
   },
 };
 

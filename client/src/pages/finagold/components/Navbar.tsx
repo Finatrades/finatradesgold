@@ -132,14 +132,14 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
               </button>
             </div>
             <Link 
-              href="/login"
+              href="/sign-in"
               className="text-gray-600 hover:text-gray-900 px-4 py-2.5 text-sm font-medium transition-colors"
               data-testid="btn-sign-in"
             >
               Sign In
             </Link>
             <Link 
-              href="/register"
+              href="/get-started"
               className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg shadow-purple-200"
               data-testid="btn-get-started"
             >
@@ -213,13 +213,13 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                   </button>
                 </div>
                 <Link 
-                  href="/login"
+                  href="/sign-in"
                   className="block border border-gray-200 text-gray-700 px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center hover:bg-gray-50"
                 >
                   Sign In
                 </Link>
                 <Link 
-                  href="/register"
+                  href="/get-started"
                   className="block bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-full text-sm font-semibold w-full text-center"
                 >
                   Get Started

@@ -384,7 +384,7 @@ function HeroSection() {
               transition={{ delay: 0.6 }}
               className="flex flex-wrap gap-4 pt-4"
             >
-              <Link href="/dashboard/bnsl/create" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/30">
+              <Link href="/get-started" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/30">
                 Start BNSL Plan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -834,7 +834,7 @@ function CalculatorSection() {
               *Terms and Conditions
             </p>
 
-            <Link href="/dashboard/bnsl/create">
+            <Link href="/get-started">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -998,7 +998,7 @@ function PlanComparisonSection() {
                 ))}
               </ul>
 
-              <Link href="/dashboard/bnsl/create">
+              <Link href="/get-started">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -1327,11 +1327,11 @@ function FinalCTASection() {
             transition={{ delay: 0.2 }}
             className="flex flex-wrap justify-center gap-4 pt-4"
           >
-            <Link href="/dashboard/bnsl/create" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-10 py-5 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg shadow-purple-200">
+            <Link href="/get-started" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-10 py-5 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg shadow-purple-200">
               Start BNSL Plan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <a href="#contact" className="flex items-center gap-2 border-2 border-purple-200 text-purple-600 px-10 py-5 rounded-full text-lg font-semibold hover:bg-purple-50 hover:border-purple-300 transition-all">
+            <a href="/finagold#contact" className="flex items-center gap-2 border-2 border-purple-200 text-purple-600 px-10 py-5 rounded-full text-lg font-semibold hover:bg-purple-50 hover:border-purple-300 transition-all">
               Speak with Support
             </a>
           </motion.div>
