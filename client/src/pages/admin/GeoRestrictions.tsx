@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Globe, Plus, Trash2, Edit2, Save, X, AlertTriangle, Check, Ban } from 'lucide-react';
+import AdminLayout from './AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -423,13 +424,16 @@ export default function GeoRestrictions() {
 
   if (loadingRestrictions || loadingSettings) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
+    <AdminLayout>
     <div className="space-y-6" data-testid="geo-restrictions-page">
       <div className="flex items-center justify-between">
         <div>
@@ -778,5 +782,6 @@ export default function GeoRestrictions() {
         </CardContent>
       </Card>
     </div>
+    </AdminLayout>
   );
 }
