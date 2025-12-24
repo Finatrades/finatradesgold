@@ -451,17 +451,28 @@ export default function BnslPlanDetailAdmin({
 
           <TabsContent value="termination" className="space-y-6">
              {!plan.earlyTermination ? (
-               <Card className="border-dashed border-2">
+               <Card className={plan.status === 'Early Termination Requested' ? "border-2 border-orange-300 bg-orange-50" : "border-dashed border-2"}>
                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <div className="p-4 bg-gray-100 rounded-full mb-4">
-                      <AlertTriangle className="w-8 h-8 text-gray-400" />
+                    <div className={`p-4 rounded-full mb-4 ${plan.status === 'Early Termination Requested' ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                      <AlertTriangle className={`w-8 h-8 ${plan.status === 'Early Termination Requested' ? 'text-orange-500' : 'text-gray-400'}`} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">No Early Termination Requested</h3>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {plan.status === 'Early Termination Requested' 
+                        ? 'Early Termination Pending Review' 
+                        : 'No Early Termination Requested'}
+                    </h3>
                     <p className="text-gray-500 mb-6 text-center max-w-md">
-                      The plan is proceeding according to schedule. You can simulate an early termination to see the financial impact.
+                      {plan.status === 'Early Termination Requested' 
+                        ? 'User has requested early termination. Run simulation to calculate settlement and process the request.'
+                        : 'The plan is proceeding according to schedule. You can simulate an early termination to see the financial impact.'}
                     </p>
-                    <Button onClick={() => { setSimulationPrice(currentMarketPrice.toString()); setShowSimulateDialog(true); }}>
-                      Run Early Termination Simulation
+                    <Button 
+                      onClick={() => { setSimulationPrice(currentMarketPrice.toString()); setShowSimulateDialog(true); }}
+                      className={plan.status === 'Early Termination Requested' ? 'bg-orange-500 hover:bg-orange-600' : ''}
+                    >
+                      {plan.status === 'Early Termination Requested' 
+                        ? 'Process Termination Request' 
+                        : 'Run Early Termination Simulation'}
                     </Button>
                  </CardContent>
                </Card>
@@ -708,7 +719,9 @@ export default function BnslPlanDetailAdmin({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSimulateDialog(false)}>Cancel</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleCreateSimulation}>Create Request</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleCreateSimulation}>
+              {plan.status === 'Early Termination Requested' ? 'Approve & Process' : 'Create Request'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
