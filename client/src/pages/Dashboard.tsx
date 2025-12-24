@@ -38,11 +38,11 @@ interface KpiBoxProps {
 
 function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
   return (
-    <Card className="p-4 bg-white border border-purple-200 shadow-sm rounded-lg">
+    <Card className="p-4 bg-white border border-purple-200 shadow-sm rounded-lg hover-lift glass-card">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs text-gray-500 mb-2">{title}</p>
-          <div className={`text-xl font-bold ${valueColor} mb-1`}>{value}</div>
+          <div className={`text-xl font-bold ${valueColor} mb-1 animate-count`}>{value}</div>
           {secondaryValue && (
             <p className="text-sm font-medium text-gray-600 mb-1">{secondaryValue}</p>
           )}
@@ -51,7 +51,7 @@ function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, i
           )}
           <p className="text-xs text-gray-400">{subtitle}</p>
         </div>
-        <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center`}>
+        <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center icon-btn`}>
           {icon}
         </div>
       </div>

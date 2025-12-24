@@ -43,16 +43,16 @@ export default function DashboardWalletCards({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* FinaPay Wallet */}
-      <Card className="p-5 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      <Card className="p-5 bg-white border border-gray-100 shadow-sm hover-lift glass-card fade-in stagger-1">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center pulse-glow">
               <Wallet className="w-4 h-4 text-emerald-600" />
             </div>
             <span className="font-semibold text-gray-900">FinaPay Wallet</span>
           </div>
           <Link href="/finapay">
-            <span className="text-sm text-purple-500 hover:text-purple-600 flex items-center gap-1 cursor-pointer">
+            <span className="text-sm text-purple-500 hover:text-purple-600 flex items-center gap-1 cursor-pointer btn-interactive rounded px-2 py-1">
               View <ArrowRight className="w-3 h-3" />
             </span>
           </Link>
@@ -61,10 +61,10 @@ export default function DashboardWalletCards({
         <div className="space-y-3">
           <div>
             <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900 animate-count">
               ${finaPayWallet.usdValue.toFixed(2)}
             </p>
-            <p className="text-xs text-fuchsia-600 font-medium">~{finaPayWallet.goldGrams.toFixed(2)}g gold</p>
+            <p className="text-xs text-fuchsia-600 font-medium gold-shimmer">~{finaPayWallet.goldGrams.toFixed(2)}g gold</p>
           </div>
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
@@ -82,7 +82,7 @@ export default function DashboardWalletCards({
 
       {/* FinaCard (Personal) or FinaBridge (Business) */}
       {isBusinessUser ? (
-        <Card className="p-5 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="p-5 bg-white border border-gray-100 shadow-sm hover-lift glass-card fade-in stagger-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -119,7 +119,7 @@ export default function DashboardWalletCards({
           </div>
         </Card>
       ) : (
-        <Card className="p-5 bg-white border border-gray-100 shadow-sm relative overflow-hidden">
+        <Card className="p-5 bg-white border border-gray-100 shadow-sm relative overflow-hidden hover-lift glass-card fade-in stagger-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
@@ -156,16 +156,16 @@ export default function DashboardWalletCards({
       )}
 
       {/* BNSL Wallet */}
-      <Card className="p-5 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      <Card className="p-5 bg-white border border-gray-100 shadow-sm hover-lift glass-card fade-in stagger-3">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center float">
               <TrendingUp className="w-4 h-4 text-purple-600" />
             </div>
             <span className="font-semibold text-gray-900">BNSL Wallet</span>
           </div>
           <Link href="/bnsl">
-            <span className="text-sm text-purple-500 hover:text-purple-600 flex items-center gap-1 cursor-pointer">
+            <span className="text-sm text-purple-500 hover:text-purple-600 flex items-center gap-1 cursor-pointer btn-interactive rounded px-2 py-1">
               View <ArrowRight className="w-3 h-3" />
             </span>
           </Link>
@@ -174,10 +174,10 @@ export default function DashboardWalletCards({
         <div className="space-y-3">
           <div>
             <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900 animate-count">
               ${bnslData.usdValue.toFixed(2)}
             </p>
-            <p className="text-xs text-fuchsia-600 font-medium">~{bnslData.goldGrams.toFixed(2)}g gold</p>
+            <p className="text-xs text-fuchsia-600 font-medium gold-shimmer">~{bnslData.goldGrams.toFixed(2)}g gold</p>
           </div>
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
