@@ -3048,6 +3048,45 @@ export type InsertPlatformConfig = z.infer<typeof insertPlatformConfigSchema>;
 export type PlatformConfig = typeof platformConfig.$inferSelect;
 
 // ============================================
+// GEO RESTRICTIONS (IP-based cross-border restrictions)
+// ============================================
+
+export const geoRestrictions = pgTable("geo_restrictions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  countryCode: varchar("country_code", { length: 2 }).notNull().unique(), // ISO 3166-1 alpha-2
+  countryName: varchar("country_name", { length: 100 }).notNull(),
+  isRestricted: boolean("is_restricted").notNull().default(true),
+  restrictionMessage: text("restriction_message"), // Custom message for this country
+  allowRegistration: boolean("allow_registration").notNull().default(false),
+  allowLogin: boolean("allow_login").notNull().default(false),
+  allowTransactions: boolean("allow_transactions").notNull().default(false),
+  reason: text("reason"), // Internal note for why restricted
+  updatedBy: varchar("updated_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertGeoRestrictionSchema = createInsertSchema(geoRestrictions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertGeoRestriction = z.infer<typeof insertGeoRestrictionSchema>;
+export type GeoRestriction = typeof geoRestrictions.$inferSelect;
+
+// Global geo restriction settings
+export const geoRestrictionSettings = pgTable("geo_restriction_settings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  isEnabled: boolean("is_enabled").notNull().default(false),
+  defaultMessage: text("default_message").notNull().default('Our services are not available in your region. Please contact support for more information.'),
+  showNoticeOnLanding: boolean("show_notice_on_landing").notNull().default(true),
+  blockAccess: boolean("block_access").notNull().default(false), // If true, block access completely
+  updatedBy: varchar("updated_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertGeoRestrictionSettingsSchema = createInsertSchema(geoRestrictionSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertGeoRestrictionSettings = z.infer<typeof insertGeoRestrictionSettingsSchema>;
+export type GeoRestrictionSettings = typeof geoRestrictionSettings.$inferSelect;
+
+// ============================================
 // DATABASE BACKUPS
 // ============================================
 
