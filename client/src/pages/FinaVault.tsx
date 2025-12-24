@@ -314,14 +314,8 @@ export default function FinaVault() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
-  // Normalize ledger entries to have a status field for VaultActivityList filtering
-  const normalizedLedgerEntries = ledgerEntries.map((entry: any) => ({
-    ...entry,
-    status: entry.status || 'Completed', // Ledger entries are always completed
-  }));
-
   // Always include certificate records, plus ledger entries or other records
-  const baseRecords = normalizedLedgerEntries.length > 0 ? normalizedLedgerEntries : [...transactionRecords, ...depositRecords];
+  const baseRecords = ledgerEntries.length > 0 ? ledgerEntries : [...transactionRecords, ...depositRecords];
   const displayRecords = [...baseRecords, ...certificateRecords].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );

@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 // Components - import early for use in SignedAgreementsSection
 import BnslStatsCard from '@/components/bnsl/BnslStatsCard';
-import BnslHedgedWalletCard from '@/components/bnsl/BnslHedgedWalletCard';
+import BnslWalletCard from '@/components/bnsl/BnslWalletCard';
 import BnslPlanList from '@/components/bnsl/BnslPlanList';
 import BnslPlanDetail from '@/components/bnsl/BnslPlanDetail';
 import CreateBnslPlan, { FULL_TERMS_AND_CONDITIONS } from '@/components/bnsl/CreateBnslPlan';
@@ -641,13 +641,15 @@ export default function BNSL() {
           </div>
         </div>
 
-        {/* HEDGED WALLET - Fixed Entry Price Module */}
-        <BnslHedgedWalletCard 
+        {/* WALLET STRIP */}
+        <BnslWalletCard 
+          bnslBalanceGold={bnslWalletBalance}
+          lockedBalanceGold={totalLockedGold}
           finaPayBalanceGold={finaPayGoldBalance}
+          onTransferFromFinaPay={handleTransferFromFinaPay}
+          onWithdrawToFinaPay={handleWithdrawToFinaPay}
           currentGoldPrice={currentGoldPrice}
-          onRefresh={refreshPlans}
         />
-        
         <div className="flex justify-end -mt-4">
             <Button variant="link" size="sm" className="text-muted-foreground hover:text-primary" onClick={() => setLocation('/finapay')}>
                 Need more funds? Go to FinaPay Wallet &rarr;
@@ -758,7 +760,7 @@ export default function BNSL() {
 
             <TabsContent value="create" id="bnsl-create-section" className={`mt-0 animate-in fade-in slide-in-from-bottom-2 transition-all duration-500 ${highlightCreate ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50' : ''}`}>
                <CreateBnslPlan 
-                 hedgedGoldBalance={bnslWalletBalance} 
+                 bnslWalletBalance={bnslWalletBalance} 
                  currentGoldPrice={currentGoldPrice}
                  onSuccess={handleCreatePlan}
                />

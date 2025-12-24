@@ -19,7 +19,7 @@ import {
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
   vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings, vaultDepositRequests,
-  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, bnslPositions, tradeCases,
+  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments,
@@ -465,8 +465,7 @@ export async function registerRoutes(
       const finabridgeGoldGrams = parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0');
       const finabridgeGoldValueUsd = finabridgeGoldGrams * goldPrice;
       
-      // Total Portfolio: wallet gold (which equals vault holdings - same gold, not double counted) + USD balance + FinaBridge gold
-      const totalPortfolioUsd = (walletGoldGrams * goldPrice) + walletUsdBalance + finabridgeGoldValueUsd;
+      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + walletUsdBalance + finabridgeGoldValueUsd;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
       // Include both 'Pending' and 'Under Review' statuses as pending
@@ -3283,269 +3282,9 @@ ${message}
     return res.json(results);
   });
 
-  // Test4: Return actual first record from each type to test serialization
-  app.get("/api/admin/kyc-test4", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    const results: any = { success: true, timestamp: new Date().toISOString() };
-    
-    try {
-      const kycAml = await storage.getAllKycSubmissions();
-      results.kycAmlCount = kycAml.length;
-      if (kycAml.length > 0) {
-        results.kycAmlFirst = kycAml[0];
-      }
-    } catch (e: any) {
-      results.kycAmlError = e?.message || String(e);
-    }
-    
-    try {
-      const personal = await storage.getAllFinatradesPersonalKyc();
-      results.personalCount = personal.length;
-      if (personal.length > 0) {
-        results.personalFirst = personal[0];
-      }
-    } catch (e: any) {
-      results.personalError = e?.message || String(e);
-    }
-    
-    try {
-      const corporate = await storage.getAllFinatradesCorporateKyc();
-      results.corporateCount = corporate.length;
-      if (corporate.length > 0) {
-        results.corporateFirst = corporate[0];
-      }
-    } catch (e: any) {
-      results.corporateError = e?.message || String(e);
-    }
-    
-    return res.json(results);
-  });
-
-  // Test6: Super simple - just return all data without any processing
-  app.get("/api/admin/kyc-test6", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    try {
-      const kycAml = await storage.getAllKycSubmissions();
-      const personal = await storage.getAllFinatradesPersonalKyc();
-      const corporate = await storage.getAllFinatradesCorporateKyc();
-      return res.json({
-        success: true,
-        counts: { kycAml: kycAml.length, personal: personal.length, corporate: corporate.length },
-        kycAml,
-        personal,
-        corporate
-      });
-    } catch (error: any) {
-      return res.status(500).json({ error: error?.message, stack: error?.stack });
-    }
-  });
-
-  // Test8: Debug the actual counts and why test7 shows 0 kycAml
-  app.get("/api/admin/kyc-test8", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    const results: any = { step: 0 };
-    
-    try {
-      results.step = 1;
-      const kycAml = await storage.getAllKycSubmissions();
-      results.step = 2;
-      results.kycAmlType = typeof kycAml;
-      results.kycAmlIsArray = Array.isArray(kycAml);
-      results.kycAmlLength = kycAml?.length;
-      
-      results.step = 3;
-      const personal = await storage.getAllFinatradesPersonalKyc();
-      results.step = 4;
-      results.personalLength = personal?.length;
-      
-      results.step = 5;
-      const corporate = await storage.getAllFinatradesCorporateKyc();
-      results.step = 6;
-      results.corporateLength = corporate?.length;
-      
-      results.step = 7;
-      results.success = true;
-      return res.json(results);
-    } catch (error: any) {
-      results.error = error?.message;
-      results.stack = error?.stack?.slice(0, 500);
-      return res.status(500).json(results);
-    }
-  });
-
-  // Test9: Return raw arrays directly without any processing - minimal test
-  app.get("/api/admin/kyc-test9", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    const debug: any = { step: 0 };
-    try {
-      debug.step = 1;
-      const personal = await storage.getAllFinatradesPersonalKyc();
-      debug.step = 2;
-      debug.personalCount = personal?.length;
-      
-      debug.step = 3;
-      const corporate = await storage.getAllFinatradesCorporateKyc();
-      debug.step = 4;
-      debug.corporateCount = corporate?.length;
-      
-      // Try to stringify each array separately
-      debug.step = 5;
-      let personalJson: string;
-      try {
-        personalJson = JSON.stringify(personal);
-        debug.personalJsonLength = personalJson.length;
-      } catch (e: any) {
-        debug.personalStringifyError = e?.message;
-        return res.status(500).json(debug);
-      }
-      
-      debug.step = 6;
-      let corporateJson: string;
-      try {
-        corporateJson = JSON.stringify(corporate);
-        debug.corporateJsonLength = corporateJson.length;
-      } catch (e: any) {
-        debug.corporateStringifyError = e?.message;
-        return res.status(500).json(debug);
-      }
-      
-      debug.step = 7;
-      const plainPersonal = JSON.parse(personalJson);
-      debug.step = 8;
-      const plainCorporate = JSON.parse(corporateJson);
-      
-      debug.step = 9;
-      const combined = [...plainPersonal, ...plainCorporate];
-      debug.combinedCount = combined.length;
-      
-      debug.step = 10;
-      debug.success = true;
-      // Return debug info only, not the actual data
-      return res.json(debug);
-    } catch (error: any) {
-      debug.error = error?.message;
-      debug.stack = error?.stack?.slice(0, 500);
-      return res.status(500).json(debug);
-    }
-  });
-
-  // Test7: Find the exact record that fails serialization
-  app.get("/api/admin/kyc-test7", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    const results: any = { success: true, tested: { kycAml: [], personal: [], corporate: [] }, errors: [] };
-    
-    try {
-      const kycAml = await storage.getAllKycSubmissions();
-      for (let i = 0; i < kycAml.length; i++) {
-        try {
-          JSON.stringify(kycAml[i]);
-          results.tested.kycAml.push({ index: i, id: kycAml[i]?.id, status: 'ok' });
-        } catch (e: any) {
-          results.errors.push({ type: 'kycAml', index: i, id: kycAml[i]?.id, error: e?.message });
-        }
-      }
-    } catch (e: any) {
-      results.errors.push({ type: 'kycAml', error: 'fetch failed: ' + e?.message });
-    }
-    
-    try {
-      const personal = await storage.getAllFinatradesPersonalKyc();
-      for (let i = 0; i < personal.length; i++) {
-        try {
-          JSON.stringify(personal[i]);
-          results.tested.personal.push({ index: i, id: personal[i]?.id, status: 'ok' });
-        } catch (e: any) {
-          results.errors.push({ type: 'personal', index: i, id: personal[i]?.id, error: e?.message });
-        }
-      }
-    } catch (e: any) {
-      results.errors.push({ type: 'personal', error: 'fetch failed: ' + e?.message });
-    }
-    
-    try {
-      const corporate = await storage.getAllFinatradesCorporateKyc();
-      for (let i = 0; i < corporate.length; i++) {
-        try {
-          JSON.stringify(corporate[i]);
-          results.tested.corporate.push({ index: i, id: corporate[i]?.id, status: 'ok' });
-        } catch (e: any) {
-          results.errors.push({ type: 'corporate', index: i, id: corporate[i]?.id, error: e?.message });
-        }
-      }
-    } catch (e: any) {
-      results.errors.push({ type: 'corporate', error: 'fetch failed: ' + e?.message });
-    }
-    
-    return res.json(results);
-  });
-
-  // Test5: Exact same logic as main endpoint but with step-by-step tracking
-  app.get("/api/admin/kyc-test5", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
-    const steps: string[] = [];
-    try {
-      steps.push("1. Starting");
-      
-      let kycAmlArray: any[] = [];
-      let personalArray: any[] = [];
-      let corporateArray: any[] = [];
-      
-      const kycAml = await storage.getAllKycSubmissions();
-      kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
-      steps.push(`2. Fetched ${kycAmlArray.length} kycAml`);
-      
-      const personal = await storage.getAllFinatradesPersonalKyc();
-      personalArray = Array.isArray(personal) ? personal : [];
-      steps.push(`3. Fetched ${personalArray.length} personal`);
-      
-      const corporate = await storage.getAllFinatradesCorporateKyc();
-      corporateArray = Array.isArray(corporate) ? corporate : [];
-      steps.push(`4. Fetched ${corporateArray.length} corporate`);
-      
-      const allSubmissions: any[] = [];
-      
-      for (let i = 0; i < kycAmlArray.length; i++) {
-        const s = kycAmlArray[i];
-        if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
-      }
-      steps.push(`5. Processed ${allSubmissions.length} kycAml items`);
-      
-      for (let i = 0; i < personalArray.length; i++) {
-        const s = personalArray[i];
-        if (s) allSubmissions.push({
-          ...s,
-          tier: 'finatrades_personal',
-          kycType: 'finatrades_personal',
-          accountType: 'personal',
-        });
-      }
-      steps.push(`6. Processed personal, total now ${allSubmissions.length}`);
-      
-      for (let i = 0; i < corporateArray.length; i++) {
-        const s = corporateArray[i];
-        if (s) allSubmissions.push({
-          ...s,
-          tier: 'finatrades_corporate',
-          kycType: 'finatrades_corporate',
-          accountType: 'business',
-          fullName: s?.companyName || null,
-        });
-      }
-      steps.push(`7. Processed corporate, total now ${allSubmissions.length}`);
-      
-      allSubmissions.sort((a, b) => {
-        const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
-      steps.push(`8. Sorted submissions`);
-      
-      steps.push(`9. About to serialize ${allSubmissions.length} items`);
-      return res.json({ success: true, steps, submissionCount: allSubmissions.length, submissions: allSubmissions });
-    } catch (error: any) {
-      return res.status(500).json({ success: false, steps, error: error?.message, stack: error?.stack });
-    }
-  });
-
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
-      console.log("[KYC Admin] Starting to fetch all KYC submissions...");
-      
       // Fetch all KYC types with individual error handling
       let kycAmlArray: any[] = [];
       let personalArray: any[] = [];
@@ -3554,25 +3293,22 @@ ${message}
       try {
         const kycAml = await storage.getAllKycSubmissions();
         kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
-        console.log(`[KYC Admin] Fetched ${kycAmlArray.length} KYC AML submissions`);
       } catch (e: any) {
-        console.error("[KYC Admin] Error fetching KYC AML submissions:", e?.message || e);
+        console.error("Error fetching KYC AML submissions:", e);
       }
       
       try {
         const personal = await storage.getAllFinatradesPersonalKyc();
         personalArray = Array.isArray(personal) ? personal : [];
-        console.log(`[KYC Admin] Fetched ${personalArray.length} personal KYC submissions`);
       } catch (e: any) {
-        console.error("[KYC Admin] Error fetching personal KYC:", e?.message || e);
+        console.error("Error fetching personal KYC:", e);
       }
       
       try {
         const corporate = await storage.getAllFinatradesCorporateKyc();
         corporateArray = Array.isArray(corporate) ? corporate : [];
-        console.log(`[KYC Admin] Fetched ${corporateArray.length} corporate KYC submissions`);
       } catch (e: any) {
-        console.error("[KYC Admin] Error fetching corporate KYC:", e?.message || e);
+        console.error("Error fetching corporate KYC:", e);
       }
       
       // Simple normalization without complex operations
@@ -3580,43 +3316,29 @@ ${message}
       
       // Add kycAml submissions
       for (const s of kycAmlArray) {
-        try {
-          if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
-        } catch (e: any) {
-          console.error("[KYC Admin] Error processing kycAml item:", e?.message || e);
-        }
+        if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
       }
       
       // Add personal submissions
       for (const s of personalArray) {
-        try {
-          if (s) allSubmissions.push({
-            ...s,
-            tier: 'finatrades_personal',
-            kycType: 'finatrades_personal',
-            accountType: 'personal',
-          });
-        } catch (e: any) {
-          console.error("[KYC Admin] Error processing personal item:", e?.message || e);
-        }
+        if (s) allSubmissions.push({
+          ...s,
+          tier: 'finatrades_personal',
+          kycType: 'finatrades_personal',
+          accountType: 'personal',
+        });
       }
       
       // Add corporate submissions - use companyName as fullName for display
       for (const s of corporateArray) {
-        try {
-          if (s) allSubmissions.push({
-            ...s,
-            tier: 'finatrades_corporate',
-            kycType: 'finatrades_corporate',
-            accountType: 'business',
-            fullName: s?.companyName || null,
-          });
-        } catch (e: any) {
-          console.error("[KYC Admin] Error processing corporate item:", e?.message || e);
-        }
+        if (s) allSubmissions.push({
+          ...s,
+          tier: 'finatrades_corporate',
+          kycType: 'finatrades_corporate',
+          accountType: 'business',
+          fullName: s?.companyName || null,
+        });
       }
-      
-      console.log(`[KYC Admin] Total submissions combined: ${allSubmissions.length}`);
       
       // Sort by creation date
       allSubmissions.sort((a, b) => {
@@ -3625,10 +3347,9 @@ ${message}
         return dateB - dateA;
       });
       
-      console.log("[KYC Admin] Sending response...");
       return res.json({ submissions: allSubmissions });
     } catch (error: any) {
-      console.error("[KYC Admin] FATAL endpoint error:", error?.message || error, error?.stack);
+      console.error("KYC endpoint error:", error);
       return res.status(500).json({ message: "Failed to fetch KYC submissions", error: error?.message });
     }
   });
@@ -8171,566 +7892,6 @@ ${message}
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to withdraw from BNSL wallet" });
     }
   });
-
-  // ============================================================================
-  // BNSL HEDGED/FIXED PRICE MODULE - Deposit and Withdraw with Entry Price Locking
-  // ============================================================================
-
-  // Get user's BNSL positions
-  app.get("/api/bnsl/positions/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const positions = await db.select().from(bnslPositions).where(eq(bnslPositions.userId, userId)).orderBy(desc(bnslPositions.createdAt));
-      res.json({ positions });
-    } catch (error) {
-      console.error('Get BNSL positions error:', error);
-      res.status(400).json({ message: "Failed to get BNSL positions" });
-    }
-  });
-
-  // BNSL Hedged Deposit - Transfer from FinaPay to BNSL with fixed entry price
-  app.post("/api/bnsl/hedged/deposit", ensureAuthenticated, async (req, res) => {
-    try {
-      const { planId, amountUsd } = req.body;
-      const userId = req.session?.userId;
-      
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      if (!amountUsd || parseFloat(amountUsd) <= 0) {
-        return res.status(400).json({ message: "Invalid deposit amount" });
-      }
-
-      const depositAmount = parseFloat(amountUsd);
-
-      // 1. Fetch current gold price (entry price) BEFORE transaction
-      let goldPrice: number;
-      let priceSource = 'live';
-      try {
-        goldPrice = await getGoldPricePerGram();
-      } catch {
-        goldPrice = 85.00;
-        priceSource = 'fallback';
-        console.warn('[BNSL Hedged] Using fallback gold price');
-      }
-
-      // 2. Calculate grams to lock at entry price
-      const gramsToLock = depositAmount / goldPrice;
-
-      // 3. Pre-validate wallets before transaction
-      const finapayWallet = await storage.getWallet(userId);
-      if (!finapayWallet) {
-        return res.status(404).json({ message: "FinaPay wallet not found" });
-      }
-
-      const availableGold = parseFloat(finapayWallet.goldGrams);
-      if (availableGold < gramsToLock) {
-        return res.status(400).json({ 
-          message: `Insufficient gold balance. You need ${gramsToLock.toFixed(4)}g but have ${availableGold.toFixed(4)}g`,
-          required: gramsToLock,
-          available: availableGold
-        });
-      }
-
-      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
-      const currentLockedGrams = parseFloat(bnslWallet.lockedGoldGrams || '0');
-      const currentWeightedAvg = parseFloat(bnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
-
-      // 4. Create narration for deposit
-      const depositNarration = `You moved $${depositAmount.toFixed(2)} from FinaPay to BNSL. Entry gold price was $${goldPrice.toFixed(2)}/g, so ${gramsToLock.toFixed(4)}g were locked. Your BNSL principal is now fixed at the entry price. Withdrawal will be calculated at the gold price on the withdrawal date.`;
-
-      // 5. Calculate new weighted average entry price
-      const newLockedTotal = currentLockedGrams + gramsToLock;
-      let newWeightedAvg: number;
-      if (currentLockedGrams === 0) {
-        newWeightedAvg = goldPrice;
-      } else {
-        newWeightedAvg = ((currentLockedGrams * currentWeightedAvg) + (gramsToLock * goldPrice)) / newLockedTotal;
-      }
-      const newPrincipalFixed = newLockedTotal * newWeightedAvg;
-
-      // 6. ATOMIC TRANSACTION - All wallet updates with row locking for concurrency safety
-      const { bnslWallets } = await import('@shared/schema');
-      let position: any;
-      let transferTxId: string;
-
-      await db.transaction(async (tx) => {
-        // Lock and re-read FinaPay wallet inside transaction
-        const [lockedFinapayWallet] = await tx.select()
-          .from(wallets)
-          .where(eq(wallets.id, finapayWallet.id))
-          .for('update');
-        
-        const freshAvailableGold = parseFloat(lockedFinapayWallet.goldGrams);
-        if (freshAvailableGold < gramsToLock) {
-          throw new Error(`Insufficient gold balance. You need ${gramsToLock.toFixed(4)}g but have ${freshAvailableGold.toFixed(4)}g`);
-        }
-
-        // Lock and re-read BNSL wallet inside transaction
-        const [lockedBnslWallet] = await tx.select()
-          .from(bnslWallets)
-          .where(eq(bnslWallets.id, bnslWallet.id))
-          .for('update');
-        
-        const freshLockedGrams = parseFloat(lockedBnslWallet.lockedGoldGrams || '0');
-        const freshWeightedAvg = parseFloat(lockedBnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
-        
-        // Recalculate with fresh values inside transaction
-        const freshNewLockedTotal = freshLockedGrams + gramsToLock;
-        let freshNewWeightedAvg: number;
-        if (freshLockedGrams === 0) {
-          freshNewWeightedAvg = goldPrice;
-        } else {
-          freshNewWeightedAvg = ((freshLockedGrams * freshWeightedAvg) + (gramsToLock * goldPrice)) / freshNewLockedTotal;
-        }
-        const freshNewPrincipalFixed = freshNewLockedTotal * freshNewWeightedAvg;
-
-        // Debit from FinaPay wallet
-        await tx.update(wallets)
-          .set({
-            goldGrams: (freshAvailableGold - gramsToLock).toFixed(6),
-            updatedAt: new Date()
-          })
-          .where(eq(wallets.id, finapayWallet.id));
-
-        // Credit to BNSL wallet with updated weighted average
-        await tx.update(bnslWallets)
-          .set({
-            lockedGoldGrams: freshNewLockedTotal.toFixed(6),
-            entryPriceUsdPerGramWeightedAvg: freshNewWeightedAvg.toFixed(2),
-            usdPrincipalFixedDisplay: freshNewPrincipalFixed.toFixed(2),
-            updatedAt: new Date()
-          })
-          .where(eq(bnslWallets.id, bnslWallet.id));
-
-        // Update vault holdings - track locked BNSL grams
-        let vaultHoldingId: string | null = null;
-        let certificateId: string | null = null;
-        
-        const userVaultHoldings = await tx.select()
-          .from(vaultHoldings)
-          .where(eq(vaultHoldings.userId, userId))
-          .for('update');
-        
-        if (userVaultHoldings.length > 0) {
-          const holding = userVaultHoldings[0];
-          vaultHoldingId = holding.id;
-          const currentLockedBnsl = parseFloat(holding.lockedBnslGrams || '0');
-          
-          await tx.update(vaultHoldings)
-            .set({
-              lockedBnslGrams: (currentLockedBnsl + gramsToLock).toFixed(6),
-              updatedAt: new Date()
-            })
-            .where(eq(vaultHoldings.id, holding.id));
-          
-          // Update active certificate status to Locked_BNSL
-          const [activeCert] = await tx.select()
-            .from(certificates)
-            .where(and(
-              eq(certificates.userId, userId),
-              eq(certificates.status, 'Active'),
-              eq(certificates.type, 'Digital Ownership')
-            ))
-            .for('update');
-          
-          if (activeCert) {
-            certificateId = activeCert.id;
-            await tx.update(certificates)
-              .set({
-                status: 'Locked_BNSL',
-                updatedAt: new Date()
-              })
-              .where(eq(certificates.id, activeCert.id));
-          }
-        }
-
-        // Calculate fixed USD value at entry price
-        const fixedValueUsd = gramsToLock * goldPrice;
-
-        // Create BNSL position record with vault/certificate links
-        const [newPosition] = await tx.insert(bnslPositions).values({
-          userId,
-          planId: planId || null,
-          vaultHoldingId,
-          certificateId,
-          depositUsd: depositAmount.toFixed(2),
-          entryPriceUsdPerGram: goldPrice.toFixed(2),
-          gramsLocked: gramsToLock.toFixed(6),
-          gramsRemaining: gramsToLock.toFixed(6),
-          fixedValueUsd: fixedValueUsd.toFixed(2),
-          status: 'Active',
-          depositNarration,
-          priceSource
-        }).returning();
-        position = newPosition;
-
-        // Create transaction record
-        const [transferTx] = await tx.insert(transactions).values({
-          userId,
-          type: 'Send',
-          status: 'Completed',
-          amountGold: gramsToLock.toFixed(6),
-          amountUsd: depositAmount.toFixed(2),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          description: `BNSL Hedged Deposit: ${gramsToLock.toFixed(4)}g locked at $${goldPrice.toFixed(2)}/g`,
-          sourceModule: 'bnsl'
-        }).returning();
-        transferTxId = transferTx.id;
-
-        // Create ledger entry for audit trail
-        const balanceAfterGrams = freshAvailableGold - gramsToLock;
-        await tx.insert(vaultLedgerEntries).values({
-          userId,
-          action: 'FinaPay_To_BNSL',
-          goldGrams: gramsToLock.toFixed(6),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          valueUsd: depositAmount.toFixed(2),
-          fromWallet: 'FinaPay',
-          toWallet: 'BNSL',
-          fromStatus: 'Available',
-          toStatus: 'Locked_BNSL',
-          balanceAfterGrams: balanceAfterGrams.toFixed(6),
-          transactionId: transferTx.id,
-          notes: `BNSL Hedged Deposit: ${gramsToLock.toFixed(4)}g locked at entry price $${goldPrice.toFixed(2)}/g. Position ID: ${position.id}`,
-          createdBy: 'system',
-        });
-      });
-
-      // 7. Get updated wallets (outside transaction for fresh read)
-      const updatedFinapay = await storage.getWallet(userId);
-      const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
-
-      // 8. Emit real-time sync event
-      emitLedgerEvent(userId, {
-        type: 'balance_update',
-        module: 'bnsl',
-        action: 'bnsl_hedged_deposit',
-        data: { 
-          goldGrams: gramsToLock, 
-          amountUsd: depositAmount,
-          entryPrice: goldPrice,
-          positionId: position.id
-        },
-      });
-
-      res.json({
-        success: true,
-        position,
-        finapayWallet: updatedFinapay,
-        bnslWallet: updatedBnsl,
-        narration: {
-          title: "Gold Locked from FinaPay",
-          body: `Locked ${gramsToLock.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`
-        }
-      });
-    } catch (error) {
-      console.error('BNSL hedged deposit error:', error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process BNSL deposit" });
-    }
-  });
-
-  // BNSL Hedged Withdraw - Transfer from BNSL back to FinaPay at current price
-  app.post("/api/bnsl/hedged/withdraw", ensureAuthenticated, async (req, res) => {
-    try {
-      const { positionId, withdrawMode, amountGrams } = req.body;
-      const userId = req.session?.userId;
-      
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      if (!positionId) {
-        return res.status(400).json({ message: "Position ID is required" });
-      }
-
-      // 1. Get and validate position
-      const [position] = await db.select().from(bnslPositions).where(eq(bnslPositions.id, positionId));
-      if (!position) {
-        return res.status(404).json({ message: "Position not found" });
-      }
-
-      if (position.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized: This position belongs to another user" });
-      }
-
-      if (position.status === 'Completed' || position.status === 'Cancelled') {
-        return res.status(400).json({ message: "This position has already been closed" });
-      }
-
-      const gramsRemaining = parseFloat(position.gramsRemaining);
-      let gramsToWithdraw: number;
-
-      if (withdrawMode === 'FULL' || !amountGrams) {
-        gramsToWithdraw = gramsRemaining;
-      } else {
-        gramsToWithdraw = parseFloat(amountGrams);
-        if (gramsToWithdraw > gramsRemaining) {
-          return res.status(400).json({ 
-            message: `Cannot withdraw ${gramsToWithdraw.toFixed(4)}g. Only ${gramsRemaining.toFixed(4)}g remaining in position.`
-          });
-        }
-      }
-
-      if (gramsToWithdraw <= 0) {
-        return res.status(400).json({ message: "Invalid withdrawal amount" });
-      }
-
-      // 2. Fetch current gold price (withdrawal price) BEFORE transaction
-      let currentPrice: number;
-      let priceSource = 'live';
-      try {
-        currentPrice = await getGoldPricePerGram();
-      } catch {
-        currentPrice = 85.00;
-        priceSource = 'fallback';
-        console.warn('[BNSL Hedged] Using fallback gold price for withdrawal');
-      }
-
-      // 3. Calculate USD value at current price
-      const entryPrice = parseFloat(position.entryPriceUsdPerGram);
-      const withdrawUsdValue = gramsToWithdraw * currentPrice;
-      const entryUsdValue = gramsToWithdraw * entryPrice;
-      const priceDiff = currentPrice - entryPrice;
-      const gainLoss = withdrawUsdValue - entryUsdValue;
-
-      // 4. Create withdrawal narration
-      const gainLossText = gainLoss >= 0 
-        ? `You gained $${Math.abs(gainLoss).toFixed(2)} due to price increase.`
-        : `You received $${Math.abs(gainLoss).toFixed(2)} less due to price decrease.`;
-      
-      const withdrawalNarration = `You withdrew ${gramsToWithdraw.toFixed(4)}g from BNSL back to FinaPay. Entry price was $${entryPrice.toFixed(2)}/g, today's price is $${currentPrice.toFixed(2)}/g. Value today = $${withdrawUsdValue.toFixed(2)}. ${gainLossText} Your remaining BNSL principal remains fixed at entry price.`;
-
-      // 5. Pre-fetch wallet data
-      const finapayWallet = await storage.getWallet(userId);
-      if (!finapayWallet) {
-        return res.status(404).json({ message: "FinaPay wallet not found" });
-      }
-
-      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
-      const currentLockedGrams = parseFloat(bnslWallet.lockedGoldGrams || '0');
-      const newLockedTotal = Math.max(0, currentLockedGrams - gramsToWithdraw);
-      const weightedAvg = parseFloat(bnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
-      const newPrincipalFixed = Math.max(0, newLockedTotal * weightedAvg);
-      const currentFinapayGold = parseFloat(finapayWallet.goldGrams);
-      const newGramsRemaining = gramsRemaining - gramsToWithdraw;
-      const newStatus = newGramsRemaining <= 0.000001 ? 'Completed' : 'PartiallyWithdrawn';
-
-      // 6. ATOMIC TRANSACTION - All wallet updates with row locking for concurrency safety
-      const { bnslWallets } = await import('@shared/schema');
-      let transferTxId: string;
-
-      await db.transaction(async (tx) => {
-        // Lock and re-read BNSL wallet inside transaction
-        const [lockedBnslWallet] = await tx.select()
-          .from(bnslWallets)
-          .where(eq(bnslWallets.id, bnslWallet.id))
-          .for('update');
-        
-        const freshLockedGrams = parseFloat(lockedBnslWallet.lockedGoldGrams || '0');
-        const freshWeightedAvg = parseFloat(lockedBnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
-        const freshNewLockedTotal = Math.max(0, freshLockedGrams - gramsToWithdraw);
-        const freshNewPrincipalFixed = Math.max(0, freshNewLockedTotal * freshWeightedAvg);
-
-        // Lock and re-read FinaPay wallet inside transaction
-        const [lockedFinapayWallet] = await tx.select()
-          .from(wallets)
-          .where(eq(wallets.id, finapayWallet.id))
-          .for('update');
-        
-        const freshFinapayGold = parseFloat(lockedFinapayWallet.goldGrams);
-
-        // Lock and re-read position inside transaction
-        const [lockedPosition] = await tx.select()
-          .from(bnslPositions)
-          .where(eq(bnslPositions.id, positionId))
-          .for('update');
-        
-        const freshGramsRemaining = parseFloat(lockedPosition.gramsRemaining);
-        if (gramsToWithdraw > freshGramsRemaining) {
-          throw new Error(`Cannot withdraw ${gramsToWithdraw.toFixed(4)}g. Only ${freshGramsRemaining.toFixed(4)}g remaining in position.`);
-        }
-        const freshNewGramsRemaining = Math.max(0, freshGramsRemaining - gramsToWithdraw);
-        const freshNewStatus = freshNewGramsRemaining <= 0.000001 ? 'Completed' : 'PartiallyWithdrawn';
-
-        // Debit from BNSL wallet
-        await tx.update(bnslWallets)
-          .set({
-            lockedGoldGrams: freshNewLockedTotal.toFixed(6),
-            usdPrincipalFixedDisplay: freshNewPrincipalFixed.toFixed(2),
-            updatedAt: new Date()
-          })
-          .where(eq(bnslWallets.id, bnslWallet.id));
-
-        // Credit to FinaPay wallet
-        await tx.update(wallets)
-          .set({
-            goldGrams: (freshFinapayGold + gramsToWithdraw).toFixed(6),
-            updatedAt: new Date()
-          })
-          .where(eq(wallets.id, finapayWallet.id));
-
-        // Update position with exit type
-        const exitType = freshNewGramsRemaining <= 0.000001 ? 'Full' : 'Partial';
-        await tx.update(bnslPositions)
-          .set({
-            gramsRemaining: freshNewGramsRemaining.toFixed(6),
-            status: freshNewStatus,
-            withdrawalPriceUsdPerGram: currentPrice.toFixed(2),
-            withdrawalUsdValue: withdrawUsdValue.toFixed(2),
-            withdrawnAt: new Date(),
-            withdrawalNarration,
-            exitType,
-            updatedAt: new Date()
-          })
-          .where(eq(bnslPositions.id, positionId));
-
-        // Update vault holdings - reduce locked BNSL grams
-        if (lockedPosition.vaultHoldingId) {
-          const [holding] = await tx.select()
-            .from(vaultHoldings)
-            .where(eq(vaultHoldings.id, lockedPosition.vaultHoldingId))
-            .for('update');
-          
-          if (holding) {
-            const currentLockedBnsl = parseFloat(holding.lockedBnslGrams || '0');
-            const newLockedBnsl = Math.max(0, currentLockedBnsl - gramsToWithdraw);
-            
-            await tx.update(vaultHoldings)
-              .set({
-                lockedBnslGrams: newLockedBnsl.toFixed(6),
-                updatedAt: new Date()
-              })
-              .where(eq(vaultHoldings.id, holding.id));
-          }
-        }
-
-        // If position is fully completed, restore certificate status to Active
-        if (freshNewStatus === 'Completed' && lockedPosition.certificateId) {
-          await tx.update(certificates)
-            .set({
-              status: 'Active',
-              updatedAt: new Date()
-            })
-            .where(eq(certificates.id, lockedPosition.certificateId));
-        }
-
-        // Create transaction record
-        const [transferTx] = await tx.insert(transactions).values({
-          userId,
-          type: 'Receive',
-          status: 'Completed',
-          amountGold: gramsToWithdraw.toFixed(6),
-          amountUsd: withdrawUsdValue.toFixed(2),
-          goldPriceUsdPerGram: currentPrice.toFixed(2),
-          description: `BNSL Hedged Withdrawal: ${gramsToWithdraw.toFixed(4)}g at $${currentPrice.toFixed(2)}/g (entry was $${entryPrice.toFixed(2)}/g)`,
-          sourceModule: 'bnsl'
-        }).returning();
-        transferTxId = transferTx.id;
-
-        // Create ledger entry for audit trail
-        const newFinaPayBalance = freshFinapayGold + gramsToWithdraw;
-        await tx.insert(vaultLedgerEntries).values({
-          userId,
-          action: 'BNSL_To_FinaPay',
-          goldGrams: gramsToWithdraw.toFixed(6),
-          goldPriceUsdPerGram: currentPrice.toFixed(2),
-          valueUsd: withdrawUsdValue.toFixed(2),
-          fromWallet: 'BNSL',
-          toWallet: 'FinaPay',
-          fromStatus: 'Locked_BNSL',
-          toStatus: 'Available',
-          balanceAfterGrams: newFinaPayBalance.toFixed(6),
-          transactionId: transferTx.id,
-          notes: `BNSL Hedged Withdrawal: ${gramsToWithdraw.toFixed(4)}g. Entry: $${entryPrice.toFixed(2)}/g, Exit: $${currentPrice.toFixed(2)}/g, Value: $${withdrawUsdValue.toFixed(2)}`,
-          createdBy: 'system',
-        });
-      });
-
-      // 7. Get updated data (outside transaction for fresh read)
-      const [updatedPosition] = await db.select().from(bnslPositions).where(eq(bnslPositions.id, positionId));
-      const updatedFinapay = await storage.getWallet(userId);
-      const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
-
-      // 8. Emit real-time sync event
-      emitLedgerEvent(userId, {
-        type: 'balance_update',
-        module: 'bnsl',
-        action: 'bnsl_hedged_withdraw',
-        data: { 
-          goldGrams: gramsToWithdraw,
-          entryPrice,
-          currentPrice,
-          withdrawValue: withdrawUsdValue,
-          gainLoss,
-          positionId
-        },
-      });
-
-      res.json({
-        success: true,
-        position: updatedPosition,
-        finapayWallet: updatedFinapay,
-        bnslWallet: updatedBnsl,
-        narration: {
-          title: "Gold Unlocked to FinaPay",
-          body: `${gramsToWithdraw.toFixed(4)}g unlocked at $${currentPrice.toFixed(2)}/g`
-        },
-        summary: {
-          gramsWithdrawn: gramsToWithdraw,
-          entryPricePerGram: entryPrice,
-          currentPricePerGram: currentPrice,
-          withdrawValueUsd: withdrawUsdValue,
-          entryValueUsd: entryUsdValue,
-          gainLossUsd: gainLoss,
-          priceChange: priceDiff
-        }
-      });
-    } catch (error) {
-      console.error('BNSL hedged withdraw error:', error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process BNSL withdrawal" });
-    }
-  });
-
-  // Get BNSL wallet summary with live market value calculation
-  app.get("/api/bnsl/wallet/summary/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const { userId } = req.params;
-      
-      const bnslWallet = await storage.getOrCreateBnslWallet(userId);
-      const lockedGrams = parseFloat(bnslWallet.lockedGoldGrams || '0');
-      const entryPriceWeightedAvg = parseFloat(bnslWallet.entryPriceUsdPerGramWeightedAvg || '0');
-      const fixedPrincipal = parseFloat(bnslWallet.usdPrincipalFixedDisplay || '0');
-
-      // Get current gold price for "Withdraw Value Today"
-      let currentPrice: number;
-      try {
-        currentPrice = await getGoldPricePerGram();
-      } catch {
-        currentPrice = 85.00;
-      }
-
-      const withdrawValueToday = lockedGrams * currentPrice;
-      const unrealizedGainLoss = withdrawValueToday - fixedPrincipal;
-
-      res.json({
-        wallet: bnslWallet,
-        summary: {
-          lockedGoldGrams: lockedGrams,
-          fixedPrincipalUsd: fixedPrincipal,
-          entryPriceWeightedAvg,
-          currentPricePerGram: currentPrice,
-          withdrawValueTodayUsd: withdrawValueToday,
-          unrealizedGainLossUsd: unrealizedGainLoss,
-          notice: "BNSL is a hedged fixed-entry module. Your principal is locked at the entry gold price. When you withdraw, conversion happens at today's gold price."
-        }
-      });
-    } catch (error) {
-      console.error('Get BNSL wallet summary error:', error);
-      res.status(400).json({ message: "Failed to get BNSL wallet summary" });
-    }
-  });
   
   // ============================================================================
   // BNSL PLAN TEMPLATES - ADMIN MANAGEMENT
@@ -8943,7 +8104,7 @@ ${message}
     }
   });
   
-  // Create BNSL plan (locks gold directly from FinaPay wallet)
+  // Create BNSL plan (locks gold from BNSL wallet)
   app.post("/api/bnsl/plans", ensureAuthenticated, async (req, res) => {
     try {
       // Auto-generate contractId if not provided
@@ -8965,42 +8126,50 @@ ${message}
       });
       const goldGrams = parseFloat(planData.goldSoldGrams);
       
-      // Get BNSL wallet and verify sufficient hedged gold (availableGoldGrams)
+      // Get BNSL wallet and verify sufficient funds
       const bnslWallet = await storage.getOrCreateBnslWallet(planData.userId);
-      const availableHedgedGold = parseFloat(bnslWallet.availableGoldGrams);
-      const originalLocked = parseFloat(bnslWallet.lockedGoldGrams);
+      const availableGold = parseFloat(bnslWallet.availableGoldGrams);
       
-      if (availableHedgedGold < goldGrams) {
+      if (availableGold < goldGrams) {
         return res.status(400).json({ 
-          message: `Insufficient hedged gold. Available: ${availableHedgedGold.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g. Please lock more gold from FinaPay first.`
+          message: `Insufficient BNSL wallet balance. Available: ${availableGold.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g`
         });
       }
       
-      // Perform atomic-like operations with rollback on failure
-      let bnslWalletUpdated = false;
-      let plan: any = null;
+      // Lock gold: move from available to locked
+      const newAvailable = availableGold - goldGrams;
+      const newLocked = parseFloat(bnslWallet.lockedGoldGrams) + goldGrams;
+      await storage.updateBnslWallet(bnslWallet.id, {
+        availableGoldGrams: newAvailable.toFixed(6),
+        lockedGoldGrams: newLocked.toFixed(6)
+      });
       
-      try {
-        // Step 1: Move gold from available (hedged) to locked for BNSL plan
-        const newAvailable = availableHedgedGold - goldGrams;
-        const newLocked = originalLocked + goldGrams;
-        await storage.updateBnslWallet(bnslWallet.id, {
-          availableGoldGrams: newAvailable.toFixed(6),
-          lockedGoldGrams: newLocked.toFixed(6)
-        });
-        bnslWalletUpdated = true;
-        
-        // Step 2: Create the plan
-        plan = await storage.createBnslPlan(planData);
-      } catch (err) {
-        // Rollback on failure
-        if (bnslWalletUpdated) {
-          await storage.updateBnslWallet(bnslWallet.id, {
-            availableGoldGrams: availableHedgedGold.toFixed(6),
-            lockedGoldGrams: originalLocked.toFixed(6)
+      // Create the plan
+      const plan = await storage.createBnslPlan(planData);
+      
+      // Update vault holdings - mark gold as locked for BNSL
+      const vaultHoldings = await storage.getUserVaultHoldings(planData.userId);
+      let remainingToLock = goldGrams;
+      
+      for (const holding of vaultHoldings) {
+        if (remainingToLock <= 0) break;
+        const holdingGold = parseFloat(holding.goldGrams);
+        if (holdingGold > 0) {
+          const lockAmount = Math.min(holdingGold, remainingToLock);
+          // Reduce vault holding by locked amount
+          await storage.updateVaultHolding(holding.id, {
+            goldGrams: (holdingGold - lockAmount).toFixed(6)
           });
+          remainingToLock -= lockAmount;
+          
+          // Update related certificates to "Updated" status
+          const certificates = await storage.getUserActiveCertificates(planData.userId);
+          for (const cert of certificates) {
+            if (cert.vaultHoldingId === holding.id) {
+              await storage.updateCertificate(cert.id, { status: 'Updated' });
+            }
+          }
         }
-        throw err;
       }
       
       // Create a new certificate for the BNSL-locked gold
@@ -9030,7 +8199,7 @@ ${message}
         })
         .catch(err => console.error('[Routes] BNSL Lock certificate error:', err));
       
-      // Record ledger entry for BNSL plan lock (from hedged to locked)
+      // Record ledger entry for BNSL lock
       const enrollmentPriceVal = parseFloat(planData.enrollmentPriceUsdPerGram);
       const { vaultLedgerService } = await import('./vault-ledger-service');
       await vaultLedgerService.recordLedgerEntry({
@@ -9043,7 +8212,7 @@ ${message}
         fromStatus: 'Available',
         toStatus: 'Locked_BNSL',
         bnslPlanId: plan.id,
-        notes: `Locked ${goldGrams.toFixed(4)}g hedged gold for BNSL contract ${plan.contractId}`,
+        notes: `Locked ${goldGrams.toFixed(4)}g for BNSL contract ${plan.contractId}`,
         createdBy: 'system',
       });
 
@@ -11522,7 +10691,7 @@ ${message}
         goldPriceUsdPerGram: 0,
         fromWallet: 'FinaBridge',
         toWallet: 'FinaBridge',
-        fromStatus: 'Reserved_Trade',
+        fromStatus: 'Locked',
         toStatus: 'Available',
         notes: `Settlement cancelled: ${reason || 'Trade cancelled'}`,
         createdBy: adminUser.id,

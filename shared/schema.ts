@@ -958,13 +958,12 @@ export const certificateTypeEnum = pgEnum('certificate_type', [
   'Trade Lock',           // Finatrades - issued when FinaBridge reserve is created
   'Trade Release'         // Finatrades - issued when FinaBridge trade settles
 ]);
-export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred', 'Locked_BNSL']);
+export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred']);
 
 export const vaultHoldings = pgTable("vault_holdings", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
-  lockedBnslGrams: decimal("locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   vaultLocation: varchar("vault_location", { length: 255 }).notNull().default('Dubai - Wingold & Metals DMCC'),
   wingoldStorageRef: varchar("wingold_storage_ref", { length: 100 }),
   storageFeesAnnualPercent: decimal("storage_fees_annual_percent", { precision: 5, scale: 2 }).notNull().default('0.5'),
@@ -1374,17 +1373,12 @@ export type VaultWithdrawalRequest = typeof vaultWithdrawalRequests.$inferSelect
 // BNSL - BUY NOW SELL LATER
 // ============================================
 
-// BNSL Wallets - Dedicated wallet for BNSL operations (Hedged/Fixed Price Module)
+// BNSL Wallets - Dedicated wallet for BNSL operations
 export const bnslWallets = pgTable("bnsl_wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
   availableGoldGrams: decimal("available_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   lockedGoldGrams: decimal("locked_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
-  
-  // Hedged/Fixed Entry Module Fields
-  entryPriceUsdPerGramWeightedAvg: decimal("entry_price_usd_per_gram_weighted_avg", { precision: 12, scale: 2 }).default('0'),
-  usdPrincipalFixedDisplay: decimal("usd_principal_fixed_display", { precision: 18, scale: 2 }).default('0'),
-  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1392,61 +1386,6 @@ export const bnslWallets = pgTable("bnsl_wallets", {
 export const insertBnslWalletSchema = createInsertSchema(bnslWallets).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertBnslWallet = z.infer<typeof insertBnslWalletSchema>;
 export type BnslWallet = typeof bnslWallets.$inferSelect;
-
-// BNSL Position Status Enum
-export const bnslPositionStatusEnum = pgEnum('bnsl_position_status', ['Active', 'Completed', 'Cancelled', 'PartiallyWithdrawn']);
-
-// BNSL Positions - Individual deposit positions with fixed entry price (Hedging Module)
-export const bnslPositions = pgTable("bnsl_positions", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  planId: varchar("plan_id", { length: 255 }).references(() => bnslPlans.id),
-  vaultHoldingId: varchar("vault_holding_id", { length: 255 }).references(() => vaultHoldings.id),
-  certificateId: varchar("certificate_id", { length: 255 }).references(() => certificates.id),
-  
-  // Deposit details
-  depositUsd: decimal("deposit_usd", { precision: 18, scale: 2 }).notNull(),
-  entryPriceUsdPerGram: decimal("entry_price_usd_per_gram", { precision: 12, scale: 2 }).notNull(),
-  gramsLocked: decimal("grams_locked", { precision: 18, scale: 6 }).notNull(),
-  gramsRemaining: decimal("grams_remaining", { precision: 18, scale: 6 }).notNull(),
-  fixedValueUsd: decimal("fixed_value_usd", { precision: 18, scale: 2 }).default('0'),
-  
-  // Timing
-  startAt: timestamp("start_at").notNull().defaultNow(),
-  maturityAt: timestamp("maturity_at"),
-  endAt: timestamp("end_at"),
-  
-  // Hedging rules
-  earlyExitAllowed: boolean("early_exit_allowed").notNull().default(false),
-  earlyExitPenaltyPercent: decimal("early_exit_penalty_percent", { precision: 5, scale: 2 }).default('0'),
-  
-  // Status
-  status: bnslPositionStatusEnum("status").notNull().default('Active'),
-  
-  // Earnings (optional based on plan)
-  earningsGrams: decimal("earnings_grams", { precision: 18, scale: 6 }).default('0'),
-  earningsUsd: decimal("earnings_usd", { precision: 18, scale: 2 }).default('0'),
-  
-  // Withdrawal details (filled on withdrawal)
-  withdrawalPriceUsdPerGram: decimal("withdrawal_price_usd_per_gram", { precision: 12, scale: 2 }),
-  withdrawalUsdValue: decimal("withdrawal_usd_value", { precision: 18, scale: 2 }),
-  withdrawnAt: timestamp("withdrawn_at"),
-  exitType: varchar("exit_type", { length: 50 }),
-  
-  // Narration for user
-  depositNarration: text("deposit_narration"),
-  withdrawalNarration: text("withdrawal_narration"),
-  
-  // Price source tracking
-  priceSource: varchar("price_source", { length: 50 }).default('live'),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertBnslPositionSchema = createInsertSchema(bnslPositions).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertBnslPosition = z.infer<typeof insertBnslPositionSchema>;
-export type BnslPosition = typeof bnslPositions.$inferSelect;
 
 // BNSL Plan Templates - Admin-configurable plan types
 export const bnslTemplateStatusEnum = pgEnum('bnsl_template_status', ['Active', 'Inactive', 'Draft']);
@@ -3030,7 +2969,7 @@ export type BuyGoldRequest = typeof buyGoldRequests.$inferSelect;
 export const platformConfigCategoryEnum = pgEnum('platform_config_category', [
   'gold_pricing', 'transaction_limits', 'deposit_limits', 'withdrawal_limits',
   'p2p_limits', 'bnsl_settings', 'finabridge_settings', 'payment_fees',
-  'kyc_settings', 'system_settings', 'vault_settings', 'referral_settings', 'finacard_settings'
+  'kyc_settings', 'system_settings', 'vault_settings', 'referral_settings'
 ]);
 
 export const platformConfig = pgTable("platform_config", {
@@ -3319,74 +3258,3 @@ export const insuranceCertificates = pgTable("insurance_certificates", {
 export const insertInsuranceCertificateSchema = createInsertSchema(insuranceCertificates).omit({ id: true, createdAt: true });
 export type InsertInsuranceCertificate = z.infer<typeof insertInsuranceCertificateSchema>;
 export type InsuranceCertificate = typeof insuranceCertificates.$inferSelect;
-
-// ============================================
-// FINACARD - GOLD-BACKED DEBIT CARDS
-// ============================================
-
-export const finacardStatusEnum = pgEnum('finacard_status', [
-  'Pending', 'Active', 'Frozen', 'Expired', 'Cancelled', 'Replaced'
-]);
-
-export const finacardTypeEnum = pgEnum('finacard_type', [
-  'Virtual', 'Physical'
-]);
-
-export const finacards = pgTable("finacards", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  cardType: finacardTypeEnum("card_type").notNull().default('Virtual'),
-  status: finacardStatusEnum("status").notNull().default('Pending'),
-  lastFourDigits: varchar("last_four_digits", { length: 4 }),
-  expiryMonth: integer("expiry_month"),
-  expiryYear: integer("expiry_year"),
-  cardholderName: varchar("cardholder_name", { length: 100 }),
-  marqetaCardToken: varchar("marqeta_card_token", { length: 255 }),
-  marqetaUserToken: varchar("marqeta_user_token", { length: 255 }),
-  dailySpendLimitUsd: decimal("daily_spend_limit_usd", { precision: 18, scale: 2 }).default('1000'),
-  monthlySpendLimitUsd: decimal("monthly_spend_limit_usd", { precision: 18, scale: 2 }).default('10000'),
-  isContactlessEnabled: boolean("is_contactless_enabled").notNull().default(true),
-  isOnlineEnabled: boolean("is_online_enabled").notNull().default(true),
-  isAtmEnabled: boolean("is_atm_enabled").notNull().default(true),
-  billingAddressId: varchar("billing_address_id", { length: 255 }),
-  activatedAt: timestamp("activated_at"),
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertFinacardSchema = createInsertSchema(finacards).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertFinacard = z.infer<typeof insertFinacardSchema>;
-export type Finacard = typeof finacards.$inferSelect;
-
-// FinaCard Transactions
-export const finacardTransactionTypeEnum = pgEnum('finacard_transaction_type', [
-  'Purchase', 'ATM_Withdrawal', 'Refund', 'Chargeback', 'Fee'
-]);
-
-export const finacardTransactionStatusEnum = pgEnum('finacard_transaction_status', [
-  'Pending', 'Approved', 'Declined', 'Settled', 'Reversed'
-]);
-
-export const finacardTransactions = pgTable("finacard_transactions", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  cardId: varchar("card_id", { length: 255 }).notNull().references(() => finacards.id),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  type: finacardTransactionTypeEnum("type").notNull(),
-  status: finacardTransactionStatusEnum("status").notNull().default('Pending'),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }).notNull(),
-  merchantName: varchar("merchant_name", { length: 255 }),
-  merchantCategory: varchar("merchant_category", { length: 100 }),
-  merchantLocation: varchar("merchant_location", { length: 255 }),
-  marqetaTransactionToken: varchar("marqeta_transaction_token", { length: 255 }),
-  authorizationCode: varchar("authorization_code", { length: 50 }),
-  declineReason: text("decline_reason"),
-  settledAt: timestamp("settled_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertFinacardTransactionSchema = createInsertSchema(finacardTransactions).omit({ id: true, createdAt: true });
-export type InsertFinacardTransaction = z.infer<typeof insertFinacardTransactionSchema>;
-export type FinacardTransaction = typeof finacardTransactions.$inferSelect;

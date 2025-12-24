@@ -80,8 +80,6 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [checkingNgenius, setCheckingNgenius] = useState(true);
   const [depositFee, setDepositFee] = useState<FeeInfo | null>(null);
   const [goldPrice, setGoldPrice] = useState<GoldPriceInfo | null>(null);
-  const [inputMode, setInputMode] = useState<'usd' | 'gold'>('usd');
-  const [goldAmount, setGoldAmount] = useState('');
   
   // Crypto payment state
   const [cryptoWallets, setCryptoWallets] = useState<CryptoWallet[]>([]);
@@ -156,8 +154,6 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setPaymentMethod(null);
     setSelectedAccount(null);
     setAmount('');
-    setGoldAmount('');
-    setInputMode('usd');
     setSenderBankName('');
     setSenderAccountName('');
     setProofOfPayment(null);
@@ -644,102 +640,18 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {/* Right Panel - Deposit Information */}
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Amount *</Label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (inputMode !== 'usd') {
-                          setInputMode('usd');
-                          if (goldAmount && goldPrice?.pricePerGram) {
-                            const usdValue = parseFloat(goldAmount) * goldPrice.pricePerGram;
-                            setAmount(usdValue.toFixed(2));
-                          }
-                        }
-                      }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                        inputMode === 'usd' 
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                          : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-                      }`}
-                      data-testid="button-input-mode-usd"
-                    >
-                      <DollarSign className="w-4 h-4" />
-                      USD
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (inputMode !== 'gold') {
-                          setInputMode('gold');
-                          if (amount && goldPrice?.pricePerGram) {
-                            const goldValue = parseFloat(amount) / goldPrice.pricePerGram;
-                            setGoldAmount(goldValue.toFixed(4));
-                          }
-                        }
-                      }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                        inputMode === 'gold' 
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                          : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-                      }`}
-                      data-testid="button-input-mode-gold"
-                    >
-                      <Coins className="w-4 h-4" />
-                      Gold (g)
-                    </button>
-                    <div className="flex-1 relative">
-                      {inputMode === 'usd' ? (
-                        <>
-                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <Input 
-                            type="number"
-                            value={amount}
-                            onChange={(e) => {
-                              setAmount(e.target.value);
-                              if (e.target.value && goldPrice?.pricePerGram) {
-                                const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
-                                setGoldAmount(goldValue.toFixed(4));
-                              } else {
-                                setGoldAmount('');
-                              }
-                            }}
-                            placeholder="0.00"
-                            className="pl-9 h-10"
-                            data-testid="input-deposit-amount"
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <Input 
-                            type="number"
-                            step="0.0001"
-                            value={goldAmount}
-                            onChange={(e) => {
-                              setGoldAmount(e.target.value);
-                              if (e.target.value && goldPrice?.pricePerGram) {
-                                const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
-                                setAmount(usdValue.toFixed(2));
-                              } else {
-                                setAmount('');
-                              }
-                            }}
-                            placeholder="0.0000"
-                            className="pl-9 h-10"
-                            data-testid="input-deposit-gold"
-                          />
-                        </>
-                      )}
-                    </div>
+                  <Label className="text-sm font-medium">Amount (USD) *</Label>
+                  <div className="relative mt-1.5">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-9 h-11"
+                      data-testid="input-deposit-amount"
+                    />
                   </div>
-                  {goldPrice?.pricePerGram && (
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      Rate: ${goldPrice.pricePerGram.toFixed(2)}/g
-                      {inputMode === 'usd' && amount && ` • ~${(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g`}
-                      {inputMode === 'gold' && goldAmount && ` • ~$${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}`}
-                    </p>
-                  )}
                 </div>
 
                 {parseFloat(amount) > 0 && (
@@ -888,101 +800,21 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
               
               <div>
-                <Label className="text-sm mb-2 block">Amount *</Label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (inputMode !== 'usd') {
-                        setInputMode('usd');
-                        if (goldAmount && goldPrice?.pricePerGram) {
-                          const usdValue = parseFloat(goldAmount) * goldPrice.pricePerGram;
-                          setAmount(usdValue.toFixed(2));
-                        }
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                      inputMode === 'usd' 
-                        ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                        : 'bg-white text-muted-foreground border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <DollarSign className="w-4 h-4" />
-                    USD
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (inputMode !== 'gold') {
-                        setInputMode('gold');
-                        if (amount && goldPrice?.pricePerGram) {
-                          const goldValue = parseFloat(amount) / goldPrice.pricePerGram;
-                          setGoldAmount(goldValue.toFixed(4));
-                        }
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                      inputMode === 'gold' 
-                        ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                        : 'bg-white text-muted-foreground border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <Coins className="w-4 h-4" />
-                    Gold (g)
-                  </button>
-                  <div className="flex-1 relative">
-                    {inputMode === 'usd' ? (
-                      <>
-                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input 
-                          type="number"
-                          value={amount}
-                          onChange={(e) => {
-                            setAmount(e.target.value);
-                            if (e.target.value && goldPrice?.pricePerGram) {
-                              const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
-                              setGoldAmount(goldValue.toFixed(4));
-                            } else {
-                              setGoldAmount('');
-                            }
-                          }}
-                          placeholder="0.00"
-                          className="pl-9 bg-white h-10"
-                          min={platformSettings.minDeposit || 50}
-                          max={Math.min(platformSettings.maxDepositSingle || 100000, 10000)}
-                          data-testid="input-card-amount"
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input 
-                          type="number"
-                          step="0.0001"
-                          value={goldAmount}
-                          onChange={(e) => {
-                            setGoldAmount(e.target.value);
-                            if (e.target.value && goldPrice?.pricePerGram) {
-                              const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
-                              setAmount(usdValue.toFixed(2));
-                            } else {
-                              setAmount('');
-                            }
-                          }}
-                          placeholder="0.0000"
-                          className="pl-9 bg-white h-10"
-                          data-testid="input-card-gold"
-                        />
-                      </>
-                    )}
-                  </div>
+                <Label className="text-sm">Amount (USD) *</Label>
+                <div className="relative mt-1">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-9 bg-white"
+                    min={platformSettings.minDeposit || 50}
+                    max={Math.min(platformSettings.maxDepositSingle || 100000, 10000)}
+                    data-testid="input-card-amount"
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {goldPrice?.pricePerGram && `Rate: $${goldPrice.pricePerGram.toFixed(2)}/g`}
-                  {inputMode === 'usd' && amount && ` • ~${(parseFloat(amount) / goldPrice!.pricePerGram).toFixed(4)}g`}
-                  {inputMode === 'gold' && goldAmount && ` • ~$${(parseFloat(goldAmount) * goldPrice!.pricePerGram).toFixed(2)}`}
-                  {` • Min: $${platformSettings.minDeposit || 50} | Max: $${Math.min(platformSettings.maxDepositSingle || 100000, 10000).toLocaleString()}`}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Min: ${platformSettings.minDeposit || 50} | Max: ${Math.min(platformSettings.maxDepositSingle || 100000, 10000).toLocaleString()}</p>
               </div>
 
               {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
@@ -1054,100 +886,20 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : step === 'crypto-amount' ? (
           <div className="space-y-4 py-4">
             <div>
-              <Label className="mb-2 block">Amount *</Label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (inputMode !== 'usd') {
-                      setInputMode('usd');
-                      if (goldAmount && goldPrice?.pricePerGram) {
-                        const usdValue = parseFloat(goldAmount) * goldPrice.pricePerGram;
-                        setAmount(usdValue.toFixed(2));
-                      }
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                    inputMode === 'usd' 
-                      ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-                  }`}
-                >
-                  <DollarSign className="w-4 h-4" />
-                  USD
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (inputMode !== 'gold') {
-                      setInputMode('gold');
-                      if (amount && goldPrice?.pricePerGram) {
-                        const goldValue = parseFloat(amount) / goldPrice.pricePerGram;
-                        setGoldAmount(goldValue.toFixed(4));
-                      }
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                    inputMode === 'gold' 
-                      ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-                  }`}
-                >
-                  <Coins className="w-4 h-4" />
-                  Gold (g)
-                </button>
-                <div className="flex-1 relative">
-                  {inputMode === 'usd' ? (
-                    <>
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        value={amount}
-                        onChange={(e) => {
-                          setAmount(e.target.value);
-                          if (e.target.value && goldPrice?.pricePerGram) {
-                            const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
-                            setGoldAmount(goldValue.toFixed(4));
-                          } else {
-                            setGoldAmount('');
-                          }
-                        }}
-                        className="pl-9 h-10"
-                        min={platformSettings.minDeposit || 50}
-                        data-testid="input-crypto-amount"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="number"
-                        step="0.0001"
-                        placeholder="0.0000"
-                        value={goldAmount}
-                        onChange={(e) => {
-                          setGoldAmount(e.target.value);
-                          if (e.target.value && goldPrice?.pricePerGram) {
-                            const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
-                            setAmount(usdValue.toFixed(2));
-                          } else {
-                            setAmount('');
-                          }
-                        }}
-                        className="pl-9 h-10"
-                        data-testid="input-crypto-gold"
-                      />
-                    </>
-                  )}
-                </div>
+              <Label>Amount (USD)</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="pl-10"
+                  min={platformSettings.minDeposit || 50}
+                  data-testid="input-crypto-amount"
+                />
               </div>
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {goldPrice?.pricePerGram && `Rate: $${goldPrice.pricePerGram.toFixed(2)}/g`}
-                {inputMode === 'usd' && amount && ` • ~${(parseFloat(amount) / goldPrice!.pricePerGram).toFixed(4)}g`}
-                {inputMode === 'gold' && goldAmount && ` • ~$${(parseFloat(goldAmount) * goldPrice!.pricePerGram).toFixed(2)}`}
-                {` • Min: $${platformSettings.minDeposit || 50}`}
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Minimum: ${platformSettings.minDeposit || 50}</p>
             </div>
 
             {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
