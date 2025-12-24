@@ -3283,6 +3283,43 @@ ${message}
     return res.json(results);
   });
 
+  // Test4: Return actual first record from each type to test serialization
+  app.get("/api/admin/kyc-test4", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    const results: any = { success: true, timestamp: new Date().toISOString() };
+    
+    try {
+      const kycAml = await storage.getAllKycSubmissions();
+      results.kycAmlCount = kycAml.length;
+      if (kycAml.length > 0) {
+        results.kycAmlFirst = kycAml[0];
+      }
+    } catch (e: any) {
+      results.kycAmlError = e?.message || String(e);
+    }
+    
+    try {
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      results.personalCount = personal.length;
+      if (personal.length > 0) {
+        results.personalFirst = personal[0];
+      }
+    } catch (e: any) {
+      results.personalError = e?.message || String(e);
+    }
+    
+    try {
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      results.corporateCount = corporate.length;
+      if (corporate.length > 0) {
+        results.corporateFirst = corporate[0];
+      }
+    } catch (e: any) {
+      results.corporateError = e?.message || String(e);
+    }
+    
+    return res.json(results);
+  });
+
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
