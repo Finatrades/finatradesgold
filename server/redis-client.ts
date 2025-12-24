@@ -85,17 +85,29 @@ export async function cache<T>(
     }
     
     const data = await fetchFn();
-    await redis.setex(key, ttlSeconds, JSON.stringify(data));
+    if (!isReadOnly) {
+      try {
+        await redis.setex(key, ttlSeconds, JSON.stringify(data));
+      } catch (setError: any) {
+        if (setError.message?.includes('NOPERM')) {
+          isReadOnly = true;
+        }
+      }
+    }
     return data;
   } catch (error: any) {
-    console.error('[Redis Cache] Error:', error.message);
+    if (error.message?.includes('NOPERM')) {
+      isReadOnly = true;
+    } else {
+      console.error('[Redis Cache] Error:', error.message);
+    }
     return fetchFn();
   }
 }
 
 export async function invalidateCache(pattern: string): Promise<void> {
   const redis = getRedisClient();
-  if (!redis) return;
+  if (!redis || isReadOnly) return;
   
   try {
     const keys = await redis.keys(pattern);
@@ -104,18 +116,26 @@ export async function invalidateCache(pattern: string): Promise<void> {
       console.log(`[Redis Cache] Invalidated ${keys.length} keys matching: ${pattern}`);
     }
   } catch (error: any) {
-    console.error('[Redis Cache] Invalidation error:', error.message);
+    if (error.message?.includes('NOPERM')) {
+      isReadOnly = true;
+    } else {
+      console.error('[Redis Cache] Invalidation error:', error.message);
+    }
   }
 }
 
 export async function setCache(key: string, value: any, ttlSeconds: number = 300): Promise<void> {
   const redis = getRedisClient();
-  if (!redis) return;
+  if (!redis || isReadOnly) return;
   
   try {
     await redis.setex(key, ttlSeconds, JSON.stringify(value));
   } catch (error: any) {
-    console.error('[Redis Cache] Set error:', error.message);
+    if (error.message?.includes('NOPERM')) {
+      isReadOnly = true;
+    } else {
+      console.error('[Redis Cache] Set error:', error.message);
+    }
   }
 }
 
