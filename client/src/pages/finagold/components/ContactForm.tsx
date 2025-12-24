@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Mail, Phone, MapPin, MessageSquare, User, Building2 } from 'lucide-react';
+import { Send, Mail, Phone, MessageSquare, User, Building2 } from 'lucide-react';
 import { useMode } from '../context/ModeContext';
 import { toast } from 'sonner';
 
@@ -228,32 +228,6 @@ export default function ContactForm() {
                     <a href="mailto:support@finatrades.com" className="text-white hover:text-[#A342FF] transition-colors">
                       support@finatrades.com
                     </a>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-5 h-5 text-[#A342FF]" />
-                  </div>
-                  <div>
-                    <p className="text-white/60 text-sm mb-1">Call Us</p>
-                    <a href="tel:+971568474843" className="text-white hover:text-[#A342FF] transition-colors">
-                      +971 56 847 4843
-                    </a>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-[#A342FF]" />
-                  </div>
-                  <div>
-                    <p className="text-white/60 text-sm mb-1">Visit Us</p>
-                    <p className="text-white">
-                      DMCC Business Centre<br />
-                      Jumeirah Lakes Towers<br />
-                      Dubai, UAE
-                    </p>
                   </div>
                 </div>
               </div>
