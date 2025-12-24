@@ -658,45 +658,45 @@ function HeroSection() {
                     transition={{ duration: 2, ease: 'easeOut', delay: 0.3 }}
                   />
                   
-                  {/* Animated gold bars - Importer to Exporter (left to right, top path) */}
+                  {/* Animated gold bars - Importer to Exporter following TOP curved path */}
                   {[0, 1].map((i) => (
                     <motion.rect
                       key={`gold-${i}`}
-                      x="35"
-                      y="96"
-                      width="12"
-                      height="8"
+                      x="0"
+                      y="0"
+                      width="14"
+                      height="9"
                       rx="2"
                       fill="url(#heroGoldGradient)"
                       animate={{
-                        x: [35, 200, 355],
-                        y: [96, 46, 96],
-                        opacity: [0, 1, 0],
+                        x: [40, 80, 120, 160, 200, 240, 280, 320, 360],
+                        y: [100, 70, 50, 45, 50, 60, 70, 85, 100],
+                        opacity: [0, 1, 1, 1, 1, 1, 1, 1, 0],
                       }}
                       transition={{
-                        duration: 6,
+                        duration: 5,
                         repeat: Infinity,
-                        delay: i * 3,
+                        delay: i * 2.5,
                         ease: 'linear',
                       }}
                     />
                   ))}
                   
-                  {/* Animated ships - Exporter to Importer (right to left, bottom path) */}
+                  {/* Animated ships - Exporter to Importer following BOTTOM curved path */}
                   {[0, 1].map((i) => (
                     <motion.path
                       key={`ship-${i}`}
-                      d="M 0 0 L 10 0 L 12 5 L -2 5 Z"
+                      d="M 0 0 L 12 0 L 14 6 L -2 6 Z"
                       fill="#60A5FA"
                       animate={{
-                        x: [355, 200, 35],
-                        y: [96, 146, 96],
-                        opacity: [0, 1, 0],
+                        x: [360, 320, 280, 240, 200, 160, 120, 80, 40],
+                        y: [100, 115, 135, 145, 150, 145, 130, 115, 100],
+                        opacity: [0, 1, 1, 1, 1, 1, 1, 1, 0],
                       }}
                       transition={{
-                        duration: 6,
+                        duration: 5,
                         repeat: Infinity,
-                        delay: i * 3 + 1.5,
+                        delay: i * 2.5 + 1.25,
                         ease: 'linear',
                       }}
                     />
