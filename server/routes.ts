@@ -24,7 +24,8 @@ import {
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments,
   physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates,
   tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
-  tradeRequests, tradeProposals, settlementHolds
+  tradeRequests, tradeProposals, settlementHolds,
+  geoRestrictions, geoRestrictionSettings, insertGeoRestrictionSchema
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -20755,6 +20756,265 @@ ${message}
     } catch (error) {
       console.error("Failed to get email log:", error);
       res.status(500).json({ message: "Failed to get email log" });
+    }
+  });
+
+  // ============================================
+  // GEO RESTRICTIONS ROUTES
+  // ============================================
+
+  // Public endpoint to check IP restriction (for landing page notice)
+  app.get("/api/geo-restriction/check", async (req, res) => {
+    try {
+      // Get settings first
+      const [settings] = await db.select().from(geoRestrictionSettings).limit(1);
+      
+      if (!settings?.isEnabled) {
+        return res.json({ restricted: false });
+      }
+      
+      // Get client IP
+      const clientIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || 
+                       req.headers['x-real-ip']?.toString() || 
+                       req.socket.remoteAddress || '';
+      
+      // Use ip-api.com free service to get country from IP
+      let countryCode = '';
+      try {
+        const geoResponse = await fetch(`http://ip-api.com/json/${clientIp}?fields=countryCode`);
+        if (geoResponse.ok) {
+          const geoData = await geoResponse.json();
+          countryCode = geoData.countryCode || '';
+        }
+      } catch (err) {
+        console.log('Failed to get geo location for IP:', clientIp);
+      }
+      
+      if (!countryCode) {
+        return res.json({ restricted: false });
+      }
+      
+      // Check if country is restricted
+      const [restriction] = await db.select()
+        .from(geoRestrictions)
+        .where(and(
+          eq(geoRestrictions.countryCode, countryCode),
+          eq(geoRestrictions.isRestricted, true)
+        ))
+        .limit(1);
+      
+      if (restriction) {
+        return res.json({
+          restricted: true,
+          countryCode: restriction.countryCode,
+          countryName: restriction.countryName,
+          message: restriction.restrictionMessage || settings.defaultMessage,
+          allowRegistration: restriction.allowRegistration,
+          allowLogin: restriction.allowLogin,
+          allowTransactions: restriction.allowTransactions,
+          showNotice: settings.showNoticeOnLanding,
+          blockAccess: settings.blockAccess,
+        });
+      }
+      
+      res.json({ restricted: false });
+    } catch (error) {
+      console.error("Failed to check geo restriction:", error);
+      res.json({ restricted: false });
+    }
+  });
+
+  // Get all geo restrictions (admin)
+  app.get("/api/admin/geo-restrictions", ensureAdminAsync, async (req, res) => {
+    try {
+      const restrictions = await db.select().from(geoRestrictions).orderBy(geoRestrictions.countryName);
+      res.json({ restrictions });
+    } catch (error) {
+      console.error("Failed to get geo restrictions:", error);
+      res.status(500).json({ message: "Failed to get geo restrictions" });
+    }
+  });
+
+  // Get geo restriction settings (admin)
+  app.get("/api/admin/geo-restriction-settings", ensureAdminAsync, async (req, res) => {
+    try {
+      const [settings] = await db.select().from(geoRestrictionSettings).limit(1);
+      res.json({ settings: settings || null });
+    } catch (error) {
+      console.error("Failed to get geo restriction settings:", error);
+      res.status(500).json({ message: "Failed to get geo restriction settings" });
+    }
+  });
+
+  // Update or create geo restriction settings (admin)
+  app.post("/api/admin/geo-restriction-settings", ensureAdminAsync, async (req, res) => {
+    try {
+      const { isEnabled, defaultMessage, showNoticeOnLanding, blockAccess } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      // Check if settings exist
+      const [existing] = await db.select().from(geoRestrictionSettings).limit(1);
+      
+      if (existing) {
+        const [updated] = await db.update(geoRestrictionSettings)
+          .set({
+            isEnabled,
+            defaultMessage,
+            showNoticeOnLanding,
+            blockAccess,
+            updatedBy: adminUser.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(geoRestrictionSettings.id, existing.id))
+          .returning();
+        
+        await storage.createAuditLog({
+          entityType: "geo_restriction_settings",
+          entityId: existing.id,
+          actionType: "update",
+          actor: adminUser.id,
+          actorRole: "admin",
+          details: `Updated geo restriction settings: ${isEnabled ? 'Enabled' : 'Disabled'}`,
+        });
+        
+        return res.json({ settings: updated });
+      } else {
+        const [created] = await db.insert(geoRestrictionSettings)
+          .values({
+            isEnabled,
+            defaultMessage: defaultMessage || 'Our services are not available in your region. Please contact support for more information.',
+            showNoticeOnLanding,
+            blockAccess,
+            updatedBy: adminUser.id,
+          })
+          .returning();
+        
+        await storage.createAuditLog({
+          entityType: "geo_restriction_settings",
+          entityId: created.id,
+          actionType: "create",
+          actor: adminUser.id,
+          actorRole: "admin",
+          details: `Created geo restriction settings`,
+        });
+        
+        return res.json({ settings: created });
+      }
+    } catch (error) {
+      console.error("Failed to update geo restriction settings:", error);
+      res.status(500).json({ message: "Failed to update geo restriction settings" });
+    }
+  });
+
+  // Add a new geo restriction (admin)
+  app.post("/api/admin/geo-restrictions", ensureAdminAsync, async (req, res) => {
+    try {
+      const { countryCode, countryName, isRestricted, restrictionMessage, allowRegistration, allowLogin, allowTransactions, reason } = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      // Check if country already exists
+      const [existing] = await db.select()
+        .from(geoRestrictions)
+        .where(eq(geoRestrictions.countryCode, countryCode.toUpperCase()))
+        .limit(1);
+      
+      if (existing) {
+        return res.status(400).json({ message: "Country restriction already exists" });
+      }
+      
+      const [created] = await db.insert(geoRestrictions)
+        .values({
+          countryCode: countryCode.toUpperCase(),
+          countryName,
+          isRestricted: isRestricted ?? true,
+          restrictionMessage,
+          allowRegistration: allowRegistration ?? false,
+          allowLogin: allowLogin ?? false,
+          allowTransactions: allowTransactions ?? false,
+          reason,
+          updatedBy: adminUser.id,
+        })
+        .returning();
+      
+      await storage.createAuditLog({
+        entityType: "geo_restriction",
+        entityId: created.id,
+        actionType: "create",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Added geo restriction for ${countryName} (${countryCode})`,
+      });
+      
+      res.json({ restriction: created });
+    } catch (error) {
+      console.error("Failed to create geo restriction:", error);
+      res.status(500).json({ message: "Failed to create geo restriction" });
+    }
+  });
+
+  // Update geo restriction (admin)
+  app.patch("/api/admin/geo-restrictions/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const adminUser = (req as any).adminUser;
+      
+      const [updated] = await db.update(geoRestrictions)
+        .set({
+          ...updates,
+          updatedBy: adminUser.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(geoRestrictions.id, id))
+        .returning();
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Geo restriction not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "geo_restriction",
+        entityId: id,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Updated geo restriction for ${updated.countryName}`,
+      });
+      
+      res.json({ restriction: updated });
+    } catch (error) {
+      console.error("Failed to update geo restriction:", error);
+      res.status(500).json({ message: "Failed to update geo restriction" });
+    }
+  });
+
+  // Delete geo restriction (admin)
+  app.delete("/api/admin/geo-restrictions/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const adminUser = (req as any).adminUser;
+      
+      const [deleted] = await db.delete(geoRestrictions)
+        .where(eq(geoRestrictions.id, id))
+        .returning();
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Geo restriction not found" });
+      }
+      
+      await storage.createAuditLog({
+        entityType: "geo_restriction",
+        entityId: id,
+        actionType: "delete",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: `Deleted geo restriction for ${deleted.countryName}`,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete geo restriction:", error);
+      res.status(500).json({ message: "Failed to delete geo restriction" });
     }
   });
 
