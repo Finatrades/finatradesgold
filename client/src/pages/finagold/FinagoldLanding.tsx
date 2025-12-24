@@ -7,6 +7,7 @@ import WhoItsFor from './components/WhoItsFor';
 import HowItWorks from './components/HowItWorks';
 import FinatradesAdvantage from './components/FinatradesAdvantage';
 import AboutSection from './components/AboutSection';
+import SwissStandards from './components/SwissStandards';
 import Products from './components/Products';
 import Certificates from './components/Certificates';
 import TrustStrip from './components/TrustStrip';
@@ -110,6 +111,7 @@ function FinagoldContent() {
         <HowItWorks />
         <FinatradesAdvantage />
         <AboutSection />
+        <SwissStandards />
         <WhoItsFor />
         <ValueProps />
         <Certificates />
