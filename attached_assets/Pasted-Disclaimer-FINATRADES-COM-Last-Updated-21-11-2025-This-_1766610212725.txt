@@ -1,0 +1,76 @@
+Disclaimer
+FINATRADES.COM • Last Updated: 21/11/2025
+
+This Disclaimer ("Disclaimer") governs your use of the website https://finatrades.com (the "Site") and the Finatrades Platform (the "Platform") operated by Finatrades Finance SA ("Finatrades," "we," "us," "our"). By accessing the Site or using the Platform, you expressly acknowledge and agree to the terms set forth below.
+
+1.
+NATURE OF INFORMATION; NO PROFESSIONAL ADVICE
+All content, materials, and information presented on the Site and Platform are provided for general informational purposes only. Nothing contained herein constitutes:
+
+•
+Investment Advice: A recommendation, solicitation, or offer to buy or sell any financial instrument or commodity.
+•
+Financial Advice: Guidance on investment strategies, financial planning, or the suitability of using gold for trade finance.
+•
+Legal or Tax Advice: An opinion on your legal rights, obligations, or the tax implications of your transactions.
+You are solely responsible for consulting with qualified professional advisors (legal, tax, financial) before engaging in any transactions.
+
+2.
+NO RELIANCE ON ACCURACY
+While Finatrades strives to provide reliable information, we do not warrant or guarantee the accuracy, completeness, timeliness, or reliability of any data, including but not limited to:
+
+•
+Gold price feeds and market data.
+•
+Information regarding third-party vaults and assayers.
+•
+Transactional data and settlement statuses.
+All information is subject to change without notice and may include estimates or delays.
+
+3.
+SERVICE PROVISION "AS IS"
+The Platform and all related services are provided on an "as is" and "as available" basis. To the fullest extent permitted under Swiss law, Finatrades expressly disclaims all warranties of any kind, whether express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not guarantee that:
+
+•
+The Platform will be uninterrupted, secure, or error-free.
+•
+The services will meet your specific requirements.
+•
+Any errors in the software or systems will be corrected.
+4.
+THIRD-PARTY SERVICES AND LINKS
+The Platform relies on and may contain links to third-party services, including vault operators, assayers, payment processors, and financial institutions. Finatrades is not responsible or liable for:
+
+•
+The acts, omissions, performance, or solvency of any third-party service provider.
+•
+The content, accuracy, or security of any third-party websites or platforms.
+•
+Any loss or damage incurred as a result of your interactions with such third parties.
+Your relationship with any third-party provider is governed solely by your agreements with them.
+
+5.
+LIMITATION OF LIABILITY
+To the maximum extent permitted by the Swiss Code of Obligations, Finatrades shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to:
+
+•
+Loss of profits, revenue, or business opportunities.
+•
+Loss of or damage to your Gold Certificates or the Underlying Gold held in vaults.
+•
+Damages arising from cyber-attacks, system failures, unauthorized access, or data breaches.
+•
+Damages resulting from the default, insolvency, or fraudulent actions of a vault operator or other Service Provider.
+•
+Any trading losses or operational losses you may incur.
+In accordance with Swiss law, particularly regarding the exclusion of liability for slight negligence, Finatrades's liability is strictly limited as defined in our Terms and Conditions.
+
+Finatrades Finance SA
+
+Rue Robert Céard 6
+
+1204 Geneva
+
+Switzerland
+
+Back to Home
