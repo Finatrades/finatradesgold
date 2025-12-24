@@ -5046,6 +5046,67 @@ ${message}
           details: `Deposit request approved - Amount: $${depositReq.amount}`,
         });
         
+        // Check and complete referral on first deposit
+        try {
+          const pendingReferral = await storage.getPendingReferralByReferredId(depositReq.userId);
+          if (pendingReferral) {
+            // Get platform config for referral rewards
+            const configs = await storage.getAllPlatformConfigs();
+            const configMap: Record<string, string> = {};
+            configs.forEach(c => { configMap[c.configKey] = c.configValue; });
+            const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
+            
+            // Get current gold price to convert bonus to grams
+            const goldPrice = await storage.getCurrentGoldPrice();
+            const goldPricePerGram = goldPrice ? parseFloat(goldPrice.pricePerGram) : 95;
+            const bonusGrams = referrerBonusUsd / goldPricePerGram;
+            
+            // Credit referrer's wallet with bonus gold
+            let referrerWallet = await storage.getWallet(pendingReferral.referrerId);
+            
+            // Create wallet if it doesn't exist
+            if (!referrerWallet) {
+              referrerWallet = await storage.createWallet({
+                userId: pendingReferral.referrerId,
+                goldGrams: '0',
+                usdBalance: '0',
+              });
+              console.log(`[Referral] Created wallet for referrer ${pendingReferral.referrerId}`);
+            }
+            
+            if (referrerWallet) {
+              const currentGold = parseFloat(referrerWallet.goldGrams || '0');
+              await storage.updateWallet(pendingReferral.referrerId, {
+                goldGrams: (currentGold + bonusGrams).toFixed(6)
+              });
+              
+              // Mark referral as completed
+              await storage.updateReferral(pendingReferral.id, {
+                status: 'Completed',
+                rewardAmount: referrerBonusUsd.toFixed(2),
+                rewardPaidAt: new Date(),
+                completedAt: new Date(),
+              });
+              
+              // Create notification for referrer
+              await storage.createNotification({
+                userId: pendingReferral.referrerId,
+                type: 'referral',
+                title: 'Referral Bonus Earned!',
+                message: `Your referral made their first deposit. You earned ${bonusGrams.toFixed(4)}g gold ($${referrerBonusUsd}).`,
+                priority: 'medium',
+              });
+              
+              console.log(`[Referral] Completed referral ${pendingReferral.id}: credited ${bonusGrams.toFixed(4)}g to referrer`);
+            } else {
+              console.error(`[Referral] Failed to create/find wallet for referrer ${pendingReferral.referrerId}`);
+            }
+          }
+        } catch (refError) {
+          console.error('[Referral Completion Error]', refError);
+          // Don't fail the deposit approval if referral fails
+        }
+        
         return res.json({ message: 'Deposit request approved and wallet credited' });
       }
       
@@ -18529,6 +18590,75 @@ ${message}
   });
 
   // ============================================
+  // USER NOTIFICATIONS
+  // ============================================
+
+  // Get user notifications
+  app.get("/api/users/:userId/notifications", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const notifications = await storage.getUserNotifications(userId);
+      res.json({ notifications });
+    } catch (error) {
+      console.error('[Notifications Error]', error);
+      res.status(500).json({ message: "Failed to get notifications" });
+    }
+  });
+
+  // Mark notification as read - with ownership verification
+  app.post("/api/notifications/:notificationId/read", async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const notification = await storage.getNotification(notificationId);
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      // Verify ownership: user can only mark their own notifications as read
+      const sessionUserId = (req.session as any)?.user?.id;
+      const isAdmin = (req.session as any)?.user?.isAdmin;
+      if (notification.userId !== sessionUserId && !isAdmin) {
+        return res.status(403).json({ message: "Not authorized to modify this notification" });
+      }
+      await storage.markNotificationRead(notificationId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read for user
+  app.post("/api/users/:userId/notifications/read-all", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      await storage.markAllNotificationsRead(userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark all as read" });
+    }
+  });
+
+  // Delete notification - with ownership verification
+  app.delete("/api/notifications/:notificationId", async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const notification = await storage.getNotification(notificationId);
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      // Verify ownership: user can only delete their own notifications
+      const sessionUserId = (req.session as any)?.user?.id;
+      const isAdmin = (req.session as any)?.user?.isAdmin;
+      if (notification.userId !== sessionUserId && !isAdmin) {
+        return res.status(403).json({ message: "Not authorized to delete this notification" });
+      }
+      await storage.deleteNotification(notificationId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // ============================================
   // AUDIT LOGS
   // ============================================
 
@@ -19570,21 +19700,28 @@ ${message}
     }
   });
 
-  // Mark notification as read
+  // Mark notification as read - with ownership verification
   app.patch("/api/notifications/:id/read", async (req, res) => {
     try {
-      const notification = await storage.markNotificationRead(req.params.id);
+      const notification = await storage.getNotification(req.params.id);
       if (!notification) {
         return res.status(404).json({ message: "Notification not found" });
       }
-      res.json({ notification });
+      // Verify ownership
+      const sessionUserId = (req.session as any)?.user?.id;
+      const isAdmin = (req.session as any)?.user?.isAdmin;
+      if (notification.userId !== sessionUserId && !isAdmin) {
+        return res.status(403).json({ message: "Not authorized to modify this notification" });
+      }
+      const updated = await storage.markNotificationRead(req.params.id);
+      res.json({ notification: updated });
     } catch (error) {
       res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
 
-  // Mark all notifications as read
-  app.patch("/api/notifications/:userId/read-all", async (req, res) => {
+  // Mark all notifications as read - with ownership verification
+  app.patch("/api/notifications/:userId/read-all", ensureOwnerOrAdmin, async (req, res) => {
     try {
       await storage.markAllNotificationsRead(req.params.userId);
       res.json({ success: true });
@@ -19593,21 +19730,28 @@ ${message}
     }
   });
 
-  // Delete notification
+  // Delete notification - with ownership verification
   app.delete("/api/notifications/:id", async (req, res) => {
     try {
-      const success = await storage.deleteNotification(req.params.id);
-      if (!success) {
+      const notification = await storage.getNotification(req.params.id);
+      if (!notification) {
         return res.status(404).json({ message: "Notification not found" });
       }
+      // Verify ownership
+      const sessionUserId = (req.session as any)?.user?.id;
+      const isAdmin = (req.session as any)?.user?.isAdmin;
+      if (notification.userId !== sessionUserId && !isAdmin) {
+        return res.status(403).json({ message: "Not authorized to delete this notification" });
+      }
+      await storage.deleteNotification(req.params.id);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete notification" });
     }
   });
 
-  // Clear all notifications for user
-  app.delete("/api/notifications/user/:userId", async (req, res) => {
+  // Clear all notifications for user - with ownership verification
+  app.delete("/api/notifications/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       await storage.deleteAllNotifications(req.params.userId);
       res.json({ success: true });
