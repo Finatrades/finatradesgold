@@ -3320,6 +3320,24 @@ ${message}
     return res.json(results);
   });
 
+  // Test6: Super simple - just return all data without any processing
+  app.get("/api/admin/kyc-test6", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    try {
+      const kycAml = await storage.getAllKycSubmissions();
+      const personal = await storage.getAllFinatradesPersonalKyc();
+      const corporate = await storage.getAllFinatradesCorporateKyc();
+      return res.json({
+        success: true,
+        counts: { kycAml: kycAml.length, personal: personal.length, corporate: corporate.length },
+        kycAml,
+        personal,
+        corporate
+      });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message, stack: error?.stack });
+    }
+  });
+
   // Test5: Exact same logic as main endpoint but with step-by-step tracking
   app.get("/api/admin/kyc-test5", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     const steps: string[] = [];
