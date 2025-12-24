@@ -45,9 +45,9 @@ export default function CTA() {
           <motion.div
             animate={{ 
               background: [
-                'radial-gradient(circle at 0% 0%, rgba(234, 194, 107, 0.12) 0%, transparent 50%)',
-                'radial-gradient(circle at 100% 100%, rgba(234, 194, 107, 0.12) 0%, transparent 50%)',
-                'radial-gradient(circle at 0% 0%, rgba(234, 194, 107, 0.12) 0%, transparent 50%)',
+                'radial-gradient(circle at 0% 0%, rgba(138, 43, 226, 0.12) 0%, transparent 50%)',
+                'radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.12) 0%, transparent 50%)',
+                'radial-gradient(circle at 0% 0%, rgba(138, 43, 226, 0.12) 0%, transparent 50%)',
               ]
             }}
             transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
@@ -64,7 +64,7 @@ export default function CTA() {
               {c.headline.includes('Gold') ? (
                 <>
                   {c.headline.split('Gold')[0]}
-                  <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">Gold</span>
+                  <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Gold</span>
                   {c.headline.split('Gold')[1]}
                 </>
               ) : (

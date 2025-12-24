@@ -42,7 +42,7 @@ function FloatingParticles() {
       {Array.from({ length: 20 }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-1 h-1 rounded-full bg-[#EAC26B]/30"
+          className="absolute w-1 h-1 rounded-full bg-purple-400/30"
           initial={{
             x: Math.random() * 100 + '%',
             y: Math.random() * 100 + '%',
@@ -75,9 +75,9 @@ function SnakePath({ activeStep, totalSteps }: { activeStep: number; totalSteps:
     >
       <defs>
         <linearGradient id="snakeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#EAC26B" stopOpacity="0.1" />
-          <stop offset="50%" stopColor="#EAC26B" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#EAC26B" stopOpacity="0.1" />
+          <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.1" />
+          <stop offset="50%" stopColor="#8A2BE2" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0.1" />
         </linearGradient>
         <filter id="glow">
           <feGaussianBlur stdDeviation="2" result="coloredBlur" />

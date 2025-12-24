@@ -62,8 +62,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] backdrop-blur-xl border-b border-[#8A2BE2]/20' 
-          : 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]'
+          ? 'bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm' 
+          : 'bg-white/80 backdrop-blur-md'
       }`}
       data-testid="finagold-navbar"
     >
@@ -73,7 +73,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
             <img 
               src={finatradesLogo} 
               alt="Finatrades" 
-              className="h-10 w-auto brightness-0 invert"
+              className="h-10 w-auto"
               data-testid="logo-finatrades"
             />
           </Link>
@@ -84,7 +84,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
                   data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {link.label}
@@ -95,8 +95,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                   href={link.href}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive(link.href)
-                      ? 'bg-white/10 text-white border border-white/20'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                   data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
@@ -107,13 +107,13 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
-            <div className="flex bg-white/10 rounded-full p-1 border border-white/20">
+            <div className="flex bg-gray-100 rounded-full p-1 border border-gray-200">
               <button
                 onClick={() => setMode('personal')}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   isPersonal
-                    ? 'bg-[#F97316] text-white shadow-lg shadow-[#F97316]/30'
-                    : 'text-white/70 hover:text-white'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
                 data-testid="toggle-personal"
               >
@@ -123,8 +123,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 onClick={() => setMode('business')}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   !isPersonal
-                    ? 'bg-white text-[#4B0082] shadow-lg'
-                    : 'text-white/70 hover:text-white'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
                 data-testid="toggle-business"
               >
@@ -133,14 +133,14 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
             </div>
             <Link 
               href="/login"
-              className="text-white/80 hover:text-white px-4 py-2.5 text-sm font-medium transition-colors"
+              className="text-gray-600 hover:text-gray-900 px-4 py-2.5 text-sm font-medium transition-colors"
               data-testid="btn-sign-in"
             >
               Sign In
             </Link>
             <Link 
               href="/register"
-              className="bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:from-[#EA580C] hover:to-[#DC2626] transition-colors shadow-lg shadow-[#F97316]/30"
+              className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg shadow-purple-200"
               data-testid="btn-get-started"
             >
               Get Started
@@ -149,7 +149,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden text-white p-2"
+            className="lg:hidden text-gray-700 p-2"
             data-testid="mobile-menu-toggle"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -162,7 +162,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden mt-4 pb-4 border-t border-white/10 pt-4"
+              className="lg:hidden mt-4 pb-4 border-t border-gray-200 pt-4"
             >
               <div className="flex flex-col gap-2">
                 {visibleLinks.map((link) => (
@@ -170,7 +170,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     <a
                       key={link.href}
                       href={link.href}
-                      className="px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all"
+                      className="px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all"
                       onClick={() => setMobileOpen(false)}
                     >
                       {link.label}
@@ -181,8 +181,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                       href={link.href}
                       className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                         isActive(link.href)
-                          ? 'bg-white/10 text-white border border-white/20'
-                          : 'text-gray-400 hover:text-white'
+                          ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                       onClick={() => setMobileOpen(false)}
                     >
@@ -195,8 +195,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     onClick={() => setMode('personal')}
                     className={`flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                       isPersonal
-                        ? 'bg-[#EAC26B] text-black'
-                        : 'bg-white/5 text-gray-400 border border-white/10'
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
+                        : 'bg-gray-100 text-gray-600 border border-gray-200'
                     }`}
                   >
                     Personal
@@ -205,8 +205,8 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     onClick={() => setMode('business')}
                     className={`flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                       !isPersonal
-                        ? 'bg-[#EAC26B] text-black'
-                        : 'bg-white/5 text-gray-400 border border-white/10'
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
+                        : 'bg-gray-100 text-gray-600 border border-gray-200'
                     }`}
                   >
                     Business
@@ -214,13 +214,13 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 </div>
                 <Link 
                   href="/login"
-                  className="block border border-white/20 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center"
+                  className="block border border-gray-200 text-gray-700 px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center hover:bg-gray-50"
                 >
                   Sign In
                 </Link>
                 <Link 
                   href="/register"
-                  className="block bg-[#EAC26B] text-black px-6 py-3 rounded-full text-sm font-semibold w-full text-center"
+                  className="block bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-full text-sm font-semibold w-full text-center"
                 >
                   Get Started
                 </Link>

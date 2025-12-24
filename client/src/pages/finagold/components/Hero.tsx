@@ -169,12 +169,12 @@ export default function Hero() {
                     {/* Chip + Card type row */}
                     <div className="flex items-center gap-4 mb-5 relative z-10">
                       {/* Gold chip */}
-                      <div className="w-12 h-9 rounded-md bg-gradient-to-br from-[#EAC26B] via-[#F5D98A] to-[#d4af5a] shadow-lg relative overflow-hidden">
+                      <div className="w-12 h-9 rounded-md bg-gradient-to-br from-purple-400 via-purple-500 to-pink-500 shadow-lg relative overflow-hidden">
                         <div className="absolute inset-0 flex flex-col justify-center gap-[2px] py-2">
-                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
-                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
-                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
-                          <div className="h-[2px] bg-[#b8942d]/60 mx-1.5" />
+                          <div className="h-[2px] bg-purple-700/60 mx-1.5" />
+                          <div className="h-[2px] bg-purple-700/60 mx-1.5" />
+                          <div className="h-[2px] bg-purple-700/60 mx-1.5" />
+                          <div className="h-[2px] bg-purple-700/60 mx-1.5" />
                         </div>
                       </div>
                       <div>
@@ -227,7 +227,7 @@ export default function Hero() {
                 </motion.div>
 
                 <div className="absolute inset-0 -z-10">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#EAC26B]/5 rounded-full blur-[100px]" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-400/5 rounded-full blur-[100px]" />
                 </div>
               </motion.div>
             </AnimatePresence>

@@ -20,7 +20,7 @@ export default function Footer() {
   const { isPersonal } = useMode();
 
   return (
-    <footer id="contact" className="relative py-16 bg-gradient-to-b from-[#0D001E] to-[#1A0033] border-t border-[#8A2BE2]/20" data-testid="footer">
+    <footer id="contact" className="relative py-16 bg-gradient-to-b from-[#F8F9FC] to-white border-t border-gray-200" data-testid="footer">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-6 gap-12 mb-12">
           <div className="md:col-span-2">
@@ -28,11 +28,11 @@ export default function Footer() {
               <img 
                 src={finatradesLogo} 
                 alt="Finatrades" 
-                className="h-10 w-auto mb-2 brightness-0 invert"
+                className="h-10 w-auto mb-2"
               />
-              <p className="text-gray-400 text-sm">Swiss-Regulated Gold Platform</p>
+              <p className="text-gray-500 text-sm">Swiss-Regulated Gold Platform</p>
             </div>
-            <p className="text-gray-300 text-sm leading-relaxed mb-6">
+            <p className="text-gray-600 text-sm leading-relaxed mb-6">
               {isPersonal 
                 ? 'Your gateway to owning and managing real physical gold with complete transparency and security.'
                 : 'Enterprise-grade gold infrastructure for treasury, trade, and compliance operations.'}
@@ -41,10 +41,10 @@ export default function Footer() {
               {socialIcons.map((social) => (
                 <button
                   key={social.label}
-                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#8A2BE2]/30 transition-colors group"
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-purple-100 transition-colors group"
                   data-testid={`social-${social.label.toLowerCase()}`}
                 >
-                  <social.icon className="w-4 h-4 text-gray-300 group-hover:text-white transition-colors" />
+                  <social.icon className="w-4 h-4 text-gray-500 group-hover:text-purple-600 transition-colors" />
                 </button>
               ))}
             </div>
@@ -52,13 +52,13 @@ export default function Footer() {
 
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4 className="text-white font-semibold mb-4 text-sm">{category}</h4>
+              <h4 className="text-gray-900 font-semibold mb-4 text-sm">{category}</h4>
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link}>
                     <a
                       href="#"
-                      className="text-gray-400 text-sm hover:text-[#F97316] transition-colors"
+                      className="text-gray-500 text-sm hover:text-purple-600 transition-colors"
                     >
                       {link}
                     </a>
@@ -69,12 +69,12 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="pt-8 border-t border-[#8A2BE2]/20">
+        <div className="pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               © {new Date().getFullYear()} Finatrades. All rights reserved.
             </p>
-            <p className="text-gray-500 text-xs text-center md:text-right max-w-lg">
+            <p className="text-gray-400 text-xs text-center md:text-right max-w-lg">
               Finatrades operates under Swiss regulatory framework. Gold custody and services availability may vary by jurisdiction. This is not investment advice.
             </p>
           </div>

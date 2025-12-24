@@ -12,7 +12,8 @@ import Footer from './components/Footer';
 import { ModeProvider } from './context/ModeContext';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
-const GOLD_COLOR = '#EAC26B';
+const PRIMARY_COLOR = '#9333ea';
+const PINK_COLOR = '#ec4899';
 
 function FloatingParticles({ count = 30 }: { count?: number }) {
   return (
@@ -21,7 +22,7 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
         <motion.div
           key={i}
           className="absolute w-1 h-1 rounded-full"
-          style={{ backgroundColor: `${GOLD_COLOR}40` }}
+          style={{ backgroundColor: i % 2 === 0 ? `${PRIMARY_COLOR}40` : `${PINK_COLOR}40` }}
           initial={{
             x: `${Math.random() * 100}%`,
             y: `${Math.random() * 100}%`,
@@ -50,9 +51,9 @@ function AnimatedBridge() {
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="bridgeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={GOLD_COLOR} stopOpacity="0" />
-            <stop offset="50%" stopColor={GOLD_COLOR} stopOpacity="1" />
-            <stop offset="100%" stopColor={GOLD_COLOR} stopOpacity="0" />
+            <stop offset="0%" stopColor={PRIMARY_COLOR} stopOpacity="0" />
+            <stop offset="50%" stopColor={PINK_COLOR} stopOpacity="1" />
+            <stop offset="100%" stopColor={PRIMARY_COLOR} stopOpacity="0" />
           </linearGradient>
           <filter id="bridgeGlow">
             <feGaussianBlur stdDeviation="3" result="coloredBlur" />
@@ -78,7 +79,7 @@ function AnimatedBridge() {
           <motion.circle
             key={i}
             r="4"
-            fill={GOLD_COLOR}
+            fill={i % 2 === 0 ? PRIMARY_COLOR : PINK_COLOR}
             initial={{ opacity: 0 }}
             animate={{
               opacity: [0, 1, 1, 0],
@@ -94,23 +95,23 @@ function AnimatedBridge() {
           />
         ))}
         
-        <motion.circle cx="50" cy="120" r="8" fill={GOLD_COLOR} opacity="0.5"
+        <motion.circle cx="50" cy="120" r="8" fill={PRIMARY_COLOR} opacity="0.5"
           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.7, 0.3] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
-        <motion.circle cx="350" cy="120" r="8" fill={GOLD_COLOR} opacity="0.5"
+        <motion.circle cx="350" cy="120" r="8" fill={PINK_COLOR} opacity="0.5"
           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.7, 0.3] }}
           transition={{ duration: 2, repeat: Infinity, delay: 1 }}
         />
       </svg>
       
       <div className="absolute left-4 bottom-4 flex items-center gap-2">
-        <Building2 className="w-6 h-6 text-[#EAC26B]" />
-        <span className="text-xs text-gray-400">Exporter</span>
+        <Building2 className="w-6 h-6 text-purple-600" />
+        <span className="text-xs text-gray-500">Exporter</span>
       </div>
       <div className="absolute right-4 bottom-4 flex items-center gap-2">
-        <span className="text-xs text-gray-400">Importer</span>
-        <Building2 className="w-6 h-6 text-[#EAC26B]" />
+        <span className="text-xs text-gray-500">Importer</span>
+        <Building2 className="w-6 h-6 text-pink-500" />
       </div>
     </div>
   );
@@ -119,11 +120,11 @@ function AnimatedBridge() {
 function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center py-32 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a0a] to-black" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]" />
       <FloatingParticles count={50} />
       
-      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full bg-[#EAC26B]/5 blur-[180px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-[#EAC26B]/5 blur-[150px]" />
+      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full bg-purple-100/30 blur-[180px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-pink-100/20 blur-[150px]" />
 
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         <motion.div
@@ -139,7 +140,7 @@ function HeroSection() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 + i * 0.1 }}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-[#EAC26B]/10 border border-[#EAC26B]/30 text-[#EAC26B]"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 text-purple-700"
               >
                 {badge}
               </motion.span>
@@ -150,10 +151,10 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-5xl md:text-7xl font-bold text-white leading-tight"
+            className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
           >
             Fina
-            <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Bridge
             </span>
           </motion.h1>
@@ -162,7 +163,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl text-gray-300"
+            className="text-xl md:text-2xl text-gray-700"
           >
             Global Trade Financing, Simplified
           </motion.p>
@@ -171,7 +172,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="text-gray-400 max-w-3xl mx-auto leading-relaxed"
+            className="text-gray-600 max-w-3xl mx-auto leading-relaxed"
           >
             A futuristic trade finance platform that connects importers and exporters, enabling gold-backed 
             settlements, secure document flows, and real-time tracking across global routes.
@@ -183,13 +184,13 @@ function HeroSection() {
             transition={{ delay: 0.6 }}
             className="flex flex-wrap justify-center gap-4 pt-8"
           >
-            <Link href="/finabridge" className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[#EAC26B]/30">
+            <Link href="/finabridge" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/30">
               Start a Trade Deal
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
               href="#features"
-              className="flex items-center gap-2 border border-[#EAC26B]/40 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all"
+              className="flex items-center gap-2 border border-purple-300 text-gray-700 px-8 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-400 transition-all"
             >
               <Eye className="w-5 h-5" />
               Watch Demo
@@ -235,7 +236,7 @@ function ValuePillarsSection() {
   ];
 
   return (
-    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
       <div className="relative max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -243,8 +244,8 @@ function ValuePillarsSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Value Pillars</h2>
-          <p className="text-gray-400 text-lg">The foundation of modern trade finance</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Value Pillars</h2>
+          <p className="text-gray-600 text-lg">The foundation of modern trade finance</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -255,25 +256,25 @@ function ValuePillarsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(234, 194, 107, 0.15)' }}
-              className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-[#EAC26B]/40 transition-all group"
+              whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(147, 51, 234, 0.15)' }}
+              className="relative p-6 rounded-2xl bg-white border border-gray-100 shadow-lg hover:border-purple-200 transition-all group"
             >
               <motion.div
                 animate={{ rotate: [0, 5, 0, -5, 0] }}
                 transition={{ duration: 4, repeat: Infinity, delay: i * 0.5 }}
-                className="w-16 h-16 rounded-xl bg-[#EAC26B]/10 flex items-center justify-center mb-4 group-hover:bg-[#EAC26B]/20 transition-colors"
+                className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-4 group-hover:from-purple-200 group-hover:to-pink-200 transition-colors"
               >
-                <pillar.icon className="w-8 h-8 text-[#EAC26B]" />
+                <pillar.icon className="w-8 h-8 text-purple-600" />
               </motion.div>
-              <h3 className="text-lg font-semibold text-white mb-2">{pillar.title}</h3>
-              <p className="text-sm text-gray-400">{pillar.description}</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{pillar.title}</h3>
+              <p className="text-sm text-gray-600">{pillar.description}</p>
               
               <motion.div
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 + 0.3 }}
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#EAC26B]/50 to-transparent origin-left"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-purple-400/50 to-transparent origin-left"
               />
             </motion.div>
           ))}
@@ -293,7 +294,7 @@ function FeaturesShowcaseSection() {
   ];
 
   return (
-    <section id="features" className="relative py-32 bg-black overflow-hidden">
+    <section id="features" className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] overflow-hidden">
       <FloatingParticles count={20} />
       
       <div className="relative max-w-6xl mx-auto px-6">
@@ -303,8 +304,8 @@ function FeaturesShowcaseSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Platform Features</h2>
-          <p className="text-gray-400 text-lg">Powerful tools for global trade operations</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Platform Features</h2>
+          <p className="text-gray-600 text-lg">Powerful tools for global trade operations</p>
         </motion.div>
 
         <div className="space-y-6">
@@ -319,15 +320,15 @@ function FeaturesShowcaseSection() {
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="flex-1 p-8 rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent border border-white/10 hover:border-[#EAC26B]/30 transition-all"
+                className="flex-1 p-8 rounded-2xl bg-white border border-gray-100 shadow-lg hover:border-purple-200 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-[#EAC26B]/10 flex items-center justify-center shrink-0">
-                    <feature.icon className="w-7 h-7 text-[#EAC26B]" />
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
+                    <feature.icon className="w-7 h-7 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                    <p className="text-gray-400">{feature.description}</p>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                    <p className="text-gray-600">{feature.description}</p>
                   </div>
                 </div>
               </motion.div>
@@ -338,7 +339,7 @@ function FeaturesShowcaseSection() {
                   transition={{ duration: 2, repeat: Infinity }}
                   className="flex items-center justify-center"
                 >
-                  <ChevronRight className={`w-8 h-8 text-[#EAC26B]/50 ${i % 2 === 1 ? 'rotate-180' : ''}`} />
+                  <ChevronRight className={`w-8 h-8 text-purple-400/50 ${i % 2 === 1 ? 'rotate-180' : ''}`} />
                 </motion.div>
               </div>
             </motion.div>
@@ -351,7 +352,7 @@ function FeaturesShowcaseSection() {
 
 function DealRoomSection() {
   return (
-    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
       <div className="relative max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -359,8 +360,8 @@ function DealRoomSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">The Deal Room</h2>
-          <p className="text-gray-400 text-lg">Where buyers and sellers connect securely</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">The Deal Room</h2>
+          <p className="text-gray-600 text-lg">Where buyers and sellers connect securely</p>
         </motion.div>
 
         <div className="relative flex flex-col lg:flex-row items-center justify-center gap-8">
@@ -368,11 +369,11 @@ function DealRoomSection() {
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-full lg:w-64 p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/30"
+            className="w-full lg:w-64 p-6 rounded-2xl bg-white border border-blue-200 shadow-lg"
           >
             <div className="flex items-center gap-3 mb-4">
-              <Building2 className="w-8 h-8 text-blue-400" />
-              <span className="text-white font-semibold">Buyer Panel</span>
+              <Building2 className="w-8 h-8 text-blue-500" />
+              <span className="text-gray-900 font-semibold">Buyer Panel</span>
             </div>
             <div className="space-y-3">
               {['Purchase Order', 'Payment Terms', 'Delivery Schedule'].map((item, i) => (
@@ -381,9 +382,9 @@ function DealRoomSection() {
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.1 }}
-                  className="flex items-center gap-2 text-sm text-gray-400"
+                  className="flex items-center gap-2 text-sm text-gray-600"
                 >
-                  <CheckCircle className="w-4 h-4 text-blue-400" />
+                  <CheckCircle className="w-4 h-4 text-blue-500" />
                   {item}
                 </motion.div>
               ))}
@@ -402,17 +403,17 @@ function DealRoomSection() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.5 + i * 0.15 }}
-                  className="p-4 rounded-xl bg-white/[0.03] border border-[#EAC26B]/20 flex items-center justify-between"
+                  className="p-4 rounded-xl bg-white border border-purple-200 shadow-lg flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-[#EAC26B]" />
-                    <span className="text-white text-sm">{doc}</span>
+                    <FileText className="w-5 h-5 text-purple-600" />
+                    <span className="text-gray-900 text-sm">{doc}</span>
                   </div>
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 1, repeat: Infinity, delay: i * 0.3 }}
                   >
-                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <CheckCircle className="w-5 h-5 text-green-500" />
                   </motion.div>
                 </motion.div>
               ))}
@@ -422,7 +423,7 @@ function DealRoomSection() {
               <motion.div
                 animate={{ opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="h-px bg-gradient-to-r from-blue-500/50 via-[#EAC26B] to-green-500/50"
+                className="h-px bg-gradient-to-r from-blue-400/50 via-purple-500 to-green-400/50"
               />
             </div>
           </div>
@@ -431,11 +432,11 @@ function DealRoomSection() {
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-full lg:w-64 p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-transparent border border-green-500/30"
+            className="w-full lg:w-64 p-6 rounded-2xl bg-white border border-green-200 shadow-lg"
           >
             <div className="flex items-center gap-3 mb-4">
-              <Building2 className="w-8 h-8 text-green-400" />
-              <span className="text-white font-semibold">Seller Panel</span>
+              <Building2 className="w-8 h-8 text-green-500" />
+              <span className="text-gray-900 font-semibold">Seller Panel</span>
             </div>
             <div className="space-y-3">
               {['Proforma Invoice', 'Shipping Details', 'Bank Info'].map((item, i) => (
@@ -444,9 +445,9 @@ function DealRoomSection() {
                   initial={{ opacity: 0, x: 20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.1 }}
-                  className="flex items-center gap-2 text-sm text-gray-400"
+                  className="flex items-center gap-2 text-sm text-gray-600"
                 >
-                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                   {item}
                 </motion.div>
               ))}
@@ -468,7 +469,7 @@ function GlobalTradeMapSection() {
   ];
 
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] overflow-hidden">
       <div className="relative max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -476,14 +477,14 @@ function GlobalTradeMapSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Global Trade Routes</h2>
-          <p className="text-gray-400 text-lg">Connected hubs across major trading centers</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Global Trade Routes</h2>
+          <p className="text-gray-600 text-lg">Connected hubs across major trading centers</p>
         </motion.div>
 
-        <div className="relative aspect-[2/1] rounded-2xl bg-white/[0.02] border border-white/10 overflow-hidden">
+        <div className="relative aspect-[2/1] rounded-2xl bg-white border border-gray-100 shadow-lg overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute inset-0" style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, ${GOLD_COLOR}20 1px, transparent 0)`,
+              backgroundImage: `radial-gradient(circle at 1px 1px, ${PRIMARY_COLOR}20 1px, transparent 0)`,
               backgroundSize: '30px 30px',
             }} />
           </div>
@@ -493,7 +494,7 @@ function GlobalTradeMapSection() {
               <motion.line
                 key={i}
                 x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`}
-                stroke={GOLD_COLOR} strokeWidth="2" strokeOpacity="0.4"
+                stroke={PRIMARY_COLOR} strokeWidth="2" strokeOpacity="0.4"
                 initial={{ pathLength: 0 }}
                 whileInView={{ pathLength: 1 }}
                 transition={{ duration: 1, delay: 0.3 + i * 0.2 }}
@@ -514,13 +515,13 @@ function GlobalTradeMapSection() {
               <motion.div
                 animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0.7, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                className="absolute inset-0 w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EAC26B]/20"
+                className="absolute inset-0 w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-300/40"
               />
-              <div className="relative w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EAC26B] shadow-lg shadow-[#EAC26B]/50">
-                <Ship className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-[#EAC26B]" />
+              <div className="relative w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg shadow-purple-500/50">
+                <Ship className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-purple-600" />
               </div>
               <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-black/70 border border-[#EAC26B]/30 text-[#EAC26B]">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/90 border border-purple-200 text-purple-700 shadow-sm">
                   {hub.name}
                 </span>
               </div>
@@ -530,7 +531,7 @@ function GlobalTradeMapSection() {
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="absolute w-2 h-2 rounded-full bg-[#EAC26B]"
+              className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500"
               style={{ top: '40%', left: '45%' }}
               animate={{
                 left: ['45%', '75%'],
@@ -560,7 +561,7 @@ function DocumentManagementSection() {
   ];
 
   return (
-    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
       <FloatingParticles count={15} />
       
       <div className="relative max-w-6xl mx-auto px-6">
@@ -571,13 +572,13 @@ function DocumentManagementSection() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
               Automated, Verifiable &{' '}
-              <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Secure
               </span>
             </h2>
-            <p className="text-gray-400 text-lg leading-relaxed">
+            <p className="text-gray-600 text-lg leading-relaxed">
               Track every invoice, PO, BL, and inspection report with instant validation. 
               All documents are securely stored and instantly verifiable.
             </p>
@@ -596,21 +597,21 @@ function DocumentManagementSection() {
                 whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -4, rotateY: 3 }}
-                className="p-5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#EAC26B]/30 transition-all flex items-center justify-between"
+                className="p-5 rounded-xl bg-white border border-gray-100 shadow-lg hover:border-purple-200 transition-all flex items-center justify-between"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-[#EAC26B]/10 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-[#EAC26B]" />
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-purple-600" />
                   </div>
-                  <span className="text-white font-medium">{doc.name}</span>
+                  <span className="text-gray-900 font-medium">{doc.name}</span>
                 </div>
                 <motion.div
                   animate={doc.status === 'Verified' ? { scale: [1, 1.1, 1] } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
                   className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
                     doc.status === 'Verified' 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-yellow-500/20 text-yellow-400'
+                      ? 'bg-green-100 text-green-600' 
+                      : 'bg-yellow-100 text-yellow-600'
                   }`}
                 >
                   <CheckCircle className="w-4 h-4" />
@@ -634,7 +635,7 @@ function SecuritySection() {
   ];
 
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] overflow-hidden">
       <div className="relative max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <motion.div
@@ -646,9 +647,9 @@ function SecuritySection() {
             <motion.div
               animate={{ 
                 boxShadow: [
-                  '0 0 60px rgba(234, 194, 107, 0.1)',
-                  '0 0 100px rgba(234, 194, 107, 0.2)',
-                  '0 0 60px rgba(234, 194, 107, 0.1)',
+                  '0 0 60px rgba(147, 51, 234, 0.1)',
+                  '0 0 100px rgba(147, 51, 234, 0.2)',
+                  '0 0 60px rgba(147, 51, 234, 0.1)',
                 ]
               }}
               transition={{ duration: 4, repeat: Infinity }}
@@ -659,7 +660,7 @@ function SecuritySection() {
                 whileInView={{ scale: 1, opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="absolute inset-0 rounded-full border-2 border-[#EAC26B]/30"
+                className="absolute inset-0 rounded-full border-2 border-purple-300"
               />
               
               {Array.from({ length: 20 }).map((_, i) => (
@@ -677,7 +678,7 @@ function SecuritySection() {
                     repeat: Infinity,
                     delay: i * 0.15,
                   }}
-                  className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-[#EAC26B]"
+                  className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500"
                   style={{ transform: 'translate(-50%, -50%)' }}
                 />
               ))}
@@ -685,9 +686,9 @@ function SecuritySection() {
               <motion.div
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-8 rounded-full bg-[#EAC26B]/10 border-2 border-[#EAC26B]/50 flex items-center justify-center"
+                className="absolute inset-8 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-300 flex items-center justify-center"
               >
-                <Shield className="w-20 h-20 text-[#EAC26B]" />
+                <Shield className="w-20 h-20 text-purple-600" />
               </motion.div>
             </motion.div>
           </motion.div>
@@ -698,13 +699,13 @@ function SecuritySection() {
             viewport={{ once: true }}
             className="space-y-8 order-1 lg:order-2"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
               Enterprise-Grade{' '}
-              <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Security
               </span>
             </h2>
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-600 text-lg">
               Your trade data is protected by multiple layers of security and compliance measures.
             </p>
             
@@ -716,12 +717,12 @@ function SecuritySection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/10"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-white border border-gray-100 shadow-lg"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-[#EAC26B]/10 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-[#EAC26B]" />
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-purple-600" />
                   </div>
-                  <span className="text-white font-medium">{feature}</span>
+                  <span className="text-gray-900 font-medium">{feature}</span>
                 </motion.div>
               ))}
             </div>
@@ -734,7 +735,7 @@ function SecuritySection() {
 
 function GoldSettlementSection() {
   return (
-    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
       <div className="relative max-w-5xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -742,31 +743,31 @@ function GoldSettlementSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Settle Faster with{' '}
-            <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Gold
             </span>
           </h2>
-          <p className="text-gray-400 text-lg">Unlock liquidity with secure, instant gold-based settlement</p>
+          <p className="text-gray-600 text-lg">Unlock liquidity with secure, instant gold-based settlement</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-8 rounded-2xl bg-gradient-to-br from-[#EAC26B]/10 to-transparent border border-[#EAC26B]/30"
+          className="p-8 rounded-2xl bg-white border border-purple-200 shadow-lg"
         >
           <div className="grid md:grid-cols-3 gap-8 items-center">
             <div className="text-center">
               <motion.div
                 animate={{ rotateY: [0, 360] }}
                 transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                className="w-24 h-24 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#EAC26B] via-[#d4af5a] to-[#b8963f] flex items-center justify-center shadow-xl shadow-[#EAC26B]/30"
+                className="w-24 h-24 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-600 via-pink-500 to-purple-600 flex items-center justify-center shadow-xl shadow-purple-500/30"
               >
-                <Coins className="w-12 h-12 text-black" />
+                <Coins className="w-12 h-12 text-white" />
               </motion.div>
-              <p className="text-white font-semibold">Gold-Backed Value</p>
+              <p className="text-gray-900 font-semibold">Gold-Backed Value</p>
             </div>
             
             <div className="flex flex-col items-center gap-4">
@@ -775,22 +776,22 @@ function GoldSettlementSection() {
                 transition={{ duration: 2, repeat: Infinity }}
                 className="flex items-center gap-2"
               >
-                <div className="w-16 h-px bg-gradient-to-r from-transparent to-[#EAC26B]" />
-                <Zap className="w-6 h-6 text-[#EAC26B]" />
-                <div className="w-16 h-px bg-gradient-to-r from-[#EAC26B] to-transparent" />
+                <div className="w-16 h-px bg-gradient-to-r from-transparent to-purple-500" />
+                <Zap className="w-6 h-6 text-purple-600" />
+                <div className="w-16 h-px bg-gradient-to-r from-pink-500 to-transparent" />
               </motion.div>
-              <p className="text-gray-400 text-sm">Instant Settlement</p>
+              <p className="text-gray-600 text-sm">Instant Settlement</p>
             </div>
             
             <div className="text-center">
               <motion.div
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="w-24 h-24 mx-auto mb-4 rounded-xl bg-green-500/20 border-2 border-green-500/50 flex items-center justify-center"
+                className="w-24 h-24 mx-auto mb-4 rounded-xl bg-green-100 border-2 border-green-300 flex items-center justify-center"
               >
-                <CheckCircle className="w-12 h-12 text-green-400" />
+                <CheckCircle className="w-12 h-12 text-green-500" />
               </motion.div>
-              <p className="text-white font-semibold">Deal Completed</p>
+              <p className="text-gray-900 font-semibold">Deal Completed</p>
             </div>
           </div>
         </motion.div>
@@ -801,14 +802,14 @@ function GoldSettlementSection() {
 
 function FinalCTASection() {
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] overflow-hidden">
       <FloatingParticles count={30} />
       
       <div className="absolute inset-0 flex items-center justify-center">
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1] }}
           transition={{ duration: 5, repeat: Infinity }}
-          className="w-[700px] h-[700px] rounded-full bg-[#EAC26B]/10 blur-[120px]"
+          className="w-[700px] h-[700px] rounded-full bg-purple-100/30 blur-[120px]"
         />
       </div>
 
@@ -819,14 +820,14 @@ function FinalCTASection() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <h2 className="text-4xl md:text-6xl font-bold text-white">
+          <h2 className="text-4xl md:text-6xl font-bold text-gray-900">
             Start Your First Global{' '}
-            <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Trade Deal
             </span>
           </h2>
           
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Execute cross-border transactions with complete confidence.
           </p>
 
@@ -837,7 +838,7 @@ function FinalCTASection() {
             transition={{ delay: 0.2 }}
             className="pt-8"
           >
-            <Link href="/finabridge" className="group inline-flex items-center gap-3 bg-[#EAC26B] text-black px-12 py-6 rounded-full text-lg font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30">
+            <Link href="/finabridge" className="group inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-12 py-6 rounded-full text-lg font-semibold hover:opacity-90 transition-all shadow-lg shadow-purple-500/30">
               Get Started
               <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -852,32 +853,28 @@ function FinalCTASection() {
 export default function FinaBridgeLanding() {
   return (
     <ModeProvider>
-      <div className="finabridge-landing min-h-screen bg-black text-white" data-testid="finabridge-landing">
+      <div className="finabridge-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-gray-900" data-testid="finabridge-landing">
         <style>{`
           .finabridge-landing {
-            --gold: #D4AF37;
-            --gold-bright: #FFD500;
-            --gold-light: #F7D878;
-            --gold-dark: #B8860B;
-            --purple-deep: #8A2BE2;
-            --purple-magenta: #FF2FBF;
-            --purple-light: #A342FF;
-            --purple-violet: #4B0082;
-            --primary: #8A2BE2;
+            --purple-600: #9333ea;
+            --pink-500: #ec4899;
+            --purple-100: #f3e8ff;
+            --pink-100: #fce7f3;
+            --primary: #9333ea;
             --primary-foreground: #ffffff;
-            --ring: #8A2BE2;
-            --accent: #D4AF37;
-            --accent-foreground: #000000;
-            --muted: #1A002F;
-            --muted-foreground: rgba(255,255,255,0.7);
-            --input: #2A0055;
-            --border: #4B0082;
-            --background: #0D001E;
-            --foreground: #ffffff;
-            --card: #1A002F;
-            --card-foreground: #ffffff;
-            --popover: #1A002F;
-            --popover-foreground: #ffffff;
+            --ring: #9333ea;
+            --accent: #ec4899;
+            --accent-foreground: #ffffff;
+            --muted: #f3f4f6;
+            --muted-foreground: #6b7280;
+            --input: #f9fafb;
+            --border: #e5e7eb;
+            --background: #ffffff;
+            --foreground: #111827;
+            --card: #ffffff;
+            --card-foreground: #111827;
+            --popover: #ffffff;
+            --popover-foreground: #111827;
           }
         `}</style>
         <Navbar variant="products" />

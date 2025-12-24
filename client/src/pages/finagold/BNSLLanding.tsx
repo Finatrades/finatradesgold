@@ -12,7 +12,7 @@ import Footer from './components/Footer';
 import { ModeProvider } from './context/ModeContext';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
-const GOLD_COLOR = '#EAC26B';
+const PURPLE_COLOR = '#8A2BE2';
 
 function FloatingParticles({ count = 30 }: { count?: number }) {
   return (
@@ -21,7 +21,7 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
         <motion.div
           key={i}
           className="absolute w-1 h-1 rounded-full"
-          style={{ backgroundColor: `${GOLD_COLOR}40` }}
+          style={{ backgroundColor: `${PURPLE_COLOR}40` }}
           initial={{
             x: `${Math.random() * 100}%`,
             y: `${Math.random() * 100}%`,
@@ -46,11 +46,13 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
 function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center py-32 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a0a] to-black" />
-      <FloatingParticles count={40} />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]" />
       
-      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full bg-[#EAC26B]/5 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[#EAC26B]/5 blur-[120px]" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-96 h-96 rounded-full bg-purple-100/40 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-[500px] h-[500px] rounded-full bg-pink-100/30 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-purple-50/50 blur-3xl" />
+      </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
         <motion.div
@@ -66,7 +68,7 @@ function HeroSection() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 + i * 0.1 }}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-[#EAC26B]/10 border border-[#EAC26B]/30 text-[#EAC26B]"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 text-purple-700"
               >
                 {badge}
               </motion.span>
@@ -77,10 +79,10 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-5xl md:text-7xl font-bold text-white leading-tight"
+            className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
           >
             BNSL – Buy Now{' '}
-            <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Sell Later
             </span>{' '}
             Plan
@@ -90,7 +92,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto"
+            className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto"
           >
             A structured gold holding program with fixed pricing, quarterly payouts, and in-kind settlement.
           </motion.p>
@@ -99,7 +101,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="text-gray-400 max-w-2xl mx-auto leading-relaxed"
+            className="text-gray-500 max-w-2xl mx-auto leading-relaxed"
           >
             Lock physical gold at a fixed price and receive quarterly payouts in additional gold units. 
             Your entire plan follows the Locked-In Price mechanism established on your start date.
@@ -111,13 +113,13 @@ function HeroSection() {
             transition={{ delay: 0.6 }}
             className="flex flex-wrap justify-center gap-4 pt-8"
           >
-            <Link href="/bnsl" className="group flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[#EAC26B]/30">
+            <Link href="/dashboard/bnsl/create" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:from-purple-700 hover:to-pink-600 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-200">
               Start BNSL Plan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
               href="#calculator"
-              className="flex items-center gap-2 border border-[#EAC26B]/40 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-white/5 hover:border-[#EAC26B]/60 transition-all"
+              className="flex items-center gap-2 border-2 border-purple-200 text-purple-600 px-8 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-300 transition-all"
             >
               <BarChart3 className="w-5 h-5" />
               Projection Calculator
@@ -147,10 +149,10 @@ function HeroSection() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 + i * 0.2 }}
-                    className="absolute w-32 h-16 rounded-lg bg-gradient-to-br from-[#EAC26B] via-[#d4af5a] to-[#b8963f] shadow-xl"
+                    className="absolute w-32 h-16 rounded-lg bg-gradient-to-br from-purple-400 via-purple-500 to-pink-500 shadow-xl"
                     style={{
                       transform: `translateY(${i * -12}px) translateX(${i * 8}px) rotateX(20deg) rotateY(-15deg)`,
-                      boxShadow: '0 20px 40px rgba(234, 194, 107, 0.3)',
+                      boxShadow: '0 20px 40px rgba(138, 43, 226, 0.3)',
                     }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-lg" />
@@ -162,13 +164,13 @@ function HeroSection() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-0 border border-[#EAC26B]/20 rounded-full"
+              className="absolute inset-0 border border-purple-200 rounded-full"
               style={{ transform: 'scale(1.5)' }}
             />
             <motion.div
               animate={{ rotate: -360 }}
               transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-0 border border-[#EAC26B]/10 rounded-full"
+              className="absolute inset-0 border border-purple-100 rounded-full"
               style={{ transform: 'scale(2)' }}
             />
           </div>
@@ -202,8 +204,11 @@ function HowItWorksSection() {
   }, [isInView, activeStep, steps.length]);
 
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
-      <FloatingParticles count={20} />
+    <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-10 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-pink-100/20 blur-3xl" />
+      </div>
       
       <div ref={ref} className="relative max-w-5xl mx-auto px-6">
         <motion.div
@@ -212,13 +217,17 @@ function HowItWorksSection() {
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <motion.div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#EAC26B]/10 border border-[#EAC26B]/20 mb-6">
-            <div className="w-2 h-2 rounded-full bg-[#EAC26B] animate-pulse" />
-            <span className="text-[#EAC26B] text-sm font-medium">Step-by-Step Guide</span>
+          <motion.div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 mb-6">
+            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+            <span className="text-purple-700 text-sm font-medium">Step-by-Step Guide</span>
           </motion.div>
           
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">How BNSL Works</h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            How{' '}
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">BNSL</span>{' '}
+            Works
+          </h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Follow the golden path to structured gold ownership
           </p>
         </motion.div>
@@ -229,7 +238,7 @@ function HowItWorksSection() {
               initial={{ scaleY: 0 }}
               animate={{ scaleY: isInView ? 1 : 0 }}
               transition={{ duration: 1.5, ease: 'easeOut' }}
-              className="w-full h-full bg-gradient-to-b from-[#EAC26B] via-[#EAC26B]/50 to-[#EAC26B]/20 origin-top"
+              className="w-full h-full bg-gradient-to-b from-purple-500 via-purple-400/50 to-purple-300/20 origin-top"
             />
             
             {steps.map((_, index) => (
@@ -238,13 +247,13 @@ function HowItWorksSection() {
                 initial={{ scale: 0 }}
                 animate={{ scale: activeStep >= index ? 1 : 0 }}
                 transition={{ duration: 0.4 }}
-                className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#EAC26B] shadow-lg shadow-[#EAC26B]/50"
+                className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-200"
                 style={{ top: `${(index / (steps.length - 1)) * 100}%` }}
               >
                 <motion.div
                   animate={{ scale: activeStep === index ? [1, 1.5, 1] : 1 }}
                   transition={{ duration: 1, repeat: activeStep === index ? Infinity : 0 }}
-                  className="absolute inset-0 rounded-full bg-[#EAC26B]/30"
+                  className="absolute inset-0 rounded-full bg-purple-400/30"
                 />
               </motion.div>
             ))}
@@ -274,18 +283,18 @@ function HowItWorksSection() {
                       animate={{
                         scale: isActive ? [1, 1.1, 1] : 1,
                         boxShadow: isActive 
-                          ? ['0 0 0 0 rgba(234, 194, 107, 0)', '0 0 30px 10px rgba(234, 194, 107, 0.3)', '0 0 20px 5px rgba(234, 194, 107, 0.2)']
-                          : '0 0 0 0 rgba(234, 194, 107, 0)',
+                          ? ['0 0 0 0 rgba(138, 43, 226, 0)', '0 0 30px 10px rgba(138, 43, 226, 0.2)', '0 0 20px 5px rgba(138, 43, 226, 0.1)']
+                          : '0 0 0 0 rgba(138, 43, 226, 0)',
                       }}
                       transition={{ duration: 0.8, repeat: isActive ? Infinity : 0, repeatDelay: 2 }}
                       className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
                         isActive || isCompleted
-                          ? 'bg-gradient-to-br from-[#EAC26B]/20 to-[#EAC26B]/5 border-2 border-[#EAC26B]'
-                          : 'bg-white/5 border border-white/10'
+                          ? 'bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-400'
+                          : 'bg-gray-100 border border-gray-200'
                       }`}
                     >
                       <step.icon className={`w-7 h-7 transition-colors duration-500 ${
-                        isActive || isCompleted ? 'text-[#EAC26B]' : 'text-gray-500'
+                        isActive || isCompleted ? 'text-purple-600' : 'text-gray-400'
                       }`} />
                     </motion.div>
 
@@ -298,17 +307,17 @@ function HowItWorksSection() {
                       transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
                       className={`flex-1 p-5 rounded-xl backdrop-blur-sm transition-all duration-500 ${
                         isActive
-                          ? 'bg-gradient-to-br from-[#EAC26B]/10 to-transparent border border-[#EAC26B]/40'
-                          : 'bg-white/[0.03] border border-white/10'
+                          ? 'bg-white border-2 border-purple-300 shadow-lg shadow-purple-100'
+                          : 'bg-white border border-gray-100 shadow-sm'
                       }`}
                     >
-                      <span className={`text-sm font-bold ${isActive ? 'text-[#EAC26B]' : 'text-gray-500'}`}>
+                      <span className={`text-sm font-bold ${isActive ? 'text-purple-600' : 'text-gray-400'}`}>
                         Step {step.number}
                       </span>
-                      <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-white' : 'text-gray-400'}`}>
+                      <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-gray-900' : 'text-gray-500'}`}>
                         {step.title}
                       </h3>
-                      <p className={`text-sm mt-2 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
+                      <p className={`text-sm mt-2 ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
                         {step.description}
                       </p>
                     </motion.div>
@@ -327,7 +336,7 @@ function HowItWorksSection() {
         >
           <a
             href="#calculator"
-            className="inline-flex items-center gap-2 bg-[#EAC26B] text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-4 rounded-full text-base font-semibold hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg shadow-purple-200"
           >
             Estimate Your Returns
             <ArrowRight className="w-5 h-5" />
@@ -864,7 +873,12 @@ function FAQSection() {
   ];
 
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-pink-100/20 blur-3xl" />
+      </div>
+
       <div className="relative max-w-3xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -872,8 +886,16 @@ function FAQSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Frequently Asked Questions</h2>
-          <p className="text-gray-400 text-lg">Everything you need to know about BNSL</p>
+          <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
+            FAQ
+          </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Frequently Asked{' '}
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+              Questions
+            </span>
+          </h2>
+          <p className="text-gray-600 text-lg">Everything you need to know about BNSL</p>
         </motion.div>
 
         <div className="space-y-4">
@@ -884,16 +906,16 @@ function FAQSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="border border-white/10 rounded-xl overflow-hidden hover:border-[#EAC26B]/30 transition-colors"
+              className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-purple-200 shadow-sm hover:shadow-md transition-all"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 className="w-full flex items-center justify-between p-5 text-left"
                 data-testid={`faq-${i}`}
               >
-                <span className="font-medium text-white">{faq.q}</span>
+                <span className="font-medium text-gray-900">{faq.q}</span>
                 {openIndex === i ? (
-                  <ChevronUp className="w-5 h-5 text-[#EAC26B]" />
+                  <ChevronUp className="w-5 h-5 text-purple-600" />
                 ) : (
                   <ChevronDown className="w-5 h-5 text-gray-400" />
                 )}
@@ -907,7 +929,7 @@ function FAQSection() {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <p className="px-5 pb-5 text-gray-400">{faq.a}</p>
+                    <p className="px-5 pb-5 text-gray-600">{faq.a}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -929,26 +951,28 @@ function RiskDisclosureSection() {
   ];
 
   return (
-    <section className="relative py-20 bg-gradient-to-b from-black to-[#050505]">
+    <section className="relative py-20 bg-gradient-to-b from-[#FAFBFF] to-[#F8F9FC]">
       <div className="relative max-w-4xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-8 rounded-2xl bg-[#1a1510] border border-[#EAC26B]/20"
+          className="p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200"
         >
           <div className="flex items-start gap-4 mb-6">
-            <AlertTriangle className="w-8 h-8 text-[#EAC26B] shrink-0" />
+            <div className="p-2 rounded-lg bg-amber-100">
+              <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0" />
+            </div>
             <div>
-              <h3 className="text-xl font-semibold text-white mb-2">Important Risk Disclosures</h3>
-              <p className="text-sm text-gray-400">Please review these risks before participating in any BNSL plan.</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Important Risk Disclosures</h3>
+              <p className="text-sm text-gray-600">Please review these risks before participating in any BNSL plan.</p>
             </div>
           </div>
           
           <ul className="space-y-3">
             {risks.map((risk, i) => (
-              <li key={i} className="flex items-start gap-3 text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EAC26B]/50 mt-2 shrink-0" />
+              <li key={i} className="flex items-start gap-3 text-gray-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
                 {risk}
               </li>
             ))}
@@ -964,11 +988,11 @@ function TermsSection() {
 
   return (
     <>
-      <section className="relative py-16 bg-[#050505]">
+      <section className="relative py-16 bg-[#F8F9FC]">
         <div className="relative max-w-4xl mx-auto px-6 text-center">
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 text-[#EAC26B] hover:text-[#d4af5a] transition-colors"
+            className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 transition-colors"
             data-testid="btn-view-terms"
           >
             <FileText className="w-5 h-5" />
@@ -984,7 +1008,7 @@ function TermsSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           >
             <motion.div
@@ -992,33 +1016,33 @@ function TermsSection() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl bg-[#0a0a0a] border border-[#EAC26B]/20"
+              className="w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-2xl"
             >
-              <div className="flex items-center justify-between p-6 border-b border-white/10">
-                <h3 className="text-xl font-semibold text-white">BNSL Terms & Conditions</h3>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 className="text-xl font-semibold text-gray-900">BNSL Terms & Conditions</h3>
+                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-                <div className="prose prose-invert prose-sm max-w-none">
-                  <h4 className="text-[#EAC26B]">1. Plan Overview</h4>
-                  <p className="text-gray-400">The BNSL (Buy Now Sell Later) Plan is a structured gold holding program that allows participants to lock physical gold at a fixed price and receive quarterly payouts in additional gold units.</p>
+              <div className="p-6 overflow-y-auto max-h-[60vh]">
+                <div className="prose prose-sm max-w-none">
+                  <h4 className="text-purple-600 font-semibold">1. Plan Overview</h4>
+                  <p className="text-gray-600">The BNSL (Buy Now Sell Later) Plan is a structured gold holding program that allows participants to lock physical gold at a fixed price and receive quarterly payouts in additional gold units.</p>
                   
-                  <h4 className="text-[#EAC26B]">2. Locked-In Price</h4>
-                  <p className="text-gray-400">The Locked-In Price is established at the time of plan activation and remains fixed for the entire duration. All calculations, payouts, and settlements are based on this price.</p>
+                  <h4 className="text-purple-600 font-semibold mt-4">2. Locked-In Price</h4>
+                  <p className="text-gray-600">The Locked-In Price is established at the time of plan activation and remains fixed for the entire duration. All calculations, payouts, and settlements are based on this price.</p>
                   
-                  <h4 className="text-[#EAC26B]">3. Quarterly Payouts</h4>
-                  <p className="text-gray-400">Payouts are distributed every three months based on the indicative annual profit rate divided into quarterly installments. All payouts are made in gold units, not fiat currency.</p>
+                  <h4 className="text-purple-600 font-semibold mt-4">3. Quarterly Payouts</h4>
+                  <p className="text-gray-600">Payouts are distributed every three months based on the indicative annual profit rate divided into quarterly installments. All payouts are made in gold units, not fiat currency.</p>
                   
-                  <h4 className="text-[#EAC26B]">4. Early Termination</h4>
-                  <p className="text-gray-400">Early exit from the plan results in penalties, forfeiture of all future payouts, and settlement at current market price rather than the Locked-In Price.</p>
+                  <h4 className="text-purple-600 font-semibold mt-4">4. Early Termination</h4>
+                  <p className="text-gray-600">Early exit from the plan results in penalties, forfeiture of all future payouts, and settlement at current market price rather than the Locked-In Price.</p>
                   
-                  <h4 className="text-[#EAC26B]">5. Settlement</h4>
-                  <p className="text-gray-400">At maturity, your original gold principal plus accumulated payouts are settled in-kind to your Finatrades wallet within 3 business days.</p>
+                  <h4 className="text-purple-600 font-semibold mt-4">5. Settlement</h4>
+                  <p className="text-gray-600">At maturity, your original gold principal plus accumulated payouts are settled in-kind to your Finatrades wallet within 3 business days.</p>
                   
-                  <h4 className="text-[#EAC26B]">6. Risk Acknowledgment</h4>
-                  <p className="text-gray-400">By participating, you acknowledge that projections are indicative, returns are not guaranteed, and the plan is subject to counterparty performance.</p>
+                  <h4 className="text-purple-600 font-semibold mt-4">6. Risk Acknowledgment</h4>
+                  <p className="text-gray-600">By participating, you acknowledge that projections are indicative, returns are not guaranteed, and the plan is subject to counterparty performance.</p>
                 </div>
               </div>
             </motion.div>
@@ -1031,14 +1055,17 @@ function TermsSection() {
 
 function FinalCTASection() {
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
-      <FloatingParticles count={25} />
+    <section className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-purple-50/30 to-[#F8F9FC] overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full bg-purple-100/40 blur-3xl" />
+        <div className="absolute bottom-20 right-1/4 w-[500px] h-[500px] rounded-full bg-pink-100/30 blur-3xl" />
+      </div>
       
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 4, repeat: Infinity }}
-          className="w-[600px] h-[600px] rounded-full bg-[#EAC26B]/10 blur-[100px]"
+          className="w-[600px] h-[600px] rounded-full bg-purple-200/30 blur-[100px]"
         />
       </div>
 
@@ -1049,14 +1076,14 @@ function FinalCTASection() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <h2 className="text-4xl md:text-6xl font-bold text-white">
+          <h2 className="text-4xl md:text-6xl font-bold text-gray-900">
             Start Your BNSL Gold Plan{' '}
-            <span className="bg-gradient-to-r from-[#EAC26B] to-[#d4af5a] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Today
             </span>
           </h2>
           
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Lock your gold at a fixed price and begin earning quarterly payouts.
           </p>
 
@@ -1067,11 +1094,11 @@ function FinalCTASection() {
             transition={{ delay: 0.2 }}
             className="flex flex-wrap justify-center gap-4 pt-4"
           >
-            <Link href="/bnsl" className="group flex items-center gap-2 bg-[#EAC26B] text-black px-10 py-5 rounded-full text-lg font-semibold hover:bg-[#d4af5a] transition-all shadow-lg shadow-[#EAC26B]/30">
+            <Link href="/dashboard/bnsl/create" className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-10 py-5 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg shadow-purple-200">
               Start BNSL Plan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <a href="#contact" className="flex items-center gap-2 border border-[#8A2BE2]/40 text-white px-10 py-5 rounded-full text-lg font-semibold hover:bg-white/5 hover:border-[#8A2BE2]/60 transition-all">
+            <a href="#contact" className="flex items-center gap-2 border-2 border-purple-200 text-purple-600 px-10 py-5 rounded-full text-lg font-semibold hover:bg-purple-50 hover:border-purple-300 transition-all">
               Speak with Support
             </a>
           </motion.div>
@@ -1085,7 +1112,7 @@ function FinalCTASection() {
 export default function BNSLLanding() {
   return (
     <ModeProvider>
-      <div className="bnsl-landing min-h-screen bg-black text-white" data-testid="bnsl-landing">
+      <div className="bnsl-landing min-h-screen bg-[#FAFBFF]" data-testid="bnsl-landing">
         <style>{`
           .bnsl-landing {
             --gold: #D4AF37;
