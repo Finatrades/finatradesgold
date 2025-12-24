@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Phone, Shield, CheckCircle } from 'lucide-react';
+import { ArrowRight, Phone, Shield, CheckCircle, X } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo.png';
@@ -47,8 +48,70 @@ const itemVariants = {
 export default function Hero() {
   const { mode, isPersonal } = useMode();
   const c = content[mode];
+  const [showRegulatory, setShowRegulatory] = useState(false);
 
   return (
+    <>
+      {/* Regulatory Information Modal */}
+      <AnimatePresence>
+        {showRegulatory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowRegulatory(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Regulatory Information</h3>
+                </div>
+                <button
+                  onClick={() => setShowRegulatory(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900">Swiss Regulatory Framework</h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Finatrades operates under the Swiss regulatory framework, ensuring the highest standards of compliance, security, and transparency for all gold-backed financial services.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900">Gold Custody & Storage</h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    All physical gold is stored in LBMA-accredited vaults with full insurance coverage. Each gram of gold is allocated and audited regularly by independent third parties.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900">Compliance Standards</h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    We maintain strict KYC/AML compliance in accordance with Swiss FINMA guidelines and international anti-money laundering standards.
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 mt-4">
+                  <p className="text-xs text-gray-500">
+                    <strong>Disclaimer:</strong> Services availability may vary by jurisdiction. This is not investment advice. Please consult with a financial advisor before making investment decisions.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     <section id="home" className="relative min-h-screen pt-28 pb-20 overflow-hidden" data-testid="hero-section">
       {/* Light gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE]" />
@@ -76,16 +139,16 @@ export default function Hero() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
-              {/* Red regulatory badge - links to legal */}
+              {/* Red regulatory badge - opens modal */}
               <motion.div variants={itemVariants}>
-                <a 
-                  href="#legal" 
+                <button 
+                  onClick={() => setShowRegulatory(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-red-300 hover:border-red-400 hover:bg-red-50 transition-all cursor-pointer"
                 >
                   <span className="text-red-500 text-sm font-bold">+</span>
                   <span className="text-red-500 text-sm font-medium">{c.badge}</span>
                   <span className="text-red-400 text-xs">○</span>
-                </a>
+                </button>
               </motion.div>
 
               {/* Pink/Magenta gradient title */}
@@ -217,17 +280,16 @@ export default function Hero() {
                     </div>
                   </div>
 
-                  {/* Swiss-Regulated Platform badge - red/pink style */}
-                  <a href="#contact">
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="absolute -top-4 right-4 sm:right-8 flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-50 border border-red-400 backdrop-blur-md shadow-lg cursor-pointer hover:border-red-500 hover:bg-red-100 transition-colors"
-                    >
-                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-red-600 text-xs font-medium">Swiss-Regulated Platform</span>
-                      <span className="text-red-400 text-xs">○</span>
-                    </motion.div>
-                  </a>
+                  {/* Swiss-Regulated Platform badge - opens modal */}
+                  <motion.button
+                    onClick={() => setShowRegulatory(true)}
+                    whileHover={{ scale: 1.02 }}
+                    className="absolute -top-4 right-4 sm:right-8 flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-50 border border-red-400 backdrop-blur-md shadow-lg cursor-pointer hover:border-red-500 hover:bg-red-100 transition-colors"
+                  >
+                    <span className="text-red-600 text-sm font-bold">+</span>
+                    <span className="text-red-600 text-xs font-medium">Swiss-Regulated Platform</span>
+                    <span className="text-red-400 text-xs">○</span>
+                  </motion.button>
 
                 </motion.div>
 
@@ -240,5 +302,6 @@ export default function Hero() {
         </div>
       </div>
     </section>
+    </>
   );
 }
