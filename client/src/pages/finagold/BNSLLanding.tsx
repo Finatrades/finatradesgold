@@ -43,6 +43,254 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
   );
 }
 
+function AnimatedVaultSequence() {
+  const [phase, setPhase] = useState<'opening' | 'depositing' | 'locking' | 'locked'>('opening');
+  const [cycleCount, setCycleCount] = useState(0);
+
+  useEffect(() => {
+    const sequence = [
+      { phase: 'opening' as const, duration: 1500 },
+      { phase: 'depositing' as const, duration: 2000 },
+      { phase: 'locking' as const, duration: 1500 },
+      { phase: 'locked' as const, duration: 2000 },
+    ];
+
+    let timeoutId: NodeJS.Timeout;
+    let currentIndex = 0;
+
+    const runSequence = () => {
+      setPhase(sequence[currentIndex].phase);
+      timeoutId = setTimeout(() => {
+        currentIndex = (currentIndex + 1) % sequence.length;
+        if (currentIndex === 0) {
+          setCycleCount(prev => prev + 1);
+        }
+        runSequence();
+      }, sequence[currentIndex].duration);
+    };
+
+    runSequence();
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  const phaseLabels = {
+    opening: 'Opening vault...',
+    depositing: 'Depositing gold...',
+    locking: 'Securing vault...',
+    locked: 'Gold Worth Locked & Secured',
+  };
+
+  const phaseIndex = ['opening', 'depositing', 'locking', 'locked'].indexOf(phase);
+
+  return (
+    <div className="relative">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="absolute -top-8 right-0 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm shadow-lg z-10"
+      >
+        <div className="flex items-center gap-2">
+          <span>Principal gold worth locked</span>
+        </div>
+        <span className="text-gray-400 text-xs">until maturity</span>
+        <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gray-900 rotate-45" />
+      </motion.div>
+
+      <div className="relative w-72 h-80">
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="relative w-full h-full"
+        >
+          {/* Vault Back (inside) */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 shadow-2xl overflow-hidden">
+            <div className="absolute inset-4 rounded-xl bg-gradient-to-b from-gray-700 to-gray-800 border border-gray-600/30">
+              {/* Gold bars inside vault */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+                {[0, 1, 2].map((row) => (
+                  <motion.div
+                    key={row}
+                    initial={{ opacity: 0, scale: 0.8, y: -30 }}
+                    animate={{
+                      opacity: phase === 'depositing' || phase === 'locking' || phase === 'locked' 
+                        ? (row <= (phase === 'depositing' ? Math.min(cycleCount % 3, row) : 2) ? 1 : 0)
+                        : 0,
+                      scale: phase !== 'opening' ? 1 : 0.8,
+                      y: phase !== 'opening' ? 0 : -30,
+                    }}
+                    transition={{ 
+                      duration: 0.5, 
+                      delay: phase === 'depositing' ? row * 0.4 : 0 
+                    }}
+                    className="flex gap-1"
+                  >
+                    {[0, 1, 2].map((col) => (
+                      <div
+                        key={col}
+                        className="w-8 h-4 rounded-sm bg-gradient-to-b from-amber-400 via-yellow-500 to-amber-600 shadow-md"
+                        style={{
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)'
+                        }}
+                      />
+                    ))}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Vault Door */}
+          <motion.div
+            animate={{
+              rotateY: phase === 'opening' ? -70 : phase === 'depositing' ? -70 : 0,
+              x: phase === 'opening' || phase === 'depositing' ? -20 : 0,
+            }}
+            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            style={{ transformOrigin: 'left center', transformStyle: 'preserve-3d' }}
+            className="absolute inset-0 rounded-2xl bg-gradient-to-br from-gray-800 via-gray-900 to-black shadow-2xl"
+          >
+            {/* Door hinges */}
+            <div className="absolute -left-2 top-1/4 flex flex-col gap-8">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="w-4 h-8 rounded bg-gradient-to-b from-gray-600 to-gray-700 shadow-md"
+                />
+              ))}
+            </div>
+
+            {/* Handle bars on right side */}
+            <div className="absolute -right-2 top-1/4 flex flex-col gap-2">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{
+                    x: phase === 'locking' || phase === 'locked' ? 0 : 4,
+                  }}
+                  transition={{ duration: 0.3, delay: i * 0.1 }}
+                  className="w-5 h-8 rounded bg-gradient-to-b from-amber-400 to-amber-600 shadow-lg border border-amber-300/50"
+                />
+              ))}
+            </div>
+
+            {/* Vault door lines */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gray-700 rounded" />
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gray-700 rounded" />
+
+            {/* Lock mechanism */}
+            <div className="flex flex-col items-center justify-center h-full">
+              <motion.div
+                animate={{
+                  scale: phase === 'locked' ? [1, 1.1, 1] : 1,
+                  rotate: phase === 'locking' ? [0, -10, 0] : 0,
+                }}
+                transition={{
+                  scale: { duration: 0.5, repeat: phase === 'locked' ? Infinity : 0, repeatDelay: 2 },
+                  rotate: { duration: 0.5 },
+                }}
+                className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-xl border-4 border-amber-400"
+              >
+                <AnimatePresence mode="wait">
+                  {(phase === 'locked' || phase === 'locking') ? (
+                    <motion.div
+                      key="locked"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      exit={{ scale: 0, rotate: 180 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <Lock className="w-12 h-12 text-amber-900" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="unlocked"
+                      initial={{ scale: 0, rotate: 180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      exit={{ scale: 0, rotate: -180 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <Vault className="w-12 h-12 text-amber-900" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+
+            {/* Glow effect when locked */}
+            <motion.div
+              animate={{
+                opacity: phase === 'locked' ? [0.3, 0.6, 0.3] : 0,
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-400/20 to-transparent pointer-events-none"
+            />
+          </motion.div>
+
+          {/* Floating gold bar during deposit */}
+          <AnimatePresence>
+            {phase === 'depositing' && (
+              <motion.div
+                key="floating-gold"
+                initial={{ opacity: 0, y: -100, x: 50, rotate: -15 }}
+                animate={{ opacity: 1, y: 20, x: 0, rotate: 0 }}
+                exit={{ opacity: 0, y: 80, scale: 0.5 }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className="absolute top-0 left-1/2 -translate-x-1/2 z-20"
+              >
+                <div className="w-16 h-8 rounded bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-500 shadow-xl border-2 border-amber-200/50"
+                  style={{
+                    boxShadow: '0 4px 20px rgba(251, 191, 36, 0.5), 0 2px 8px rgba(0,0,0,0.3)'
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+
+      {/* Bottom badge with phase indicator */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1 }}
+        className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-amber-200 border border-amber-300 shadow-lg"
+      >
+        <div className="flex items-center gap-2">
+          <motion.div
+            animate={{ rotate: phase === 'locking' ? 360 : 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Lock className="w-4 h-4 text-amber-600" />
+          </motion.div>
+          <motion.span
+            key={phase}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-amber-800 text-sm font-medium"
+          >
+            {phaseLabels[phase]}
+          </motion.span>
+        </div>
+      </motion.div>
+
+      {/* Phase indicator dots */}
+      <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 flex gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <motion.div
+            key={i}
+            animate={{
+              scale: phaseIndex === i ? 1.2 : 1,
+              backgroundColor: phaseIndex === i ? '#f59e0b' : '#d1d5db',
+            }}
+            className="w-2 h-2 rounded-full"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HeroSection() {
   return (
     <section className="relative min-h-[90vh] flex items-center py-24 overflow-hidden">
@@ -150,95 +398,14 @@ function HeroSection() {
             </motion.div>
           </motion.div>
 
-          {/* Vault Visual */}
+          {/* Animated Vault Visual */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             className="hidden lg:flex justify-center"
           >
-            <div className="relative">
-              {/* Floating tooltip */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                className="absolute -top-8 right-0 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm shadow-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <span>Principal gold worth locked</span>
-                </div>
-                <span className="text-gray-400 text-xs">until maturity</span>
-                <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gray-900 rotate-45" />
-              </motion.div>
-
-              {/* Vault */}
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity }}
-                className="relative w-64 h-72 rounded-2xl bg-gradient-to-br from-gray-800 via-gray-900 to-black p-6 shadow-2xl"
-              >
-                {/* Gold bars on sides */}
-                <div className="absolute -left-3 top-1/4 flex flex-col gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ x: [-2, 2, -2] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                      className="w-6 h-10 rounded bg-gradient-to-b from-amber-400 to-amber-600 shadow-lg"
-                    />
-                  ))}
-                </div>
-                <div className="absolute -right-3 top-1/4 flex flex-col gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ x: [2, -2, 2] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                      className="w-6 h-10 rounded bg-gradient-to-b from-amber-400 to-amber-600 shadow-lg"
-                    />
-                  ))}
-                </div>
-
-                {/* Lock mechanism */}
-                <div className="flex flex-col items-center justify-center h-full">
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg border-4 border-amber-400"
-                  >
-                    <Lock className="w-10 h-10 text-amber-900" />
-                  </motion.div>
-                  
-                  {/* Vault lines */}
-                  <div className="absolute top-6 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gray-700 rounded" />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gray-700 rounded" />
-                </div>
-              </motion.div>
-
-              {/* Bottom badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1 }}
-                className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-amber-200 border border-amber-300 shadow-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-amber-600" />
-                  <span className="text-amber-800 text-sm font-medium">Gold Worth Locked & Secured</span>
-                </div>
-              </motion.div>
-
-              {/* Carousel dots */}
-              <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 flex gap-2">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
-                  />
-                ))}
-              </div>
-            </div>
+            <AnimatedVaultSequence />
           </motion.div>
         </div>
       </div>
