@@ -573,9 +573,17 @@ export default function BNSLManagement() {
         </div>
 
         <Tabs defaultValue="plans" className="w-full">
-           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
+           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6 flex-wrap">
              <TabsTrigger value="plans" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                All Plans
+             </TabsTrigger>
+             <TabsTrigger value="terminations" className="rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 py-3 px-1 relative">
+               Early Terminations
+               {plans.filter(p => p.earlyTermination?.status === 'Requested').length > 0 && (
+                 <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                   {plans.filter(p => p.earlyTermination?.status === 'Requested').length}
+                 </span>
+               )}
              </TabsTrigger>
              <TabsTrigger value="templates" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
                Plan Templates
@@ -634,6 +642,100 @@ export default function BNSLManagement() {
                      </div>
                   </CardContent>
                 </Card>
+             </TabsContent>
+             
+             {/* Early Termination Requests Tab */}
+             <TabsContent value="terminations">
+               <Card>
+                 <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50 border-b">
+                   <CardTitle className="flex items-center gap-2 text-red-700">
+                     <AlertTriangle className="w-5 h-5" />
+                     Early Termination Requests
+                   </CardTitle>
+                   <CardDescription>Review and process early termination requests from users.</CardDescription>
+                 </CardHeader>
+                 <CardContent className="p-6">
+                   {(() => {
+                     const terminationPlans = plans.filter(p => 
+                       p.earlyTermination?.status === 'Requested' || 
+                       p.earlyTermination?.status === 'Pending' ||
+                       p.status === 'Early Termination Requested'
+                     );
+                     
+                     if (terminationPlans.length === 0) {
+                       return (
+                         <div className="text-center py-12 text-gray-500">
+                           <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-300" />
+                           <h3 className="text-lg font-semibold text-gray-700 mb-2">No Pending Termination Requests</h3>
+                           <p>All early termination requests have been processed.</p>
+                         </div>
+                       );
+                     }
+                     
+                     return (
+                       <div className="space-y-4">
+                         {terminationPlans.map((plan) => (
+                           <div 
+                             key={plan.id} 
+                             onClick={() => handleOpenPlan(plan.id)} 
+                             className="p-4 border border-red-200 rounded-lg bg-gradient-to-r from-red-50 to-orange-50 hover:from-red-100 hover:to-orange-100 transition-colors cursor-pointer"
+                           >
+                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                               <div className="flex-1">
+                                 <div className="flex items-center gap-2 mb-2">
+                                   <h4 className="font-bold text-gray-900">{plan.contractId}</h4>
+                                   <Badge variant="destructive" className="animate-pulse">Termination Requested</Badge>
+                                 </div>
+                                 <p className="text-sm text-gray-600 mb-1">
+                                   <strong>User:</strong> {plan.participant.name} ({plan.participant.email})
+                                 </p>
+                                 <p className="text-sm text-gray-600 mb-1">
+                                   <strong>Plan Details:</strong> {plan.tenorMonths} Months @ {plan.agreedMarginAnnualPercent}% • Gold: {plan.goldSoldGrams}g • Base: ${plan.basePriceComponentUsd.toLocaleString()}
+                                 </p>
+                                 {plan.earlyTermination && (
+                                   <>
+                                     <p className="text-sm text-gray-600 mb-1">
+                                       <strong>Requested:</strong> {new Date(plan.earlyTermination.requestedAt).toLocaleString()}
+                                     </p>
+                                     {plan.earlyTermination.reason && (
+                                       <p className="text-sm text-red-600 mt-2 p-2 bg-white rounded border border-red-100">
+                                         <strong>Reason:</strong> {plan.earlyTermination.reason}
+                                       </p>
+                                     )}
+                                     <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                       <div className="p-2 bg-white rounded border">
+                                         <p className="text-gray-500">Net Value</p>
+                                         <p className="font-bold text-green-600">${plan.earlyTermination.netValueUsd?.toFixed(2) || '0.00'}</p>
+                                       </div>
+                                       <div className="p-2 bg-white rounded border">
+                                         <p className="text-gray-500">Return Gold</p>
+                                         <p className="font-bold text-amber-600">{plan.earlyTermination.finalGoldGrams?.toFixed(4) || '0'}g</p>
+                                       </div>
+                                       <div className="p-2 bg-white rounded border">
+                                         <p className="text-gray-500">Penalty</p>
+                                         <p className="font-bold text-red-600">{plan.earlyTermination.penaltyPercent?.toFixed(1) || '0'}%</p>
+                                       </div>
+                                       <div className="p-2 bg-white rounded border">
+                                         <p className="text-gray-500">Margin Paid</p>
+                                         <p className="font-bold text-blue-600">${plan.earlyTermination.totalDisbursedMarginUsd?.toFixed(2) || '0.00'}</p>
+                                       </div>
+                                     </div>
+                                   </>
+                                 )}
+                               </div>
+                               <div className="flex flex-col gap-2">
+                                 <Button variant="default" size="sm" className="bg-purple-600 hover:bg-purple-700">
+                                   Review & Process
+                                 </Button>
+                               </div>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     );
+                   })()}
+                 </CardContent>
+               </Card>
              </TabsContent>
              
              <TabsContent value="templates">
