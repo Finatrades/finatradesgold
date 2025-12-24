@@ -235,7 +235,7 @@ export default function BnslWalletCard({
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Available to Invest</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">USD Value (Locked):</span>
+                  <span className="text-xs text-muted-foreground">{availableValueUsd != null ? 'USD Value (Locked):' : 'USD Value (Current):'}</span>
                   <span className="text-xl font-bold text-foreground">
                     ${(availableValueUsd ?? (bnslBalanceGold * currentGoldPrice)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
@@ -248,7 +248,9 @@ export default function BnslWalletCard({
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">
-                Price locked at transfer time (not live price).
+                {availableValueUsd != null 
+                  ? 'Price locked at transfer time. Withdrawal pays market price.'
+                  : 'Current market value. Withdrawal pays market price.'}
               </p>
             </div>
 

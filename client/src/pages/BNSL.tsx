@@ -323,7 +323,9 @@ export default function BNSL() {
         setBnslWalletBalance(parseFloat(bnslData.wallet.availableGoldGrams || '0'));
         // Preserve undefined for legacy wallets without locked USD values (allows fallback to live calculation)
         const rawAvailableValueUsd = bnslData.wallet.availableValueUsd;
-        setBnslAvailableValueUsd(rawAvailableValueUsd != null && rawAvailableValueUsd !== '0' ? parseFloat(rawAvailableValueUsd) : undefined);
+        const parsedValue = rawAvailableValueUsd != null ? parseFloat(rawAvailableValueUsd) : 0;
+        // Only set the locked value if it's greater than 0 (legacy wallets will show live calculation)
+        setBnslAvailableValueUsd(parsedValue > 0 ? parsedValue : undefined);
         setLockedBnslBalance(parseFloat(bnslData.wallet.lockedGoldGrams || '0'));
       }
     } catch (err) {
