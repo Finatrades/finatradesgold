@@ -36,6 +36,17 @@ The platform uses a client-server architecture with a React frontend and an Expr
 - **Real-time**: Socket.IO server.
 - **Database Access**: Drizzle ORM with PostgreSQL.
 
+**Security Hardening:**
+- **Helmet.js**: Security headers configured in `server/index.ts`:
+  - CSP: Strict in production, disabled in development for hot reload
+  - HSTS: 1-year max-age in production
+  - X-Frame-Options: deny (clickjacking protection)
+  - X-Content-Type-Options: nosniff
+  - Referrer-Policy: strict-origin-when-cross-origin
+- **CSRF Protection**: Custom header validation requiring `X-Requested-With: XMLHttpRequest` for all state-changing requests. Frontend adds this header via `apiRequest` in `client/src/lib/queryClient.ts`.
+  - **CSRF-exempt endpoints**: Authentication flows (login, register, password reset), webhooks (BinancePay, Ngenius, Stripe), public info endpoints
+- **Idempotency Middleware**: Applied to critical payment routes using atomic Redis SETNX (24-hour TTL, 30-second lock). Protected routes: `/api/transactions`, `/api/deposit-requests`, `/api/withdrawal-requests`, `/api/bnsl/plans`, `/api/bnsl/wallet/transfer`, `/api/bnsl/wallet/withdraw`, `/api/buy-gold/submit`. Client integrations should supply stable `X-Idempotency-Key` headers for retries.
+
 **Data Storage:**
 - **Database**: PostgreSQL with Drizzle ORM.
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
