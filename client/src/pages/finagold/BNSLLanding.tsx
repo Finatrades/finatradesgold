@@ -781,14 +781,35 @@ function PlanComparisonSection() {
 
 function BenefitsSection() {
   const benefits = [
-    { icon: Shield, title: 'Physical Gold Security', description: 'Your investment stays backed by real physical gold in regulated vaults.' },
-    { icon: Lock, title: 'Fixed Price Stability', description: 'Your gold value stays anchored to the Locked-In Price for the entire plan.' },
-    { icon: Calendar, title: 'Quarterly Gold Rewards', description: 'Every 3 months your wallet receives payout in additional gold units.' },
-    { icon: Vault, title: 'In-Kind Settlement', description: 'Your principal is returned exactly in gold units at maturity.' },
+    { 
+      icon: Vault, 
+      title: 'Physical Gold Security', 
+      description: 'Your investment remains fully backed by physical gold held in regulated vaults.' 
+    },
+    { 
+      icon: Lock, 
+      title: 'Fixed Price Stability', 
+      description: 'The Locked-In Price safeguards your valuation throughout the plan.' 
+    },
+    { 
+      icon: Calendar, 
+      title: 'Quarterly Gold Growth Credits', 
+      description: 'Your gold worth increases every 3 months based on the agreed rate.' 
+    },
+    { 
+      icon: Shield, 
+      title: 'In-Kind Settlement', 
+      description: 'At maturity, your principal worth is returned in gold, not cash.' 
+    },
   ];
 
   return (
-    <section className="relative py-32 bg-gradient-to-b from-black via-[#050505] to-black overflow-hidden">
+    <section className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-1/4 w-96 h-96 rounded-full bg-purple-100/20 blur-3xl" />
+        <div className="absolute bottom-10 right-1/4 w-72 h-72 rounded-full bg-pink-100/20 blur-3xl" />
+      </div>
+
       <div className="relative max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -796,8 +817,15 @@ function BenefitsSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Why Users Choose the BNSL Plan</h2>
-          <p className="text-gray-400 text-lg">Built for stability, transparency, and real gold ownership</p>
+          <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
+            Key Benefits
+          </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Why Users Prefer the{' '}
+            <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+              BNSL Plan
+            </span>
+          </h2>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -809,13 +837,13 @@ function BenefitsSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -4 }}
-              className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-[#EAC26B]/30 transition-all"
+              className="bg-white p-6 rounded-2xl border border-gray-100 shadow-lg hover:shadow-xl hover:border-purple-200 transition-all"
             >
-              <div className="w-14 h-14 rounded-xl bg-[#EAC26B]/10 flex items-center justify-center mb-4">
-                <benefit.icon className="w-7 h-7 text-[#EAC26B]" />
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-5">
+                <benefit.icon className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{benefit.title}</h3>
-              <p className="text-sm text-gray-400">{benefit.description}</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{benefit.title}</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">{benefit.description}</p>
             </motion.div>
           ))}
         </div>
