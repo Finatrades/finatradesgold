@@ -2175,8 +2175,10 @@ ${message}
       } catch (e) { /* table may not exist */ }
 
       try {
-        const allVaultRequests = await db.select().from(vaultHoldings);
-        pendingVaultRequests = allVaultRequests.filter((v: any) => v.status === 'pending' || v.status === 'processing').length;
+        const allVaultWithdrawals = await db.select().from(vaultWithdrawalRequests);
+        pendingVaultRequests = allVaultWithdrawals.filter((v: any) => 
+          v.status === 'Submitted' || v.status === 'Pending' || v.status === 'Processing'
+        ).length;
       } catch (e) { /* table may not exist */ }
 
       try {
