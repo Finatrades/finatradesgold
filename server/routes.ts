@@ -7963,11 +7963,14 @@ ${message}
         goldGrams: (availableGold - amountGrams).toFixed(6)
       });
       
-      // Credit to BNSL wallet
+      // Credit to BNSL wallet with locked USD value
       const bnslWallet = await storage.getOrCreateBnslWallet(userId);
       const newAvailable = parseFloat(bnslWallet.availableGoldGrams) + amountGrams;
+      const currentAvailableValueUsd = parseFloat(bnslWallet.availableValueUsd || '0');
+      const newAvailableValueUsd = currentAvailableValueUsd + usdValue;
       await storage.updateBnslWallet(bnslWallet.id, {
-        availableGoldGrams: newAvailable.toFixed(6)
+        availableGoldGrams: newAvailable.toFixed(6),
+        availableValueUsd: newAvailableValueUsd.toFixed(2)
       });
       
       // Create transaction record with USD value
@@ -8057,9 +8060,16 @@ ${message}
       const goldPrice = await getGoldPricePerGram();
       const usdValue = amountGrams * goldPrice;
       
-      // Debit from BNSL wallet
+      // Calculate proportional locked USD to deduct (based on original locked price per gram)
+      const currentAvailableValueUsd = parseFloat(bnslWallet.availableValueUsd || '0');
+      const lockedPricePerGram = availableGold > 0 ? currentAvailableValueUsd / availableGold : 0;
+      const usdToDeduct = amountGrams * lockedPricePerGram;
+      const newAvailableValueUsd = Math.max(0, currentAvailableValueUsd - usdToDeduct);
+      
+      // Debit from BNSL wallet (including locked USD value)
       await storage.updateBnslWallet(bnslWallet.id, {
-        availableGoldGrams: (availableGold - amountGrams).toFixed(6)
+        availableGoldGrams: (availableGold - amountGrams).toFixed(6),
+        availableValueUsd: newAvailableValueUsd.toFixed(2)
       });
       
       // Credit to FinaPay wallet

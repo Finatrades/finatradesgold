@@ -11,6 +11,7 @@ import { AEDAmount, AED_SYMBOL } from '@/components/ui/DirhamSymbol';
 
 interface BnslWalletCardProps {
   bnslBalanceGold: number;
+  availableValueUsd?: number;
   lockedBalanceGold: number;
   lockedValueUsd?: number;
   finaPayBalanceGold: number;
@@ -21,6 +22,7 @@ interface BnslWalletCardProps {
 
 export default function BnslWalletCard({ 
   bnslBalanceGold, 
+  availableValueUsd,
   lockedBalanceGold,
   lockedValueUsd, 
   finaPayBalanceGold, 
@@ -225,25 +227,28 @@ export default function BnslWalletCard({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            {/* Available Balance */}
-            <div className="bg-muted p-4 rounded-xl border border-border">
+            {/* Available Balance - USD Value is LOCKED at transfer time */}
+            <div className="bg-muted p-4 rounded-xl border border-border relative overflow-hidden">
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-muted-foreground/50" />
+              </div>
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Available to Invest</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">USD Value:</span>
+                  <span className="text-xs text-muted-foreground">USD Value (Locked):</span>
                   <span className="text-xl font-bold text-foreground">
-                    ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${(availableValueUsd ?? (bnslBalanceGold * currentGoldPrice)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                  <span className="text-xs text-muted-foreground">Gold Quantity:</span>
                   <span className="text-base font-semibold text-fuchsia-600">
                     {bnslBalanceGold.toFixed(4)} g
                   </span>
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">
-                Funds available for creating new BNSL plans.
+                Price locked at transfer time (not live price).
               </p>
             </div>
 

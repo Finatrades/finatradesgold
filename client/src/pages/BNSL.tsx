@@ -300,6 +300,7 @@ export default function BNSL() {
   // Real Wallet State from API
   const [finaPayGoldBalance, setFinaPayGoldBalance] = useState(0);
   const [bnslWalletBalance, setBnslWalletBalance] = useState(0);
+  const [bnslAvailableValueUsd, setBnslAvailableValueUsd] = useState<number | undefined>(undefined);
   const [lockedBnslBalance, setLockedBnslBalance] = useState(0);
 
   // Fetch wallet balances
@@ -320,6 +321,9 @@ export default function BNSL() {
       const bnslData = await bnslRes.json();
       if (bnslData.wallet) {
         setBnslWalletBalance(parseFloat(bnslData.wallet.availableGoldGrams || '0'));
+        // Preserve undefined for legacy wallets without locked USD values (allows fallback to live calculation)
+        const rawAvailableValueUsd = bnslData.wallet.availableValueUsd;
+        setBnslAvailableValueUsd(rawAvailableValueUsd != null && rawAvailableValueUsd !== '0' ? parseFloat(rawAvailableValueUsd) : undefined);
         setLockedBnslBalance(parseFloat(bnslData.wallet.lockedGoldGrams || '0'));
       }
     } catch (err) {
@@ -647,6 +651,7 @@ export default function BNSL() {
         {/* WALLET STRIP */}
         <BnslWalletCard 
           bnslBalanceGold={bnslWalletBalance}
+          availableValueUsd={bnslAvailableValueUsd}
           lockedBalanceGold={totalLockedGold}
           lockedValueUsd={totalLockedValueUsd}
           finaPayBalanceGold={finaPayGoldBalance}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
-import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award, FileText, DollarSign, Package, Shield, Truck, Download, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award, FileText, DollarSign, Package, Shield, Truck, Download, CheckCircle, AlertCircle, XCircle, Box, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -850,8 +850,62 @@ export default function FinaVault() {
                 </TabsContent>
 
                 {/* Storage Fees Tab */}
-                <TabsContent value="storage-fees" className="mt-0">
-                  <Card className="bg-white border">
+                <TabsContent value="storage-fees" className="mt-0 space-y-6">
+                  {/* Storage Fees Summary Cards */}
+                  {(() => {
+                    const fees = storageFeesData?.fees || [];
+                    const totalPaid = fees.filter((f: any) => f.status === 'Paid').reduce((sum: number, f: any) => sum + parseFloat(f.feeAmountUsd || 0), 0);
+                    const pendingFees = fees.filter((f: any) => f.status === 'Pending').reduce((sum: number, f: any) => sum + parseFloat(f.feeAmountUsd || 0), 0);
+                    const currentRate = fees.length > 0 ? parseFloat(fees[0]?.feeRatePercent || 0) : 0.5;
+                    
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Fees Paid</p>
+                                <p className="text-xl font-bold text-green-700 dark:text-green-400">${totalPaid.toFixed(2)}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+                                <Clock className="w-5 h-5 text-amber-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">Pending Fees</p>
+                                <p className="text-xl font-bold text-amber-700 dark:text-amber-400">${pendingFees.toFixed(2)}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border-purple-200 dark:border-purple-800">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                                <DollarSign className="w-5 h-5 text-purple-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">Current Annual Rate</p>
+                                <p className="text-xl font-bold text-purple-700 dark:text-purple-400">{currentRate.toFixed(2)}%</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    );
+                  })()}
+                  
+                  <Card className="bg-white dark:bg-card border">
                     <CardHeader className="border-b">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <DollarSign className="w-5 h-5 text-primary" />
@@ -898,9 +952,9 @@ export default function FinaVault() {
                                   </td>
                                   <td className="p-4 text-center">
                                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                      fee.status === 'Paid' ? 'bg-green-100 text-green-700' : 
-                                      fee.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 
-                                      'bg-gray-100 text-gray-700'
+                                      fee.status === 'Paid' ? 'bg-success-muted text-success-muted-foreground' : 
+                                      fee.status === 'Pending' ? 'bg-warning-muted text-warning-muted-foreground' : 
+                                      'bg-muted text-muted-foreground'
                                     }`}>
                                       {fee.status === 'Paid' && <CheckCircle className="w-3 h-3 mr-1" />}
                                       {fee.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
@@ -983,86 +1037,136 @@ export default function FinaVault() {
                 </TabsContent>
 
                 {/* Deliveries Tab */}
-                <TabsContent value="deliveries" className="mt-0">
-                  <Card className="bg-white border">
-                    <CardHeader className="border-b">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Truck className="w-5 h-5 text-primary" />
-                        Physical Delivery Requests
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">Track your physical gold delivery requests</p>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      {(physicalDeliveriesData?.requests || []).length === 0 ? (
-                        <div className="p-12 text-center">
-                          <Truck className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                          <h3 className="text-lg font-bold mb-2">No Delivery Requests</h3>
-                          <p className="text-muted-foreground">
-                            You haven't requested any physical gold deliveries yet. Contact support to request physical delivery of your gold.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50 border-b">
-                              <tr>
-                                <th className="text-left p-4 font-medium">Reference</th>
-                                <th className="text-left p-4 font-medium">Gold Amount</th>
-                                <th className="text-left p-4 font-medium">Delivery Address</th>
-                                <th className="text-center p-4 font-medium">Status</th>
-                                <th className="text-left p-4 font-medium">Tracking</th>
-                                <th className="text-left p-4 font-medium">Created</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              {(physicalDeliveriesData?.requests || []).map((delivery: any) => (
-                                <tr key={delivery.id} className="hover:bg-gray-50">
-                                  <td className="p-4 font-mono text-xs">
-                                    {delivery.referenceNumber || delivery.id.substring(0, 8).toUpperCase()}
-                                  </td>
-                                  <td className="p-4 font-medium">
-                                    {parseFloat(delivery.goldGrams || 0).toFixed(4)} g
-                                  </td>
-                                  <td className="p-4 text-muted-foreground max-w-xs truncate">
-                                    {delivery.deliveryAddress || 'Not specified'}
-                                  </td>
-                                  <td className="p-4 text-center">
-                                    <div className="flex flex-col items-center gap-1">
-                                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                        delivery.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
-                                        delivery.status === 'Shipped' ? 'bg-blue-100 text-blue-700' : 
-                                        delivery.status === 'Processing' ? 'bg-purple-100 text-purple-700' : 
-                                        delivery.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 
-                                        delivery.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 
-                                        'bg-gray-100 text-gray-700'
-                                      }`}>
-                                        {delivery.status === 'Delivered' && <CheckCircle className="w-3 h-3 mr-1" />}
-                                        {delivery.status === 'Shipped' && <Truck className="w-3 h-3 mr-1" />}
-                                        {delivery.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
-                                        {delivery.status}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="p-4">
-                                    {delivery.trackingNumber ? (
-                                      <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                                        {delivery.trackingNumber}
-                                      </span>
-                                    ) : (
-                                      <span className="text-muted-foreground">-</span>
-                                    )}
-                                  </td>
-                                  <td className="p-4 text-muted-foreground">
-                                    {new Date(delivery.createdAt).toLocaleDateString()}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                <TabsContent value="deliveries" className="mt-0 space-y-6">
+                  {/* Delivery Tracking Cards */}
+                  {(physicalDeliveriesData?.requests || []).length === 0 ? (
+                    <Card className="bg-white dark:bg-card border">
+                      <CardContent className="p-12 text-center">
+                        <Truck className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                        <h3 className="text-lg font-bold mb-2">No Delivery Requests</h3>
+                        <p className="text-muted-foreground">
+                          You haven't requested any physical gold deliveries yet. Contact support to request physical delivery of your gold.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    (physicalDeliveriesData?.requests || []).map((delivery: any) => {
+                      const deliverySteps = [
+                        { key: 'Pending', label: 'Request Submitted', description: 'Your delivery request has been received', icon: Clock },
+                        { key: 'Processing', label: 'Processing', description: 'Preparing your gold for shipment', icon: Box },
+                        { key: 'Shipped', label: 'Shipped', description: 'Your gold is on its way', icon: Truck },
+                        { key: 'In Transit', label: 'In Transit', description: 'Package is being delivered', icon: Truck },
+                        { key: 'Delivered', label: 'Delivered', description: 'Successfully delivered', icon: CheckCircle },
+                      ];
+                      const statusIndex = deliverySteps.findIndex(s => s.key === delivery.status);
+                      const isCancelled = delivery.status === 'Cancelled' || delivery.status === 'Failed';
+                      
+                      return (
+                        <Card key={delivery.id} className="bg-white dark:bg-card border overflow-hidden">
+                          <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                  <Truck className="w-5 h-5 text-primary" />
+                                  Delivery #{delivery.referenceNumber || delivery.id.substring(0, 8).toUpperCase()}
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {parseFloat(delivery.goldGrams || 0).toFixed(4)}g Gold • {delivery.city}, {delivery.country}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                                  delivery.status === 'Delivered' ? 'bg-success-muted text-success-muted-foreground' : 
+                                  delivery.status === 'Shipped' || delivery.status === 'In Transit' ? 'bg-info-muted text-info-muted-foreground' : 
+                                  delivery.status === 'Processing' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' : 
+                                  delivery.status === 'Pending' ? 'bg-warning-muted text-warning-muted-foreground' : 
+                                  'bg-error-muted text-error-muted-foreground'
+                                }`}>
+                                  {delivery.status === 'Delivered' && <CheckCircle className="w-3 h-3 mr-1" />}
+                                  {(delivery.status === 'Shipped' || delivery.status === 'In Transit') && <Truck className="w-3 h-3 mr-1" />}
+                                  {delivery.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
+                                  {delivery.status}
+                                </span>
+                                {delivery.trackingNumber && (
+                                  <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                                    {delivery.trackingNumber}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="p-6">
+                            {/* Step-by-step visual tracking */}
+                            {isCancelled ? (
+                              <div className="text-center py-4">
+                                <div className="w-12 h-12 rounded-full bg-error-muted mx-auto mb-3 flex items-center justify-center">
+                                  <X className="w-6 h-6 text-destructive" />
+                                </div>
+                                <p className="font-medium text-destructive">Delivery {delivery.status}</p>
+                                <p className="text-sm text-muted-foreground">Please contact support for more information</p>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                {/* Progress line */}
+                                <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" />
+                                <div 
+                                  className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500" 
+                                  style={{ width: `${Math.max(0, (statusIndex / (deliverySteps.length - 1)) * 100)}%` }}
+                                />
+                                
+                                {/* Steps */}
+                                <div className="relative flex justify-between">
+                                  {deliverySteps.map((step, index) => {
+                                    const isComplete = index <= statusIndex;
+                                    const isCurrent = index === statusIndex;
+                                    const StepIcon = step.icon;
+                                    
+                                    return (
+                                      <div key={step.key} className="flex flex-col items-center text-center w-24">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                                          isComplete ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-muted-foreground'
+                                        } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`}>
+                                          <StepIcon className="w-5 h-5" />
+                                        </div>
+                                        <p className={`text-xs font-medium mt-2 ${isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                          {step.label}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground mt-0.5 hidden md:block">
+                                          {step.description}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Delivery details */}
+                            <div className="mt-6 pt-6 border-t grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Delivery Address</p>
+                                <p className="font-medium">{delivery.deliveryAddress}</p>
+                                <p className="text-muted-foreground">{delivery.city}, {delivery.country} {delivery.postalCode}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Courier</p>
+                                <p className="font-medium">{delivery.courierName || 'To be assigned'}</p>
+                                {delivery.estimatedDeliveryDays && (
+                                  <p className="text-muted-foreground">Est. {delivery.estimatedDeliveryDays} days</p>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Dates</p>
+                                <p className="font-medium">Created: {new Date(delivery.createdAt).toLocaleDateString()}</p>
+                                {delivery.shippedAt && <p className="text-muted-foreground">Shipped: {new Date(delivery.shippedAt).toLocaleDateString()}</p>}
+                                {delivery.deliveredAt && <p className="text-success-muted-foreground font-medium">Delivered: {new Date(delivery.deliveredAt).toLocaleDateString()}</p>}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
                 </TabsContent>
 
                 {/* Insurance Tab */}
