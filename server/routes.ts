@@ -3286,6 +3286,8 @@ ${message}
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
+      console.log("[KYC Admin] Starting to fetch all KYC submissions...");
+      
       // Fetch all KYC types with individual error handling
       let kycAmlArray: any[] = [];
       let personalArray: any[] = [];
@@ -3294,22 +3296,25 @@ ${message}
       try {
         const kycAml = await storage.getAllKycSubmissions();
         kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
+        console.log(`[KYC Admin] Fetched ${kycAmlArray.length} KYC AML submissions`);
       } catch (e: any) {
-        console.error("Error fetching KYC AML submissions:", e);
+        console.error("[KYC Admin] Error fetching KYC AML submissions:", e?.message || e);
       }
       
       try {
         const personal = await storage.getAllFinatradesPersonalKyc();
         personalArray = Array.isArray(personal) ? personal : [];
+        console.log(`[KYC Admin] Fetched ${personalArray.length} personal KYC submissions`);
       } catch (e: any) {
-        console.error("Error fetching personal KYC:", e);
+        console.error("[KYC Admin] Error fetching personal KYC:", e?.message || e);
       }
       
       try {
         const corporate = await storage.getAllFinatradesCorporateKyc();
         corporateArray = Array.isArray(corporate) ? corporate : [];
+        console.log(`[KYC Admin] Fetched ${corporateArray.length} corporate KYC submissions`);
       } catch (e: any) {
-        console.error("Error fetching corporate KYC:", e);
+        console.error("[KYC Admin] Error fetching corporate KYC:", e?.message || e);
       }
       
       // Simple normalization without complex operations
@@ -3317,29 +3322,43 @@ ${message}
       
       // Add kycAml submissions
       for (const s of kycAmlArray) {
-        if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
+        try {
+          if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
+        } catch (e: any) {
+          console.error("[KYC Admin] Error processing kycAml item:", e?.message || e);
+        }
       }
       
       // Add personal submissions
       for (const s of personalArray) {
-        if (s) allSubmissions.push({
-          ...s,
-          tier: 'finatrades_personal',
-          kycType: 'finatrades_personal',
-          accountType: 'personal',
-        });
+        try {
+          if (s) allSubmissions.push({
+            ...s,
+            tier: 'finatrades_personal',
+            kycType: 'finatrades_personal',
+            accountType: 'personal',
+          });
+        } catch (e: any) {
+          console.error("[KYC Admin] Error processing personal item:", e?.message || e);
+        }
       }
       
       // Add corporate submissions - use companyName as fullName for display
       for (const s of corporateArray) {
-        if (s) allSubmissions.push({
-          ...s,
-          tier: 'finatrades_corporate',
-          kycType: 'finatrades_corporate',
-          accountType: 'business',
-          fullName: s?.companyName || null,
-        });
+        try {
+          if (s) allSubmissions.push({
+            ...s,
+            tier: 'finatrades_corporate',
+            kycType: 'finatrades_corporate',
+            accountType: 'business',
+            fullName: s?.companyName || null,
+          });
+        } catch (e: any) {
+          console.error("[KYC Admin] Error processing corporate item:", e?.message || e);
+        }
       }
+      
+      console.log(`[KYC Admin] Total submissions combined: ${allSubmissions.length}`);
       
       // Sort by creation date
       allSubmissions.sort((a, b) => {
@@ -3348,9 +3367,10 @@ ${message}
         return dateB - dateA;
       });
       
+      console.log("[KYC Admin] Sending response...");
       return res.json({ submissions: allSubmissions });
     } catch (error: any) {
-      console.error("KYC endpoint error:", error);
+      console.error("[KYC Admin] FATAL endpoint error:", error?.message || error, error?.stack);
       return res.status(500).json({ message: "Failed to fetch KYC submissions", error: error?.message });
     }
   });
