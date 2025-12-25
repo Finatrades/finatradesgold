@@ -119,14 +119,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const getBadgeCount = (href: string): number => {
     if (!pendingCounts) return 0;
+    const finapayTotal = (pendingCounts.pendingDeposits || 0) + (pendingCounts.pendingWithdrawals || 0) + (pendingCounts.pendingCryptoPayments || 0) + (pendingCounts.pendingBuyGold || 0);
     const countMap: Record<string, number> = {
+      '/admin/users': 0,
+      '/admin/employees': 0,
       '/admin/kyc': pendingCounts.pendingKyc || 0,
+      '/admin/compliance': pendingCounts.pendingKyc || 0,
+      '/admin/referrals': 0,
       '/admin/transactions': pendingCounts.pendingTransactions || 0,
-      '/admin/finapay': (pendingCounts.pendingDeposits || 0) + (pendingCounts.pendingWithdrawals || 0) + (pendingCounts.pendingCryptoPayments || 0) + (pendingCounts.pendingBuyGold || 0),
+      '/admin/account-statements': 0,
+      '/admin/payment-gateways': 0,
+      '/admin/fees': 0,
+      '/admin/finapay': finapayTotal,
       '/admin/vault': pendingCounts.pendingVaultRequests || 0,
       '/admin/finabridge': pendingCounts.pendingTradeCases || 0,
       '/admin/bnsl': pendingCounts.pendingBnslRequests || 0,
+      '/admin/documents': 0,
+      '/admin/attachments': 0,
       '/admin/chat': pendingCounts.unreadChats || 0,
+      '/admin/email-notifications': 0,
+      '/admin/cms': 0,
+      '/admin/security': 0,
+      '/admin/platform-config': 0,
+      '/admin/database-backups': 0,
+      '/admin/geo-restrictions': 0,
+      '/admin/settings': 0,
     };
     return countMap[href] || 0;
   };
