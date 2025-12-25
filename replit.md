@@ -13,6 +13,9 @@ Finatrades is a gold-backed digital financial platform offering integrated servi
 
 Preferred communication style: Simple, everyday language.
 
+**System Reports Email:** System@finatrades.com  
+All system-generated reports (security audits, CSRF reports, compliance reports, etc.) should be sent to this email address.
+
 ## System Architecture
 
 The platform uses a client-server architecture with a React frontend and an Express Node.js backend. Data persistence is handled by PostgreSQL.
