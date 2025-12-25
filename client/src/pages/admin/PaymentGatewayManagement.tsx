@@ -218,14 +218,20 @@ export default function PaymentGatewayManagement() {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user?.id || '' 
         },
+        credentials: 'include',
         body: JSON.stringify(settings)
       });
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to save');
+      }
       toast.success('Payment gateway settings saved successfully');
     } catch (error) {
-      toast.error('Failed to save settings');
+      console.error('Save error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save settings');
     } finally {
       setSaving(false);
     }
