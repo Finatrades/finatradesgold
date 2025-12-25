@@ -122,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const countMap: Record<string, number> = {
       '/admin/kyc': pendingCounts.pendingKyc || 0,
       '/admin/transactions': pendingCounts.pendingTransactions || 0,
-      '/admin/finapay': pendingCounts.pendingDeposits + pendingCounts.pendingWithdrawals || 0,
+      '/admin/finapay': (pendingCounts.pendingDeposits || 0) + (pendingCounts.pendingWithdrawals || 0) + (pendingCounts.pendingCryptoPayments || 0) + (pendingCounts.pendingBuyGold || 0),
       '/admin/vault': pendingCounts.pendingVaultRequests || 0,
       '/admin/finabridge': pendingCounts.pendingTradeCases || 0,
       '/admin/bnsl': pendingCounts.pendingBnslRequests || 0,

@@ -2326,6 +2326,19 @@ ${message}
         unreadChats = allChats.filter((c: any) => c.status === 'active' || c.status === 'waiting').length;
       } catch (e) { /* table may not exist */ }
 
+      let pendingCryptoPayments = 0;
+      let pendingBuyGold = 0;
+
+      try {
+        const allCrypto = await db.select().from(cryptoPaymentRequests);
+        pendingCryptoPayments = allCrypto.filter((c: any) => c.status === 'Pending' || c.status === 'Under Review').length;
+      } catch (e) { /* table may not exist */ }
+
+      try {
+        const allBuyGold = await db.select().from(buyGoldRequests);
+        pendingBuyGold = allBuyGold.filter((b: any) => b.status === 'Pending' || b.status === 'Under Review').length;
+      } catch (e) { /* table may not exist */ }
+
       res.json({
         pendingKyc,
         pendingTransactions,
@@ -2334,7 +2347,9 @@ ${message}
         pendingVaultRequests,
         pendingTradeCases,
         pendingBnslRequests,
-        unreadChats
+        unreadChats,
+        pendingCryptoPayments,
+        pendingBuyGold
       });
     } catch (error) {
       console.error("Failed to get pending counts:", error);
