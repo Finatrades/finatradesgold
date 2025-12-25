@@ -270,7 +270,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               <div className="hidden lg:block h-8 w-px bg-border" />
 
-              <nav className="hidden lg:flex items-center gap-1" data-testid="admin-section-tabs">
+              <nav className="hidden lg:flex items-center justify-center gap-1 flex-1" data-testid="admin-section-tabs">
                 {menuSections.map((section) => {
                   const visibleItems = section.items.filter(item => hasMenuPermission(item.href));
                   if (visibleItems.length === 0) return null;
@@ -371,7 +371,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="hidden lg:block border-t border-border bg-card/50" data-testid="admin-nav-bar">
           <div className="px-4 lg:px-6">
-            <div className="flex items-center gap-6 py-2.5">
+            <div className="flex items-center justify-center gap-6 py-2.5">
               {currentSectionItems.map((item) => {
                 const badgeCount = getBadgeCount(item.href);
                 return (
