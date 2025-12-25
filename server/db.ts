@@ -38,6 +38,8 @@ export const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
+  // Enable SSL for AWS RDS connections with relaxed certificate validation
+  ssl: isUsingAws ? { rejectUnauthorized: false } : undefined,
 });
 
 // Secondary database pool (Replit - for backup sync)
