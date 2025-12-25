@@ -409,7 +409,11 @@ export default function KYCReview() {
     mutationFn: async (submissionId: string) => {
       const res = await fetch(`/api/kyc/${submissionId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ 
           status: 'Approved',
           reviewedBy: adminUser?.id,
@@ -433,7 +437,11 @@ export default function KYCReview() {
     mutationFn: async ({ submissionId, reason }: { submissionId: string; reason: string }) => {
       const res = await fetch(`/api/kyc/${submissionId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ 
           status: 'Rejected',
           rejectionReason: reason,
@@ -470,7 +478,11 @@ export default function KYCReview() {
         submissionIds.map(async (id) => {
           const res = await fetch(`/api/kyc/${id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
             body: JSON.stringify({ 
               status: 'Approved',
               reviewedBy: adminUser?.id,
@@ -499,7 +511,11 @@ export default function KYCReview() {
         submissionIds.map(async (id) => {
           const res = await fetch(`/api/kyc/${id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
             body: JSON.stringify({ 
               status: 'Rejected',
               rejectionReason: reason,

@@ -87,8 +87,10 @@ export default function SecuritySettings() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user.id
         },
+        credentials: 'include',
         body: JSON.stringify(updates)
       });
       if (!res.ok) throw new Error('Failed to save');

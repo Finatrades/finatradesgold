@@ -122,6 +122,7 @@ export default function EmailNotificationsManagement() {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user?.id || '' 
         },
         credentials: 'include',
@@ -143,7 +144,10 @@ export default function EmailNotificationsManagement() {
     mutationFn: async () => {
       const res = await fetch('/api/admin/email-notifications/seed', {
         method: 'POST',
-        headers: { 'X-Admin-User-Id': user?.id || '' },
+        headers: { 
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-Admin-User-Id': user?.id || '' 
+        },
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to seed settings');

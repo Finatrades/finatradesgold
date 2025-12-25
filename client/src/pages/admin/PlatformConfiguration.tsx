@@ -160,7 +160,11 @@ export default function PlatformConfiguration() {
     try {
       const res = await fetch('/api/admin/platform-config/seed', {
         method: 'POST',
-        headers: { 'X-Admin-User-Id': user?.id || '' }
+        headers: { 
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-Admin-User-Id': user?.id || '' 
+        },
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to seed');
       toast.success('Default configuration seeded successfully');
@@ -207,8 +211,10 @@ export default function PlatformConfiguration() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user?.id || '' 
         },
+        credentials: 'include',
         body: JSON.stringify({ updates })
       });
       if (!res.ok) throw new Error('Failed to save');

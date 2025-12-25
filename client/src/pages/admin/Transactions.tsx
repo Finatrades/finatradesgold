@@ -54,7 +54,11 @@ export default function Transactions() {
     mutationFn: async ({ id, sourceTable }: { id: string; sourceTable?: string }) => {
       const res = await fetch(`/api/admin/transactions/${id}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ sourceTable }),
       });
       if (!res.ok) throw new Error('Failed to approve transaction');
@@ -73,7 +77,11 @@ export default function Transactions() {
     mutationFn: async ({ id, sourceTable }: { id: string; sourceTable?: string }) => {
       const res = await fetch(`/api/admin/transactions/${id}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ reason: 'Rejected by admin', sourceTable }),
       });
       if (!res.ok) throw new Error('Failed to reject transaction');
@@ -126,7 +134,11 @@ export default function Transactions() {
         ids.map(async (id) => {
           const res = await fetch(`/api/admin/transactions/${id}/approve`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
             body: JSON.stringify({}),
           });
           return { id, success: res.ok };
@@ -151,7 +163,11 @@ export default function Transactions() {
         ids.map(async (id) => {
           const res = await fetch(`/api/admin/transactions/${id}/reject`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
             body: JSON.stringify({ reason: 'Bulk rejected by admin' }),
           });
           return { id, success: res.ok };

@@ -431,6 +431,7 @@ export default function FinaPayManagement() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': String(currentUser.id)
         },
         credentials: 'include',
@@ -487,6 +488,7 @@ export default function FinaPayManagement() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': String(currentUser.id)
         },
         credentials: 'include',

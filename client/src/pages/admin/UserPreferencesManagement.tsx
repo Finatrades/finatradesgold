@@ -59,7 +59,11 @@ export default function UserPreferencesManagement() {
     mutationFn: async ({ userId, updates }: { userId: string; updates: Partial<UserPreferencesData> }) => {
       const res = await fetch(`/api/admin/users/${userId}/preferences`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(updates),
       });
       if (!res.ok) throw new Error('Failed to update');

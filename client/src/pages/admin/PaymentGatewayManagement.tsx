@@ -365,8 +365,10 @@ export default function PaymentGatewayManagement() {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user?.id || ''
         },
+        credentials: 'include',
         body: JSON.stringify(walletForm)
       });
       if (!res.ok) throw new Error('Failed to save');
@@ -384,7 +386,11 @@ export default function PaymentGatewayManagement() {
     try {
       const res = await fetch(`/api/admin/crypto-wallets/${id}`, {
         method: 'DELETE',
-        headers: { 'X-Admin-User-Id': user?.id || '' }
+        headers: { 
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-Admin-User-Id': user?.id || '' 
+        },
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to delete');
       toast.success('Wallet deleted');
@@ -400,8 +406,10 @@ export default function PaymentGatewayManagement() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user?.id || ''
         },
+        credentials: 'include',
         body: JSON.stringify({ isActive: !wallet.isActive })
       });
       if (!res.ok) throw new Error('Failed to update');

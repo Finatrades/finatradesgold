@@ -140,7 +140,10 @@ export default function DatabaseBackups() {
     mutationFn: async (otp: string) => {
       const res = await fetch("/api/admin/backups", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
         credentials: "include",
         body: JSON.stringify({ otpCode: otp }),
       });
@@ -168,6 +171,7 @@ export default function DatabaseBackups() {
     mutationFn: async (backupId: string) => {
       const res = await fetch(`/api/admin/backups/${backupId}`, {
         method: "DELETE",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
         credentials: "include",
       });
       if (!res.ok) {
@@ -194,7 +198,10 @@ export default function DatabaseBackups() {
     mutationFn: async ({ backupId, otp }: { backupId: string; otp: string }) => {
       const res = await fetch(`/api/admin/backups/${backupId}/restore`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
         credentials: "include",
         body: JSON.stringify({ confirmed: true, otpCode: otp }),
       });
@@ -225,7 +232,10 @@ export default function DatabaseBackups() {
     try {
       const res = await fetch(`/api/admin/backups/${backup.id}/download`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
         credentials: "include",
         body: JSON.stringify({ otpCode: otp }),
       });

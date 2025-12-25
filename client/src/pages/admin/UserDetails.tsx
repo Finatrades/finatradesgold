@@ -43,7 +43,11 @@ export default function UserDetails() {
     try {
       const res = await fetch(`/api/admin/users/${userId}/verify-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ adminId: adminUser?.id }),
       });
       if (res.ok) {
@@ -59,7 +63,11 @@ export default function UserDetails() {
     try {
       const res = await fetch(`/api/admin/users/${userId}/suspend`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ adminId: adminUser?.id, reason: "Suspended by admin" }),
       });
       if (res.ok) {
@@ -75,7 +83,11 @@ export default function UserDetails() {
     try {
       const res = await fetch(`/api/admin/users/${userId}/activate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ adminId: adminUser?.id }),
       });
       if (res.ok) {

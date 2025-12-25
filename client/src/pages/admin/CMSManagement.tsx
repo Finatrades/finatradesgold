@@ -99,7 +99,11 @@ export default function CMSManagement() {
     mutationFn: async (data: any) => {
       const res = await fetch('/api/admin/branding', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       return res.json();
@@ -114,7 +118,11 @@ export default function CMSManagement() {
     mutationFn: async (data: Partial<ContentPage>) => {
       const res = await fetch('/api/admin/cms/pages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       return res.json();
@@ -131,7 +139,11 @@ export default function CMSManagement() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<ContentPage> }) => {
       const res = await fetch(`/api/admin/cms/pages/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       return res.json();
@@ -146,7 +158,11 @@ export default function CMSManagement() {
 
   const deletePageMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/cms/pages/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/cms/pages/${id}`, { 
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       return res.json();
     },
     onSuccess: () => {
@@ -159,7 +175,11 @@ export default function CMSManagement() {
     mutationFn: async (data: Partial<ContentBlock>) => {
       const res = await fetch('/api/admin/cms/blocks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       return res.json();
@@ -176,7 +196,11 @@ export default function CMSManagement() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<ContentBlock> }) => {
       const res = await fetch(`/api/admin/cms/blocks/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       return res.json();
@@ -191,7 +215,11 @@ export default function CMSManagement() {
 
   const deleteBlockMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/cms/blocks/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/cms/blocks/${id}`, { 
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       return res.json();
     },
     onSuccess: () => {
@@ -204,7 +232,11 @@ export default function CMSManagement() {
     mutationFn: async (data: Partial<Template>) => {
       const res = await fetch('/api/admin/cms/templates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       return res.json();
@@ -221,7 +253,11 @@ export default function CMSManagement() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<Template> }) => {
       const res = await fetch(`/api/admin/cms/templates/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       return res.json();
@@ -236,7 +272,11 @@ export default function CMSManagement() {
 
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/cms/templates/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/cms/templates/${id}`, { 
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       return res.json();
     },
     onSuccess: () => {

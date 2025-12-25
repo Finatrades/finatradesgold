@@ -114,7 +114,11 @@ export default function EmployeeManagement() {
     mutationFn: async (data: typeof formData) => {
       const res = await fetch('/api/admin/employees', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ ...data, createdBy: user?.id }),
       });
       if (!res.ok) {
@@ -138,7 +142,11 @@ export default function EmployeeManagement() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
       const res = await fetch(`/api/admin/employees/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ ...data, updatedBy: user?.id }),
       });
       if (!res.ok) throw new Error('Failed to update employee');
@@ -159,7 +167,11 @@ export default function EmployeeManagement() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/employees/${id}/deactivate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ adminId: user?.id }),
       });
       if (!res.ok) throw new Error('Failed to deactivate employee');
@@ -178,7 +190,11 @@ export default function EmployeeManagement() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/employees/${id}/activate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ adminId: user?.id }),
       });
       if (!res.ok) throw new Error('Failed to activate employee');

@@ -102,7 +102,11 @@ export default function ReferralManagement() {
       
       const response = await fetch(`/api/admin/referrals/${selectedReferral.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(updates),
       });
       

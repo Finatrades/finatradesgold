@@ -97,7 +97,11 @@ export default function ComplianceDashboard() {
     mutationFn: async ({ caseId, status, notes }: { caseId: string; status: string; notes?: string }) => {
       const res = await fetch(`/api/admin/aml-cases/${caseId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ status, notes, reviewedBy: adminUser?.id }),
       });
       if (!res.ok) throw new Error('Failed to update case');
@@ -120,7 +124,11 @@ export default function ComplianceDashboard() {
     mutationFn: async (userId: string) => {
       const res = await fetch(`/api/admin/risk-profile/${userId}/calculate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ assessedBy: adminUser?.id }),
       });
       if (!res.ok) throw new Error('Failed to calculate risk');
@@ -137,7 +145,11 @@ export default function ComplianceDashboard() {
 
   const seedRulesMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/admin/aml/seed-rules', { method: 'POST' });
+      const res = await fetch('/api/admin/aml/seed-rules', { 
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to seed rules');
       return res.json();
     },

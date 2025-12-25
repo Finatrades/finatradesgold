@@ -75,7 +75,11 @@ function AgentManagement() {
     try {
       const response = await fetch(`/api/chat-agents/${agent.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ status: newStatus })
       });
       if (!response.ok) throw new Error('Failed to update agent');
@@ -101,7 +105,11 @@ function AgentManagement() {
     try {
       const response = await fetch(`/api/chat-agents/${editingAgent.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(editForm)
       });
       if (!response.ok) throw new Error('Failed to update agent');
@@ -406,7 +414,11 @@ function KnowledgeBaseManagement() {
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(payload)
       });
 
@@ -424,7 +436,11 @@ function KnowledgeBaseManagement() {
   const deleteArticle = async (id: string) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
     try {
-      const response = await fetch(`/api/knowledge/articles/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/knowledge/articles/${id}`, { 
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to delete');
       setArticles(prev => prev.filter(a => a.id !== id));
       toast({ title: 'Success', description: 'Article deleted' });
@@ -438,7 +454,11 @@ function KnowledgeBaseManagement() {
     try {
       const response = await fetch(`/api/knowledge/articles/${article.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({ status: newStatus })
       });
       if (!response.ok) throw new Error('Failed to update');

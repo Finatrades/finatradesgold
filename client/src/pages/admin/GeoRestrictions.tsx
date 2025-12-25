@@ -315,7 +315,11 @@ export default function GeoRestrictions() {
     mutationFn: async (data: typeof newRestriction) => {
       const res = await fetch('/api/admin/geo-restrictions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
       if (!res.ok) {
@@ -348,7 +352,11 @@ export default function GeoRestrictions() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<GeoRestriction> }) => {
       const res = await fetch(`/api/admin/geo-restrictions/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to update restriction');
@@ -368,6 +376,8 @@ export default function GeoRestrictions() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/geo-restrictions/${id}`, {
         method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to delete restriction');
       return res.json();
