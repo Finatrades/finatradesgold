@@ -153,7 +153,10 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await fetch('/api/transactions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({
           ...transactionData,
           userId: user?.id,

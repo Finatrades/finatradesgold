@@ -570,7 +570,10 @@ export default function KYC() {
       
       const response = await fetch('/api/kyc/submit-tiered', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({
           userId: user.id,
           tier: selectedTier,
@@ -646,7 +649,10 @@ export default function KYC() {
       
       const response = await fetch('/api/finatrades-kyc/personal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({
           userId: user.id,
           personalInformation: {
@@ -724,7 +730,10 @@ export default function KYC() {
       
       const response = await fetch('/api/finatrades-kyc/corporate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({
           userId: user.id,
           companyName,

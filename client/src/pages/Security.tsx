@@ -70,7 +70,10 @@ export default function Security() {
     try {
       const res = await fetch('/api/mfa/setup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ userId: user.id }),
       });
       
@@ -95,7 +98,10 @@ export default function Security() {
     try {
       const res = await fetch('/api/mfa/enable', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ userId: user.id, token: verifyCode }),
       });
       
@@ -128,7 +134,10 @@ export default function Security() {
     try {
       const res = await fetch('/api/mfa/disable', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ userId: user.id, password: disablePassword }),
       });
       
