@@ -114,8 +114,10 @@ export default function DocumentsManagement() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user?.id || ''
         },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to resend invoice');
       return res.json();
@@ -135,8 +137,10 @@ export default function DocumentsManagement() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           'X-Admin-User-Id': user?.id || ''
         },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to resend certificate');
       return res.json();

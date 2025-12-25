@@ -296,7 +296,11 @@ export default function GeoRestrictions() {
     mutationFn: async (settings: Partial<GeoRestrictionSettings>) => {
       const res = await fetch('/api/admin/geo-restriction-settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(settings),
       });
       if (!res.ok) throw new Error('Failed to update settings');
