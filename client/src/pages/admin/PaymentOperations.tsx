@@ -281,15 +281,19 @@ export default function FinaPayManagement() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleApprove = async (txId: string) => {
+  const handleApprove = async (txId: string, sourceTable?: string) => {
     try {
-      await apiRequest('POST', `/api/admin/transactions/${txId}/approve`, {
+      const endpoint = sourceTable === 'buyGoldRequests' 
+        ? `/api/admin/buy-gold/${txId}/approve`
+        : `/api/admin/transactions/${txId}/approve`;
+      
+      await apiRequest('POST', endpoint, {
         adminId: currentUser?.id
       });
-      toast.success("Transaction approved successfully");
+      toast.success(sourceTable === 'buyGoldRequests' ? "Buy gold request approved successfully" : "Transaction approved successfully");
       fetchData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to approve transaction");
+      toast.error(error instanceof Error ? error.message : "Failed to approve");
     }
   };
 
@@ -303,16 +307,20 @@ export default function FinaPayManagement() {
     if (!selectedTx) return;
     
     try {
-      await apiRequest('POST', `/api/admin/transactions/${selectedTx.id}/reject`, {
+      const endpoint = selectedTx.sourceTable === 'buyGoldRequests'
+        ? `/api/admin/buy-gold/${selectedTx.id}/reject`
+        : `/api/admin/transactions/${selectedTx.id}/reject`;
+      
+      await apiRequest('POST', endpoint, {
         adminId: currentUser?.id,
         reason: rejectReason || 'Rejected by admin'
       });
-      toast.success("Transaction rejected");
+      toast.success(selectedTx.sourceTable === 'buyGoldRequests' ? "Buy gold request rejected" : "Transaction rejected");
       setRejectDialogOpen(false);
       setSelectedTx(null);
       fetchData();
     } catch (error) {
-      toast.error("Failed to reject transaction");
+      toast.error("Failed to reject");
     }
   };
 
@@ -579,7 +587,7 @@ export default function FinaPayManagement() {
             <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => openRejectDialog(tx)} data-testid={`button-reject-${tx.id}`}>
               <XCircle className="w-4 h-4 mr-1" /> Reject
             </Button>
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(tx.id)} data-testid={`button-approve-${tx.id}`}>
+            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(tx.id, tx.sourceTable)} data-testid={`button-approve-${tx.id}`}>
               <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
             </Button>
           </>
