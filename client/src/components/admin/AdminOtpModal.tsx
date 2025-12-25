@@ -93,6 +93,7 @@ export default function AdminOtpModal({
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-User-Id': adminUserId,
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
           actionType,
@@ -134,6 +135,7 @@ export default function AdminOtpModal({
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-User-Id': adminUserId,
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
           otpId,
@@ -172,6 +174,7 @@ export default function AdminOtpModal({
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-User-Id': adminUserId,
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({ otpId }),
       });
@@ -339,6 +342,7 @@ export async function checkOtpRequired(
     const res = await fetch(`/api/admin/action-otp/required/${actionType}`, {
       headers: {
         'X-Admin-User-Id': adminUserId,
+        'X-Requested-With': 'XMLHttpRequest',
       },
     });
     const data = await res.json();
