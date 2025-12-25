@@ -882,15 +882,6 @@ export default function FinaPayManagement() {
             </TabsContent>
 
             <TabsContent value="transactions">
-              {pendingTxs.length > 0 && (
-                <>
-                  <h2 className="text-lg font-semibold mb-4">Pending Transactions</h2>
-                  <div className="space-y-3 mb-8">
-                    {pendingTxs.map(tx => <TransactionRow key={tx.id} tx={tx} showActions={true} />)}
-                  </div>
-                </>
-              )}
-
               <h2 className="text-lg font-semibold mb-4">Processed Transactions</h2>
               {transactions.filter(t => t.status !== 'Pending').length === 0 ? (
                 <Card>
