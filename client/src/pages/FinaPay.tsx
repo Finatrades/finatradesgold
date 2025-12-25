@@ -12,6 +12,7 @@ import { Wallet, Transaction } from '@/types/finapay';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 import TransactionHistory from '@/components/finapay/TransactionHistory';
+import PendingTransfers from '@/components/finapay/PendingTransfers';
 
 import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
@@ -378,6 +379,9 @@ export default function FinaPay() {
             <BarChart3 className="w-4 h-4 inline mr-1" /> Trade Finance
           </button>
         </div>
+
+        {/* Pending Transfers */}
+        <PendingTransfers />
 
         {/* Transaction History */}
         <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
