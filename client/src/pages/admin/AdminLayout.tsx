@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation, Link, Redirect } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
@@ -75,6 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, logout, adminPortal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
+  const [activeSection, setActiveSection] = useState('Overview');
 
   const { data: employeeData } = useQuery({
     queryKey: ['/api/admin/employee/me', user?.id],
@@ -191,6 +192,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const isActive = (path: string) => location === path;
 
+  useEffect(() => {
+    for (const section of menuSections) {
+      if (section.items.some(item => isActive(item.href))) {
+        setActiveSection(section.title);
+        break;
+      }
+    }
+  }, [location]);
+
+  const currentSection = menuSections.find(s => s.title === activeSection);
+  const currentSectionItems = currentSection?.items.filter(item => hasMenuPermission(item.href)) || [];
+
+  const getSectionBadgeCount = (section: typeof menuSections[0]): number => {
+    return section.items.reduce((acc, item) => acc + getBadgeCount(item.href), 0);
+  };
+
   const MobileMenuContent = ({ onItemClick }: { onItemClick?: () => void }) => (
     <div className="space-y-6 py-4">
       {menuSections.map((section) => {
@@ -252,6 +269,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
 
               <div className="hidden lg:block h-8 w-px bg-border" />
+
+              <nav className="hidden lg:flex items-center gap-1" data-testid="admin-section-tabs">
+                {menuSections.map((section) => {
+                  const visibleItems = section.items.filter(item => hasMenuPermission(item.href));
+                  if (visibleItems.length === 0) return null;
+                  
+                  const sectionBadgeCount = getSectionBadgeCount(section);
+                  const isSectionActive = activeSection === section.title;
+                  
+                  return (
+                    <button
+                      key={section.title}
+                      onClick={() => setActiveSection(section.title)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isSectionActive 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                      }`}
+                      data-testid={`admin-section-tab-${section.title.toLowerCase()}`}
+                    >
+                      {section.icon}
+                      {section.title}
+                      {sectionBadgeCount > 0 && (
+                        <span className={`min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center ${
+                          isSectionActive ? 'bg-white/90 text-purple-700' : 'bg-destructive text-destructive-foreground'
+                        }`}>
+                          {sectionBadgeCount > 99 ? '99+' : sectionBadgeCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -321,42 +371,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="hidden lg:block border-t border-border bg-card/50" data-testid="admin-nav-bar">
           <div className="px-4 lg:px-6">
-            <div className="flex items-start gap-8 py-3 overflow-x-auto">
-              {menuSections.map((section) => {
-                const visibleItems = section.items.filter(item => hasMenuPermission(item.href));
-                if (visibleItems.length === 0) return null;
-                
+            <div className="flex items-center gap-6 py-2.5">
+              {currentSectionItems.map((item) => {
+                const badgeCount = getBadgeCount(item.href);
                 return (
-                  <div key={section.title} className="flex-shrink-0" data-testid={`admin-section-${section.title.toLowerCase()}`}>
-                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      {section.icon}
-                      {section.title}
-                    </p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1">
-                      {visibleItems.map((item) => {
-                        const badgeCount = getBadgeCount(item.href);
-                        return (
-                          <Link key={item.href} href={item.href}>
-                            <span 
-                              className={`text-sm whitespace-nowrap cursor-pointer transition-colors inline-flex items-center gap-1.5 ${
-                                isActive(item.href) 
-                                  ? 'text-primary font-semibold' 
-                                  : 'text-muted-foreground hover:text-foreground'
-                              }`}
-                              data-testid={`admin-nav-link-${item.href.replace(/\//g, '-').slice(1)}`}
-                            >
-                              {item.label}
-                              {badgeCount > 0 && (
-                                <span className="min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
-                                  {badgeCount > 99 ? '99+' : badgeCount}
-                                </span>
-                              )}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <Link key={item.href} href={item.href}>
+                    <span 
+                      className={`text-sm whitespace-nowrap cursor-pointer transition-colors inline-flex items-center gap-1.5 py-1 px-2 rounded-md ${
+                        isActive(item.href) 
+                          ? 'bg-primary/10 text-primary font-semibold' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                      }`}
+                      data-testid={`admin-nav-link-${item.href.replace(/\//g, '-').slice(1)}`}
+                    >
+                      {item.label}
+                      {badgeCount > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                          {badgeCount > 99 ? '99+' : badgeCount}
+                        </span>
+                      )}
+                    </span>
+                  </Link>
                 );
               })}
             </div>
