@@ -15,7 +15,7 @@ import {
   paymentGatewaySettings,
   brandingSettings,
   employees, rolePermissions,
-  securitySettings, otpVerifications, userPasskeys,
+  securitySettings, otpVerifications, userPasskeys, transactionPins, pinVerificationTokens,
   invoices, certificateDeliveries, adminActionOtps,
   userRiskProfiles, amlScreeningLogs, amlCases, amlCaseActivities, amlMonitoringRules,
   complianceSettings, finatradesPersonalKyc, finatradesCorporateKyc,
@@ -77,6 +77,8 @@ import {
   type SecuritySettings, type InsertSecuritySettings,
   type OtpVerification, type InsertOtpVerification,
   type UserPasskey, type InsertUserPasskey,
+  type TransactionPin, type InsertTransactionPin,
+  type PinVerificationToken, type InsertPinVerificationToken,
   type Invoice, type InsertInvoice,
   type CertificateDelivery, type InsertCertificateDelivery,
   type AdminActionOtp, type InsertAdminActionOtp,
@@ -693,6 +695,18 @@ export interface IStorage {
   getAllEmailLogs(): Promise<EmailLog[]>;
   createEmailLog(log: InsertEmailLog): Promise<EmailLog>;
   updateEmailLog(id: string, updates: Partial<EmailLog>): Promise<EmailLog | undefined>;
+  
+  // Transaction PIN
+  getTransactionPin(userId: string): Promise<TransactionPin | undefined>;
+  createTransactionPin(pin: InsertTransactionPin): Promise<TransactionPin>;
+  updateTransactionPin(userId: string, updates: Partial<TransactionPin>): Promise<TransactionPin | undefined>;
+  deleteTransactionPin(userId: string): Promise<boolean>;
+  
+  // PIN Verification Tokens
+  createPinVerificationToken(token: InsertPinVerificationToken): Promise<PinVerificationToken>;
+  getPinVerificationToken(token: string): Promise<PinVerificationToken | undefined>;
+  usePinVerificationToken(token: string): Promise<PinVerificationToken | undefined>;
+  cleanupExpiredPinTokens(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3341,6 +3355,67 @@ export class DatabaseStorage implements IStorage {
   async updateEmailLog(id: string, updates: Partial<EmailLog>): Promise<EmailLog | undefined> {
     const [log] = await db.update(emailLogs).set(updates).where(eq(emailLogs.id, id)).returning();
     return log || undefined;
+  }
+
+  // ============================================
+  // TRANSACTION PIN
+  // ============================================
+
+  async getTransactionPin(userId: string): Promise<TransactionPin | undefined> {
+    const [pin] = await db.select().from(transactionPins).where(eq(transactionPins.userId, userId));
+    return pin || undefined;
+  }
+
+  async createTransactionPin(pin: InsertTransactionPin): Promise<TransactionPin> {
+    const [created] = await db.insert(transactionPins).values(pin).returning();
+    return created;
+  }
+
+  async updateTransactionPin(userId: string, updates: Partial<TransactionPin>): Promise<TransactionPin | undefined> {
+    const [pin] = await db.update(transactionPins)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(transactionPins.userId, userId))
+      .returning();
+    return pin || undefined;
+  }
+
+  async deleteTransactionPin(userId: string): Promise<boolean> {
+    const result = await db.delete(transactionPins).where(eq(transactionPins.userId, userId)).returning();
+    return result.length > 0;
+  }
+
+  // ============================================
+  // PIN VERIFICATION TOKENS
+  // ============================================
+
+  async createPinVerificationToken(token: InsertPinVerificationToken): Promise<PinVerificationToken> {
+    const [created] = await db.insert(pinVerificationTokens).values(token).returning();
+    return created;
+  }
+
+  async getPinVerificationToken(token: string): Promise<PinVerificationToken | undefined> {
+    const [found] = await db.select().from(pinVerificationTokens)
+      .where(and(
+        eq(pinVerificationTokens.token, token),
+        eq(pinVerificationTokens.used, false)
+      ));
+    return found || undefined;
+  }
+
+  async usePinVerificationToken(token: string): Promise<PinVerificationToken | undefined> {
+    const [updated] = await db.update(pinVerificationTokens)
+      .set({ used: true, usedAt: new Date() })
+      .where(and(
+        eq(pinVerificationTokens.token, token),
+        eq(pinVerificationTokens.used, false)
+      ))
+      .returning();
+    return updated || undefined;
+  }
+
+  async cleanupExpiredPinTokens(): Promise<void> {
+    await db.delete(pinVerificationTokens)
+      .where(sql`${pinVerificationTokens.expiresAt} < NOW()`);
   }
 }
 
