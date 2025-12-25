@@ -2302,7 +2302,7 @@ export type MediaAsset = typeof mediaAssets.$inferSelect;
 // PEER TRANSFERS (Send/Receive Money)
 // ============================================
 
-export const peerTransferStatusEnum = pgEnum('peer_transfer_status', ['Completed', 'Failed', 'Reversed']);
+export const peerTransferStatusEnum = pgEnum('peer_transfer_status', ['Pending', 'Completed', 'Rejected', 'Expired', 'Failed', 'Reversed']);
 export const peerTransferChannelEnum = pgEnum('peer_transfer_channel', ['email', 'finatrades_id', 'qr_code']);
 
 export const peerTransfers = pgTable("peer_transfers", {
@@ -2311,16 +2311,23 @@ export const peerTransfers = pgTable("peer_transfers", {
   senderId: varchar("sender_id", { length: 255 }).notNull().references(() => users.id),
   recipientId: varchar("recipient_id", { length: 255 }).notNull().references(() => users.id),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  amountGold: decimal("amount_gold", { precision: 18, scale: 6 }), // Gold amount for gold transfers
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }), // Gold price at time of transfer
   channel: peerTransferChannelEnum("channel").notNull(), // How the transfer was initiated
   recipientIdentifier: varchar("recipient_identifier", { length: 255 }).notNull(), // email, finatrades_id, or qr token
   memo: text("memo"),
   status: peerTransferStatusEnum("status").notNull().default('Completed'),
+  requiresApproval: boolean("requires_approval").notNull().default(false), // Whether recipient needs to accept
   senderTransactionId: varchar("sender_transaction_id", { length: 255 }).references(() => transactions.id),
   recipientTransactionId: varchar("recipient_transaction_id", { length: 255 }).references(() => transactions.id),
+  expiresAt: timestamp("expires_at"), // When pending transfer expires (auto-reject)
+  respondedAt: timestamp("responded_at"), // When recipient accepted/rejected
+  rejectionReason: text("rejection_reason"), // Optional reason for rejection
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertPeerTransferSchema = createInsertSchema(peerTransfers).omit({ id: true, createdAt: true });
+export const insertPeerTransferSchema = createInsertSchema(peerTransfers).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPeerTransfer = z.infer<typeof insertPeerTransferSchema>;
 export type PeerTransfer = typeof peerTransfers.$inferSelect;
 
@@ -2338,16 +2345,20 @@ export const peerRequests = pgTable("peer_requests", {
   targetIdentifier: varchar("target_identifier", { length: 255 }), // email or finatrades_id if target unknown
   channel: peerTransferChannelEnum("channel").notNull(),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  amountGold: decimal("amount_gold", { precision: 18, scale: 6 }), // Gold amount for gold requests
+  assetType: varchar("asset_type", { length: 20 }).notNull().default('GOLD'), // GOLD or USD
   memo: text("memo"),
   qrPayload: varchar("qr_payload", { length: 500 }), // Unique token for QR code requests
   status: peerRequestStatusEnum("status").notNull().default('Pending'),
   fulfilledTransferId: varchar("fulfilled_transfer_id", { length: 255 }).references(() => peerTransfers.id),
+  declineReason: text("decline_reason"), // Optional reason for declining
   expiresAt: timestamp("expires_at"),
   respondedAt: timestamp("responded_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertPeerRequestSchema = createInsertSchema(peerRequests).omit({ id: true, createdAt: true });
+export const insertPeerRequestSchema = createInsertSchema(peerRequests).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPeerRequest = z.infer<typeof insertPeerRequestSchema>;
 export type PeerRequest = typeof peerRequests.$inferSelect;
 
@@ -2930,6 +2941,9 @@ export const userPreferences = pgTable("user_preferences", {
   // Privacy preferences
   showBalance: boolean("show_balance").notNull().default(true),
   twoFactorReminder: boolean("two_factor_reminder").notNull().default(true),
+  // Transfer preferences
+  requireTransferApproval: boolean("require_transfer_approval").notNull().default(false), // Require accept/reject for incoming transfers
+  transferApprovalTimeout: integer("transfer_approval_timeout").notNull().default(24), // Hours before auto-accept (0 = no auto-accept)
   // Timestamps
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
