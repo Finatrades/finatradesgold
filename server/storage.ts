@@ -134,6 +134,7 @@ export interface TransactionalStorage {
   createInvoice(insertInvoice: InsertInvoice): Promise<Invoice>;
   createCertificateDelivery(insertDelivery: InsertCertificateDelivery): Promise<CertificateDelivery>;
   generateInvoiceNumber(): Promise<string>;
+  updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined>;
 }
 
 function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
@@ -211,6 +212,10 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 6).toUpperCase();
       return `${prefix}-${timestamp}-${random}`;
+    },
+    async updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined> {
+      const [request] = await txDb.update(buyGoldRequests).set({ ...updates, updatedAt: new Date() }).where(eq(buyGoldRequests.id, id)).returning();
+      return request || undefined;
     }
   };
 }
