@@ -69,7 +69,10 @@ export default function TransactionPinPrompt({
     try {
       const res = await fetch('/api/transaction-pin/verify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ userId, pin, action }),
       });
       

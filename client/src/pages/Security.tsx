@@ -83,7 +83,10 @@ export default function Security() {
     try {
       const res = await fetch('/api/transaction-pin/setup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ userId: user.id, pin: pinValue, password: pinPassword }),
       });
       
@@ -115,7 +118,10 @@ export default function Security() {
     try {
       const res = await fetch('/api/transaction-pin/reset', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ userId: user.id, newPin: pinValue, password: pinPassword }),
       });
       
