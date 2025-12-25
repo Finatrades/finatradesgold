@@ -3025,7 +3025,8 @@ export type BuyGoldRequest = typeof buyGoldRequests.$inferSelect;
 export const platformConfigCategoryEnum = pgEnum('platform_config_category', [
   'gold_pricing', 'transaction_limits', 'deposit_limits', 'withdrawal_limits',
   'p2p_limits', 'bnsl_settings', 'finabridge_settings', 'payment_fees',
-  'kyc_settings', 'system_settings', 'vault_settings', 'referral_settings'
+  'kyc_settings', 'system_settings', 'vault_settings', 'referral_settings',
+  'terms_conditions'
 ]);
 
 export const platformConfig = pgTable("platform_config", {
