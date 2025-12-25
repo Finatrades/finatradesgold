@@ -76,7 +76,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
 
   const { data: goldPrice } = useQuery<{ pricePerGram: number }>({
     queryKey: ['/api/gold-price'],
@@ -563,7 +563,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                   </div>
 
                   {/* Terms and Conditions Checkbox */}
-                  {termsContent && (
+                  {termsContent?.enabled && (
                     <div className="border border-border rounded-lg p-3 bg-muted/30">
                       <div className="flex items-start gap-3">
                         <Checkbox 
@@ -591,7 +591,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12"
-                    disabled={numericAmount <= 0 || numericAmount > availableGoldValueUsd || !paymentReason || !sourceOfFunds || !termsAccepted}
+                    disabled={numericAmount <= 0 || numericAmount > availableGoldValueUsd || !paymentReason || !sourceOfFunds || (termsContent?.enabled && !termsAccepted)}
                     onClick={() => setStep('confirm')}
                   >
                     Continue to Review

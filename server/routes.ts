@@ -13339,6 +13339,11 @@ ${message}
         return res.status(400).json({ message: "Invalid terms type" });
       }
       
+      // Check if terms are enabled for this type
+      const enabledKey = `${type}_terms_enabled`;
+      const enabledConfig = await storage.getPlatformConfigByKey(enabledKey);
+      const isEnabled = enabledConfig ? enabledConfig.configValue === 'true' : true;
+      
       // Get from platform_config or return default
       const configKey = `${type}_terms`;
       const config = await storage.getPlatformConfigByKey(configKey);
@@ -13346,7 +13351,8 @@ ${message}
       if (config && config.configValue) {
         return res.json({ 
           terms: config.configValue,
-          title: config.displayName || `${type.replace('_', ' ')} Terms`
+          title: config.displayName || `${type.replace('_', ' ')} Terms`,
+          enabled: isEnabled
         });
       }
       
@@ -13371,7 +13377,7 @@ ${message}
       };
       
       const defaults = defaultTerms[type] || { title: 'Terms & Conditions', terms: 'Please review the terms and conditions before proceeding.' };
-      res.json(defaults);
+      res.json({ ...defaults, enabled: isEnabled });
     } catch (error) {
       res.status(400).json({ message: "Failed to get terms" });
     }

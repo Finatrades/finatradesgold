@@ -94,7 +94,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
 
   const fetchTerms = async () => {
     try {
@@ -811,7 +811,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
                 
                 {/* Terms and Conditions Checkbox */}
-                {termsContent && (
+                {termsContent?.enabled && (
                   <div className="border border-border rounded-lg p-3 bg-muted/30">
                     <div className="flex items-start gap-3">
                       <Checkbox 
@@ -1297,7 +1297,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
                 onClick={handleSubmit} 
-                disabled={!amount || submitting || !termsAccepted}
+                disabled={!amount || submitting || (termsContent?.enabled && !termsAccepted)}
                 data-testid="button-submit-deposit"
               >
                 {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}

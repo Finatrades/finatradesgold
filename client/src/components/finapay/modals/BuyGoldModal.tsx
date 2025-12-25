@@ -72,7 +72,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
   
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -651,7 +651,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
               )}
               
               {/* Terms and Conditions Checkbox */}
-              {termsContent && numericGrams > 0 && (
+              {termsContent?.enabled && numericGrams > 0 && (
                 <div className="border border-border rounded-lg p-3 bg-muted/30">
                   <div className="flex items-start gap-3">
                     <Checkbox 
@@ -680,7 +680,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
               {/* Confirm Button */}
               <Button 
                 className="w-full h-12 bg-primary text-white hover:bg-primary/90 font-bold"
-                disabled={numericGrams <= 0 || isBelowMinimum || isLoading || isLoadingMethods || !method || enabledMethodsCount === 0 || (method === 'crypto' && !selectedWallet) || !termsAccepted}
+                disabled={numericGrams <= 0 || isBelowMinimum || isLoading || isLoadingMethods || !method || enabledMethodsCount === 0 || (method === 'crypto' && !selectedWallet) || (termsContent?.enabled && !termsAccepted)}
                 onClick={handleConfirm}
                 data-testid="button-confirm-purchase"
               >

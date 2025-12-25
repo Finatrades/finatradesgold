@@ -35,7 +35,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -235,7 +235,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
               </div>
 
               {/* Terms and Conditions Checkbox */}
-              {termsContent && (
+              {termsContent?.enabled && (
                 <div className="border border-border rounded-lg p-3 bg-muted/30">
                   <div className="flex items-start gap-3">
                     <Checkbox 
@@ -263,7 +263,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
               <Button 
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold"
-                disabled={numericAmount <= 0 || isLoading || !termsAccepted}
+                disabled={numericAmount <= 0 || isLoading || (termsContent?.enabled && !termsAccepted)}
                 onClick={handleCreateRequest}
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowDownLeft className="w-5 h-5 mr-2" />}
