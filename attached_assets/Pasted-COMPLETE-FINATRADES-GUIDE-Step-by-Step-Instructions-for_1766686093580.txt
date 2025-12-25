@@ -1,0 +1,308 @@
+COMPLETE FINATRADES GUIDE
+Step-by-Step Instructions for Every Feature
+1. WALLET (FinaPay)
+1A. DEPOSIT MONEY (Add Funds)
+"If you want to deposit money, click Add Funds, then choose Bank Transfer, Crypto, or Card. Fill in the details, accept Terms and Conditions, and submit."
+
+Option 1: Bank Transfer
+Step 1: Click "Add Funds" button
+Step 2: Choose "Bank Transfer"
+Step 3: Select which bank account to send to (from list)
+Step 4: Enter the amount you want to deposit (in USD)
+Step 5: Enter your bank name
+Step 6: Enter your account holder name
+Step 7: Upload proof of payment (screenshot/receipt)
+Step 8: Check the box "I accept Terms and Conditions"
+Step 9: Click "Submit"
+Step 10: Wait for admin approval (you'll get a notification)
+Option 2: Card Payment
+Step 1: Click "Add Funds" button
+Step 2: Choose "Card"
+Step 3: Enter amount you want to deposit (in USD)
+Step 4: Click "Continue"
+Step 5: Enter your card number
+Step 6: Enter expiry date (MM/YY)
+Step 7: Enter CVV (3 digits on back)
+Step 8: Enter cardholder name
+Step 9: Check the box "I accept Terms and Conditions"
+Step 10: Click "Pay Now"
+Step 11: Complete 3D Secure verification (if asked)
+Step 12: Money added instantly to your wallet
+Option 3: Crypto Payment
+Step 1: Click "Add Funds" button
+Step 2: Choose "Crypto"
+Step 3: Enter amount in USD
+Step 4: Select network (USDT TRC20, BTC, ETH, etc.)
+Step 5: Copy the wallet address shown
+Step 6: Send crypto from your external wallet to this address
+Step 7: Enter the transaction hash
+Step 8: Upload screenshot of payment
+Step 9: Check the box "I accept Terms and Conditions"
+Step 10: Click "Submit Proof"
+Step 11: Wait for confirmation (you'll get notification)
+1B. BUY GOLD
+"If you want to buy gold, click Buy Gold, enter the USD amount, review the gold you'll receive, and confirm."
+
+Step 1: Click "Buy Gold" button
+Step 2: Enter how much USD you want to spend
+Step 3: See how many grams of gold you'll get (auto-calculated)
+Step 4: See the current gold price per gram
+Step 5: See any fees applied
+Step 6: Check the box "I accept Terms and Conditions"
+Step 7: Click "Confirm Purchase"
+Step 8: Gold is added to your wallet instantly
+1C. SELL GOLD
+"If you want to sell gold, click Sell Gold, enter how many grams, see how much USD you'll receive, and confirm."
+
+Step 1: Click "Sell Gold" button
+Step 2: Enter how many grams you want to sell
+Step 3: See how much USD you'll receive (auto-calculated)
+Step 4: See current gold price and any fees
+Step 5: Check the box "I accept Terms and Conditions"
+Step 6: Click "Confirm Sale"
+Step 7: USD is added to your wallet balance
+1D. SEND GOLD (Transfer to Friend)
+"If you want to send gold to someone, click Transfer, enter their Finatrades ID or email, enter the amount, and confirm."
+
+Step 1: Click "Transfer" or "Send Gold" button
+Step 2: Enter recipient's Finatrades ID OR email address
+Step 3: Enter amount (grams or USD value)
+Step 4: Add a note (optional)
+Step 5: Review the transfer details
+Step 6: Enter your Transaction PIN (if enabled)
+Step 7: Click "Send"
+Step 8: Recipient receives gold instantly (or pending if they have approval enabled)
+1E. WITHDRAW MONEY
+"If you want to withdraw money, click Withdraw, choose your method, enter bank details, enter amount, and submit."
+
+Step 1: Click "Withdraw" button
+Step 2: Choose withdrawal method (Bank Transfer)
+Step 3: Enter your bank name
+Step 4: Enter your account number
+Step 5: Enter your IBAN/SWIFT code
+Step 6: Enter amount to withdraw (in USD)
+Step 7: Review fees and final amount you'll receive
+Step 8: Check the box "I accept Terms and Conditions"
+Step 9: Enter your Transaction PIN (if enabled)
+Step 10: Click "Submit Request"
+Step 11: Wait for admin approval and bank transfer
+1F. REQUEST GOLD
+"If you want to request gold from someone, click Request, enter their details, enter amount, and send the request."
+
+Step 1: Click "Request Gold" button
+Step 2: Enter the person's Finatrades ID or email
+Step 3: Enter how much gold you're requesting (grams)
+Step 4: Add a message explaining why (optional)
+Step 5: Click "Send Request"
+Step 6: They receive notification and can accept or decline
+1G. PENDING TRANSFERS (Accept/Reject)
+"If someone sends you gold and you have approval enabled, you'll see pending transfers. You can accept or reject them."
+
+Step 1: Go to Wallet page
+Step 2: See "Pending Transfers" section (if any)
+Step 3: Review who sent it and how much
+Step 4: Click "Accept" to receive the gold
+   OR
+   Click "Reject" to decline (gold returns to sender)
+Step 5: Transfer is processed automatically if you don't respond within 24 hours
+2. GOLD STORAGE (FinaVault)
+2A. VIEW YOUR STORED GOLD
+"If you want to see your stored gold, go to FinaVault and view your holdings with certificates."
+
+Step 1: Click "Gold Storage" in sidebar
+Step 2: See your total gold in vault (grams)
+Step 3: See individual batches with:
+   - Batch reference number
+   - Weight in grams
+   - Date added
+   - Purity (usually 999.9)
+Step 4: Click on any batch to see certificate
+Step 5: Download certificate as PDF (optional)
+2B. DEPOSIT GOLD TO VAULT
+"If you want to deposit physical gold to vault, create a deposit request with gold details."
+
+Step 1: Click "Gold Storage" in sidebar
+Step 2: Click "New Deposit" tab
+Step 3: Enter weight of gold (grams)
+Step 4: Enter purity (e.g., 999.9)
+Step 5: Enter form type (bar, coin, etc.)
+Step 6: Add any notes
+Step 7: Click "Submit Request"
+Step 8: Follow instructions for physical delivery
+Step 9: Admin verifies and approves deposit
+Step 10: Gold appears in your vault
+2C. WITHDRAW GOLD FROM VAULT (Cash Out)
+"If you want to cash out or get physical gold, create a withdrawal request."
+
+Step 1: Click "Gold Storage" in sidebar
+Step 2: Click "Cash Out" or "Withdraw"
+Step 3: Select which gold batches to withdraw
+Step 4: Choose delivery option:
+   - Physical delivery (get gold shipped)
+   - Sell for cash (convert to USD)
+Step 5: Enter delivery address (if physical)
+Step 6: Review fees
+Step 7: Check terms and conditions
+Step 8: Click "Submit Request"
+Step 9: Admin processes your request
+3. BUY NOW, SELL LATER (BNSL)
+3A. CREATE A BNSL PLAN
+"If you want to buy gold now and sell it later with guaranteed profit, create a BNSL plan."
+
+Step 1: Click "Buy Now, Sell Later" in sidebar
+Step 2: Click "Create New Plan" button
+Step 3: Enter how much gold you want to lock (grams)
+Step 4: Choose tenor (how many months: 3, 6, 12, etc.)
+Step 5: See the guaranteed return % (annual margin)
+Step 6: See total payout at maturity
+Step 7: Review the agreement terms
+Step 8: Type your full name as signature
+Step 9: Check "I agree to Terms and Conditions"
+Step 10: Click "Confirm & Create Plan"
+Step 11: Gold is locked, plan starts
+Step 12: Receive payouts as per schedule
+3B. VIEW YOUR BNSL PLANS
+"If you want to see your active BNSL plans, go to BNSL and view your portfolio."
+
+Step 1: Click "Buy Now, Sell Later" in sidebar
+Step 2: See "My Plans" tab
+Step 3: View all your plans:
+   - Plan ID
+   - Gold locked (grams)
+   - Status (Active, Completed, etc.)
+   - Start date and maturity date
+   - Expected payout
+Step 4: Click any plan to see full details
+Step 5: See payout schedule and history
+3C. BNSL WALLET
+"Your BNSL earnings go to your BNSL wallet. You can transfer them to your main wallet."
+
+Step 1: Go to "Buy Now, Sell Later"
+Step 2: See "BNSL Wallet" card
+Step 3: View your BNSL balance
+Step 4: Click "Transfer to Main Wallet"
+Step 5: Enter amount to transfer
+Step 6: Confirm transfer
+Step 7: Funds move to your FinaPay wallet
+4. TRADE FINANCE (FinaBridge) - For Business
+4A. CREATE A TRADE REQUEST (As Importer)
+"If you're buying goods internationally and need trade finance, create a trade request."
+
+Step 1: Click "Trade Finance" in sidebar
+Step 2: Click "Create Trade Request"
+Step 3: Fill in trade details:
+   - Goods name and description
+   - Quantity
+   - Trade value (USD)
+   - Expected shipping date
+   - Destination country
+   - Mode of transport (Sea, Air, Land)
+   - Incoterms (FOB, CIF, etc.)
+   - Insurance details
+Step 4: Review gold collateral required
+Step 5: Sign the agreement (type your name)
+Step 6: Check Terms and Conditions
+Step 7: Click "Submit Request"
+Step 8: Exporters can now send proposals
+4B. SUBMIT A PROPOSAL (As Exporter)
+"If you're a seller and see a trade request you can fulfill, submit a proposal."
+
+Step 1: Click "Trade Finance" in sidebar
+Step 2: Browse available trade requests
+Step 3: Click on a request to view details
+Step 4: Click "Submit Proposal"
+Step 5: Fill in your proposal:
+   - Quote price
+   - Delivery timeline (days)
+   - Shipping method
+   - Port of loading
+   - Payment terms
+   - Company details
+Step 6: Upload any supporting documents
+Step 7: Sign the agreement
+Step 8: Check Terms and Conditions
+Step 9: Click "Submit Proposal"
+Step 10: Wait for importer's response
+4C. DEAL ROOM (Negotiate)
+"Once proposal is accepted, you enter a Deal Room to chat, share documents, and finalize."
+
+Step 1: Go to "Trade Finance"
+Step 2: Click on active trade
+Step 3: Enter "Deal Room"
+Step 4: Chat with the other party
+Step 5: Upload documents:
+   - Commercial invoice
+   - Bill of lading
+   - Certificates
+   - Insurance documents
+Step 6: Track trade status
+Step 7: Confirm shipment and delivery
+Step 8: Trade completes, gold is released
+5. FINACARD (Coming Soon)
+"FinaCard lets you spend your gold balance using a debit card."
+
+Step 1: Click "FinaCard" in sidebar
+Step 2: See "Coming Soon" message
+Step 3: Register interest (optional)
+Step 4: Get notified when available
+6. SECURITY SETTINGS
+6A. SET UP TRANSACTION PIN
+"If you want extra security before transactions, set up a 6-digit PIN."
+
+Step 1: Click "Security" in sidebar
+Step 2: Find "Transaction PIN" section
+Step 3: Click "Set Up PIN"
+Step 4: Enter your account password to verify
+Step 5: Enter new 6-digit PIN
+Step 6: Confirm PIN (enter again)
+Step 7: Click "Save"
+Step 8: Now PIN is required before sending money or gold
+6B. ENABLE TWO-FACTOR AUTHENTICATION (2FA)
+"If you want to protect your login with an authenticator app."
+
+Step 1: Click "Security" in sidebar
+Step 2: Find "Two-Factor Authentication" section
+Step 3: Click "Enable 2FA"
+Step 4: Scan QR code with authenticator app (Google Authenticator, etc.)
+Step 5: Enter the 6-digit code from app
+Step 6: Save your backup codes (write them down!)
+Step 7: Click "Verify & Enable"
+Step 8: 2FA is now active for all logins
+6C. CHANGE PASSWORD
+"If you want to change your password."
+
+Step 1: Click "Security" in sidebar
+Step 2: Find "Password" section
+Step 3: Click "Change Password"
+Step 4: Enter current password
+Step 5: Enter new password
+Step 6: Confirm new password
+Step 7: Click "Save"
+7. PROFILE & KYC
+7A. COMPLETE KYC VERIFICATION
+"To unlock all features, complete your identity verification."
+
+Step 1: Click "Profile" in sidebar
+   OR
+   Click "Verify Identity" if shown
+Step 2: Fill in personal information:
+   - Full name
+   - Date of birth
+   - Address
+   - Phone number
+Step 3: Upload documents:
+   - Government ID (passport, national ID)
+   - Proof of address (utility bill, bank statement)
+Step 4: Take a selfie for liveness check
+Step 5: Click "Submit for Verification"
+Step 6: Wait for admin review (usually 1-2 business days)
+Step 7: Get notification when approved
+8. REFERRAL PROGRAM
+"Invite friends and earn rewards when they sign up and trade."
+
+Step 1: Click "Referral" in sidebar
+Step 2: See your unique referral code
+Step 3: Copy the code or share link
+Step 4: Send to friends
+Step 5: When they sign up and trade, you earn rewards
+Step 6: Track your referrals and earnings

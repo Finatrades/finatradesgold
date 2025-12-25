@@ -12953,76 +12953,118 @@ ${message}
       let responseData: any;
       
       if (selectedAgent?.type === 'juris') {
-        // Use Juris agent for registration/KYC
-        const { processJurisMessage, getJurisGreeting } = await import('./juris-agent-service.js');
+        // Juris agent: AI-powered responses with workflow support
+        const { processJurisMessage } = await import('./juris-agent-service.js');
         const user = sessionUserId ? await storage.getUser(sessionUserId) : undefined;
-        
-        // Load active workflow from session (guest or user)
         const sessionKey = sessionUserId || req.sessionID;
+        
+        let finalReply: string;
+        let suggestedActions: string[] = ['Start Registration', 'KYC Help', 'Check Status'];
+        let usedAI = false;
+        let finalEscalate = false;
+        let workflowUpdate: any = undefined;
+        let collectData: any = undefined;
+        
+        // Load active workflow
         let activeWorkflow: any = undefined;
-        
         try {
-          // Try to find active workflow by session ID first
           activeWorkflow = await storage.getActiveWorkflowBySession(sessionKey);
-          
-          // If no session workflow, try user workflow
           if (!activeWorkflow && sessionUserId) {
-            activeWorkflow = await storage.getActiveWorkflowByUser(sessionUserId, 'registration');
-            if (!activeWorkflow) {
-              activeWorkflow = await storage.getActiveWorkflowByUser(sessionUserId, 'kyc');
-            }
+            activeWorkflow = await storage.getActiveWorkflowByUser(sessionUserId, 'registration') ||
+                             await storage.getActiveWorkflowByUser(sessionUserId, 'kyc');
           }
-        } catch (err) {
-          console.log("[Juris] No active workflow found, starting fresh");
-        }
+        } catch (err) { /* No workflow */ }
         
+        // Try structured workflow first
         const jurisResponse = processJurisMessage(
           sanitizedMessage, 
           activeWorkflow,
           user ? { id: user.id, firstName: user.firstName, kycStatus: user.kycStatus } : undefined
         );
         
-        // Save workflow state if Juris returned an update
+        // If workflow returned a meaningful update, use it
         if (jurisResponse.workflowUpdate) {
+          finalReply = jurisResponse.message;
+          suggestedActions = jurisResponse.actions || suggestedActions;
+          workflowUpdate = jurisResponse.workflowUpdate;
+          collectData = jurisResponse.collectData;
+          
+          // Save workflow state
           try {
-            const workflowType = jurisResponse.workflowUpdate.currentStep?.includes('kyc') || 
-                                 jurisResponse.nextStep?.includes('kyc') ? 'kyc' : 'registration';
-            
+            const workflowType = workflowUpdate.currentStep?.includes('kyc') ? 'kyc' : 'registration';
             if (activeWorkflow) {
-              // Update existing workflow
               await storage.updateWorkflow(activeWorkflow.id, {
-                currentStep: jurisResponse.workflowUpdate.currentStep,
-                completedSteps: jurisResponse.workflowUpdate.completedSteps,
-                stepData: JSON.stringify(jurisResponse.workflowUpdate.stepData || {}),
-                status: jurisResponse.workflowUpdate.currentStep === 'complete' ? 'completed' : 'active'
+                currentStep: workflowUpdate.currentStep,
+                completedSteps: workflowUpdate.completedSteps,
+                stepData: JSON.stringify(workflowUpdate.stepData || {}),
+                status: workflowUpdate.currentStep === 'complete' ? 'completed' : 'active'
               });
             } else {
-              // Create new workflow
               await storage.createWorkflow({
                 userId: sessionUserId || null,
                 sessionId: sessionKey,
                 agentId: selectedAgent.id,
                 workflowType: workflowType,
-                currentStep: jurisResponse.workflowUpdate.currentStep,
-                completedSteps: jurisResponse.workflowUpdate.completedSteps || 0,
-                stepData: JSON.stringify(jurisResponse.workflowUpdate.stepData || {}),
+                currentStep: workflowUpdate.currentStep,
+                completedSteps: workflowUpdate.completedSteps || 0,
+                stepData: JSON.stringify(workflowUpdate.stepData || {}),
                 status: 'active'
               });
             }
           } catch (err) {
             console.error("[Juris] Error saving workflow:", err);
           }
+        } else if (process.env.OPENAI_API_KEY) {
+          // No workflow update - use AI for conversational questions
+          try {
+            console.log("[Juris AI] Using OpenAI for:", sanitizedMessage.slice(0, 50));
+            const aiResponse = await processUserMessageWithAI(
+              sanitizedMessage,
+              userContext,
+              platformConfig,
+              goldPrice,
+              undefined,
+              'juris'
+            );
+            
+            finalReply = aiResponse.message;
+            // Use AI-provided actions or derive from response content
+            if (aiResponse.suggestedActions && aiResponse.suggestedActions.length > 0) {
+              suggestedActions = aiResponse.suggestedActions;
+            } else {
+              // Derive actions from response content
+              const lowerReply = finalReply.toLowerCase();
+              if (lowerReply.includes('register') || lowerReply.includes('account')) {
+                suggestedActions = ['Personal Account', 'Business Account', 'More Info'];
+              } else if (lowerReply.includes('document') || lowerReply.includes('upload')) {
+                suggestedActions = ['Upload Documents', 'Document Tips', 'Check Status'];
+              } else if (lowerReply.includes('verification') || lowerReply.includes('kyc')) {
+                suggestedActions = ['Start KYC', 'Check Status', 'Help'];
+              }
+            }
+            finalEscalate = aiResponse.escalateToHuman || false;
+            usedAI = true;
+            console.log("[Juris AI] Response generated");
+          } catch (aiError) {
+            console.error("[Juris AI] Error:", aiError);
+            finalReply = jurisResponse.message; // Fall back to structured response
+            suggestedActions = jurisResponse.actions || suggestedActions;
+          }
+        } else {
+          // No AI available
+          finalReply = jurisResponse.message;
+          suggestedActions = jurisResponse.actions || suggestedActions;
         }
         
         responseData = {
-          reply: jurisResponse.message,
-          category: 'juris',
-          confidence: 0.9,
-          suggestedActions: jurisResponse.actions,
-          escalateToHuman: false,
-          collectData: jurisResponse.collectData,
-          nextStep: jurisResponse.nextStep,
-          workflowUpdate: jurisResponse.workflowUpdate,
+          reply: finalReply,
+          category: 'kyc_assistance',
+          confidence: usedAI ? 0.95 : 0.9,
+          suggestedActions,
+          escalateToHuman: finalEscalate,
+          collectData,
+          workflowUpdate,
+          usedAI,
           agent: {
             id: selectedAgent.id,
             name: selectedAgent.displayName,
@@ -13030,43 +13072,99 @@ ${message}
           }
         };
       } else {
-        // Use General agent with FREE FAQ-based responses
+        // Use General agent with FAQ-based responses, AI fallback for complex queries
         // First, search knowledge base for relevant articles
         let knowledgeResponse: string | null = null;
         try {
           const kbResults = await storage.searchKnowledgeArticles(sanitizedMessage, selectedAgent?.type || 'general');
           if (kbResults.length > 0 && kbResults[0].summary) {
-            // Use the top matching article's summary or content
             knowledgeResponse = kbResults[0].summary || kbResults[0].content.slice(0, 500);
           }
         } catch (err) {
           console.error("Error searching knowledge base:", err);
         }
         
-        // Use FREE FAQ-based response (no API costs)
+        // Try FAQ-based response first (cost-efficient)
         const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
         
-        // If knowledge base found a relevant article and FAQ had low confidence, prefer KB
         let finalReply = response.message;
-        if (knowledgeResponse && response.confidence < 0.6) {
-          finalReply = knowledgeResponse;
+        let finalConfidence = response.confidence;
+        let finalCategory = response.category;
+        let finalActions = response.suggestedActions;
+        let finalEscalate = response.escalateToHuman;
+        let usedAI = false;
+        
+        // Use AI for better responses when FAQ doesn't have a strong match
+        // Threshold 0.7 ensures AI handles most conversational queries while FAQ handles exact matches
+        if (response.confidence < 0.7 && process.env.OPENAI_API_KEY) {
+          try {
+            console.log("[General] Using AI-powered response for:", sanitizedMessage.slice(0, 50));
+            const aiResponse = await processUserMessageWithAI(
+              sanitizedMessage,
+              userContext,
+              platformConfig,
+              goldPrice,
+              undefined,
+              selectedAgent?.type || 'general'
+            );
+            
+            if (aiResponse.message && aiResponse.message.length > 0) {
+              finalReply = aiResponse.message;
+              finalConfidence = aiResponse.confidence;
+              finalCategory = aiResponse.category || 'ai_response';
+              finalEscalate = aiResponse.escalateToHuman || false;
+              usedAI = true;
+              
+              // Use AI-provided actions or derive from response content
+              if (aiResponse.suggestedActions && aiResponse.suggestedActions.length > 0) {
+                finalActions = aiResponse.suggestedActions;
+              } else {
+                // Derive actions from response content
+                const lowerReply = finalReply.toLowerCase();
+                if (lowerReply.includes('bnsl') || lowerReply.includes('lock')) {
+                  finalActions = ['View BNSL Plans', 'Create Plan'];
+                } else if (lowerReply.includes('deposit') || lowerReply.includes('add funds')) {
+                  finalActions = ['Add Funds', 'View Methods'];
+                } else if (lowerReply.includes('vault') || lowerReply.includes('storage')) {
+                  finalActions = ['View Vault', 'Certificates'];
+                } else if (lowerReply.includes('kyc') || lowerReply.includes('verification')) {
+                  finalActions = ['Start KYC', 'Talk to Juris AI'];
+                } else if (lowerReply.includes('transfer') || lowerReply.includes('send')) {
+                  finalActions = ['Send Payment', 'Request Payment'];
+                } else if (lowerReply.includes('withdraw')) {
+                  finalActions = ['Withdraw Funds'];
+                } else {
+                  finalActions = ['Show Menu', 'Contact Support'];
+                }
+              }
+            }
+          } catch (aiError) {
+            console.error("AI fallback error:", aiError);
+          }
         }
         
-        // Sanitize output - ensure no script tags or dangerous content
+        // If knowledge base found a relevant article and still low confidence, use KB
+        if (knowledgeResponse && !usedAI && response.confidence < 0.6) {
+          finalReply = knowledgeResponse;
+          finalConfidence = 0.7;
+        }
+        
+        // Sanitize output
         const sanitizedReply = finalReply.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         
         responseData = {
           reply: sanitizedReply,
-          category: response.category,
-          confidence: knowledgeResponse ? Math.max(response.confidence, 0.7) : response.confidence,
-          suggestedActions: response.suggestedActions,
-          escalateToHuman: response.escalateToHuman,
+          category: finalCategory,
+          confidence: finalConfidence,
+          suggestedActions: finalActions,
+          escalateToHuman: finalEscalate,
           agent: selectedAgent ? {
             id: selectedAgent.id,
             name: selectedAgent.displayName,
             type: selectedAgent.type
           } : undefined,
-          fromKnowledgeBase: !!knowledgeResponse && response.confidence < 0.6
+          fromKnowledgeBase: !!knowledgeResponse && !usedAI && response.confidence < 0.6,
+          usedAI: usedAI
         };
       }
       

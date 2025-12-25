@@ -490,6 +490,88 @@ const FAQ_DATABASE: FAQEntry[] = [
     category: 'pricing',
     actions: ['Buy Gold', 'Sell Gold']
   },
+  // --- ENHANCED FAQ ENTRIES ---
+  
+  // Why is my USD value different today
+  {
+    keywords: ['usd different', 'value changed overnight', 'balance dropped', 'lost money', 'value decreased'],
+    patterns: [/why (is|did) my (usd|dollar|value|balance) (change|drop|decrease|go down|different)/i, /lost money overnight/i, /balance (dropped|went down|decreased)/i],
+    response: "Your USD value changes because it reflects the current market price of gold.\n\n**Important:** Your gold grams haven't changed - only the USD display value has.\n\n• If gold price rises → your USD value increases\n• If gold price falls → your USD value decreases\n\n**Your gold grams only change when you:**\n• Buy or sell gold\n• Send or receive payments\n• Lock gold in BNSL\n• Make withdrawals\n\nCheck your transaction history to confirm your gold grams are unchanged.",
+    category: 'account',
+    actions: ['View Dashboard', 'Check Transactions']
+  },
+  // FinaCard (Coming Soon - Feature in Development)
+  {
+    keywords: ['finacard', 'fina card', 'debit card', 'gold card', 'visa', 'mastercard'],
+    patterns: [/finacard/i, /fina card/i, /debit card/i, /gold (debit )?card/i, /visa|mastercard/i],
+    response: "**FinaCard** - Gold-Backed Debit Card\n\n**Status:** Currently in development. We're working to bring you a physical card that lets you spend your gold holdings anywhere.\n\n**Planned Features (not yet available):**\n• Spend gold directly at merchants worldwide\n• Auto-convert gold to local currency at point of sale\n• Integration with major card networks\n\n**Want to be notified?** We'll announce the launch date via email and in-app notifications. Check your profile settings to ensure notifications are enabled.",
+    category: 'products',
+    actions: ['Enable Notifications']
+  },
+  // Mobile App
+  {
+    keywords: ['mobile app', 'ios', 'android', 'app store', 'play store', 'download app'],
+    patterns: [/mobile app/i, /ios app/i, /android app/i, /download (the )?app/i, /app store|play store/i],
+    response: "Finatrades is available as a mobile app:\n\n• **iOS:** Download from App Store\n• **Android:** Download from Google Play Store\n\n**Mobile Features:**\n• Biometric login (Face ID / Fingerprint)\n• Push notifications\n• Full wallet and vault access\n• QR code payments\n• Certificate viewing\n\nSearch 'Finatrades' in your app store to download.",
+    category: 'general',
+    actions: ['Download App']
+  },
+  // Transaction PIN
+  {
+    keywords: ['transaction pin', 'pin', 'security pin', 'payment pin', 'set pin'],
+    patterns: [/transaction pin/i, /set (a |my )?pin/i, /security pin/i, /payment pin/i, /reset (my )?pin/i],
+    response: "Transaction PIN adds extra security to your payments:\n\n**To Set Up:**\n1. Go to Settings > Security\n2. Click 'Transaction PIN'\n3. Create a 4-6 digit PIN\n4. Confirm your PIN\n\n**When Required:**\n• Sending payments over certain amounts\n• Withdrawals\n• BNSL plan creation\n\n**Forgot PIN?** Use 'Reset PIN' with email verification.",
+    category: 'security',
+    actions: ['Set Transaction PIN']
+  },
+  // Wingold & Metals
+  {
+    keywords: ['wingold', 'metals', 'vault partner', 'storage partner', 'dmcc', 'dubai'],
+    patterns: [/wingold/i, /metals dmcc/i, /vault partner/i, /storage partner/i, /where is.*gold stored/i],
+    response: "**Wingold & Metals DMCC** is our trusted vault partner.\n\n**About the Vault:**\n• Located in Dubai, UAE\n• DMCC licensed and regulated\n• Grade-A secure vault facilities\n• Fully insured gold storage\n• Regular third-party audits\n\nEvery gram of gold on Finatrades is physically stored in their secure facilities. You receive a Physical Storage Certificate for verification.",
+    category: 'vault',
+    actions: ['View Certificates']
+  },
+  // Referral Program
+  {
+    keywords: ['referral', 'refer friend', 'invite', 'bonus', 'referral code'],
+    patterns: [/referral/i, /refer (a )?friend/i, /invite (a )?friend/i, /referral (code|bonus|program)/i, /earn.*invit/i],
+    response: "**Referral Program** - Earn by sharing Finatrades!\n\n**How It Works:**\n1. Get your unique referral code from Profile > Referrals\n2. Share with friends and family\n3. When they sign up and complete KYC, you both earn rewards\n\n**Rewards:**\n• You earn: Referral bonus credited to your wallet\n• Friend earns: Welcome bonus on first deposit\n\nCheck your profile for your personalized referral link.",
+    category: 'referral',
+    actions: ['Get Referral Code']
+  },
+  // Processing Times
+  {
+    keywords: ['processing time', 'how long', 'when will', 'wait time', 'delay'],
+    patterns: [/how long (does|will)/i, /processing time/i, /when will (i|my)/i, /wait(ing)? time/i, /how many days/i],
+    response: "**Typical Processing Times:**\n\n**Deposits:**\n• Card: Instant (after 3DS verification)\n• Bank Transfer: 1-3 business days\n• Crypto: 10-30 minutes (after confirmations)\n\n**Withdrawals:**\n• Bank Transfer: 1-3 business days\n• Processing begins within 24 hours\n\n**KYC Verification:**\n• Basic: 1-2 hours\n• Enhanced: 1-2 business days\n• Corporate: 3-5 business days\n\n**P2P Transfers:** Instant!",
+    category: 'support',
+    actions: ['Check Status']
+  },
+  // Account Deletion
+  {
+    keywords: ['delete account', 'close account', 'remove account', 'deactivate'],
+    patterns: [/delete (my )?account/i, /close (my )?account/i, /deactivate/i, /remove (my )?account/i],
+    response: "To close your Finatrades account:\n\n**Requirements:**\n• Zero gold balance (sell or withdraw all gold)\n• No pending transactions\n• No active BNSL plans\n\n**Process:**\n1. Withdraw or sell all gold\n2. Contact support with your request\n3. Verify your identity\n4. Account will be deactivated\n\n**Note:** Account closure is permanent. Your transaction history is retained for regulatory compliance.",
+    category: 'account',
+    actions: ['Contact Support']
+  },
+  // Tax Information
+  {
+    keywords: ['tax', 'taxes', 'tax report', 'capital gains', 'tax statement'],
+    patterns: [/tax(es)?/i, /capital gains/i, /tax (report|statement|document)/i, /report.*taxes/i],
+    response: "**Tax Information:**\n\nFinatrades provides transaction history and statements that may help with tax reporting.\n\n**Available Documents:**\n• Complete transaction history\n• Annual statement (downloadable)\n• Certificate records\n\n**Important:**\n• Tax obligations vary by country\n• Consult a tax professional for your situation\n• Finatrades does not provide tax advice\n\nDownload your transaction history from Settings > Statements.",
+    category: 'compliance',
+    actions: ['Download Statement']
+  },
+  // Notification Settings
+  {
+    keywords: ['notification', 'notifications', 'email alerts', 'push notifications', 'alerts'],
+    patterns: [/notification/i, /email alert/i, /push notification/i, /turn off (email|notification)/i],
+    response: "**Notification Settings:**\n\nCustomize your alerts in Settings > Notifications:\n\n**Email Notifications:**\n• Transaction confirmations\n• Security alerts\n• KYC updates\n• BNSL payouts\n• Marketing (optional)\n\n**Push Notifications (Mobile):**\n• Payment received\n• Price alerts\n• Account activity\n\nYou can enable/disable each type individually.",
+    category: 'settings',
+    actions: ['Notification Settings']
+  },
   // Greeting (Professional, banking-style)
   {
     keywords: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening'],
@@ -897,60 +979,244 @@ export function getChatbotGreeting(userName?: string): string {
   return `${greeting} Welcome to Finatrades.\n\nI'm your AI Assistant. I can help you understand and use our gold-backed digital financial platform.\n\n${generateMainMenuResponse()}`;
 }
 
-// System prompt for OpenAI
-const FINATRADES_SYSTEM_PROMPT = `You are the official Finatrades AI Assistant.
+// System prompt for OpenAI - Enhanced with comprehensive Finatrades knowledge
+const FINATRADES_SYSTEM_PROMPT = `You are the official Finatrades AI Assistant - a knowledgeable, professional financial services advisor.
 
-Goal:
-Help users understand and use Finatrades (FinaPay, FinaVault, BNSL, and Business-only FinaBridge) in a banking-style experience backed 100% by physical gold.
+## ABOUT FINATRADES
+Finatrades is a gold-backed digital financial platform enabling users to store, transfer, earn, and settle value using physical gold. Every gram shown on the platform is backed by physical gold stored securely with our vault partner, Wingold & Metals DMCC in Dubai.
 
-Mandatory Core Rules:
-1) Gold grams are the real balance. USD is shown only as a reference display.
-2) Never describe Finatrades as crypto, DeFi, token, or blockchain-based in user help.
-3) Never promise guaranteed profits. For BNSL, only state plan terms and schedules.
-4) Always mention verification/approval where applicable (KYC/KYB, admin approvals, certificate issuance).
-5) Ask one question at a time. Confirm details before submitting any action.
-6) If user disputes verification, requests bypass, asks for admin access, or reports fraud/dispute → escalate to human support.
-7) Be professional, calm, clear, and short. Use numbered steps and bullet points.
+## CRITICAL CORE CONCEPT (MUST UNDERSTAND)
+**Gold grams are the REAL balance. USD is shown ONLY as a reference value for convenience.**
+- When gold price rises, your USD value increases even though gold grams stay the same
+- When gold price falls, your USD value decreases but your gold ownership remains unchanged
+- This is NOT volatility of your asset - it's the natural behavior of real gold ownership
+- Think of it like owning physical gold bars: the weight never changes, only the market price does
 
-MAIN MENU OPTIONS:
-1) Create Account (Personal / Business)
-2) Login Help (OTP / Password reset)
-3) Complete Verification (KYC / KYB)
-4) Understand My Balance (Gold grams vs USD)
-5) Add Funds (Card / Bank / Crypto) – How it works
-6) Send Payment
-7) Request Payment
-8) View Certificates (Ownership / Storage / Transfer)
-9) BNSL Plans (Lock gold and earn margin)
-10) FinaBridge (Business Trade Settlement)
-11) Troubleshooting (Pending, Locked, Failed)
-12) Contact Support
+## MANDATORY RULES
+1) Gold = real asset, USD = display currency only. Never confuse users about this.
+2) NEVER describe Finatrades as crypto, DeFi, token, staking, or blockchain-based.
+3) NEVER promise guaranteed profits. For BNSL, state exact plan terms (margin %, term length).
+4) Always mention that actions require verification/approval where applicable.
+5) Ask one question at a time. Confirm user input before proceeding.
+6) Escalate to human support for: disputes, chargebacks, fraud reports, compliance blocks, verification bypass requests.
+7) Be professional, calm, concise, and helpful. Use bullet points and numbered steps.
+8) If you don't know something specific, say so and offer to connect with support.
 
-KEY KNOWLEDGE:
-- Personal Account includes: FinaPay + FinaVault + BNSL
-- Business Account includes: All Personal features + FinaBridge
-- BNSL terms: 12 months 10%, 24 months 11%, 36 months 12%
-- Certificates: Digital Ownership (Finatrades), Physical Storage (Wingold & Metals DMCC), Transfer
-- Gold is the ONLY real asset. USD is for display/calculation only.
+## PRODUCT KNOWLEDGE
 
-Conversation Style:
-- Guide step-by-step when user chooses a menu item
-- Validate input formats: email, phone, country, company reg number, password
-- Summarize user entries before final submission
-- Provide next steps at the end
+### FinaPay (Digital Gold Wallet)
+- Add funds via card, bank transfer, or crypto (BTC, USDT)
+- Funds convert to gold grams at current market price
+- Send payments to other Finatrades users instantly (free P2P transfers)
+- Request payments from other users
+- Sell gold back to USD and withdraw to bank
 
-Escalation Triggers (respond with "I will connect you to support"):
-- Chargeback, fraud, dispute
-- Compliance block
-- Requests to bypass verification`;
+### FinaVault (Secure Gold Storage)
+- Long-term secure gold storage
+- Physical gold backed by Wingold & Metals DMCC
+- View holdings, certificates, and storage details
+- Transfer between wallet and vault
+- Deposit physical gold (requires verification)
 
-// OpenAI-powered response function
+### BNSL (Buy Now Sell Later)
+- Lock gold for fixed terms to earn margin
+- Terms: 12 months → 10% margin, 24 months → 11%, 36 months → 12%
+- Margin accrues daily, payouts quarterly in gold value
+- Early exit allowed with penalty fee
+- Locked gold cannot be used for other transactions during term
+
+### FinaBridge (Business Trade Finance) - BUSINESS ACCOUNTS ONLY
+- Gold-backed international trade settlement
+- Importer creates trade request → Exporters submit proposals
+- Gold locked as settlement collateral
+- Deal room for secure negotiations
+- Admin oversight for compliance
+
+### Account Types
+**Personal Account:** FinaPay + FinaVault + BNSL
+**Business Account:** All Personal features + FinaBridge
+
+### KYC/KYB Verification
+- Required to unlock deposits, payments, higher limits
+- Tier 1 (Basic): ID + Selfie → 1-2 hours processing
+- Tier 2 (Enhanced): ID + Address proof + Liveness → 1-2 business days
+- Tier 3 (Corporate/Business): Company docs + Authorized rep → 3-5 business days
+
+### Certificates Issued
+- **Digital Ownership Certificate** - Issued by Finatrades, proves gold ownership
+- **Physical Storage Certificate** - Issued by Wingold & Metals DMCC
+- **Transfer Certificate** - Issued on each payment/transfer
+
+### Transaction Limits (depend on KYC tier)
+- Tier 1: Lower daily/monthly limits
+- Tier 2: Medium limits for most users
+- Tier 3: Highest limits for verified businesses
+
+### Fees (transparent, shown before confirmation)
+- Buy/Sell: Spread applied to gold price
+- Deposits: Payment method dependent
+- Withdrawals: Percentage + fixed fee
+- P2P Transfers: FREE
+- Vault Storage: Annual percentage fee
+
+## CONVERSATION GUIDELINES
+- Greet users warmly and professionally
+- Listen to the full question before responding
+- Provide clear, actionable next steps
+- Offer to clarify if the user seems confused
+- End with "Is there anything else I can help you with?"
+- If user is frustrated, acknowledge their concern and offer solutions
+
+## ESCALATION TRIGGERS (Respond: "I'll connect you with our support team")
+- Chargeback, fraud, or dispute claims
+- Compliance or security blocks
+- Requests to bypass verification
+- Account access issues after multiple attempts
+- Requests involving legal or regulatory matters
+
+## MENU REFERENCE
+1) Create Account  2) Login Help  3) Verification  4) Balance
+5) Add Funds  6) Send Payment  7) Request Payment  8) Certificates
+9) BNSL Plans  10) FinaBridge  11) Troubleshooting  12) Support`;
+
+// Juris AI - Specialized KYC/Registration Assistant Prompt
+const JURIS_AI_PROMPT = `You are **Juris**, the Finatrades Registration & KYC Specialist AI.
+
+## YOUR ROLE
+You are an expert in account creation and identity verification. Guide users step-by-step through registration and KYC processes with patience and clarity.
+
+## PERSONALITY
+- Friendly, patient, and encouraging
+- Break down complex verification steps into simple actions
+- Celebrate progress ("Great! You've completed step 1")
+- Reassure users about data security and privacy
+
+## CORE KNOWLEDGE
+
+### Account Types
+**Personal Account:**
+- For individuals
+- Access: FinaPay + FinaVault + BNSL
+- KYC required for full access
+
+**Business Account:**
+- For companies/organizations
+- Access: All Personal features + FinaBridge
+- Requires KYB (Know Your Business) verification
+
+### Registration Steps (Personal)
+1. Choose account type: Personal
+2. Enter email address
+3. Create secure password (8+ chars, uppercase, number, symbol)
+4. Verify email via link sent to inbox
+5. Complete profile: Full name, country, phone
+6. Begin KYC verification
+
+### Registration Steps (Business)
+1. Choose account type: Business
+2. Enter business email
+3. Create secure password
+4. Verify email
+5. Company details: Name, registration number, country
+6. Authorized representative information
+7. Begin KYB verification
+
+### KYC Verification Tiers
+
+**Tier 1 - Basic:**
+- Documents: Valid ID (Passport, National ID, Driver's License)
+- Selfie for liveness check
+- Processing: 1-2 hours
+- Limits: Basic transaction limits
+
+**Tier 2 - Enhanced:**
+- Documents: ID + Proof of Address (utility bill, bank statement <3 months old)
+- Video liveness verification
+- Processing: 1-2 business days
+- Limits: Higher transaction limits
+
+**Tier 3 - Corporate:**
+- Company registration documents
+- Proof of business address
+- Authorized representative ID + authorization letter
+- Beneficial owner information
+- Processing: 3-5 business days
+- Limits: Maximum limits
+
+### Document Tips
+**ID Documents:**
+- Must be valid (not expired)
+- Clear, readable photo
+- All corners visible
+- No glare or blur
+
+**Proof of Address:**
+- Must be dated within last 3 months
+- Full name and address visible
+- Accepted: Utility bills, bank statements, government letters
+- NOT accepted: Mobile phone bills, emails, screenshots
+
+**Selfie/Liveness:**
+- Well-lit environment
+- Face clearly visible
+- Remove glasses if possible
+- Follow on-screen instructions
+
+### Common Issues & Solutions
+- **Document rejected:** Check image quality, ensure all text is readable
+- **Liveness failed:** Improve lighting, hold device steady, follow prompts
+- **Email not received:** Check spam, request resend, verify email address
+- **Verification taking long:** Usually 1-2 days, contact support if >3 days
+
+## CONVERSATION FLOW
+
+1. **Greeting:** Welcome user, ask what they need help with
+2. **Clarify:** Determine if new registration or KYC for existing account
+3. **Guide:** Walk through steps one at a time
+4. **Confirm:** Ask user to confirm each step before moving on
+5. **Support:** Offer help if they get stuck
+6. **Complete:** Congratulate on completion, explain next steps
+
+## RESPONSE STYLE
+- Use numbered steps for processes
+- Use checkboxes for requirements ☐ → ☑
+- Break long processes into manageable chunks
+- Ask "Ready to continue?" between major steps
+- Provide tips proactively
+
+## ESCALATION
+If user mentions:
+- Repeated verification failures
+- Account locked
+- Compliance/legal issues
+- Fraud or suspicious activity
+→ Respond: "I'll connect you with our verification team for specialized assistance."`;
+
+// Get the appropriate system prompt based on agent type
+function getAgentPrompt(agentType?: string): string {
+  switch (agentType?.toLowerCase()) {
+    case 'juris':
+      return JURIS_AI_PROMPT;
+    case 'vaultis':
+    case 'payis':
+    case 'tradis':
+    case 'logis':
+    case 'markis':
+      // These agents are coming soon, fall back to general
+      return FINATRADES_SYSTEM_PROMPT;
+    default:
+      return FINATRADES_SYSTEM_PROMPT;
+  }
+}
+
+// OpenAI-powered response function with agent type support
 export async function processUserMessageWithAI(
   message: string, 
   userContext?: UserContext, 
   platformConfig?: PlatformConfig, 
   goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string },
-  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
+  agentType?: string
 ): Promise<ChatbotResponse> {
   // Check for escalation keywords first
   if (shouldEscalate(message)) {
@@ -962,40 +1228,52 @@ export async function processUserMessageWithAI(
     };
   }
 
-  // Check for menu request
+  // Check for menu request (only for general agent)
   const normalizedMsg = message.toLowerCase().trim();
-  if (normalizedMsg === 'menu' || normalizedMsg === 'help' || normalizedMsg === 'start') {
-    return {
-      message: generateMainMenuResponse(),
-      category: 'menu',
-      confidence: 1.0,
-      suggestedActions: getMenuActions(),
-      escalateToHuman: false
-    };
+  if (!agentType || agentType === 'general') {
+    if (normalizedMsg === 'menu' || normalizedMsg === 'help' || normalizedMsg === 'start') {
+      return {
+        message: generateMainMenuResponse(),
+        category: 'menu',
+        confidence: 1.0,
+        suggestedActions: getMenuActions(),
+        escalateToHuman: false
+      };
+    }
   }
 
   try {
-    // Build context string
-    let contextInfo = '';
+    // Get agent-specific prompt
+    const systemPrompt = getAgentPrompt(agentType);
+    
+    // Build context string with enhanced user information
+    let contextInfo = '\n\n## CURRENT CONTEXT';
     if (userContext) {
-      contextInfo += `\nUser Context: Name: ${userContext.userName}, Gold Balance: ${userContext.goldBalance.toFixed(4)}g, Vault Gold: ${userContext.vaultGold.toFixed(4)}g, USD Value: $${userContext.usdValue.toFixed(2)}, KYC Status: ${userContext.kycStatus}`;
+      contextInfo += `\n**User:** ${userContext.userName}`;
+      contextInfo += `\n**Gold Balance:** ${userContext.goldBalance.toFixed(4)}g (Wallet)`;
+      contextInfo += `\n**Vault Gold:** ${userContext.vaultGold.toFixed(4)}g`;
+      contextInfo += `\n**Total Holdings:** ${(userContext.goldBalance + userContext.vaultGold).toFixed(4)}g`;
+      contextInfo += `\n**USD Value:** $${userContext.usdValue.toFixed(2)}`;
+      contextInfo += `\n**KYC Status:** ${userContext.kycStatus}`;
+    } else {
+      contextInfo += '\n**User:** Guest (not logged in)';
     }
     if (goldPrice) {
-      contextInfo += `\nCurrent Gold Price: $${goldPrice.pricePerGram.toFixed(2)}/gram, $${goldPrice.pricePerOz.toFixed(2)}/oz`;
+      contextInfo += `\n**Gold Price:** $${goldPrice.pricePerGram.toFixed(2)}/gram ($${goldPrice.pricePerOz.toFixed(2)}/oz)`;
     }
     if (platformConfig) {
-      contextInfo += `\nPlatform Fees: Buy spread ${platformConfig.buySpreadPercent}%, Sell spread ${platformConfig.sellSpreadPercent}%, Storage ${platformConfig.storageFeePercent}%/year`;
+      contextInfo += `\n**Trading Spreads:** Buy ${platformConfig.buySpreadPercent}%, Sell ${platformConfig.sellSpreadPercent}%`;
+      contextInfo += `\n**Storage Fee:** ${platformConfig.storageFeePercent}%/year`;
     }
 
-    // Build messages array
+    // Build messages array with agent-specific prompt
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: 'system', content: FINATRADES_SYSTEM_PROMPT + contextInfo }
+      { role: 'system', content: systemPrompt + contextInfo }
     ];
 
-    // Add conversation history if provided
+    // Add conversation history if provided (keep last 12 for better context)
     if (conversationHistory && conversationHistory.length > 0) {
-      // Keep last 10 messages for context
-      const recentHistory = conversationHistory.slice(-10);
+      const recentHistory = conversationHistory.slice(-12);
       for (const msg of recentHistory) {
         messages.push({ role: msg.role, content: msg.content });
       }
@@ -1004,39 +1282,60 @@ export async function processUserMessageWithAI(
     // Add current user message
     messages.push({ role: 'user', content: message });
 
-    // Call OpenAI
+    // Call OpenAI with optimized parameters
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
-      max_tokens: 800,
-      temperature: 0.7
+      max_tokens: 1000,
+      temperature: 0.6,
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1
     });
 
     const aiResponse = completion.choices[0]?.message?.content || '';
 
-    // Determine suggested actions based on content
+    // Determine suggested actions based on agent type and content
     let suggestedActions: string[] = [];
-    if (aiResponse.toLowerCase().includes('create account') || aiResponse.toLowerCase().includes('register')) {
-      suggestedActions = ['Personal', 'Business', 'Talk to Juris AI'];
-    } else if (aiResponse.toLowerCase().includes('kyc') || aiResponse.toLowerCase().includes('verification')) {
-      suggestedActions = ['Start Verification', 'Talk to Juris AI'];
-    } else if (aiResponse.toLowerCase().includes('bnsl')) {
-      suggestedActions = ['View BNSL Plans', 'Create Plan'];
-    } else if (aiResponse.toLowerCase().includes('deposit') || aiResponse.toLowerCase().includes('add funds')) {
-      suggestedActions = ['Add Funds', 'View Methods'];
-    } else if (aiResponse.toLowerCase().includes('support') || aiResponse.toLowerCase().includes('agent')) {
-      suggestedActions = ['Speak to Agent'];
+    const lowerResponse = aiResponse.toLowerCase();
+    
+    if (agentType === 'juris') {
+      // Juris-specific actions
+      if (lowerResponse.includes('kyc') || lowerResponse.includes('verification')) {
+        suggestedActions = ['Start KYC', 'Upload Documents', 'Check Status'];
+      } else if (lowerResponse.includes('register') || lowerResponse.includes('account')) {
+        suggestedActions = ['Personal Account', 'Business Account'];
+      } else {
+        suggestedActions = ['Start Registration', 'KYC Help', 'Back to General'];
+      }
     } else {
-      suggestedActions = ['Show Menu', 'Contact Support'];
+      // General agent actions
+      if (lowerResponse.includes('create account') || lowerResponse.includes('register')) {
+        suggestedActions = ['Personal', 'Business', 'Talk to Juris AI'];
+      } else if (lowerResponse.includes('kyc') || lowerResponse.includes('verification')) {
+        suggestedActions = ['Start Verification', 'Talk to Juris AI'];
+      } else if (lowerResponse.includes('bnsl')) {
+        suggestedActions = ['View BNSL Plans', 'Create Plan'];
+      } else if (lowerResponse.includes('deposit') || lowerResponse.includes('add funds')) {
+        suggestedActions = ['Add Funds', 'View Methods'];
+      } else if (lowerResponse.includes('vault') || lowerResponse.includes('storage')) {
+        suggestedActions = ['View Vault', 'Certificates'];
+      } else if (lowerResponse.includes('transfer') || lowerResponse.includes('send')) {
+        suggestedActions = ['Send Payment', 'Request Payment'];
+      } else if (lowerResponse.includes('support') || lowerResponse.includes('agent')) {
+        suggestedActions = ['Speak to Agent'];
+      } else {
+        suggestedActions = ['Show Menu', 'Contact Support'];
+      }
     }
 
     // Check if response suggests escalation
-    const shouldEscalateResponse = aiResponse.toLowerCase().includes('connect you to support') || 
-                                    aiResponse.toLowerCase().includes('human agent');
+    const shouldEscalateResponse = lowerResponse.includes('connect you to support') || 
+                                    lowerResponse.includes('human agent') ||
+                                    lowerResponse.includes('verification team');
 
     return {
       message: aiResponse,
-      category: 'ai_response',
+      category: agentType === 'juris' ? 'kyc_assistance' : 'ai_response',
       confidence: 0.95,
       suggestedActions,
       escalateToHuman: shouldEscalateResponse
