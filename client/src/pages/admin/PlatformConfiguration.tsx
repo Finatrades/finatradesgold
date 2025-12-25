@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { 
   Settings, DollarSign, Percent, Shield, Users, CreditCard, 
   TrendingUp, Wallet, Building, Gift, AlertCircle, Save, 
-  RefreshCw, Loader2, ChevronRight, Database, X, Plus, Globe
+  RefreshCw, Loader2, ChevronRight, Database, X, Plus, Globe, FileText
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -120,6 +120,11 @@ const CATEGORY_INFO: Record<string, { label: string; icon: React.ReactNode; desc
     label: 'Referral Settings', 
     icon: <Gift className="h-4 w-4" />, 
     description: 'Referral bonus configuration' 
+  },
+  terms_conditions: { 
+    label: 'Terms & Conditions', 
+    icon: <FileText className="h-4 w-4" />, 
+    description: 'Manage terms and conditions for deposits, purchases, and transfers' 
   },
 };
 
@@ -356,6 +361,21 @@ export default function PlatformConfiguration() {
           placeholder="JSON array or object"
           className="font-mono text-sm"
           rows={3}
+          data-testid={`textarea-${config.configKey}`}
+        />
+      );
+    }
+    
+    // Handle text type (used for terms and conditions)
+    if (config.configType === 'text') {
+      return (
+        <Textarea
+          id={config.id}
+          value={value}
+          onChange={(e) => handleValueChange(config.id, e.target.value)}
+          placeholder="Enter text content..."
+          className="text-sm min-w-[400px]"
+          rows={6}
           data-testid={`textarea-${config.configKey}`}
         />
       );
