@@ -42,7 +42,11 @@ async function getChatbotResponse(message: string, agentType?: string): Promise<
   try {
     const response = await fetch('/api/chatbot/message', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'include',
       body: JSON.stringify({ message, agentType }),
     });
     if (!response.ok) throw new Error('Failed to get response');

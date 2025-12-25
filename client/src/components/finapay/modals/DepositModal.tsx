@@ -233,7 +233,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     try {
       const response = await fetch('/api/crypto-payments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user.id,
           walletConfigId: selectedCryptoWallet.id,
@@ -269,7 +273,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     try {
       const response = await fetch(`/api/crypto-payments/${cryptoPaymentRequestId}/submit-proof`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           transactionHash: transactionHash.trim(),
           proofImageUrl: cryptoReceipt,
@@ -1008,7 +1016,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     try {
                       const response = await fetch('/api/crypto-payments', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                          'Content-Type': 'application/json',
+                          'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'include',
                         body: JSON.stringify({
                           userId: user.id,
                           walletConfigId: wallet.id,

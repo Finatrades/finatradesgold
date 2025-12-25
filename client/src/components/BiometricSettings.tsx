@@ -71,7 +71,11 @@ export function BiometricSettings() {
 
         const response = await fetch('/api/biometric/enable', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'include',
           body: JSON.stringify({
             userId: user.id,
             password,
@@ -91,7 +95,11 @@ export function BiometricSettings() {
       } else {
         const response = await fetch('/api/biometric/disable', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'include',
           body: JSON.stringify({
             userId: user.id,
             password,

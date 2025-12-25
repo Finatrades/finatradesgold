@@ -167,7 +167,11 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
       // Create the payment request
       const response = await fetch('/api/crypto-payments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user?.id,
           walletConfigId: selectedWallet.id,
@@ -210,7 +214,11 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
     try {
       const response = await fetch(`/api/crypto-payments/${paymentRequestId}/submit-proof`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           transactionHash: transactionHash.trim(),
         }),

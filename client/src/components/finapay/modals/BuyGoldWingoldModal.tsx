@@ -116,6 +116,8 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       
       const uploadResponse = await fetch('/api/documents/upload', {
         method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include',
         body: formData,
       });
       
@@ -127,7 +129,11 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       
       const submitResponse = await fetch('/api/buy-gold/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user.id,
           amountUsd: amountUsd || null,

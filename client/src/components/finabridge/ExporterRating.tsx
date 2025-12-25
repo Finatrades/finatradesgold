@@ -69,7 +69,11 @@ export default function ExporterRating({
     try {
       const response = await fetch('/api/finabridge/ratings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           exporterUserId,
           tradeRequestId,

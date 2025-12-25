@@ -146,7 +146,11 @@ export default function TradeCertificate({
     try {
       const response = await fetch('/api/finabridge/certificates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           tradeRequestId,
           type,

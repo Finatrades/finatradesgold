@@ -148,7 +148,11 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
       
       const res = await fetch('/api/ngenius/process-hosted-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user?.id,
           sessionId,
