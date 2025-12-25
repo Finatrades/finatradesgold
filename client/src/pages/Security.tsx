@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Shield, Smartphone, Key, Copy, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Lock } from 'lucide-react';
+import { Shield, Smartphone, Key, Copy, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Lock, KeyRound, LockKeyhole } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -37,11 +37,111 @@ export default function Security() {
   const [showPassword, setShowPassword] = useState(false);
   const [isDisabling, setIsDisabling] = useState(false);
 
+  // Transaction PIN states
+  const [pinStatus, setPinStatus] = useState<{hasPin: boolean; isLocked: boolean; lockedUntil?: string | null}>({hasPin: false, isLocked: false});
+  const [isPinLoading, setIsPinLoading] = useState(true);
+  const [showPinSetupDialog, setShowPinSetupDialog] = useState(false);
+  const [showPinResetDialog, setShowPinResetDialog] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [confirmPinValue, setConfirmPinValue] = useState('');
+  const [pinPassword, setPinPassword] = useState('');
+  const [showPinPassword, setShowPinPassword] = useState(false);
+  const [isPinSaving, setIsPinSaving] = useState(false);
+  const [pinStep, setPinStep] = useState<'enter' | 'confirm'>('enter');
+
   useEffect(() => {
     if (user) {
       fetchMfaStatus();
+      fetchPinStatus();
     }
   }, [user]);
+
+  const fetchPinStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const res = await fetch(`/api/transaction-pin/status/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPinStatus(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch PIN status:', error);
+    } finally {
+      setIsPinLoading(false);
+    }
+  };
+
+  const handleSetupPin = async () => {
+    if (!user || pinValue.length !== 6 || pinValue !== confirmPinValue || !pinPassword) {
+      toast.error('Please fill in all fields correctly');
+      return;
+    }
+    
+    setIsPinSaving(true);
+    
+    try {
+      const res = await fetch('/api/transaction-pin/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, pin: pinValue, password: pinPassword }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to set up PIN');
+      }
+      
+      setPinStatus({ hasPin: true, isLocked: false });
+      setShowPinSetupDialog(false);
+      resetPinForm();
+      toast.success('Transaction PIN set up successfully');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to set up PIN');
+    } finally {
+      setIsPinSaving(false);
+    }
+  };
+
+  const handleResetPin = async () => {
+    if (!user || pinValue.length !== 6 || pinValue !== confirmPinValue || !pinPassword) {
+      toast.error('Please fill in all fields correctly');
+      return;
+    }
+    
+    setIsPinSaving(true);
+    
+    try {
+      const res = await fetch('/api/transaction-pin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, newPin: pinValue, password: pinPassword }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to reset PIN');
+      }
+      
+      setPinStatus({ hasPin: true, isLocked: false });
+      setShowPinResetDialog(false);
+      resetPinForm();
+      toast.success('Transaction PIN has been reset');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to reset PIN');
+    } finally {
+      setIsPinSaving(false);
+    }
+  };
+
+  const resetPinForm = () => {
+    setPinValue('');
+    setConfirmPinValue('');
+    setPinPassword('');
+    setPinStep('enter');
+  };
 
   const fetchMfaStatus = async () => {
     if (!user) return;
@@ -288,6 +388,93 @@ export default function Security() {
           </CardContent>
         </Card>
 
+        {/* Transaction PIN Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center">
+                  <KeyRound className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Transaction PIN
+                    {pinStatus.hasPin && (
+                      <Badge className="bg-green-100 text-green-700 border-none">
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Active
+                      </Badge>
+                    )}
+                    {pinStatus.isLocked && (
+                      <Badge variant="destructive">
+                        <LockKeyhole className="w-3 h-3 mr-1" /> Locked
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    Add an extra layer of protection for sensitive transactions like withdrawals and transfers.
+                  </CardDescription>
+                </div>
+              </div>
+              {isPinLoading && (
+                <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+              <LockKeyhole className="w-5 h-5 text-muted-foreground mt-0.5" />
+              <div>
+                <h4 className="font-medium text-sm">6-Digit Security PIN</h4>
+                <p className="text-sm text-muted-foreground">
+                  Your transaction PIN is required when performing sensitive operations such as withdrawals, transfers, and gold trades.
+                </p>
+              </div>
+            </div>
+            
+            {pinStatus.hasPin ? (
+              <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-100">
+                <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm text-green-800">Transaction PIN Active</h4>
+                  <p className="text-sm text-green-700">
+                    Your transactions are protected with a 6-digit PIN.
+                    {pinStatus.isLocked && pinStatus.lockedUntil && (
+                      <span className="block mt-1 text-red-600">
+                        PIN is currently locked until {new Date(pinStatus.lockedUntil).toLocaleTimeString()}.
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => { resetPinForm(); setShowPinResetDialog(true); }}
+                  data-testid="button-reset-pin"
+                >
+                  Reset PIN
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-100">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm text-amber-800">PIN Not Set</h4>
+                  <p className="text-sm text-amber-700">
+                    Set up a transaction PIN to add an extra layer of security for your financial operations.
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => { resetPinForm(); setShowPinSetupDialog(true); }}
+                  size="sm"
+                  data-testid="button-setup-pin"
+                >
+                  Set Up PIN
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Setup Dialog */}
         <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
           <DialogContent className="max-w-md">
@@ -444,6 +631,226 @@ export default function Security() {
                 {isDisabling ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
                 Disable MFA
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* PIN Setup Dialog */}
+        <Dialog open={showPinSetupDialog} onOpenChange={(open) => { setShowPinSetupDialog(open); if (!open) resetPinForm(); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {pinStep === 'enter' ? 'Set Up Transaction PIN' : 'Confirm Your PIN'}
+              </DialogTitle>
+              <DialogDescription>
+                {pinStep === 'enter' 
+                  ? 'Create a 6-digit PIN to secure your transactions.'
+                  : 'Enter your PIN again to confirm.'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {pinStep === 'enter' ? (
+                <div className="flex flex-col items-center gap-4">
+                  <Label className="text-center">Enter your 6-digit PIN</Label>
+                  <InputOTP 
+                    maxLength={6} 
+                    value={pinValue}
+                    onChange={setPinValue}
+                    data-testid="input-setup-pin"
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center gap-4">
+                    <Label className="text-center">Confirm your PIN</Label>
+                    <InputOTP 
+                      maxLength={6} 
+                      value={confirmPinValue}
+                      onChange={setConfirmPinValue}
+                      data-testid="input-confirm-pin"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                    {confirmPinValue.length === 6 && confirmPinValue !== pinValue && (
+                      <p className="text-sm text-red-500">PINs do not match</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="pin-password">Enter your password to confirm</Label>
+                    <div className="relative">
+                      <Input 
+                        id="pin-password"
+                        type={showPinPassword ? "text" : "password"}
+                        value={pinPassword}
+                        onChange={(e) => setPinPassword(e.target.value)}
+                        placeholder="Your account password"
+                        data-testid="input-pin-password"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPinPassword(!showPinPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPinPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <DialogFooter>
+              {pinStep === 'enter' ? (
+                <Button 
+                  onClick={() => setPinStep('confirm')} 
+                  disabled={pinValue.length !== 6}
+                  className="w-full"
+                  data-testid="button-pin-next"
+                >
+                  Continue
+                </Button>
+              ) : (
+                <div className="flex gap-2 w-full">
+                  <Button variant="outline" onClick={() => { setPinStep('enter'); setConfirmPinValue(''); setPinPassword(''); }}>Back</Button>
+                  <Button 
+                    onClick={handleSetupPin} 
+                    disabled={confirmPinValue.length !== 6 || confirmPinValue !== pinValue || !pinPassword || isPinSaving}
+                    className="flex-1"
+                    data-testid="button-save-pin"
+                  >
+                    {isPinSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Set Up PIN
+                  </Button>
+                </div>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* PIN Reset Dialog */}
+        <Dialog open={showPinResetDialog} onOpenChange={(open) => { setShowPinResetDialog(open); if (!open) resetPinForm(); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {pinStep === 'enter' ? 'Reset Transaction PIN' : 'Confirm New PIN'}
+              </DialogTitle>
+              <DialogDescription>
+                {pinStep === 'enter' 
+                  ? 'Create a new 6-digit PIN.'
+                  : 'Enter your new PIN again to confirm.'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {pinStep === 'enter' ? (
+                <div className="flex flex-col items-center gap-4">
+                  <Label className="text-center">Enter your new 6-digit PIN</Label>
+                  <InputOTP 
+                    maxLength={6} 
+                    value={pinValue}
+                    onChange={setPinValue}
+                    data-testid="input-reset-pin"
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center gap-4">
+                    <Label className="text-center">Confirm your new PIN</Label>
+                    <InputOTP 
+                      maxLength={6} 
+                      value={confirmPinValue}
+                      onChange={setConfirmPinValue}
+                      data-testid="input-confirm-reset-pin"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                    {confirmPinValue.length === 6 && confirmPinValue !== pinValue && (
+                      <p className="text-sm text-red-500">PINs do not match</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-pin-password">Enter your password to confirm</Label>
+                    <div className="relative">
+                      <Input 
+                        id="reset-pin-password"
+                        type={showPinPassword ? "text" : "password"}
+                        value={pinPassword}
+                        onChange={(e) => setPinPassword(e.target.value)}
+                        placeholder="Your account password"
+                        data-testid="input-reset-pin-password"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPinPassword(!showPinPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPinPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <DialogFooter>
+              {pinStep === 'enter' ? (
+                <Button 
+                  onClick={() => setPinStep('confirm')} 
+                  disabled={pinValue.length !== 6}
+                  className="w-full"
+                  data-testid="button-reset-pin-next"
+                >
+                  Continue
+                </Button>
+              ) : (
+                <div className="flex gap-2 w-full">
+                  <Button variant="outline" onClick={() => { setPinStep('enter'); setConfirmPinValue(''); setPinPassword(''); }}>Back</Button>
+                  <Button 
+                    onClick={handleResetPin} 
+                    disabled={confirmPinValue.length !== 6 || confirmPinValue !== pinValue || !pinPassword || isPinSaving}
+                    className="flex-1"
+                    data-testid="button-confirm-reset-pin"
+                  >
+                    {isPinSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Reset PIN
+                  </Button>
+                </div>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
