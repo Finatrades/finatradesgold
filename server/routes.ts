@@ -419,6 +419,75 @@ function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Helper to validate and consume PIN verification token
+// Returns userId if valid, null if invalid
+async function validatePinToken(token: string | undefined, action: string): Promise<{ valid: boolean; userId?: string; error?: string }> {
+  if (!token) {
+    return { valid: false, error: 'PIN verification token required' };
+  }
+  
+  const pinToken = await storage.getPinVerificationToken(token);
+  
+  if (!pinToken) {
+    return { valid: false, error: 'Invalid or expired PIN token' };
+  }
+  
+  if (new Date(pinToken.expiresAt) < new Date()) {
+    return { valid: false, error: 'PIN token has expired' };
+  }
+  
+  if (pinToken.action !== action) {
+    return { valid: false, error: 'PIN token action mismatch' };
+  }
+  
+  // Mark token as used
+  await storage.usePinVerificationToken(token);
+  
+  return { valid: true, userId: pinToken.userId };
+}
+
+// Middleware to require PIN verification for sensitive transactions
+function requirePinVerification(action: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const pinToken = req.headers['x-pin-token'] as string | undefined;
+    const userId = req.body.userId || req.params.userId;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID required' });
+    }
+    
+    // Check if user has PIN set up
+    const transactionPin = await storage.getTransactionPin(userId);
+    
+    // If no PIN set up, allow transaction (user hasn't enabled this security feature)
+    if (!transactionPin) {
+      return next();
+    }
+    
+    // PIN is set up, require verification token
+    const result = await validatePinToken(pinToken, action);
+    
+    if (!result.valid) {
+      return res.status(403).json({ 
+        message: result.error,
+        requiresPin: true,
+        action
+      });
+    }
+    
+    // Verify token belongs to the requesting user
+    if (result.userId !== userId) {
+      return res.status(403).json({ 
+        message: 'PIN verification user mismatch',
+        requiresPin: true,
+        action
+      });
+    }
+    
+    next();
+  };
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
