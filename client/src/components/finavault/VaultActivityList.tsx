@@ -412,6 +412,9 @@ export default function VaultActivityList() {
     }
   });
   
+  // Get all transaction IDs from the transactions array to avoid duplicate certificate entries
+  const existingTransactionIds = new Set(transactions.map((tx: any) => tx.id));
+  
   // Create one Vault Deposit entry per certificate group (combining both cert types)
   // Skip certificates without transactionId that have vaultHoldingId - these are physical deposits
   // that already appear in the transactions array with their certificates attached
@@ -421,6 +424,11 @@ export default function VaultActivityList() {
       // These are already shown from the transactions array with certificates attached
       const firstCert = certGroup[0];
       if (!firstCert.transactionId && firstCert.vaultHoldingId) {
+        return false;
+      }
+      // Skip certificates that belong to transactions already in the transactions array
+      // This prevents duplicate entries for Send/Receive transactions that have certificates attached
+      if (firstCert.transactionId && existingTransactionIds.has(firstCert.transactionId)) {
         return false;
       }
       return true;
