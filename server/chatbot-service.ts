@@ -692,6 +692,192 @@ const FAQ_DATABASE: FAQEntry[] = [
     response: "__SHOW_MENU__",
     category: 'menu',
     actions: []
+  },
+  // === STEP-BY-STEP GUIDES ===
+  
+  // Step-by-step: Bank Transfer Deposit
+  {
+    keywords: ['bank transfer deposit', 'deposit bank', 'wire transfer', 'bank deposit steps'],
+    patterns: [/bank transfer.*deposit/i, /deposit.*bank transfer/i, /wire transfer/i, /how.*bank deposit/i],
+    response: "**DEPOSIT VIA BANK TRANSFER - Step by Step**\n\n1. Click 'Add Funds' button\n2. Choose 'Bank Transfer'\n3. Select which bank account to send to (from list)\n4. Enter the amount you want to deposit (in USD)\n5. Enter your bank name\n6. Enter your account holder name\n7. Upload proof of payment (screenshot/receipt)\n8. Check the box 'I accept Terms and Conditions'\n9. Click 'Submit'\n10. Wait for admin approval (you'll get a notification)\n\n**Processing Time:** 1-3 business days after admin approval.",
+    category: 'deposits',
+    actions: ['Add Funds', 'Contact Support']
+  },
+  // Step-by-step: Card Payment Deposit
+  {
+    keywords: ['card deposit', 'credit card deposit', 'debit card deposit', 'pay by card'],
+    patterns: [/card.*deposit/i, /deposit.*card/i, /credit card.*add/i, /debit card.*add/i, /pay (by|with) card/i],
+    response: "**DEPOSIT VIA CARD - Step by Step**\n\n1. Click 'Add Funds' button\n2. Choose 'Card'\n3. Enter amount you want to deposit (in USD)\n4. Click 'Continue'\n5. Enter your card number\n6. Enter expiry date (MM/YY)\n7. Enter CVV (3 digits on back)\n8. Enter cardholder name\n9. Check the box 'I accept Terms and Conditions'\n10. Click 'Pay Now'\n11. Complete 3D Secure verification (if asked)\n12. Money added instantly to your wallet\n\n**Processing Time:** Instant after 3DS verification.",
+    category: 'deposits',
+    actions: ['Add Funds']
+  },
+  // Step-by-step: Crypto Deposit
+  {
+    keywords: ['crypto deposit', 'bitcoin deposit', 'usdt deposit', 'ethereum deposit', 'btc deposit'],
+    patterns: [/crypto.*deposit/i, /deposit.*crypto/i, /bitcoin.*deposit/i, /usdt.*deposit/i, /eth.*deposit/i, /btc.*add/i],
+    response: "**DEPOSIT VIA CRYPTO - Step by Step**\n\n1. Click 'Add Funds' button\n2. Choose 'Crypto'\n3. Enter amount in USD\n4. Select network (USDT TRC20, BTC, ETH, etc.)\n5. Copy the wallet address shown\n6. Send crypto from your external wallet to this address\n7. Enter the transaction hash\n8. Upload screenshot of payment\n9. Check the box 'I accept Terms and Conditions'\n10. Click 'Submit Proof'\n11. Wait for confirmation (you'll get notification)\n\n**Processing Time:** 10-30 minutes after blockchain confirmations.",
+    category: 'deposits',
+    actions: ['Add Funds']
+  },
+  // Step-by-step: Buy Gold
+  {
+    keywords: ['how buy gold step', 'buy gold steps', 'purchase gold guide', 'gold buying process'],
+    patterns: [/how.*buy gold/i, /buy gold.*step/i, /step.*buy gold/i, /gold buying/i, /purchase gold.*how/i],
+    response: "**BUY GOLD - Step by Step**\n\n1. Click 'Buy Gold' button\n2. Enter how much USD you want to spend\n3. See how many grams of gold you'll get (auto-calculated)\n4. See the current gold price per gram\n5. See any fees applied\n6. Check the box 'I accept Terms and Conditions'\n7. Click 'Confirm Purchase'\n8. Gold is added to your wallet instantly\n\n**Tip:** Make sure you have sufficient USD balance in your wallet before buying.",
+    category: 'trading',
+    actions: ['Buy Gold', 'Add Funds']
+  },
+  // Step-by-step: Sell Gold
+  {
+    keywords: ['how sell gold step', 'sell gold steps', 'selling gold guide', 'gold selling process'],
+    patterns: [/how.*sell gold/i, /sell gold.*step/i, /step.*sell gold/i, /gold selling/i, /convert gold.*usd/i],
+    response: "**SELL GOLD - Step by Step**\n\n1. Click 'Sell Gold' button\n2. Enter how many grams you want to sell\n3. See how much USD you'll receive (auto-calculated)\n4. See current gold price and any fees\n5. Check the box 'I accept Terms and Conditions'\n6. Click 'Confirm Sale'\n7. USD is added to your wallet balance\n\n**Note:** Only your 'Available' gold can be sold. Locked gold in BNSL plans must mature first.",
+    category: 'trading',
+    actions: ['Sell Gold']
+  },
+  // Step-by-step: Send Gold / Transfer
+  {
+    keywords: ['how send gold step', 'send gold steps', 'transfer gold guide', 'send payment steps'],
+    patterns: [/how.*send gold/i, /send gold.*step/i, /transfer gold.*step/i, /step.*transfer/i, /send payment.*how/i],
+    response: "**SEND GOLD (Transfer) - Step by Step**\n\n1. Click 'Transfer' or 'Send Gold' button\n2. Enter recipient's Finatrades ID OR email address\n3. Enter amount (grams or USD value)\n4. Add a note (optional)\n5. Review the transfer details\n6. Enter your Transaction PIN (if enabled)\n7. Click 'Send'\n8. Recipient receives gold instantly\n\n**Note:** Recipient pending if they have approval enabled. P2P transfers are free!",
+    category: 'transfers',
+    actions: ['Send Payment']
+  },
+  // Step-by-step: Withdraw Money
+  {
+    keywords: ['how withdraw step', 'withdraw steps', 'withdrawal guide', 'cash out steps', 'withdraw money how'],
+    patterns: [/how.*withdraw/i, /withdraw.*step/i, /step.*withdraw/i, /cash out.*how/i, /withdrawal process/i],
+    response: "**WITHDRAW MONEY - Step by Step**\n\n1. Click 'Withdraw' button\n2. Choose withdrawal method (Bank Transfer)\n3. Enter your bank name\n4. Enter your account number\n5. Enter your IBAN/SWIFT code\n6. Enter amount to withdraw (in USD)\n7. Review fees and final amount you'll receive\n8. Check the box 'I accept Terms and Conditions'\n9. Enter your Transaction PIN (if enabled)\n10. Click 'Submit Request'\n11. Wait for admin approval and bank transfer\n\n**Processing Time:** 1-3 business days.",
+    category: 'withdrawals',
+    actions: ['Withdraw Funds']
+  },
+  // Step-by-step: Request Gold
+  {
+    keywords: ['how request gold step', 'request gold steps', 'request payment guide'],
+    patterns: [/how.*request gold/i, /request gold.*step/i, /step.*request gold/i, /request payment.*how/i],
+    response: "**REQUEST GOLD - Step by Step**\n\n1. Click 'Request Gold' button\n2. Enter the person's Finatrades ID or email\n3. Enter how much gold you're requesting (grams)\n4. Add a message explaining why (optional)\n5. Click 'Send Request'\n6. They receive notification and can accept or decline\n\n**Tip:** This is useful for invoicing or receiving payments from friends and business partners.",
+    category: 'transfers',
+    actions: ['Request Payment']
+  },
+  // Step-by-step: Accept/Reject Pending Transfers
+  {
+    keywords: ['pending transfer', 'accept transfer', 'reject transfer', 'approve transfer'],
+    patterns: [/pending transfer/i, /accept.*transfer/i, /reject.*transfer/i, /approve.*transfer/i, /incoming transfer/i],
+    response: "**PENDING TRANSFERS - Accept or Reject**\n\n1. Go to Wallet page\n2. See 'Pending Transfers' section (if any)\n3. Review who sent it and how much\n4. Click 'Accept' to receive the gold\n   OR\n   Click 'Reject' to decline (gold returns to sender)\n5. Transfer is processed automatically if you don't respond within 24 hours\n\n**Note:** Enable 'Transfer Approval' in settings if you want to review transfers before they're credited.",
+    category: 'transfers',
+    actions: ['View Wallet']
+  },
+  // Step-by-step: View Stored Gold (FinaVault)
+  {
+    keywords: ['view stored gold', 'check vault', 'my gold holdings', 'vault holdings'],
+    patterns: [/view.*stored gold/i, /check.*vault/i, /my.*holdings/i, /vault holdings/i, /see my gold/i],
+    response: "**VIEW YOUR STORED GOLD - Step by Step**\n\n1. Click 'Gold Storage' in sidebar\n2. See your total gold in vault (grams)\n3. See individual batches with:\n   • Batch reference number\n   • Weight in grams\n   • Date added\n   • Purity (usually 999.9)\n4. Click on any batch to see certificate\n5. Download certificate as PDF (optional)\n\n**Tip:** Your gold is stored in insured Grade-A vaults by Wingold & Metals DMCC.",
+    category: 'vault',
+    actions: ['Go to FinaVault']
+  },
+  // Step-by-step: Deposit Gold to Vault
+  {
+    keywords: ['deposit gold vault', 'add gold vault', 'physical gold deposit'],
+    patterns: [/deposit.*gold.*vault/i, /add.*gold.*vault/i, /physical gold.*deposit/i, /bring.*gold/i],
+    response: "**DEPOSIT GOLD TO VAULT - Step by Step**\n\n1. Click 'Gold Storage' in sidebar\n2. Click 'New Deposit' tab\n3. Enter weight of gold (grams)\n4. Enter purity (e.g., 999.9)\n5. Enter form type (bar, coin, etc.)\n6. Add any notes\n7. Click 'Submit Request'\n8. Follow instructions for physical delivery\n9. Admin verifies and approves deposit\n10. Gold appears in your vault\n\n**Note:** Physical gold must meet our purity standards to be accepted.",
+    category: 'vault',
+    actions: ['Submit Deposit Request']
+  },
+  // Step-by-step: Withdraw Gold from Vault
+  {
+    keywords: ['withdraw gold vault', 'cash out vault', 'get physical gold', 'vault withdrawal'],
+    patterns: [/withdraw.*gold.*vault/i, /cash out.*vault/i, /physical gold.*withdraw/i, /get.*physical gold/i],
+    response: "**WITHDRAW GOLD FROM VAULT - Step by Step**\n\n1. Click 'Gold Storage' in sidebar\n2. Click 'Cash Out' or 'Withdraw'\n3. Select which gold batches to withdraw\n4. Choose delivery option:\n   • Physical delivery (get gold shipped)\n   • Sell for cash (convert to USD)\n5. Enter delivery address (if physical)\n6. Review fees\n7. Check terms and conditions\n8. Click 'Submit Request'\n9. Admin processes your request\n\n**Processing Time:** Physical delivery may take 5-10 business days depending on location.",
+    category: 'vault',
+    actions: ['View FinaVault']
+  },
+  // Step-by-step: Create BNSL Plan
+  {
+    keywords: ['create bnsl', 'start bnsl', 'bnsl plan steps', 'lock gold bnsl'],
+    patterns: [/create.*bnsl/i, /start.*bnsl/i, /bnsl.*step/i, /how.*bnsl plan/i, /lock gold.*bnsl/i],
+    response: "**CREATE A BNSL PLAN - Step by Step**\n\n1. Click 'Buy Now, Sell Later' in sidebar\n2. Click 'Create New Plan' button\n3. Enter how much gold you want to lock (grams)\n4. Choose tenor (how many months: 3, 6, 12, etc.)\n5. See the guaranteed return % (annual margin)\n6. See total payout at maturity\n7. Review the agreement terms\n8. Type your full name as signature\n9. Check 'I agree to Terms and Conditions'\n10. Click 'Confirm & Create Plan'\n11. Gold is locked, plan starts\n12. Receive payouts as per schedule\n\n**Note:** Locked gold cannot be used for transactions until maturity.",
+    category: 'bnsl',
+    actions: ['Create BNSL Plan']
+  },
+  // Step-by-step: View BNSL Plans
+  {
+    keywords: ['view bnsl', 'my bnsl plans', 'bnsl portfolio', 'check bnsl'],
+    patterns: [/view.*bnsl/i, /my.*bnsl.*plan/i, /bnsl portfolio/i, /check.*bnsl/i],
+    response: "**VIEW YOUR BNSL PLANS - Step by Step**\n\n1. Click 'Buy Now, Sell Later' in sidebar\n2. See 'My Plans' tab\n3. View all your plans:\n   • Plan ID\n   • Gold locked (grams)\n   • Status (Active, Completed, etc.)\n   • Start date and maturity date\n   • Expected payout\n4. Click any plan to see full details\n5. See payout schedule and history\n\n**Tip:** BNSL returns are paid quarterly into your BNSL wallet.",
+    category: 'bnsl',
+    actions: ['View BNSL Plans']
+  },
+  // Step-by-step: BNSL Wallet
+  {
+    keywords: ['bnsl wallet', 'bnsl earnings', 'transfer bnsl', 'bnsl balance'],
+    patterns: [/bnsl wallet/i, /bnsl earnings/i, /transfer.*bnsl/i, /bnsl balance/i],
+    response: "**BNSL WALLET - Step by Step**\n\n1. Go to 'Buy Now, Sell Later'\n2. See 'BNSL Wallet' card\n3. View your BNSL balance\n4. Click 'Transfer to Main Wallet'\n5. Enter amount to transfer\n6. Confirm transfer\n7. Funds move to your FinaPay wallet\n\n**Note:** Your BNSL earnings accumulate here from quarterly payouts. Transfer them to your main wallet anytime.",
+    category: 'bnsl',
+    actions: ['Transfer to Wallet']
+  },
+  // Step-by-step: Create Trade Request (Importer)
+  {
+    keywords: ['create trade request', 'importer trade', 'trade finance steps', 'finabridge importer'],
+    patterns: [/create.*trade request/i, /importer.*trade/i, /trade finance.*step/i, /finabridge.*how/i],
+    response: "**CREATE A TRADE REQUEST (Importer) - Step by Step**\n\n1. Click 'Trade Finance' in sidebar\n2. Click 'Create Trade Request'\n3. Fill in trade details:\n   • Goods name and description\n   • Quantity\n   • Trade value (USD)\n   • Expected shipping date\n   • Destination country\n   • Mode of transport (Sea, Air, Land)\n   • Incoterms (FOB, CIF, etc.)\n   • Insurance details\n4. Review gold collateral required\n5. Sign the agreement (type your name)\n6. Check Terms and Conditions\n7. Click 'Submit Request'\n8. Exporters can now send proposals\n\n**Note:** Business account with KYB required.",
+    category: 'trade',
+    actions: ['Create Trade Request']
+  },
+  // Step-by-step: Submit Proposal (Exporter)
+  {
+    keywords: ['submit proposal', 'exporter proposal', 'trade proposal', 'finabridge exporter'],
+    patterns: [/submit.*proposal/i, /exporter.*proposal/i, /trade proposal/i, /finabridge.*exporter/i],
+    response: "**SUBMIT A PROPOSAL (Exporter) - Step by Step**\n\n1. Click 'Trade Finance' in sidebar\n2. Browse available trade requests\n3. Click on a request to view details\n4. Click 'Submit Proposal'\n5. Fill in your proposal:\n   • Quote price\n   • Delivery timeline (days)\n   • Shipping method\n   • Port of loading\n   • Payment terms\n   • Company details\n6. Upload any supporting documents\n7. Sign the agreement\n8. Check Terms and Conditions\n9. Click 'Submit Proposal'\n10. Wait for importer's response\n\n**Note:** Your details are shared only after proposal acceptance.",
+    category: 'trade',
+    actions: ['View Trade Requests']
+  },
+  // Step-by-step: Deal Room
+  {
+    keywords: ['deal room', 'trade negotiation', 'finalize trade', 'trade chat'],
+    patterns: [/deal room/i, /trade negotiation/i, /finalize.*trade/i, /trade.*chat/i],
+    response: "**DEAL ROOM (Negotiate) - Step by Step**\n\n1. Go to 'Trade Finance'\n2. Click on active trade\n3. Enter 'Deal Room'\n4. Chat with the other party\n5. Upload documents:\n   • Commercial invoice\n   • Bill of lading\n   • Certificates\n   • Insurance documents\n6. Track trade status\n7. Confirm shipment and delivery\n8. Trade completes, gold is released\n\n**Note:** Deal room is a secure space for trade communication and document sharing.",
+    category: 'trade',
+    actions: ['View Trades']
+  },
+  // Step-by-step: Set Up Transaction PIN
+  {
+    keywords: ['setup pin', 'set transaction pin', 'create pin', 'enable pin'],
+    patterns: [/setup.*pin/i, /set.*transaction pin/i, /create.*pin/i, /enable.*pin/i, /how.*pin/i],
+    response: "**SET UP TRANSACTION PIN - Step by Step**\n\n1. Click 'Security' in sidebar\n2. Find 'Transaction PIN' section\n3. Click 'Set Up PIN'\n4. Enter your account password to verify\n5. Enter new 6-digit PIN\n6. Confirm PIN (enter again)\n7. Click 'Save'\n8. Now PIN is required before sending money or gold\n\n**Tip:** Choose a PIN you'll remember but others can't guess.",
+    category: 'security',
+    actions: ['Set Up PIN']
+  },
+  // Step-by-step: Enable 2FA
+  {
+    keywords: ['enable 2fa steps', 'setup 2fa', 'authenticator setup', 'two factor steps'],
+    patterns: [/enable.*2fa.*step/i, /setup.*2fa/i, /authenticator.*setup/i, /two factor.*step/i, /how.*enable.*2fa/i],
+    response: "**ENABLE TWO-FACTOR AUTHENTICATION - Step by Step**\n\n1. Click 'Security' in sidebar\n2. Find 'Two-Factor Authentication' section\n3. Click 'Enable 2FA'\n4. Scan QR code with authenticator app (Google Authenticator, etc.)\n5. Enter the 6-digit code from app\n6. Save your backup codes (write them down!)\n7. Click 'Verify & Enable'\n8. 2FA is now active for all logins\n\n**Important:** Keep backup codes safe! You'll need them if you lose your phone.",
+    category: 'security',
+    actions: ['Enable 2FA']
+  },
+  // Step-by-step: Change Password
+  {
+    keywords: ['change password steps', 'reset password how', 'update password', 'new password'],
+    patterns: [/change password.*step/i, /how.*change password/i, /update.*password/i, /new password.*how/i],
+    response: "**CHANGE PASSWORD - Step by Step**\n\n1. Click 'Security' in sidebar\n2. Find 'Password' section\n3. Click 'Change Password'\n4. Enter current password\n5. Enter new password\n6. Confirm new password\n7. Click 'Save'\n\n**Password Requirements:**\n• At least 8 characters\n• Include uppercase and lowercase letters\n• Include at least one number\n• Include at least one special character",
+    category: 'security',
+    actions: ['Change Password']
+  },
+  // Step-by-step: Complete KYC
+  {
+    keywords: ['complete kyc steps', 'kyc verification steps', 'verify identity how', 'kyc process steps'],
+    patterns: [/complete.*kyc.*step/i, /kyc.*verification.*step/i, /verify identity.*how/i, /kyc process.*step/i],
+    response: "**COMPLETE KYC VERIFICATION - Step by Step**\n\n1. Click 'Profile' in sidebar OR Click 'Verify Identity' if shown\n2. Fill in personal information:\n   • Full name\n   • Date of birth\n   • Address\n   • Phone number\n3. Upload documents:\n   • Government ID (passport, national ID)\n   • Proof of address (utility bill, bank statement)\n4. Take a selfie for liveness check\n5. Click 'Submit for Verification'\n6. Wait for admin review (usually 1-2 business days)\n7. Get notification when approved\n\n**Tip:** Use clear, well-lit photos of documents for faster approval.",
+    category: 'kyc',
+    actions: ['Start KYC', 'Talk to Juris AI']
+  },
+  // Step-by-step: Referral Program
+  {
+    keywords: ['referral steps', 'how refer friend', 'get referral code', 'share referral'],
+    patterns: [/referral.*step/i, /how.*refer.*friend/i, /get.*referral code/i, /share.*referral/i, /refer friend.*how/i],
+    response: "**REFERRAL PROGRAM - Step by Step**\n\n1. Click 'Referral' in sidebar\n2. See your unique referral code\n3. Copy the code or share link\n4. Send to friends\n5. When they sign up and trade, you earn rewards\n6. Track your referrals and earnings\n\n**Rewards:**\n• You earn bonus when friend completes first transaction\n• Friend also gets welcome bonus\n• No limit on number of referrals\n\n**Tip:** Share on social media for maximum reach!",
+    category: 'referral',
+    actions: ['Get Referral Code']
   }
 ];
 
