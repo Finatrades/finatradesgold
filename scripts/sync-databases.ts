@@ -1,14 +1,18 @@
 /**
  * Database Sync Utility
- * Syncs data between Replit and AWS RDS databases
+ * Syncs data between AWS RDS (primary) and Replit (secondary/backup)
+ * 
+ * Architecture:
+ *   PRIMARY: AWS RDS (production database)
+ *   SECONDARY: Replit PostgreSQL (backup/development)
  * 
  * Usage:
- *   npx tsx scripts/sync-databases.ts [direction]
+ *   npx tsx scripts/sync-databases.ts [command]
  * 
- * Directions:
- *   to-aws    - Sync from Replit to AWS (Replit is primary)
- *   from-aws  - Sync from AWS to Replit (AWS is primary)
- *   verify    - Compare record counts between databases
+ * Commands:
+ *   sync-backup  - Sync AWS (primary) → Replit (backup) [RECOMMENDED]
+ *   restore      - Restore Replit → AWS (emergency recovery)
+ *   verify       - Compare record counts between databases
  */
 
 import { exec } from 'child_process';

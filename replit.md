@@ -51,9 +51,12 @@ The platform uses a client-server architecture with a React frontend and an Expr
 - **Idempotency Middleware**: Applied to critical payment routes using atomic Redis SETNX (24-hour TTL, 30-second lock). Protected routes: `/api/transactions`, `/api/deposit-requests`, `/api/withdrawal-requests`, `/api/bnsl/plans`, `/api/bnsl/wallet/transfer`, `/api/bnsl/wallet/withdraw`, `/api/buy-gold/submit`. Client integrations should supply stable `X-Idempotency-Key` headers for retries.
 
 **Data Storage:**
-- **Database**: PostgreSQL with Drizzle ORM.
+- **Database**: PostgreSQL with Drizzle ORM (multi-database architecture).
+- **Primary Database**: AWS RDS PostgreSQL (production) - set via `AWS_DATABASE_URL`
+- **Secondary Database**: Replit PostgreSQL (backup/development) - set via `DATABASE_URL`
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
 - **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs.
+- **Backup Scripts**: Located in `scripts/` directory for database sync between AWS and Replit.
 
 **Authentication & Authorization:**
 - **Method**: Email/password authentication.
