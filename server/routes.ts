@@ -13018,9 +13018,21 @@ ${message}
           // No workflow update - use AI for conversational questions
           try {
             console.log("[Juris AI] Using OpenAI for:", sanitizedMessage.slice(0, 50));
+            
+            // Enrich context with workflow state for AI
+            const jurisContext = {
+              ...userContext,
+              workflowState: activeWorkflow ? {
+                currentStep: activeWorkflow.currentStep,
+                completedSteps: activeWorkflow.completedSteps,
+                workflowType: activeWorkflow.workflowType
+              } : null,
+              kycStatus: user?.kycStatus || 'not_started'
+            };
+            
             const aiResponse = await processUserMessageWithAI(
               sanitizedMessage,
-              userContext,
+              jurisContext,
               platformConfig,
               goldPrice,
               undefined,
