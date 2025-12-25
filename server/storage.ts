@@ -270,6 +270,10 @@ export interface IStorage {
   
   // Peer Transfers
   getPeerTransfers(userId: string): Promise<PeerTransfer[]>;
+  getPeerTransfer(id: string): Promise<PeerTransfer | undefined>;
+  updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined>;
+  getPendingIncomingTransfers(userId: string): Promise<PeerTransfer[]>;
+  getPendingOutgoingTransfers(userId: string): Promise<PeerTransfer[]>;
   
   // BNSL Payouts
   getBnslPayout(id: string): Promise<BnslPayout | undefined>;
@@ -2048,6 +2052,24 @@ export class DatabaseStorage implements IStorage {
   async updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined> {
     const [transfer] = await db.update(peerTransfers).set(updates).where(eq(peerTransfers.id, id)).returning();
     return transfer || undefined;
+  }
+
+  async getPendingIncomingTransfers(userId: string): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers)
+      .where(and(
+        eq(peerTransfers.recipientId, userId),
+        eq(peerTransfers.status, 'Pending')
+      ))
+      .orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async getPendingOutgoingTransfers(userId: string): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers)
+      .where(and(
+        eq(peerTransfers.senderId, userId),
+        eq(peerTransfers.status, 'Pending')
+      ))
+      .orderBy(desc(peerTransfers.createdAt));
   }
 
   // Peer Requests (Request Money)
