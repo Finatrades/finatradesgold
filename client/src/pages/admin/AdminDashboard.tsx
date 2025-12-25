@@ -28,6 +28,12 @@ interface AdminStats {
   pendingBnslTermRequests: number;
   openTradeCases: number;
   pendingReviewCases: number;
+  // Percentage changes (real data)
+  volumeChange: number;
+  revenueChange: number;
+  userGrowthChange: number;
+  currentMonthVolume: number;
+  lastMonthVolume: number;
   recentCriticalEvents: Array<{
     id: string;
     action: string;
@@ -133,6 +139,7 @@ export default function AdminDashboard() {
             icon={<Users className="w-6 h-6" />} 
             gradient="from-blue-500 to-indigo-600"
             loading={isLoading}
+            percentChange={stats?.userGrowthChange ?? 0}
           />
           <GlassStatsCard 
             title="Total Volume" 
@@ -141,6 +148,7 @@ export default function AdminDashboard() {
             icon={<BarChart3 className="w-6 h-6" />} 
             gradient="from-purple-500 to-pink-600"
             loading={isLoading}
+            percentChange={stats?.volumeChange ?? 0}
           />
           <GlassStatsCard 
             title="Pending KYC" 
@@ -157,6 +165,7 @@ export default function AdminDashboard() {
             icon={<TrendingUp className="w-6 h-6" />} 
             gradient="from-emerald-500 to-teal-600"
             loading={isLoading}
+            percentChange={stats?.revenueChange ?? 0}
           />
         </div>
 
@@ -435,13 +444,14 @@ export default function AdminDashboard() {
   );
 }
 
-function GlassStatsCard({ title, value, subtitle, icon, gradient, loading }: { 
+function GlassStatsCard({ title, value, subtitle, icon, gradient, loading, percentChange }: { 
   title: string; 
   value: string; 
   subtitle: string; 
   icon: React.ReactNode; 
   gradient: string; 
   loading: boolean;
+  percentChange?: number;
 }) {
   return (
     <div className="relative group">
@@ -458,7 +468,21 @@ function GlassStatsCard({ title, value, subtitle, icon, gradient, loading }: {
                   </div>
                 ) : value}
               </h3>
-              <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-gray-400">{subtitle}</p>
+                {!loading && percentChange !== undefined && (
+                  <span className={`text-xs font-medium flex items-center gap-0.5 ${
+                    percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'
+                  }`}>
+                    {percentChange > 0 ? (
+                      <ArrowUpRight className="w-3 h-3" />
+                    ) : percentChange < 0 ? (
+                      <ArrowDownRight className="w-3 h-3" />
+                    ) : null}
+                    {percentChange > 0 ? '+' : ''}{percentChange}%
+                  </span>
+                )}
+              </div>
             </div>
             <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
               {icon}

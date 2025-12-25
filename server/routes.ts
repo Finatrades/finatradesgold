@@ -2046,6 +2046,18 @@ ${message}
         storage.getAllDepositRequests()
       ]);
       
+      // Date calculations for period comparisons
+      const currentDate = new Date();
+      const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const lastMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0, 23, 59, 59);
+      
+      // Helper to calculate percentage change
+      const calcPercentChange = (current: number, previous: number): number => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return Math.round(((current - previous) / previous) * 100 * 10) / 10;
+      };
+      
       // Total users count
       const totalUsers = users.length;
       
@@ -2076,6 +2088,44 @@ ${message}
       
       // Revenue estimate (1% of volume as placeholder)
       const revenue = totalVolume * 0.01;
+      
+      // Calculate current month and last month volumes for percentage change
+      const currentMonthVolume = allTransactions
+        .filter(tx => new Date(tx.createdAt) >= currentMonthStart)
+        .reduce((sum, tx) => {
+          let txValue = 0;
+          if (tx.amountUsd) txValue = parseFloat(tx.amountUsd);
+          else if (tx.amountGold && tx.goldPriceUsdPerGram) {
+            txValue = parseFloat(tx.amountGold) * parseFloat(tx.goldPriceUsdPerGram);
+          }
+          return sum + (isNaN(txValue) ? 0 : Math.abs(txValue));
+        }, 0);
+      
+      const lastMonthVolume = allTransactions
+        .filter(tx => {
+          const txDate = new Date(tx.createdAt);
+          return txDate >= lastMonthStart && txDate <= lastMonthEnd;
+        })
+        .reduce((sum, tx) => {
+          let txValue = 0;
+          if (tx.amountUsd) txValue = parseFloat(tx.amountUsd);
+          else if (tx.amountGold && tx.goldPriceUsdPerGram) {
+            txValue = parseFloat(tx.amountGold) * parseFloat(tx.goldPriceUsdPerGram);
+          }
+          return sum + (isNaN(txValue) ? 0 : Math.abs(txValue));
+        }, 0);
+      
+      // Calculate percentage changes (real data only, 0 if no previous data)
+      const volumeChange = calcPercentChange(currentMonthVolume, lastMonthVolume);
+      const revenueChange = volumeChange; // Revenue is derived from volume
+      
+      // User growth: this month vs last month
+      const currentMonthUsers = users.filter(u => new Date(u.createdAt) >= currentMonthStart).length;
+      const lastMonthUsers = users.filter(u => {
+        const createdAt = new Date(u.createdAt);
+        return createdAt >= lastMonthStart && createdAt <= lastMonthEnd;
+      }).length;
+      const userGrowthChange = calcPercentChange(currentMonthUsers, lastMonthUsers);
       
       // Get pending KYC requests from submissions table with user details
       const pendingSubmissions = kycSubmissions.filter(k => k.status === 'In Progress');
@@ -2334,7 +2384,13 @@ ${message}
         openTradeCases,
         pendingReviewCases,
         recentCriticalEvents,
-        recentTransactions
+        recentTransactions,
+        // Percentage changes (real data - 0 if no previous period data)
+        volumeChange,
+        revenueChange,
+        userGrowthChange,
+        currentMonthVolume,
+        lastMonthVolume
       };
 
       // Cache the response
