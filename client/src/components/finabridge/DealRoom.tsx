@@ -359,6 +359,9 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     try {
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData,
         credentials: 'include',
       });

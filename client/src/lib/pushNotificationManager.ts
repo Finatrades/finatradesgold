@@ -72,7 +72,11 @@ class PushNotificationManager {
     try {
       await fetch('/api/push/unregister-all', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({})
       });
     } catch (error) {
