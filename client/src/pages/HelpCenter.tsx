@@ -129,7 +129,10 @@ export default function HelpCenter() {
     try {
       const res = await fetch('/api/support/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({
           userId: user?.id,
           subject: ticketSubject,
