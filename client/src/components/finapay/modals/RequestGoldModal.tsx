@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Mail, Hash, CheckCircle2, Clock, Paperclip, X, FileText } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
@@ -31,6 +32,10 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   const [myFinatradesId, setMyFinatradesId] = useState('');
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Terms and conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,11 +48,18 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       setQrCodeDataUrl('');
       setReferenceNumber('');
       setInvoiceFile(null);
+      setTermsAccepted(false);
       
       // Fetch user's QR code for receiving payments
       if (user?.id) {
         fetchMyQrCode();
       }
+      
+      // Fetch terms
+      fetch('/api/terms/transfer')
+        .then(res => res.json())
+        .then(data => setTermsContent(data))
+        .catch(() => console.error('Failed to load terms'));
     }
   }, [isOpen, user?.id]);
 
@@ -222,9 +234,36 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                 </p>
               </div>
 
+              {/* Terms and Conditions Checkbox */}
+              {termsContent && (
+                <div className="border border-border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-start gap-3">
+                    <Checkbox 
+                      id="request-terms"
+                      checked={termsAccepted}
+                      onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                      className="mt-0.5"
+                      data-testid="checkbox-request-terms"
+                    />
+                    <div className="flex-1">
+                      <label htmlFor="request-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-primary" />
+                        I accept the Terms & Conditions
+                      </label>
+                      <details className="mt-2">
+                        <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                        <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                          {termsContent.terms}
+                        </div>
+                      </details>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Button 
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold"
-                disabled={numericAmount <= 0 || isLoading}
+                disabled={numericAmount <= 0 || isLoading || !termsAccepted}
                 onClick={handleCreateRequest}
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowDownLeft className="w-5 h-5 mr-2" />}
