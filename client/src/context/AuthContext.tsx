@@ -243,7 +243,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem('adminPortalSession');
     sessionStorage.removeItem('pendingAdminLogin');
     
-    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    fetch('/api/auth/logout', { 
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'include'
+    }).catch(() => {});
     
     setLocation('/');
   };

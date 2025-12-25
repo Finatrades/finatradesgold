@@ -82,7 +82,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await fetch('/api/notifications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user.id,
           title: notification.title,
@@ -102,7 +106,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const markAsRead = async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+      await fetch(`/api/notifications/${id}/read`, { 
+        method: 'PATCH',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
@@ -112,7 +120,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (!user?.id) return;
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     try {
-      await fetch(`/api/notifications/${user.id}/read-all`, { method: 'PATCH' });
+      await fetch(`/api/notifications/${user.id}/read-all`, { 
+        method: 'PATCH',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
     }
@@ -122,7 +134,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (!user?.id) return;
     setNotifications([]);
     try {
-      await fetch(`/api/notifications/user/${user.id}`, { method: 'DELETE' });
+      await fetch(`/api/notifications/user/${user.id}`, { 
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
     } catch (error) {
       console.error('Failed to clear notifications:', error);
     }

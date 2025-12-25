@@ -45,7 +45,11 @@ export default function Notifications() {
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      const res = await fetch(`/api/notifications/${notificationId}/read`, { method: 'POST' });
+      const res = await fetch(`/api/notifications/${notificationId}/read`, { 
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to mark as read');
     },
     onSuccess: () => {
@@ -55,7 +59,11 @@ export default function Notifications() {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/users/${user?.id}/notifications/read-all`, { method: 'POST' });
+      const res = await fetch(`/api/users/${user?.id}/notifications/read-all`, { 
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to mark all as read');
     },
     onSuccess: () => {
@@ -66,7 +74,11 @@ export default function Notifications() {
 
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      const res = await fetch(`/api/notifications/${notificationId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/notifications/${notificationId}`, { 
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to delete notification');
     },
     onSuccess: () => {

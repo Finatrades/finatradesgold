@@ -63,7 +63,11 @@ export default function Settings() {
     mutationFn: async (updates: Partial<UserPreferencesData>) => {
       const res = await fetch(`/api/users/${user?.id}/preferences`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
         body: JSON.stringify(updates),
       });
       if (!res.ok) throw new Error('Failed to save preferences');
