@@ -13341,12 +13341,12 @@ ${message}
       
       // Check if terms are enabled for this type
       const enabledKey = `${type}_terms_enabled`;
-      const enabledConfig = await storage.getPlatformConfigByKey(enabledKey);
+      const enabledConfig = await storage.getPlatformConfig(enabledKey);
       const isEnabled = enabledConfig ? enabledConfig.configValue === 'true' : true;
       
       // Get from platform_config or return default
       const configKey = `${type}_terms`;
-      const config = await storage.getPlatformConfigByKey(configKey);
+      const config = await storage.getPlatformConfig(configKey);
       
       if (config && config.configValue) {
         return res.json({ 
