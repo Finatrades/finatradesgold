@@ -108,13 +108,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   useEffect(() => {
     if (isOpen) {
+      // Reset form state first before fetching data
+      resetForm();
+      
       checkNgeniusStatus();
       fetchBankAccounts();
       fetchCryptoWallets();
       fetchFees();
       fetchGoldPrice();
       fetchTerms();
-      resetForm();
       
       // Preload NGenius SDK in background when modal opens
       preloadNGeniusSDK().catch(() => {
