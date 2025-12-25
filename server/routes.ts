@@ -68,7 +68,7 @@ import PDFDocument from "pdfkit";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { emitLedgerEvent, emitLedgerEventToUsers } from "./socket";
+import { emitLedgerEvent, emitLedgerEventToUsers, getIO } from "./socket";
 import {
   createBackup,
   listBackups,
