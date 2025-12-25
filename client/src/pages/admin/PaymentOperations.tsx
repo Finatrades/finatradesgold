@@ -663,52 +663,46 @@ export default function FinaPayManagement() {
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
             <TabsTrigger value="deposits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <ArrowDownLeft className="w-4 h-4 mr-2" />
-              Deposits ({depositRequests.length})
+              Deposits {pendingDeposits.length > 0 && `(${pendingDeposits.length})`}
             </TabsTrigger>
             <TabsTrigger value="withdrawals" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <ArrowUpRight className="w-4 h-4 mr-2" />
-              Withdrawals ({withdrawalRequests.length})
+              Withdrawals {pendingWithdrawals.length > 0 && `(${pendingWithdrawals.length})`}
             </TabsTrigger>
             <TabsTrigger value="transactions" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Coins className="w-4 h-4 mr-2" />
-              Transactions ({transactions.length})
+              Transactions {pendingTxs.length > 0 && `(${pendingTxs.length})`}
             </TabsTrigger>
             <TabsTrigger value="peer-transfers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Send className="w-4 h-4 mr-2" />
-              Peer Transfers ({peerTransfers.length})
+              Peer Transfers
             </TabsTrigger>
             <TabsTrigger value="peer-requests" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <CreditCard className="w-4 h-4 mr-2" />
-              Peer Requests ({peerRequests.length})
+              Peer Requests {peerRequests.filter(r => r.status === 'Pending').length > 0 && `(${peerRequests.filter(r => r.status === 'Pending').length})`}
             </TabsTrigger>
             <TabsTrigger value="crypto" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Bitcoin className="w-4 h-4 mr-2" />
-              Crypto ({cryptoPayments.length})
+              Crypto {cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').length > 0 && `(${cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').length})`}
             </TabsTrigger>
             <TabsTrigger value="buy-gold" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Coins className="w-4 h-4 mr-2" />
-              Buy Gold ({buyGoldRequests.length})
+              Buy Gold {buyGoldRequests.filter(r => r.status === 'Pending' || r.status === 'Under Review').length > 0 && `(${buyGoldRequests.filter(r => r.status === 'Pending' || r.status === 'Under Review').length})`}
             </TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
             <TabsContent value="deposits">
-              <h2 className="text-lg font-semibold mb-4">Deposit Requests</h2>
-              {depositRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    <ArrowDownLeft className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No deposit requests</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {depositRequests.map(deposit => (
+              {pendingDeposits.length > 0 && (
+                <>
+                  <h2 className="text-lg font-semibold mb-4">Pending Deposit Requests</h2>
+                  <div className="space-y-3 mb-8">
+                    {pendingDeposits.map(deposit => (
                       <Card key={deposit.id} data-testid={`card-deposit-${deposit.id}`}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                              <div className="p-3 bg-green-100 text-green-700 rounded-lg">
+                              <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
                                 <ArrowDownLeft className="w-6 h-6" />
                               </div>
                               <div>
@@ -726,46 +720,126 @@ export default function FinaPayManagement() {
                             <div className="flex items-center gap-4">
                               <div className="text-right">
                                 <p className="text-xs text-gray-400">{new Date(deposit.createdAt).toLocaleString()}</p>
-                                {deposit.processedAt && (
-                                  <p className="text-xs text-gray-400">Processed: {new Date(deposit.processedAt).toLocaleString()}</p>
-                                )}
                               </div>
-                              {deposit.status === 'Pending' && (
-                                <Button size="sm" onClick={() => openDepositDialog(deposit)} data-testid={`button-process-deposit-${deposit.id}`}>
-                                  Process
-                                </Button>
-                              )}
-                              {deposit.status !== 'Pending' && (
-                                <Button size="sm" variant="ghost" onClick={() => openDepositDialog(deposit)}>
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                              )}
+                              <Button size="sm" onClick={() => openDepositDialog(deposit)} data-testid={`button-process-deposit-${deposit.id}`}>
+                                Process
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
                       </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <h2 className="text-lg font-semibold mb-4">Processed Deposits</h2>
+              {depositRequests.filter(d => d.status !== 'Pending').length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    <ArrowDownLeft className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No processed deposits</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {depositRequests.filter(d => d.status !== 'Pending').map(deposit => (
+                    <Card key={deposit.id} data-testid={`card-deposit-${deposit.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-lg ${deposit.status === 'Confirmed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              <ArrowDownLeft className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900 text-lg">${parseFloat(deposit.amountUsd).toFixed(2)}</span>
+                                {getStatusBadge(deposit.status)}
+                              </div>
+                              <p className="text-sm text-gray-600">{getUserName(deposit.userId)} ({getUserEmail(deposit.userId)})</p>
+                              <p className="text-xs text-gray-400">Ref: {deposit.referenceNumber}</p>
+                              {deposit.senderBankName && (
+                                <p className="text-xs text-gray-400">From: {deposit.senderBankName} ({deposit.senderAccountName})</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">{new Date(deposit.createdAt).toLocaleString()}</p>
+                              {deposit.processedAt && (
+                                <p className="text-xs text-gray-400">Processed: {new Date(deposit.processedAt).toLocaleString()}</p>
+                              )}
+                            </div>
+                            <Button size="sm" variant="ghost" onClick={() => openDepositDialog(deposit)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               )}
             </TabsContent>
 
             <TabsContent value="withdrawals">
-              <h2 className="text-lg font-semibold mb-4">Withdrawal Requests</h2>
-              {withdrawalRequests.length === 0 ? (
+              {pendingWithdrawals.length > 0 && (
+                <>
+                  <h2 className="text-lg font-semibold mb-4">Pending Withdrawal Requests</h2>
+                  <div className="space-y-3 mb-8">
+                    {pendingWithdrawals.map(withdrawal => (
+                      <Card key={withdrawal.id} data-testid={`card-withdrawal-${withdrawal.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
+                                <ArrowUpRight className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-gray-900 text-lg">${parseFloat(withdrawal.amountUsd).toFixed(2)}</span>
+                                  {getStatusBadge(withdrawal.status)}
+                                </div>
+                                <p className="text-sm text-gray-600">{getUserName(withdrawal.userId)} ({getUserEmail(withdrawal.userId)})</p>
+                                <p className="text-xs text-gray-400">Ref: {withdrawal.referenceNumber}</p>
+                                <p className="text-xs text-gray-400">
+                                  To: {withdrawal.bankName} - {withdrawal.accountName} ({withdrawal.accountNumber})
+                                </p>
+                                {withdrawal.swiftCode && <p className="text-xs text-gray-400">SWIFT: {withdrawal.swiftCode}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="text-xs text-gray-400">{new Date(withdrawal.createdAt).toLocaleString()}</p>
+                              </div>
+                              <Button size="sm" onClick={() => openWithdrawalDialog(withdrawal)} data-testid={`button-process-withdrawal-${withdrawal.id}`}>
+                                Process
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <h2 className="text-lg font-semibold mb-4">Processed Withdrawals</h2>
+              {withdrawalRequests.filter(w => w.status !== 'Pending' && w.status !== 'Processing').length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center text-gray-500">
                     <ArrowUpRight className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No withdrawal requests</p>
+                    <p>No processed withdrawals</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {withdrawalRequests.map(withdrawal => (
+                  {withdrawalRequests.filter(w => w.status !== 'Pending' && w.status !== 'Processing').map(withdrawal => (
                     <Card key={withdrawal.id} data-testid={`card-withdrawal-${withdrawal.id}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-100 text-purple-700 rounded-lg">
+                            <div className={`p-3 rounded-lg ${withdrawal.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                               <ArrowUpRight className="w-6 h-6" />
                             </div>
                             <div>
@@ -778,7 +852,6 @@ export default function FinaPayManagement() {
                               <p className="text-xs text-gray-400">
                                 To: {withdrawal.bankName} - {withdrawal.accountName} ({withdrawal.accountNumber})
                               </p>
-                              {withdrawal.swiftCode && <p className="text-xs text-gray-400">SWIFT: {withdrawal.swiftCode}</p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
@@ -788,16 +861,9 @@ export default function FinaPayManagement() {
                                 <p className="text-xs text-gray-400">Processed: {new Date(withdrawal.processedAt).toLocaleString()}</p>
                               )}
                             </div>
-                            {(withdrawal.status === 'Pending' || withdrawal.status === 'Processing') && (
-                              <Button size="sm" onClick={() => openWithdrawalDialog(withdrawal)} data-testid={`button-process-withdrawal-${withdrawal.id}`}>
-                                Process
-                              </Button>
-                            )}
-                            {withdrawal.status !== 'Pending' && withdrawal.status !== 'Processing' && (
-                              <Button size="sm" variant="ghost" onClick={() => openWithdrawalDialog(withdrawal)}>
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            )}
+                            <Button size="sm" variant="ghost" onClick={() => openWithdrawalDialog(withdrawal)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -808,16 +874,25 @@ export default function FinaPayManagement() {
             </TabsContent>
 
             <TabsContent value="transactions">
-              <h2 className="text-lg font-semibold mb-4">All Transactions</h2>
-              {transactions.length === 0 ? (
+              {pendingTxs.length > 0 && (
+                <>
+                  <h2 className="text-lg font-semibold mb-4">Pending Transactions</h2>
+                  <div className="space-y-3 mb-8">
+                    {pendingTxs.map(tx => <TransactionRow key={tx.id} tx={tx} showActions={true} />)}
+                  </div>
+                </>
+              )}
+
+              <h2 className="text-lg font-semibold mb-4">Processed Transactions</h2>
+              {transactions.filter(t => t.status !== 'Pending').length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center text-gray-500">
-                    No transactions found
+                    No processed transactions
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {transactions.map(tx => <TransactionRow key={tx.id} tx={tx} showActions={tx.status === 'Pending'} />)}
+                  {transactions.filter(t => t.status !== 'Pending').map(tx => <TransactionRow key={tx.id} tx={tx} showActions={false} />)}
                 </div>
               )}
             </TabsContent>
@@ -937,38 +1012,70 @@ export default function FinaPayManagement() {
             </TabsContent>
 
             <TabsContent value="crypto">
-              <h2 className="text-lg font-semibold mb-4">Crypto Payment Requests</h2>
-              {cryptoPayments.length === 0 ? (
+              {cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').length > 0 && (
+                <>
+                  <h2 className="text-lg font-semibold mb-4">Pending Crypto Payments</h2>
+                  <div className="space-y-3 mb-8">
+                    {cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').map(payment => (
+                      <Card key={payment.id} data-testid={`card-crypto-${payment.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
+                                <Bitcoin className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-gray-900 text-lg">${parseFloat(payment.amountUsd).toFixed(2)}</span>
+                                  <Badge variant="secondary">{payment.status}</Badge>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                  {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : getUserName(payment.userId)} 
+                                  {' '}({payment.user?.email || getUserEmail(payment.userId)})
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {payment.walletConfig?.networkLabel || 'Unknown Network'} • {parseFloat(payment.goldGrams).toFixed(4)}g Gold
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="text-xs text-gray-400">{new Date(payment.createdAt).toLocaleString()}</p>
+                              </div>
+                              <Button size="sm" onClick={() => openCryptoDialog(payment)} data-testid={`button-review-crypto-${payment.id}`}>
+                                Review
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <h2 className="text-lg font-semibold mb-4">Processed Crypto Payments</h2>
+              {cryptoPayments.filter(p => p.status !== 'Pending' && p.status !== 'Under Review').length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center text-gray-500">
                     <Bitcoin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No crypto payment requests</p>
+                    <p>No processed crypto payments</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {cryptoPayments.map(payment => (
+                  {cryptoPayments.filter(p => p.status !== 'Pending' && p.status !== 'Under Review').map(payment => (
                     <Card key={payment.id} data-testid={`card-crypto-${payment.id}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-100 text-purple-700 rounded-lg">
+                            <div className={`p-3 rounded-lg ${payment.status === 'Credited' || payment.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                               <Bitcoin className="w-6 h-6" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-gray-900 text-lg">${parseFloat(payment.amountUsd).toFixed(2)}</span>
-                                <Badge variant={
-                                  payment.status === 'Credited' ? 'default' :
-                                  payment.status === 'Approved' ? 'default' :
-                                  payment.status === 'Rejected' ? 'destructive' :
-                                  payment.status === 'Under Review' ? 'secondary' : 'outline'
-                                } className={
-                                  payment.status === 'Credited' ? 'bg-green-100 text-green-800' :
-                                  payment.status === 'Approved' ? 'bg-blue-100 text-blue-800' : ''
-                                }>
-                                  {payment.status}
-                                </Badge>
+                                {getStatusBadge(payment.status)}
                               </div>
                               <p className="text-sm text-gray-600">
                                 {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : getUserName(payment.userId)} 
@@ -977,11 +1084,6 @@ export default function FinaPayManagement() {
                               <p className="text-xs text-gray-400">
                                 {payment.walletConfig?.networkLabel || 'Unknown Network'} • {parseFloat(payment.goldGrams).toFixed(4)}g Gold
                               </p>
-                              {payment.transactionHash && (
-                                <p className="text-xs text-blue-600 font-mono truncate max-w-xs">
-                                  TX: {payment.transactionHash.slice(0, 20)}...
-                                </p>
-                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
@@ -991,8 +1093,8 @@ export default function FinaPayManagement() {
                                 <p className="text-xs text-gray-400">Reviewed: {new Date(payment.reviewedAt).toLocaleString()}</p>
                               )}
                             </div>
-                            <Button size="sm" onClick={() => openCryptoDialog(payment)} data-testid={`button-review-crypto-${payment.id}`}>
-                              {payment.status === 'Pending' || payment.status === 'Under Review' ? 'Review' : <Eye className="w-4 h-4" />}
+                            <Button size="sm" variant="ghost" onClick={() => openCryptoDialog(payment)}>
+                              <Eye className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
@@ -1004,22 +1106,67 @@ export default function FinaPayManagement() {
             </TabsContent>
 
             <TabsContent value="buy-gold">
-              <h2 className="text-lg font-semibold mb-4">Buy Gold Requests (Wingold)</h2>
-              {buyGoldRequests.length === 0 ? (
+              {buyGoldRequests.filter(r => r.status === 'Pending' || r.status === 'Under Review').length > 0 && (
+                <>
+                  <h2 className="text-lg font-semibold mb-4">Pending Buy Gold Requests</h2>
+                  <div className="space-y-3 mb-8">
+                    {buyGoldRequests.filter(r => r.status === 'Pending' || r.status === 'Under Review').map(request => (
+                      <Card key={request.id} data-testid={`card-buy-gold-${request.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
+                                <Coins className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-gray-900 text-lg">
+                                    {request.amountUsd ? `$${parseFloat(request.amountUsd).toFixed(2)}` : 'Awaiting Review'}
+                                  </span>
+                                  <Badge variant="secondary">{request.status}</Badge>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                  {request.user ? `${request.user.firstName} ${request.user.lastName}` : getUserName(request.userId)} 
+                                  {' '}({request.user?.email || getUserEmail(request.userId)})
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {request.referenceNumber ? `Ref: ${request.referenceNumber}` : `Submitted: ${new Date(request.createdAt).toLocaleDateString()}`}
+                                  {request.wingoldReferenceId && ` • Wingold: ${request.wingoldReferenceId}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="text-xs text-gray-400">{new Date(request.createdAt).toLocaleString()}</p>
+                              </div>
+                              <Button size="sm" onClick={() => openBuyGoldDialog(request)} data-testid={`button-review-buy-gold-${request.id}`}>
+                                Review
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <h2 className="text-lg font-semibold mb-4">Processed Buy Gold Requests</h2>
+              {buyGoldRequests.filter(r => r.status !== 'Pending' && r.status !== 'Under Review').length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center text-gray-500">
                     <Coins className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No buy gold requests</p>
+                    <p>No processed buy gold requests</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {buyGoldRequests.map(request => (
+                  {buyGoldRequests.filter(r => r.status !== 'Pending' && r.status !== 'Under Review').map(request => (
                     <Card key={request.id} data-testid={`card-buy-gold-${request.id}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-100 text-fuchsia-700 rounded-lg">
+                            <div className={`p-3 rounded-lg ${request.status === 'Credited' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                               <Coins className="w-6 h-6" />
                             </div>
                             <div>
@@ -1027,15 +1174,7 @@ export default function FinaPayManagement() {
                                 <span className="font-bold text-gray-900 text-lg">
                                   {request.amountUsd ? `$${parseFloat(request.amountUsd).toFixed(2)}` : 'Awaiting Review'}
                                 </span>
-                                <Badge variant={
-                                  request.status === 'Credited' ? 'default' :
-                                  request.status === 'Rejected' ? 'destructive' :
-                                  request.status === 'Under Review' ? 'secondary' : 'outline'
-                                } className={
-                                  request.status === 'Credited' ? 'bg-green-100 text-green-800' : ''
-                                }>
-                                  {request.status}
-                                </Badge>
+                                {getStatusBadge(request.status)}
                               </div>
                               <p className="text-sm text-gray-600">
                                 {request.user ? `${request.user.firstName} ${request.user.lastName}` : getUserName(request.userId)} 
@@ -1046,7 +1185,7 @@ export default function FinaPayManagement() {
                                 {request.wingoldReferenceId && ` • Wingold: ${request.wingoldReferenceId}`}
                               </p>
                               {request.goldGrams && (
-                                <p className="text-xs text-fuchsia-600">
+                                <p className={`text-xs ${request.status === 'Credited' ? 'text-green-600' : 'text-gray-600'}`}>
                                   {parseFloat(request.goldGrams).toFixed(4)}g Gold
                                 </p>
                               )}
@@ -1059,8 +1198,8 @@ export default function FinaPayManagement() {
                                 <p className="text-xs text-gray-400">Reviewed: {new Date(request.reviewedAt).toLocaleString()}</p>
                               )}
                             </div>
-                            <Button size="sm" onClick={() => openBuyGoldDialog(request)} data-testid={`button-review-buy-gold-${request.id}`}>
-                              {request.status === 'Pending' || request.status === 'Under Review' ? 'Review' : <Eye className="w-4 h-4" />}
+                            <Button size="sm" variant="ghost" onClick={() => openBuyGoldDialog(request)}>
+                              <Eye className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
