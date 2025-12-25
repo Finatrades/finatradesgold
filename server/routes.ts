@@ -20204,7 +20204,7 @@ ${message}
         const currentGold = parseFloat(wallet.goldGrams || '0');
         const newGoldBalance = currentGold + finalGoldGrams;
         
-        await txStorage.updateWallet(request.userId, {
+        await txStorage.updateWallet(wallet.id, {
           goldGrams: newGoldBalance.toFixed(6)
         });
         
