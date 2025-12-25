@@ -185,9 +185,7 @@ export default function Register() {
     if (accountType === 'business' && !formData.companyName.trim()) {
       errors.companyName = "Company name is required";
     }
-    if (!profilePhoto) {
-      errors.photo = "Please capture your selfie";
-    }
+    // Profile selfie is now optional - can be added later during KYC
     
     setFieldErrors(errors);
     
@@ -416,8 +414,7 @@ export default function Register() {
             </div>
 
             <div className="border rounded-lg p-4">
-              <Label className="mb-3 block">Profile Selfie *</Label>
-              {fieldErrors.photo && <p className="text-red-500 text-xs mb-2">{fieldErrors.photo}</p>}
+              <Label className="mb-3 block">Profile Selfie <span className="text-muted-foreground font-normal">(optional)</span></Label>
               
               {!profilePhoto && !cameraStream && (
                 <div className="text-center">
