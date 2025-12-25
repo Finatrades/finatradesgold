@@ -17493,6 +17493,336 @@ ${message}
   });
 
   // ============================================================================
+  // TRANSACTION PIN
+  // ============================================================================
+
+  // Check if user has a transaction PIN set up
+  app.get("/api/transaction-pin/status/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const pin = await storage.getTransactionPin(userId);
+      
+      if (!pin) {
+        return res.json({ hasPin: false, isLocked: false });
+      }
+      
+      const isLocked = pin.lockedUntil ? new Date(pin.lockedUntil) > new Date() : false;
+      res.json({ 
+        hasPin: true, 
+        isLocked,
+        lockedUntil: isLocked ? pin.lockedUntil : null,
+        failedAttempts: pin.failedAttempts
+      });
+    } catch (error) {
+      console.error("Failed to get transaction PIN status:", error);
+      res.status(400).json({ message: "Failed to get PIN status" });
+    }
+  });
+
+  // Set up a new transaction PIN
+  app.post("/api/transaction-pin/setup", async (req, res) => {
+    try {
+      const { userId, pin, password } = req.body;
+      
+      if (!userId || !pin || !password) {
+        return res.status(400).json({ message: "User ID, PIN, and password are required" });
+      }
+      
+      // Validate PIN format (6 digits)
+      if (!/^\d{6}$/.test(pin)) {
+        return res.status(400).json({ message: "PIN must be exactly 6 digits" });
+      }
+      
+      // Verify user's password
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Incorrect password" });
+      }
+      
+      // Check if user already has a PIN
+      const existingPin = await storage.getTransactionPin(userId);
+      if (existingPin) {
+        return res.status(400).json({ message: "Transaction PIN already exists. Use reset to change it." });
+      }
+      
+      // Hash the PIN
+      const hashedPin = await bcrypt.hash(pin, 12);
+      
+      // Create the transaction PIN
+      const newPin = await storage.createTransactionPin({
+        userId,
+        hashedPin,
+        failedAttempts: 0
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "transaction_pin",
+        entityId: newPin.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: "Transaction PIN created"
+      });
+      
+      res.json({ success: true, message: "Transaction PIN set up successfully" });
+    } catch (error) {
+      console.error("Failed to set up transaction PIN:", error);
+      res.status(400).json({ message: "Failed to set up transaction PIN" });
+    }
+  });
+
+  // Verify transaction PIN and get a verification token
+  app.post("/api/transaction-pin/verify", async (req, res) => {
+    try {
+      const { userId, pin, action } = req.body;
+      
+      if (!userId || !pin || !action) {
+        return res.status(400).json({ message: "User ID, PIN, and action are required" });
+      }
+      
+      const transactionPin = await storage.getTransactionPin(userId);
+      if (!transactionPin) {
+        return res.status(404).json({ message: "Transaction PIN not set up" });
+      }
+      
+      // Check if locked
+      if (transactionPin.lockedUntil && new Date(transactionPin.lockedUntil) > new Date()) {
+        const remainingMinutes = Math.ceil((new Date(transactionPin.lockedUntil).getTime() - Date.now()) / 60000);
+        return res.status(423).json({ 
+          message: `PIN is locked. Try again in ${remainingMinutes} minutes.`,
+          lockedUntil: transactionPin.lockedUntil
+        });
+      }
+      
+      // Verify PIN
+      const isValid = await bcrypt.compare(pin, transactionPin.hashedPin);
+      
+      if (!isValid) {
+        const newFailedAttempts = (transactionPin.failedAttempts || 0) + 1;
+        
+        // Lock after 5 failed attempts for 30 minutes
+        let lockedUntil = null;
+        if (newFailedAttempts >= 5) {
+          lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
+        }
+        
+        await storage.updateTransactionPin(userId, {
+          failedAttempts: newFailedAttempts,
+          lockedUntil
+        });
+        
+        const remainingAttempts = Math.max(0, 5 - newFailedAttempts);
+        
+        if (lockedUntil) {
+          return res.status(423).json({ 
+            message: "Too many failed attempts. PIN locked for 30 minutes.",
+            lockedUntil
+          });
+        }
+        
+        return res.status(401).json({ 
+          message: `Incorrect PIN. ${remainingAttempts} attempts remaining.`,
+          remainingAttempts
+        });
+      }
+      
+      // Reset failed attempts on success
+      await storage.updateTransactionPin(userId, {
+        failedAttempts: 0,
+        lockedUntil: null,
+        lastUsedAt: new Date()
+      });
+      
+      // Generate a verification token (valid for 5 minutes)
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      
+      await storage.createPinVerificationToken({
+        userId,
+        token,
+        action,
+        expiresAt
+      });
+      
+      res.json({ 
+        success: true, 
+        token,
+        expiresAt,
+        message: "PIN verified successfully"
+      });
+    } catch (error) {
+      console.error("Failed to verify transaction PIN:", error);
+      res.status(400).json({ message: "Failed to verify transaction PIN" });
+    }
+  });
+
+  // Reset transaction PIN (requires password and optionally MFA)
+  app.post("/api/transaction-pin/reset", async (req, res) => {
+    try {
+      const { userId, newPin, password } = req.body;
+      
+      if (!userId || !newPin || !password) {
+        return res.status(400).json({ message: "User ID, new PIN, and password are required" });
+      }
+      
+      // Validate PIN format
+      if (!/^\d{6}$/.test(newPin)) {
+        return res.status(400).json({ message: "PIN must be exactly 6 digits" });
+      }
+      
+      // Verify user's password
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Incorrect password" });
+      }
+      
+      // Hash the new PIN
+      const hashedPin = await bcrypt.hash(newPin, 12);
+      
+      // Check if user has an existing PIN
+      const existingPin = await storage.getTransactionPin(userId);
+      
+      if (existingPin) {
+        // Update existing PIN
+        await storage.updateTransactionPin(userId, {
+          hashedPin,
+          failedAttempts: 0,
+          lockedUntil: null
+        });
+      } else {
+        // Create new PIN
+        await storage.createTransactionPin({
+          userId,
+          hashedPin,
+          failedAttempts: 0
+        });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "transaction_pin",
+        entityId: userId,
+        actionType: "update",
+        actor: userId,
+        actorRole: "user",
+        details: existingPin ? "Transaction PIN reset" : "Transaction PIN created"
+      });
+      
+      res.json({ success: true, message: "Transaction PIN has been reset successfully" });
+    } catch (error) {
+      console.error("Failed to reset transaction PIN:", error);
+      res.status(400).json({ message: "Failed to reset transaction PIN" });
+    }
+  });
+
+  // Validate PIN verification token (used by other endpoints to check token validity)
+  app.post("/api/transaction-pin/validate-token", async (req, res) => {
+    try {
+      const { token, action } = req.body;
+      
+      if (!token || !action) {
+        return res.status(400).json({ valid: false, message: "Token and action are required" });
+      }
+      
+      const pinToken = await storage.getPinVerificationToken(token);
+      
+      if (!pinToken) {
+        return res.json({ valid: false, message: "Invalid or expired token" });
+      }
+      
+      if (new Date(pinToken.expiresAt) < new Date()) {
+        return res.json({ valid: false, message: "Token has expired" });
+      }
+      
+      if (pinToken.action !== action) {
+        return res.json({ valid: false, message: "Token action mismatch" });
+      }
+      
+      res.json({ valid: true, userId: pinToken.userId });
+    } catch (error) {
+      console.error("Failed to validate PIN token:", error);
+      res.status(400).json({ valid: false, message: "Failed to validate token" });
+    }
+  });
+
+  // Use (consume) PIN verification token
+  app.post("/api/transaction-pin/use-token", async (req, res) => {
+    try {
+      const { token, action } = req.body;
+      
+      if (!token || !action) {
+        return res.status(400).json({ success: false, message: "Token and action are required" });
+      }
+      
+      const pinToken = await storage.getPinVerificationToken(token);
+      
+      if (!pinToken) {
+        return res.status(400).json({ success: false, message: "Invalid or expired token" });
+      }
+      
+      if (new Date(pinToken.expiresAt) < new Date()) {
+        return res.status(400).json({ success: false, message: "Token has expired" });
+      }
+      
+      if (pinToken.action !== action) {
+        return res.status(400).json({ success: false, message: "Token action mismatch" });
+      }
+      
+      // Mark token as used
+      await storage.usePinVerificationToken(token);
+      
+      res.json({ success: true, userId: pinToken.userId });
+    } catch (error) {
+      console.error("Failed to use PIN token:", error);
+      res.status(400).json({ success: false, message: "Failed to use token" });
+    }
+  });
+
+  // Admin: Unlock a user's transaction PIN
+  app.post("/api/admin/transaction-pin/unlock/:userId", ensureAdminAsync, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const adminUser = (req as any).adminUser;
+      
+      const pin = await storage.getTransactionPin(userId);
+      if (!pin) {
+        return res.status(404).json({ message: "User does not have a transaction PIN" });
+      }
+      
+      await storage.updateTransactionPin(userId, {
+        failedAttempts: 0,
+        lockedUntil: null
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "transaction_pin",
+        entityId: userId,
+        actionType: "update",
+        actor: adminUser.id,
+        actorRole: "admin",
+        details: "Transaction PIN unlocked by admin"
+      });
+      
+      res.json({ success: true, message: "Transaction PIN unlocked successfully" });
+    } catch (error) {
+      console.error("Failed to unlock transaction PIN:", error);
+      res.status(400).json({ message: "Failed to unlock transaction PIN" });
+    }
+  });
+
+  // ============================================================================
   // COMPLIANCE SETTINGS (KYC Mode Toggle)
   // ============================================================================
 
