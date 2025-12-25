@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash, UserPlus, ExternalLink, ArrowRight } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash, UserPlus, ExternalLink, ArrowRight, FileText } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
@@ -72,6 +73,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [notFoundEmail, setNotFoundEmail] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  
+  // Terms and conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
 
   const { data: goldPrice } = useQuery<{ pricePerGram: number }>({
     queryKey: ['/api/gold-price'],
@@ -100,6 +105,13 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setNotFoundEmail('');
       setIsSendingInvite(false);
       setInviteSent(false);
+      setTermsAccepted(false);
+      
+      // Fetch terms
+      fetch('/api/terms/transfer')
+        .then(res => res.json())
+        .then(data => setTermsContent(data))
+        .catch(() => console.error('Failed to load terms'));
     }
   }, [isOpen]);
 
@@ -550,9 +562,36 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                     </div>
                   </div>
 
+                  {/* Terms and Conditions Checkbox */}
+                  {termsContent && (
+                    <div className="border border-border rounded-lg p-3 bg-muted/30">
+                      <div className="flex items-start gap-3">
+                        <Checkbox 
+                          id="transfer-terms"
+                          checked={termsAccepted}
+                          onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                          className="mt-0.5"
+                          data-testid="checkbox-transfer-terms"
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="transfer-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-primary" />
+                            I accept the Terms & Conditions
+                          </label>
+                          <details className="mt-2">
+                            <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                            <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                              {termsContent.terms}
+                            </div>
+                          </details>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12"
-                    disabled={numericAmount <= 0 || numericAmount > availableGoldValueUsd || !paymentReason || !sourceOfFunds}
+                    disabled={numericAmount <= 0 || numericAmount > availableGoldValueUsd || !paymentReason || !sourceOfFunds || !termsAccepted}
                     onClick={() => setStep('confirm')}
                   >
                     Continue to Review
