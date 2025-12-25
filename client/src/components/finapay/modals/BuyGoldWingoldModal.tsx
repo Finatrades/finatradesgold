@@ -7,6 +7,7 @@ import { Loader2, Upload, ExternalLink, AlertCircle, CheckCircle2, FileText, X }
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface BuyGoldWingoldModalProps {
   isOpen: boolean;
@@ -31,6 +32,10 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
   
+  // Terms and conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,6 +46,13 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       setReceiptFile(null);
       setRequestId(null);
       setIframeBlocked(true);
+      setTermsAccepted(false);
+      
+      // Fetch terms
+      fetch('/api/terms/buy_gold')
+        .then(res => res.json())
+        .then(data => setTermsContent(data))
+        .catch(() => setTermsContent(null));
     }
   }, [isOpen]);
 
@@ -325,6 +337,33 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                   )}
                 </div>
 
+                {/* Terms and Conditions Checkbox */}
+                {termsContent?.enabled && (
+                  <div className="border border-border rounded-lg p-3 bg-muted/30">
+                    <div className="flex items-start gap-3">
+                      <Checkbox 
+                        id="buy-gold-wingold-terms"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                        className="mt-0.5"
+                        data-testid="checkbox-buy-gold-wingold-terms"
+                      />
+                      <div className="flex-1">
+                        <label htmlFor="buy-gold-wingold-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-primary" />
+                          I accept the Terms & Conditions
+                        </label>
+                        <details className="mt-2">
+                          <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                          <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                            {termsContent.terms}
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <DialogFooter className="gap-2">
                   <Button
                     variant="outline"
@@ -335,7 +374,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    disabled={!receiptFile || isSubmitting}
+                    disabled={!receiptFile || isSubmitting || (termsContent?.enabled && !termsAccepted)}
                     className="bg-fuchsia-600 hover:bg-fuchsia-700"
                     data-testid="button-submit-request"
                   >
