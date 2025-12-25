@@ -109,8 +109,10 @@ export default function PendingTransfers() {
         description: data.message,
       });
       refetchIncoming();
+      refetchOutgoing();
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setSelectedTransfer(null);
       setActionType(null);
     },
@@ -140,6 +142,10 @@ export default function PendingTransfers() {
         description: data.message,
       });
       refetchIncoming();
+      refetchOutgoing();
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setSelectedTransfer(null);
       setActionType(null);
       setRejectionReason('');
