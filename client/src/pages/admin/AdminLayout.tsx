@@ -257,8 +257,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-muted text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
       <header className="sticky top-0 z-50 bg-background border-b border-border" data-testid="admin-header">
         <div className="px-4 lg:px-6">
-          <div className="h-14 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+          <div className="h-14 flex items-center gap-4">
+            <div className="flex items-center gap-4 shrink-0">
               <Link href="/admin">
                 <div className="flex items-center gap-2 cursor-pointer" data-testid="admin-header-logo">
                   <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
@@ -267,44 +267,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <span className="text-lg font-bold hidden sm:block">FinaAdmin</span>
                 </div>
               </Link>
-
-              <div className="hidden lg:block h-8 w-px bg-border" />
-
-              <nav className="hidden lg:flex items-center justify-center gap-1 flex-1" data-testid="admin-section-tabs">
-                {menuSections.map((section) => {
-                  const visibleItems = section.items.filter(item => hasMenuPermission(item.href));
-                  if (visibleItems.length === 0) return null;
-                  
-                  const sectionBadgeCount = getSectionBadgeCount(section);
-                  const isSectionActive = activeSection === section.title;
-                  
-                  return (
-                    <button
-                      key={section.title}
-                      onClick={() => setActiveSection(section.title)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        isSectionActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                      }`}
-                      data-testid={`admin-section-tab-${section.title.toLowerCase()}`}
-                    >
-                      {section.icon}
-                      {section.title}
-                      {sectionBadgeCount > 0 && (
-                        <span className={`min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center ${
-                          isSectionActive ? 'bg-white/90 text-purple-700' : 'bg-destructive text-destructive-foreground'
-                        }`}>
-                          {sectionBadgeCount > 99 ? '99+' : sectionBadgeCount}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <nav className="hidden lg:flex items-center justify-center gap-1 flex-1" data-testid="admin-section-tabs">
+              {menuSections.map((section) => {
+                const visibleItems = section.items.filter(item => hasMenuPermission(item.href));
+                if (visibleItems.length === 0) return null;
+                
+                const sectionBadgeCount = getSectionBadgeCount(section);
+                const isSectionActive = activeSection === section.title;
+                
+                return (
+                  <button
+                    key={section.title}
+                    onClick={() => setActiveSection(section.title)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isSectionActive 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                    }`}
+                    data-testid={`admin-section-tab-${section.title.toLowerCase()}`}
+                  >
+                    {section.icon}
+                    {section.title}
+                    {sectionBadgeCount > 0 && (
+                      <span className={`min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center ${
+                        isSectionActive ? 'bg-white/90 text-purple-700' : 'bg-destructive text-destructive-foreground'
+                      }`}>
+                        {sectionBadgeCount > 99 ? '99+' : sectionBadgeCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <ThemeToggle />
               <NotificationCenter />
               
