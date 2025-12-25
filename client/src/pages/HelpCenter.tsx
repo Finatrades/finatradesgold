@@ -11,10 +11,388 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { 
   HelpCircle, MessageCircle, Book, Search, Send, 
   Wallet, Database, TrendingUp, Shield, CreditCard,
-  ChevronRight, ExternalLink, Mail, Phone, Clock
+  ChevronRight, ExternalLink, Mail, Phone, Clock,
+  FileText, ArrowRight, CheckCircle, Gift, BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+const userManualSections = [
+  {
+    id: 'wallet',
+    title: 'Wallet (FinaPay)',
+    icon: <Wallet className="w-5 h-5" />,
+    guides: [
+      {
+        title: 'Deposit Money (Add Funds)',
+        description: 'Add money to your wallet using Bank Transfer, Card, or Crypto',
+        steps: [
+          { method: 'Bank Transfer', steps: [
+            'Click "Add Funds" button',
+            'Choose "Bank Transfer"',
+            'Select which bank account to send to (from list)',
+            'Enter the amount you want to deposit (in USD)',
+            'Enter your bank name',
+            'Enter your account holder name',
+            'Upload proof of payment (screenshot/receipt)',
+            'Check the box "I accept Terms and Conditions"',
+            'Click "Submit"',
+            'Wait for admin approval (you\'ll get a notification)'
+          ]},
+          { method: 'Card Payment', steps: [
+            'Click "Add Funds" button',
+            'Choose "Card"',
+            'Enter amount you want to deposit (in USD)',
+            'Click "Continue"',
+            'Enter your card number',
+            'Enter expiry date (MM/YY)',
+            'Enter CVV (3 digits on back)',
+            'Enter cardholder name',
+            'Check the box "I accept Terms and Conditions"',
+            'Click "Pay Now"',
+            'Complete 3D Secure verification (if asked)',
+            'Money added instantly to your wallet'
+          ]},
+          { method: 'Crypto Payment', steps: [
+            'Click "Add Funds" button',
+            'Choose "Crypto"',
+            'Enter amount in USD',
+            'Select network (USDT TRC20, BTC, ETH, etc.)',
+            'Copy the wallet address shown',
+            'Send crypto from your external wallet to this address',
+            'Enter the transaction hash',
+            'Upload screenshot of payment',
+            'Check the box "I accept Terms and Conditions"',
+            'Click "Submit Proof"',
+            'Wait for confirmation (you\'ll get notification)'
+          ]}
+        ]
+      },
+      {
+        title: 'Buy Gold',
+        description: 'Purchase gold using your USD balance',
+        steps: [
+          'Click "Buy Gold" button',
+          'Enter how much USD you want to spend',
+          'See how many grams of gold you\'ll get (auto-calculated)',
+          'See the current gold price per gram',
+          'See any fees applied',
+          'Check the box "I accept Terms and Conditions"',
+          'Click "Confirm Purchase"',
+          'Gold is added to your wallet instantly'
+        ]
+      },
+      {
+        title: 'Sell Gold',
+        description: 'Convert your gold back to USD',
+        steps: [
+          'Click "Sell Gold" button',
+          'Enter how many grams you want to sell',
+          'See how much USD you\'ll receive (auto-calculated)',
+          'See current gold price and any fees',
+          'Check the box "I accept Terms and Conditions"',
+          'Click "Confirm Sale"',
+          'USD is added to your wallet balance'
+        ]
+      },
+      {
+        title: 'Send Gold (Transfer)',
+        description: 'Send gold to another Finatrades user',
+        steps: [
+          'Click "Transfer" or "Send Gold" button',
+          'Enter recipient\'s Finatrades ID OR email address',
+          'Enter amount (grams or USD value)',
+          'Add a note (optional)',
+          'Review the transfer details',
+          'Enter your Transaction PIN (if enabled)',
+          'Click "Send"',
+          'Recipient receives gold instantly (or pending if they have approval enabled)'
+        ]
+      },
+      {
+        title: 'Withdraw Money',
+        description: 'Withdraw your USD balance to your bank',
+        steps: [
+          'Click "Withdraw" button',
+          'Choose withdrawal method (Bank Transfer)',
+          'Enter your bank name',
+          'Enter your account number',
+          'Enter your IBAN/SWIFT code',
+          'Enter amount to withdraw (in USD)',
+          'Review fees and final amount you\'ll receive',
+          'Check the box "I accept Terms and Conditions"',
+          'Enter your Transaction PIN (if enabled)',
+          'Click "Submit Request"',
+          'Wait for admin approval and bank transfer'
+        ]
+      },
+      {
+        title: 'Request Gold',
+        description: 'Request gold from another user',
+        steps: [
+          'Click "Request Gold" button',
+          'Enter the person\'s Finatrades ID or email',
+          'Enter how much gold you\'re requesting (grams)',
+          'Add a message explaining why (optional)',
+          'Click "Send Request"',
+          'They receive notification and can accept or decline'
+        ]
+      },
+      {
+        title: 'Pending Transfers (Accept/Reject)',
+        description: 'Manage incoming transfer requests',
+        steps: [
+          'Go to Wallet page',
+          'See "Pending Transfers" section (if any)',
+          'Review who sent it and how much',
+          'Click "Accept" to receive the gold OR Click "Reject" to decline',
+          'Transfer is processed automatically if you don\'t respond within 24 hours'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'vault',
+    title: 'Gold Storage (FinaVault)',
+    icon: <Database className="w-5 h-5" />,
+    guides: [
+      {
+        title: 'View Your Stored Gold',
+        description: 'See your vault holdings and certificates',
+        steps: [
+          'Click "Gold Storage" in sidebar',
+          'See your total gold in vault (grams)',
+          'See individual batches with batch reference, weight, date, and purity',
+          'Click on any batch to see certificate',
+          'Download certificate as PDF (optional)'
+        ]
+      },
+      {
+        title: 'Deposit Gold to Vault',
+        description: 'Store physical gold in the vault',
+        steps: [
+          'Click "Gold Storage" in sidebar',
+          'Click "New Deposit" tab',
+          'Enter weight of gold (grams)',
+          'Enter purity (e.g., 999.9)',
+          'Enter form type (bar, coin, etc.)',
+          'Add any notes',
+          'Click "Submit Request"',
+          'Follow instructions for physical delivery',
+          'Admin verifies and approves deposit',
+          'Gold appears in your vault'
+        ]
+      },
+      {
+        title: 'Withdraw Gold (Cash Out)',
+        description: 'Get physical gold or convert to cash',
+        steps: [
+          'Click "Gold Storage" in sidebar',
+          'Click "Cash Out" or "Withdraw"',
+          'Select which gold batches to withdraw',
+          'Choose delivery option: Physical delivery or Sell for cash',
+          'Enter delivery address (if physical)',
+          'Review fees',
+          'Check terms and conditions',
+          'Click "Submit Request"',
+          'Admin processes your request'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'bnsl',
+    title: 'Buy Now, Sell Later (BNSL)',
+    icon: <TrendingUp className="w-5 h-5" />,
+    guides: [
+      {
+        title: 'Create a BNSL Plan',
+        description: 'Lock gold and earn guaranteed returns',
+        steps: [
+          'Click "Buy Now, Sell Later" in sidebar',
+          'Click "Create New Plan" button',
+          'Enter how much gold you want to lock (grams)',
+          'Choose tenor (how many months: 3, 6, 12, etc.)',
+          'See the guaranteed return % (annual margin)',
+          'See total payout at maturity',
+          'Review the agreement terms',
+          'Type your full name as signature',
+          'Check "I agree to Terms and Conditions"',
+          'Click "Confirm & Create Plan"',
+          'Gold is locked, plan starts',
+          'Receive payouts as per schedule'
+        ]
+      },
+      {
+        title: 'View Your BNSL Plans',
+        description: 'Monitor your active plans and payouts',
+        steps: [
+          'Click "Buy Now, Sell Later" in sidebar',
+          'See "My Plans" tab',
+          'View all your plans with Plan ID, Gold locked, Status, Dates, Expected payout',
+          'Click any plan to see full details',
+          'See payout schedule and history'
+        ]
+      },
+      {
+        title: 'BNSL Wallet Transfer',
+        description: 'Move earnings to your main wallet',
+        steps: [
+          'Go to "Buy Now, Sell Later"',
+          'See "BNSL Wallet" card',
+          'View your BNSL balance',
+          'Click "Transfer to Main Wallet"',
+          'Enter amount to transfer',
+          'Confirm transfer',
+          'Funds move to your FinaPay wallet'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'finabridge',
+    title: 'Trade Finance (FinaBridge)',
+    icon: <BarChart3 className="w-5 h-5" />,
+    guides: [
+      {
+        title: 'Create a Trade Request (Importer)',
+        description: 'Request trade finance for international purchases',
+        steps: [
+          'Click "Trade Finance" in sidebar',
+          'Click "Create Trade Request"',
+          'Fill in trade details: Goods name, Quantity, Trade value, Shipping date, Destination',
+          'Select mode of transport (Sea, Air, Land)',
+          'Choose Incoterms (FOB, CIF, etc.)',
+          'Add insurance details',
+          'Review gold collateral required',
+          'Sign the agreement (type your name)',
+          'Check Terms and Conditions',
+          'Click "Submit Request"',
+          'Exporters can now send proposals'
+        ]
+      },
+      {
+        title: 'Submit a Proposal (Exporter)',
+        description: 'Respond to trade requests with your offer',
+        steps: [
+          'Click "Trade Finance" in sidebar',
+          'Browse available trade requests',
+          'Click on a request to view details',
+          'Click "Submit Proposal"',
+          'Fill in: Quote price, Delivery timeline, Shipping method, Port, Payment terms',
+          'Add company details',
+          'Upload any supporting documents',
+          'Sign the agreement',
+          'Check Terms and Conditions',
+          'Click "Submit Proposal"',
+          'Wait for importer\'s response'
+        ]
+      },
+      {
+        title: 'Deal Room (Negotiate)',
+        description: 'Chat and finalize trade with your partner',
+        steps: [
+          'Go to "Trade Finance"',
+          'Click on active trade',
+          'Enter "Deal Room"',
+          'Chat with the other party',
+          'Upload documents: Invoice, Bill of lading, Certificates',
+          'Track trade status',
+          'Confirm shipment and delivery',
+          'Trade completes, gold is released'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'security',
+    title: 'Security Settings',
+    icon: <Shield className="w-5 h-5" />,
+    guides: [
+      {
+        title: 'Set Up Transaction PIN',
+        description: 'Add extra security for transactions',
+        steps: [
+          'Click "Security" in sidebar',
+          'Find "Transaction PIN" section',
+          'Click "Set Up PIN"',
+          'Enter your account password to verify',
+          'Enter new 6-digit PIN',
+          'Confirm PIN (enter again)',
+          'Click "Save"',
+          'Now PIN is required before sending money or gold'
+        ]
+      },
+      {
+        title: 'Enable Two-Factor Authentication',
+        description: 'Protect your login with authenticator app',
+        steps: [
+          'Click "Security" in sidebar',
+          'Find "Two-Factor Authentication" section',
+          'Click "Enable 2FA"',
+          'Scan QR code with authenticator app',
+          'Enter the 6-digit code from app',
+          'Save your backup codes (write them down!)',
+          'Click "Verify & Enable"',
+          '2FA is now active for all logins'
+        ]
+      },
+      {
+        title: 'Change Password',
+        description: 'Update your account password',
+        steps: [
+          'Click "Security" in sidebar',
+          'Find "Password" section',
+          'Click "Change Password"',
+          'Enter current password',
+          'Enter new password',
+          'Confirm new password',
+          'Click "Save"'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'profile',
+    title: 'Profile & KYC',
+    icon: <FileText className="w-5 h-5" />,
+    guides: [
+      {
+        title: 'Complete KYC Verification',
+        description: 'Verify your identity to unlock all features',
+        steps: [
+          'Click "Profile" in sidebar OR Click "Verify Identity" if shown',
+          'Fill in personal information: Full name, Date of birth, Address, Phone',
+          'Upload documents: Government ID, Proof of address',
+          'Take a selfie for liveness check',
+          'Click "Submit for Verification"',
+          'Wait for admin review (usually 1-2 business days)',
+          'Get notification when approved'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'referral',
+    title: 'Referral Program',
+    icon: <Gift className="w-5 h-5" />,
+    guides: [
+      {
+        title: 'Invite Friends & Earn',
+        description: 'Share your referral code and earn rewards',
+        steps: [
+          'Click "Referral" in sidebar',
+          'See your unique referral code',
+          'Copy the code or share link',
+          'Send to friends',
+          'When they sign up and trade, you earn rewards',
+          'Track your referrals and earnings'
+        ]
+      }
+    ]
+  }
+];
 
 const faqCategories = [
   {
@@ -115,6 +493,7 @@ export default function HelpCenter() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('finapay');
+  const [activeManualSection, setActiveManualSection] = useState('wallet');
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketMessage, setTicketMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -215,8 +594,11 @@ export default function HelpCenter() {
           ))}
         </div>
 
-        <Tabs defaultValue="faq" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+        <Tabs defaultValue="manual" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="manual" className="flex items-center gap-2" data-testid="tab-manual">
+              <FileText className="w-4 h-4" /> User Manual
+            </TabsTrigger>
             <TabsTrigger value="faq" className="flex items-center gap-2" data-testid="tab-faq">
               <Book className="w-4 h-4" /> FAQ
             </TabsTrigger>
@@ -224,6 +606,106 @@ export default function HelpCenter() {
               <MessageCircle className="w-4 h-4" /> Contact Support
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="manual">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-1">
+                <Card className="sticky top-4">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Sections</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <div className="space-y-1">
+                      {userManualSections.map((section) => (
+                        <button
+                          key={section.id}
+                          onClick={() => setActiveManualSection(section.id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
+                            activeManualSection === section.id 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                          }`}
+                          data-testid={`manual-section-${section.id}`}
+                        >
+                          {section.icon}
+                          <span className="text-sm font-medium">{section.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="lg:col-span-3">
+                <Card data-testid="card-user-manual">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        {userManualSections.find(s => s.id === activeManualSection)?.icon}
+                      </div>
+                      <div>
+                        <CardTitle>{userManualSections.find(s => s.id === activeManualSection)?.title}</CardTitle>
+                        <CardDescription>Step-by-step instructions</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[600px] pr-4">
+                      <div className="space-y-6">
+                        {userManualSections.find(s => s.id === activeManualSection)?.guides.map((guide, guideIdx) => (
+                          <div key={guideIdx} className="border border-border rounded-xl p-5 bg-card">
+                            <div className="flex items-start gap-3 mb-4">
+                              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">
+                                {guideIdx + 1}
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-lg text-foreground">{guide.title}</h3>
+                                <p className="text-sm text-muted-foreground">{guide.description}</p>
+                              </div>
+                            </div>
+                            
+                            {Array.isArray(guide.steps) && typeof guide.steps[0] === 'string' ? (
+                              <div className="ml-11 space-y-2">
+                                {(guide.steps as string[]).map((step, stepIdx) => (
+                                  <div key={stepIdx} className="flex items-start gap-3">
+                                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground shrink-0">
+                                      {stepIdx + 1}
+                                    </div>
+                                    <p className="text-sm text-foreground pt-0.5">{step}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="ml-11 space-y-4">
+                                {(guide.steps as Array<{method: string; steps: string[]}>).map((methodGroup, methodIdx) => (
+                                  <div key={methodIdx} className="border-l-2 border-primary/30 pl-4">
+                                    <h4 className="font-medium text-primary mb-2 flex items-center gap-2">
+                                      <ArrowRight className="w-4 h-4" />
+                                      {methodGroup.method}
+                                    </h4>
+                                    <div className="space-y-2">
+                                      {methodGroup.steps.map((step, stepIdx) => (
+                                        <div key={stepIdx} className="flex items-start gap-3">
+                                          <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground shrink-0">
+                                            {stepIdx + 1}
+                                          </div>
+                                          <p className="text-sm text-foreground">{step}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
 
           <TabsContent value="faq">
             <Card data-testid="card-faq">
