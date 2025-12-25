@@ -2794,6 +2794,41 @@ export type InsertUserPasskey = z.infer<typeof insertUserPasskeySchema>;
 export type UserPasskey = typeof userPasskeys.$inferSelect;
 
 // ============================================
+// TRANSACTION PIN
+// ============================================
+
+export const transactionPins = pgTable("transaction_pins", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  hashedPin: text("hashed_pin").notNull(),
+  failedAttempts: integer("failed_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until"),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTransactionPinSchema = createInsertSchema(transactionPins).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTransactionPin = z.infer<typeof insertTransactionPinSchema>;
+export type TransactionPin = typeof transactionPins.$inferSelect;
+
+// Transaction PIN verification tokens (short-lived tokens after successful PIN entry)
+export const pinVerificationTokens = pgTable("pin_verification_tokens", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  action: varchar("action", { length: 100 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPinVerificationTokenSchema = createInsertSchema(pinVerificationTokens).omit({ id: true, createdAt: true });
+export type InsertPinVerificationToken = z.infer<typeof insertPinVerificationTokenSchema>;
+export type PinVerificationToken = typeof pinVerificationTokens.$inferSelect;
+
+// ============================================
 // ADMIN ACTION OTP VERIFICATIONS
 // ============================================
 
