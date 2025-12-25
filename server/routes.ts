@@ -17290,7 +17290,7 @@ ${message}
   // ============================================================================
 
   // Get payment gateway settings (Admin)
-  app.get("/api/admin/payment-gateways", async (req, res) => {
+  app.get("/api/admin/payment-gateways", ensureAdminAsync, async (req, res) => {
     try {
       const settings = await db.select().from(paymentGatewaySettings).limit(1);
       res.json(settings[0] || null);
@@ -17301,8 +17301,9 @@ ${message}
   });
 
   // Update payment gateway settings (Admin)
-  app.put("/api/admin/payment-gateways", async (req, res) => {
+  app.put("/api/admin/payment-gateways", ensureAdminAsync, async (req, res) => {
     try {
+      console.log("[PaymentGateway] Updating settings:", JSON.stringify(req.body, null, 2));
       const settings = await db.select().from(paymentGatewaySettings).limit(1);
       
       if (settings.length === 0) {
@@ -17312,6 +17313,7 @@ ${message}
           ...req.body,
           updatedAt: new Date()
         }).returning();
+        console.log("[PaymentGateway] Created new settings");
         res.json(newSettings[0]);
       } else {
         // Update existing settings
@@ -17319,11 +17321,12 @@ ${message}
           .set({ ...req.body, updatedAt: new Date() })
           .where(eq(paymentGatewaySettings.id, settings[0].id))
           .returning();
+        console.log("[PaymentGateway] Updated settings");
         res.json(updatedSettings[0]);
       }
     } catch (error) {
       console.error("Failed to update payment gateway settings:", error);
-      res.status(400).json({ message: "Failed to update payment gateway settings" });
+      res.status(400).json({ message: "Failed to update payment gateway settings", error: String(error) });
     }
   });
 
