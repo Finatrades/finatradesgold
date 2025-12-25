@@ -237,6 +237,7 @@ export function useTransactionPin() {
   const [pinPromptOpen, setPinPromptOpen] = useState(false);
   const [pinVerificationToken, setPinVerificationToken] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<{
+    userId: string;
     action: string;
     onSuccess: (token: string) => void;
     onCancel?: () => void;
@@ -252,6 +253,7 @@ export function useTransactionPin() {
   }): Promise<string> => {
     return new Promise((resolve, reject) => {
       setPendingAction({
+        userId: options.userId,
         action: options.action,
         title: options.title,
         description: options.description,
@@ -282,7 +284,7 @@ export function useTransactionPin() {
       <TransactionPinPrompt
         open={pinPromptOpen}
         onOpenChange={setPinPromptOpen}
-        userId=""
+        userId={pendingAction.userId}
         action={pendingAction.action}
         onSuccess={pendingAction.onSuccess}
         onCancel={pendingAction.onCancel}
