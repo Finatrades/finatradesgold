@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { CreditCard, Wallet, Building, Loader2, CheckCircle2, ArrowRightLeft, AlertCircle, Copy, Check, Bitcoin, ArrowLeft, Clock, Upload } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { CreditCard, Wallet, Building, Loader2, CheckCircle2, ArrowRightLeft, AlertCircle, Copy, Check, Bitcoin, ArrowLeft, Clock, Upload, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatform } from '@/context/PlatformContext';
@@ -68,6 +69,10 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
   const { user } = useAuth();
   const { settings: platformSettings } = usePlatform();
   const { toast } = useToast();
+  
+  // Terms and conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,14 +85,17 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
       setSelectedWallet(null);
       setTransactionHash('');
       setPaymentRequestId(null);
+      setTermsAccepted(false);
       
-      // Fetch payment methods and crypto wallets
+      // Fetch payment methods, crypto wallets, and terms
       Promise.all([
         fetch('/api/payment-methods').then(res => res.json()),
-        fetch('/api/crypto-wallets/active').then(res => res.json())
-      ]).then(([methodsData, walletsData]) => {
+        fetch('/api/crypto-wallets/active').then(res => res.json()),
+        fetch('/api/terms/buy_gold').then(res => res.json())
+      ]).then(([methodsData, walletsData, termsData]) => {
         setPaymentMethods(methodsData);
         setCryptoWallets(walletsData.wallets || []);
+        setTermsContent(termsData);
         
         // Set default method - prefer crypto if wallets available
         if (walletsData.wallets?.length > 0) setMethod('crypto');
@@ -641,11 +649,38 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                     </div>
                  </div>
               )}
+              
+              {/* Terms and Conditions Checkbox */}
+              {termsContent && numericGrams > 0 && (
+                <div className="border border-border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-start gap-3">
+                    <Checkbox 
+                      id="buy-gold-terms"
+                      checked={termsAccepted}
+                      onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                      className="mt-0.5"
+                      data-testid="checkbox-buy-gold-terms"
+                    />
+                    <div className="flex-1">
+                      <label htmlFor="buy-gold-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-primary" />
+                        I accept the Terms & Conditions
+                      </label>
+                      <details className="mt-2">
+                        <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                        <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                          {termsContent.terms}
+                        </div>
+                      </details>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Confirm Button */}
               <Button 
                 className="w-full h-12 bg-primary text-white hover:bg-primary/90 font-bold"
-                disabled={numericGrams <= 0 || isBelowMinimum || isLoading || isLoadingMethods || !method || enabledMethodsCount === 0 || (method === 'crypto' && !selectedWallet)}
+                disabled={numericGrams <= 0 || isBelowMinimum || isLoading || isLoadingMethods || !method || enabledMethodsCount === 0 || (method === 'crypto' && !selectedWallet) || !termsAccepted}
                 onClick={handleConfirm}
                 data-testid="button-confirm-purchase"
               >

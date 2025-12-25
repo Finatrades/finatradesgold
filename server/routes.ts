@@ -13329,6 +13329,54 @@ ${message}
     }
   });
   
+  // Get terms and conditions content (Public - for modals)
+  app.get("/api/terms/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      const validTypes = ['deposit', 'buy_gold', 'withdrawal', 'transfer'];
+      
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({ message: "Invalid terms type" });
+      }
+      
+      // Get from platform_config or return default
+      const configKey = `${type}_terms`;
+      const config = await storage.getPlatformConfigByKey(configKey);
+      
+      if (config && config.configValue) {
+        return res.json({ 
+          terms: config.configValue,
+          title: config.displayName || `${type.replace('_', ' ')} Terms`
+        });
+      }
+      
+      // Return default terms based on type
+      const defaultTerms: Record<string, { title: string; terms: string }> = {
+        deposit: {
+          title: 'Deposit Terms & Conditions',
+          terms: 'By proceeding with this deposit, you agree to the following terms:\n\n1. Gold price shown is tentative and subject to change upon fund verification.\n2. Deposits will be processed within 1-3 business days after verification.\n3. The final gold amount credited will be calculated at the confirmed rate at time of receipt.\n4. All deposits are subject to anti-money laundering (AML) verification.\n5. You confirm that the funds are from a legitimate source.'
+        },
+        buy_gold: {
+          title: 'Gold Purchase Terms & Conditions',
+          terms: 'By purchasing gold through Finatrades, you agree to the following:\n\n1. Gold prices are based on real-time market rates plus applicable spread.\n2. Once a purchase is confirmed, it cannot be cancelled or reversed.\n3. Purchased gold will be credited to your wallet within 24 hours.\n4. All purchases are subject to platform transaction limits.\n5. You understand that gold values may fluctuate after purchase.'
+        },
+        withdrawal: {
+          title: 'Withdrawal Terms & Conditions',
+          terms: 'By proceeding with this withdrawal, you agree to the following:\n\n1. Withdrawals are subject to verification and may take 1-5 business days.\n2. Withdrawal fees will be deducted from the amount.\n3. You confirm the receiving account details are correct.\n4. Finatrades is not responsible for incorrect account details provided.'
+        },
+        transfer: {
+          title: 'Transfer Terms & Conditions',
+          terms: 'By proceeding with this transfer, you agree to:\n\n1. Transfers are instant and cannot be reversed once completed.\n2. You confirm the recipient details are correct.\n3. Transfer limits apply based on your verification level.'
+        }
+      };
+      
+      const defaults = defaultTerms[type] || { title: 'Terms & Conditions', terms: 'Please review the terms and conditions before proceeding.' };
+      res.json(defaults);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get terms" });
+    }
+  });
+  
   // Get template by slug (Public - for rendering)
   app.get("/api/templates/:slug", async (req, res) => {
     try {

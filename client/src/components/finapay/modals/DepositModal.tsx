@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatform } from '@/context/PlatformContext';
-import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock } from 'lucide-react';
+import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
@@ -90,6 +91,20 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [cryptoReceipt, setCryptoReceipt] = useState<string | null>(null);
   const [cryptoReceiptFileName, setCryptoReceiptFileName] = useState<string>('');
   const cryptoReceiptInputRef = useRef<HTMLInputElement>(null);
+  
+  // Terms and conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string } | null>(null);
+
+  const fetchTerms = async () => {
+    try {
+      const response = await fetch('/api/terms/deposit');
+      const data = await response.json();
+      setTermsContent(data);
+    } catch (error) {
+      console.error('Failed to load terms');
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -98,6 +113,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       fetchCryptoWallets();
       fetchFees();
       fetchGoldPrice();
+      fetchTerms();
       resetForm();
       
       // Preload NGenius SDK in background when modal opens
@@ -165,6 +181,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setCryptoPaymentRequestId(null);
     setCryptoReceipt(null);
     setCryptoReceiptFileName('');
+    setTermsAccepted(false);
   };
   
   const handleCryptoReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -790,6 +807,33 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                    <p className="font-semibold mb-1">Important Notice</p>
                    <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
                 </div>
+                
+                {/* Terms and Conditions Checkbox */}
+                {termsContent && (
+                  <div className="border border-border rounded-lg p-3 bg-muted/30">
+                    <div className="flex items-start gap-3">
+                      <Checkbox 
+                        id="deposit-terms"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                        className="mt-0.5"
+                        data-testid="checkbox-deposit-terms"
+                      />
+                      <div className="flex-1">
+                        <label htmlFor="deposit-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-primary" />
+                          I accept the Terms & Conditions
+                        </label>
+                        <details className="mt-2">
+                          <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                          <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                            {termsContent.terms}
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1251,7 +1295,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
                 onClick={handleSubmit} 
-                disabled={!amount || submitting}
+                disabled={!amount || submitting || !termsAccepted}
                 data-testid="button-submit-deposit"
               >
                 {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
