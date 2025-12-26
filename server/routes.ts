@@ -17635,7 +17635,7 @@ ${message}
           type: cert.type,
           status: cert.status,
           goldGrams,
-          issuedAt: cert.createdAt,
+          issuedAt: cert.issuedAt,
           userName: userMap.get(cert.userId) || 'Unknown'
         };
       });
