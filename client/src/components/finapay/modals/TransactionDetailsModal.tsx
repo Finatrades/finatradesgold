@@ -55,16 +55,19 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
     
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(16);
+    
+    const goldAmount = transaction.amountGrams ? transaction.amountGrams.toFixed(4) : '0.0000';
+    const usdAmount = transaction.amountUsd ? transaction.amountUsd.toFixed(2) : '0.00';
     const amount = transaction.assetType === 'GOLD' 
-      ? `${transaction.amountGrams?.toFixed(4)} g` 
-      : `$${transaction.amountUsd.toFixed(2)}`;
-    const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit') ? '+' : '-';
-    pdf.text(`${prefix} ${amount}`, pageWidth / 2, 55, { align: 'center' });
+      ? goldAmount + ' g' 
+      : 'USD ' + usdAmount;
+    const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit') ? '+ ' : '- ';
+    pdf.text(prefix + amount, pageWidth / 2, 55, { align: 'center' });
     
     if (transaction.assetType === 'GOLD') {
       pdf.setFontSize(10);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(`≈ $${transaction.amountUsd.toFixed(2)} USD`, pageWidth / 2, 63, { align: 'center' });
+      pdf.text('USD ' + usdAmount, pageWidth / 2, 63, { align: 'center' });
     }
     
     pdf.setDrawColor(230, 230, 230);
@@ -77,18 +80,19 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
       pdf.setTextColor(100, 100, 100);
       pdf.text(label, 25, yPos);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(value, pageWidth - 25, yPos, { align: 'right' });
+      const safeValue = String(value).replace(/[^\x00-\x7F]/g, '');
+      pdf.text(safeValue, pageWidth - 25, yPos, { align: 'right' });
       yPos += 12;
     };
     
-    addRow('Transaction Type', `${transaction.type} ${transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}`);
+    addRow('Transaction Type', transaction.type + ' ' + (transaction.assetType === 'GOLD' ? 'Gold' : 'USD'));
     addRow('Status', transaction.status);
     addRow('Reference ID', transaction.referenceId);
     addRow('Date & Time', new Date(transaction.timestamp).toLocaleString());
     if (transaction.description) {
-      addRow('Description', transaction.description);
+      addRow('Description', transaction.description.substring(0, 40));
     }
-    addRow('Network Fee', `$${(transaction.feeUsd || 0).toFixed(2)}`);
+    addRow('Network Fee', 'USD ' + (transaction.feeUsd || 0).toFixed(2));
     
     pdf.line(20, yPos + 5, pageWidth - 20, yPos + 5);
     
@@ -97,7 +101,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
     pdf.text('Thank you for using Finatrades', pageWidth / 2, 280, { align: 'center' });
     pdf.text(new Date().toLocaleDateString(), pageWidth / 2, 287, { align: 'center' });
     
-    pdf.save(`finatrades-receipt-${transaction.referenceId}.pdf`);
+    pdf.save('finatrades-receipt-' + transaction.referenceId + '.pdf');
     
     toast({ title: 'Receipt Downloaded', description: 'Your transaction receipt has been saved as PDF' });
   };
