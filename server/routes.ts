@@ -81,6 +81,7 @@ import {
   getBackupAuditLogs
 } from "./backup-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
+import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -209,12 +210,13 @@ function idempotencyMiddleware(req: Request, res: Response, next: NextFunction) 
 }
 
 // Configure multer for file uploads
+// Use memory storage when R2 is configured, otherwise use disk storage as fallback
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const multerStorage = multer.diskStorage({
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
@@ -223,6 +225,9 @@ const multerStorage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
+
+const memoryStorage = multer.memoryStorage();
+const multerStorage = isR2Configured() ? memoryStorage : diskStorage;
 
 // Validate both mimetype and file extension for security
 const allowedMimeTypes: Record<string, string[]> = {
@@ -542,14 +547,25 @@ export async function registerRoutes(
   startDocumentExpiryScheduler();
 
   // File upload endpoint for Deal Room and other attachments
-  app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), (req: Request, res: Response) => {
+  app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
       
-      // Return the URL to access the uploaded file
-      const fileUrl = `/uploads/${req.file.filename}`;
+      let fileUrl: string;
+      
+      // Upload to R2 if configured, otherwise use local disk
+      if (isR2Configured() && req.file.buffer) {
+        const r2Key = generateR2Key('documents', req.file.originalname);
+        const result = await uploadToR2(r2Key, req.file.buffer, req.file.mimetype);
+        fileUrl = result.url;
+        console.log(`[R2] File uploaded: ${r2Key}`);
+      } else {
+        // Fallback to local disk storage
+        fileUrl = `/uploads/${(req.file as any).filename}`;
+      }
+      
       res.json({ 
         url: fileUrl, 
         filename: req.file.originalname,
