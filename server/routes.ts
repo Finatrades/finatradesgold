@@ -10081,6 +10081,15 @@ ${message}
             read: false,
           });
           
+          // Notify all admins about the deposit approval
+          const depositUserName = depositUser ? `${depositUser.firstName || ''} ${depositUser.lastName || ''}`.trim() || 'User' : 'User';
+          notifyAllAdmins({
+            title: 'Deposit Approved',
+            message: `Deposit of $${depositAmountUsd.toFixed(2)} for ${depositUserName} has been confirmed. ${goldGrams.toFixed(4)}g gold credited.`,
+            type: 'success',
+            link: '/admin/transactions',
+          });
+          
           // Emit real-time sync event for auto-update
           emitLedgerEvent(request.userId, {
             type: 'balance_update',
@@ -22210,6 +22219,16 @@ ${message}
         type: "success",
         read: false,
         link: "/finavault",
+      });
+      
+      // Notify all admins about the buy gold approval
+      const buyGoldUser = await storage.getUser(request.userId);
+      const buyGoldUserName = buyGoldUser ? `${buyGoldUser.firstName || ''} ${buyGoldUser.lastName || ''}`.trim() || 'User' : 'User';
+      notifyAllAdmins({
+        title: 'Buy Gold Bar Approved',
+        message: `${buyGoldUserName}'s purchase of ${finalGoldGrams.toFixed(4)}g gold ($${finalAmountUsd.toFixed(2)}) has been approved and credited.`,
+        type: 'success',
+        link: '/admin/finapay/buy-gold',
       });
       
       // Emit real-time updates
