@@ -4533,11 +4533,11 @@ ${message}
           .map(c => c.transactionId)
       );
       
-      // Regular transactions (FinaPay) - exclude Buy/Deposit transactions that have certificates or are vault deposits
+      // Regular transactions (FinaPay) - exclude transactions that have certificates or are vault deposits
       regularTransactions
         .filter(tx => {
-          // Skip Buy and Deposit transactions that have certificates (they're shown as ADD_FUNDS from certificate)
-          if ((tx.type === 'Buy' || tx.type === 'Deposit') && transactionIdsWithCerts.has(tx.id)) {
+          // Skip Buy, Deposit, and Receive transactions that have certificates (they're shown as ADD_FUNDS from certificate)
+          if ((tx.type === 'Buy' || tx.type === 'Deposit' || tx.type === 'Receive') && transactionIdsWithCerts.has(tx.id)) {
             return false;
           }
           // Skip Deposit transactions that are linked to vault deposits (they're shown separately as vault_deposit entries)
