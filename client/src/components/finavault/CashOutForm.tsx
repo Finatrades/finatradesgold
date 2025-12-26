@@ -6,15 +6,13 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowRight, DollarSign, Building, AlertCircle, RefreshCw, CheckCircle2, Bitcoin, Clock } from 'lucide-react';
+import { ArrowRight, DollarSign, Building, AlertCircle, RefreshCw, CheckCircle2, Bitcoin, Clock, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFees, FEE_KEYS } from '@/context/FeeContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
-import { useQueryClient } from '@tanstack/react-query';
-
-const GOLD_PRICE_USD = 85.22;
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 interface CashOutFormProps {
   vaultBalance?: number;
@@ -25,6 +23,20 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
   const { user } = useAuth();
   const { getFeeValue } = useFees();
   const queryClient = useQueryClient();
+  
+  // Fetch live gold price
+  const { data: goldPriceData } = useQuery({
+    queryKey: ['gold-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-price', { credentials: 'include' });
+      if (!res.ok) return { pricePerGram: 145, priceChange24h: 0 };
+      return res.json();
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+  
+  const goldPriceUsd = goldPriceData?.pricePerGram || 145;
+  const priceChange24h = goldPriceData?.priceChange24h || 0;
   
   const [step, setStep] = useState<'input' | 'confirm' | 'success'>('input');
   const [amountGrams, setAmountGrams] = useState('');
@@ -49,7 +61,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
   const cashoutFeePercent = getFeeValue(FEE_KEYS.FINAVAULT_CASHOUT, 1.5);
   
   const grams = parseFloat(amountGrams) || 0;
-  const grossAmount = grams * GOLD_PRICE_USD;
+  const grossAmount = grams * goldPriceUsd;
   const fee = grossAmount * (cashoutFeePercent / 100);
   const netAmount = grossAmount - fee;
 
@@ -87,7 +99,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
       await apiRequest('POST', '/api/vault/withdrawal', {
         userId: user.id,
         goldGrams: grams.toString(),
-        goldPriceUsdPerGram: GOLD_PRICE_USD.toString(),
+        goldPriceUsdPerGram: goldPriceUsd.toString(),
         withdrawalMethod,
         bankName: withdrawalMethod === 'Bank Transfer' ? bankName : null,
         accountName: withdrawalMethod === 'Bank Transfer' ? accountName : null,
@@ -390,7 +402,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     </div>
                     <div className="flex justify-between text-muted-foreground text-sm">
                       <span>Gold Price</span>
-                      <span className="text-foreground">${GOLD_PRICE_USD}/g</span>
+                      <span className="text-foreground">${goldPriceUsd.toFixed(2)}/g</span>
                     </div>
                     <Separator className="bg-border" />
                     <div className="flex justify-between text-muted-foreground text-sm">
@@ -499,11 +511,12 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
             <div>
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Live Gold Price</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-foreground">${GOLD_PRICE_USD}</span>
+                <span className="text-3xl font-bold text-foreground">${goldPriceUsd.toFixed(2)}</span>
                 <span className="text-sm text-green-600 font-medium">/ gram</span>
               </div>
-              <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
-                <ArrowRight className="w-3 h-3 -rotate-45" /> +1.2% (24h)
+              <p className={`text-xs mt-1 flex items-center gap-1 ${priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <TrendingUp className={`w-3 h-3 ${priceChange24h < 0 ? 'rotate-180' : ''}`} />
+                {priceChange24h >= 0 ? '+' : ''}{priceChange24h.toFixed(1)}% (24h)
               </p>
             </div>
             
@@ -516,7 +529,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Value (USD)</span>
-                <span className="text-secondary font-bold">${(vaultBalance * GOLD_PRICE_USD).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="text-secondary font-bold">${(vaultBalance * goldPriceUsd).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
