@@ -17501,12 +17501,16 @@ ${message}
         }
       }
 
-      // Get vault holdings
+      // Get vault holdings (physical gold bars in FinaVault - separate from wallet gold)
+      // Note: Vault holdings are for physical gold storage, wallet gold is digital
+      // Only count vault holdings that are marked as physically deposited to avoid double-counting
       const vaultHoldings = await storage.getAllVaultHoldings();
       let vaultGoldGrams = 0;
       for (const holding of vaultHoldings) {
-        // All vault holdings are considered active (no status field)
-        vaultGoldGrams += parseFloat(holding.goldGrams || '0');
+        // Only count physically deposited vault holdings to avoid double-counting with wallet gold
+        if (holding.isPhysicallyDeposited) {
+          vaultGoldGrams += parseFloat(holding.goldGrams || '0');
+        }
       }
 
       // Get all BNSL plans
