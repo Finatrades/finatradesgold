@@ -415,14 +415,26 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       setStep('submitted');
       toast.success("Deposit request submitted");
     } catch (error: any) {
-      const errorMessage = error?.message || "Failed to submit deposit request";
-      toast.error(errorMessage, {
-        description: 'Please check your details and try again, or contact support if the problem persists.',
-        action: {
-          label: 'Retry',
-          onClick: () => handleSubmit(),
-        },
-      });
+      // Check if this is a KYC error
+      if (error?.code === 'KYC_REQUIRED' || error?.message?.includes('KYC')) {
+        toast.error('Identity Verification Required', {
+          description: 'Please complete your identity verification to access this feature.',
+          action: {
+            label: 'Verify Now',
+            onClick: () => window.location.href = '/kyc',
+          },
+        });
+        onClose();
+      } else {
+        const errorMessage = error?.message || "Failed to submit deposit request";
+        toast.error(errorMessage, {
+          description: 'Please check your details and try again.',
+          action: {
+            label: 'Retry',
+            onClick: () => handleSubmit(),
+          },
+        });
+      }
     } finally {
       setSubmitting(false);
     }

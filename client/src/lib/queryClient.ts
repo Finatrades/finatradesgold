@@ -4,8 +4,24 @@ async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     
+    // Try to parse JSON for structured errors
+    let errorData: any = null;
+    try {
+      errorData = JSON.parse(text);
+    } catch {
+      // Not JSON, use text as-is
+    }
+    
+    // Handle KYC errors with proper structure
+    if (errorData?.code === 'KYC_REQUIRED') {
+      const error: any = new Error('Please complete your identity verification to access this feature.');
+      error.code = 'KYC_REQUIRED';
+      error.kycStatus = errorData.kycStatus;
+      throw error;
+    }
+    
     // Convert technical errors to user-friendly messages
-    let friendlyMessage = text;
+    let friendlyMessage = errorData?.message || text;
     if (res.status === 403 && text.includes('CSRF')) {
       friendlyMessage = 'Your session may have expired. Please refresh the page and try again.';
     } else if (res.status === 401) {
