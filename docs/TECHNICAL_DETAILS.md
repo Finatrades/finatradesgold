@@ -8,10 +8,17 @@ Contact: +971568474843
 
 ## Table of Contents
 1. [Notification System](#notification-system)
-   - [Email Notifications](#email-notifications)
-   - [Bell/In-App Notifications](#bellin-app-notifications)
-   - [Push Notifications](#push-notifications)
-2. [Additional Details](#additional-details) *(To be added)*
+2. [Platform Configuration](#platform-configuration)
+3. [User Preferences System](#user-preferences-system)
+4. [KYC Verification System](#kyc-verification-system)
+5. [FinaPay - Digital Wallet System](#finapay---digital-wallet-system)
+6. [FinaVault - Gold Storage System](#finavault---gold-storage-system)
+7. [BNSL - Buy Now Sell Later](#bnsl---buy-now-sell-later)
+8. [FinaBridge - Trade Finance](#finabridge---trade-finance)
+9. [Payment Integrations](#payment-integrations)
+10. [Security Features](#security-features)
+11. [Certificate System](#certificate-system)
+12. [Database Schema Overview](#database-schema-overview)
 
 ---
 
@@ -21,7 +28,7 @@ Contact: +971568474843
 
 The platform sends 55 different email templates organized into the following categories:
 
-#### Authentication & Security (7 templates)
+#### Authentication & Security (8 templates)
 | Template Slug | Description |
 |---------------|-------------|
 | `welcome_email` | Welcome email sent after registration |
@@ -72,7 +79,7 @@ The platform sends 55 different email templates organized into the following cat
 | `bnsl_plan_completed` | BNSL plan completed |
 | `bnsl_early_exit` | BNSL early exit processed |
 
-#### FinaBridge Trade Finance (~8 templates)
+#### FinaBridge Trade Finance (8 templates)
 | Template Slug | Description |
 |---------------|-------------|
 | `trade_proposal` | New trade proposal notification |
@@ -100,7 +107,7 @@ The platform sends 55 different email templates organized into the following cat
 | `invoice_gold_purchase` | Gold purchase invoice |
 | `monthly_account_statement` | Monthly account statement |
 
-#### Marketing (~5 templates)
+#### Marketing (5 templates)
 | Template Slug | Description |
 |---------------|-------------|
 | `newsletter` | Newsletter subscription |
@@ -117,9 +124,30 @@ Email notifications are controlled at three levels:
 2. **Per-Type Admin Toggle**: `email_notification_settings` table allows enabling/disabling specific notification types
 3. **User Preferences**: Users can control their own email preferences:
    - `emailNotifications` - Master toggle for all emails
-   - `transactionAlerts` - Transaction-related emails
-   - `securityAlerts` - Security-related emails
-   - `marketingEmails` - Marketing and promotional emails
+   - `transactionAlerts` - Transaction-related emails (19 slugs)
+   - `securityAlerts` - Security-related emails (7 slugs)
+   - `marketingEmails` - Marketing and promotional emails (5 slugs)
+
+#### Transaction Email Slugs (checked against `transactionAlerts`)
+```
+gold_purchase, gold_sale, card_payment_receipt, deposit_received, 
+deposit_processing, withdrawal_requested, withdrawal_processing, 
+withdrawal_completed, transaction_failed, low_balance_alert,
+transfer_sent, transfer_received, transfer_pending, transfer_completed,
+transfer_cancelled, bnsl_payment_received, bnsl_payment_reminder,
+bnsl_plan_completed, bnsl_early_exit
+```
+
+#### Security Email Slugs (checked against `securityAlerts`)
+```
+password_reset, password_changed, new_device_login, account_locked,
+suspicious_activity, mfa_enabled, email_verification
+```
+
+#### Marketing Email Slugs (checked against `marketingEmails`)
+```
+newsletter, promotion, marketing, announcement, invitation
+```
 
 ---
 
@@ -191,16 +219,612 @@ Push notifications are sent to mobile devices for FinaBridge trade finance event
 
 ---
 
-## Additional Details
+## Platform Configuration
 
-*(To be added in future updates)*
+All platform settings are managed via the `platform_config` database table with 13 categories:
 
-- Fee Structure
-- Transaction Limits
-- KYC Tiers and Requirements
-- Vault Inventory Management
-- Payment Method Configuration
-- Platform Configuration Settings
+### Configuration Categories
+
+| Category | Description |
+|----------|-------------|
+| `gold_pricing` | Buy/sell spreads, storage fees, minimum trade amounts |
+| `transaction_limits` | Daily/monthly limits by KYC tier |
+| `deposit_limits` | Minimum/maximum deposit amounts |
+| `withdrawal_limits` | Minimum/maximum withdrawal amounts, fees |
+| `p2p_limits` | P2P transfer limits and fees |
+| `bnsl_settings` | BNSL minimum amounts, max terms, early exit penalties |
+| `finabridge_settings` | Trade finance configuration |
+| `payment_fees` | Card, bank transfer, crypto payment fees |
+| `kyc_settings` | KYC requirements and restrictions |
+| `system_settings` | Global system toggles |
+| `vault_settings` | Vault inventory management |
+| `referral_settings` | Referral program configuration |
+| `terms_conditions` | Terms and conditions content |
+
+### Key Configuration Parameters
+
+#### Gold Pricing
+| Parameter | Description |
+|-----------|-------------|
+| `buySpreadPercent` | Percentage spread added to buy price |
+| `sellSpreadPercent` | Percentage spread deducted from sell price |
+| `storageFeePercent` | Annual vault storage fee percentage |
+| `minTradeAmount` | Minimum USD amount for trades |
+
+#### Transaction Limits by KYC Tier
+| Tier | Daily Limit | Monthly Limit |
+|------|-------------|---------------|
+| Tier 1 (Basic) | Configurable | Configurable |
+| Tier 2 (Enhanced) | Configurable | Configurable |
+| Tier 3 (Maximum) | Configurable | Configurable |
+
+#### Deposit/Withdrawal Settings
+| Parameter | Description |
+|-----------|-------------|
+| `minDeposit` | Minimum deposit amount (USD) |
+| `maxDepositSingle` | Maximum single deposit (USD) |
+| `dailyDepositLimit` | Daily deposit limit (USD) |
+| `minWithdrawal` | Minimum withdrawal amount (USD) |
+| `maxWithdrawalSingle` | Maximum single withdrawal (USD) |
+| `withdrawalFeePercent` | Percentage fee on withdrawals |
+| `withdrawalFeeFixed` | Fixed fee on withdrawals (USD) |
+
+#### P2P Transfer Settings
+| Parameter | Description |
+|-----------|-------------|
+| `minP2pTransfer` | Minimum P2P transfer amount |
+| `maxP2pTransfer` | Maximum P2P transfer amount |
+| `p2pFeePercent` | P2P transfer fee percentage |
+
+#### Payment Fees
+| Payment Method | Fee Structure |
+|----------------|---------------|
+| Card | `cardFeePercent` + `cardFeeFixed` |
+| Bank Transfer | `bankTransferFeePercent` |
+| Crypto | `cryptoFeePercent` |
+
+---
+
+## User Preferences System
+
+Each user has personalized preferences stored in the `user_preferences` table:
+
+### Notification Preferences
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `emailNotifications` | boolean | true | Master toggle for all emails |
+| `pushNotifications` | boolean | true | Master toggle for push/bell notifications |
+| `transactionAlerts` | boolean | true | Transaction-related notifications |
+| `priceAlerts` | boolean | true | Gold price alerts |
+| `securityAlerts` | boolean | true | Security-related notifications |
+| `marketingEmails` | boolean | false | Marketing and promotional emails |
+
+### Display Preferences
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `displayCurrency` | string | 'USD' | Display amounts in USD/AED/EUR |
+| `language` | string | 'en' | Interface language |
+| `theme` | string | 'system' | Theme: light/dark/system |
+| `compactMode` | boolean | false | Enable compact UI mode |
+
+### Privacy Preferences
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `showBalance` | boolean | true | Show/hide balances on dashboard |
+| `twoFactorReminder` | boolean | true | Show 2FA setup reminder |
+
+### Transfer Preferences
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `requireTransferApproval` | boolean | false | Require accept/reject for incoming transfers |
+| `transferApprovalTimeout` | integer | 24 | Hours before auto-accept (0 = no auto-accept) |
+
+### Currency Conversion Rates
+| Currency | Conversion from USD |
+|----------|---------------------|
+| USD | 1.00 (base) |
+| AED | *3.67 |
+| EUR | *0.92 |
+
+---
+
+## KYC Verification System
+
+### KYC Statuses
+| Status | Description |
+|--------|-------------|
+| `Not Started` | User has not begun KYC |
+| `In Progress` | KYC submission in progress |
+| `Approved` | KYC verified and approved |
+| `Rejected` | KYC rejected (can resubmit) |
+| `Escalated` | Requires manual review |
+| `Pending Review` | Awaiting admin review |
+
+### KYC Tiers
+| Tier | Name | Requirements |
+|------|------|--------------|
+| `tier_1_basic` | Basic | Basic identity verification |
+| `tier_2_enhanced` | Enhanced | Full identity + address verification |
+| `tier_3_corporate` | Corporate | Business documentation + verification |
+
+### KYC Modes
+
+The platform supports two KYC modes:
+
+#### 1. kycAml Mode (Tiered Verification)
+- **Basic**: Basic identity verification
+- **Enhanced**: Full identity + address verification
+- **Corporate**: Business documentation + verification
+
+#### 2. Finatrades Mode
+- **Personal Info**: Name, DOB, nationality, etc.
+- **Documents**: ID document upload (passport, ID card, driver's license)
+- **Liveness Verification**: Selfie/video verification
+
+### KYC Documents Collected
+
+#### Personal KYC
+| Field | Description |
+|-------|-------------|
+| `documentType` | passport, national_id, driver_license |
+| `documentNumber` | Document identification number |
+| `documentExpiryDate` | Document expiry date |
+| `documentFrontUrl` | Front side image URL |
+| `documentBackUrl` | Back side image URL |
+| `selfieUrl` | Selfie for liveness check |
+| `livenessVideoUrl` | Optional liveness video |
+| `livenessScore` | AI-generated liveness score |
+
+#### Corporate KYC
+| Field | Description |
+|-------|-------------|
+| `companyRegistrationNumber` | Company registration ID |
+| `companyName` | Legal company name |
+| `registrationDocumentUrl` | Company registration document |
+| `memorandumUrl` | Memorandum of association |
+| `boardResolutionUrl` | Board resolution document |
+| `businessLicenseUrl` | Business license |
+| `authorizedSignatories` | JSON array of authorized signatories |
+| `ultimateBeneficialOwners` | JSON array of UBOs |
+
+---
+
+## FinaPay - Digital Wallet System
+
+### Wallet Structure
+Each user has a single wallet with:
+| Field | Description |
+|-------|-------------|
+| `goldGrams` | Gold balance in grams (6 decimal precision) |
+| `usdBalance` | USD fiat balance |
+| `eurBalance` | EUR fiat balance |
+
+### Transaction Types
+| Type | Description |
+|------|-------------|
+| `Buy` | Purchase gold with fiat |
+| `Sell` | Sell gold for fiat |
+| `Send` | Send gold to another user |
+| `Receive` | Receive gold from another user |
+| `Swap` | Currency swap |
+| `Deposit` | Add fiat to wallet |
+| `Withdrawal` | Withdraw fiat from wallet |
+
+### Transaction Statuses
+| Status | Description |
+|--------|-------------|
+| `Draft` | Transaction not yet submitted |
+| `Pending` | Awaiting processing |
+| `Pending Verification` | Requires additional verification |
+| `Approved` | Approved by admin |
+| `Processing` | Being processed |
+| `Completed` | Successfully completed |
+| `Failed` | Transaction failed |
+| `Cancelled` | Cancelled by user |
+| `Rejected` | Rejected by admin |
+
+### P2P Transfer Features
+- **Accept/Reject**: Users can require approval for incoming transfers
+- **Auto-Accept Timeout**: Configurable hours before auto-accept
+- **Transfer Limits**: Configurable min/max amounts
+- **Fee Structure**: Percentage-based fees
+
+---
+
+## FinaVault - Gold Storage System
+
+### Vault Holding Types
+| Type | Description |
+|------|-------------|
+| Digital Ownership | Gold owned digitally (Finatrades custody) |
+| Physical Storage | Physical gold stored in vault (Wingold custody) |
+
+### Vault Holding Fields
+| Field | Description |
+|-------|-------------|
+| `goldGrams` | Amount of gold in grams |
+| `vaultLocation` | Physical vault location |
+| `wingoldStorageRef` | Wingold storage reference |
+| `storageType` | 'allocated' or 'pooled' |
+| `status` | 'active', 'pending_withdrawal', 'withdrawn' |
+
+### Default Vault Location
+**Dubai - Wingold & Metals DMCC**
+
+---
+
+## BNSL - Buy Now Sell Later
+
+### Overview
+BNSL allows users to lock gold for a fixed term and earn guaranteed returns.
+
+### Plan Terms and Returns
+| Term | Annual Margin |
+|------|---------------|
+| 12 months | 10% |
+| 24 months | 11% |
+| 36 months | 12% |
+
+### BNSL Plan Structure
+| Field | Description |
+|-------|-------------|
+| `contractId` | Unique contract identifier |
+| `tenorMonths` | Lock period in months |
+| `agreedMarginAnnualPercent` | Agreed annual return percentage |
+| `goldSoldGrams` | Amount of gold locked |
+| `enrollmentPriceUsdPerGram` | Gold price at enrollment |
+| `basePriceComponentUsd` | Base value in USD |
+| `startDate` | Plan start date |
+| `maturityDate` | Plan maturity date |
+
+### BNSL Plan Statuses
+| Status | Description |
+|--------|-------------|
+| `Pending Activation` | Plan created, awaiting activation |
+| `Active` | Plan is active, returns accruing |
+| `Maturing` | Approaching maturity |
+| `Completed` | Plan completed successfully |
+| `Early Termination Requested` | User requested early exit |
+| `Early Terminated` | Early exit processed |
+| `Defaulted` | Plan defaulted |
+| `Cancelled` | Plan cancelled |
+
+### Payout Structure
+- **Accrual**: Returns accrue daily
+- **Payout Frequency**: Quarterly payouts
+- **Payout Method**: Credited as gold grams to wallet
+
+### Early Termination
+| Field | Description |
+|-------|-------------|
+| `adminFeePercent` | Administrative fee percentage |
+| `penaltyPercent` | Early exit penalty percentage |
+| `totalDeductionsUsd` | Total deductions applied |
+| `netValueUsd` | Net value after deductions |
+| `finalGoldGrams` | Gold returned to user |
+
+### Eligibility Requirements
+- Minimum gold: 1 gram
+- Completed KYC verification (Tier 1 or higher)
+- Account in good standing
+- No active disputes
+
+---
+
+## FinaBridge - Trade Finance
+
+### Overview
+FinaBridge facilitates gold-backed trade finance between importers and exporters.
+
+### Trade Case Structure
+| Field | Description |
+|-------|-------------|
+| `caseNumber` | Unique case identifier |
+| `companyName` | Trading company name |
+| `tradeType` | Import or Export |
+| `commodityType` | Type of commodity |
+| `tradeValueUsd` | Total trade value in USD |
+| `buyerName` | Buyer company name |
+| `sellerName` | Seller company name |
+| `originCountry` | Origin country |
+| `destinationCountry` | Destination country |
+
+### Trade Case Statuses
+| Status | Description |
+|--------|-------------|
+| `Draft` | Case in draft mode |
+| `Submitted` | Case submitted for review |
+| `Under Review` | Being reviewed by operations |
+| `Approved` | Approved by compliance |
+| `Active` | Trade is active |
+| `Settled` | Trade completed and settled |
+| `Cancelled` | Trade cancelled |
+| `Rejected` | Trade rejected |
+
+### Approval Workflow
+1. **Operations Approval**: Initial review by operations team
+2. **Compliance Approval**: Compliance team review
+3. **Final Approval**: Trade becomes active
+
+### Risk Levels
+| Level | Description |
+|-------|-------------|
+| `Low` | Low risk trade |
+| `Medium` | Medium risk, standard monitoring |
+| `High` | High risk, enhanced monitoring |
+| `Critical` | Critical risk, escalated review |
+
+### Deal Room Features
+- **Participants**: Buyer, seller, and intermediaries
+- **Document Sharing**: Secure document upload/download
+- **Chat**: Real-time messaging between participants
+- **Agreement Acceptance**: Digital agreement signing
+- **Dispute Resolution**: Formal dispute process
+
+### Trade Documents
+| Document Type | Description |
+|---------------|-------------|
+| Invoice | Commercial invoice |
+| Bill of Lading | Shipping document |
+| Certificate of Origin | Country of origin certificate |
+| Insurance Certificate | Cargo insurance |
+| Packing List | Detailed packing information |
+| Quality Certificate | Quality inspection certificate |
+
+### Shipment Tracking
+| Status | Description |
+|--------|-------------|
+| `Pending` | Shipment not started |
+| `Picked Up` | Cargo picked up |
+| `In Transit` | Cargo in transit |
+| `Customs` | At customs clearance |
+| `Delivered` | Delivered to destination |
+
+### Settlement Process
+1. **Gold Lock**: Gold locked in escrow at trade initiation
+2. **Document Verification**: All documents verified
+3. **Shipment Confirmation**: Shipment delivered and confirmed
+4. **Gold Release**: Gold released to appropriate party
+
+---
+
+## Payment Integrations
+
+### Supported Payment Methods
+
+#### 1. Binance Pay (Crypto)
+| Feature | Description |
+|---------|-------------|
+| **Type** | Cryptocurrency payments |
+| **API** | `bpay.binanceapi.com` |
+| **Flow** | QR code or deeplink |
+| **Webhook** | Real-time payment notifications |
+| **Required Secrets** | `BINANCE_PAY_API_KEY`, `BINANCE_PAY_SECRET_KEY`, `BINANCE_PAY_MERCHANT_ID` |
+
+#### 2. NGenius (Card Payments)
+| Feature | Description |
+|---------|-------------|
+| **Type** | Credit/Debit card payments |
+| **Modes** | Sandbox and Live |
+| **Features** | Saved cards, 3D Secure |
+| **Webhook** | Payment status updates |
+| **Required Secrets** | `NGENIUS_API_KEY`, `NGENIUS_OUTLET_REF` |
+
+#### 3. Stripe (Card Payments)
+| Feature | Description |
+|---------|-------------|
+| **Type** | Credit/Debit card payments |
+| **Webhook** | Payment events |
+| **Features** | Full Stripe integration |
+
+#### 4. Bank Transfer (Fiat)
+| Feature | Description |
+|---------|-------------|
+| **Type** | Manual bank transfers |
+| **Flow** | User submits proof of payment |
+| **Verification** | Admin manual verification |
+
+#### 5. Crypto Deposits
+| Feature | Description |
+|---------|-------------|
+| **Type** | Direct cryptocurrency deposits |
+| **Verification** | Transaction hash verification |
+| **Status Tracking** | Pending, Under Review, Approved, Rejected |
+
+---
+
+## Security Features
+
+### Authentication
+| Feature | Description |
+|---------|-------------|
+| **Method** | Email/password |
+| **Password Hashing** | bcrypt (10 rounds) |
+| **Session Storage** | PostgreSQL with connect-pg-simple |
+| **Session Expiry** | Configurable |
+
+### Multi-Factor Authentication (MFA)
+| Method | Description |
+|--------|-------------|
+| `totp` | Time-based One-Time Password (Google Authenticator) |
+| `sms` | SMS-based OTP |
+| `email` | Email-based OTP |
+
+#### MFA Fields
+| Field | Description |
+|-------|-------------|
+| `mfaEnabled` | Whether MFA is enabled |
+| `mfaMethod` | Selected MFA method |
+| `mfaSecret` | TOTP secret key |
+| `mfaBackupCodes` | JSON array of hashed backup codes |
+
+### Biometric Authentication
+| Field | Description |
+|-------|-------------|
+| `biometricEnabled` | Whether biometric auth is enabled |
+| `biometricDeviceId` | Device identifier for biometric auth |
+
+### Transaction PIN
+- 4-digit PIN required for sensitive operations
+- PIN is hashed before storage
+- Supports PIN reset via email verification
+
+### Security Headers (Helmet.js)
+| Header | Configuration |
+|--------|---------------|
+| CSP | Strict in production, disabled in dev |
+| HSTS | 1-year max-age in production |
+| X-Frame-Options | deny (clickjacking protection) |
+| X-Content-Type-Options | nosniff |
+| Referrer-Policy | strict-origin-when-cross-origin |
+
+### CSRF Protection
+- Custom header validation: `X-Requested-With: XMLHttpRequest`
+- Exempt endpoints: Authentication flows, webhooks, public info
+
+### Idempotency Middleware
+- Redis-based atomic SETNX
+- 24-hour TTL
+- 30-second lock
+- Applied to critical payment routes
+
+---
+
+## Certificate System
+
+### Certificate Types
+| Type | Issuer | Description |
+|------|--------|-------------|
+| `Digital Ownership` | Finatrades | Issued when gold is purchased |
+| `Physical Storage` | Wingold | Confirms physical gold in vault |
+| `Transfer` | Finatrades | Issued when gold moves between users |
+| `BNSL Lock` | Finatrades | Issued when gold is locked into BNSL plan |
+| `Trade Lock` | Finatrades | Issued when FinaBridge reserve is created |
+| `Trade Release` | Finatrades | Issued when FinaBridge reserve is released |
+
+### Certificate Statuses
+| Status | Description |
+|--------|-------------|
+| `Active` | Certificate is valid and active |
+| `Superseded` | Replaced by a newer certificate |
+| `Cancelled` | Certificate has been cancelled |
+| `Expired` | Certificate has expired |
+
+### Certificate Fields
+| Field | Description |
+|-------|-------------|
+| `certificateNumber` | Unique certificate number |
+| `goldGrams` | Gold amount covered |
+| `goldPriceUsdPerGram` | Gold price at issuance |
+| `totalValueUsd` | Total USD value |
+| `issuedAt` | Issuance timestamp |
+| `expiresAt` | Expiry timestamp (optional) |
+| `supersededBy` | ID of superseding certificate |
+
+### Public Certificate Verification
+- Certificates can be verified publicly via certificate number
+- QR code generation for easy verification
+- Verification page shows certificate details and authenticity
+
+---
+
+## Database Schema Overview
+
+### Core Tables
+
+| Table | Description |
+|-------|-------------|
+| `users` | User accounts and authentication |
+| `wallets` | User wallet balances |
+| `transactions` | All transaction records |
+| `notifications` | In-app notifications |
+| `user_preferences` | User preference settings |
+
+### KYC Tables
+
+| Table | Description |
+|-------|-------------|
+| `kyc_submissions` | Legacy KYC submissions |
+| `finatrades_personal_kyc` | Personal KYC submissions |
+| `finatrades_corporate_kyc` | Corporate KYC submissions |
+
+### Vault Tables
+
+| Table | Description |
+|-------|-------------|
+| `vault_holdings` | User vault holdings |
+| `certificates` | Ownership certificates |
+
+### BNSL Tables
+
+| Table | Description |
+|-------|-------------|
+| `bnsl_plan_templates` | BNSL plan templates |
+| `bnsl_template_variants` | Template variants |
+| `bnsl_plans` | User BNSL plans |
+| `bnsl_payouts` | Scheduled/paid payouts |
+| `bnsl_early_terminations` | Early exit records |
+
+### FinaBridge Tables
+
+| Table | Description |
+|-------|-------------|
+| `trade_cases` | Trade finance cases |
+| `trade_documents` | Trade documents |
+| `deal_rooms` | Deal room instances |
+| `deal_room_participants` | Deal room members |
+| `deal_room_messages` | Chat messages |
+| `deal_room_agreement_acceptances` | Agreement signatures |
+| `trade_disputes` | Dispute records |
+| `trade_shipments` | Shipment tracking |
+| `trade_settlements` | Settlement records |
+
+### Payment Tables
+
+| Table | Description |
+|-------|-------------|
+| `deposit_requests` | Fiat deposit requests |
+| `withdrawal_requests` | Withdrawal requests |
+| `crypto_payments` | Crypto payment records |
+| `card_payments` | Card payment records |
+
+### System Tables
+
+| Table | Description |
+|-------|-------------|
+| `platform_config` | Platform configuration |
+| `email_notification_settings` | Email toggle settings |
+| `email_logs` | Email audit logs |
+| `audit_logs` | System audit trail |
+| `geo_restrictions` | Country restrictions |
+| `branding_settings` | Platform branding |
+
+---
+
+## API Architecture
+
+### Endpoint Categories
+
+| Category | Base Path | Description |
+|----------|-----------|-------------|
+| Authentication | `/api/auth/*` | Login, register, password reset |
+| Users | `/api/users/*` | User management |
+| Wallets | `/api/wallets/*` | Wallet operations |
+| Transactions | `/api/transactions/*` | Transaction operations |
+| KYC | `/api/kyc/*` | KYC submissions |
+| BNSL | `/api/bnsl/*` | BNSL operations |
+| FinaBridge | `/api/finabridge/*` | Trade finance |
+| Admin | `/api/admin/*` | Admin operations |
+| Webhooks | `/api/webhooks/*` | Payment webhooks |
+
+### Real-time Features (Socket.IO)
+
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `ledger:sync` | Server → Client | Data sync notification |
+| `balance_update` | Server → Client | Balance changed |
+| `notification` | Server → Client | New notification |
+| `chat:message` | Bidirectional | Chat messages |
 
 ---
 
