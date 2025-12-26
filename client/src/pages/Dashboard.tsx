@@ -45,24 +45,25 @@ interface KpiBoxProps {
   icon: React.ReactNode;
   iconBg?: string;
   valueColor?: string;
+  compact?: boolean;
 }
 
-function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900' }: KpiBoxProps) {
+function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, iconBg = 'bg-gray-100', valueColor = 'text-gray-900', compact = false }: KpiBoxProps) {
   return (
-    <Card className="p-4 bg-white border border-purple-200 shadow-sm rounded-lg hover-lift glass-card">
+    <Card className={`${compact ? 'p-3' : 'p-4'} bg-white border border-purple-200 shadow-sm rounded-lg hover-lift glass-card`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-xs text-gray-500 mb-2">{title}</p>
-          <div className={`text-xl font-bold ${valueColor} mb-1 animate-count`}>{value}</div>
+          <p className={`text-xs text-gray-500 ${compact ? 'mb-1' : 'mb-2'}`}>{title}</p>
+          <div className={`${compact ? 'text-lg' : 'text-xl'} font-bold ${valueColor} mb-1 animate-count`}>{value}</div>
           {secondaryValue && (
-            <p className="text-sm font-medium text-gray-600 mb-1">{secondaryValue}</p>
+            <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-600 mb-1`}>{secondaryValue}</p>
           )}
           {tertiaryValue && (
-            <p className="text-sm font-medium text-gray-600 mb-1">{tertiaryValue}</p>
+            <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-600 mb-1`}>{tertiaryValue}</p>
           )}
           <p className="text-xs text-gray-400">{subtitle}</p>
         </div>
-        <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center icon-btn`}>
+        <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg ${iconBg} flex items-center justify-center icon-btn`}>
           {icon}
         </div>
       </div>
@@ -121,7 +122,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className={`max-w-7xl mx-auto ${compactMode ? 'space-y-3' : 'space-y-6'}`}>
 
         {/* Settlement Assurance Rotating Banner */}
         <div 
@@ -242,6 +243,7 @@ export default function Dashboard() {
                         icon={<Database className="w-5 h-5 text-purple-600" />}
                         iconBg="bg-purple-50"
                         valueColor="text-purple-600"
+                        compact={compactMode}
                       />
                       <KpiBox
                         title={`Total Gold Value (${displayCurrency})`}
@@ -249,6 +251,7 @@ export default function Dashboard() {
                         subtitle={`Worth in ${displayCurrency}`}
                         icon={<DollarSign className="w-5 h-5 text-green-600" />}
                         iconBg="bg-green-50"
+                        compact={compactMode}
                       />
                       <KpiBox
                         title="Total Gold Value (AED)"
@@ -256,6 +259,7 @@ export default function Dashboard() {
                         subtitle="Worth in AED"
                         icon={<DollarSign className="w-5 h-5 text-blue-600" />}
                         iconBg="bg-blue-50"
+                        compact={compactMode}
                       />
                     </>
                   );
@@ -269,6 +273,7 @@ export default function Dashboard() {
                   icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
                   iconBg="bg-purple-50"
                   valueColor="text-purple-600"
+                  compact={compactMode}
                 />
                 <KpiBox
                   title="BNSL Invested"
@@ -277,6 +282,7 @@ export default function Dashboard() {
                   icon={<TrendingUp className="w-5 h-5 text-teal-600" />}
                   iconBg="bg-teal-50"
                   valueColor="text-purple-600"
+                  compact={compactMode}
                 />
                 <KpiBox
                   title="Total Profit"
@@ -285,6 +291,7 @@ export default function Dashboard() {
                   icon={<Coins className="w-5 h-5 text-purple-600" />}
                   iconBg="bg-purple-50"
                   valueColor="text-green-600"
+                  compact={compactMode}
                 />
               </div>
               
