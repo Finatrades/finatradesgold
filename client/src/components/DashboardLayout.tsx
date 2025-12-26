@@ -81,7 +81,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <p className="text-xs text-primary capitalize font-medium">{accountType} Account</p>
                     </div>
                     <Avatar className="h-10 w-10 border-2 border-primary/30 ring-2 ring-primary/10">
-                      <AvatarImage src={user.profilePhoto || ''} alt={user.firstName} />
+                      <AvatarImage 
+                        src={user.profilePhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&backgroundColor=8A2BE2&textColor=ffffff`} 
+                        alt={user.firstName} 
+                      />
                       <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                         {user.firstName[0]}{user.lastName[0]}
                       </AvatarFallback>
