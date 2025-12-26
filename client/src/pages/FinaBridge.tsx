@@ -305,7 +305,7 @@ By signing, you acknowledge that you have read, understood, and agree to all ter
 }
 
 export default function FinaBridge() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { accountType } = useAccountType();
   const [, setLocation] = useLocation();
   const { addNotification } = useNotifications();
@@ -353,6 +353,8 @@ export default function FinaBridge() {
         } else {
           setRole('exporter');
         }
+        // Refresh user data to get updated finabridgeRole
+        await refreshUser();
         toast({ title: 'Disclaimer Accepted', description: `You are now registered as ${selectedRole === 'both' ? 'Importer & Exporter' : selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}.` });
       }
     } catch (error) {
