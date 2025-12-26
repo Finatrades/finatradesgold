@@ -336,10 +336,10 @@ function OverviewSection({ overview, isLoading, metrics }: { overview?: Financia
           loading={isLoading}
         />
         <MetricCard
-          title="Net Position"
-          value={formatCurrency((overview?.totalAUM || 0) - (overview?.totalLiabilities || 0))}
-          icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
-          bg="bg-purple-50"
+          title="Net Profit"
+          value={formatCurrency(overview?.netProfit || 0)}
+          icon={<TrendingUp className="w-5 h-5 text-green-600" />}
+          bg="bg-green-50"
           trend="up"
           loading={isLoading}
         />
