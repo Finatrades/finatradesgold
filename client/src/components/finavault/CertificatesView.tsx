@@ -188,7 +188,8 @@ export default function CertificatesView() {
       if (!res.ok) throw new Error('Failed to fetch certificates');
       return res.json();
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    staleTime: 30000,
   });
 
   const certificates: Certificate[] = data?.certificates || [];
@@ -206,7 +207,10 @@ export default function CertificatesView() {
     setModalOpen(true);
   };
 
-  if (isLoading) {
+  // Show loading if user auth is pending OR initial query load (no data yet)
+  const isInitialLoading = !user?.id || (isLoading && !data);
+  
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
