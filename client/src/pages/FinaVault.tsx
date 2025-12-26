@@ -386,11 +386,22 @@ export default function FinaVault() {
     const groups: { parent: any; children: any[] }[] = [];
     const usedTxIds = new Set<string>();
     
+    // Actions that can have certificates attached (deposits/buys only, not transfers/sends)
+    const canHaveCertificates = (action: string) => {
+      if (!action) return false;
+      const a = action.toLowerCase();
+      return a.includes('deposit') || a.includes('buy') || a === 'add funds' || 
+             a.includes('credit') || a.includes('receive');
+    };
+    
     // Create groups from non-certificate records
     for (const record of nonCertBaseRecords) {
       const txId = record.transactionId;
-      const children = txId ? (certsByTxId.get(txId) || []) : [];
-      if (txId) usedTxIds.add(txId);
+      // Only attach certificates to deposit/buy transactions, not transfers
+      const children = (txId && canHaveCertificates(record.action)) 
+        ? (certsByTxId.get(txId) || []) 
+        : [];
+      if (txId && canHaveCertificates(record.action)) usedTxIds.add(txId);
       groups.push({
         parent: record,
         children
