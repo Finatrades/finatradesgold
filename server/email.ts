@@ -78,6 +78,14 @@ async function logEmail(params: {
 // Check if notification type is enabled
 async function isNotificationEnabled(notificationType: string): Promise<boolean> {
   try {
+    // First check global email notifications setting
+    const { getSystemSettings } = await import("./index");
+    const systemSettings = await getSystemSettings();
+    if (!systemSettings.emailNotificationsEnabled) {
+      return false; // Global toggle is off
+    }
+    
+    // Then check per-notification-type setting
     const [setting] = await db.select()
       .from(emailNotificationSettings)
       .where(eq(emailNotificationSettings.notificationType, notificationType));

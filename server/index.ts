@@ -103,6 +103,124 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
+// System Settings Cache (in-memory with short TTL)
+interface SystemSettingsCache {
+  maintenanceMode: boolean;
+  registrationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  sessionTimeoutMinutes: number;
+  require2fa: boolean;
+  lastFetch: number;
+}
+
+let systemSettingsCache: SystemSettingsCache | null = null;
+const SYSTEM_SETTINGS_CACHE_TTL = 30000; // 30 seconds
+
+export async function getSystemSettings(): Promise<SystemSettingsCache> {
+  const now = Date.now();
+  if (systemSettingsCache && (now - systemSettingsCache.lastFetch) < SYSTEM_SETTINGS_CACHE_TTL) {
+    return systemSettingsCache;
+  }
+
+  try {
+    const configs = await storage.getPlatformConfigsByCategory('system_settings');
+    const settingsMap = new Map<string, string>();
+    for (const config of configs) {
+      settingsMap.set(config.configKey, config.configValue);
+    }
+
+    systemSettingsCache = {
+      maintenanceMode: settingsMap.get('maintenance_mode') === 'true',
+      registrationsEnabled: settingsMap.get('registrations_enabled') !== 'false',
+      emailNotificationsEnabled: settingsMap.get('email_notifications_enabled') !== 'false',
+      sessionTimeoutMinutes: parseInt(settingsMap.get('session_timeout_minutes') || '30', 10),
+      require2fa: settingsMap.get('require_2fa') === 'true',
+      lastFetch: now,
+    };
+  } catch (error) {
+    console.error('[SystemSettings] Failed to fetch settings:', error);
+    if (!systemSettingsCache) {
+      systemSettingsCache = {
+        maintenanceMode: false,
+        registrationsEnabled: true,
+        emailNotificationsEnabled: true,
+        sessionTimeoutMinutes: 30,
+        require2fa: false,
+        lastFetch: now,
+      };
+    }
+  }
+
+  return systemSettingsCache;
+}
+
+// Clear cache when settings change (call this from admin update endpoints)
+export function invalidateSystemSettingsCache() {
+  systemSettingsCache = null;
+}
+
+// Maintenance Mode Middleware - Block non-admin users when enabled
+app.use(async (req, res, next) => {
+  // Skip for static assets and certain paths
+  const skipPaths = [
+    '/api/system/status',
+    '/api/auth/login',
+    '/api/admin/login',
+    '/api/gold-price',
+    '/api/platform-config/public',
+    '/api/branding',
+    '/uploads/',
+    '/assets/',
+    '/@',
+    '/node_modules/',
+  ];
+  
+  if (skipPaths.some(p => req.path.startsWith(p)) || !req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  try {
+    const settings = await getSystemSettings();
+    
+    if (settings.maintenanceMode) {
+      // Allow admin users through
+      if (req.session?.userRole === 'admin') {
+        return next();
+      }
+      
+      // Block all other API requests during maintenance
+      return res.status(503).json({
+        message: 'Platform is currently under maintenance. Please try again later.',
+        maintenanceMode: true,
+      });
+    }
+    
+    // Apply session timeout from settings
+    if (req.session?.cookie && settings.sessionTimeoutMinutes > 0) {
+      req.session.cookie.maxAge = settings.sessionTimeoutMinutes * 60 * 1000;
+    }
+  } catch (error) {
+    console.error('[MaintenanceMiddleware] Error:', error);
+  }
+
+  next();
+});
+
+// System status endpoint (always accessible)
+app.get('/api/system/status', async (req, res) => {
+  try {
+    const settings = await getSystemSettings();
+    res.json({
+      maintenanceMode: settings.maintenanceMode,
+      registrationsEnabled: settings.registrationsEnabled,
+      sessionTimeoutMinutes: settings.sessionTimeoutMinutes,
+      isAdmin: req.session?.userRole === 'admin',
+    });
+  } catch (error) {
+    res.json({ maintenanceMode: false, registrationsEnabled: true, sessionTimeoutMinutes: 30 });
+  }
+});
+
 // CSRF Protection: Require custom header for state-changing requests
 // This prevents CSRF attacks since browsers won't add custom headers to cross-origin requests
 app.use((req, res, next) => {

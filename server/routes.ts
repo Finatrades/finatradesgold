@@ -849,6 +849,15 @@ ${message}
   // Register new user
   app.post("/api/auth/register", async (req, res) => {
     try {
+      // Check if registrations are enabled
+      const { getSystemSettings } = await import("./index");
+      const systemSettings = await getSystemSettings();
+      if (!systemSettings.registrationsEnabled) {
+        return res.status(403).json({ 
+          message: "New registrations are currently disabled. Please try again later." 
+        });
+      }
+      
       const { referralCode, ...restBody } = req.body;
       const userData = insertUserSchema.parse(restBody);
       const existingUser = await storage.getUserByEmail(userData.email);
@@ -22578,6 +22587,12 @@ ${message}
         details: `Updated ${updated.configKey} to ${configValue}`,
       });
       
+      // Invalidate system settings cache when system_settings are updated
+      if (updated.category === 'system_settings') {
+        const { invalidateSystemSettingsCache } = await import("./index");
+        invalidateSystemSettingsCache();
+      }
+      
       res.json({ config: updated });
     } catch (error) {
       console.error("Failed to update platform config:", error);
@@ -22596,6 +22611,7 @@ ${message}
       }
       
       const results: any[] = [];
+      let hasSystemSettingsUpdate = false;
       for (const update of updates) {
         const updated = await storage.updatePlatformConfig(update.id, {
           configValue: String(update.configValue),
@@ -22603,6 +22619,7 @@ ${message}
         });
         if (updated) {
           results.push(updated);
+          if (updated.category === 'system_settings') hasSystemSettingsUpdate = true;
           await storage.createAuditLog({
             entityType: "platform_config",
             entityId: update.id,
@@ -22612,6 +22629,12 @@ ${message}
             details: `Updated ${updated.configKey} to ${update.configValue}`,
           });
         }
+      }
+      
+      // Invalidate system settings cache if any system_settings were updated
+      if (hasSystemSettingsUpdate) {
+        const { invalidateSystemSettingsCache } = await import("./index");
+        invalidateSystemSettingsCache();
       }
       
       res.json({ configs: results, updated: results.length });

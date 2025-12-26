@@ -1,16 +1,17 @@
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import NotFound from "@/pages/not-found";
+import MaintenancePage from "@/pages/MaintenancePage";
 import FinaVault from "@/pages/FinaVault";
 import FinaPay from "@/pages/FinaPay";
 import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
-import Register from "@/pages/Register"; // Renamed component export, file still named Onboarding.tsx for now
+import Register from "@/pages/Register";
 import KYC from "@/pages/KYC";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -229,6 +230,32 @@ import { CMSProvider } from "@/context/CMSContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { DataSyncProvider } from "@/hooks/useDataSync";
 
+function MaintenanceGuard({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const { user } = useAuth();
+  
+  const { data: systemStatus } = useQuery({
+    queryKey: ['system-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/system/status');
+      return res.json();
+    },
+    staleTime: 30000,
+    refetchInterval: 60000,
+  });
+
+  const isAdminRoute = location.startsWith('/admin');
+  const isPublicRoute = ['/', '/finagold', '/login', '/register', '/get-started', '/sign-in', 
+    '/forgot-password', '/reset-password', '/verify-email', '/verify-certificate',
+    '/privacy', '/terms', '/disclaimer'].some(p => location === p || location.startsWith('/finagold'));
+
+  if (systemStatus?.maintenanceMode && !systemStatus?.isAdmin && !isAdminRoute && !isPublicRoute && !user?.role?.includes('admin')) {
+    return <MaintenancePage />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -250,7 +277,9 @@ function App() {
                                   <TooltipProvider>
                                     <Toaster />
                                     <SonnerToaster position="top-right" richColors />
-                                    <Router />
+                                    <MaintenanceGuard>
+                                      <Router />
+                                    </MaintenanceGuard>
                                   </TooltipProvider>
                                 </NotificationProvider>
                               </AccountTypeProvider>
