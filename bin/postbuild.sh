@@ -8,13 +8,13 @@ rm -rf ./.amplify-hosting
 mkdir -p ./.amplify-hosting/compute/default
 mkdir -p ./.amplify-hosting/static
 
-# Build the frontend first
+# Build the frontend first using local vite
 echo "Building frontend..."
-npx vite build --outDir ./.amplify-hosting/static
+./node_modules/.bin/vite build --outDir ./.amplify-hosting/static
 
 # Build the server - externalize build-time only dependencies
 echo "Building server..."
-npx esbuild server/index.ts \
+./node_modules/.bin/esbuild server/index.ts \
   --bundle \
   --platform=node \
   --target=node20 \
