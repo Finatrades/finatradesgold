@@ -19972,7 +19972,7 @@ ${message}
   // Download transaction receipt PDF
   app.get("/api/admin/documents/receipts/:id/download", ensureAdminAsync, async (req, res) => {
     try {
-      const transactionId = parseInt(req.params.id);
+      const transactionId = req.params.id;
       const transaction = await storage.getTransaction(transactionId);
       
       if (!transaction) {
