@@ -5,15 +5,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query';
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, Wallet, 
   Building2, Clock, FileText, Download, RefreshCcw,
   PiggyBank, CreditCard, Vault, BarChart3, PieChart,
   ArrowUpRight, ArrowDownRight, AlertTriangle, CheckCircle2,
-  Loader2, Calendar
+  Loader2, Calendar, FileCheck, Lock, Unlock, Ship, 
+  Coins, Receipt, ScrollText, Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { apiRequest } from '@/lib/queryClient';
 
 interface FinancialOverview {
   totalRevenue: number;
@@ -62,6 +66,70 @@ interface UserFinancialData {
   lastActivity: string;
 }
 
+interface GoldHoldingsSummary {
+  totalGoldGrams: number;
+  freeGoldGrams: number;
+  lockedGoldGrams: number;
+  walletGoldGrams: number;
+  vaultGoldGrams: number;
+  bnslLockedGrams: number;
+  finabridgeLockedGrams: number;
+  goldValueUsd: number;
+  goldPricePerGram: number;
+}
+
+interface CertificateSummary {
+  totalCertificates: number;
+  activeCertificates: number;
+  digitalOwnership: number;
+  physicalStorage: number;
+  transferCertificates: number;
+  bnslCertificates: number;
+  totalGoldGrams: number;
+  certificates: Array<{
+    id: string;
+    certificateNumber: string;
+    type: string;
+    status: string;
+    goldGrams: number;
+    issuedAt: string;
+    userName: string;
+  }>;
+}
+
+interface FinaBridgeSummary {
+  activeCases: number;
+  totalCases: number;
+  goldInEscrow: number;
+  pendingSettlements: number;
+  completedTrades: number;
+  tradeVolumeUsd: number;
+  cases: Array<{
+    id: string;
+    caseNumber: string;
+    counterparty: string;
+    goldGrams: number;
+    status: string;
+    settlementDate: string;
+    companyName: string;
+  }>;
+}
+
+interface FeesSummary {
+  totalFeesCollected: number;
+  transactionFees: number;
+  storageFees: number;
+  bnslInterest: number;
+  spreadRevenue: number;
+  withdrawalFees: number;
+  feeBreakdown: Array<{
+    type: string;
+    amount: number;
+    count: number;
+    percentage: number;
+  }>;
+}
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -106,6 +174,42 @@ export default function FinancialReports() {
     }
   });
 
+  const { data: goldHoldings, isLoading: loadingGold } = useQuery<GoldHoldingsSummary>({
+    queryKey: ['/api/admin/financial/gold-holdings'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/financial/gold-holdings');
+      if (!res.ok) throw new Error('Failed to fetch gold holdings');
+      return res.json();
+    }
+  });
+
+  const { data: certificates, isLoading: loadingCerts } = useQuery<CertificateSummary>({
+    queryKey: ['/api/admin/financial/certificates'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/financial/certificates');
+      if (!res.ok) throw new Error('Failed to fetch certificates');
+      return res.json();
+    }
+  });
+
+  const { data: finaBridge, isLoading: loadingBridge } = useQuery<FinaBridgeSummary>({
+    queryKey: ['/api/admin/financial/finabridge'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/financial/finabridge');
+      if (!res.ok) throw new Error('Failed to fetch FinaBridge');
+      return res.json();
+    }
+  });
+
+  const { data: feesSummary, isLoading: loadingFees } = useQuery<FeesSummary>({
+    queryKey: ['/api/admin/financial/fees', dateRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/financial/fees?range=${dateRange}`);
+      if (!res.ok) throw new Error('Failed to fetch fees summary');
+      return res.json();
+    }
+  });
+
   const isLoading = loadingOverview || loadingMetrics;
 
   return (
@@ -146,12 +250,16 @@ export default function FinancialReports() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 w-full max-w-4xl">
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="revenue" data-testid="tab-revenue">Revenue</TabsTrigger>
+            <TabsTrigger value="gold-holdings" data-testid="tab-gold-holdings">Gold Holdings</TabsTrigger>
+            <TabsTrigger value="certificates" data-testid="tab-certificates">Certificates</TabsTrigger>
             <TabsTrigger value="finapay" data-testid="tab-finapay">FinaPay</TabsTrigger>
             <TabsTrigger value="finavault" data-testid="tab-finavault">FinaVault</TabsTrigger>
             <TabsTrigger value="bnsl" data-testid="tab-bnsl">BNSL</TabsTrigger>
+            <TabsTrigger value="finabridge" data-testid="tab-finabridge">FinaBridge</TabsTrigger>
+            <TabsTrigger value="fees" data-testid="tab-fees">Fees</TabsTrigger>
             <TabsTrigger value="liabilities" data-testid="tab-liabilities">Liabilities</TabsTrigger>
           </TabsList>
 
@@ -161,6 +269,14 @@ export default function FinancialReports() {
 
           <TabsContent value="revenue" className="space-y-6">
             <RevenueSection overview={overview} metrics={metrics} isLoading={isLoading} />
+          </TabsContent>
+
+          <TabsContent value="gold-holdings" className="space-y-6">
+            <GoldHoldingsSection data={goldHoldings} isLoading={loadingGold} />
+          </TabsContent>
+
+          <TabsContent value="certificates" className="space-y-6">
+            <CertificatesSection data={certificates} isLoading={loadingCerts} />
           </TabsContent>
 
           <TabsContent value="finapay" className="space-y-6">
@@ -173,6 +289,14 @@ export default function FinancialReports() {
 
           <TabsContent value="bnsl" className="space-y-6">
             <BNSLSection metrics={metrics?.bnsl} isLoading={loadingMetrics} />
+          </TabsContent>
+
+          <TabsContent value="finabridge" className="space-y-6">
+            <FinaBridgeSection data={finaBridge} isLoading={loadingBridge} />
+          </TabsContent>
+
+          <TabsContent value="fees" className="space-y-6">
+            <FeesSection data={feesSummary} isLoading={loadingFees} />
           </TabsContent>
 
           <TabsContent value="liabilities" className="space-y-6">
@@ -613,6 +737,381 @@ function BNSLSection({ metrics, isLoading }: { metrics?: ProductMetrics['bnsl'];
             <PayoutRow date="Dec 20, 2025" amount={8750} plans={5} />
             <PayoutRow date="Dec 25, 2025" amount={3400} plans={2} />
             <PayoutRow date="Jan 1, 2026" amount={12000} plans={7} />
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+function GoldHoldingsSection({ data, isLoading }: { data?: GoldHoldingsSummary; isLoading: boolean }) {
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Total Gold"
+          value={formatGrams(data?.totalGoldGrams || 0)}
+          icon={<Coins className="w-5 h-5 text-fuchsia-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Free Gold"
+          value={formatGrams(data?.freeGoldGrams || 0)}
+          icon={<Unlock className="w-5 h-5 text-green-600" />}
+          bg="bg-green-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Locked Gold"
+          value={formatGrams(data?.lockedGoldGrams || 0)}
+          icon={<Lock className="w-5 h-5 text-purple-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Total Value (USD)"
+          value={formatCurrency(data?.goldValueUsd || 0)}
+          icon={<DollarSign className="w-5 h-5 text-green-600" />}
+          bg="bg-green-50"
+          loading={isLoading}
+        />
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Gold Distribution
+            </CardTitle>
+            <CardDescription>Breakdown by location and type</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium">Wallet Gold</span>
+                </div>
+                <span className="font-bold text-blue-600">{formatGrams(data?.walletGoldGrams || 0)}</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="h-2 rounded-full bg-blue-500" style={{ width: `${((data?.walletGoldGrams || 0) / (data?.totalGoldGrams || 1)) * 100}%` }} />
+              </div>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <Vault className="w-4 h-4 text-fuchsia-600" />
+                  <span className="font-medium">Vault Gold</span>
+                </div>
+                <span className="font-bold text-fuchsia-600">{formatGrams(data?.vaultGoldGrams || 0)}</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="h-2 rounded-full bg-purple-500" style={{ width: `${((data?.vaultGoldGrams || 0) / (data?.totalGoldGrams || 1)) * 100}%` }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5" />
+              Locked Gold Breakdown
+            </CardTitle>
+            <CardDescription>Gold in active plans and trades</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                  <span className="font-medium">BNSL Locked</span>
+                </div>
+                <span className="font-bold text-purple-600">{formatGrams(data?.bnslLockedGrams || 0)}</span>
+              </div>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Ship className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium">FinaBridge Locked</span>
+                </div>
+                <span className="font-bold text-blue-600">{formatGrams(data?.finabridgeLockedGrams || 0)}</span>
+              </div>
+            </div>
+            <div className="p-4 border rounded-lg bg-gray-50">
+              <div className="flex justify-between items-center">
+                <span className="font-bold">Total Locked</span>
+                <span className="font-bold">{formatGrams(data?.lockedGoldGrams || 0)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+function CertificatesSection({ data, isLoading }: { data?: CertificateSummary; isLoading: boolean }) {
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Total Certificates"
+          value={data?.totalCertificates?.toString() || '0'}
+          icon={<ScrollText className="w-5 h-5 text-purple-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Active Certificates"
+          value={data?.activeCertificates?.toString() || '0'}
+          icon={<FileCheck className="w-5 h-5 text-green-600" />}
+          bg="bg-green-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Digital Ownership"
+          value={data?.digitalOwnership?.toString() || '0'}
+          icon={<FileText className="w-5 h-5 text-blue-600" />}
+          bg="bg-blue-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Physical Storage"
+          value={data?.physicalStorage?.toString() || '0'}
+          icon={<Vault className="w-5 h-5 text-fuchsia-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Certificates</CardTitle>
+          <CardDescription>Latest issued certificates across all users</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <table className="w-full">
+              <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <tr>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">Certificate ID</th>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">User</th>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">Type</th>
+                  <th className="text-right py-4 px-4 font-semibold tracking-wide">Gold (g)</th>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">Status</th>
+                  <th className="text-left py-4 px-4 font-semibold tracking-wide">Issued</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {data?.certificates?.slice(0, 15).map((cert, index) => (
+                  <tr key={cert.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
+                    <td className="py-3 px-4 font-mono text-sm">{cert.certificateNumber}</td>
+                    <td className="py-3 px-4">{cert.userName}</td>
+                    <td className="py-3 px-4">
+                      <Badge variant={cert.type === 'Digital Ownership' ? 'default' : 'secondary'}>
+                        {cert.type}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-fuchsia-600">
+                      {formatGrams(cert.goldGrams)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={cert.status === 'Active' ? 'bg-green-100 text-green-700' : ''}>
+                        {cert.status}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-500">
+                      {format(new Date(cert.issuedAt), 'MMM d, yyyy')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function FinaBridgeSection({ data, isLoading }: { data?: FinaBridgeSummary; isLoading: boolean }) {
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Active Cases"
+          value={data?.activeCases?.toString() || '0'}
+          icon={<Ship className="w-5 h-5 text-blue-600" />}
+          bg="bg-blue-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Gold in Escrow"
+          value={formatGrams(data?.goldInEscrow || 0)}
+          icon={<Lock className="w-5 h-5 text-fuchsia-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Pending Settlements"
+          value={data?.pendingSettlements?.toString() || '0'}
+          icon={<Clock className="w-5 h-5 text-purple-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Trade Volume"
+          value={formatCurrency(data?.tradeVolumeUsd || 0)}
+          icon={<TrendingUp className="w-5 h-5 text-green-600" />}
+          bg="bg-green-50"
+          loading={isLoading}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Trade Finance Cases</CardTitle>
+          <CardDescription>Corporate trade finance activity</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {data?.cases && data.cases.length > 0 ? (
+            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+              <table className="w-full">
+                <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                  <tr>
+                    <th className="text-left py-4 px-4 font-semibold tracking-wide">Case ID</th>
+                    <th className="text-left py-4 px-4 font-semibold tracking-wide">Company</th>
+                    <th className="text-left py-4 px-4 font-semibold tracking-wide">Counterparty</th>
+                    <th className="text-right py-4 px-4 font-semibold tracking-wide">Gold (g)</th>
+                    <th className="text-left py-4 px-4 font-semibold tracking-wide">Status</th>
+                    <th className="text-left py-4 px-4 font-semibold tracking-wide">Settlement</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.cases.slice(0, 10).map((c, index) => (
+                    <tr key={c.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
+                      <td className="py-3 px-4 font-mono text-sm">{c.caseNumber}</td>
+                      <td className="py-3 px-4">{c.companyName}</td>
+                      <td className="py-3 px-4">{c.counterparty}</td>
+                      <td className="py-3 px-4 text-right font-semibold text-fuchsia-600">
+                        {formatGrams(c.goldGrams)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant={c.status === 'Active' ? 'default' : 'secondary'}>
+                          {c.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-500">
+                        {c.settlementDate ? format(new Date(c.settlementDate), 'MMM d, yyyy') : 'TBD'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Ship className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No trade finance cases yet</p>
+              <p className="text-sm text-gray-400">Corporate trade cases will appear here</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function FeesSection({ data, isLoading }: { data?: FeesSummary; isLoading: boolean }) {
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Total Fees Collected"
+          value={formatCurrency(data?.totalFeesCollected || 0)}
+          icon={<Receipt className="w-5 h-5 text-green-600" />}
+          bg="bg-green-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Transaction Fees"
+          value={formatCurrency(data?.transactionFees || 0)}
+          icon={<CreditCard className="w-5 h-5 text-blue-600" />}
+          bg="bg-blue-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Storage Fees"
+          value={formatCurrency(data?.storageFees || 0)}
+          icon={<Vault className="w-5 h-5 text-fuchsia-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+        <MetricCard
+          title="Spread Revenue"
+          value={formatCurrency(data?.spreadRevenue || 0)}
+          icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
+          bg="bg-purple-50"
+          loading={isLoading}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Fee Breakdown by Type</CardTitle>
+          <CardDescription>Revenue sources from platform fees</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {data?.feeBreakdown?.map((fee, idx) => (
+              <div key={idx} className="p-4 border rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-purple-600" />
+                    <span className="font-medium">{fee.type}</span>
+                    <Badge variant="secondary" className="text-xs">{fee.count} transactions</Badge>
+                  </div>
+                  <span className="font-bold text-green-600">{formatCurrency(fee.amount)}</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="h-2 rounded-full bg-purple-500" style={{ width: `${fee.percentage}%` }} />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{fee.percentage.toFixed(1)}% of total fees</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>BNSL Interest Income</CardTitle>
+            <CardDescription>Revenue from Buy Now Sell Later plans</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-6">
+              <p className="text-4xl font-bold text-purple-600">{formatCurrency(data?.bnslInterest || 0)}</p>
+              <p className="text-sm text-gray-500 mt-2">Interest earned from active BNSL plans</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Withdrawal Fees</CardTitle>
+            <CardDescription>Fees collected from user withdrawals</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-6">
+              <p className="text-4xl font-bold text-blue-600">{formatCurrency(data?.withdrawalFees || 0)}</p>
+              <p className="text-sm text-gray-500 mt-2">Total withdrawal processing fees</p>
+            </div>
           </CardContent>
         </Card>
       </div>

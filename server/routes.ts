@@ -17538,6 +17538,272 @@ ${message}
     }
   });
 
+  // Gold Holdings Summary - Free vs locked gold breakdown
+  app.get("/api/admin/financial/gold-holdings", async (req, res) => {
+    try {
+      const GOLD_PRICE_USD = 93.50;
+      
+      const allUsers = await storage.getAllUsers();
+      const allWallets = await Promise.all(
+        allUsers.map(user => storage.getWallet(user.id))
+      );
+      
+      // Calculate wallet gold
+      let walletGoldGrams = 0;
+      for (const wallet of allWallets) {
+        if (wallet) {
+          walletGoldGrams += parseFloat(wallet.goldGrams || '0');
+        }
+      }
+      
+      // Calculate vault gold
+      const vaultHoldings = await storage.getAllVaultHoldings();
+      let vaultGoldGrams = 0;
+      for (const holding of vaultHoldings) {
+        vaultGoldGrams += parseFloat(holding.goldGrams || '0');
+      }
+      
+      // Calculate BNSL locked gold
+      const bnslPlans = await storage.getAllBnslPlans();
+      let bnslLockedGrams = 0;
+      for (const plan of bnslPlans) {
+        if (plan.status === 'Active' || plan.status === 'Pending Activation') {
+          bnslLockedGrams += parseFloat(plan.goldGrams || '0');
+        }
+      }
+      
+      // Calculate FinaBridge locked gold (from trade cases if any)
+      const tradeCases = await storage.getAllTradeCases();
+      let finabridgeLockedGrams = 0;
+      for (const tc of tradeCases) {
+        if (tc.status === 'Active' || tc.status === 'Pending') {
+          finabridgeLockedGrams += parseFloat(tc.goldAmountGrams || '0');
+        }
+      }
+      
+      const totalGoldGrams = walletGoldGrams + vaultGoldGrams;
+      const lockedGoldGrams = bnslLockedGrams + finabridgeLockedGrams;
+      const freeGoldGrams = totalGoldGrams - lockedGoldGrams;
+      
+      res.json({
+        totalGoldGrams,
+        freeGoldGrams: Math.max(0, freeGoldGrams),
+        lockedGoldGrams,
+        walletGoldGrams,
+        vaultGoldGrams,
+        bnslLockedGrams,
+        finabridgeLockedGrams,
+        goldValueUsd: totalGoldGrams * GOLD_PRICE_USD,
+        goldPricePerGram: GOLD_PRICE_USD
+      });
+    } catch (error) {
+      console.error("Failed to get gold holdings:", error);
+      res.status(400).json({ message: "Failed to get gold holdings" });
+    }
+  });
+
+  // Certificates Summary - All certificates across users
+  app.get("/api/admin/financial/certificates", async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, `${u.firstName} ${u.lastName}`]));
+      
+      // Get all certificates (using vault certificates table)
+      const allCertificates = await storage.getAllCertificates();
+      
+      let digitalOwnership = 0;
+      let physicalStorage = 0;
+      let transferCertificates = 0;
+      let bnslCertificates = 0;
+      let activeCertificates = 0;
+      let totalGoldGrams = 0;
+      
+      const certificatesWithUser = allCertificates.map(cert => {
+        const goldGrams = parseFloat(cert.goldGrams || '0');
+        totalGoldGrams += goldGrams;
+        
+        if (cert.status === 'Active') activeCertificates++;
+        
+        if (cert.type === 'Digital Ownership') digitalOwnership++;
+        else if (cert.type === 'Physical Storage') physicalStorage++;
+        else if (cert.type === 'Transfer') transferCertificates++;
+        else if (cert.type === 'BNSL') bnslCertificates++;
+        
+        return {
+          id: cert.id,
+          certificateNumber: cert.certificateNumber,
+          type: cert.type,
+          status: cert.status,
+          goldGrams,
+          issuedAt: cert.createdAt,
+          userName: userMap.get(cert.userId) || 'Unknown'
+        };
+      });
+      
+      // Sort by most recent
+      certificatesWithUser.sort((a, b) => 
+        new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime()
+      );
+      
+      res.json({
+        totalCertificates: allCertificates.length,
+        activeCertificates,
+        digitalOwnership,
+        physicalStorage,
+        transferCertificates,
+        bnslCertificates,
+        totalGoldGrams,
+        certificates: certificatesWithUser
+      });
+    } catch (error) {
+      console.error("Failed to get certificates:", error);
+      res.status(400).json({ message: "Failed to get certificates" });
+    }
+  });
+
+  // FinaBridge Summary - Trade finance cases
+  app.get("/api/admin/financial/finabridge", async (req, res) => {
+    try {
+      const GOLD_PRICE_USD = 93.50;
+      const tradeCases = await storage.getAllTradeCases();
+      const allUsers = await storage.getAllUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, u.companyName || `${u.firstName} ${u.lastName}`]));
+      
+      let activeCases = 0;
+      let goldInEscrow = 0;
+      let pendingSettlements = 0;
+      let completedTrades = 0;
+      let tradeVolumeUsd = 0;
+      
+      const casesData = tradeCases.map(tc => {
+        const goldGrams = parseFloat(tc.goldAmountGrams || '0');
+        
+        if (tc.status === 'Active') {
+          activeCases++;
+          goldInEscrow += goldGrams;
+        }
+        if (tc.status === 'Pending') pendingSettlements++;
+        if (tc.status === 'Completed') {
+          completedTrades++;
+          tradeVolumeUsd += goldGrams * GOLD_PRICE_USD;
+        }
+        
+        return {
+          id: tc.id,
+          caseNumber: tc.caseNumber || `FB-${tc.id.slice(0,8).toUpperCase()}`,
+          counterparty: tc.counterpartyName || 'N/A',
+          goldGrams,
+          status: tc.status,
+          settlementDate: tc.settlementDate,
+          companyName: userMap.get(tc.userId) || 'Unknown'
+        };
+      });
+      
+      res.json({
+        activeCases,
+        totalCases: tradeCases.length,
+        goldInEscrow,
+        pendingSettlements,
+        completedTrades,
+        tradeVolumeUsd,
+        cases: casesData
+      });
+    } catch (error) {
+      console.error("Failed to get FinaBridge data:", error);
+      res.status(400).json({ message: "Failed to get FinaBridge data" });
+    }
+  });
+
+  // Fees Summary - Platform revenue from fees
+  app.get("/api/admin/financial/fees", async (req, res) => {
+    try {
+      const GOLD_PRICE_USD = 93.50;
+      
+      // Get platform config for fee rates
+      const platformConfigs = await storage.getAllPlatformConfigs();
+      const configMap = new Map<string, string>();
+      for (const config of platformConfigs) {
+        configMap.set(config.configKey, config.configValue);
+      }
+      
+      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
+      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
+      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
+      const withdrawalFeePercent = parseFloat(configMap.get('withdrawal_fee_percent') || '0');
+      
+      // Get all transactions
+      const allTransactions = await storage.getAllTransactions();
+      
+      let transactionFees = 0;
+      let spreadRevenue = 0;
+      let withdrawalFees = 0;
+      let buyCount = 0;
+      let sellCount = 0;
+      let withdrawalCount = 0;
+      
+      for (const tx of allTransactions) {
+        if (tx.status !== 'Completed') continue;
+        
+        const txValue = parseFloat(tx.amountUsd || '0') || 
+          (parseFloat(tx.amountGold || '0') * GOLD_PRICE_USD);
+        
+        if (tx.type === 'Buy') {
+          spreadRevenue += txValue * (buySpreadPercent / 100);
+          buyCount++;
+        } else if (tx.type === 'Sell') {
+          spreadRevenue += txValue * (sellSpreadPercent / 100);
+          sellCount++;
+        } else if (tx.type === 'Withdrawal') {
+          withdrawalFees += txValue * (withdrawalFeePercent / 100);
+          withdrawalCount++;
+        }
+      }
+      
+      transactionFees = spreadRevenue;
+      
+      // Calculate storage fees
+      const vaultHoldings = await storage.getAllVaultHoldings();
+      let storageFees = 0;
+      for (const holding of vaultHoldings) {
+        const goldGrams = parseFloat(holding.goldGrams || '0');
+        storageFees += goldGrams * GOLD_PRICE_USD * (storageFeePercent / 100);
+      }
+      
+      // BNSL Interest
+      const bnslPlans = await storage.getAllBnslPlans();
+      let bnslInterest = 0;
+      for (const plan of bnslPlans) {
+        if (plan.status === 'Active' || plan.status === 'Pending Activation') {
+          const monthsElapsed = Math.floor((Date.now() - new Date(plan.createdAt!).getTime()) / (30 * 24 * 60 * 60 * 1000));
+          const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
+          bnslInterest += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsElapsed;
+        }
+      }
+      
+      const totalFeesCollected = transactionFees + storageFees + bnslInterest + withdrawalFees;
+      
+      const feeBreakdown = [
+        { type: 'Buy/Sell Spread', amount: spreadRevenue, count: buyCount + sellCount, percentage: totalFeesCollected > 0 ? (spreadRevenue / totalFeesCollected) * 100 : 0 },
+        { type: 'Storage Fees', amount: storageFees, count: vaultHoldings.length, percentage: totalFeesCollected > 0 ? (storageFees / totalFeesCollected) * 100 : 0 },
+        { type: 'BNSL Interest', amount: bnslInterest, count: bnslPlans.filter(p => p.status === 'Active').length, percentage: totalFeesCollected > 0 ? (bnslInterest / totalFeesCollected) * 100 : 0 },
+        { type: 'Withdrawal Fees', amount: withdrawalFees, count: withdrawalCount, percentage: totalFeesCollected > 0 ? (withdrawalFees / totalFeesCollected) * 100 : 0 }
+      ].filter(f => f.amount > 0);
+      
+      res.json({
+        totalFeesCollected,
+        transactionFees,
+        storageFees,
+        bnslInterest,
+        spreadRevenue,
+        withdrawalFees,
+        feeBreakdown
+      });
+    } catch (error) {
+      console.error("Failed to get fees summary:", error);
+      res.status(400).json({ message: "Failed to get fees summary" });
+    }
+  });
+
   // ============================================================================
   // ACCOUNT STATEMENTS (Admin)
   // ============================================================================
