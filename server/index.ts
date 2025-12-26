@@ -130,6 +130,7 @@ app.use((req, res, next) => {
     '/api/branding',
     '/api/fees',
     '/api/verify-certificate',
+    '/api/certificates/verify',
     // External webhooks (no browser context)
     '/api/webhooks',
     '/api/binancepay/webhook',
