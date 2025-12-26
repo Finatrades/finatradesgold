@@ -484,7 +484,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               <h3 className="text-2xl font-bold text-foreground mb-2">Request Submitted!</h3>
               <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
                 Your withdrawal request for {grams}g of gold has been submitted. <br />
-                <span className="text-secondary font-bold">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> will be sent via {withdrawalMethod} once approved.
+                <span className="text-primary font-bold">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> will be sent via {withdrawalMethod} once approved.
               </p>
               <p className="text-sm text-muted-foreground mb-6">
                 <Clock className="w-4 h-4 inline mr-1" />
@@ -503,9 +503,9 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
 
       {/* Right Column: Market Info */}
       <div className="space-y-6">
-        <Card className="bg-secondary/5 border-secondary/20 backdrop-blur-sm sticky top-24">
+        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border-purple-200 dark:border-purple-800 backdrop-blur-sm sticky top-24">
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-secondary">Market Snapshot</CardTitle>
+            <CardTitle className="text-lg font-bold text-primary">Market Snapshot</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
@@ -520,7 +520,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               </p>
             </div>
             
-            <Separator className="bg-secondary/20" />
+            <Separator className="bg-purple-200 dark:bg-purple-800" />
             
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
@@ -529,11 +529,11 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Value (USD)</span>
-                <span className="text-secondary font-bold">${(vaultBalance * goldPriceUsd).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="text-primary font-bold">${(vaultBalance * goldPriceUsd).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
-            <div className="p-3 bg-muted/50 rounded text-xs text-muted-foreground leading-relaxed">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded text-xs text-muted-foreground leading-relaxed">
               <AlertCircle className="w-3 h-3 inline mr-1 mb-0.5" />
               All withdrawal requests require admin approval. Processing times vary by method.
             </div>
