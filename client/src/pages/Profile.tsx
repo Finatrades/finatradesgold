@@ -9,22 +9,17 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail, Phone, MapPin, Shield, Key, History, Edit, Save, Camera, ArrowRight, AlertTriangle, Download, FileText, Loader2, Trash2, Fingerprint, Calendar, Wallet } from 'lucide-react';
-import BiometricSettings from '@/components/BiometricSettings';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { User, Building, Mail, Phone, MapPin, Shield, History, Edit, Save, Camera, ArrowRight, Download, FileText, Loader2, Calendar, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link, useLocation } from 'wouter';
+import { Link } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { format, subMonths, startOfMonth, endOfMonth, subDays } from 'date-fns';
 
 export default function Profile() {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { accountType } = useAccountType();
-  const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
   const [statementFrom, setStatementFrom] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [statementTo, setStatementTo] = useState(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [isGeneratingStatement, setIsGeneratingStatement] = useState(false);
@@ -69,36 +64,6 @@ export default function Profile() {
 
   const getInitials = () => {
     return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`;
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!deletePassword) {
-      toast.error("Password required", {
-        description: "Please enter your password to confirm deletion"
-      });
-      return;
-    }
-    
-    setIsDeleting(true);
-    try {
-      await apiRequest('DELETE', `/api/users/${user.id}`, {
-        password: deletePassword
-      });
-      
-      toast.success("Account deleted", {
-        description: "Your account has been permanently deleted."
-      });
-      
-      logout();
-      setLocation('/');
-    } catch (error) {
-      toast.error("Failed to delete account", {
-        description: error instanceof Error ? error.message : "Could not delete your account"
-      });
-    } finally {
-      setIsDeleting(false);
-      setDeletePassword('');
-    }
   };
 
   const isKycApproved = user.kycStatus === 'Approved';
@@ -502,102 +467,18 @@ export default function Profile() {
                 <Card className="border-border">
                   <CardHeader>
                     <CardTitle>Security Settings</CardTitle>
-                    <CardDescription>Manage your password and 2FA settings.</CardDescription>
+                    <CardDescription>Manage your password, 2FA, transaction PIN, and account.</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                      <Label>Current Password</Label>
-                      <Input type="password" placeholder="••••••••" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>New Password</Label>
-                        <Input type="password" placeholder="••••••••" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Confirm New Password</Label>
-                        <Input type="password" placeholder="••••••••" />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-full text-primary">
-                          <Shield className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="font-medium">Two-Factor Authentication</p>
-                          <p className="text-xs text-muted-foreground">Secure your account with 2FA.</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">Enable 2FA</Button>
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button>Update Password</Button>
-                  </CardFooter>
-                </Card>
-
-                {/* Biometric Authentication */}
-                <div className="mt-6">
-                  <BiometricSettings />
-                </div>
-
-                {/* Danger Zone */}
-                <Card className="border-red-200 mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-red-600 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5" />
-                      Danger Zone
-                    </CardTitle>
-                    <CardDescription>Irreversible actions for your account.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
-                      <div>
-                        <p className="font-medium text-red-700">Delete Account</p>
-                        <p className="text-sm text-red-600">Permanently delete your account and all data. This cannot be undone.</p>
-                      </div>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm" data-testid="button-delete-account">
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete Account
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-                              <AlertTriangle className="w-5 h-5" />
-                              Delete Your Account?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. All your data, transactions, and wallet balances will be permanently deleted.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <div className="space-y-2 py-4">
-                            <Label htmlFor="delete-password">Enter your password to confirm:</Label>
-                            <Input
-                              id="delete-password"
-                              type="password"
-                              value={deletePassword}
-                              onChange={(e) => setDeletePassword(e.target.value)}
-                              placeholder="Your password"
-                              data-testid="input-delete-password"
-                            />
-                          </div>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setDeletePassword('')}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={handleDeleteAccount}
-                              disabled={isDeleting || !deletePassword}
-                              className="bg-red-600 hover:bg-red-700"
-                              data-testid="button-confirm-delete"
-                            >
-                              {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                              Delete Permanently
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        For full security settings including Two-Factor Authentication, Transaction PIN, Biometric Authentication, password management, and account deletion, visit the dedicated Security page.
+                      </p>
+                      <Link href="/security">
+                        <Button className="w-full" data-testid="button-goto-security">
+                          <Shield className="w-4 h-4 mr-2" /> Go to Security Settings
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
@@ -610,12 +491,16 @@ export default function Profile() {
                     <CardDescription>Choose how you want to be notified.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {['Email Notifications', 'Push Notifications', 'SMS Alerts', 'Marketing Updates'].map((item) => (
-                      <div key={item} className="flex items-center justify-between py-2">
-                        <Label className="font-medium">{item}</Label>
-                        <input type="checkbox" className="toggle toggle-primary" defaultChecked />
-                      </div>
-                    ))}
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Manage all your notification preferences including email, push notifications, and alert settings in the Settings page.
+                      </p>
+                      <Link href="/settings">
+                        <Button className="w-full" data-testid="button-goto-settings">
+                          <Edit className="w-4 h-4 mr-2" /> Go to Settings
+                        </Button>
+                      </Link>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

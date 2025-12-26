@@ -7,15 +7,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Shield, Smartphone, Key, Copy, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Lock, KeyRound, LockKeyhole } from 'lucide-react';
+import { Shield, Smartphone, Key, Copy, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Lock, KeyRound, LockKeyhole, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useLocation } from 'wouter';
+import BiometricSettings from '@/components/BiometricSettings';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function Security() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [, setLocation] = useLocation();
+  
+  // Delete account states
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // MFA States
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -283,6 +290,36 @@ export default function Security() {
     setBackupCodes([]);
   };
 
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error("Password required", {
+        description: "Please enter your password to confirm deletion"
+      });
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      await apiRequest('DELETE', `/api/users/${user?.id}`, {
+        password: deletePassword
+      });
+      
+      toast.success("Account deleted", {
+        description: "Your account has been permanently deleted."
+      });
+      
+      logout();
+      setLocation('/');
+    } catch (error) {
+      toast.error("Failed to delete account", {
+        description: error instanceof Error ? error.message : "Could not delete your account"
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeletePassword('');
+    }
+  };
+
   if (!user) {
     setLocation('/login');
     return null;
@@ -478,6 +515,69 @@ export default function Security() {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Biometric Authentication */}
+        <BiometricSettings />
+
+        {/* Danger Zone - Delete Account */}
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-600 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription>Irreversible actions for your account.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
+              <div>
+                <p className="font-medium text-red-700">Delete Account</p>
+                <p className="text-sm text-red-600">Permanently delete your account and all data. This cannot be undone.</p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" data-testid="button-delete-account">
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete Account
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                      <AlertTriangle className="w-5 h-5" />
+                      Delete Your Account?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. All your data, transactions, and wallet balances will be permanently deleted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="space-y-2 py-4">
+                    <Label htmlFor="delete-password">Enter your password to confirm:</Label>
+                    <Input
+                      id="delete-password"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Your password"
+                      data-testid="input-delete-password"
+                    />
+                  </div>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeletePassword('')}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAccount}
+                      disabled={isDeleting || !deletePassword}
+                      className="bg-red-600 hover:bg-red-700"
+                      data-testid="button-confirm-delete"
+                    >
+                      {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                      Delete Permanently
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </CardContent>
         </Card>
 
