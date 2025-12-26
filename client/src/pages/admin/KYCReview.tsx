@@ -87,8 +87,12 @@ function DocumentViewer({
   
   // Create blob URL for PDF to avoid iframe security restrictions
   const [pdfBlobUrl, setPdfBlobUrl] = React.useState<string>('');
+  const [pdfLoading, setPdfLoading] = React.useState(true);
+  const [pdfError, setPdfError] = React.useState(false);
   
   React.useEffect(() => {
+    setPdfLoading(true);
+    setPdfError(false);
     if (isPdf && documentUrl.startsWith('data:')) {
       const blobUrl = base64ToBlobUrl(documentUrl);
       setPdfBlobUrl(blobUrl);
@@ -180,12 +184,38 @@ function DocumentViewer({
         <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[75vh] bg-gray-100 rounded-lg p-4">
           {isPdf ? (
             pdfBlobUrl ? (
-              <iframe 
-                src={pdfBlobUrl}
-                className="w-full h-[70vh] border-0 rounded bg-white"
-                title={documentName}
-                data-testid="iframe-document-preview"
-              />
+              <div className="w-full h-[70vh] relative">
+                {pdfLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded">
+                    <FileText className="w-16 h-16 mb-4 text-gray-400 animate-pulse" />
+                    <p className="text-gray-500">Loading PDF...</p>
+                  </div>
+                )}
+                {pdfError ? (
+                  <div className="flex flex-col items-center justify-center h-full bg-white rounded p-8">
+                    <FileText className="w-16 h-16 mb-4 text-gray-400" />
+                    <p className="text-gray-700 font-medium mb-2">PDF Preview Unavailable</p>
+                    <p className="text-gray-500 text-sm mb-4 text-center">
+                      Your browser may not support embedded PDF viewing.
+                    </p>
+                    <Button variant="default" onClick={handleOpenInNewTab} data-testid="button-pdf-fallback">
+                      Open PDF in New Tab
+                    </Button>
+                  </div>
+                ) : (
+                  <iframe 
+                    src={pdfBlobUrl}
+                    className="w-full h-full border-0 rounded bg-white"
+                    title={documentName}
+                    data-testid="iframe-document-preview"
+                    onLoad={() => setPdfLoading(false)}
+                    onError={() => {
+                      setPdfLoading(false);
+                      setPdfError(true);
+                    }}
+                  />
+                )}
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-gray-500">
                 <FileText className="w-16 h-16 mb-4 animate-pulse" />
