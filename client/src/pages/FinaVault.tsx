@@ -334,7 +334,10 @@ export default function FinaVault() {
   // Check if there are FinaBridge transactions to avoid duplicate entries from Trade Release certificates
   const hasFinaBridgeTransactions = transactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
   
-  const certificates = certificatesData?.certificates || [];
+  // Handle both cases: certificatesData might be { certificates: [...] } or just [...] directly
+  const certificates = Array.isArray(certificatesData) 
+    ? certificatesData 
+    : (certificatesData?.certificates || []);
   const certificateRecords = certificates
     .filter((cert: any) => {
       // Include Physical Storage and Digital Ownership certificates
@@ -385,13 +388,6 @@ export default function FinaVault() {
   
   // All certificates (normalized, from API data)
   const allCertificates = certificateRecords;
-  
-  // Debug logging
-  console.log('[FinaVault Debug] certificatesData:', certificatesData);
-  console.log('[FinaVault Debug] certificates (raw):', certificates.length, certificates.slice(0, 2));
-  console.log('[FinaVault Debug] certificateRecords (filtered):', certificateRecords.length, certificateRecords.slice(0, 2));
-  console.log('[FinaVault Debug] ledgerEntries:', ledgerEntries.length, ledgerEntries.slice(0, 2));
-  console.log('[FinaVault Debug] baseRecords:', baseRecords.length, baseRecords.slice(0, 2));
 
   // Group entries: main transaction entries are parents, certificates are children
   // Certificates (Physical Storage, Digital Ownership) should ONLY appear as children, never as top-level
