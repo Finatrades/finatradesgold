@@ -17539,7 +17539,7 @@ ${message}
   });
 
   // Gold Holdings Summary - Free vs locked gold breakdown
-  app.get("/api/admin/financial/gold-holdings", async (req, res) => {
+  app.get("/api/admin/financial/gold-holdings", ensureAdminAsync, async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
       
@@ -17603,7 +17603,7 @@ ${message}
   });
 
   // Certificates Summary - All certificates across users
-  app.get("/api/admin/financial/certificates", async (req, res) => {
+  app.get("/api/admin/financial/certificates", ensureAdminAsync, async (req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
       const userMap = new Map(allUsers.map(u => [u.id, `${u.firstName} ${u.lastName}`]));
@@ -17662,7 +17662,7 @@ ${message}
   });
 
   // FinaBridge Summary - Trade finance cases
-  app.get("/api/admin/financial/finabridge", async (req, res) => {
+  app.get("/api/admin/financial/finabridge", ensureAdminAsync, async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
       const tradeCases = await storage.getAllTradeCases();
@@ -17715,9 +17715,31 @@ ${message}
   });
 
   // Fees Summary - Platform revenue from fees
-  app.get("/api/admin/financial/fees", async (req, res) => {
+  app.get("/api/admin/financial/fees", ensureAdminAsync, async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
+      const range = (req.query.range as string) || 'all';
+      
+      // Calculate date range
+      const now = new Date();
+      let fromDate: Date | null = null;
+      
+      switch (range) {
+        case '7d':
+          fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          fromDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case 'ytd':
+          fromDate = new Date(now.getFullYear(), 0, 1);
+          break;
+        default:
+          fromDate = null;
+      }
       
       // Get platform config for fee rates
       const platformConfigs = await storage.getAllPlatformConfigs();
@@ -17731,8 +17753,11 @@ ${message}
       const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
       const withdrawalFeePercent = parseFloat(configMap.get('withdrawal_fee_percent') || '0');
       
-      // Get all transactions
+      // Get all transactions and filter by date range
       const allTransactions = await storage.getAllTransactions();
+      const filteredTransactions = fromDate 
+        ? allTransactions.filter(tx => new Date(tx.createdAt!) >= fromDate!)
+        : allTransactions;
       
       let transactionFees = 0;
       let spreadRevenue = 0;
@@ -17741,7 +17766,7 @@ ${message}
       let sellCount = 0;
       let withdrawalCount = 0;
       
-      for (const tx of allTransactions) {
+      for (const tx of filteredTransactions) {
         if (tx.status !== 'Completed') continue;
         
         const txValue = parseFloat(tx.amountUsd || '0') || 
@@ -17761,22 +17786,56 @@ ${message}
       
       transactionFees = spreadRevenue;
       
-      // Calculate storage fees
+      // Calculate storage fees - prorated to the actual overlap with selected period
       const vaultHoldings = await storage.getAllVaultHoldings();
       let storageFees = 0;
+      let vaultHoldingsCount = 0;
       for (const holding of vaultHoldings) {
+        const holdingCreated = new Date(holding.createdAt!);
+        
+        // Calculate the actual overlap between holding lifetime and the selected period
+        const periodStart = fromDate || new Date(0); // Start of time if no range
+        const periodEnd = now;
+        
+        // Skip if holding was created after the period ends
+        if (holdingCreated > periodEnd) continue;
+        
+        // The start of when we should charge is the later of period start or holding creation
+        const chargeStart = holdingCreated > periodStart ? holdingCreated : periodStart;
+        
+        // Calculate days actually chargeable
+        const daysChargeable = Math.max(0, Math.ceil((periodEnd.getTime() - chargeStart.getTime()) / (24 * 60 * 60 * 1000)));
+        
+        if (daysChargeable === 0) continue;
+        
         const goldGrams = parseFloat(holding.goldGrams || '0');
-        storageFees += goldGrams * GOLD_PRICE_USD * (storageFeePercent / 100);
+        // Annual storage fee prorated by actual days in period
+        const holdingPeriodFraction = daysChargeable / 365;
+        storageFees += goldGrams * GOLD_PRICE_USD * (storageFeePercent / 100) * holdingPeriodFraction;
+        vaultHoldingsCount++;
       }
       
-      // BNSL Interest
+      // BNSL Interest - only for interest accrued during the period
       const bnslPlans = await storage.getAllBnslPlans();
       let bnslInterest = 0;
+      let activeBnslCount = 0;
       for (const plan of bnslPlans) {
         if (plan.status === 'Active' || plan.status === 'Pending Activation') {
-          const monthsElapsed = Math.floor((Date.now() - new Date(plan.createdAt!).getTime()) / (30 * 24 * 60 * 60 * 1000));
+          const planCreated = new Date(plan.createdAt!);
+          
+          // Calculate interest only for the period
+          const periodStart = fromDate && fromDate > planCreated ? fromDate : planCreated;
+          const periodEnd = now;
+          
+          // Skip if plan was created after the period ends
+          if (fromDate && planCreated > now) continue;
+          
+          const daysInPeriod = Math.max(0, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)));
+          const monthsInPeriod = daysInPeriod / 30;
+          
           const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
-          bnslInterest += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsElapsed;
+          bnslInterest += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsInPeriod;
+          activeBnslCount++;
         }
       }
       
@@ -17784,8 +17843,8 @@ ${message}
       
       const feeBreakdown = [
         { type: 'Buy/Sell Spread', amount: spreadRevenue, count: buyCount + sellCount, percentage: totalFeesCollected > 0 ? (spreadRevenue / totalFeesCollected) * 100 : 0 },
-        { type: 'Storage Fees', amount: storageFees, count: vaultHoldings.length, percentage: totalFeesCollected > 0 ? (storageFees / totalFeesCollected) * 100 : 0 },
-        { type: 'BNSL Interest', amount: bnslInterest, count: bnslPlans.filter(p => p.status === 'Active').length, percentage: totalFeesCollected > 0 ? (bnslInterest / totalFeesCollected) * 100 : 0 },
+        { type: 'Storage Fees', amount: storageFees, count: vaultHoldingsCount, percentage: totalFeesCollected > 0 ? (storageFees / totalFeesCollected) * 100 : 0 },
+        { type: 'BNSL Interest', amount: bnslInterest, count: activeBnslCount, percentage: totalFeesCollected > 0 ? (bnslInterest / totalFeesCollected) * 100 : 0 },
         { type: 'Withdrawal Fees', amount: withdrawalFees, count: withdrawalCount, percentage: totalFeesCollected > 0 ? (withdrawalFees / totalFeesCollected) * 100 : 0 }
       ].filter(f => f.amount > 0);
       
