@@ -1051,18 +1051,6 @@ export default function KYC() {
                             </Select>
                           </div>
                           
-                          <div>
-                            <Label>Account Type</Label>
-                            <Select value={personalAccountType} onValueChange={setPersonalAccountType}>
-                              <SelectTrigger data-testid="select-account-type">
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="personal">Personal</SelectItem>
-                                <SelectItem value="business">Business</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-end">
