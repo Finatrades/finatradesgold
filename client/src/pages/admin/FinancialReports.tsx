@@ -14,10 +14,21 @@ import {
   PiggyBank, CreditCard, Vault, BarChart3, PieChart,
   ArrowUpRight, ArrowDownRight, AlertTriangle, CheckCircle2,
   Loader2, Calendar, FileCheck, Lock, Unlock, Ship, 
-  Coins, Receipt, ScrollText, Eye
+  Coins, Receipt, ScrollText, Eye, ChevronDown, FileSpreadsheet
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiRequest } from '@/lib/queryClient';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { 
+  exportFinancialReportToCSV, 
+  exportFinancialReportToPDF,
+  type FinancialReportData 
+} from '@/lib/exportUtils';
 
 interface FinancialOverview {
   totalRevenue: number;
@@ -242,10 +253,63 @@ export default function FinancialReports() {
               <RefreshCcw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-            <Button data-testid="button-export-reports">
-              <Download className="w-4 h-4 mr-2" />
-              Export Report
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button data-testid="button-export-reports">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Report
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  onClick={() => {
+                    const dateRangeLabels: Record<string, string> = {
+                      '7d': 'Last 7 Days',
+                      '30d': 'Last 30 Days',
+                      '90d': 'Last 90 Days',
+                      'ytd': 'Year to Date',
+                      'all': 'All Time'
+                    };
+                    const reportData: FinancialReportData = {
+                      overview: overview,
+                      metrics: metrics,
+                      goldHoldings: goldHoldings,
+                      dateRange: dateRangeLabels[dateRange] || dateRange,
+                      generatedAt: format(new Date(), 'PPpp')
+                    };
+                    exportFinancialReportToPDF(reportData);
+                  }}
+                  data-testid="export-pdf"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    const dateRangeLabels: Record<string, string> = {
+                      '7d': 'Last 7 Days',
+                      '30d': 'Last 30 Days',
+                      '90d': 'Last 90 Days',
+                      'ytd': 'Year to Date',
+                      'all': 'All Time'
+                    };
+                    const reportData: FinancialReportData = {
+                      overview: overview,
+                      metrics: metrics,
+                      goldHoldings: goldHoldings,
+                      dateRange: dateRangeLabels[dateRange] || dateRange,
+                      generatedAt: format(new Date(), 'PPpp')
+                    };
+                    exportFinancialReportToCSV(reportData);
+                  }}
+                  data-testid="export-csv"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export as CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
