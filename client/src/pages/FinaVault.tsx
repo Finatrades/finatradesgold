@@ -604,10 +604,6 @@ export default function FinaVault() {
               </div>
               <h2 className="text-lg font-bold text-foreground">FinaVault Wallet</h2>
             </div>
-            <Button size="sm" className="bg-purple-500 hover:bg-fuchsia-600 text-white" onClick={() => setActiveTab('new-request')}>
-              <Database className="w-4 h-4 mr-2" />
-              Deposit Gold
-            </Button>
           </div>
 
           {/* Cards Grid */}
