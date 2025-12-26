@@ -2734,8 +2734,40 @@ ${message}
       // Get transactions
       const transactions = await storage.getUserTransactions(user.id);
       
-      // Get KYC submission
-      const kycSubmission = await storage.getKycSubmission(user.id);
+      // Get KYC submission - check all KYC tables
+      let kycSubmission = await storage.getKycSubmission(user.id);
+      
+      // If not found in legacy table, check finatrades personal KYC
+      if (!kycSubmission) {
+        const personalKyc = await storage.getFinatradesPersonalKyc(user.id);
+        if (personalKyc) {
+          kycSubmission = {
+            ...personalKyc,
+            tier: 'finatrades_personal',
+            kycType: 'finatrades_personal',
+            accountType: 'personal',
+            idFrontUrl: personalKyc.idFrontUrl,
+            idBackUrl: personalKyc.idBackUrl,
+            passportUrl: personalKyc.passportUrl,
+            addressProofUrl: personalKyc.addressProofUrl,
+            livenessCapture: personalKyc.selfieUrl,
+          } as any;
+        }
+      }
+      
+      // If still not found, check finatrades corporate KYC
+      if (!kycSubmission) {
+        const corporateKyc = await storage.getFinatradesCorporateKyc(user.id);
+        if (corporateKyc) {
+          kycSubmission = {
+            ...corporateKyc,
+            tier: 'finatrades_corporate',
+            kycType: 'finatrades_corporate',
+            accountType: 'business',
+            fullName: corporateKyc.companyName,
+          } as any;
+        }
+      }
       
       // Get audit logs for this user
       const auditLogs = await storage.getEntityAuditLogs('user', user.id);
