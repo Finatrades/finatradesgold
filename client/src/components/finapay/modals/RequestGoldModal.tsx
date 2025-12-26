@@ -36,6 +36,9 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
+  
+  // Gold price for summary
+  const [currentGoldPrice, setCurrentGoldPrice] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,6 +63,12 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
         .then(res => res.json())
         .then(data => setTermsContent(data))
         .catch(() => console.error('Failed to load terms'));
+      
+      // Fetch current gold price
+      fetch('/api/gold-price')
+        .then(res => res.json())
+        .then(data => setCurrentGoldPrice(data.pricePerGram || 0))
+        .catch(() => console.error('Failed to load gold price'));
     }
   }, [isOpen, user?.id]);
 
@@ -93,6 +102,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   };
 
   const numericAmount = parseFloat(amount) || 0;
+  const goldEquivalent = currentGoldPrice > 0 ? (numericAmount / currentGoldPrice).toFixed(4) : '0.0000';
 
   const handleCreateRequest = async () => {
     if (!user || numericAmount <= 0) return;
@@ -134,7 +144,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <ArrowDownLeft className="w-5 h-5 text-purple-500" />
@@ -153,122 +163,187 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
               <TabsTrigger value="qr">My QR Code</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="direct" className="space-y-4">
-              <div className="space-y-2">
-                <Label>Request From (Optional)</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Email or Finatrades ID (leave empty for open request)" 
-                    className="bg-background border-input pl-9"
-                    value={targetIdentifier}
-                    onChange={(e) => setTargetIdentifier(e.target.value)}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Leave empty to create a request anyone can pay via QR code
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Amount (USD)</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    className="bg-background border-input pl-8 text-lg font-medium"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Note (Optional)</Label>
-                <Textarea 
-                  placeholder="What's this payment for?" 
-                  className="bg-background border-input resize-none h-16"
-                  value={memo}
-                  onChange={(e) => setMemo(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Attach Invoice (Optional)</Label>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileAttach}
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  className="hidden"
-                  data-testid="input-invoice-file"
-                />
-                {invoiceFile ? (
-                  <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border border-border">
-                    <FileText className="w-5 h-5 text-purple-500" />
-                    <span className="flex-1 text-sm truncate">{invoiceFile.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={removeFile}
-                      data-testid="button-remove-invoice"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+            <TabsContent value="direct">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Panel - Form Fields */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Request From (Optional)</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Email or Finatrades ID" 
+                        className="bg-background border-input pl-9"
+                        value={targetIdentifier}
+                        onChange={(e) => setTargetIdentifier(e.target.value)}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty to create a request anyone can pay via QR code
+                    </p>
                   </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-muted-foreground"
-                    onClick={() => fileInputRef.current?.click()}
-                    data-testid="button-attach-invoice"
-                  >
-                    <Paperclip className="w-4 h-4 mr-2" />
-                    Attach PDF or Image
-                  </Button>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Max 5MB. Accepted: PDF, PNG, JPG
-                </p>
-              </div>
 
-              {/* Terms and Conditions Checkbox */}
-              {termsContent?.enabled && (
-                <div className="border border-border rounded-lg p-3 bg-muted/30">
-                  <div className="flex items-start gap-3">
-                    <Checkbox 
-                      id="request-terms"
-                      checked={termsAccepted}
-                      onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                      className="mt-0.5"
-                      data-testid="checkbox-request-terms"
-                    />
-                    <div className="flex-1">
-                      <label htmlFor="request-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-primary" />
-                        I accept the Terms & Conditions
-                      </label>
-                      <details className="mt-2">
-                        <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
-                        <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
-                          {termsContent.terms}
-                        </div>
-                      </details>
+                  <div className="space-y-2">
+                    <Label>Amount (USD)</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
+                      <Input 
+                        type="number" 
+                        placeholder="0.00" 
+                        className="bg-background border-input pl-8 text-lg font-medium"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                      />
                     </div>
                   </div>
-                </div>
-              )}
 
-              <Button 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold"
-                disabled={numericAmount <= 0 || isLoading || (termsContent?.enabled && !termsAccepted)}
-                onClick={handleCreateRequest}
-              >
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowDownLeft className="w-5 h-5 mr-2" />}
-                Create Request
-              </Button>
+                  <div className="space-y-2">
+                    <Label>Note (Optional)</Label>
+                    <Textarea 
+                      placeholder="What's this payment for?" 
+                      className="bg-background border-input resize-none h-16"
+                      value={memo}
+                      onChange={(e) => setMemo(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Attach Invoice (Optional)</Label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileAttach}
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      className="hidden"
+                      data-testid="input-invoice-file"
+                    />
+                    {invoiceFile ? (
+                      <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border border-border">
+                        <FileText className="w-5 h-5 text-purple-500" />
+                        <span className="flex-1 text-sm truncate">{invoiceFile.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={removeFile}
+                          data-testid="button-remove-invoice"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-muted-foreground"
+                        onClick={() => fileInputRef.current?.click()}
+                        data-testid="button-attach-invoice"
+                      >
+                        <Paperclip className="w-4 h-4 mr-2" />
+                        Attach PDF or Image
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Max 5MB. Accepted: PDF, PNG, JPG
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Panel - Request Summary */}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center gap-2 text-purple-700 font-semibold">
+                      <ArrowDownLeft className="w-4 h-4" />
+                      <span>Request Summary</span>
+                    </div>
+
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                        <span className="text-muted-foreground">Request Amount:</span>
+                        <span className="font-semibold text-foreground">${numericAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                        <span className="text-muted-foreground">Transaction Fee:</span>
+                        <span className="font-semibold text-green-600">$0.00</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                        <span className="text-muted-foreground font-medium">You'll Receive:</span>
+                        <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground">Gold Equivalent:</span>
+                        <span className="font-bold text-primary">{goldEquivalent}g</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground bg-white/50 p-2 rounded-md">
+                      Based on current gold price: ${currentGoldPrice.toFixed(2)}/gram
+                    </div>
+                  </div>
+
+                  {/* Request From Visual */}
+                  <div className="bg-muted/30 border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-10 h-10 border-2 border-muted">
+                          <AvatarFallback className="bg-muted text-muted-foreground text-xs font-bold">
+                            {targetIdentifier ? targetIdentifier.slice(0, 2).toUpperCase() : '??'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">{targetIdentifier || 'Anyone'}</span>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="h-px flex-1 bg-border"></div>
+                        <ArrowDownLeft className="w-5 h-5 text-primary mx-2" />
+                        <div className="h-px flex-1 bg-border"></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">You</span>
+                        <Avatar className="w-10 h-10 border-2 border-primary">
+                          <AvatarFallback className="bg-primary text-white text-xs font-bold">
+                            {user?.firstName?.[0]}{user?.lastName?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Terms and Conditions Checkbox */}
+                  {termsContent?.enabled && (
+                    <div className="border border-border rounded-lg p-3 bg-muted/30">
+                      <div className="flex items-start gap-3">
+                        <Checkbox 
+                          id="request-terms"
+                          checked={termsAccepted}
+                          onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                          className="mt-0.5"
+                          data-testid="checkbox-request-terms"
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="request-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-primary" />
+                            I accept the Terms & Conditions
+                          </label>
+                          <details className="mt-2">
+                            <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                            <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                              {termsContent.terms}
+                            </div>
+                          </details>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button 
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12"
+                    disabled={numericAmount <= 0 || isLoading || (termsContent?.enabled && !termsAccepted)}
+                    onClick={handleCreateRequest}
+                  >
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowDownLeft className="w-5 h-5 mr-2" />}
+                    Create Request
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="qr" className="space-y-4">
