@@ -36,8 +36,9 @@ export default function NotificationCenter() {
       if (!res.ok) throw new Error('Failed to fetch notifications');
       return res.json();
     },
-    enabled: !!user?.id && isOpen,
-    refetchInterval: isOpen ? 30000 : false,
+    enabled: !!user?.id,
+    staleTime: 60000,
+    refetchInterval: isOpen ? 30000 : 120000,
   });
 
   const markAsReadMutation = useMutation({
