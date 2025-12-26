@@ -219,56 +219,6 @@ export default function AllTransactions() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-fuchsia-900/20 border-purple-200/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Gold</p>
-                <p className="text-2xl font-bold text-fuchsia-700 dark:text-fuchsia-400" data-testid="text-total-grams">
-                  {totals.totalGrams.toFixed(4)}g
-                </p>
-              </div>
-              <div className="p-3 bg-purple-200/50 dark:bg-fuchsia-800/30 rounded-full">
-                <TrendingUp className="w-5 h-5 text-fuchsia-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total USD Value</p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-400" data-testid="text-total-usd">
-                  ${totals.totalUSD.toFixed(2)}
-                </p>
-              </div>
-              <div className="p-3 bg-green-200/50 dark:bg-green-800/30 rounded-full">
-                <Wallet className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Transactions</p>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400" data-testid="text-total-count">
-                  {totals.count}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-200/50 dark:bg-blue-800/30 rounded-full">
-                <Filter className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card className="shadow-lg">
         <CardHeader className="pb-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
