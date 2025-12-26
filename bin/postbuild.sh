@@ -8,11 +8,11 @@ rm -rf ./.amplify-hosting
 mkdir -p ./.amplify-hosting/compute/default
 mkdir -p ./.amplify-hosting/static
 
-# Build the frontend first (before server to avoid conflicts)
+# Build the frontend first
 echo "Building frontend..."
 npx vite build --outDir ./.amplify-hosting/static
 
-# Build the server with ESM format and externalize native modules
+# Build the server - bundle all dependencies inline (no external node_modules needed)
 echo "Building server..."
 npx esbuild server/index.ts \
   --bundle \
@@ -20,22 +20,15 @@ npx esbuild server/index.ts \
   --target=node20 \
   --format=esm \
   --outfile=./.amplify-hosting/compute/default/index.mjs \
-  --external:better-sqlite3 \
   --external:pg-native \
-  --external:@tailwindcss/oxide* \
-  --external:lightningcss \
-  --external:vite \
-  --external:esbuild \
-  --packages=external
+  --minify
 
 # Create package.json for ESM
 echo '{"type": "module"}' > ./.amplify-hosting/compute/default/package.json
-
-# Copy node_modules for runtime dependencies
-echo "Copying dependencies..."
-cp -r ./node_modules ./.amplify-hosting/compute/default/node_modules
 
 # Copy deploy manifest
 cp deploy-manifest.json ./.amplify-hosting/deploy-manifest.json
 
 echo "Build complete!"
+echo "Output size:"
+du -sh ./.amplify-hosting/

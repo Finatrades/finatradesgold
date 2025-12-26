@@ -1,0 +1,96 @@
+2025-12-26T21:48:34.742Z [INFO]: # Build environment configured with Standard build compute type: 8GiB Memory, 4vCPUs, 128GB Disk Space
+2025-12-26T21:48:35.319Z [INFO]: # Cloning repository: git@github.com:Finatrades/finatradesgold.git
+2025-12-26T21:48:38.894Z [INFO]: 
+2025-12-26T21:48:38.992Z [INFO]: Cloning into 'finatradesgold'...
+2025-12-26T21:48:38.992Z [INFO]: # Switching to commit: 1a8e2a68237b9c6bde955839f7ea1dec0a33fd93
+2025-12-26T21:48:39.342Z [INFO]: Note: switching to '1a8e2a68237b9c6bde955839f7ea1dec0a33fd93'.
+                                 You are in 'detached HEAD' state. You can look around, make experimental
+                                 changes and commit them, and you can discard any commits you make in this
+                                 state without impacting any branches by switching back to a branch.
+                                 If you want to create a new branch to retain commits you create, you may
+                                 do so (now or later) by using -c with the switch command. Example:
+                                 git switch -c <new-branch-name>
+                                 Or undo this operation with:
+                                 git switch -
+                                 Turn off this advice by setting config variable advice.detachedHead to false
+                                 HEAD is now at 1a8e2a6 Fix build configuration for ESM compatibility and native module handling
+2025-12-26T21:48:39.356Z [INFO]: Successfully cleaned up Git credentials
+2025-12-26T21:48:39.357Z [INFO]: # Checking for Git submodules at: /codebuild/output/src302525826/src/finatradesgold/.gitmodules
+2025-12-26T21:48:39.364Z [INFO]: # Retrieving environment cache...
+2025-12-26T21:48:39.434Z [INFO]: # Retrieved environment cache
+2025-12-26T21:48:39.435Z [INFO]: ---- Setting Up SSM Secrets ----
+2025-12-26T21:48:39.435Z [INFO]: SSM params {"Path":"/amplify/dbkbtek9v7jgv/main/","WithDecryption":true}
+2025-12-26T21:48:39.472Z [WARNING]: !Failed to set up process.env.secrets
+2025-12-26T21:48:40.305Z [INFO]: # No package override configuration found.
+2025-12-26T21:48:40.310Z [INFO]: # Retrieving cache...
+2025-12-26T21:48:45.636Z [INFO]: # Extracting cache...
+2025-12-26T21:48:58.043Z [INFO]: # Extraction completed
+2025-12-26T21:48:58.184Z [INFO]: # Retrieved cache
+2025-12-26T21:49:03.152Z [INFO]: ## Starting Backend Build
+                                 ## Checking for associated backend environment...
+                                 ## No backend environment association found, continuing...
+                                 ## Completed Backend Build
+2025-12-26T21:49:03.158Z [INFO]: ## Starting Frontend Build
+                                 # Starting phase: preBuild
+                                 # Executing command: nvm use 20
+2025-12-26T21:49:08.152Z [INFO]: Now using node v20.19.4 (npm v10.8.2)
+2025-12-26T21:49:08.157Z [INFO]: # Executing command: npm ci
+2025-12-26T21:49:21.804Z [WARNING]: npm warn deprecated csurf@1.11.0: This package is archived and no longer maintained. For support, visit https://github.com/expressjs/express/discussions
+2025-12-26T21:49:23.009Z [WARNING]: npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+2025-12-26T21:49:23.099Z [WARNING]: npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+2025-12-26T21:49:30.626Z [INFO]: added 752 packages, and audited 753 packages in 22s
+2025-12-26T21:49:30.632Z [INFO]: 58 packages are looking for funding
+                                 run `npm fund` for details
+2025-12-26T21:49:30.654Z [INFO]: 8 vulnerabilities (4 low, 4 moderate)
+                                 To address issues that do not require attention, run:
+                                 npm audit fix
+                                 To address all issues (including breaking changes), run:
+                                 npm audit fix --force
+                                 Run `npm audit` for details.
+2025-12-26T21:49:30.672Z [INFO]: # Completed phase: preBuild
+                                 # Starting phase: build
+2025-12-26T21:49:30.673Z [INFO]: # Executing command: chmod +x bin/postbuild.sh
+2025-12-26T21:49:30.674Z [INFO]: # Executing command: ./bin/postbuild.sh
+2025-12-26T21:49:30.676Z [INFO]: Starting Amplify build...
+2025-12-26T21:49:30.680Z [INFO]: Building frontend...
+2025-12-26T21:49:31.861Z [INFO]: vite v7.1.12 building for production...
+2025-12-26T21:49:31.939Z [INFO]: transforming...
+2025-12-26T21:49:42.523Z [INFO]: ✓ 3021 modules transformed.
+2025-12-26T21:49:43.271Z [INFO]: rendering chunks...
+2025-12-26T21:49:44.198Z [WARNING]: [plugin vite:reporter]
+                                    (!) /codebuild/output/src302525826/src/finatradesgold/client/src/lib/queryClient.ts is dynamically imported by /codebuild/output/src302525826/src/finatradesgold/client/src/components/bnsl/BnslPlanDetail.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/bnsl/CreateBnslPlan.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/bnsl/admin/BnslPlanDetailAdmin.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/bnsl/admin/BnslPlanDetailAdmin.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/bnsl/admin/BnslPlanDetailAdmin.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx but also statically imported by /codebuild/output/src302525826/src/finatradesgold/client/src/App.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/dashboard/QuickActionsTop.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finabridge/DealRoom.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finabridge/DealRoomList.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finabridge/FinaBridgeDisclaimerModal.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finapay/PendingTransfers.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finapay/modals/DepositModal.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finapay/modals/RequestGoldModal.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finapay/modals/SendGoldModal.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/components/finavault/CashOutForm.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/context/AuthContext.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/context/BnslContext.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/hooks/useDashboardData.ts, /codebuild/output/src302525826/src/finatradesgold/client/src/lib/ngenius-sdk-loader.ts, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/BNSLHistory.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/FinaBridge.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/FinaBridgeHistory.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/FinaBridgeProposals.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/FinaBridgeRequests.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/FinaVault.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/Profile.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/QATests.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/Security.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/VerifyEmail.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FinaBridgeManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/FinaVaultManagement.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/PaymentOperations.tsx, /codebuild/output/src302525826/src/finatradesgold/client/src/pages/admin/UserManagement.tsx, dynamic import will not move module into another chunk.
+2025-12-26T21:49:44.241Z [INFO]: [meta-images] no Replit deployment domain found, skipping meta tag updates
+2025-12-26T21:49:44.293Z [INFO]: computing gzip size...
+2025-12-26T21:49:44.432Z [INFO]: .amplify-hosting/static/index.html                               2.76 kB │ gzip:   0.98 kB
+2025-12-26T21:49:44.433Z [INFO]: .amplify-hosting/static/assets/finatrades-logo-Br7J-q2F.png     39.63 kB
+                                 .amplify-hosting/static/assets/index-CH-zEwZ3.css              306.25 kB │ gzip:  38.23 kB
+                                 .amplify-hosting/static/assets/web-BKD6NW-v.js                   0.42 kB │ gzip:   0.20 kB
+                                 .amplify-hosting/static/assets/web-DF2Ad7Tb.js                   1.25 kB │ gzip:   0.59 kB
+                                 .amplify-hosting/static/assets/index.es-DrBDxAuX.js            159.35 kB │ gzip:  53.40 kB
+                                 .amplify-hosting/static/assets/html2canvas.esm-B0tyYwQk.js     202.36 kB │ gzip:  48.04 kB
+                                 .amplify-hosting/static/assets/index-TUSYF4eH.js             3,529.05 kB │ gzip: 882.21 kB
+2025-12-26T21:49:44.433Z [WARNING]: (!) Some chunks are larger than 500 kB after minification. Consider:
+                                    - Using dynamic import() to code-split the application
+                                    - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+                                    - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+2025-12-26T21:49:44.433Z [INFO]: ✓ built in 12.54s
+2025-12-26T21:49:44.500Z [INFO]: Building server...
+2025-12-26T21:49:44.901Z [WARNING]: .amplify-hosting/compute/default/index.mjs  1.6mb ⚠️
+                                    ⚡ Done in 88ms
+2025-12-26T21:49:44.910Z [INFO]: Copying dependencies...
+2025-12-26T21:49:46.295Z [INFO]: Build complete!
+2025-12-26T21:49:46.300Z [INFO]: # Completed phase: build
+                                 ## Completed Frontend Build
+2025-12-26T21:49:46.392Z [INFO]: ## Build completed successfully
+2025-12-26T21:49:46.392Z [INFO]: # Starting caching...
+2025-12-26T21:49:46.397Z [INFO]: # Creating cache artifact...
+2025-12-26T21:49:56.648Z [INFO]: # Created cache artifact
+2025-12-26T21:49:56.743Z [INFO]: # Uploading cache artifact...
+2025-12-26T21:50:00.431Z [INFO]: # Uploaded cache artifact
+2025-12-26T21:50:00.524Z [INFO]: # Caching completed
+2025-12-26T21:50:26.608Z [ERROR]: !!! CustomerError: The size of the build output (373733012) exceeds the max allowed size of 230686720 bytes. Please reduce the size of your build output (/codebuild/output/src302525826/src/finatradesgold/.amplify-hosting/compute/default) and try again.
+2025-12-26T21:50:26.700Z [INFO]: # Starting environment caching...
+2025-12-26T21:50:26.700Z [INFO]: # Uploading environment cache artifact...
+2025-12-26T21:50:26.810Z [INFO]: # Uploaded environment cache artifact
+2025-12-26T21:50:26.810Z [INFO]: # Environment caching completed
+
