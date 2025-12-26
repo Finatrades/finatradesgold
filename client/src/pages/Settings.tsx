@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
@@ -31,6 +31,8 @@ interface UserPreferencesData {
   compactMode: boolean;
   showBalance: boolean;
   twoFactorReminder: boolean;
+  requireTransferApproval: boolean;
+  transferApprovalTimeout: number;
 }
 
 export default function Settings() {
@@ -100,6 +102,8 @@ export default function Settings() {
       compactMode: localPrefs.compactMode,
       showBalance: localPrefs.showBalance,
       twoFactorReminder: localPrefs.twoFactorReminder,
+      requireTransferApproval: localPrefs.requireTransferApproval,
+      transferApprovalTimeout: localPrefs.transferApprovalTimeout,
     });
   };
 
@@ -375,6 +379,70 @@ export default function Settings() {
                 onCheckedChange={(v) => updatePref('twoFactorReminder', v)}
                 data-testid="switch-2fa-reminder"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-payment">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowDownLeft className="w-5 h-5 text-primary" />
+              Payment Settings
+            </CardTitle>
+            <CardDescription>Control how you receive payments and transfers</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <ArrowDownLeft className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <Label className="text-base">Require Transfer Approval</Label>
+                  <p className="text-sm text-muted-foreground">
+                    When enabled, you must accept or reject incoming transfers before they are added to your wallet
+                  </p>
+                </div>
+              </div>
+              <Switch 
+                checked={localPrefs.requireTransferApproval}
+                onCheckedChange={(v) => updatePref('requireTransferApproval', v)}
+                data-testid="switch-require-transfer-approval"
+              />
+            </div>
+
+            {localPrefs.requireTransferApproval && (
+              <div className="p-4 rounded-lg border bg-muted/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
+                  <Label className="text-base">Auto-Expire Timeout</Label>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Pending transfers will automatically be rejected after this time if not accepted
+                </p>
+                <Select 
+                  value={String(localPrefs.transferApprovalTimeout)}
+                  onValueChange={(v) => updatePref('transferApprovalTimeout', parseInt(v))}
+                >
+                  <SelectTrigger data-testid="select-transfer-timeout" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="12">12 hours</SelectItem>
+                    <SelectItem value="24">24 hours</SelectItem>
+                    <SelectItem value="48">48 hours</SelectItem>
+                    <SelectItem value="72">72 hours</SelectItem>
+                    <SelectItem value="0">Never (manual only)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="p-3 bg-info-muted rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
+                <strong>How it works:</strong> When someone sends you gold or money, you'll receive a notification. 
+                You can then accept (receive funds) or reject (return funds to sender) the transfer from your FinaPay page.
+              </p>
             </div>
           </CardContent>
         </Card>
