@@ -51,9 +51,11 @@ export async function uploadToR2(
     })
   );
   
+  // R2 uses path-style URLs: https://{account_id}.r2.cloudflarestorage.com/{bucket}/{key}
+  // Use custom public URL (CDN) if configured, otherwise use path-style endpoint
   const url = R2_PUBLIC_URL 
     ? `${R2_PUBLIC_URL}/${key}`
-    : `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
+    : `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${key}`;
   
   return { url, key };
 }
