@@ -180,16 +180,17 @@ function DocumentViewer({
         <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[75vh] bg-gray-100 rounded-lg p-4">
           {isPdf ? (
             pdfBlobUrl ? (
-              <embed 
+              <iframe 
                 src={pdfBlobUrl}
-                type="application/pdf"
-                className="w-full h-[70vh] border-0 rounded"
-                data-testid="embed-document-preview"
+                className="w-full h-[70vh] border-0 rounded bg-white"
+                title={documentName}
+                data-testid="iframe-document-preview"
               />
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-gray-500">
-                <FileText className="w-16 h-16 mb-4" />
+                <FileText className="w-16 h-16 mb-4 animate-pulse" />
                 <p>Loading PDF...</p>
+                <p className="text-xs mt-2">If the PDF doesn't load, try clicking "Open in New Tab"</p>
               </div>
             )
           ) : (
