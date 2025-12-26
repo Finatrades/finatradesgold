@@ -83,6 +83,8 @@ import DatabaseBackups from "@/pages/admin/DatabaseBackups";
 import GeoRestrictions from "@/pages/admin/GeoRestrictions";
 import BNSLExplore from "@/pages/BNSLExplore";
 import FinaVaultHistory from "@/pages/FinaVaultHistory";
+import BNSLHistory from "@/pages/BNSLHistory";
+import FinaBridgeHistory from "@/pages/FinaBridgeHistory";
 import FinaBridgeRequests from "@/pages/FinaBridgeRequests";
 import FinaBridgeProposals from "@/pages/FinaBridgeProposals";
 
@@ -153,9 +155,11 @@ function Router() {
       <ProtectedRoute path="/finavault/history" component={FinaVaultHistory} />
       <ProtectedRoute path="/finavault" component={FinaVault} />
       <ProtectedRoute path="/bnsl/explore" component={BNSLExplore} />
+      <ProtectedRoute path="/bnsl/history" component={BNSLHistory} />
       <ProtectedRoute path="/bnsl" component={BNSL} />
       <ProtectedRoute path="/finabridge/requests" component={FinaBridgeRequests} />
       <ProtectedRoute path="/finabridge/proposals" component={FinaBridgeProposals} />
+      <ProtectedRoute path="/finabridge/history" component={FinaBridgeHistory} />
       <ProtectedRoute path="/finabridge" component={FinaBridge} />
       <ProtectedRoute path="/finacard" component={FinaCard} />
       <ProtectedRoute path="/profile" component={Profile} />

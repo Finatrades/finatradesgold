@@ -8202,6 +8202,109 @@ ${message}
     }
   });
 
+  // Get BNSL ledger history for user - PROTECTED
+  app.get("/api/bnsl/ledger/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      // Get BNSL plans for this user
+      const plans = await storage.getUserBnslPlans(userId);
+      
+      // Get BNSL payouts
+      const allPayouts: any[] = [];
+      for (const plan of plans) {
+        const payouts = await storage.getBnslPlanPayouts(plan.id);
+        allPayouts.push(...payouts.map((p: any) => ({ ...p, planId: plan.id })));
+      }
+      
+      // Get wallet transactions (transfers from vault ledger)
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      const vaultEntries = await vaultLedgerService.getLedgerHistory(userId, 200);
+      const bnslRelatedEntries = vaultEntries.filter((e: any) => 
+        e.action === 'FinaPay_To_BNSL' || e.action === 'BNSL_To_FinaPay'
+      );
+      
+      // Build ledger entries
+      const entries: any[] = [];
+      let runningBalance = 0;
+      
+      // Add plan creations (gold locked)
+      for (const plan of plans) {
+        const goldGrams = parseFloat(plan.goldSoldGrams);
+        runningBalance -= goldGrams; // Gold locked is a debit
+        entries.push({
+          id: `plan-${plan.id}`,
+          action: 'Plan_Lock',
+          goldGrams: (-goldGrams).toString(),
+          valueUsd: plan.totalSaleProceedsUsd,
+          planId: plan.id,
+          balanceAfterGrams: runningBalance.toString(),
+          notes: `${plan.tenorMonths} Month BNSL Plan - ${goldGrams.toFixed(4)}g locked`,
+          createdAt: plan.createdAt,
+        });
+      }
+      
+      // Add margin payouts (credits)
+      for (const payout of allPayouts) {
+        if (payout.status === 'Paid') {
+          const payoutGrams = parseFloat(payout.marginPayoutGrams || '0');
+          runningBalance += payoutGrams;
+          entries.push({
+            id: `payout-${payout.id}`,
+            action: 'Margin_Payout',
+            goldGrams: payoutGrams.toString(),
+            valueUsd: payout.marginPayoutUsd,
+            payoutId: payout.id,
+            planId: payout.planId,
+            balanceAfterGrams: runningBalance.toString(),
+            notes: `Margin Payout - Period ${payout.periodNumber}`,
+            createdAt: payout.paidAt || payout.createdAt,
+          });
+        }
+      }
+      
+      // Add wallet transfers
+      for (const entry of bnslRelatedEntries) {
+        const goldGrams = parseFloat(entry.goldGrams);
+        if (entry.action === 'FinaPay_To_BNSL') {
+          runningBalance += Math.abs(goldGrams);
+        } else {
+          runningBalance -= Math.abs(goldGrams);
+        }
+        entries.push({
+          id: `transfer-${entry.id}`,
+          action: entry.action,
+          goldGrams: entry.goldGrams,
+          valueUsd: entry.valueUsd,
+          balanceAfterGrams: runningBalance.toString(),
+          notes: entry.notes || (entry.action === 'FinaPay_To_BNSL' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
+          createdAt: entry.createdAt,
+        });
+      }
+      
+      // Sort by date ascending first to calculate running balances chronologically
+      entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      
+      // Calculate running balances chronologically from beginning
+      let runningBal = 0;
+      for (const entry of entries) {
+        const goldChange = parseFloat(entry.goldGrams);
+        runningBal += goldChange; // Positive for credits, negative for debits
+        entry.balanceAfterGrams = runningBal.toFixed(6);
+      }
+      
+      // Now reverse to show newest first
+      entries.reverse();
+      const sortedEntries = entries.slice(0, limit);
+      
+      res.json({ entries: sortedEntries });
+    } catch (error) {
+      console.error("Failed to get BNSL ledger:", error);
+      res.status(400).json({ message: "Failed to get BNSL ledger history" });
+    }
+  });
+
   // Transfer gold from FinaPay wallet to BNSL wallet
   app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
@@ -10908,6 +11011,96 @@ ${message}
       res.json({ wallet });
     } catch (error) {
       res.status(400).json({ message: "Failed to get wallet" });
+    }
+  });
+
+  // Get FinaBridge ledger history for user - PROTECTED
+  app.get("/api/finabridge/ledger/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      // Get trade requests created by this user
+      const myRequests = await storage.getUserTradeRequests(userId);
+      
+      // Get settlements where user is involved
+      const settlements = await storage.getUserSettlementHolds(userId);
+      
+      // Get wallet transactions (transfers from vault ledger)
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      const vaultEntries = await vaultLedgerService.getLedgerHistory(userId, 200);
+      const tradeRelatedEntries = vaultEntries.filter((e: any) => 
+        e.action === 'FinaPay_To_Trade' || e.action === 'Trade_To_FinaPay'
+      );
+      
+      // Build ledger entries
+      const entries: any[] = [];
+      
+      // Add trade request funding (gold locked for trades)
+      for (const request of myRequests) {
+        if (request.status !== 'Open') {
+          const goldGrams = parseFloat(request.settlementGoldGrams || '0');
+          entries.push({
+            id: `request-${request.id}`,
+            action: 'Funding_Lock',
+            goldGrams: (-goldGrams).toString(),
+            valueUsd: request.tradeValueUsd,
+            tradeRequestId: request.id,
+            balanceAfterGrams: '0',
+            notes: `Trade Request - ${request.goodsName || 'Trade'} to ${request.destination || 'N/A'}`,
+            createdAt: request.createdAt,
+          });
+        }
+      }
+      
+      // Add settlements (credits for completed trades)
+      for (const settlement of settlements) {
+        if (settlement.status === 'Released') {
+          const goldGrams = parseFloat(settlement.lockedGoldGrams || '0');
+          entries.push({
+            id: `settlement-${settlement.id}`,
+            action: 'Settlement_Credit',
+            goldGrams: goldGrams.toString(),
+            tradeRequestId: settlement.tradeRequestId,
+            balanceAfterGrams: '0',
+            notes: 'Trade Settlement Completed',
+            createdAt: settlement.updatedAt || settlement.createdAt,
+          });
+        }
+      }
+      
+      // Add wallet transfers
+      for (const entry of tradeRelatedEntries) {
+        entries.push({
+          id: `transfer-${entry.id}`,
+          action: entry.action,
+          goldGrams: entry.goldGrams,
+          valueUsd: entry.valueUsd,
+          balanceAfterGrams: '0',
+          notes: entry.notes || (entry.action === 'FinaPay_To_Trade' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
+          createdAt: entry.createdAt,
+        });
+      }
+      
+      // Sort by date ascending first to calculate running balances chronologically
+      entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      
+      // Calculate running balances chronologically from beginning
+      let runningBal = 0;
+      for (const entry of entries) {
+        const goldChange = parseFloat(entry.goldGrams);
+        runningBal += goldChange; // Positive for credits, negative for debits
+        entry.balanceAfterGrams = runningBal.toFixed(6);
+      }
+      
+      // Now reverse to show newest first
+      entries.reverse();
+      const sortedEntries = entries.slice(0, limit);
+      
+      res.json({ entries: sortedEntries });
+    } catch (error) {
+      console.error("Failed to get FinaBridge ledger:", error);
+      res.status(400).json({ message: "Failed to get FinaBridge ledger history" });
     }
   });
   
