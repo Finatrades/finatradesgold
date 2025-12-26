@@ -196,6 +196,68 @@ export default function AllTransactions() {
     }
   };
 
+  // Get transfer badges for Send/Receive transactions
+  const getTransferBadges = (tx: UnifiedTransaction) => {
+    const action = tx.actionType?.toUpperCase() || '';
+    const description = tx.description?.toLowerCase() || '';
+    
+    // For Send transactions, show "Sent" badge and destination module
+    if (action === 'SEND') {
+      let destModule = '';
+      if (description.includes('to bnsl')) destModule = 'bnsl';
+      else if (description.includes('to finabridge')) destModule = 'finabridge';
+      else if (description.includes('to finavault')) destModule = 'finavault';
+      else if (description.includes('to finapay')) destModule = 'finapay';
+      
+      return (
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700">
+            <ArrowUpRight className="w-3 h-3 mr-0.5" />
+            Sent
+          </Badge>
+          {destModule && (
+            <Badge variant="outline" className={`text-xs ${getModuleColor(destModule)}`}>
+              {getModuleIcon(destModule)}
+              <span className="ml-1">{formatModuleName(destModule)}</span>
+            </Badge>
+          )}
+        </div>
+      );
+    }
+    
+    // For Receive transactions, show "Received" badge and source module
+    if (action === 'RECEIVE') {
+      let srcModule = '';
+      if (description.includes('from bnsl')) srcModule = 'bnsl';
+      else if (description.includes('from finabridge')) srcModule = 'finabridge';
+      else if (description.includes('from finavault')) srcModule = 'finavault';
+      else if (description.includes('from finapay')) srcModule = 'finapay';
+      
+      return (
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700">
+            <ArrowDownLeft className="w-3 h-3 mr-0.5" />
+            Received
+          </Badge>
+          {srcModule && (
+            <Badge variant="outline" className={`text-xs ${getModuleColor(srcModule)}`}>
+              {getModuleIcon(srcModule)}
+              <span className="ml-1">{formatModuleName(srcModule)}</span>
+            </Badge>
+          )}
+        </div>
+      );
+    }
+    
+    // Default: show module badge only
+    return (
+      <Badge variant="outline" className={`text-xs ${getModuleColor(tx.module)}`}>
+        {getModuleIcon(tx.module)}
+        <span className="ml-1">{formatModuleName(tx.module)}</span>
+      </Badge>
+    );
+  };
+
   return (
     <DashboardLayout>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -308,10 +370,7 @@ export default function AllTransactions() {
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="font-semibold text-foreground">{getActionLabel(tx.actionType, tx.module)}</span>
-                          <Badge variant="outline" className={`text-xs ${getModuleColor(tx.module)}`}>
-                            {getModuleIcon(tx.module)}
-                            <span className="ml-1">{formatModuleName(tx.module)}</span>
-                          </Badge>
+                          {getTransferBadges(tx)}
                         </div>
                         <p className="text-sm text-muted-foreground">{tx.description || tx.referenceId || 'No description'}</p>
                       </div>
