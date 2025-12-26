@@ -443,16 +443,16 @@ export default function FinaVault() {
     }
     
     // Handle certificate-only groups (no parent transaction) - create descriptive parent
-    for (const [txId, certs] of certsByTxId) {
+    for (const [txId, certs] of Array.from(certsByTxId.entries())) {
       if (!usedTxIds.has(txId) && certs.length > 0) {
         // Create a descriptive parent for orphaned certificates using transactionId metadata
         const firstCert = certs[0];
-        const totalGold = certs.reduce((sum, c) => sum + safeParseFloat(c.goldGrams), 0);
-        const totalValue = certs.reduce((sum, c) => sum + safeParseFloat(c.valueUsd), 0);
+        const totalGold = certs.reduce((sum: number, c: any) => sum + safeParseFloat(c.goldGrams), 0);
+        const totalValue = certs.reduce((sum: number, c: any) => sum + safeParseFloat(c.valueUsd), 0);
         
         // Determine action label based on certificate types present
-        const hasPhysical = certs.some(c => c.action === 'Physical Storage');
-        const hasDigital = certs.some(c => c.action === 'Digital Ownership');
+        const hasPhysical = certs.some((c: any) => c.action === 'Physical Storage');
+        const hasDigital = certs.some((c: any) => c.action === 'Digital Ownership');
         let actionLabel = 'Vault Deposit';
         if (hasPhysical && hasDigital) actionLabel = 'Vault Deposit';
         else if (hasPhysical) actionLabel = 'Physical Storage Deposit';
@@ -540,7 +540,7 @@ export default function FinaVault() {
       const result = await res.json();
       
       queryClient.invalidateQueries({ queryKey: ['vault-deposits'] });
-      setActiveTab('my-deposits');
+      setActiveTab('vault-activity');
       
       toast({
         title: "Request Submitted",
@@ -721,13 +721,6 @@ export default function FinaVault() {
                     Vault Activity
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="my-deposits"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                  >
-                    <Database className="w-4 h-4 mr-2" />
-                    Deposit Requests
-                  </TabsTrigger>
-                  <TabsTrigger 
                     value="new-request"
                     className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                   >
@@ -803,37 +796,10 @@ export default function FinaVault() {
                   <VaultActivityList />
                 </TabsContent>
 
-                <TabsContent value="my-deposits" className="mt-0">
-                  {depositsLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : apiRequests.length === 0 ? (
-                    <Card className="bg-white border">
-                      <CardContent className="p-12 text-center">
-                        <Database className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                        <h3 className="text-lg font-bold mb-2">No Deposit Requests</h3>
-                        <p className="text-muted-foreground mb-4">
-                          You haven't submitted any gold deposit requests yet. Start by creating a new deposit request to store your physical gold in our secure vaults.
-                        </p>
-                        <Button onClick={() => setActiveTab('new-request')} data-testid="button-first-deposit">
-                          <PlusCircle className="w-4 h-4 mr-2" /> Create New Deposit Request
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <DepositList 
-                      requests={apiRequests} 
-                      onSelectRequest={setSelectedRequest}
-                      onNewRequest={() => setActiveTab('new-request')}
-                    />
-                  )}
-                </TabsContent>
-
                 <TabsContent value="new-request" id="finavault-deposit-section" className={`transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50' : ''}`}>
                   <NewDepositForm 
                     onSubmit={handleNewRequest}
-                    onCancel={() => setActiveTab('my-deposits')}
+                    onCancel={() => setActiveTab('vault-activity')}
                   />
                 </TabsContent>
 
