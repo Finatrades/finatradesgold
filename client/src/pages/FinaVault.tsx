@@ -348,7 +348,7 @@ export default function FinaVault() {
       createdAt: cert.issuedAt,
       action: cert.type === 'Trade Release' ? 'Trade Release Received' : cert.type,
       status: cert.status === 'Active' ? 'Completed' : cert.status,
-      fromWallet: cert.type === 'Trade Release' ? 'FinaBridge Trade' : 'Vault Deposit',
+      fromWallet: cert.type === 'Trade Release' ? 'FinaBridge Trade' : (cert.type === 'Physical Storage' ? 'Wingold & Metals' : 'Vault Deposit'),
       toWallet: cert.type === 'Trade Release' ? 'FinaBridge Wallet' : 'FinaVault',
       fromStatus: null,
       toStatus: 'Available',
