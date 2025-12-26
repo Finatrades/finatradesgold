@@ -182,7 +182,9 @@ export default function CertificatesView() {
     queryKey: ['certificates', user?.id],
     queryFn: async () => {
       if (!user?.id) return { certificates: [], activeCertificates: [] };
-      const res = await fetch(`/api/certificates/${user.id}`);
+      const res = await fetch(`/api/certificates/${user.id}`, {
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to fetch certificates');
       return res.json();
     },
