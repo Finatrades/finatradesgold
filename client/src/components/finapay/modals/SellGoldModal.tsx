@@ -7,6 +7,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, CheckCircle2, Building, Wallet, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { usePlatform } from '@/context/PlatformContext';
+import { useAuth } from '@/context/AuthContext';
+import { useTransactionPin } from '@/components/TransactionPinPrompt';
 
 interface SellGoldModalProps {
   isOpen: boolean;
@@ -14,11 +16,12 @@ interface SellGoldModalProps {
   goldPrice: number;
   walletBalance: number;
   spreadPercent: number;
-  onConfirm: (grams: number, payout: number) => void;
+  onConfirm: (grams: number, payout: number, pinToken: string) => void;
 }
 
 export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalance, spreadPercent, onConfirm }: SellGoldModalProps) {
   const { settings: platformSettings } = usePlatform();
+  const { user } = useAuth();
   const [method, setMethod] = useState('bank');
   
   // Dual inputs
@@ -26,6 +29,8 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
   const [usd, setUsd] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
   useEffect(() => {
     if (isOpen) {
@@ -69,16 +74,30 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
   const minTradeAmount = platformSettings.minTradeAmount || 10;
   const isBelowMinimum = grossPayout > 0 && grossPayout < minTradeAmount;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (!user) return;
+    
+    let pinToken: string;
+    try {
+      pinToken = await requirePin({
+        userId: user.id,
+        action: 'sell_gold',
+        title: 'Authorize Gold Sale',
+        description: `Enter your 6-digit PIN to sell ${numericGrams.toFixed(4)}g of gold for $${netPayout.toFixed(2)}`,
+      });
+    } catch (error) {
+      return;
+    }
+    
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      onConfirm(numericGrams, netPayout);
+      onConfirm(numericGrams, netPayout, pinToken);
     }, 1500);
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
@@ -207,5 +226,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
       </DialogContent>
     </Dialog>
+    {TransactionPinPromptComponent}
+    </>
   );
 }

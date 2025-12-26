@@ -4543,6 +4543,26 @@ ${message}
   app.post("/api/transactions", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
+      
+      // Require PIN verification for Sell transactions
+      if (transactionData.type === 'Sell') {
+        const pinToken = req.headers['x-pin-token'] as string | undefined;
+        const userId = transactionData.userId;
+        
+        if (!pinToken) {
+          return res.status(403).json({ message: 'PIN verification required for this transaction' });
+        }
+        
+        const pinValidation = await validatePinToken(pinToken, 'sell_gold');
+        if (!pinValidation.valid) {
+          return res.status(403).json({ message: pinValidation.message || 'Invalid PIN token' });
+        }
+        
+        if (pinValidation.userId !== userId) {
+          return res.status(403).json({ message: 'PIN token does not match user' });
+        }
+      }
+      
       // Force all transactions to start as Pending (requires admin authorization)
       const transaction = await storage.createTransaction({
         ...transactionData,
@@ -10220,8 +10240,8 @@ ${message}
     }
   });
   
-  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC
-  app.post("/api/withdrawal-requests", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
+  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN
+  app.post("/api/withdrawal-requests", ensureAuthenticated, requireKycApproved, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd, ...bankDetails } = req.body;
       
@@ -13978,8 +13998,8 @@ ${message}
     }
   });
 
-  // Send money to another user (USD or Gold) - PROTECTED: requires authentication + sender verification
-  app.post("/api/finapay/send", ensureAuthenticated, async (req, res) => {
+  // Send money to another user (USD or Gold) - PROTECTED: requires authentication + sender verification + PIN
+  app.post("/api/finapay/send", ensureAuthenticated, requirePinVerification('send_funds'), async (req, res) => {
     try {
       const { senderId, recipientIdentifier, amountUsd, amountGold, assetType, channel, memo } = req.body;
       

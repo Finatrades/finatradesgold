@@ -14,6 +14,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import QRScanner from '../QRScanner';
+import { useTransactionPin } from '@/components/TransactionPinPrompt';
 
 const PAYMENT_REASONS = [
   'Buying Gold / Precious Metals',
@@ -77,6 +78,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
+  
+  // Transaction PIN verification
+  const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
   const { data: goldPrice } = useQuery<{ pricePerGram: number }>({
     queryKey: ['/api/gold-price'],
@@ -190,20 +194,46 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const handleConfirmSend = async () => {
     if (!user || !foundUser || numericAmount <= 0) return;
     
+    let pinToken: string;
+    try {
+      pinToken = await requirePin({
+        userId: user.id,
+        action: 'send_funds',
+        title: 'Authorize Transfer',
+        description: `Enter your 6-digit PIN to send $${numericAmount.toFixed(2)} to ${foundUser.firstName} ${foundUser.lastName}`,
+      });
+    } catch (error) {
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       const goldAmountToSend = numericAmount / currentGoldPrice;
-      const res = await apiRequest('POST', '/api/finapay/send', {
-        senderId: user.id,
-        recipientIdentifier: activeTab === 'email' ? foundUser.email : foundUser.finatradesId,
-        amountGold: goldAmountToSend.toFixed(6),
-        assetType: 'GOLD',
-        channel: activeTab === 'qr_code' ? 'finatrades_id' : activeTab,
-        memo: memo || null,
-        paymentReason: paymentReason,
-        sourceOfFunds: sourceOfFunds,
+      const res = await fetch('/api/finapay/send', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'x-pin-token': pinToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          senderId: user.id,
+          recipientIdentifier: activeTab === 'email' ? foundUser.email : foundUser.finatradesId,
+          amountGold: goldAmountToSend.toFixed(6),
+          assetType: 'GOLD',
+          channel: activeTab === 'qr_code' ? 'finatrades_id' : activeTab,
+          memo: memo || null,
+          paymentReason: paymentReason,
+          sourceOfFunds: sourceOfFunds,
+        }),
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Transfer failed');
+      }
       
       const data = await res.json();
       setTransferRef(data.transfer.referenceNumber);
@@ -225,6 +255,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const goldEquivalent = numericAmount > 0 ? (numericAmount / currentGoldPrice).toFixed(4) : '0.0000';
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className={`bg-white border-border text-foreground w-[95vw] max-h-[85vh] overflow-y-auto ${foundUser && step === 'search' ? 'max-w-2xl' : 'max-w-md'}`}>
         <DialogHeader>
@@ -683,5 +714,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
         )}
       </DialogContent>
     </Dialog>
+    {TransactionPinPromptComponent}
+  </>
   );
 }

@@ -162,18 +162,36 @@ export default function FinaPay() {
     }
   }, [searchString]);
 
-  const handleSellConfirm = async (grams: number, payout: number) => {
+  const handleSellConfirm = async (grams: number, payout: number, pinToken: string) => {
     if (grams > goldGrams) {
       toast({ title: "Insufficient Gold", description: "You don't have enough gold to sell.", variant: "destructive" });
       return;
     }
     try {
-      await createTransaction({
-        type: 'Sell',
-        amountUsd: payout.toFixed(2),
-        amountGold: grams.toFixed(6),
-        description: 'Gold sale via FinaPay'
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'x-pin-token': pinToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          type: 'Sell',
+          userId: user?.id,
+          amountUsd: payout.toFixed(2),
+          amountGold: grams.toFixed(6),
+          description: 'Gold sale via FinaPay'
+        }),
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to submit sell order');
+      }
+      
+      refreshWallet();
+      refreshTransactions();
       setActiveModal(null);
       toast({ title: "Sell Order Submitted", description: `Your order to sell ${grams.toFixed(4)}g has been submitted.` });
     } catch (error) {

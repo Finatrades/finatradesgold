@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { ArrowUpRight, CheckCircle2, DollarSign, Loader2, Building2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
+import { useTransactionPin } from '@/components/TransactionPinPrompt';
 
 interface WithdrawalModalProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
   const [swiftCode, setSwiftCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
+  
+  const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
   useEffect(() => {
     if (isOpen) {
@@ -55,17 +58,44 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
       return;
     }
 
+    let pinToken: string;
+    try {
+      pinToken = await requirePin({
+        userId: user.id,
+        action: 'withdraw_funds',
+        title: 'Authorize Withdrawal',
+        description: `Enter your 6-digit PIN to withdraw $${amountNum.toFixed(2)}`,
+      });
+    } catch (error) {
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const res = await apiRequest('POST', '/api/withdrawal-requests', {
-        userId: user.id,
-        amountUsd: parseFloat(amount).toString(),
-        bankName,
-        accountName,
-        accountNumber,
-        routingNumber: routingNumber || null,
-        swiftCode: swiftCode || null,
+      const res = await fetch('/api/withdrawal-requests', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'x-pin-token': pinToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user.id,
+          amountUsd: parseFloat(amount).toString(),
+          bankName,
+          accountName,
+          accountNumber,
+          routingNumber: routingNumber || null,
+          swiftCode: swiftCode || null,
+        }),
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to submit withdrawal request');
+      }
+      
       const data = await res.json();
       
       setReferenceNumber(data.request.referenceNumber);
@@ -93,6 +123,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
@@ -287,5 +318,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {TransactionPinPromptComponent}
+    </>
   );
 }
