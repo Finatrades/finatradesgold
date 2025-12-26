@@ -115,7 +115,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
                 <img 
                   src={finatradesLogo} 
                   alt="Finatrades" 
-                  className="h-8 w-auto object-contain"
+                  className="h-12 w-auto object-contain"
                 />
               </div>
             </Link>
