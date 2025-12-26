@@ -139,89 +139,114 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
         </CardHeader>
         
         <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-[400px] px-6 py-4">
-            <div className="space-y-1">
-              <div className="grid grid-cols-12 text-xs text-muted-foreground uppercase tracking-wider font-medium px-4 pb-2">
-                 <div className="col-span-5">Transaction</div>
-                 <div className="col-span-3 text-right">Amount</div>
-                 <div className="col-span-2 text-right">Status</div>
-                 <div className="col-span-2 text-right">Action</div>
+          <ScrollArea className="h-[400px]">
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">No transactions found</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full" data-testid="finapay-transactions-table">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date</th>
+                      <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Description</th>
+                      <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Debit</th>
+                      <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Credit</th>
+                      <th className="text-center py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Status</th>
+                      <th className="text-center py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredTransactions.map((tx, index) => {
+                      const isDebit = tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal';
+                      const isCredit = tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit';
+                      const transactionLabel = tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
+                        ? 'Deposit Physical Gold'
+                        : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
+                        ? 'Acquire Gold' 
+                        : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`;
+                      
+                      return (
+                        <tr 
+                          key={tx.id} 
+                          onClick={() => setSelectedTx(tx)}
+                          className={`hover:bg-muted/30 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
+                          data-testid={`transaction-row-${tx.id}`}
+                        >
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-foreground">
+                              {new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type)}`}>
+                                {getIcon(tx.type, tx.assetType)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-foreground text-sm">{transactionLabel}</span>
+                                  {tx.status === 'Completed' && (tx.type === 'Send' || tx.type === 'Receive') && (
+                                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">P2P</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                  {tx.description || tx.referenceId}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            {isDebit ? (
+                              <div>
+                                <span className="text-red-600 font-medium">
+                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
+                                </span>
+                                {tx.amountGrams && tx.amountGrams > 0 && (
+                                  <div className="text-xs text-muted-foreground">${tx.amountUsd.toFixed(2)}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            {isCredit ? (
+                              <div>
+                                <span className="text-green-600 font-medium">
+                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
+                                </span>
+                                {tx.amountGrams && tx.amountGrams > 0 && (
+                                  <div className="text-xs text-muted-foreground">${tx.amountUsd.toFixed(2)}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-center">
+                              <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
+                                {tx.status}
+                              </Badge>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-center">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-
-              {filteredTransactions.length === 0 ? (
-                 <div className="text-center py-12 text-muted-foreground text-sm">No transactions found</div>
-              ) : (
-                filteredTransactions.map((tx) => (
-                  <div 
-                    key={tx.id} 
-                    onClick={() => setSelectedTx(tx)}
-                    className="grid grid-cols-12 items-center p-3 rounded-lg hover:bg-muted/50 transition-colors group border border-transparent hover:border-border cursor-pointer"
-                  >
-                    
-                    {/* Type & Date */}
-                    <div className="col-span-5 flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${getColor(tx.type)} bg-opacity-10`}>
-                        {getIcon(tx.type, tx.assetType)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-foreground text-sm">{
-                            // Deposit Physical Gold for FinaVault physical deposits
-                            tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
-                              ? 'Deposit Physical Gold'
-                              // Acquire Gold for bank/card/crypto deposits that result in gold
-                              : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
-                              ? 'Acquire Gold' 
-                              : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`
-                          }</p>
-                          {tx.status === 'Completed' && (tx.type === 'Send' || tx.type === 'Receive') && (
-                             <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">P2P</span>
-                          )}
-                        </div>
-                        {tx.description && <p className="text-xs text-muted-foreground font-medium truncate max-w-[150px]">{tx.description}</p>}
-                        <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{new Date(tx.timestamp).toLocaleDateString()} • {new Date(tx.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Amount */}
-                    <div className="col-span-3 text-right">
-                      {tx.assetType === 'GOLD' ? (
-                         <>
-                           <p className="font-bold text-foreground text-sm">{tx.amountGrams?.toFixed(4)} g</p>
-                           <p className="text-[10px] text-muted-foreground">${tx.amountUsd.toFixed(2)}</p>
-                         </>
-                      ) : tx.amountGrams && tx.amountGrams > 0 ? (
-                         <>
-                           <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
-                           <p className="text-[10px] text-fuchsia-600 font-medium">{tx.amountGrams.toFixed(4)}g gold</p>
-                         </>
-                      ) : goldPrice > 0 ? (
-                         <>
-                           <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
-                           <p className="text-[10px] text-fuchsia-600 font-medium">~{(tx.amountUsd / goldPrice).toFixed(2)}g gold</p>
-                         </>
-                      ) : (
-                         <p className="font-bold text-foreground text-sm">${tx.amountUsd.toFixed(2)}</p>
-                      )}
-                    </div>
-
-                    {/* Status */}
-                    <div className="col-span-2 flex justify-end">
-                       <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
-                         {tx.status}
-                       </Badge>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="col-span-2 flex justify-end">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>
