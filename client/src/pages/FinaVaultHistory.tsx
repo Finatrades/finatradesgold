@@ -197,14 +197,14 @@ export default function FinaVaultHistory() {
           </TabsList>
 
           <TabsContent value="ledger">
-            <Card>
-              <CardHeader>
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-border bg-muted/30">
                 <CardTitle className="flex items-center gap-2">
                   <Wallet className="w-5 h-5" />
-                  Gold Movement History
+                  Gold Movement Ledger
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {ledgerLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
@@ -216,52 +216,89 @@ export default function FinaVaultHistory() {
                     <p className="text-sm mt-2">Your gold movements will appear here</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {ledgerEntries.map((entry) => (
-                      <div 
-                        key={entry.id} 
-                        className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-                        data-testid={`ledger-entry-${entry.id}`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-muted`}>
-                            {getActionIcon(entry.action)}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">
-                              {formatAction(entry.action, entry)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {entry.notes || (entry.fromWallet && entry.toWallet 
-                                ? `${entry.fromWallet} → ${entry.toWallet}`
-                                : 'Gold movement')}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className={`font-bold ${getActionColor(entry.action)}`}>
-                              {parseFloat(entry.goldGrams) >= 0 ? '+' : ''}{parseFloat(entry.goldGrams).toFixed(4)} g
-                            </p>
-                            {entry.valueUsd && (
-                              <p className="text-xs text-muted-foreground">
-                                ${parseFloat(entry.valueUsd).toFixed(2)}
-                              </p>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(entry.createdAt), 'MMM dd, yyyy HH:mm')}
-                            </p>
-                          </div>
-                          <div className="text-right min-w-[80px]">
-                            <p className="text-xs text-muted-foreground">Balance</p>
-                            <p className="font-semibold text-foreground">
-                              {parseFloat(entry.balanceAfterGrams).toFixed(4)} g
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full" data-testid="ledger-table">
+                      <thead>
+                        <tr className="bg-muted/50 border-b border-border">
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date</th>
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Description</th>
+                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Debit (g)</th>
+                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Credit (g)</th>
+                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Value (USD)</th>
+                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted/80">Balance (g)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {ledgerEntries.map((entry, index) => {
+                          const goldAmount = parseFloat(entry.goldGrams);
+                          const isCredit = goldAmount >= 0;
+                          const debitActions = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
+                          const isDebit = debitActions.includes(entry.action) || goldAmount < 0;
+                          
+                          return (
+                            <tr 
+                              key={entry.id} 
+                              className={`hover:bg-muted/30 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
+                              data-testid={`ledger-entry-${entry.id}`}
+                            >
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-foreground">
+                                  {format(new Date(entry.createdAt), 'MMM dd, yyyy')}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(entry.createdAt), 'HH:mm')}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                    isCredit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                                  }`}>
+                                    {getActionIcon(entry.action)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="font-medium text-foreground text-sm">
+                                      {formatAction(entry.action, entry)}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                      {entry.notes || (entry.fromWallet && entry.toWallet 
+                                        ? `${entry.fromWallet} → ${entry.toWallet}`
+                                        : 'Gold movement')}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono">
+                                {isDebit ? (
+                                  <span className="text-red-600 font-medium">
+                                    {Math.abs(goldAmount).toFixed(4)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono">
+                                {isCredit && !isDebit ? (
+                                  <span className="text-green-600 font-medium">
+                                    {Math.abs(goldAmount).toFixed(4)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono text-sm text-muted-foreground">
+                                {entry.valueUsd ? `$${parseFloat(entry.valueUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono bg-muted/20">
+                                <span className="font-semibold text-foreground">
+                                  {parseFloat(entry.balanceAfterGrams).toFixed(4)}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardContent>
@@ -269,14 +306,14 @@ export default function FinaVaultHistory() {
           </TabsContent>
 
           <TabsContent value="physical">
-            <Card>
-              <CardHeader>
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-border bg-muted/30">
                 <CardTitle className="flex items-center gap-2">
                   <History className="w-5 h-5" />
                   Physical Gold Transactions
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
@@ -288,51 +325,77 @@ export default function FinaVaultHistory() {
                     <p className="text-sm mt-2">Physical deposits and withdrawals will appear here</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {allTransactions.map((tx) => (
-                      <div 
-                        key={tx.id} 
-                        className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-                        data-testid={`vault-transaction-${tx.id}`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            tx.type === 'deposit' 
-                              ? 'bg-green-100 dark:bg-green-900/30' 
-                              : 'bg-red-100 dark:bg-red-900/30'
-                          }`}>
-                            {tx.type === 'deposit' 
-                              ? <ArrowDownRight className="w-5 h-5 text-green-600" />
-                              : <ArrowUpRight className="w-5 h-5 text-red-600" />
-                            }
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground capitalize">
-                              {tx.type === 'deposit' ? 'Gold Deposit' : 'Gold Withdrawal'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {tx.referenceNumber || tx.id.slice(0, 8)}
-                              {tx.vaultLocation && ` - ${tx.vaultLocation}`}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className={`font-bold ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
-                              {tx.type === 'deposit' ? '+' : '-'}{parseFloat(tx.goldGrams).toFixed(3)} g
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(tx.createdAt), 'MMM dd, yyyy')}
-                            </p>
-                          </div>
-                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(tx.status)}`}>
-                            {getStatusIcon(tx.status)}
-                            <span className="capitalize">{tx.status.replace('_', ' ')}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full" data-testid="physical-transactions-table">
+                      <thead>
+                        <tr className="bg-muted/50 border-b border-border">
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date</th>
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Type</th>
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Reference</th>
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Location</th>
+                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Weight (g)</th>
+                          <th className="text-center py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {allTransactions.map((tx, index) => (
+                          <tr 
+                            key={tx.id} 
+                            className={`hover:bg-muted/30 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
+                            data-testid={`vault-transaction-${tx.id}`}
+                          >
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-foreground">
+                                {format(new Date(tx.createdAt), 'MMM dd, yyyy')}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {format(new Date(tx.createdAt), 'HH:mm')}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                  tx.type === 'deposit' 
+                                    ? 'bg-green-100 dark:bg-green-900/30' 
+                                    : 'bg-red-100 dark:bg-red-900/30'
+                                }`}>
+                                  {tx.type === 'deposit' 
+                                    ? <ArrowDownRight className="w-4 h-4 text-green-600" />
+                                    : <ArrowUpRight className="w-4 h-4 text-red-600" />
+                                  }
+                                </div>
+                                <span className="font-medium text-foreground text-sm capitalize">
+                                  {tx.type === 'deposit' ? 'Deposit' : 'Withdrawal'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="text-sm font-mono text-muted-foreground">
+                                {tx.referenceNumber || tx.id.slice(0, 8).toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="text-sm text-muted-foreground">
+                                {tx.vaultLocation || '—'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono">
+                              <span className={`font-medium ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
+                                {tx.type === 'deposit' ? '+' : '-'}{parseFloat(tx.goldGrams).toFixed(4)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex justify-center">
+                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(tx.status)}`}>
+                                  {getStatusIcon(tx.status)}
+                                  <span className="capitalize">{tx.status.replace('_', ' ')}</span>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardContent>
