@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 
 interface VaultTransaction {
   id: string;
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal' | 'Vault Deposit' | 'Vault Withdrawal';
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal' | 'Vault Deposit' | 'Vault Withdrawal' | 'Bank Deposit';
   status: string;
   amountGold: string | null;
   amountUsd: string | null;
@@ -23,6 +23,7 @@ interface VaultTransaction {
   referenceId?: string | null;
   createdAt: string;
   completedAt: string | null;
+  rejectionReason?: string | null;
   certificates: {
     id: string;
     certificateNumber: string;
@@ -42,9 +43,24 @@ interface VaultActivityData {
   };
 }
 
+interface DepositRequest {
+  id: string;
+  userId: string;
+  amountUsd: string;
+  goldGrams?: string;
+  goldPriceAtRequest?: string;
+  paymentMethod: string;
+  status: string;
+  referenceNumber: string;
+  createdAt: string;
+  processedAt?: string;
+  rejectionReason?: string;
+}
+
 export default function VaultActivityList() {
   const { user } = useAuth();
   const [data, setData] = useState<VaultActivityData | null>(null);
+  const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -324,10 +340,20 @@ export default function VaultActivityList() {
     if (!user) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/vault/activity/${user.id}`);
-      if (response.ok) {
-        const result = await response.json();
+      // Fetch both vault activity and bank deposit requests in parallel
+      const [vaultResponse, depositResponse] = await Promise.all([
+        fetch(`/api/vault/activity/${user.id}`),
+        fetch(`/api/deposit-requests/${user.id}`)
+      ]);
+      
+      if (vaultResponse.ok) {
+        const result = await vaultResponse.json();
         setData(result);
+      }
+      
+      if (depositResponse.ok) {
+        const depositResult = await depositResponse.json();
+        setDepositRequests(depositResult.requests || []);
       }
     } catch (error) {
       console.error('Failed to fetch vault activity:', error);
@@ -350,6 +376,7 @@ export default function VaultActivityList() {
       case 'Withdrawal': return <ArrowUpRight className="w-4 h-4" />;
       case 'Vault Deposit': return <Box className="w-4 h-4" />;
       case 'Vault Withdrawal': return <ArrowUpRight className="w-4 h-4" />;
+      case 'Bank Deposit': return <ArrowDownLeft className="w-4 h-4" />;
       default: return <Coins className="w-4 h-4" />;
     }
   };
@@ -364,6 +391,7 @@ export default function VaultActivityList() {
       case 'Withdrawal': return 'bg-purple-100 text-fuchsia-700';
       case 'Vault Deposit': return 'bg-[#D4AF37]/20 text-[#B8860B]';
       case 'Vault Withdrawal': return 'bg-purple-100 text-purple-700';
+      case 'Bank Deposit': return 'bg-blue-100 text-blue-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -376,14 +404,30 @@ export default function VaultActivityList() {
     return type === 'Deposit';
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, rejectionReason?: string | null) => {
     switch (status) {
       case 'Completed':
         return <Badge className="bg-green-100 text-green-700 border-green-200">Completed</Badge>;
       case 'Pending':
         return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pending</Badge>;
       case 'Cancelled':
-        return <Badge className="bg-red-100 text-red-700 border-red-200">Cancelled</Badge>;
+        return (
+          <div className="flex items-center gap-1">
+            <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
+            {rejectionReason && (
+              <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
+            )}
+          </div>
+        );
+      case 'Rejected':
+        return (
+          <div className="flex items-center gap-1">
+            <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
+            {rejectionReason && (
+              <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
+            )}
+          </div>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -468,8 +512,35 @@ export default function VaultActivityList() {
   // Just use all transactions directly - no filtering needed
   const filteredTxs = transactions;
   
+  // Convert bank deposit requests to VaultTransaction format
+  // Only show deposits that don't already have a corresponding Buy transaction
+  const existingDepositRefs = new Set(
+    transactions
+      .filter((tx: any) => tx.type === 'Buy' && tx.referenceId?.startsWith('DEP-'))
+      .map((tx: any) => tx.referenceId)
+  );
+  
+  const bankDepositActivities: VaultTransaction[] = depositRequests
+    .filter(dep => !existingDepositRefs.has(dep.referenceNumber))
+    .map(dep => ({
+      id: `deposit-${dep.id}`,
+      type: 'Bank Deposit' as const,
+      status: dep.status === 'Confirmed' ? 'Completed' : dep.status === 'Rejected' ? 'Cancelled' : 'Pending',
+      amountGold: dep.goldGrams || null,
+      amountUsd: dep.amountUsd,
+      goldPriceUsdPerGram: dep.goldPriceAtRequest || null,
+      recipientEmail: null,
+      senderEmail: null,
+      description: `Bank Deposit via ${dep.paymentMethod}`,
+      referenceId: dep.referenceNumber,
+      createdAt: dep.createdAt,
+      completedAt: dep.processedAt || null,
+      rejectionReason: dep.rejectionReason || null,
+      certificates: [],
+    }));
+  
   // Combine and sort by date (newest first)
-  const allActivities = [...filteredTxs, ...certificateActivities]
+  const allActivities = [...filteredTxs, ...certificateActivities, ...bankDepositActivities]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
   const filteredTransactions = allActivities.filter(tx => {
@@ -511,6 +582,7 @@ export default function VaultActivityList() {
                 <SelectItem value="Withdrawal">Withdrawal</SelectItem>
                 <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
                 <SelectItem value="Vault Withdrawal">Vault Withdrawal</SelectItem>
+                <SelectItem value="Bank Deposit">Bank Deposit</SelectItem>
               </SelectContent>
             </Select>
             <Button size="icon" variant="outline" onClick={fetchActivity} data-testid="button-refresh-vault">
@@ -604,7 +676,7 @@ export default function VaultActivityList() {
                     )}
                   </div>
                   <div className="text-right">
-                    {getStatusBadge(tx.status)}
+                    {getStatusBadge(tx.status, tx.rejectionReason)}
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(tx.createdAt).toLocaleDateString()}
                     </p>
@@ -637,8 +709,14 @@ export default function VaultActivityList() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Status</p>
-                  {getStatusBadge(selectedTx.status)}
+                  {getStatusBadge(selectedTx.status, selectedTx.rejectionReason)}
                 </div>
+                {selectedTx.rejectionReason && (
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Rejection Reason</p>
+                    <p className="text-red-600">{selectedTx.rejectionReason}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-muted-foreground">Gold Amount</p>
                   <p className="font-bold">{selectedTx.amountGold ? parseFloat(selectedTx.amountGold).toFixed(6) : '0'}g</p>
