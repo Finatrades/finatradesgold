@@ -38,7 +38,7 @@ export default function FinaVault() {
     queryKey: ['vault-deposits', user?.id],
     queryFn: async () => {
       if (!user?.id) return { requests: [] };
-      const res = await fetch(`/api/vault/deposits/${user.id}`);
+      const res = await fetch(`/api/vault/deposits/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { requests: [] };
       return res.json();
     },
@@ -50,7 +50,7 @@ export default function FinaVault() {
     queryKey: ['vault-withdrawals', user?.id],
     queryFn: async () => {
       if (!user?.id) return { requests: [] };
-      const res = await fetch(`/api/vault/withdrawals/${user.id}`);
+      const res = await fetch(`/api/vault/withdrawals/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { requests: [] };
       return res.json();
     },
@@ -62,7 +62,7 @@ export default function FinaVault() {
     queryKey: ['vault-holdings', user?.id],
     queryFn: async () => {
       if (!user?.id) return { holdings: [] };
-      const res = await fetch(`/api/vault/${user.id}`);
+      const res = await fetch(`/api/vault/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { holdings: [] };
       return res.json();
     },
@@ -74,7 +74,7 @@ export default function FinaVault() {
     queryKey: ['vault-ownership', user?.id],
     queryFn: async () => {
       if (!user?.id) return { ownership: null };
-      const res = await fetch(`/api/vault/ownership/${user.id}`);
+      const res = await fetch(`/api/vault/ownership/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { ownership: null };
       return res.json();
     },
@@ -86,7 +86,7 @@ export default function FinaVault() {
     queryKey: ['vault-ledger', user?.id],
     queryFn: async () => {
       if (!user?.id) return { entries: [] };
-      const res = await fetch(`/api/vault/ledger/${user.id}?limit=50`);
+      const res = await fetch(`/api/vault/ledger/${user.id}?limit=50`, { credentials: 'include' });
       if (!res.ok) return { entries: [] };
       return res.json();
     },
@@ -98,7 +98,7 @@ export default function FinaVault() {
     queryKey: ['user-transactions', user?.id],
     queryFn: async () => {
       if (!user?.id) return { transactions: [] };
-      const res = await fetch(`/api/transactions/${user.id}`);
+      const res = await fetch(`/api/transactions/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { transactions: [] };
       return res.json();
     },
@@ -110,7 +110,7 @@ export default function FinaVault() {
     queryKey: ['deposit-requests', user?.id],
     queryFn: async () => {
       if (!user?.id) return { requests: [] };
-      const res = await fetch(`/api/deposit-requests/${user.id}`);
+      const res = await fetch(`/api/deposit-requests/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { requests: [] };
       return res.json();
     },
@@ -123,8 +123,8 @@ export default function FinaVault() {
     queryFn: async () => {
       if (!user?.id) return { wallet: null, holds: [] };
       const [walletRes, holdsRes] = await Promise.all([
-        fetch(`/api/finabridge/wallet/${user.id}`),
-        fetch(`/api/finabridge/settlement-holds/${user.id}`)
+        fetch(`/api/finabridge/wallet/${user.id}`, { credentials: 'include' }),
+        fetch(`/api/finabridge/settlement-holds/${user.id}`, { credentials: 'include' })
       ]);
       const wallet = walletRes.ok ? (await walletRes.json()).wallet : null;
       const holds = holdsRes.ok ? (await holdsRes.json()).holds : [];
@@ -138,7 +138,7 @@ export default function FinaVault() {
     queryKey: ['wallet', user?.id],
     queryFn: async () => {
       if (!user?.id) return { wallet: null };
-      const res = await fetch(`/api/wallet/${user.id}`);
+      const res = await fetch(`/api/wallet/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { wallet: null };
       return res.json();
     },
@@ -150,7 +150,7 @@ export default function FinaVault() {
     queryKey: ['bnsl-plans', user?.id],
     queryFn: async () => {
       if (!user?.id) return { plans: [] };
-      const res = await fetch(`/api/bnsl/plans/${user.id}`);
+      const res = await fetch(`/api/bnsl/plans/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { plans: [] };
       return res.json();
     },
@@ -162,7 +162,7 @@ export default function FinaVault() {
     queryKey: ['certificates', user?.id],
     queryFn: async () => {
       if (!user?.id) return { certificates: [] };
-      const res = await fetch(`/api/certificates/${user.id}`);
+      const res = await fetch(`/api/certificates/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { certificates: [] };
       return res.json();
     },
@@ -184,7 +184,7 @@ export default function FinaVault() {
     queryKey: ['storage-fees', user?.id],
     queryFn: async () => {
       if (!user?.id) return { fees: [] };
-      const res = await fetch(`/api/vault/storage-fees/${user.id}`);
+      const res = await fetch(`/api/vault/storage-fees/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { fees: [] };
       return res.json();
     },
@@ -196,7 +196,7 @@ export default function FinaVault() {
     queryKey: ['gold-bars', user?.id],
     queryFn: async () => {
       if (!user?.id) return { bars: [] };
-      const res = await fetch(`/api/vault/gold-bars/${user.id}`);
+      const res = await fetch(`/api/vault/gold-bars/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { bars: [] };
       return res.json();
     },
@@ -208,7 +208,7 @@ export default function FinaVault() {
     queryKey: ['insurance', user?.id],
     queryFn: async () => {
       if (!user?.id) return { certificates: [] };
-      const res = await fetch(`/api/vault/insurance/${user.id}`);
+      const res = await fetch(`/api/vault/insurance/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { certificates: [] };
       return res.json();
     },
@@ -220,7 +220,7 @@ export default function FinaVault() {
     queryKey: ['physical-deliveries', user?.id],
     queryFn: async () => {
       if (!user?.id) return { requests: [] };
-      const res = await fetch(`/api/vault/physical-deliveries/${user.id}`);
+      const res = await fetch(`/api/vault/physical-deliveries/${user.id}`, { credentials: 'include' });
       if (!res.ok) return { requests: [] };
       return res.json();
     },
