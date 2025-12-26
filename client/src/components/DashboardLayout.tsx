@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
-import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import SyncStatusIndicator from '@/components/SyncStatusIndicator';
 import IdleTimeoutWarning from '@/components/IdleTimeoutWarning';
+import KycStatusBanner from '@/components/KycStatusBanner';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, AlertTriangle, ArrowRight, Clock, LogOut, User, Settings } from 'lucide-react';
+import { Menu, Clock, LogOut, User, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -40,52 +40,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  const kycNotStarted = user.kycStatus === 'Not Started';
-  const kycPending = user.kycStatus === 'In Progress';
-
   return (
     <div className="min-h-screen bg-muted text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative">
       
-      {/* Block access completely only for users who haven't started KYC */}
-      {kycNotStarted && (
-        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-card border border-border shadow-2xl rounded-2xl p-8 max-w-md w-full text-center space-y-6 relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/80" />
-            
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-primary" />
-            </div>
-            
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-card-foreground">Verification Required</h2>
-              <p className="text-muted-foreground">
-                To ensure compliance and security, all accounts must be verified before accessing the platform features.
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <Link href="/kyc">
-                <Button className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-[1.02]" data-testid="button-verify-kyc">
-                  Verify Identity Now <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-              <Button 
-                variant="ghost" 
-                className="w-full text-muted-foreground hover:text-foreground"
-                onClick={() => setLocation('/')}
-                data-testid="button-return-home"
-              >
-                Return to Home
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       <div className="lg:ml-72 min-h-screen flex flex-col transition-all duration-300">
@@ -171,26 +128,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-6 overflow-x-hidden bg-muted">
-          {/* Show pending approval banner for users who have submitted KYC */}
-          {kycPending && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 bg-secondary border border-primary/20 rounded-xl p-4 flex items-center gap-4"
-            >
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground">Verification Pending</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your documents are under review. You can view all features, but some actions are restricted until approved.
-                </p>
-              </div>
-            </motion.div>
-          )}
-          {children}
+        <main className="flex-1 overflow-x-hidden bg-muted">
+          <KycStatusBanner kycStatus={user.kycStatus} />
+          <div className="p-6">
+            {children}
+          </div>
         </main>
         
         <FloatingAgentChat />
