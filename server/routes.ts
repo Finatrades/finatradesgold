@@ -4649,26 +4649,29 @@ ${message}
         });
       });
       
-      // P2P transfers
-      peerTransfers.forEach(transfer => {
-        const isSender = transfer.senderUserId === userId;
-        unifiedTransactions.push({
-          id: transfer.id,
-          userId: userId,
-          module: 'finapay',
-          actionType: isSender ? 'SEND' : 'RECEIVE',
-          grams: transfer.goldGrams,
-          usd: transfer.amountUsd,
-          usdPerGram: transfer.goldPriceUsdPerGram,
-          status: transfer.status === 'Completed' ? 'COMPLETED' : transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
-          referenceId: transfer.referenceNumber,
-          description: transfer.description || (isSender ? `Sent to ${transfer.recipientEmail}` : `Received from ${transfer.senderEmail}`),
-          counterpartyUserId: isSender ? transfer.recipientUserId : transfer.senderUserId,
-          createdAt: transfer.createdAt,
-          completedAt: transfer.completedAt,
-          sourceType: 'peer_transfer'
+      // P2P transfers - only include pending ones (completed transfers are already in regularTransactions)
+      // Completed peer transfers create transaction records, so filter them out to avoid duplicates
+      peerTransfers
+        .filter(transfer => transfer.status !== 'Completed')
+        .forEach(transfer => {
+          const isSender = transfer.senderId === userId;
+          unifiedTransactions.push({
+            id: transfer.id,
+            userId: userId,
+            module: 'finapay',
+            actionType: isSender ? 'SEND' : 'RECEIVE',
+            grams: transfer.amountGold,
+            usd: transfer.amountUsd,
+            usdPerGram: transfer.goldPriceUsdPerGram,
+            status: transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
+            referenceId: transfer.referenceNumber,
+            description: transfer.memo || (isSender ? `Sending to ${transfer.recipientIdentifier}` : `Receiving from sender`),
+            counterpartyUserId: isSender ? transfer.recipientId : transfer.senderId,
+            createdAt: transfer.createdAt,
+            completedAt: transfer.respondedAt,
+            sourceType: 'peer_transfer'
+          });
         });
-      });
       
       // Vault deposits - physical gold deposited and converted to digital
       vaultDepositReqs.forEach(dep => {
@@ -4984,28 +4987,31 @@ ${message}
         });
       });
       
-      allPeerTransfers.forEach(transfer => {
-        const sender = userMap.get(transfer.senderUserId);
-        const recipient = userMap.get(transfer.recipientUserId || '');
-        unifiedTransactions.push({
-          id: transfer.id,
-          userId: transfer.senderUserId,
-          userName: sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown',
-          userEmail: sender?.email || 'Unknown',
-          recipientName: recipient ? `${recipient.firstName} ${recipient.lastName}` : transfer.recipientEmail,
-          module: 'finapay',
-          actionType: 'SEND',
-          grams: transfer.goldGrams,
-          usd: transfer.amountUsd,
-          usdPerGram: transfer.goldPriceUsdPerGram,
-          status: transfer.status === 'Completed' ? 'COMPLETED' : transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
-          referenceId: transfer.referenceNumber,
-          description: transfer.description || `Transfer to ${transfer.recipientEmail}`,
-          createdAt: transfer.createdAt,
-          completedAt: transfer.completedAt,
-          sourceType: 'peer_transfer'
+      // P2P transfers - only pending (completed ones already have transaction records)
+      allPeerTransfers
+        .filter(transfer => transfer.status !== 'Completed')
+        .forEach(transfer => {
+          const sender = userMap.get(transfer.senderId);
+          const recipient = userMap.get(transfer.recipientId || '');
+          unifiedTransactions.push({
+            id: transfer.id,
+            userId: transfer.senderId,
+            userName: sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown',
+            userEmail: sender?.email || 'Unknown',
+            recipientName: recipient ? `${recipient.firstName} ${recipient.lastName}` : transfer.recipientIdentifier,
+            module: 'finapay',
+            actionType: 'SEND',
+            grams: transfer.amountGold,
+            usd: transfer.amountUsd,
+            usdPerGram: transfer.goldPriceUsdPerGram,
+            status: transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
+            referenceId: transfer.referenceNumber,
+            description: transfer.memo || `Transfer to ${transfer.recipientIdentifier}`,
+            createdAt: transfer.createdAt,
+            completedAt: transfer.respondedAt,
+            sourceType: 'peer_transfer'
+          });
         });
-      });
       
       // FinaBridge trade cases
       allTradeCases.forEach(tc => {
