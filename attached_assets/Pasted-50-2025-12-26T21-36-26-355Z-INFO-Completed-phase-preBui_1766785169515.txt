@@ -1,0 +1,154 @@
+50
+
+2025-12-26T21:36:26.355Z [INFO]: # Completed phase: preBuild
+
+51
+
+                                 # Starting phase: build
+
+52
+
+                                 # Executing command: chmod +x bin/postbuild.sh
+
+53
+
+2025-12-26T21:36:26.356Z [INFO]: # Executing command: ./bin/postbuild.sh
+
+54
+
+2025-12-26T21:36:26.358Z [INFO]: Starting Amplify build...
+
+55
+
+2025-12-26T21:36:26.361Z [INFO]: Building server...
+
+56
+
+2025-12-26T21:36:26.851Z [WARNING]: ✘ [ERROR] Top-level await is currently not supported with the "cjs" output format
+
+57
+
+                                    vite.config.ts:17:10:
+
+58
+
+                                    17 │           await import("@replit/vite-plugin-cartographer").then((m...
+
+59
+
+                                    ╵           ~~~~~
+
+60
+
+2025-12-26T21:36:26.851Z [WARNING]: ✘ [ERROR] Top-level await is currently not supported with the "cjs" output format
+
+61
+
+                                    vite.config.ts:20:10:
+
+62
+
+                                    20 │           await import("@replit/vite-plugin-dev-banner").then((m) =>
+
+63
+
+                                    ╵           ~~~~~
+
+64
+
+2025-12-26T21:36:26.852Z [WARNING]: ▲ [WARNING] "import.meta" is not available with the "cjs" output format and will be empty [empty-import-meta]
+
+65
+
+                                    vite.config.ts:28:24:
+
+66
+
+                                    28 │       "@": path.resolve(import.meta.dirname, "client", "src"),
+
+67
+
+                                    ╵                         ~~~~~~~~~~~
+
+68
+
+                                    You need to set the output format to "esm" for "import.meta" to work correctly.
+
+69
+
+2025-12-26T21:36:26.938Z [WARNING]: ✘ [ERROR] No loader is configured for ".node" files: node_modules/@tailwindcss/oxide-linux-x64-musl/tailwindcss-oxide.linux-x64-musl.node
+
+70
+
+                                    node_modules/@tailwindcss/oxide/index.js:275:34:
+
+71
+
+                                    275 │ ...     const binding = require('@tailwindcss/oxide-linux-x64-musl')
+
+72
+
+                                    ╵                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+73
+
+2025-12-26T21:36:26.943Z [WARNING]: ✘ [ERROR] No loader is configured for ".node" files: node_modules/@tailwindcss/oxide-linux-x64-gnu/tailwindcss-oxide.linux-x64-gnu.node
+
+74
+
+                                    node_modules/@tailwindcss/oxide/index.js:291:34:
+
+75
+
+                                    291 │ ...      const binding = require('@tailwindcss/oxide-linux-x64-gnu')
+
+76
+
+                                    ╵                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+77
+
+2025-12-26T21:36:26.961Z [WARNING]: ✘ [ERROR] Could not resolve "../pkg"
+
+78
+
+                                    node_modules/lightningcss/node/index.js:17:27:
+
+79
+
+                                    17 │   module.exports = require(`../pkg`);
+
+80
+
+                                    ╵                            ~~~~~~~~
+
+81
+
+2025-12-26T21:36:27.272Z [WARNING]: 1 of 7 warnings and 5 of 6 errors shown (disable the message limit with --log-limit=0)
+
+82
+
+2025-12-26T21:36:27.292Z [ERROR]: !!! Build failed
+
+83
+
+2025-12-26T21:36:27.293Z [ERROR]: !!! Error: Command failed with exit code 1
+
+84
+
+2025-12-26T21:36:27.293Z [INFO]: # Starting environment caching...
+
+85
+
+2025-12-26T21:36:27.293Z [INFO]: # Uploading environment cache artifact...
+
+86
+
+2025-12-26T21:36:27.423Z [INFO]: # Uploaded environment cache artifact
+
+87
+
+2025-12-26T21:36:27.423Z [INFO]: # Environment caching completed
+
+88
+
