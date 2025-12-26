@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet, ShieldCheck } from 'lucide-react';
+import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet, ShieldCheck, Shield, EyeOff } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
 import { AEDAmount } from '@/components/ui/DirhamSymbol';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
 
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 import DashboardWalletCards from '@/components/dashboard/DashboardWalletCards';
@@ -14,6 +17,13 @@ import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import CertificatesCard from '@/components/dashboard/CertificatesCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
+
+interface UserPreferences {
+  showBalance: boolean;
+  twoFactorReminder: boolean;
+  compactMode: boolean;
+  displayCurrency: string;
+}
 
 function formatNumber(num: number, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -66,6 +76,34 @@ export default function Dashboard() {
   const [showAssuranceDialog, setShowAssuranceDialog] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
 
+  const { data: prefsData } = useQuery<{ preferences: UserPreferences }>({
+    queryKey: ['preferences', user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${user?.id}/preferences`);
+      if (!res.ok) throw new Error('Failed to fetch preferences');
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 300000,
+  });
+
+  const prefs = prefsData?.preferences;
+  const showBalance = prefs?.showBalance !== false;
+  const twoFactorReminder = prefs?.twoFactorReminder !== false;
+  const compactMode = prefs?.compactMode === true;
+  const displayCurrency = prefs?.displayCurrency || 'USD';
+
+  const formatCurrency = (usdAmount: number) => {
+    if (displayCurrency === 'AED') {
+      return `Dh ${formatNumber(usdAmount * 3.67)}`;
+    } else if (displayCurrency === 'EUR') {
+      return `€${formatNumber(usdAmount * 0.92)}`;
+    }
+    return `$${formatNumber(usdAmount)}`;
+  };
+
+  const hiddenValue = '••••••';
+
   if (!user) return null;
   
   if (isLoading) {
@@ -115,6 +153,34 @@ export default function Dashboard() {
             </svg>
           </div>
         </div>
+
+        {/* 2FA Reminder Banner */}
+        {twoFactorReminder && !user.mfaEnabled && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-amber-50 border border-amber-300" data-testid="banner-2fa-reminder">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-amber-800">Secure Your Account</p>
+                <p className="text-xs text-amber-600">Enable Two-Factor Authentication for enhanced security</p>
+              </div>
+            </div>
+            <Link href="/security">
+              <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100">
+                Enable 2FA
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* Balance Hidden Indicator */}
+        {!showBalance && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-muted-foreground text-sm">
+            <EyeOff className="w-4 h-4" />
+            <span>Balances are hidden. Go to Settings to show them.</span>
+          </div>
+        )}
 
         {/* Gold Price Status Banner */}
         {goldPriceSource && (
@@ -169,24 +235,24 @@ export default function Dashboard() {
                     <>
                       <KpiBox
                         title="Gold Storage"
-                        value={`${formatNumber(availableGoldGrams, 4)} g`}
-                        secondaryValue={`${formatNumber(availableGoldGrams / 1000, 6)} KG`}
-                        tertiaryValue={`${formatNumber(availableGoldGrams / 31.1035, 4)} OZ`}
+                        value={showBalance ? `${formatNumber(availableGoldGrams, 4)} g` : hiddenValue}
+                        secondaryValue={showBalance ? `${formatNumber(availableGoldGrams / 1000, 6)} KG` : undefined}
+                        tertiaryValue={showBalance ? `${formatNumber(availableGoldGrams / 31.1035, 4)} OZ` : undefined}
                         subtitle="Available for withdrawal or transfer"
                         icon={<Database className="w-5 h-5 text-purple-600" />}
                         iconBg="bg-purple-50"
                         valueColor="text-purple-600"
                       />
                       <KpiBox
-                        title="Total Gold Value (USD)"
-                        value={`$${formatNumber(availableGoldValueUsd)}`}
-                        subtitle="Worth in USD"
+                        title={`Total Gold Value (${displayCurrency})`}
+                        value={showBalance ? formatCurrency(availableGoldValueUsd) : hiddenValue}
+                        subtitle={`Worth in ${displayCurrency}`}
                         icon={<DollarSign className="w-5 h-5 text-green-600" />}
                         iconBg="bg-green-50"
                       />
                       <KpiBox
                         title="Total Gold Value (AED)"
-                        value={<AEDAmount amount={availableGoldValueUsd * 3.67} />}
+                        value={showBalance ? <AEDAmount amount={availableGoldValueUsd * 3.67} /> : hiddenValue}
                         subtitle="Worth in AED"
                         icon={<DollarSign className="w-5 h-5 text-blue-600" />}
                         iconBg="bg-blue-50"
@@ -198,7 +264,7 @@ export default function Dashboard() {
                 {/* Row 2 */}
                 <KpiBox
                   title="Total Portfolio"
-                  value={`$${formatNumber(totals.totalPortfolioUsd)}`}
+                  value={showBalance ? formatCurrency(totals.totalPortfolioUsd) : hiddenValue}
                   subtitle="Overall investment"
                   icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
                   iconBg="bg-purple-50"
@@ -206,7 +272,7 @@ export default function Dashboard() {
                 />
                 <KpiBox
                   title="BNSL Invested"
-                  value={formatGrams(totals.bnslLockedGrams)}
+                  value={showBalance ? formatGrams(totals.bnslLockedGrams) : hiddenValue}
                   subtitle="In active plans"
                   icon={<TrendingUp className="w-5 h-5 text-teal-600" />}
                   iconBg="bg-teal-50"
@@ -214,7 +280,7 @@ export default function Dashboard() {
                 />
                 <KpiBox
                   title="Total Profit"
-                  value={`+$${formatNumber(totals.bnslTotalProfit)}`}
+                  value={showBalance ? `+${formatCurrency(totals.bnslTotalProfit)}` : hiddenValue}
                   subtitle="ROI from BNSL"
                   icon={<Coins className="w-5 h-5 text-purple-600" />}
                   iconBg="bg-purple-50"

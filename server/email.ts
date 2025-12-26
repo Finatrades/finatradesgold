@@ -246,11 +246,64 @@ export async function sendEmail(
   data: EmailData,
   options?: { userId?: string; recipientName?: string; metadata?: Record<string, any> }
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  // Check if this notification type is enabled
+  // Check if this notification type is enabled (admin-level)
   const isEnabled = await isNotificationEnabled(templateSlug);
   if (!isEnabled) {
     console.log(`[Email] Notification type ${templateSlug} is disabled, skipping email to ${to}`);
     return { success: true, messageId: 'notification-disabled' };
+  }
+  
+  // Check user preferences if userId is provided
+  if (options?.userId) {
+    try {
+      const { storage } = await import("./storage");
+      const userPrefs = await storage.getUserPreferences(options.userId);
+      
+      if (userPrefs) {
+        // Check global email notifications toggle
+        if (!userPrefs.emailNotifications) {
+          console.log(`[Email] User ${options.userId} has email notifications disabled, skipping`);
+          return { success: true, messageId: 'user-disabled-emails' };
+        }
+        
+        // Check specific notification type preferences - using exact template slug matching
+        const transactionSlugs = [
+          'gold_purchase', 'gold_sale', 'card_payment_receipt', 'deposit_received', 
+          'deposit_processing', 'withdrawal_requested', 'withdrawal_processing', 
+          'withdrawal_completed', 'transaction_failed', 'low_balance_alert',
+          'transfer_sent', 'transfer_received', 'transfer_pending', 'transfer_completed',
+          'transfer_cancelled', 'bnsl_payment_received', 'bnsl_payment_reminder',
+          'bnsl_plan_completed', 'bnsl_early_exit'
+        ];
+        const securitySlugs = [
+          'password_reset', 'password_changed', 'new_device_login', 'account_locked',
+          'suspicious_activity', 'mfa_enabled', 'email_verification'
+        ];
+        const marketingSlugs = ['newsletter', 'promotion', 'marketing', 'announcement', 'invitation'];
+        
+        const isTransactionEmail = transactionSlugs.includes(templateSlug);
+        const isSecurityEmail = securitySlugs.includes(templateSlug);
+        const isMarketingEmail = marketingSlugs.includes(templateSlug);
+        
+        if (isTransactionEmail && !userPrefs.transactionAlerts) {
+          console.log(`[Email] User ${options.userId} has transaction alerts disabled, skipping`);
+          return { success: true, messageId: 'user-disabled-transaction-alerts' };
+        }
+        
+        if (isSecurityEmail && !userPrefs.securityAlerts) {
+          console.log(`[Email] User ${options.userId} has security alerts disabled, skipping`);
+          return { success: true, messageId: 'user-disabled-security-alerts' };
+        }
+        
+        if (isMarketingEmail && !userPrefs.marketingEmails) {
+          console.log(`[Email] User ${options.userId} has marketing emails disabled, skipping`);
+          return { success: true, messageId: 'user-disabled-marketing' };
+        }
+      }
+    } catch (error) {
+      console.error('[Email] Error checking user preferences:', error);
+      // Continue sending if preference check fails
+    }
   }
 
   try {
