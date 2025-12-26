@@ -667,55 +667,59 @@ export default function BNSL() {
             </Button>
         </div>
 
-        {/* SUMMARY STRIP */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-           <BnslStatsCard 
-             label="Active Plans" 
-             value={activePlansCount.toString()} 
-             icon={Briefcase} 
-             accentColor="text-blue-600"
-           />
-           <BnslStatsCard 
-             label="Deferred Base Value" 
-             value={`$${totalDeferredBase.toLocaleString()}`} 
-             icon={BarChart3} 
-             accentColor="text-foreground"
-             tooltip="Total Base Price Component you are entitled to at maturity."
-           />
-           <BnslStatsCard 
-             label="Avg. Margin Rate" 
-             value={`${weightedRate.toFixed(2)}% p.a.`} 
-             icon={TrendingUp} 
-             accentColor="text-secondary"
-           />
-        </div>
+        {/* SUMMARY STRIP - Only show when user has active plans */}
+        {activePlansCount > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               <BnslStatsCard 
+                 label="Active Plans" 
+                 value={activePlansCount.toString()} 
+                 icon={Briefcase} 
+                 accentColor="text-blue-600"
+               />
+               <BnslStatsCard 
+                 label="Deferred Base Value" 
+                 value={`$${totalDeferredBase.toLocaleString()}`} 
+                 icon={BarChart3} 
+                 accentColor="text-foreground"
+                 tooltip="Total Base Price Component you are entitled to at maturity."
+               />
+               <BnslStatsCard 
+                 label="Avg. Margin Rate" 
+                 value={`${weightedRate.toFixed(2)}% p.a.`} 
+                 icon={TrendingUp} 
+                 accentColor="text-secondary"
+               />
+            </div>
 
-        {/* DAILY MARGIN STRIP */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-           <BnslStatsCard 
-             label="Today's Margin Accrual" 
-             value={`$${totalDailyMargin.toFixed(2)}`} 
-             subValue="Earning daily, paid quarterly"
-             icon={Coins} 
-             accentColor="text-fuchsia-600"
-             tooltip="Amount of margin accruing today across all active plans."
-           />
-           <BnslStatsCard 
-             label="Total Accrued (Unpaid)" 
-             value={`$${unpaidAccruedMargin.toFixed(2)}`} 
-             subValue="Pending next quarterly payout"
-             icon={TrendingUp} 
-             accentColor="text-purple-600"
-             tooltip="Total margin earned but not yet paid out."
-           />
-           <BnslStatsCard 
-             label="Next Payout" 
-             value={nextPayout ? `$${nextPayout.amount.toLocaleString()}` : 'None'} 
-             subValue={nextPayout ? new Date(nextPayout.date).toLocaleDateString() : ''}
-             icon={Calendar} 
-             accentColor="text-green-600"
-           />
-        </div>
+            {/* DAILY MARGIN STRIP */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               <BnslStatsCard 
+                 label="Today's Margin Accrual" 
+                 value={`$${totalDailyMargin.toFixed(2)}`} 
+                 subValue="Earning daily, paid quarterly"
+                 icon={Coins} 
+                 accentColor="text-fuchsia-600"
+                 tooltip="Amount of margin accruing today across all active plans."
+               />
+               <BnslStatsCard 
+                 label="Total Accrued (Unpaid)" 
+                 value={`$${unpaidAccruedMargin.toFixed(2)}`} 
+                 subValue="Pending next quarterly payout"
+                 icon={TrendingUp} 
+                 accentColor="text-purple-600"
+                 tooltip="Total margin earned but not yet paid out."
+               />
+               <BnslStatsCard 
+                 label="Next Payout" 
+                 value={nextPayout ? `$${nextPayout.amount.toLocaleString()}` : 'None'} 
+                 subValue={nextPayout ? new Date(nextPayout.date).toLocaleDateString() : ''}
+                 icon={Calendar} 
+                 accentColor="text-green-600"
+               />
+            </div>
+          </>
+        )}
 
         {/* MAIN CONTENT */}
         {displayedPlan ? (
