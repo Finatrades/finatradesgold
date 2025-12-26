@@ -48,7 +48,7 @@ app.use(helmet({
   hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   xContentTypeOptions: true,
-  xFrameOptions: { action: "deny" },
+  xFrameOptions: { action: "sameorigin" },
 }));
 
 // Session configuration with PostgreSQL store
