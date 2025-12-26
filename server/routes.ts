@@ -388,6 +388,48 @@ function requirePermission(...requiredPermissions: string[]) {
   };
 }
 
+// Middleware to require KYC approval for financial operations
+// Must be used AFTER ensureAuthenticated
+async function requireKycApproved(req: Request, res: Response, next: NextFunction) {
+  try {
+    const sessionUserId = req.session?.userId;
+    
+    if (!sessionUserId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const user = await storage.getUser(sessionUserId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    
+    // Admin users bypass KYC requirement
+    if (user.role === 'admin') {
+      return next();
+    }
+    
+    // Check if KYC is approved
+    if (user.kycStatus !== 'Approved') {
+      const statusMessage = user.kycStatus === 'In Progress' 
+        ? 'Your KYC verification is pending approval. Please wait for verification to complete.'
+        : user.kycStatus === 'Rejected'
+          ? 'Your KYC verification was rejected. Please re-submit your documents.'
+          : 'Please complete KYC verification to access this feature.';
+      
+      return res.status(403).json({ 
+        message: statusMessage,
+        code: 'KYC_REQUIRED',
+        kycStatus: user.kycStatus
+      });
+    }
+    
+    next();
+  } catch (error: any) {
+    console.error('[KYC Check Error]', error?.message || error);
+    return res.status(500).json({ message: "KYC verification check failed" });
+  }
+}
+
 // Helper to notify all admin users
 async function notifyAllAdmins(notification: { title: string; message: string; type: 'info' | 'success' | 'warning' | 'error' | 'transaction'; link?: string }) {
   try {
@@ -4451,7 +4493,7 @@ ${message}
   // app.patch("/api/wallet/:id") - INTENTIONALLY REMOVED
   
   // Create transaction - all transactions start as Pending and require admin approval
-  app.post("/api/transactions", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/transactions", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
       // Force all transactions to start as Pending (requires admin authorization)
@@ -6796,7 +6838,7 @@ ${message}
   });
 
   // Create vault deposit request (user submission)
-  app.post("/api/vault/deposit", ensureAuthenticated, async (req, res) => {
+  app.post("/api/vault/deposit", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const { userId, vaultLocation, depositType, totalDeclaredWeightGrams, items, deliveryMethod, pickupDetails, documents } = req.body;
       
@@ -7089,7 +7131,7 @@ ${message}
   });
 
   // Create vault withdrawal request (user submission)
-  app.post("/api/vault/withdrawal", ensureAuthenticated, async (req, res) => {
+  app.post("/api/vault/withdrawal", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const { 
         userId, goldGrams, goldPriceUsdPerGram, withdrawalMethod,
@@ -7326,7 +7368,7 @@ ${message}
   // ============================================================================
 
   // User: Create physical delivery request
-  app.post("/api/vault/physical-delivery", ensureAuthenticated, async (req, res) => {
+  app.post("/api/vault/physical-delivery", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const { userId, goldGrams, deliveryAddress, city, country, postalCode, phone, specialInstructions, deliveryMethod } = req.body;
       
@@ -7726,7 +7768,7 @@ ${message}
   // ============================================================================
 
   // User: Request vault transfer
-  app.post("/api/vault/transfers", ensureAuthenticated, async (req, res) => {
+  app.post("/api/vault/transfers", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const { userId, goldGrams, fromLocation, toLocation, reason } = req.body;
       
@@ -7835,7 +7877,7 @@ ${message}
   // ============================================================================
 
   // User: Send gold gift
-  app.post("/api/vault/gifts", ensureAuthenticated, async (req, res) => {
+  app.post("/api/vault/gifts", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const { senderUserId, recipientEmail, recipientPhone, goldGrams, message, occasion } = req.body;
       
@@ -8306,7 +8348,7 @@ ${message}
   });
 
   // Transfer gold from FinaPay wallet to BNSL wallet
-  app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, goldGrams } = req.body;
       
@@ -8405,7 +8447,7 @@ ${message}
   });
 
   // Transfer gold from BNSL wallet to FinaPay wallet (withdraw)
-  app.post("/api/bnsl/wallet/withdraw", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/bnsl/wallet/withdraw", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, goldGrams } = req.body;
       
@@ -8721,7 +8763,7 @@ ${message}
   });
   
   // Create BNSL plan (locks gold from BNSL wallet)
-  app.post("/api/bnsl/plans", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/bnsl/plans", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       // Auto-generate contractId if not provided
       const contractId = req.body.contractId || `BNSL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -8915,7 +8957,7 @@ ${message}
   });
 
   // Create early termination
-  app.post("/api/bnsl/early-termination", ensureAuthenticated, async (req, res) => {
+  app.post("/api/bnsl/early-termination", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const terminationData = insertBnslEarlyTerminationSchema.parse(req.body);
       const termination = await storage.createBnslEarlyTermination(terminationData);
@@ -9768,8 +9810,8 @@ ${message}
     }
   });
   
-  // Create deposit request (User) - PROTECTED
-  app.post("/api/deposit-requests", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
+  // Create deposit request (User) - PROTECTED - Requires KYC
+  app.post("/api/deposit-requests", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       // Generate reference number
       const referenceNumber = `DEP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -10122,8 +10164,8 @@ ${message}
     }
   });
   
-  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification
-  app.post("/api/withdrawal-requests", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
+  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC
+  app.post("/api/withdrawal-requests", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd, ...bankDetails } = req.body;
       
@@ -10299,8 +10341,8 @@ ${message}
     }
   });
   
-  // Create trade case - PROTECTED
-  app.post("/api/trade/cases", ensureAuthenticated, async (req, res) => {
+  // Create trade case - PROTECTED - Requires KYC
+  app.post("/api/trade/cases", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const caseData = insertTradeCaseSchema.parse(req.body);
       const tradeCase = await storage.createTradeCase(caseData);
@@ -10431,8 +10473,8 @@ ${message}
     }
   });
   
-  // Create new trade request (Importer)
-  app.post("/api/finabridge/importer/requests", ensureAuthenticated, async (req, res) => {
+  // Create new trade request (Importer) - Requires KYC
+  app.post("/api/finabridge/importer/requests", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const requestData = insertTradeRequestSchema.parse({
         ...req.body,
@@ -10741,8 +10783,8 @@ ${message}
     }
   });
   
-  // Submit proposal for a trade request
-  app.post("/api/finabridge/exporter/proposals", ensureAuthenticated, async (req, res) => {
+  // Submit proposal for a trade request - Requires KYC
+  app.post("/api/finabridge/exporter/proposals", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
       const proposalData = insertTradeProposalSchema.parse(req.body);
       
