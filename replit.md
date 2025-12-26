@@ -175,3 +175,7 @@ The platform uses a client-server architecture with a React frontend and an Expr
 | `bg-red-100 text-red-700` | `bg-error-muted text-error-muted-foreground` |
 
 **Note**: `--error` aliases `--destructive` for consistency. Use either `bg-destructive` or `bg-error`.
+
+## Documentation
+
+- **Technical Details Report**: `docs/TECHNICAL_DETAILS.md` - Contains detailed information about notification systems (55 email templates, 25+ bell notification types, 10 push notification events), preference controls, and other technical specifications.
