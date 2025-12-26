@@ -8,13 +8,13 @@ rm -rf ./.amplify-hosting
 mkdir -p ./.amplify-hosting/compute/default
 mkdir -p ./.amplify-hosting/static
 
-# Build the frontend first using local vite
+# Build the frontend using vite directly via npx (will use local version)
 echo "Building frontend..."
-./node_modules/.bin/vite build --outDir ./.amplify-hosting/static
+npx --no vite build --outDir ./.amplify-hosting/static
 
 # Build the server - externalize build-time only dependencies
 echo "Building server..."
-./node_modules/.bin/esbuild server/index.ts \
+npx --no esbuild server/index.ts \
   --bundle \
   --platform=node \
   --target=node20 \
@@ -40,5 +40,3 @@ cp deploy-manifest.json ./.amplify-hosting/deploy-manifest.json
 echo "Build complete!"
 echo "Output size:"
 du -sh ./.amplify-hosting/
-du -sh ./.amplify-hosting/compute/
-du -sh ./.amplify-hosting/static/
