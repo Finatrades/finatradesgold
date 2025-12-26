@@ -2103,10 +2103,12 @@ ${message}
       // Total users count
       const totalUsers = users.length;
       
-      // Pending KYC count from submissions table
-      const pendingKycCount = kycSubmissions.filter(k => 
+      // Pending KYC count from both submissions table and users table
+      const pendingKycSubmissions = kycSubmissions.filter(k => 
         k.status === 'In Progress'
       ).length;
+      const pendingKycUsers = users.filter(u => u.kycStatus === 'In Progress').length;
+      const pendingKycCount = Math.max(pendingKycSubmissions, pendingKycUsers);
       
       // Total transaction volume - calculate USD equivalent from all monetary fields
       const totalVolume = allTransactions.reduce((sum, tx) => {
@@ -2449,13 +2451,17 @@ ${message}
   // Admin Pending Counts for Sidebar Badges
   app.get("/api/admin/pending-counts", ensureAdminAsync, async (req, res) => {
     try {
-      const [kycSubmissions, allTransactions, allDepositRequests] = await Promise.all([
+      const [kycSubmissions, allTransactions, allDepositRequests, allUsers] = await Promise.all([
         storage.getAllKycSubmissions(),
         storage.getAllTransactions(),
-        storage.getAllDepositRequests()
+        storage.getAllDepositRequests(),
+        storage.getAllUsers()
       ]);
 
-      const pendingKyc = kycSubmissions.filter(k => k.status === 'In Progress').length;
+      // Count pending KYC from both kyc_submissions and users table
+      const pendingKycSubmissions = kycSubmissions.filter(k => k.status === 'In Progress').length;
+      const pendingKycUsers = allUsers.filter(u => u.kycStatus === 'In Progress').length;
+      const pendingKyc = Math.max(pendingKycSubmissions, pendingKycUsers);
       const pendingTransactions = allTransactions.filter(tx => tx.status === 'Pending').length;
       const pendingDeposits = allDepositRequests.filter(d => d.status === 'Pending' || d.status === 'Under Review').length;
       
