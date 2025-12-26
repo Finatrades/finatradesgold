@@ -926,7 +926,7 @@ function CertificatesSection({ data, isLoading }: { data?: CertificateSummary; i
                       </Badge>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-500">
-                      {format(new Date(cert.issuedAt), 'MMM d, yyyy')}
+                      {cert.issuedAt ? format(new Date(cert.issuedAt), 'MMM d, yyyy') : 'N/A'}
                     </td>
                   </tr>
                 ))}
