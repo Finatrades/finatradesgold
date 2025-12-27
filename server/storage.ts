@@ -108,7 +108,9 @@ import {
   emailNotificationSettings,
   emailLogs,
   type EmailNotificationSetting, type InsertEmailNotificationSetting,
-  type EmailLog, type InsertEmailLog
+  type EmailLog, type InsertEmailLog,
+  accountDeletionRequests,
+  type AccountDeletionRequest, type InsertAccountDeletionRequest
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -711,6 +713,14 @@ export interface IStorage {
   getPinVerificationToken(token: string): Promise<PinVerificationToken | undefined>;
   usePinVerificationToken(token: string): Promise<PinVerificationToken | undefined>;
   cleanupExpiredPinTokens(): Promise<void>;
+  
+  // Account Deletion Requests
+  getAccountDeletionRequest(id: string): Promise<AccountDeletionRequest | undefined>;
+  getAccountDeletionRequestByUser(userId: string): Promise<AccountDeletionRequest | undefined>;
+  getAllAccountDeletionRequests(): Promise<AccountDeletionRequest[]>;
+  getPendingAccountDeletionRequests(): Promise<AccountDeletionRequest[]>;
+  createAccountDeletionRequest(request: InsertAccountDeletionRequest): Promise<AccountDeletionRequest>;
+  updateAccountDeletionRequest(id: string, updates: Partial<AccountDeletionRequest>): Promise<AccountDeletionRequest | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3786,6 +3796,47 @@ export class DatabaseStorage implements IStorage {
       })),
       kycSubmission: kycResult[0] || null,
     };
+  }
+
+  // Account Deletion Requests
+  async getAccountDeletionRequest(id: string): Promise<AccountDeletionRequest | undefined> {
+    const [request] = await db.select().from(accountDeletionRequests).where(eq(accountDeletionRequests.id, id));
+    return request || undefined;
+  }
+
+  async getAccountDeletionRequestByUser(userId: string): Promise<AccountDeletionRequest | undefined> {
+    const [request] = await db.select().from(accountDeletionRequests)
+      .where(and(
+        eq(accountDeletionRequests.userId, userId),
+        or(
+          eq(accountDeletionRequests.status, 'Pending'),
+          eq(accountDeletionRequests.status, 'Approved')
+        )
+      ));
+    return request || undefined;
+  }
+
+  async getAllAccountDeletionRequests(): Promise<AccountDeletionRequest[]> {
+    return await db.select().from(accountDeletionRequests).orderBy(desc(accountDeletionRequests.requestedAt));
+  }
+
+  async getPendingAccountDeletionRequests(): Promise<AccountDeletionRequest[]> {
+    return await db.select().from(accountDeletionRequests)
+      .where(eq(accountDeletionRequests.status, 'Pending'))
+      .orderBy(desc(accountDeletionRequests.requestedAt));
+  }
+
+  async createAccountDeletionRequest(request: InsertAccountDeletionRequest): Promise<AccountDeletionRequest> {
+    const [newRequest] = await db.insert(accountDeletionRequests).values(request).returning();
+    return newRequest;
+  }
+
+  async updateAccountDeletionRequest(id: string, updates: Partial<AccountDeletionRequest>): Promise<AccountDeletionRequest | undefined> {
+    const [updated] = await db.update(accountDeletionRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(accountDeletionRequests.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 
