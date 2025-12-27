@@ -3506,8 +3506,19 @@ export class DatabaseStorage implements IStorage {
     const backingRatio = totalLiabilities > 0 ? (physicalGoldGrams / totalLiabilities) * 100 : 100;
     const surplus = physicalGoldGrams - totalLiabilities;
 
+    // Parse holdings to ensure goldGrams is a number
+    const parsedHoldings = holdings.map(h => ({
+      id: h.id,
+      userId: h.userId,
+      vaultLocation: h.vaultLocation,
+      goldGrams: h.goldGrams ? parseFloat(h.goldGrams) : 0,
+      isPhysicallyDeposited: h.isPhysicallyDeposited,
+      createdAt: h.createdAt,
+      updatedAt: h.updatedAt,
+    }));
+
     return {
-      physicalGold: { totalGrams: physicalGoldGrams, holdings },
+      physicalGold: { totalGrams: physicalGoldGrams, holdings: parsedHoldings },
       customerLiabilities: {
         totalGrams: totalLiabilities,
         wallets: { count: walletCount, totalGrams: walletGrams },
@@ -3516,6 +3527,264 @@ export class DatabaseStorage implements IStorage {
       certificates: { total: totalCerts, byStatus: certByStatus },
       backingRatio: parseFloat(backingRatio.toFixed(2)),
       surplus: parseFloat(surplus.toFixed(6)),
+    };
+  }
+
+  // ============================================
+  // GOLD BACKING DRILL-DOWN METHODS
+  // ============================================
+
+  async getUsersWithFinaPayHoldings(): Promise<Array<{
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    finatradesId: string | null;
+    goldGrams: number;
+    kycStatus: string;
+    accountType: string;
+  }>> {
+    const results = await db.select({
+      userId: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      finatradesId: users.finatradesId,
+      goldGrams: wallets.goldGrams,
+      kycStatus: users.kycStatus,
+      accountType: users.accountType,
+    })
+    .from(wallets)
+    .innerJoin(users, eq(wallets.userId, users.id))
+    .where(sql`${wallets.goldGrams}::numeric > 0`)
+    .orderBy(sql`${wallets.goldGrams}::numeric DESC`);
+
+    return results.map(r => ({
+      userId: r.userId,
+      email: r.email,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      finatradesId: r.finatradesId,
+      goldGrams: r.goldGrams ? parseFloat(r.goldGrams) : 0,
+      kycStatus: r.kycStatus,
+      accountType: r.accountType,
+    }));
+  }
+
+  async getUsersWithBnslHoldings(): Promise<Array<{
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    finatradesId: string | null;
+    availableGoldGrams: number;
+    lockedGoldGrams: number;
+    totalGoldGrams: number;
+    kycStatus: string;
+    accountType: string;
+  }>> {
+    const results = await db.select({
+      userId: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      finatradesId: users.finatradesId,
+      availableGoldGrams: bnslWallets.availableGoldGrams,
+      lockedGoldGrams: bnslWallets.lockedGoldGrams,
+      kycStatus: users.kycStatus,
+      accountType: users.accountType,
+    })
+    .from(bnslWallets)
+    .innerJoin(users, eq(bnslWallets.userId, users.id))
+    .where(sql`(${bnslWallets.availableGoldGrams}::numeric + ${bnslWallets.lockedGoldGrams}::numeric) > 0`)
+    .orderBy(sql`(${bnslWallets.availableGoldGrams}::numeric + ${bnslWallets.lockedGoldGrams}::numeric) DESC`);
+
+    return results.map(r => ({
+      userId: r.userId,
+      email: r.email,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      finatradesId: r.finatradesId,
+      availableGoldGrams: r.availableGoldGrams ? parseFloat(r.availableGoldGrams) : 0,
+      lockedGoldGrams: r.lockedGoldGrams ? parseFloat(r.lockedGoldGrams) : 0,
+      totalGoldGrams: (r.availableGoldGrams ? parseFloat(r.availableGoldGrams) : 0) + 
+                      (r.lockedGoldGrams ? parseFloat(r.lockedGoldGrams) : 0),
+      kycStatus: r.kycStatus,
+      accountType: r.accountType,
+    }));
+  }
+
+  async getVaultHoldingDetails(holdingId: string): Promise<{
+    holding: any;
+    certificates: any[];
+  } | null> {
+    const holding = await db.select()
+      .from(vaultHoldings)
+      .where(eq(vaultHoldings.id, holdingId))
+      .limit(1);
+
+    if (!holding[0]) return null;
+
+    // Get certificates linked to this vault holding
+    const certs = await db.select({
+      id: certificates.id,
+      userId: certificates.userId,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      finatradesId: users.finatradesId,
+      certificateNumber: certificates.certificateNumber,
+      goldGrams: certificates.goldGrams,
+      status: certificates.status,
+      issuedAt: certificates.issuedAt,
+    })
+    .from(certificates)
+    .innerJoin(users, eq(certificates.userId, users.id))
+    .where(eq(certificates.vaultHoldingId, holdingId));
+
+    return {
+      holding: holding[0],
+      certificates: certs.map(c => ({
+        ...c,
+        goldGrams: c.goldGrams ? parseFloat(c.goldGrams) : 0,
+      })),
+    };
+  }
+
+  async getUsersByVaultLocation(vaultLocation: string): Promise<Array<{
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    finatradesId: string | null;
+    goldGrams: number;
+    certificateNumber: string;
+    status: string;
+    kycStatus: string;
+    accountType: string;
+  }>> {
+    const results = await db.select({
+      userId: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      finatradesId: users.finatradesId,
+      goldGrams: certificates.goldGrams,
+      certificateNumber: certificates.certificateNumber,
+      status: certificates.status,
+      kycStatus: users.kycStatus,
+      accountType: users.accountType,
+    })
+    .from(certificates)
+    .innerJoin(users, eq(certificates.userId, users.id))
+    .where(eq(certificates.vaultLocation, vaultLocation))
+    .orderBy(sql`${certificates.goldGrams}::numeric DESC`);
+
+    return results.map(r => ({
+      userId: r.userId,
+      email: r.email,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      finatradesId: r.finatradesId,
+      goldGrams: r.goldGrams ? parseFloat(r.goldGrams) : 0,
+      certificateNumber: r.certificateNumber,
+      status: r.status,
+      kycStatus: r.kycStatus,
+      accountType: r.accountType,
+    }));
+  }
+
+  async getUserFinancialProfile(userId: string): Promise<{
+    user: any;
+    finapayWallet: { goldGrams: number; usdBalance: number } | null;
+    bnslWallet: { availableGoldGrams: number; lockedGoldGrams: number } | null;
+    vaultHoldings: any[];
+    certificates: any[];
+    recentTransactions: any[];
+    kycSubmission: any | null;
+  } | null> {
+    // Get user details
+    const user = await db.select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user[0]) return null;
+
+    // Get FinaPay wallet
+    const wallet = await db.select()
+      .from(wallets)
+      .where(eq(wallets.userId, userId))
+      .limit(1);
+
+    // Get BNSL wallet
+    const bnsl = await db.select()
+      .from(bnslWallets)
+      .where(eq(bnslWallets.userId, userId))
+      .limit(1);
+
+    // Get vault holdings owned by user
+    const vaultResults = await db.select()
+      .from(vaultHoldings)
+      .where(eq(vaultHoldings.userId, userId));
+
+    // Get certificates
+    const certResults = await db.select()
+      .from(certificates)
+      .where(eq(certificates.userId, userId));
+
+    // Get recent transactions (last 20)
+    const txResults = await db.select()
+      .from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(sql`${transactions.createdAt} DESC`)
+      .limit(20);
+
+    // Get KYC submission
+    const kycResult = await db.select()
+      .from(kycSubmissions)
+      .where(eq(kycSubmissions.userId, userId))
+      .limit(1);
+
+    return {
+      user: user[0],
+      finapayWallet: wallet[0] ? {
+        goldGrams: wallet[0].goldGrams ? parseFloat(wallet[0].goldGrams) : 0,
+        usdBalance: wallet[0].usdBalance ? parseFloat(wallet[0].usdBalance) : 0,
+      } : null,
+      bnslWallet: bnsl[0] ? {
+        availableGoldGrams: bnsl[0].availableGoldGrams ? parseFloat(bnsl[0].availableGoldGrams) : 0,
+        lockedGoldGrams: bnsl[0].lockedGoldGrams ? parseFloat(bnsl[0].lockedGoldGrams) : 0,
+      } : null,
+      vaultHoldings: vaultResults.map(v => ({
+        id: v.id,
+        userId: v.userId,
+        vaultLocation: v.vaultLocation,
+        goldGrams: v.goldGrams ? parseFloat(v.goldGrams) : 0,
+        isPhysicallyDeposited: v.isPhysicallyDeposited,
+        createdAt: v.createdAt,
+        updatedAt: v.updatedAt,
+      })),
+      certificates: certResults.map(c => ({
+        id: c.id,
+        userId: c.userId,
+        certificateNumber: c.certificateNumber,
+        vaultLocation: c.vaultLocation,
+        goldGrams: c.goldGrams ? parseFloat(c.goldGrams) : 0,
+        status: c.status,
+        issuedAt: c.issuedAt,
+        expiresAt: c.expiresAt,
+      })),
+      recentTransactions: txResults.map(t => ({
+        id: t.id,
+        type: t.type,
+        status: t.status,
+        description: t.description,
+        amountGold: t.amountGold ? parseFloat(t.amountGold) : 0,
+        amountUsd: t.amountUsd ? parseFloat(t.amountUsd) : 0,
+        createdAt: t.createdAt,
+      })),
+      kycSubmission: kycResult[0] || null,
     };
   }
 }

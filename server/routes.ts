@@ -2567,6 +2567,67 @@ ${message}
     }
   });
 
+  // Gold Backing Drill-Down: FinaPay Users with Holdings
+  app.get("/api/admin/gold-backing/finapay-users", ensureAdminAsync, async (req, res) => {
+    try {
+      const users = await storage.getUsersWithFinaPayHoldings();
+      res.json({ users });
+    } catch (error) {
+      console.error("Failed to get FinaPay users:", error);
+      res.status(500).json({ message: "Failed to get FinaPay users" });
+    }
+  });
+
+  // Gold Backing Drill-Down: BNSL Users with Holdings
+  app.get("/api/admin/gold-backing/bnsl-users", ensureAdminAsync, async (req, res) => {
+    try {
+      const users = await storage.getUsersWithBnslHoldings();
+      res.json({ users });
+    } catch (error) {
+      console.error("Failed to get BNSL users:", error);
+      res.status(500).json({ message: "Failed to get BNSL users" });
+    }
+  });
+
+  // Gold Backing Drill-Down: Vault Holding Details
+  app.get("/api/admin/gold-backing/vault/:holdingId", ensureAdminAsync, async (req, res) => {
+    try {
+      const details = await storage.getVaultHoldingDetails(req.params.holdingId);
+      if (!details) {
+        return res.status(404).json({ message: "Vault holding not found" });
+      }
+      res.json(details);
+    } catch (error) {
+      console.error("Failed to get vault holding details:", error);
+      res.status(500).json({ message: "Failed to get vault holding details" });
+    }
+  });
+
+  // Gold Backing Drill-Down: Users by Vault Location
+  app.get("/api/admin/gold-backing/vault-location/:location", ensureAdminAsync, async (req, res) => {
+    try {
+      const users = await storage.getUsersByVaultLocation(decodeURIComponent(req.params.location));
+      res.json({ users });
+    } catch (error) {
+      console.error("Failed to get users by vault location:", error);
+      res.status(500).json({ message: "Failed to get users by vault location" });
+    }
+  });
+
+  // Gold Backing Drill-Down: Full User Financial Profile
+  app.get("/api/admin/gold-backing/user/:userId", ensureAdminAsync, async (req, res) => {
+    try {
+      const profile = await storage.getUserFinancialProfile(req.params.userId);
+      if (!profile) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Failed to get user financial profile:", error);
+      res.status(500).json({ message: "Failed to get user financial profile" });
+    }
+  });
+
   // System Health Check (Admin)
   app.get("/api/admin/system-health", ensureAdminAsync, async (req, res) => {
     const startTime = process.hrtime();
