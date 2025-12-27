@@ -1439,6 +1439,328 @@ ${message}
     }
   });
   
+  // ============================================================================
+  // ACCOUNT DELETION REQUESTS (30-day grace period with admin approval)
+  // ============================================================================
+  
+  // Submit account deletion request
+  app.post("/api/account-deletion-request", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { reason, additionalComments, password } = req.body;
+      const userId = req.session.userId;
+      
+      // Validate required fields
+      if (!reason || reason.trim().length < 10) {
+        return res.status(400).json({ message: "Please provide a reason (minimum 10 characters)" });
+      }
+      
+      if (!password) {
+        return res.status(400).json({ message: "Password is required to confirm deletion request" });
+      }
+      
+      // Verify user exists and password is correct
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      let isValidPassword = false;
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await bcrypt.compare(password, user.password);
+      }
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+      
+      // Check for existing pending request
+      const existingRequest = await storage.getAccountDeletionRequestByUser(userId);
+      if (existingRequest) {
+        return res.status(400).json({ 
+          message: "You already have a pending deletion request",
+          request: existingRequest
+        });
+      }
+      
+      // Calculate scheduled deletion date (30 days from now)
+      const scheduledDeletionDate = new Date();
+      scheduledDeletionDate.setDate(scheduledDeletionDate.getDate() + 30);
+      
+      // Create deletion request
+      const deletionRequest = await storage.createAccountDeletionRequest({
+        userId,
+        reason: reason.trim(),
+        additionalComments: additionalComments?.trim() || null,
+        status: 'Pending',
+        scheduledDeletionDate,
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "account_deletion_request",
+        entityId: deletionRequest.id,
+        actionType: "create",
+        actor: userId,
+        actorRole: "user",
+        details: `User ${user.email} submitted account deletion request`,
+      });
+      
+      // Send confirmation email
+      try {
+        await sendEmail(
+          user.email,
+          "Account Deletion Request Received",
+          `<h2>Account Deletion Request Received</h2>
+           <p>Dear ${user.firstName},</p>
+           <p>We have received your request to delete your Finatrades account.</p>
+           <p><strong>Scheduled Deletion Date:</strong> ${scheduledDeletionDate.toLocaleDateString()}</p>
+           <p>Your request is now pending admin review. You have 30 days to cancel this request if you change your mind.</p>
+           <p>If you did not make this request, please contact our support team immediately.</p>
+           <p>Best regards,<br>The Finatrades Team</p>`,
+          'account_deletion_request'
+        );
+      } catch (emailError) {
+        console.error("Failed to send deletion request email:", emailError);
+      }
+      
+      res.status(201).json({ 
+        message: "Deletion request submitted successfully",
+        request: deletionRequest 
+      });
+    } catch (error) {
+      console.error("Account deletion request error:", error);
+      res.status(500).json({ message: "Failed to submit deletion request" });
+    }
+  });
+  
+  // Get user's current deletion request
+  app.get("/api/account-deletion-request", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const request = await storage.getAccountDeletionRequestByUser(req.session.userId);
+      res.json({ request: request || null });
+    } catch (error) {
+      console.error("Get deletion request error:", error);
+      res.status(500).json({ message: "Failed to get deletion request" });
+    }
+  });
+  
+  // Cancel deletion request (user can cancel within 30 days)
+  app.post("/api/account-deletion-request/cancel", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const request = await storage.getAccountDeletionRequestByUser(req.session.userId);
+      if (!request) {
+        return res.status(404).json({ message: "No pending deletion request found" });
+      }
+      
+      if (request.status !== 'Pending' && request.status !== 'Approved') {
+        return res.status(400).json({ message: "This request cannot be cancelled" });
+      }
+      
+      // Update request status to Cancelled
+      const updated = await storage.updateAccountDeletionRequest(request.id, {
+        status: 'Cancelled',
+        cancelledAt: new Date(),
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "account_deletion_request",
+        entityId: request.id,
+        actionType: "cancel",
+        actor: req.session.userId,
+        actorRole: "user",
+        details: "User cancelled account deletion request",
+      });
+      
+      res.json({ message: "Deletion request cancelled", request: updated });
+    } catch (error) {
+      console.error("Cancel deletion request error:", error);
+      res.status(500).json({ message: "Failed to cancel deletion request" });
+    }
+  });
+  
+  // Admin: Get all deletion requests
+  app.get("/api/admin/account-deletion-requests", ensureAdmin, async (req, res) => {
+    try {
+      const requests = await storage.getAllAccountDeletionRequests();
+      
+      // Enrich with user data
+      const enrichedRequests = await Promise.all(
+        requests.map(async (request) => {
+          const user = await storage.getUser(request.userId);
+          const reviewer = request.reviewedBy ? await storage.getUser(request.reviewedBy) : null;
+          return {
+            ...request,
+            user: user ? { 
+              id: user.id, 
+              email: user.email, 
+              firstName: user.firstName, 
+              lastName: user.lastName 
+            } : null,
+            reviewer: reviewer ? { 
+              id: reviewer.id, 
+              email: reviewer.email,
+              firstName: reviewer.firstName, 
+              lastName: reviewer.lastName 
+            } : null,
+          };
+        })
+      );
+      
+      res.json({ requests: enrichedRequests });
+    } catch (error) {
+      console.error("Admin get deletion requests error:", error);
+      res.status(500).json({ message: "Failed to get deletion requests" });
+    }
+  });
+  
+  // Admin: Review deletion request (approve/reject)
+  app.post("/api/admin/account-deletion-requests/:id/review", ensureAdmin, async (req, res) => {
+    try {
+      const { action, reviewNotes } = req.body;
+      const requestId = req.params.id;
+      const adminId = req.session.userId!;
+      
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
+      }
+      
+      const request = await storage.getAccountDeletionRequest(requestId);
+      if (!request) {
+        return res.status(404).json({ message: "Deletion request not found" });
+      }
+      
+      if (request.status !== 'Pending') {
+        return res.status(400).json({ message: "This request has already been reviewed" });
+      }
+      
+      const newStatus = action === 'approve' ? 'Approved' : 'Rejected';
+      
+      const updated = await storage.updateAccountDeletionRequest(requestId, {
+        status: newStatus,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        reviewNotes: reviewNotes?.trim() || null,
+      });
+      
+      // Get user for email
+      const user = await storage.getUser(request.userId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "account_deletion_request",
+        entityId: requestId,
+        actionType: action,
+        actor: adminId,
+        actorRole: "admin",
+        details: `Admin ${action}d account deletion request for user ${user?.email || request.userId}`,
+      });
+      
+      // Send email notification to user
+      if (user) {
+        try {
+          const emailContent = action === 'approve'
+            ? `<h2>Account Deletion Request Approved</h2>
+               <p>Dear ${user.firstName},</p>
+               <p>Your account deletion request has been approved.</p>
+               <p><strong>Scheduled Deletion Date:</strong> ${request.scheduledDeletionDate.toLocaleDateString()}</p>
+               <p>Your account will be permanently deleted on this date unless you cancel the request before then.</p>
+               ${reviewNotes ? `<p><strong>Admin Notes:</strong> ${reviewNotes}</p>` : ''}
+               <p>Best regards,<br>The Finatrades Team</p>`
+            : `<h2>Account Deletion Request Rejected</h2>
+               <p>Dear ${user.firstName},</p>
+               <p>Your account deletion request has been reviewed and rejected.</p>
+               ${reviewNotes ? `<p><strong>Reason:</strong> ${reviewNotes}</p>` : ''}
+               <p>If you have any questions, please contact our support team.</p>
+               <p>Best regards,<br>The Finatrades Team</p>`;
+          
+          await sendEmail(
+            user.email,
+            `Account Deletion Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+            emailContent,
+            'account_deletion_review'
+          );
+        } catch (emailError) {
+          console.error("Failed to send review notification email:", emailError);
+        }
+      }
+      
+      res.json({ 
+        message: `Deletion request ${action}d successfully`, 
+        request: updated 
+      });
+    } catch (error) {
+      console.error("Admin review deletion request error:", error);
+      res.status(500).json({ message: "Failed to review deletion request" });
+    }
+  });
+  
+  // Admin: Execute approved deletion (only for approved requests past scheduled date)
+  app.post("/api/admin/account-deletion-requests/:id/execute", ensureAdmin, async (req, res) => {
+    try {
+      const requestId = req.params.id;
+      const adminId = req.session.userId!;
+      
+      const request = await storage.getAccountDeletionRequest(requestId);
+      if (!request) {
+        return res.status(404).json({ message: "Deletion request not found" });
+      }
+      
+      if (request.status !== 'Approved') {
+        return res.status(400).json({ message: "Only approved requests can be executed" });
+      }
+      
+      // Check if scheduled date has passed
+      if (new Date() < new Date(request.scheduledDeletionDate)) {
+        return res.status(400).json({ 
+          message: "Cannot execute before scheduled deletion date",
+          scheduledDate: request.scheduledDeletionDate
+        });
+      }
+      
+      const user = await storage.getUser(request.userId);
+      
+      // Delete the user account
+      const deleted = await storage.deleteUser(request.userId);
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete user account" });
+      }
+      
+      // Update request status
+      await storage.updateAccountDeletionRequest(requestId, {
+        status: 'Completed',
+        completedAt: new Date(),
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "account_deletion_request",
+        entityId: requestId,
+        actionType: "execute",
+        actor: adminId,
+        actorRole: "admin",
+        details: `Admin executed account deletion for user ${user?.email || request.userId}`,
+      });
+      
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Execute deletion request error:", error);
+      res.status(500).json({ message: "Failed to execute deletion request" });
+    }
+  });
+
   // Logout - destroy session
   app.post("/api/auth/logout", (req, res) => {
     const userId = req.session?.userId;
