@@ -35,7 +35,8 @@ export function getRedisClient(): Redis | null {
       redisClient = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         retryDelayOnFailover: 100,
-        lazyConnect: true,
+        lazyConnect: false,
+        enableReadyCheck: true,
         tls: redisUrl.includes('upstash.io') ? {} : undefined,
       });
 
