@@ -16,7 +16,7 @@ interface Notification {
   type: 'transaction' | 'kyc' | 'bnsl' | 'vault' | 'security' | 'system' | 'referral';
   title: string;
   message: string;
-  isRead: boolean;
+  read: boolean;
   priority: 'low' | 'medium' | 'high';
   actionUrl?: string;
   createdAt: string;
@@ -95,11 +95,11 @@ export default function NotificationCenter() {
   }, []);
 
   const notifications = data?.notifications || [];
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const filteredNotifications = notifications.filter(n => {
     if (filter === 'all') return true;
-    if (filter === 'unread') return !n.isRead;
+    if (filter === 'unread') return !n.read;
     return n.type === filter;
   });
 
@@ -238,7 +238,7 @@ export default function NotificationCenter() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, x: -50 }}
-                        className={`p-3 hover:bg-muted/50 transition-colors group ${!notification.isRead ? 'bg-primary/5' : ''}`}
+                        className={`p-3 hover:bg-muted/50 transition-colors group ${!notification.read ? 'bg-primary/5' : ''}`}
                         data-testid={`notification-item-${notification.id}`}
                       >
                         <div className="flex gap-3">
@@ -248,10 +248,10 @@ export default function NotificationCenter() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <h4 className={`text-sm font-medium truncate ${!notification.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                <h4 className={`text-sm font-medium truncate ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
                                   {notification.title}
                                 </h4>
-                                {!notification.isRead && (
+                                {!notification.read && (
                                   <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                                 )}
                                 {getPriorityDot(notification.priority) && (
@@ -259,7 +259,7 @@ export default function NotificationCenter() {
                                 )}
                               </div>
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                {!notification.isRead && (
+                                {!notification.read && (
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
