@@ -8,6 +8,7 @@ import crypto from "crypto";
 import { storage } from "./storage";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import { RedisStore } from "connect-redis";
 import { pool } from "./db";
 import { getRedisClient } from "./redis-client";
 import helmet from "helmet";
@@ -51,15 +52,33 @@ app.use(helmet({
   xFrameOptions: { action: "sameorigin" },
 }));
 
-// Session configuration with PostgreSQL store
+// Session configuration with Redis (primary) or PostgreSQL (fallback)
 const PgSession = connectPgSimple(session);
+
+// Create session store - prefer Redis for performance, fallback to PostgreSQL
+function createSessionStore() {
+  const redisClient = getRedisClient();
+  
+  if (redisClient) {
+    console.log('[Session] Using Redis session store (enterprise performance)');
+    return new RedisStore({
+      client: redisClient,
+      prefix: 'finatrades:sess:',
+      ttl: 86400, // 24 hours in seconds
+    });
+  }
+  
+  console.log('[Session] Using PostgreSQL session store (Redis not available)');
+  return new PgSession({
+    pool: pool,
+    tableName: "user_sessions",
+    createTableIfMissing: true,
+  });
+}
+
 app.use(
   session({
-    store: new PgSession({
-      pool: pool,
-      tableName: "user_sessions",
-      createTableIfMissing: true,
-    }),
+    store: createSessionStore(),
     secret: (() => {
       const secret = process.env.SESSION_SECRET;
       if (!secret && process.env.NODE_ENV === 'production') {
@@ -340,6 +359,17 @@ app.use((req, res, next) => {
     await storage.seedDefaultKnowledgeBase();
   } catch (error) {
     console.error('[Knowledge Base] Failed to seed defaults:', error);
+  }
+  
+  // Initialize enterprise job queue system
+  try {
+    const { initializeJobQueues } = await import('./job-queue');
+    const { startJobProcessors } = await import('./job-processor');
+    initializeJobQueues();
+    startJobProcessors();
+    console.log('[Enterprise] Background job processing enabled');
+  } catch (error) {
+    console.warn('[Enterprise] Job queue initialization skipped:', error);
   }
   
   // Setup Socket.IO for real-time chat

@@ -12,25 +12,18 @@ interface LedgerEvent {
   syncVersion: number;
 }
 
+// Enterprise-optimized query key mapping - balanced between performance and real-time accuracy
 const QUERY_KEY_MAP: Record<string, string[][]> = {
-  'balance_update': [['dashboard'], ['wallet'], ['user']],
-  'transaction': [['dashboard'], ['transactions'], ['wallet']],
-  'certificate': [['dashboard'], ['certificates'], ['vault-deposits']],
-  'notification': [['notifications']],
-  'gold_price': [['gold-price'], ['dashboard']],
-  'deposit_rejected': [['dashboard'], ['transactions'], ['notifications'], ['deposit-requests']],
-  'withdrawal_rejected': [['dashboard'], ['transactions'], ['notifications'], ['withdrawal-requests']],
-  'crypto_rejected': [['dashboard'], ['transactions'], ['notifications'], ['crypto-payments']],
-  'pending_transfer': [['pendingTransfers'], ['notifications'], ['dashboard'], ['wallet']],
-  'admin_update': [
-    ['admin-users'],
-    ['admin-transactions'],
-    ['admin-kyc-submissions'],
-    ['admin-vault'],
-    ['admin-bnsl'],
-    ['/api/admin/transactions'],
-    ['/api/admin/users'],
-  ],
+  'balance_update': [['wallet'], ['dashboard']], // Essential for financial accuracy
+  'transaction': [['transactions'], ['dashboard']], // Transactions update dashboard totals
+  'certificate': [['certificates']], // Only certificates
+  'notification': [['notifications']], // Only notifications
+  'gold_price': [['gold-price']], // Only gold price - dashboard has longer staleTime
+  'deposit_rejected': [['deposit-requests'], ['notifications'], ['dashboard']],
+  'withdrawal_rejected': [['withdrawal-requests'], ['notifications'], ['dashboard']],
+  'crypto_rejected': [['crypto-payments'], ['notifications']],
+  'pending_transfer': [['pendingTransfers'], ['wallet']], // Pending affects wallet
+  'admin_update': [['admin-transactions'], ['admin-users']], // Minimal admin updates
 };
 
 const MODULE_QUERY_MAP: Record<string, string[][]> = {
