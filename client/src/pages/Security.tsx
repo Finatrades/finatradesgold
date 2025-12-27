@@ -7,22 +7,101 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Shield, Smartphone, Key, Copy, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Lock, KeyRound, LockKeyhole, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Shield, Smartphone, Key, Copy, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Lock, KeyRound, LockKeyhole, AlertTriangle, Trash2, Loader2, Clock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useLocation } from 'wouter';
 import BiometricSettings from '@/components/BiometricSettings';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 export default function Security() {
   const { user, refreshUser, logout } = useAuth();
   const [, setLocation] = useLocation();
   
-  // Delete account states
-  const [deletePassword, setDeletePassword] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  // Account deletion request states
+  const [showDeletionRequestDialog, setShowDeletionRequestDialog] = useState(false);
+  const [deletionReason, setDeletionReason] = useState('');
+  const [deletionComments, setDeletionComments] = useState('');
+  const [deletionPassword, setDeletionPassword] = useState('');
+  const [showDeletionPassword, setShowDeletionPassword] = useState(false);
+  
+  // Query for existing deletion request
+  const { data: deletionRequestData, isLoading: isDeletionRequestLoading, refetch: refetchDeletionRequest } = useQuery({
+    queryKey: ['account-deletion-request'],
+    queryFn: async () => {
+      const res = await fetch('/api/account-deletion-request');
+      if (!res.ok) throw new Error('Failed to fetch deletion request');
+      return res.json();
+    },
+    enabled: !!user,
+  });
+  
+  // Mutation to submit deletion request
+  const submitDeletionMutation = useMutation({
+    mutationFn: async (data: { reason: string; additionalComments: string; password: string }) => {
+      return apiRequest('POST', '/api/account-deletion-request', data);
+    },
+    onSuccess: () => {
+      toast.success('Deletion request submitted', {
+        description: 'Your account deletion request has been submitted for review.'
+      });
+      setShowDeletionRequestDialog(false);
+      resetDeletionForm();
+      refetchDeletionRequest();
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to submit request', {
+        description: error.message || 'Could not submit deletion request'
+      });
+    },
+  });
+  
+  // Mutation to cancel deletion request
+  const cancelDeletionMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/account-deletion-request/cancel', {});
+    },
+    onSuccess: () => {
+      toast.success('Request cancelled', {
+        description: 'Your account deletion request has been cancelled.'
+      });
+      refetchDeletionRequest();
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to cancel request', {
+        description: error.message || 'Could not cancel deletion request'
+      });
+    },
+  });
+  
+  const resetDeletionForm = () => {
+    setDeletionReason('');
+    setDeletionComments('');
+    setDeletionPassword('');
+    setShowDeletionPassword(false);
+  };
+  
+  const handleSubmitDeletionRequest = () => {
+    if (deletionReason.trim().length < 10) {
+      toast.error('Please provide a detailed reason (at least 10 characters)');
+      return;
+    }
+    if (!deletionPassword) {
+      toast.error('Password is required to confirm');
+      return;
+    }
+    submitDeletionMutation.mutate({
+      reason: deletionReason,
+      additionalComments: deletionComments,
+      password: deletionPassword,
+    });
+  };
+  
+  const deletionRequest = deletionRequestData?.request;
   
   // MFA States
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -290,35 +369,6 @@ export default function Security() {
     setBackupCodes([]);
   };
 
-  const handleDeleteAccount = async () => {
-    if (!deletePassword) {
-      toast.error("Password required", {
-        description: "Please enter your password to confirm deletion"
-      });
-      return;
-    }
-    
-    setIsDeleting(true);
-    try {
-      await apiRequest('DELETE', `/api/users/${user?.id}`, {
-        password: deletePassword
-      });
-      
-      toast.success("Account deleted", {
-        description: "Your account has been permanently deleted."
-      });
-      
-      logout();
-      setLocation('/');
-    } catch (error) {
-      toast.error("Failed to delete account", {
-        description: error instanceof Error ? error.message : "Could not delete your account"
-      });
-    } finally {
-      setIsDeleting(false);
-      setDeletePassword('');
-    }
-  };
 
   if (!user) {
     setLocation('/login');
@@ -521,65 +571,200 @@ export default function Security() {
         {/* Biometric Authentication */}
         <BiometricSettings />
 
-        {/* Danger Zone - Delete Account */}
+        {/* Danger Zone - Account Deletion Request */}
         <Card className="border-red-200">
           <CardHeader>
             <CardTitle className="text-red-600 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
               Danger Zone
             </CardTitle>
-            <CardDescription>Irreversible actions for your account.</CardDescription>
+            <CardDescription>Request account deletion. This process requires admin approval and has a 30-day waiting period.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
-              <div>
-                <p className="font-medium text-red-700">Delete Account</p>
-                <p className="text-sm text-red-600">Permanently delete your account and all data. This cannot be undone.</p>
+            {isDeletionRequestLoading ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" data-testid="button-delete-account">
-                    <Trash2 className="w-4 h-4 mr-2" /> Delete Account
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-                      <AlertTriangle className="w-5 h-5" />
-                      Delete Your Account?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. All your data, transactions, and wallet balances will be permanently deleted.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <div className="space-y-2 py-4">
-                    <Label htmlFor="delete-password">Enter your password to confirm:</Label>
-                    <Input
-                      id="delete-password"
-                      type="password"
-                      value={deletePassword}
-                      onChange={(e) => setDeletePassword(e.target.value)}
-                      placeholder="Your password"
-                      data-testid="input-delete-password"
-                    />
+            ) : deletionRequest ? (
+              // Show existing request status
+              <div className="space-y-4">
+                <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-red-700">Deletion Request Submitted</p>
+                        <Badge 
+                          variant={deletionRequest.status === 'Approved' ? 'destructive' : deletionRequest.status === 'Pending' ? 'outline' : 'secondary'}
+                          data-testid="badge-deletion-status"
+                        >
+                          {deletionRequest.status}
+                        </Badge>
+                      </div>
+                      <div className="text-sm space-y-1 text-red-600">
+                        <p className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Scheduled deletion: {new Date(deletionRequest.scheduledDeletionDate).toLocaleDateString()}
+                        </p>
+                        <p><strong>Reason:</strong> {deletionRequest.reason}</p>
+                        {deletionRequest.additionalComments && (
+                          <p><strong>Comments:</strong> {deletionRequest.additionalComments}</p>
+                        )}
+                        {deletionRequest.reviewNotes && (
+                          <p><strong>Admin notes:</strong> {deletionRequest.reviewNotes}</p>
+                        )}
+                      </div>
+                    </div>
+                    {(deletionRequest.status === 'Pending' || deletionRequest.status === 'Approved') && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" data-testid="button-cancel-deletion">
+                            <XCircle className="w-4 h-4 mr-2" /> Cancel Request
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel Deletion Request?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel your account deletion request? Your account will remain active.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep Request</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => cancelDeletionMutation.mutate()}
+                              disabled={cancelDeletionMutation.isPending}
+                              data-testid="button-confirm-cancel-deletion"
+                            >
+                              {cancelDeletionMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                              Yes, Cancel Request
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDeletePassword('')}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteAccount}
-                      disabled={isDeleting || !deletePassword}
-                      className="bg-red-600 hover:bg-red-700"
-                      data-testid="button-confirm-delete"
-                    >
-                      {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                      Delete Permanently
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                </div>
+                {deletionRequest.status === 'Pending' && (
+                  <p className="text-sm text-muted-foreground">
+                    Your request is pending admin review. You can cancel it at any time before the scheduled deletion date.
+                  </p>
+                )}
+                {deletionRequest.status === 'Approved' && (
+                  <p className="text-sm text-amber-600">
+                    Your request has been approved. Your account will be deleted on the scheduled date unless you cancel the request.
+                  </p>
+                )}
+              </div>
+            ) : (
+              // Show form to request deletion
+              <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
+                <div>
+                  <p className="font-medium text-red-700">Request Account Deletion</p>
+                  <p className="text-sm text-red-600">Submit a request to delete your account. Requires admin approval and has a 30-day grace period.</p>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => setShowDeletionRequestDialog(true)}
+                  data-testid="button-request-deletion"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Request Deletion
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Deletion Request Dialog */}
+        <Dialog open={showDeletionRequestDialog} onOpenChange={(open) => { 
+          setShowDeletionRequestDialog(open); 
+          if (!open) resetDeletionForm(); 
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                Request Account Deletion
+              </DialogTitle>
+              <DialogDescription>
+                Submit a request to permanently delete your account. This requires admin approval and has a 30-day waiting period during which you can cancel.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                <p className="font-medium mb-1">Important:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Your request will be reviewed by an admin</li>
+                  <li>You have 30 days to cancel the request</li>
+                  <li>All data will be permanently deleted after approval</li>
+                </ul>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="deletion-reason">Reason for leaving *</Label>
+                <Textarea
+                  id="deletion-reason"
+                  value={deletionReason}
+                  onChange={(e) => setDeletionReason(e.target.value)}
+                  placeholder="Please tell us why you want to delete your account (minimum 10 characters)"
+                  rows={3}
+                  data-testid="input-deletion-reason"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="deletion-comments">Additional comments (optional)</Label>
+                <Textarea
+                  id="deletion-comments"
+                  value={deletionComments}
+                  onChange={(e) => setDeletionComments(e.target.value)}
+                  placeholder="Any other feedback or comments?"
+                  rows={2}
+                  data-testid="input-deletion-comments"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="deletion-password">Confirm your password *</Label>
+                <div className="relative">
+                  <Input
+                    id="deletion-password"
+                    type={showDeletionPassword ? 'text' : 'password'}
+                    value={deletionPassword}
+                    onChange={(e) => setDeletionPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    data-testid="input-deletion-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowDeletionPassword(!showDeletionPassword)}
+                  >
+                    {showDeletionPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowDeletionRequestDialog(false); resetDeletionForm(); }}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleSubmitDeletionRequest}
+                disabled={submitDeletionMutation.isPending || deletionReason.trim().length < 10 || !deletionPassword}
+                data-testid="button-submit-deletion-request"
+              >
+                {submitDeletionMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Submit Request
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Setup Dialog */}
         <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>

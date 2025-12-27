@@ -1592,7 +1592,7 @@ ${message}
   });
   
   // Admin: Get all deletion requests
-  app.get("/api/admin/account-deletion-requests", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/account-deletion-requests", ensureAdminAsync, async (req, res) => {
     try {
       const requests = await storage.getAllAccountDeletionRequests();
       
@@ -1627,7 +1627,7 @@ ${message}
   });
   
   // Admin: Review deletion request (approve/reject)
-  app.post("/api/admin/account-deletion-requests/:id/review", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/account-deletion-requests/:id/review", ensureAdminAsync, async (req, res) => {
     try {
       const { action, reviewNotes } = req.body;
       const requestId = req.params.id;
@@ -1708,7 +1708,7 @@ ${message}
   });
   
   // Admin: Execute approved deletion (only for approved requests past scheduled date)
-  app.post("/api/admin/account-deletion-requests/:id/execute", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/account-deletion-requests/:id/execute", ensureAdminAsync, async (req, res) => {
     try {
       const requestId = req.params.id;
       const adminId = req.session.userId!;
