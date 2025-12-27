@@ -15139,10 +15139,12 @@ ${message}
       
       // Find target if identifier provided
       let targetId = null;
+      let targetUser = null;
       if (targetIdentifier) {
         const targetUsers = await storage.searchUsersByIdentifier(targetIdentifier);
         if (targetUsers.length > 0) {
           targetId = targetUsers[0].id;
+          targetUser = targetUsers[0];
         }
       }
       
@@ -15164,6 +15166,51 @@ ${message}
       
       // Generate QR code as data URL
       const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
+      
+      // Send email notification to target user if found
+      if (targetUser && targetUser.email) {
+        const requesterName = `${requester.firstName} ${requester.lastName}`;
+        try {
+          await sendEmailDirect({
+            to: targetUser.email,
+            subject: `Payment Request from ${requesterName} - $${parseFloat(amountUsd).toFixed(2)}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%); padding: 20px; text-align: center;">
+                  <h1 style="color: white; margin: 0;">Finatrades</h1>
+                </div>
+                <div style="padding: 30px; background: #f9fafb;">
+                  <h2 style="color: #1f2937;">You've Received a Payment Request</h2>
+                  <p style="color: #4b5563; font-size: 16px;">
+                    <strong>${requesterName}</strong> has requested a payment from you.
+                  </p>
+                  <div style="background: white; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 10px 0; color: #6b7280;">Amount Requested:</p>
+                    <p style="margin: 0; font-size: 28px; font-weight: bold; color: #8A2BE2;">$${parseFloat(amountUsd).toFixed(2)}</p>
+                    ${memo ? `<p style="margin: 15px 0 0 0; color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
+                  </div>
+                  <p style="color: #4b5563;">Reference: <strong>${referenceNumber}</strong></p>
+                  <p style="color: #4b5563;">This request expires on: <strong>${expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong></p>
+                  <div style="margin-top: 25px; text-align: center;">
+                    <a href="${process.env.REPLIT_DOMAINS?.split(',')[0] ? 'https://' + process.env.REPLIT_DOMAINS.split(',')[0] : 'https://finatrades.com'}/finapay" 
+                       style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                      View Request in FinaPay
+                    </a>
+                  </div>
+                  <p style="color: #9ca3af; font-size: 14px; margin-top: 25px;">
+                    Log in to your Finatrades account to pay or decline this request.
+                  </p>
+                </div>
+                <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+                  <p>&copy; ${new Date().getFullYear()} Finatrades. All rights reserved.</p>
+                </div>
+              </div>
+            `,
+          });
+        } catch (emailError) {
+          console.error('[PaymentRequest] Failed to send email notification:', emailError);
+        }
+      }
       
       res.json({ request, qrCodeDataUrl });
     } catch (error) {
