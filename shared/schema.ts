@@ -3589,3 +3589,40 @@ export const tradeRiskAssessments = pgTable("trade_risk_assessments", {
 export const insertTradeRiskAssessmentSchema = createInsertSchema(tradeRiskAssessments).omit({ id: true, createdAt: true });
 export type InsertTradeRiskAssessment = z.infer<typeof insertTradeRiskAssessmentSchema>;
 export type TradeRiskAssessment = typeof tradeRiskAssessments.$inferSelect;
+
+// ============================================
+// ACCOUNT DELETION REQUESTS
+// ============================================
+
+export const accountDeletionStatusEnum = pgEnum('account_deletion_status', [
+  'Pending', 'Approved', 'Rejected', 'Cancelled', 'Completed'
+]);
+
+export const accountDeletionRequests = pgTable("account_deletion_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  reason: text("reason").notNull(),
+  additionalComments: text("additional_comments"),
+  
+  status: accountDeletionStatusEnum("status").notNull().default('Pending'),
+  
+  requestedAt: timestamp("requested_at").notNull().defaultNow(),
+  scheduledDeletionDate: timestamp("scheduled_deletion_date").notNull(),
+  
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
+  cancelledAt: timestamp("cancelled_at"),
+  completedAt: timestamp("completed_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAccountDeletionRequestSchema = createInsertSchema(accountDeletionRequests).omit({ 
+  id: true, createdAt: true, updatedAt: true, reviewedAt: true, cancelledAt: true, completedAt: true 
+});
+export type InsertAccountDeletionRequest = z.infer<typeof insertAccountDeletionRequestSchema>;
+export type AccountDeletionRequest = typeof accountDeletionRequests.$inferSelect;
