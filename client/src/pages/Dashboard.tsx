@@ -126,29 +126,29 @@ export default function Dashboard() {
 
         {/* Settlement Assurance Rotating Banner */}
         <div 
-          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border border-amber-300 cursor-pointer hover:shadow-md transition-all group"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border border-green-300 cursor-pointer hover:shadow-md transition-all group"
           onClick={() => setShowAssuranceDialog(true)}
           data-testid="banner-settlement-assurance"
         >
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-sm">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-sm">
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 overflow-hidden">
             <div className="animate-marquee whitespace-nowrap">
-              <span className="text-sm font-semibold text-amber-800">
+              <span className="text-sm font-semibold text-green-800">
                 Guarantee of Settlement Assurance
               </span>
-              <span className="mx-4 text-amber-400">•</span>
-              <span className="text-sm text-amber-700">
+              <span className="mx-4 text-green-400">•</span>
+              <span className="text-sm text-green-700">
                 Backed by USD 42.134 Billion in verified geological gold reserves
               </span>
-              <span className="mx-4 text-amber-400">•</span>
-              <span className="text-sm text-amber-600">
+              <span className="mx-4 text-green-400">•</span>
+              <span className="text-sm text-green-600">
                 Click to learn more
               </span>
             </div>
           </div>
-          <div className="flex-shrink-0 text-amber-600 group-hover:text-amber-800 transition-colors">
+          <div className="flex-shrink-0 text-green-600 group-hover:text-green-800 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -157,18 +157,18 @@ export default function Dashboard() {
 
         {/* 2FA Reminder Banner */}
         {twoFactorReminder && !user.mfaEnabled && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-amber-50 border border-amber-300" data-testid="banner-2fa-reminder">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-red-50 border border-red-300" data-testid="banner-2fa-reminder">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-amber-800">Secure Your Account</p>
-                <p className="text-xs text-amber-600">Enable Two-Factor Authentication for enhanced security</p>
+                <p className="text-sm font-medium text-red-800">Secure Your Account</p>
+                <p className="text-xs text-red-600">Enable Two-Factor Authentication for enhanced security</p>
               </div>
             </div>
             <Link href="/security">
-              <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100">
+              <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
                 Enable 2FA
               </Button>
             </Link>
@@ -348,16 +348,16 @@ export default function Dashboard() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-md">
                 <ShieldCheck className="w-6 h-6 text-white" />
               </div>
-              <DialogTitle className="text-xl font-bold text-amber-800">
+              <DialogTitle className="text-xl font-bold text-green-800">
                 Guarantee of Settlement Assurance
               </DialogTitle>
             </div>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200">
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
               <p className="text-gray-700 leading-relaxed text-sm">
                 Raminvest Holding Ltd (DIFC Registration No. 7030), as the governing entity of the Group ecosystem that includes Wingold & Metals DMCC, provides a limited settlement assurance mechanism supported by verified geological gold reserves held through Boudadiya Services SARL under Mining Permit No. 2265 B2-WOMPOU.
               </p>
