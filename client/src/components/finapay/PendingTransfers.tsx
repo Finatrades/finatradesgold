@@ -135,7 +135,7 @@ export default function PendingTransfers() {
       for (const requesterId of requesterIds) {
         if (!requesterInfoMap[requesterId as string]) {
           try {
-            const response = await fetch(`/api/users/${requesterId}`);
+            const response = await apiRequest('GET', `/api/users/${requesterId}`);
             if (response.ok) {
               const data = await response.json();
               setRequesterInfoMap(prev => ({
@@ -220,7 +220,9 @@ export default function PendingTransfers() {
 
   const payRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const response = await apiRequest('POST', `/api/finapay/requests/${requestId}/pay`);
+      const response = await apiRequest('POST', `/api/finapay/requests/${requestId}/pay`, {
+        payerId: user?.id,
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to pay request');
