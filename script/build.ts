@@ -1,7 +1,8 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, cp, mkdir } from "fs/promises";
 import { execSync } from "child_process";
+import { existsSync } from "fs";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -69,6 +70,14 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+
+  // Copy certs folder for AWS RDS SSL connections
+  if (existsSync("certs")) {
+    console.log("copying SSL certificates...");
+    await mkdir("dist/certs", { recursive: true });
+    await cp("certs", "dist/certs", { recursive: true });
+    console.log("SSL certificates copied to dist/certs");
+  }
 }
 
 buildAll().catch((err) => {

@@ -48,18 +48,20 @@ if (secondaryUrl && isUsingAws) {
 function getAwsSslConfig(): pg.PoolConfig['ssl'] {
   if (!isUsingAws) return undefined;
   
-  // Check if relaxed SSL mode is explicitly requested
-  // Can be used in production if CA bundle issues occur - set AWS_RDS_RELAXED_SSL=true
-  const relaxedSsl = process.env.AWS_RDS_RELAXED_SSL === 'true';
+  // Check if relaxed SSL mode is explicitly requested (development only)
+  const relaxedSsl = process.env.AWS_RDS_RELAXED_SSL === 'true' && process.env.NODE_ENV !== 'production';
   
   if (relaxedSsl) {
-    console.log('[Database] Using SSL with relaxed certificate verification (AWS_RDS_RELAXED_SSL=true)');
+    console.log('[Database] Using SSL with relaxed certificate verification (development mode)');
     return { rejectUnauthorized: false };
   }
   
   // Default: Try to load AWS RDS CA bundle for secure certificate verification
+  // Check multiple locations for production (dist/) and development environments
   const caBundlePaths = [
     path.join(process.cwd(), 'certs', 'aws-rds-global-bundle.pem'),
+    path.join(process.cwd(), 'dist', 'certs', 'aws-rds-global-bundle.pem'),
+    path.join(__dirname, 'certs', 'aws-rds-global-bundle.pem'),
     path.join(__dirname, '..', 'certs', 'aws-rds-global-bundle.pem'),
     '/etc/ssl/certs/aws-rds-global-bundle.pem',
   ];
@@ -76,10 +78,15 @@ function getAwsSslConfig(): pg.PoolConfig['ssl'] {
     }
   }
   
-  // Fallback: CA bundle not found - use relaxed SSL with warning
-  console.warn('[Database] WARNING: AWS RDS CA bundle not found. Using relaxed SSL mode.');
-  console.warn('[Database] For secure connections, ensure certs/aws-rds-global-bundle.pem exists or set AWS_RDS_RELAXED_SSL=true.');
-  return { rejectUnauthorized: false };
+  // Fallback: If in development and CA bundle not found, use relaxed mode with warning
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('[Database] WARNING: AWS RDS CA bundle not found. Using relaxed SSL for development.');
+    console.warn('[Database] For production, ensure certs/aws-rds-global-bundle.pem exists.');
+    return { rejectUnauthorized: false };
+  }
+  
+  // In production without CA bundle, fail securely
+  throw new Error('[Database] SECURITY: AWS RDS CA bundle required in production. Add certs/aws-rds-global-bundle.pem');
 }
 
 // Primary database pool (AWS RDS in production)
