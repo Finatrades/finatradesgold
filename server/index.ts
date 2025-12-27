@@ -55,20 +55,9 @@ app.use(helmet({
 // Session configuration with Redis (primary) or PostgreSQL (fallback)
 const PgSession = connectPgSimple(session);
 
-// Create session store - prefer Redis for performance, fallback to PostgreSQL
+// Create session store - PostgreSQL for reliability
 function createSessionStore() {
-  const redisClient = getRedisClient();
-  
-  if (redisClient) {
-    console.log('[Session] Using Redis session store (enterprise performance)');
-    return new RedisStore({
-      client: redisClient,
-      prefix: 'finatrades:sess:',
-      ttl: 86400, // 24 hours in seconds
-    });
-  }
-  
-  console.log('[Session] Using PostgreSQL session store (Redis not available)');
+  console.log('[Session] Using PostgreSQL session store');
   return new PgSession({
     pool: pool,
     tableName: "user_sessions",
