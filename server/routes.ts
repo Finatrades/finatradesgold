@@ -2556,6 +2556,17 @@ ${message}
     }
   });
 
+  // Gold Backing Report (Admin)
+  app.get("/api/admin/gold-backing-report", ensureAdminAsync, async (req, res) => {
+    try {
+      const report = await storage.getGoldBackingReport();
+      res.json(report);
+    } catch (error) {
+      console.error("Failed to get gold backing report:", error);
+      res.status(500).json({ message: "Failed to get gold backing report" });
+    }
+  });
+
   // System Health Check (Admin)
   app.get("/api/admin/system-health", ensureAdminAsync, async (req, res) => {
     const startTime = process.hrtime();

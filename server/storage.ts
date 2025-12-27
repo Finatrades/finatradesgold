@@ -3439,6 +3439,85 @@ export class DatabaseStorage implements IStorage {
     await db.delete(pinVerificationTokens)
       .where(sql`${pinVerificationTokens.expiresAt} < NOW()`);
   }
+
+  // ============================================
+  // GOLD BACKING REPORT
+  // ============================================
+
+  async getGoldBackingReport(): Promise<{
+    physicalGold: { totalGrams: number; holdings: any[] };
+    customerLiabilities: {
+      totalGrams: number;
+      wallets: { count: number; totalGrams: number };
+      bnslWallets: { count: number; availableGrams: number; lockedGrams: number };
+    };
+    certificates: { total: number; byStatus: Record<string, number> };
+    backingRatio: number;
+    surplus: number;
+  }> {
+    // Get physical gold in vault (all holdings represent physical gold)
+    const vaultResults = await db.select({
+      totalGrams: sql<string>`COALESCE(SUM(${vaultHoldings.goldGrams}::numeric), 0)`,
+    }).from(vaultHoldings);
+    
+    const physicalGoldGrams = vaultResults[0]?.totalGrams ? parseFloat(vaultResults[0].totalGrams) : 0;
+
+    // Get vault holdings details
+    const holdings = await db.select().from(vaultHoldings);
+
+    // Get customer wallet liabilities
+    const walletResults = await db.select({
+      count: sql<string>`COUNT(*)`,
+      totalGrams: sql<string>`COALESCE(SUM(${wallets.goldGrams}::numeric), 0)`,
+    }).from(wallets).where(sql`${wallets.goldGrams}::numeric > 0`);
+
+    const walletCount = walletResults[0]?.count ? parseInt(walletResults[0].count) : 0;
+    const walletGrams = walletResults[0]?.totalGrams ? parseFloat(walletResults[0].totalGrams) : 0;
+
+    // Get BNSL wallet liabilities (both available and locked gold)
+    const bnslResults = await db.select({
+      count: sql<string>`COUNT(*)`,
+      availableGrams: sql<string>`COALESCE(SUM(${bnslWallets.availableGoldGrams}::numeric), 0)`,
+      lockedGrams: sql<string>`COALESCE(SUM(${bnslWallets.lockedGoldGrams}::numeric), 0)`,
+    }).from(bnslWallets);
+
+    const bnslCount = bnslResults[0]?.count ? parseInt(bnslResults[0].count) : 0;
+    const bnslAvailableGrams = bnslResults[0]?.availableGrams ? parseFloat(bnslResults[0].availableGrams) : 0;
+    const bnslLockedGrams = bnslResults[0]?.lockedGrams ? parseFloat(bnslResults[0].lockedGrams) : 0;
+    const bnslTotalGrams = bnslAvailableGrams + bnslLockedGrams;
+
+    const totalLiabilities = walletGrams + bnslTotalGrams;
+
+    // Get certificates breakdown by status
+    const certResults = await db.select({
+      status: certificates.status,
+      count: sql<string>`COUNT(*)`,
+    }).from(certificates).groupBy(certificates.status);
+
+    const certByStatus: Record<string, number> = {};
+    let totalCerts = 0;
+    for (const row of certResults) {
+      const count = row.count ? Number(row.count) : 0;
+      certByStatus[row.status] = count;
+      totalCerts += count;
+    }
+
+    // Calculate backing ratio
+    const backingRatio = totalLiabilities > 0 ? (physicalGoldGrams / totalLiabilities) * 100 : 100;
+    const surplus = physicalGoldGrams - totalLiabilities;
+
+    return {
+      physicalGold: { totalGrams: physicalGoldGrams, holdings },
+      customerLiabilities: {
+        totalGrams: totalLiabilities,
+        wallets: { count: walletCount, totalGrams: walletGrams },
+        bnslWallets: { count: bnslCount, availableGrams: bnslAvailableGrams, lockedGrams: bnslLockedGrams },
+      },
+      certificates: { total: totalCerts, byStatus: certByStatus },
+      backingRatio: parseFloat(backingRatio.toFixed(2)),
+      surplus: parseFloat(surplus.toFixed(6)),
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();

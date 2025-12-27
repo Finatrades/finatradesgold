@@ -1,12 +1,12 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// Disable SSL certificate validation for AWS RDS connections
-// AWS RDS uses certificates that may not be in the system trust store
-if (process.env.AWS_DATABASE_URL) {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const { Pool } = pg;
 
@@ -22,7 +22,7 @@ const { Pool } = pg;
  */
 
 // Determine primary database URL
-const primaryUrl = process.env.AWS_DATABASE_URL || process.env.DATABASE_URL;
+let primaryUrl = process.env.AWS_DATABASE_URL || process.env.DATABASE_URL;
 const secondaryUrl = process.env.DATABASE_URL;
 
 if (!primaryUrl) {
@@ -33,9 +33,57 @@ if (!primaryUrl) {
 
 // Log which database is being used
 const isUsingAws = !!process.env.AWS_DATABASE_URL;
+
+// Strip sslmode from connection string if present - we'll handle SSL via pool config
+if (isUsingAws && primaryUrl.includes('sslmode=')) {
+  primaryUrl = primaryUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$/, '');
+  console.log('[Database] Stripped sslmode from connection string - using pool SSL config');
+}
 console.log(`[Database] Primary: ${isUsingAws ? 'AWS RDS' : 'Replit PostgreSQL'}`);
 if (secondaryUrl && isUsingAws) {
   console.log(`[Database] Secondary (backup): Replit PostgreSQL`);
+}
+
+// Configure SSL for AWS RDS connections
+function getAwsSslConfig(): pg.PoolConfig['ssl'] {
+  if (!isUsingAws) return undefined;
+  
+  // Check if relaxed SSL mode is explicitly requested (development only)
+  const relaxedSsl = process.env.AWS_RDS_RELAXED_SSL === 'true' && process.env.NODE_ENV !== 'production';
+  
+  if (relaxedSsl) {
+    console.log('[Database] Using SSL with relaxed certificate verification (development mode)');
+    return { rejectUnauthorized: false };
+  }
+  
+  // Default: Try to load AWS RDS CA bundle for secure certificate verification
+  const caBundlePaths = [
+    path.join(process.cwd(), 'certs', 'aws-rds-global-bundle.pem'),
+    path.join(__dirname, '..', 'certs', 'aws-rds-global-bundle.pem'),
+    '/etc/ssl/certs/aws-rds-global-bundle.pem',
+  ];
+  
+  for (const caPath of caBundlePaths) {
+    try {
+      if (fs.existsSync(caPath)) {
+        const ca = fs.readFileSync(caPath, 'utf8');
+        console.log(`[Database] Using AWS RDS CA bundle from: ${caPath}`);
+        return { ca, rejectUnauthorized: true };
+      }
+    } catch (err) {
+      console.warn(`[Database] Failed to read CA bundle from ${caPath}:`, err);
+    }
+  }
+  
+  // Fallback: If in development and CA bundle not found, use relaxed mode with warning
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('[Database] WARNING: AWS RDS CA bundle not found. Using relaxed SSL for development.');
+    console.warn('[Database] For production, ensure certs/aws-rds-global-bundle.pem exists.');
+    return { rejectUnauthorized: false };
+  }
+  
+  // In production without CA bundle, fail securely
+  throw new Error('[Database] SECURITY: AWS RDS CA bundle required in production. Add certs/aws-rds-global-bundle.pem');
 }
 
 // Primary database pool (AWS RDS in production)
@@ -44,8 +92,7 @@ export const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
-  // Enable SSL for AWS RDS connections with relaxed certificate validation
-  ssl: isUsingAws ? { rejectUnauthorized: false } : undefined,
+  ssl: getAwsSslConfig(),
 });
 
 // Secondary database pool (Replit - for backup sync)

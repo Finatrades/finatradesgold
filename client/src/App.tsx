@@ -104,6 +104,7 @@ import AttachmentsManagement from "@/pages/admin/AttachmentsManagement";
 import ReferralManagement from "@/pages/admin/ReferralManagement";
 import AuditLogs from "@/pages/admin/AuditLogs";
 import SystemHealth from "@/pages/admin/SystemHealth";
+import GoldBackingReport from "@/pages/admin/GoldBackingReport";
 import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
@@ -211,6 +212,7 @@ function Router() {
       <Route path="/admin/referrals" component={ReferralManagement} />
       <Route path="/admin/audit-logs" component={AuditLogs} />
       <Route path="/admin/system-health" component={SystemHealth} />
+      <Route path="/admin/gold-backing" component={GoldBackingReport} />
       <Route path="/admin/compliance" component={ComplianceDashboard} />
       
       {/* QA Routes */}

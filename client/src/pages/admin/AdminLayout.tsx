@@ -155,6 +155,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'Dashboard', href: '/admin' },
         { label: 'Financial Reports', href: '/admin/financial-reports' },
+        { label: 'Gold Backing Report', href: '/admin/gold-backing' },
         { label: 'System Health', href: '/admin/system-health' },
       ]
     },
