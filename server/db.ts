@@ -3,10 +3,6 @@ import pg from "pg";
 import * as schema from "@shared/schema";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const { Pool } = pg;
 
@@ -58,11 +54,10 @@ function getAwsSslConfig(): pg.PoolConfig['ssl'] {
   
   // Default: Try to load AWS RDS CA bundle for secure certificate verification
   // Check multiple locations for production (dist/) and development environments
+  const cwd = process.cwd();
   const caBundlePaths = [
-    path.join(process.cwd(), 'certs', 'aws-rds-global-bundle.pem'),
-    path.join(process.cwd(), 'dist', 'certs', 'aws-rds-global-bundle.pem'),
-    path.join(__dirname, 'certs', 'aws-rds-global-bundle.pem'),
-    path.join(__dirname, '..', 'certs', 'aws-rds-global-bundle.pem'),
+    path.join(cwd, 'certs', 'aws-rds-global-bundle.pem'),
+    path.join(cwd, 'dist', 'certs', 'aws-rds-global-bundle.pem'),
     '/etc/ssl/certs/aws-rds-global-bundle.pem',
   ];
   
