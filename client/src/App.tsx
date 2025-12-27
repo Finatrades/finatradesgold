@@ -109,6 +109,7 @@ import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
 import UserPreferencesManagement from "@/pages/admin/UserPreferencesManagement";
+import AccountDeletionRequests from "@/pages/admin/AccountDeletionRequests";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
@@ -194,6 +195,7 @@ function Router() {
       <Route path="/admin/attachments" component={AttachmentsManagement} />
       <Route path="/admin/email-notifications" component={EmailNotificationsManagement} />
       <Route path="/admin/user-preferences" component={UserPreferencesManagement} />
+      <Route path="/admin/account-deletion-requests" component={AccountDeletionRequests} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />

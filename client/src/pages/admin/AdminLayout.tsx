@@ -69,6 +69,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/geo-restrictions': ['manage_settings'],
   '/admin/settings': ['manage_settings'],
   '/admin/referrals': ['view_users', 'manage_users'],
+  '/admin/account-deletion-requests': ['view_users', 'manage_users'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -126,6 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       '/admin/kyc': pendingCounts.pendingKyc || 0,
       '/admin/compliance': pendingCounts.pendingKyc || 0,
       '/admin/referrals': 0,
+      '/admin/account-deletion-requests': 0,
       '/admin/transactions': pendingCounts.pendingTransactions || 0,
       '/admin/account-statements': 0,
       '/admin/payment-gateways': 0,
@@ -168,6 +170,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'KYC Reviews', href: '/admin/kyc' },
         { label: 'Compliance', href: '/admin/compliance' },
         { label: 'Referrals', href: '/admin/referrals' },
+        { label: 'Deletion Requests', href: '/admin/account-deletion-requests' },
       ]
     },
     {
