@@ -2,6 +2,12 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
 
+// Disable SSL certificate validation for AWS RDS connections
+// AWS RDS uses certificates that may not be in the system trust store
+if (process.env.AWS_DATABASE_URL) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 const { Pool } = pg;
 
 /**
