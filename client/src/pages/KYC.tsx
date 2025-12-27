@@ -174,6 +174,23 @@ export default function KYC() {
     }
   });
   
+  // Fetch existing KYC submission status
+  const { data: existingKycData, isLoading: kycLoading } = useQuery({
+    queryKey: ['/api/kyc-status', user?.id, user?.accountType],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const endpoint = user.accountType === 'business' 
+        ? `/api/finatrades-kyc/corporate/${user.id}`
+        : `/api/finatrades-kyc/personal/${user.id}`;
+      const res = await fetch(endpoint);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+  
+  const existingSubmission = existingKycData?.submission;
+  
   const kycMode: KycModeType = 'finatrades';
   
   // === KYCAML MODE STATE (Existing Tiered KYC) ===
@@ -810,12 +827,186 @@ export default function KYC() {
     return null;
   }
   
-  if (modeLoading) {
+  if (modeLoading || kycLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading verification...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show status page if user has already submitted KYC
+  if (existingSubmission && ['In Progress', 'Pending Review'].includes(existingSubmission.status)) {
+    const isCorporate = user?.accountType === 'business';
+    const expectedDays = isCorporate ? '5 business days' : '24 hours';
+    
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen py-12 bg-background">
+          <div className="container mx-auto px-6 max-w-2xl">
+            <Card className="border-green-200 shadow-lg">
+              <CardHeader className="text-center pb-4">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                  <Clock className="w-10 h-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-green-800">Verification In Progress</CardTitle>
+                <CardDescription className="text-base">
+                  Your {isCorporate ? 'Corporate' : 'Personal'} KYC verification has been submitted and is under review.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <span className="font-semibold text-green-800">Submitted Successfully</span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    Your documents and information have been received. Our compliance team is reviewing your submission.
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    <span className="font-semibold text-blue-800">Expected Processing Time</span>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    {expectedDays} - You will be notified via email once your verification is complete.
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <ShieldCheck className="w-5 h-5 text-purple-600" />
+                    <span className="font-semibold text-purple-800">What Happens Next?</span>
+                  </div>
+                  <ul className="text-sm text-purple-700 space-y-1 ml-8 list-disc">
+                    <li>Our team reviews your submitted documents</li>
+                    <li>You'll receive an email notification with the result</li>
+                    <li>Once approved, all platform features will be unlocked</li>
+                  </ul>
+                </div>
+                
+                {existingSubmission.createdAt && (
+                  <div className="text-center text-sm text-muted-foreground">
+                    Submitted on: {new Date(existingSubmission.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-center pt-4">
+                <Button variant="outline" onClick={() => setLocation('/dashboard')}>
+                  Return to Dashboard
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show rejected status with option to resubmit
+  if (existingSubmission && existingSubmission.status === 'Rejected') {
+    const isCorporate = user?.accountType === 'business';
+    
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen py-12 bg-background">
+          <div className="container mx-auto px-6 max-w-2xl">
+            <Card className="border-red-200 shadow-lg">
+              <CardHeader className="text-center pb-4">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
+                  <AlertCircle className="w-10 h-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-red-800">Verification Rejected</CardTitle>
+                <CardDescription className="text-base">
+                  Unfortunately, your {isCorporate ? 'Corporate' : 'Personal'} KYC verification was not approved.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {existingSubmission.rejectionReason && (
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <span className="font-semibold text-red-800">Reason for Rejection</span>
+                    </div>
+                    <p className="text-sm text-red-700">
+                      {existingSubmission.rejectionReason}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <RefreshCw className="w-5 h-5 text-amber-600" />
+                    <span className="font-semibold text-amber-800">What Can You Do?</span>
+                  </div>
+                  <p className="text-sm text-amber-700">
+                    Please review the rejection reason above and contact our support team for assistance. 
+                    You may need to provide additional or corrected documents.
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-center gap-4 pt-4">
+                <Button variant="outline" onClick={() => setLocation('/dashboard')}>
+                  Return to Dashboard
+                </Button>
+                <Button variant="default" onClick={() => setLocation('/help')}>
+                  Contact Support
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show approved status
+  if (existingSubmission && existingSubmission.status === 'Approved') {
+    const isCorporate = user?.accountType === 'business';
+    
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen py-12 bg-background">
+          <div className="container mx-auto px-6 max-w-2xl">
+            <Card className="border-green-200 shadow-lg">
+              <CardHeader className="text-center pb-4">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                  <CheckCircle2 className="w-10 h-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-green-800">Verification Approved</CardTitle>
+                <CardDescription className="text-base">
+                  Your {isCorporate ? 'Corporate' : 'Personal'} KYC verification has been approved.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <span className="font-semibold text-green-800">Full Access Granted</span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    All platform features have been unlocked. You can now access all trading and financial services.
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-center pt-4">
+                <Button variant="default" onClick={() => setLocation('/dashboard')}>
+                  Go to Dashboard
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
         </div>
       </div>
     );
