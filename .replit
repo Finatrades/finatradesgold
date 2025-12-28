@@ -52,3 +52,4 @@ NGENIUS_OUTLET_REF = "e1dd74c3-7c14-46f0-9875-53ff4a517617"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
+PRODUCTION_DOMAIN = "demo.finatrades.com"
