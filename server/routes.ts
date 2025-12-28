@@ -15192,7 +15192,7 @@ ${message}
                   <p style="color: #4b5563;">Reference: <strong>${referenceNumber}</strong></p>
                   <p style="color: #4b5563;">This request expires on: <strong>${expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong></p>
                   <div style="margin-top: 25px; text-align: center;">
-                    <a href="${process.env.REPLIT_DOMAINS?.split(',')[0] ? 'https://' + process.env.REPLIT_DOMAINS.split(',')[0] : 'https://finatrades.com'}/finapay" 
+                    <a href="${process.env.NODE_ENV === 'production' && process.env.PRODUCTION_IP ? 'http://' + process.env.PRODUCTION_IP : (process.env.REPLIT_DOMAINS?.split(',')[0] ? 'https://' + process.env.REPLIT_DOMAINS.split(',')[0] : 'https://finatrades.com')}/finapay" 
                        style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                       View Request in FinaPay
                     </a>
