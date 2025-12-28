@@ -44,6 +44,13 @@ if (secondaryUrl && isUsingAws) {
 function getAwsSslConfig(): pg.PoolConfig['ssl'] {
   if (!isUsingAws) return undefined;
   
+  // Check if SSL is explicitly disabled
+  const sslDisabled = process.env.AWS_RDS_SSL_DISABLED === 'true';
+  if (sslDisabled) {
+    console.log('[Database] SSL disabled for AWS RDS connection');
+    return false;
+  }
+  
   // Check if relaxed SSL mode is explicitly requested (development only)
   const relaxedSsl = process.env.AWS_RDS_RELAXED_SSL === 'true' && process.env.NODE_ENV !== 'production';
   
