@@ -5926,8 +5926,7 @@ ${message}
             const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
             
             // Get current gold price to convert bonus to grams
-            const goldPrice = await storage.getCurrentGoldPrice();
-            const goldPricePerGram = goldPrice ? parseFloat(goldPrice.pricePerGram) : 95;
+            const goldPricePerGram = await getGoldPricePerGram();
             const bonusGrams = referrerBonusUsd / goldPricePerGram;
             
             // Credit referrer's wallet with bonus gold
@@ -21643,8 +21642,7 @@ ${message}
       const totalEarnedUsd = completedReferrals.reduce((sum, r) => sum + parseFloat(r.rewardAmount || '0'), 0);
 
       // Get current gold price to convert USD reward to grams
-      const goldPrice = await storage.getCurrentGoldPrice();
-      const goldPricePerGram = goldPrice ? parseFloat(goldPrice.pricePerGram) : 95;
+      const goldPricePerGram = await getGoldPricePerGram();
       const rewardPerReferralGrams = referrerBonusUsd / goldPricePerGram;
       const totalEarnedGrams = totalEarnedUsd / goldPricePerGram;
 
