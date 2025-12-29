@@ -15,13 +15,14 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 // Rate limiting configurations for different security levels
+// Uses default IP-based key generator which properly handles IPv6
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // 10 attempts per window
   message: { message: "Too many login attempts. Please try again after 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+  validate: { xForwardedForHeader: false },
 });
 
 export const otpRateLimiter = rateLimit({
@@ -30,7 +31,7 @@ export const otpRateLimiter = rateLimit({
   message: { message: "Too many OTP attempts. Please try again after 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+  validate: { xForwardedForHeader: false },
 });
 
 export const passwordResetRateLimiter = rateLimit({
@@ -39,7 +40,7 @@ export const passwordResetRateLimiter = rateLimit({
   message: { message: "Too many password reset requests. Please try again after 1 hour." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+  validate: { xForwardedForHeader: false },
 });
 
 export const withdrawalRateLimiter = rateLimit({
@@ -48,7 +49,7 @@ export const withdrawalRateLimiter = rateLimit({
   message: { message: "Too many withdrawal requests. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => (req.session as any)?.user?.id || req.ip || 'unknown',
+  validate: { xForwardedForHeader: false },
 });
 
 export const apiRateLimiter = rateLimit({
@@ -57,7 +58,7 @@ export const apiRateLimiter = rateLimit({
   message: { message: "Too many requests. Please slow down." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+  validate: { xForwardedForHeader: false },
 });
 
 // Extend express-session types

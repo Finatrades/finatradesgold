@@ -49,6 +49,12 @@ The platform uses a client-server architecture with a React frontend and an Expr
 - **CSRF Protection**: Custom header validation requiring `X-Requested-With: XMLHttpRequest` for all state-changing requests. Frontend adds this header via `apiRequest` in `client/src/lib/queryClient.ts`.
   - **CSRF-exempt endpoints**: Authentication flows (login, register, password reset), webhooks (BinancePay, Ngenius, Stripe), public info endpoints
 - **Idempotency Middleware**: Applied to critical payment routes using atomic Redis SETNX (24-hour TTL, 30-second lock). Protected routes: `/api/transactions`, `/api/deposit-requests`, `/api/withdrawal-requests`, `/api/bnsl/plans`, `/api/bnsl/wallet/transfer`, `/api/bnsl/wallet/withdraw`, `/api/buy-gold/submit`. Client integrations should supply stable `X-Idempotency-Key` headers for retries.
+- **Rate Limiting**: Express-rate-limit middleware protects sensitive endpoints:
+  - **Auth endpoints** (login, register): 10 requests per 15 minutes
+  - **OTP endpoints** (verify-email, otp/request, otp/verify): 5 requests per 5 minutes
+  - **Password reset**: 5 requests per hour
+  - **Withdrawals**: 10 requests per hour per user
+  - **General API**: 100 requests per minute (not yet applied globally)
 
 **Data Storage:**
 - **Database**: PostgreSQL with Drizzle ORM (multi-database architecture).
