@@ -392,51 +392,49 @@ export default function Settings() {
             <CardDescription>Control how you receive payments and transfers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border">
+            <div className="flex items-center justify-between p-4 rounded-lg border bg-green-50 dark:bg-green-950/20">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <ArrowDownLeft className="w-5 h-5 text-amber-600" />
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <ArrowDownLeft className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <Label className="text-base">Require Transfer Approval</Label>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base">Transfer Approval</Label>
+                    <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded-full">
+                      Always Enabled
+                    </span>
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    When enabled, you must accept or reject incoming transfers before they are added to your wallet
+                    For your security, you must accept or reject incoming transfers before they are added to your wallet
                   </p>
                 </div>
               </div>
-              <Switch 
-                checked={localPrefs.requireTransferApproval}
-                onCheckedChange={(v) => updatePref('requireTransferApproval', v)}
-                data-testid="switch-require-transfer-approval"
-              />
             </div>
 
-            {localPrefs.requireTransferApproval && (
-              <div className="p-4 rounded-lg border bg-muted/30">
-                <div className="flex items-center gap-3 mb-3">
-                  <Clock className="w-5 h-5 text-muted-foreground" />
-                  <Label className="text-base">Auto-Expire Timeout</Label>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Pending transfers will automatically be rejected after this time if not accepted
-                </p>
-                <Select 
-                  value={String(localPrefs.transferApprovalTimeout)}
-                  onValueChange={(v) => updatePref('transferApprovalTimeout', parseInt(v))}
-                >
-                  <SelectTrigger data-testid="select-transfer-timeout" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="12">12 hours</SelectItem>
-                    <SelectItem value="24">24 hours</SelectItem>
-                    <SelectItem value="48">48 hours</SelectItem>
-                    <SelectItem value="72">72 hours</SelectItem>
-                    <SelectItem value="0">Never (manual only)</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-3 mb-3">
+                <Clock className="w-5 h-5 text-muted-foreground" />
+                <Label className="text-base">Auto-Expire Timeout</Label>
               </div>
-            )}
+              <p className="text-sm text-muted-foreground mb-3">
+                Pending transfers will automatically be rejected after this time if not accepted
+              </p>
+              <Select 
+                value={String(localPrefs.transferApprovalTimeout)}
+                onValueChange={(v) => updatePref('transferApprovalTimeout', parseInt(v))}
+              >
+                <SelectTrigger data-testid="select-transfer-timeout" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="12">12 hours</SelectItem>
+                  <SelectItem value="24">24 hours</SelectItem>
+                  <SelectItem value="48">48 hours</SelectItem>
+                  <SelectItem value="72">72 hours</SelectItem>
+                  <SelectItem value="0">Never (manual only)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="p-3 bg-info-muted rounded-lg">
               <p className="text-sm text-info-muted-foreground">

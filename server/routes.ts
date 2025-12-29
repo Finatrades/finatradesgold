@@ -14556,9 +14556,9 @@ ${message}
       
       const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
-      // Check if recipient requires transfer approval
+      // Transfer approval is always required for security
       const recipientPreferences = await storage.getUserPreferences(recipient.id);
-      const requiresApproval = recipientPreferences?.requireTransferApproval || false;
+      const requiresApproval = true; // Always require approval for all transfers
       
       if (requiresApproval) {
         // Create pending transfer instead of immediate transfer
@@ -15967,11 +15967,12 @@ ${message}
   });
 
   // Get user's transfer approval preference - PROTECTED: requires owner or admin
+  // Note: requireTransferApproval is always true for security
   app.get("/api/finapay/preferences/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const preferences = await storage.getUserPreferences(req.params.userId);
       res.json({ 
-        requireTransferApproval: preferences?.requireTransferApproval || false,
+        requireTransferApproval: true, // Always enabled for security
         transferApprovalTimeout: preferences?.transferApprovalTimeout || 24
       });
     } catch (error) {
@@ -15980,28 +15981,29 @@ ${message}
   });
 
   // Update user's transfer approval preference - PROTECTED: requires owner or admin
+  // Note: requireTransferApproval is always true and cannot be changed
   app.patch("/api/finapay/preferences/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
-      const { requireTransferApproval, transferApprovalTimeout } = req.body;
+      const { transferApprovalTimeout } = req.body;
       
       let preferences = await storage.getUserPreferences(req.params.userId);
       if (!preferences) {
         // Create preferences if they don't exist
         preferences = await storage.createUserPreferences({
           userId: req.params.userId,
-          requireTransferApproval: requireTransferApproval ?? false,
+          requireTransferApproval: true, // Always true
           transferApprovalTimeout: transferApprovalTimeout ?? 24,
         });
       } else {
         preferences = await storage.updateUserPreferences(preferences.id, {
-          requireTransferApproval: requireTransferApproval ?? preferences.requireTransferApproval,
+          requireTransferApproval: true, // Always true
           transferApprovalTimeout: transferApprovalTimeout ?? preferences.transferApprovalTimeout,
         });
       }
       
       res.json({ 
         message: "Preferences updated",
-        requireTransferApproval: preferences?.requireTransferApproval,
+        requireTransferApproval: true, // Always enabled
         transferApprovalTimeout: preferences?.transferApprovalTimeout
       });
     } catch (error) {
