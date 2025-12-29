@@ -1,0 +1,154 @@
+43
+
+2025-12-29T10:23:38.343Z [INFO]: vite v7.1.12 building for production...
+
+44
+
+2025-12-29T10:23:38.451Z [INFO]: transforming...
+
+45
+
+2025-12-29T10:23:48.539Z [INFO]: ✓ 3023 modules transformed.
+
+46
+
+2025-12-29T10:23:49.287Z [INFO]: rendering chunks...
+
+47
+
+2025-12-29T10:23:50.172Z [WARNING]: [plugin vite:reporter]
+
+48
+
+                                    (!) /codebuild/output/src1395512162/src/finatradesgold/client/src/lib/queryClient.ts is dynamically imported by /codebuild/output/src1395512162/src/finatradesgold/client/src/components/bnsl/BnslPlanDetail.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/bnsl/CreateBnslPlan.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/bnsl/admin/BnslPlanDetailAdmin.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/bnsl/admin/BnslPlanDetailAdmin.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/bnsl/admin/BnslPlanDetailAdmin.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/BNSL.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/BNSLManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FeeManagement.tsx but also statically imported by /codebuild/output/src1395512162/src/finatradesgold/client/src/App.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/dashboard/QuickActionsTop.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finabridge/DealRoom.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finabridge/DealRoomList.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finabridge/FinaBridgeDisclaimerModal.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finapay/PendingTransfers.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finapay/modals/DepositModal.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finapay/modals/RequestGoldModal.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finapay/modals/SendGoldModal.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/components/finavault/CashOutForm.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/context/AuthContext.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/context/BnslContext.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/hooks/useDashboardData.ts, /codebuild/output/src1395512162/src/finatradesgold/client/src/lib/ngenius-sdk-loader.ts, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/BNSLHistory.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/FinaBridge.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/FinaBridgeHistory.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/FinaBridgeProposals.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/FinaBridgeRequests.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/FinaVault.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/Profile.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/QATests.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/Security.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/VerifyEmail.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/AccountDeletionRequests.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FinaBridgeManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/FinaVaultManagement.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/PaymentOperations.tsx, /codebuild/output/src1395512162/src/finatradesgold/client/src/pages/admin/UserManagement.tsx, dynamic import will not move module into another chunk.
+
+49
+
+2025-12-29T10:23:50.212Z [INFO]: [meta-images] no Replit deployment domain found, skipping meta tag updates
+
+50
+
+2025-12-29T10:23:50.262Z [INFO]: computing gzip size...
+
+51
+
+2025-12-29T10:23:50.347Z [INFO]: ../dist/public/index.html                               2.76 kB │ gzip:   0.98 kB
+
+52
+
+2025-12-29T10:23:50.347Z [INFO]: ../dist/public/assets/finatrades-logo-Br7J-q2F.png     39.63 kB
+
+53
+
+                                 ../dist/public/assets/index-CVj1MCJU.css              307.15 kB │ gzip:  38.28 kB
+
+54
+
+                                 ../dist/public/assets/web-B42Jd8wD.js                   0.42 kB │ gzip:   0.20 kB
+
+55
+
+                                 ../dist/public/assets/web-BljeIHYp.js                   1.25 kB │ gzip:   0.59 kB
+
+56
+
+                                 ../dist/public/assets/index.es-DQ96IvxT.js            159.35 kB │ gzip:  53.40 kB
+
+57
+
+                                 ../dist/public/assets/html2canvas.esm-B0tyYwQk.js     202.36 kB │ gzip:  48.04 kB
+
+58
+
+                                 ../dist/public/assets/index-BcqSEjBX.js             3,577.65 kB │ gzip: 891.24 kB
+
+59
+
+2025-12-29T10:23:50.348Z [WARNING]: (!) Some chunks are larger than 500 kB after minification. Consider:
+
+60
+
+                                    - Using dynamic import() to code-split the application
+
+61
+
+                                    - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+
+62
+
+                                    - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+63
+
+2025-12-29T10:23:50.348Z [INFO]: ✓ built in 11.97s
+
+64
+
+2025-12-29T10:23:50.420Z [INFO]: Building server...
+
+65
+
+2025-12-29T10:23:51.190Z [WARNING]: .amplify-hosting/compute/default/index.mjs  5.2mb ⚠️
+
+66
+
+                                    ⚡ Done in 480ms
+
+67
+
+2025-12-29T10:23:51.210Z [INFO]: Build complete!
+
+68
+
+                                 Output size:
+
+69
+
+2025-12-29T10:23:51.211Z [INFO]: 9.4M	./.amplify-hosting/
+
+70
+
+2025-12-29T10:23:51.212Z [INFO]: # Completed phase: build
+
+71
+
+                                 ## Completed Frontend Build
+
+72
+
+2025-12-29T10:23:51.222Z [INFO]: ## Build completed successfully
+
+73
+
+2025-12-29T10:23:51.222Z [INFO]: # Starting caching...
+
+74
+
+2025-12-29T10:23:51.226Z [INFO]: # Creating cache artifact...
+
+75
+
+2025-12-29T10:24:01.482Z [INFO]: # Created cache artifact
+
+76
+
+2025-12-29T10:24:01.570Z [INFO]: # Uploading cache artifact...
+
+77
+
+2025-12-29T10:24:05.307Z [INFO]: # Uploaded cache artifact
+
+78
+
+2025-12-29T10:24:05.386Z [INFO]: # Caching completed
+
+79
+
+2025-12-29T10:24:05.949Z [INFO]: # Starting environment caching...
+
+80
+
+2025-12-29T10:24:05.950Z [INFO]: # Environment caching completed
+
+81
+
