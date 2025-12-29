@@ -954,6 +954,11 @@ ${message}
         link: '/kyc',
       });
       
+      // Send welcome email (non-blocking)
+      sendEmail(user.email, EMAIL_TEMPLATES.WELCOME, {
+        user_name: `${user.firstName} ${user.lastName}`,
+      }).catch(err => console.error('[Email] Welcome email failed:', err));
+      
       // Send verification email (wrapped in try-catch to prevent registration failure)
       let emailResult: { success: boolean; messageId?: string; error?: string } = { success: false, error: '' };
       try {
@@ -1994,6 +1999,15 @@ ${message}
         link: '/security',
       });
       
+      // Send password changed email
+      const user = await storage.getUser(resetToken.userId);
+      if (user?.email) {
+        sendEmail(user.email, EMAIL_TEMPLATES.PASSWORD_CHANGED, {
+          user_name: `${user.firstName} ${user.lastName}`,
+          change_time: new Date().toISOString(),
+        }).catch(err => console.error('[Email] Password changed notification failed:', err));
+      }
+      
       res.json({ message: "Password has been reset successfully" });
     } catch (error) {
       console.error("Password reset error:", error);
@@ -2094,6 +2108,12 @@ ${message}
         type: 'success',
         link: '/security',
       });
+      
+      // Send MFA enabled email
+      sendEmail(user.email, EMAIL_TEMPLATES.MFA_ENABLED, {
+        user_name: `${user.firstName} ${user.lastName}`,
+        enabled_time: new Date().toISOString(),
+      }).catch(err => console.error('[Email] MFA enabled notification failed:', err));
       
       res.json({ 
         success: true, 
@@ -6699,6 +6719,22 @@ ${message}
         }
       }
       
+      // Send gold sale email for Sell transactions
+      if (transaction.type === 'Sell') {
+        const sellUser = await storage.getUser(transaction.userId);
+        if (sellUser?.email) {
+          const goldAmount = parseFloat(transaction.amountGold || '0');
+          const usdAmount = parseFloat(transaction.amountUsd || '0');
+          const goldPricePerGram = parseFloat(transaction.goldPriceUsdPerGram || '0') || 95;
+          sendEmail(sellUser.email, EMAIL_TEMPLATES.GOLD_SALE, {
+            user_name: `${sellUser.firstName} ${sellUser.lastName}`,
+            gold_grams: goldAmount.toFixed(4),
+            amount_usd: usdAmount.toFixed(2),
+            gold_price: goldPricePerGram.toFixed(2),
+          }).catch(err => console.error('[Email] Gold sale notification failed:', err));
+        }
+      }
+      
       res.json({ 
         transaction: result.updatedTransaction, 
         certificates: result.generatedCertificates,
@@ -10645,6 +10681,15 @@ ${message}
         link: '/admin/transactions',
       });
       
+      // Send deposit processing email to user
+      if (depositUser?.email) {
+        sendEmail(depositUser.email, EMAIL_TEMPLATES.DEPOSIT_PROCESSING, {
+          user_name: `${depositUser.firstName} ${depositUser.lastName}`,
+          amount: parseFloat(req.body.amountUsd).toFixed(2),
+          reference_number: referenceNumber,
+        }).catch(err => console.error('[Email] Deposit processing notification failed:', err));
+      }
+      
       res.json({ request });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
@@ -11037,6 +11082,15 @@ ${message}
         link: '/admin/transactions',
       });
       
+      // Send withdrawal requested email to user
+      if (withdrawUser?.email) {
+        sendEmail(withdrawUser.email, EMAIL_TEMPLATES.WITHDRAWAL_REQUESTED, {
+          user_name: `${withdrawUser.firstName} ${withdrawUser.lastName}`,
+          amount: parseFloat(amountUsd).toFixed(2),
+          reference_number: referenceNumber,
+        }).catch(err => console.error('[Email] Withdrawal requested notification failed:', err));
+      }
+      
       res.json({ request });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
@@ -11189,6 +11243,16 @@ ${message}
         type: 'trade',
         link: '/finabridge',
       });
+      
+      // Send trade case created email
+      const tradeUser = await storage.getUser(caseData.userId);
+      if (tradeUser?.email) {
+        sendEmail(tradeUser.email, EMAIL_TEMPLATES.TRADE_CASE_CREATED, {
+          user_name: `${tradeUser.firstName} ${tradeUser.lastName}`,
+          case_id: tradeCase.id,
+          trade_value: caseData.tradeValueUsd,
+        }).catch(err => console.error('[Email] Trade case created notification failed:', err));
+      }
       
       res.json({ tradeCase });
     } catch (error) {
@@ -23193,6 +23257,16 @@ ${message}
         type: 'success',
         link: '/admin/finapay/buy-gold',
       });
+      
+      // Send gold purchase email
+      if (buyGoldUser?.email) {
+        sendEmail(buyGoldUser.email, EMAIL_TEMPLATES.GOLD_PURCHASE, {
+          user_name: `${buyGoldUser.firstName} ${buyGoldUser.lastName}`,
+          gold_grams: finalGoldGrams.toFixed(4),
+          amount_usd: finalAmountUsd.toFixed(2),
+          gold_price: goldPrice.toFixed(2),
+        }).catch(err => console.error('[Email] Gold purchase notification failed:', err));
+      }
       
       // Emit real-time updates
       const io = getIO();
