@@ -945,6 +945,15 @@ ${message}
         details: referralCode ? `User registered with referral code ${referralCode}` : "User registered - pending email verification",
       });
       
+      // Create welcome notification
+      await storage.createNotification({
+        userId: user.id,
+        title: 'Welcome to Finatrades!',
+        message: 'Your account has been created. Complete your email verification and KYC to unlock all features.',
+        type: 'info',
+        link: '/kyc',
+      });
+      
       // Send verification email (wrapped in try-catch to prevent registration failure)
       let emailResult: { success: boolean; messageId?: string; error?: string } = { success: false, error: '' };
       try {
@@ -1976,6 +1985,15 @@ ${message}
         details: "Password reset completed",
       });
       
+      // Create bell notification for password change
+      await storage.createNotification({
+        userId: resetToken.userId,
+        title: 'Password Changed',
+        message: 'Your password has been successfully reset. If you did not make this change, please contact support immediately.',
+        type: 'warning',
+        link: '/security',
+      });
+      
       res.json({ message: "Password has been reset successfully" });
     } catch (error) {
       console.error("Password reset error:", error);
@@ -2066,6 +2084,15 @@ ${message}
         actor: userId,
         actorRole: "user",
         details: "MFA enabled via authenticator app",
+      });
+      
+      // Create bell notification for MFA enabled
+      await storage.createNotification({
+        userId: userId,
+        title: 'Two-Factor Authentication Enabled',
+        message: 'Your account is now protected with two-factor authentication. Save your backup codes in a secure location.',
+        type: 'success',
+        link: '/security',
       });
       
       res.json({ 
@@ -9653,6 +9680,15 @@ ${message}
         data: { goldGrams, planId: plan.id },
       });
       
+      // Create bell notification for BNSL plan creation
+      await storage.createNotification({
+        userId: planData.userId,
+        title: 'BNSL Plan Created',
+        message: `Your BNSL plan ${plan.contractId} has been created. ${goldGrams.toFixed(4)}g gold locked for deferred sale.`,
+        type: 'bnsl',
+        link: '/bnsl',
+      });
+      
       res.json({ plan });
     } catch (error) {
       console.error('BNSL plan creation error:', error);
@@ -10063,10 +10099,10 @@ ${message}
         data: { goldGrams: gramsCredited, planId: plan.id, payoutId: payout.id },
       });
       
-      // Send notification email
+      // Send notification email and bell notification
       const user = await storage.getUser(plan.userId);
       if (user?.email) {
-        await sendEmail(user.email, EMAIL_TEMPLATES.BNSL_PAYOUT, {
+        await sendEmail(user.email, EMAIL_TEMPLATES.BNSL_PAYMENT_RECEIVED, {
           user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
           plan_id: plan.contractId,
           payout_number: payout.sequence.toString(),
@@ -10074,6 +10110,15 @@ ${message}
           usd_value: monetaryAmount.toFixed(2),
           market_price: price.toFixed(2),
           dashboard_url: `${req.protocol}://${req.get('host')}/bnsl`
+        });
+        
+        // Create bell notification
+        await storage.createNotification({
+          userId: plan.userId,
+          title: 'BNSL Payout Received',
+          message: `Payout #${payout.sequence} processed: ${gramsCredited.toFixed(4)}g ($${monetaryAmount.toFixed(2)}) credited to your wallet.`,
+          type: 'bnsl',
+          link: '/bnsl',
         });
       }
       
@@ -10193,7 +10238,7 @@ ${message}
         data: { goldGrams: goldGramsToCredit, planId: plan.id },
       });
       
-      // Send notification email
+      // Send notification email and bell notification
       const user = await storage.getUser(plan.userId);
       if (user?.email) {
         await sendEmail(user.email, EMAIL_TEMPLATES.BNSL_PLAN_COMPLETED, {
@@ -10204,6 +10249,15 @@ ${message}
           market_price: price.toFixed(2),
           total_margin_received: plan.paidMarginGrams,
           dashboard_url: `${req.protocol}://${req.get('host')}/bnsl`
+        });
+        
+        // Create bell notification
+        await storage.createNotification({
+          userId: plan.userId,
+          title: 'BNSL Plan Completed',
+          message: `Your BNSL plan ${plan.contractId} has matured! ${goldGramsToCredit.toFixed(4)}g has been credited to your wallet.`,
+          type: 'bnsl',
+          link: '/bnsl',
         });
       }
       
@@ -11125,6 +11179,15 @@ ${message}
         actor: caseData.userId,
         actorRole: "user",
         details: `Trade case created: ${caseData.tradeValueUsd} USD`,
+      });
+      
+      // Create bell notification for trade case creation
+      await storage.createNotification({
+        userId: caseData.userId,
+        title: 'Trade Case Submitted',
+        message: `Your trade finance application for $${caseData.tradeValueUsd} has been submitted and is pending review.`,
+        type: 'trade',
+        link: '/finabridge',
       });
       
       res.json({ tradeCase });
@@ -15264,6 +15327,23 @@ ${message}
             `
           ).catch(err => console.error('[Email] Failed to send gold transfer notification:', err));
         }
+        
+        // Create bell notifications for sender and recipient
+        await storage.createNotification({
+          userId: sender.id,
+          title: 'Gold Sent Successfully',
+          message: `You sent ${goldAmount.toFixed(4)}g gold ($${(goldAmount * goldPrice).toFixed(2)}) to ${recipient.firstName} ${recipient.lastName}.`,
+          type: 'transaction',
+          link: '/finapay/transactions',
+        });
+        
+        await storage.createNotification({
+          userId: recipient.id,
+          title: 'Gold Received!',
+          message: `You received ${goldAmount.toFixed(4)}g gold ($${(goldAmount * goldPrice).toFixed(2)}) from ${sender.firstName} ${sender.lastName}.`,
+          type: 'transaction',
+          link: '/finapay/transactions',
+        });
 
         res.json({ 
           transfer: result.transfer,
@@ -15376,6 +15456,23 @@ ${message}
             `
           ).catch(err => console.error('[Email] Failed to send transfer notification:', err));
         }
+        
+        // Create bell notifications for USD transfer
+        await storage.createNotification({
+          userId: sender.id,
+          title: 'Transfer Sent',
+          message: `You sent $${amount.toFixed(2)} to ${recipient.firstName} ${recipient.lastName}.`,
+          type: 'transaction',
+          link: '/finapay/transactions',
+        });
+        
+        await storage.createNotification({
+          userId: recipient.id,
+          title: 'Money Received!',
+          message: `You received $${amount.toFixed(2)} from ${sender.firstName} ${sender.lastName}.`,
+          type: 'transaction',
+          link: '/finapay/transactions',
+        });
         
         res.json({ 
           transfer, 

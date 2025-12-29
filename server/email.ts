@@ -2315,6 +2315,244 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     ],
     status: 'published' as const,
   },
+  // Trade Case Rejected
+  {
+    slug: EMAIL_TEMPLATES.TRADE_CASE_REJECTED,
+    name: 'Trade Case Rejected',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Trade case {{trade_ref}} has been rejected',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Trade Case Rejected</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>We regret to inform you that your trade case has been rejected.</p>
+          <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Rejection Reason:</td><td style="text-align: right;">{{rejection_reason}}</td></tr>
+              <tr><td style="padding: 8px 0;">Rejected On:</td><td style="text-align: right;">{{rejection_date}}</td></tr>
+            </table>
+          </div>
+          <p>If you have questions about this decision, please contact our support team.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'rejection_reason', description: 'Reason for rejection' },
+      { name: 'rejection_date', description: 'Date of rejection' },
+    ],
+    status: 'published' as const,
+  },
+  // Trade Document Uploaded
+  {
+    slug: EMAIL_TEMPLATES.TRADE_DOCUMENT_UPLOADED,
+    name: 'Trade Document Uploaded',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'New document uploaded for trade {{trade_ref}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Document Uploaded</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>A new document has been uploaded for your trade case.</p>
+          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Document Type:</td><td style="text-align: right;">{{document_type}}</td></tr>
+              <tr><td style="padding: 8px 0;">Uploaded By:</td><td style="text-align: right;">{{uploaded_by}}</td></tr>
+              <tr><td style="padding: 8px 0;">Upload Date:</td><td style="text-align: right;">{{upload_date}}</td></tr>
+            </table>
+          </div>
+          <p>Log in to your account to view the document.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'document_type', description: 'Type of document' },
+      { name: 'uploaded_by', description: 'Name of uploader' },
+      { name: 'upload_date', description: 'Date of upload' },
+    ],
+    status: 'published' as const,
+  },
+  // FinaBridge Proposal Declined
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_PROPOSAL_DECLINED,
+    name: 'Trade Proposal Declined',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Trade proposal for {{trade_ref}} has been declined',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Proposal Declined</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>The trade proposal you submitted has been declined.</p>
+          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Proposal Amount:</td><td style="text-align: right;">\${{proposal_amount}}</td></tr>
+              <tr><td style="padding: 8px 0;">Declined Reason:</td><td style="text-align: right;">{{decline_reason}}</td></tr>
+            </table>
+          </div>
+          <p>You may submit a revised proposal if you wish to continue with this trade.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'proposal_amount', description: 'Proposal amount' },
+      { name: 'decline_reason', description: 'Reason for decline' },
+    ],
+    status: 'published' as const,
+  },
+  // FinaBridge Deal Room Created
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CREATED,
+    name: 'Deal Room Created',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Deal room created for trade {{trade_ref}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Deal Room Created</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>A secure deal room has been created for your trade negotiation.</p>
+          <div style="background: #f3e8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
+              <tr><td style="padding: 8px 0;">Deal Room ID:</td><td style="text-align: right;">{{deal_room_id}}</td></tr>
+              <tr><td style="padding: 8px 0;">Counterparty:</td><td style="text-align: right;">{{counterparty_name}}</td></tr>
+              <tr><td style="padding: 8px 0;">Created:</td><td style="text-align: right;">{{created_date}}</td></tr>
+            </table>
+          </div>
+          <p>Access your deal room to communicate securely with your counterparty and manage trade documents.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'deal_room_id', description: 'Deal room identifier' },
+      { name: 'counterparty_name', description: 'Counterparty name' },
+      { name: 'created_date', description: 'Creation date' },
+    ],
+    status: 'published' as const,
+  },
+  // Monthly Statement
+  {
+    slug: EMAIL_TEMPLATES.MONTHLY_STATEMENT,
+    name: 'Monthly Account Statement',
+    type: 'email' as const,
+    module: 'account',
+    subject: 'Your {{month}} {{year}} Account Statement',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Monthly Statement</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>Your account statement for {{month}} {{year}} is now available.</p>
+          <div style="background: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #c2410c; margin-top: 0;">Account Summary</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Opening Balance:</td><td style="text-align: right;">{{opening_gold}}g (\${{opening_usd}})</td></tr>
+              <tr><td style="padding: 8px 0;">Closing Balance:</td><td style="text-align: right; font-weight: bold;">{{closing_gold}}g (\${{closing_usd}})</td></tr>
+              <tr><td style="padding: 8px 0;">Total Transactions:</td><td style="text-align: right;">{{total_transactions}}</td></tr>
+              <tr><td style="padding: 8px 0;">Net Change:</td><td style="text-align: right;">{{net_change_gold}}g</td></tr>
+            </table>
+          </div>
+          <p>Your detailed statement is attached to this email.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'month', description: 'Statement month' },
+      { name: 'year', description: 'Statement year' },
+      { name: 'opening_gold', description: 'Opening gold balance' },
+      { name: 'opening_usd', description: 'Opening USD value' },
+      { name: 'closing_gold', description: 'Closing gold balance' },
+      { name: 'closing_usd', description: 'Closing USD value' },
+      { name: 'total_transactions', description: 'Total transactions' },
+      { name: 'net_change_gold', description: 'Net change in gold' },
+    ],
+    status: 'published' as const,
+  },
+  // Annual Tax Statement
+  {
+    slug: EMAIL_TEMPLATES.ANNUAL_TAX_STATEMENT,
+    name: 'Annual Tax Statement',
+    type: 'email' as const,
+    module: 'account',
+    subject: 'Your {{year}} Annual Tax Statement',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #059669, #047857); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Annual Tax Statement</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>Your annual tax statement for the year {{year}} is now available.</p>
+          <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #047857; margin-top: 0;">Annual Summary</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0;">Total Gold Purchased:</td><td style="text-align: right;">{{total_purchases_gold}}g</td></tr>
+              <tr><td style="padding: 8px 0;">Total Gold Sold:</td><td style="text-align: right;">{{total_sales_gold}}g</td></tr>
+              <tr><td style="padding: 8px 0;">Realized Gains/Losses:</td><td style="text-align: right; font-weight: bold;">\${{realized_gains}}</td></tr>
+              <tr><td style="padding: 8px 0;">Year-End Holdings:</td><td style="text-align: right;">{{year_end_gold}}g</td></tr>
+            </table>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;"><em>Note: This statement is for informational purposes only. Please consult your tax advisor for filing requirements.</em></p>
+          <p>Your detailed tax statement is attached to this email.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'year', description: 'Tax year' },
+      { name: 'total_purchases_gold', description: 'Total gold purchased' },
+      { name: 'total_sales_gold', description: 'Total gold sold' },
+      { name: 'realized_gains', description: 'Realized gains/losses' },
+      { name: 'year_end_gold', description: 'Year-end gold holdings' },
+    ],
+    status: 'published' as const,
+  },
   // Certificate Templates
   {
     slug: 'certificate_digital_ownership',
