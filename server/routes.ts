@@ -82,6 +82,7 @@ import {
 } from "./backup-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
+import { format } from "date-fns";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -2947,6 +2948,76 @@ ${message}
     } catch (error) {
       console.error("Failed to get user financial profile:", error);
       res.status(500).json({ message: "Failed to get user financial profile" });
+    }
+  });
+
+  // Gold Backing Report PDF Download
+  app.get("/api/admin/gold-backing-report/pdf", ensureAdminAsync, async (req, res) => {
+    try {
+      const { generateGoldBackingReportPDF } = await import('./pdf-generator');
+      
+      const report = await storage.getGoldBackingReport();
+      const finapayUsers = await storage.getUsersWithFinaPayHoldings();
+      const bnslUsers = await storage.getUsersWithBnslHoldings();
+      
+      const vaultHoldingsGrouped = report.physicalGold.holdings.reduce((acc: any, h: any) => {
+        const loc = h.vaultLocation || 'Unknown';
+        if (!acc[loc]) acc[loc] = { goldGrams: 0, count: 0 };
+        acc[loc].goldGrams += parseFloat(h.goldGrams) || 0;
+        acc[loc].count += 1;
+        return acc;
+      }, {});
+
+      const pdfData = {
+        summary: {
+          physicalGoldGrams: report.physicalGold.totalGrams,
+          customerLiabilitiesGrams: report.customerLiabilities.totalGrams,
+          backingRatio: report.backingRatio,
+          surplus: report.surplus,
+          generatedAt: new Date().toISOString()
+        },
+        physicalGold: {
+          totalGrams: report.physicalGold.totalGrams,
+          holdings: Object.entries(vaultHoldingsGrouped).map(([loc, data]: [string, any]) => ({
+            vaultLocation: loc,
+            goldGrams: data.goldGrams,
+            holdingsCount: data.count
+          }))
+        },
+        customerLiabilities: {
+          totalGrams: report.customerLiabilities.totalGrams,
+          finapay: {
+            count: report.customerLiabilities.wallets.count,
+            totalGrams: report.customerLiabilities.wallets.totalGrams,
+            users: finapayUsers.map((u: any) => ({
+              name: `${u.firstName} ${u.lastName}`,
+              email: u.email,
+              goldGrams: parseFloat(u.goldGrams) || 0
+            }))
+          },
+          bnsl: {
+            count: report.customerLiabilities.bnslWallets.count,
+            availableGrams: report.customerLiabilities.bnslWallets.availableGrams,
+            lockedGrams: report.customerLiabilities.bnslWallets.lockedGrams,
+            users: bnslUsers.map((u: any) => ({
+              name: `${u.firstName} ${u.lastName}`,
+              email: u.email,
+              availableGrams: parseFloat(u.availableGoldGrams) || 0,
+              lockedGrams: parseFloat(u.lockedGoldGrams) || 0
+            }))
+          }
+        },
+        certificates: report.certificates
+      };
+
+      const pdfBuffer = await generateGoldBackingReportPDF(pdfData);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="gold-backing-report-${format(new Date(), 'yyyy-MM-dd')}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Failed to generate gold backing report PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF report" });
     }
   });
 

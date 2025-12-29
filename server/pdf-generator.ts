@@ -2264,3 +2264,233 @@ export function generateAdminManualPDF(): Promise<Buffer> {
     }
   });
 }
+
+// Gold Backing Report PDF Generator
+interface GoldBackingReportData {
+  summary: {
+    physicalGoldGrams: number;
+    customerLiabilitiesGrams: number;
+    backingRatio: number;
+    surplus: number;
+    generatedAt: string;
+  };
+  physicalGold: {
+    totalGrams: number;
+    holdings: Array<{
+      vaultLocation: string;
+      goldGrams: number;
+      holdingsCount: number;
+    }>;
+  };
+  customerLiabilities: {
+    totalGrams: number;
+    finapay: {
+      count: number;
+      totalGrams: number;
+      users: Array<{ name: string; email: string; goldGrams: number }>;
+    };
+    bnsl: {
+      count: number;
+      availableGrams: number;
+      lockedGrams: number;
+      users: Array<{ name: string; email: string; availableGrams: number; lockedGrams: number }>;
+    };
+  };
+  certificates: {
+    total: number;
+    byStatus: Record<string, number>;
+  };
+}
+
+export async function generateGoldBackingReportPDF(data: GoldBackingReportData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: 'Gold Backing Report',
+          Author: 'Finatrades',
+          Subject: 'Gold Backing Verification Report',
+          Creator: 'Finatrades Platform'
+        }
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const PURPLE = '#8A2BE2';
+      const DARK_PURPLE = '#4B0082';
+      let currentPage = 1;
+
+      const addPageHeader = () => {
+        doc.rect(0, 0, doc.page.width, 80).fill(DARK_PURPLE);
+        doc.fillColor('#FFFFFF').fontSize(24).font('Helvetica-Bold')
+           .text('FINATRADES', 50, 25);
+        doc.fontSize(12).font('Helvetica')
+           .text('Gold Backing Report', 50, 52);
+        doc.moveDown(3);
+      };
+
+      const addPageFooter = () => {
+        const y = doc.page.height - 40;
+        doc.fillColor('#6b7280').fontSize(8).font('Helvetica')
+           .text(`Generated: ${formatDate(new Date())}`, 50, y)
+           .text(`Page ${currentPage}`, doc.page.width - 100, y);
+      };
+
+      const addNewPage = () => {
+        addPageFooter();
+        doc.addPage();
+        currentPage++;
+        addPageHeader();
+      };
+
+      const drawTable = (headers: string[], rows: string[][], startY: number, columnWidths: number[]) => {
+        const rowHeight = 25;
+        const tableWidth = columnWidths.reduce((a, b) => a + b, 0);
+        let y = startY;
+
+        doc.rect(50, y, tableWidth, rowHeight).fill('#f3f4f6');
+        let x = 50;
+        headers.forEach((header, i) => {
+          doc.fillColor('#1f2937').fontSize(9).font('Helvetica-Bold')
+             .text(header, x + 5, y + 8, { width: columnWidths[i] - 10 });
+          x += columnWidths[i];
+        });
+        y += rowHeight;
+
+        rows.forEach((row, rowIndex) => {
+          if (y > doc.page.height - 100) {
+            addNewPage();
+            y = 100;
+          }
+
+          if (rowIndex % 2 === 0) {
+            doc.rect(50, y, tableWidth, rowHeight).fill('#fafafa');
+          }
+
+          x = 50;
+          row.forEach((cell, i) => {
+            doc.fillColor('#374151').fontSize(9).font('Helvetica')
+               .text(cell, x + 5, y + 8, { width: columnWidths[i] - 10 });
+            x += columnWidths[i];
+          });
+          y += rowHeight;
+        });
+
+        return y;
+      };
+
+      addPageHeader();
+
+      const statusColor = data.summary.backingRatio >= 100 ? '#22c55e' : 
+                          data.summary.backingRatio >= 90 ? '#f59e0b' : '#ef4444';
+      const statusText = data.summary.backingRatio >= 100 ? 'FULLY BACKED' : 
+                         data.summary.backingRatio >= 90 ? 'MOSTLY BACKED' : 'UNDER-BACKED';
+
+      doc.rect(50, 100, doc.page.width - 100, 80).fill(statusColor);
+      doc.fillColor('#FFFFFF').fontSize(28).font('Helvetica-Bold')
+         .text(statusText, 60, 120);
+      doc.fontSize(14).font('Helvetica')
+         .text(`${data.summary.backingRatio.toFixed(2)}% of customer gold is backed by physical holdings`, 60, 152);
+
+      doc.fillColor('#1f2937').fontSize(18).font('Helvetica-Bold')
+         .text('Summary Overview', 50, 200);
+
+      doc.rect(50, 230, 240, 100).stroke('#e5e7eb');
+      doc.fillColor(PURPLE).fontSize(11).font('Helvetica-Bold')
+         .text('Physical Gold in Vault', 60, 245);
+      doc.fillColor('#1f2937').fontSize(24).font('Helvetica-Bold')
+         .text(`${formatGrams(data.summary.physicalGoldGrams)}`, 60, 270);
+      doc.fillColor('#6b7280').fontSize(10).font('Helvetica')
+         .text('Total physical gold stored', 60, 300);
+
+      doc.rect(305, 230, 240, 100).stroke('#e5e7eb');
+      doc.fillColor('#3b82f6').fontSize(11).font('Helvetica-Bold')
+         .text('Customer Liabilities', 315, 245);
+      doc.fillColor('#1f2937').fontSize(24).font('Helvetica-Bold')
+         .text(`${formatGrams(data.summary.customerLiabilitiesGrams)}`, 315, 270);
+      doc.fillColor('#6b7280').fontSize(10).font('Helvetica')
+         .text('Total gold owed to customers', 315, 300);
+
+      doc.rect(50, 345, 495, 60).stroke('#e5e7eb');
+      doc.fillColor(data.summary.surplus >= 0 ? '#22c55e' : '#ef4444')
+         .fontSize(11).font('Helvetica-Bold')
+         .text(data.summary.surplus >= 0 ? 'SURPLUS' : 'DEFICIT', 60, 360);
+      doc.fillColor('#1f2937').fontSize(20).font('Helvetica-Bold')
+         .text(`${data.summary.surplus >= 0 ? '+' : ''}${formatGrams(data.summary.surplus)}`, 60, 380);
+
+      doc.fillColor('#1f2937').fontSize(14).font('Helvetica-Bold')
+         .text('Certificates Overview', 50, 430);
+      doc.fillColor('#374151').fontSize(11).font('Helvetica')
+         .text(`Total Certificates: ${data.certificates.total}`, 50, 450);
+      
+      let certY = 470;
+      Object.entries(data.certificates.byStatus).forEach(([status, count]) => {
+        doc.text(`${status}: ${count}`, 60, certY);
+        certY += 15;
+      });
+
+      addNewPage();
+      
+      doc.fillColor('#1f2937').fontSize(18).font('Helvetica-Bold')
+         .text('Physical Gold Holdings by Vault Location', 50, 100);
+
+      const vaultHeaders = ['Vault Location', 'Gold (grams)', 'Holdings Count'];
+      const vaultRows = data.physicalGold.holdings.map(h => [
+        h.vaultLocation,
+        formatGrams(h.goldGrams),
+        h.holdingsCount.toString()
+      ]);
+      let tableY = drawTable(vaultHeaders, vaultRows, 130, [280, 120, 95]);
+
+      addNewPage();
+      
+      doc.fillColor('#1f2937').fontSize(18).font('Helvetica-Bold')
+         .text('FinaPay Wallet Holdings', 50, 100);
+      doc.fillColor('#6b7280').fontSize(11).font('Helvetica')
+         .text(`${data.customerLiabilities.finapay.count} accounts | Total: ${formatGrams(data.customerLiabilities.finapay.totalGrams)}`, 50, 125);
+
+      if (data.customerLiabilities.finapay.users.length > 0) {
+        const finapayHeaders = ['Name', 'Email', 'Gold (grams)'];
+        const finapayRows = data.customerLiabilities.finapay.users.map(u => [
+          u.name,
+          u.email,
+          formatGrams(u.goldGrams)
+        ]);
+        tableY = drawTable(finapayHeaders, finapayRows, 150, [180, 200, 115]);
+      }
+
+      if (tableY > doc.page.height - 200) {
+        addNewPage();
+        tableY = 100;
+      } else {
+        tableY += 40;
+      }
+
+      doc.fillColor('#1f2937').fontSize(18).font('Helvetica-Bold')
+         .text('BNSL Account Holdings', 50, tableY);
+      doc.fillColor('#6b7280').fontSize(11).font('Helvetica')
+         .text(`${data.customerLiabilities.bnsl.count} accounts | Available: ${formatGrams(data.customerLiabilities.bnsl.availableGrams)} | Locked: ${formatGrams(data.customerLiabilities.bnsl.lockedGrams)}`, 50, tableY + 25);
+
+      if (data.customerLiabilities.bnsl.users.length > 0) {
+        const bnslHeaders = ['Name', 'Email', 'Available (g)', 'Locked (g)'];
+        const bnslRows = data.customerLiabilities.bnsl.users.map(u => [
+          u.name,
+          u.email,
+          formatGrams(u.availableGrams),
+          formatGrams(u.lockedGrams)
+        ]);
+        drawTable(bnslHeaders, bnslRows, tableY + 50, [150, 180, 85, 80]);
+      }
+
+      addPageFooter();
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

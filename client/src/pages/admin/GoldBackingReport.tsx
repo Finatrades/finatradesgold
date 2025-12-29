@@ -23,8 +23,11 @@ import {
   Shield,
   Clock,
   CreditCard,
-  Building
+  Building,
+  Download,
+  Printer
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -96,6 +99,8 @@ export default function GoldBackingReport() {
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedVaultLocation, setSelectedVaultLocation] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { toast } = useToast();
 
   const { data, isLoading, refetch, isFetching } = useQuery<GoldBackingReport>({
     queryKey: ['/api/admin/gold-backing-report'],
@@ -169,6 +174,48 @@ export default function GoldBackingReport() {
     setSelectedUserId(null);
   };
 
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch('/api/admin/gold-backing-report/pdf', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gold-backing-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast({
+        title: 'Download Complete',
+        description: 'Gold backing report PDF has been downloaded.',
+      });
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      toast({
+        title: 'Download Failed',
+        description: 'Failed to generate PDF report. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   const backingStatus = data ? getBackingStatus(data.backingRatio) : null;
   const StatusIcon = backingStatus?.icon || AlertTriangle;
 
@@ -196,15 +243,36 @@ export default function GoldBackingReport() {
               Compare vault holdings against customer liabilities to ensure full gold backing
             </p>
           </div>
-          <Button 
-            onClick={() => refetch()} 
-            variant="outline" 
-            disabled={isFetching}
-            data-testid="button-refresh-report"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleDownloadPDF} 
+              variant="outline" 
+              disabled={isDownloading || !data}
+              data-testid="button-download-pdf"
+            >
+              <Download className={`h-4 w-4 mr-2 ${isDownloading ? 'animate-pulse' : ''}`} />
+              {isDownloading ? 'Generating...' : 'Download PDF'}
+            </Button>
+            <Button 
+              onClick={handlePrint} 
+              variant="outline" 
+              disabled={!data}
+              data-testid="button-print-report"
+              className="print:hidden"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print
+            </Button>
+            <Button 
+              onClick={() => refetch()} 
+              variant="outline" 
+              disabled={isFetching}
+              data-testid="button-refresh-report"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
