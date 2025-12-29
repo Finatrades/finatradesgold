@@ -154,17 +154,98 @@ export async function repairOrphanedTransfers(): Promise<{ fixed: number; errors
   return { fixed, errors };
 }
 
+export async function processExpiredInviteTransfers(): Promise<{ expired: number; errors: string[] }> {
+  const errors: string[] = [];
+  let expired = 0;
+
+  try {
+    console.log('[Invite Expiry] Scanning for expired invitation transfers...');
+    
+    // Find expired invite transfers
+    const now = new Date();
+    const expiredInvites = await db.select().from(peerTransfers)
+      .where(and(
+        eq(peerTransfers.status, 'Pending'),
+        eq(peerTransfers.isInvite, true),
+        isNull(peerTransfers.recipientId),
+        sql`${peerTransfers.expiresAt} < ${now}`
+      ));
+    
+    for (const invite of expiredInvites) {
+      try {
+        const goldAmount = parseFloat(invite.amountGold || '0');
+        
+        // Refund sender's wallet
+        const [senderWallet] = await db.select().from(wallets)
+          .where(eq(wallets.userId, invite.senderId));
+        
+        if (senderWallet) {
+          const currentGold = parseFloat(senderWallet.goldGrams?.toString() || '0');
+          await db.update(wallets)
+            .set({ 
+              goldGrams: (currentGold + goldAmount).toFixed(6),
+              updatedAt: new Date()
+            })
+            .where(eq(wallets.id, senderWallet.id));
+        }
+        
+        // Update sender's transaction to expired
+        if (invite.senderTransactionId) {
+          await db.update(transactions)
+            .set({ 
+              status: 'Failed',
+              description: `${invite.recipientIdentifier} did not register within 24 hours - gold refunded`,
+              updatedAt: new Date()
+            })
+            .where(eq(transactions.id, invite.senderTransactionId));
+        }
+        
+        // Update invite transfer to expired
+        await db.update(peerTransfers)
+          .set({ 
+            status: 'Expired',
+            rejectionReason: 'Recipient did not register within 24 hours',
+            respondedAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(peerTransfers.id, invite.id));
+        
+        console.log(`[Invite Expiry] Expired and refunded transfer ${invite.referenceNumber}: ${goldAmount.toFixed(4)}g`);
+        expired++;
+      } catch (err) {
+        const errorMsg = `Failed to expire transfer ${invite.referenceNumber}: ${err instanceof Error ? err.message : 'Unknown error'}`;
+        console.error(`[Invite Expiry] ${errorMsg}`);
+        errors.push(errorMsg);
+      }
+    }
+    
+    if (expired > 0) {
+      console.log(`[Invite Expiry] Completed. Expired ${expired} invitation transfers.`);
+    } else {
+      console.log('[Invite Expiry] No expired invitation transfers found.');
+    }
+    
+  } catch (error) {
+    const errorMsg = `Invite expiry scan failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    console.error(`[Invite Expiry] ${errorMsg}`);
+    errors.push(errorMsg);
+  }
+  
+  return { expired, errors };
+}
+
 export async function runAllRepairs(): Promise<void> {
   console.log('[Data Repair] Starting automatic data repair...');
   
   const walletResult = await repairCorruptedWallets();
   const transferResult = await repairOrphanedTransfers();
+  const expiryResult = await processExpiredInviteTransfers();
   
-  const totalFixed = walletResult.fixed + transferResult.fixed;
-  const totalErrors = [...walletResult.errors, ...transferResult.errors];
+  const totalFixed = walletResult.fixed + transferResult.fixed + expiryResult.expired;
+  const totalErrors = [...walletResult.errors, ...transferResult.errors, ...expiryResult.errors];
   
   if (totalFixed > 0) {
-    console.log(`[Data Repair] Completed. Fixed ${walletResult.fixed} wallets, ${transferResult.fixed} transfers.`);
+    console.log(`[Data Repair] Completed. Fixed ${walletResult.fixed} wallets, ${transferResult.fixed} transfers, expired ${expiryResult.expired} invites.`);
   }
   
   if (totalErrors.length > 0) {

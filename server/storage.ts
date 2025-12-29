@@ -281,6 +281,8 @@ export interface IStorage {
   updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined>;
   getPendingIncomingTransfers(userId: string): Promise<PeerTransfer[]>;
   getPendingOutgoingTransfers(userId: string): Promise<PeerTransfer[]>;
+  getPendingInvitesByEmail(email: string): Promise<PeerTransfer[]>;
+  getExpiredInviteTransfers(): Promise<PeerTransfer[]>;
   
   // BNSL Payouts
   getBnslPayout(id: string): Promise<BnslPayout | undefined>;
@@ -2083,6 +2085,29 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(peerTransfers.senderId, userId),
         eq(peerTransfers.status, 'Pending')
+      ))
+      .orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async getPendingInvitesByEmail(email: string): Promise<PeerTransfer[]> {
+    return await db.select().from(peerTransfers)
+      .where(and(
+        eq(peerTransfers.recipientIdentifier, email.toLowerCase()),
+        eq(peerTransfers.status, 'Pending'),
+        eq(peerTransfers.isInvite, true),
+        isNull(peerTransfers.recipientId)
+      ))
+      .orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async getExpiredInviteTransfers(): Promise<PeerTransfer[]> {
+    const now = new Date();
+    return await db.select().from(peerTransfers)
+      .where(and(
+        eq(peerTransfers.status, 'Pending'),
+        eq(peerTransfers.isInvite, true),
+        isNull(peerTransfers.recipientId),
+        sql`${peerTransfers.expiresAt} < ${now}`
       ))
       .orderBy(desc(peerTransfers.createdAt));
   }

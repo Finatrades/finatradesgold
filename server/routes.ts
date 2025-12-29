@@ -909,12 +909,102 @@ ${message}
       });
       
       // Create wallet for new user
-      await storage.createWallet({
+      const newWallet = await storage.createWallet({
         userId: user.id,
         goldGrams: "0",
         usdBalance: "0",
         eurBalance: "0",
       });
+      
+      // Check for pending invitation transfers to this email
+      try {
+        const pendingInvites = await storage.getPendingInvitesByEmail(user.email);
+        for (const invite of pendingInvites) {
+          if (invite.status === 'Pending' && invite.isInvite && !invite.recipientId) {
+            // Claim the invitation transfer
+            const goldAmount = parseFloat(invite.amountGold || '0');
+            const goldPrice = parseFloat(invite.goldPriceUsdPerGram || '0');
+            
+            // Credit the new user's wallet
+            const currentGold = parseFloat(newWallet.goldGrams?.toString() || '0');
+            await storage.updateWallet(newWallet.id, {
+              goldGrams: (currentGold + goldAmount).toFixed(6)
+            });
+            
+            // Create recipient transaction
+            const recipientTx = await storage.createTransaction({
+              userId: user.id,
+              type: 'Receive',
+              status: 'Completed',
+              amountGold: goldAmount.toFixed(6),
+              amountUsd: (goldAmount * goldPrice).toFixed(2),
+              goldPriceUsdPerGram: goldPrice.toFixed(2),
+              senderEmail: invite.recipientIdentifier,
+              description: `Claimed invitation transfer from registration`,
+              referenceId: invite.referenceNumber,
+              sourceModule: 'finapay',
+              completedAt: new Date(),
+            });
+            
+            // Update sender's transaction to completed
+            if (invite.senderTransactionId) {
+              await storage.updateTransaction(invite.senderTransactionId, {
+                status: 'Completed',
+                recipientUserId: user.id,
+                completedAt: new Date(),
+              });
+            }
+            
+            // Update the invite transfer
+            await storage.updatePeerTransfer(invite.id, {
+              recipientId: user.id,
+              recipientTransactionId: recipientTx.id,
+              status: 'Completed',
+              respondedAt: new Date(),
+            });
+            
+            // Record ledger entry
+            const { vaultLedgerService } = await import('./vault-ledger-service');
+            await vaultLedgerService.recordLedgerEntry({
+              userId: user.id,
+              action: 'Transfer_Receive',
+              goldGrams: goldAmount,
+              goldPriceUsdPerGram: goldPrice,
+              fromWallet: 'Escrow',
+              toWallet: 'FinaPay',
+              fromStatus: 'Pending',
+              toStatus: 'Available',
+              transactionId: recipientTx.id,
+              counterpartyUserId: invite.senderId,
+              notes: `Claimed invitation transfer ${invite.referenceNumber}`,
+              createdBy: 'system',
+            });
+            
+            // Create notification
+            await storage.createNotification({
+              userId: user.id,
+              title: 'Gold Claimed!',
+              message: `You received ${goldAmount.toFixed(4)}g gold from an invitation transfer.`,
+              type: 'success',
+              link: '/finapay',
+            });
+            
+            // Notify sender
+            await storage.createNotification({
+              userId: invite.senderId,
+              title: 'Transfer Claimed',
+              message: `Your invitation transfer of ${goldAmount.toFixed(4)}g gold was claimed by ${user.email}.`,
+              type: 'success',
+              link: '/finapay',
+            });
+            
+            console.log(`[Registration] Claimed invitation transfer ${invite.referenceNumber} for ${user.email}`);
+          }
+        }
+      } catch (inviteError) {
+        console.error('[Registration] Invitation claiming failed:', inviteError);
+        // Don't fail registration if invitation claiming fails
+      }
       
       // Handle referral code if provided
       if (referralCode) {
