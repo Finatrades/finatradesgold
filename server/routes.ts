@@ -15362,17 +15362,20 @@ ${message}
         return res.status(400).json({ message: "Cannot pay your own request" });
       }
       
-      // Check payer balance
+      // Check payer balance - use gold balance as the underlying asset
       const payerWallet = await storage.getWallet(payer.id);
       if (!payerWallet) {
         return res.status(400).json({ message: "Wallet not found" });
       }
       
-      const amount = parseFloat(request.amountUsd.toString());
-      const payerBalance = parseFloat(payerWallet.usdBalance.toString());
+      // Get current gold price to convert USD to gold grams
+      const { pricePerGram } = await getGoldPricePerGram();
+      const amountUsd = parseFloat(request.amountUsd.toString());
+      const goldGrams = amountUsd / pricePerGram;
+      const payerGoldBalance = parseFloat(payerWallet.goldGrams.toString());
       
-      if (payerBalance < amount) {
-        return res.status(400).json({ message: "Insufficient balance" });
+      if (payerGoldBalance < goldGrams) {
+        return res.status(400).json({ message: "Insufficient gold balance" });
       }
       
       // Get requester wallet
@@ -15384,23 +15387,25 @@ ${message}
       // Generate reference
       const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
-      // Debit payer
+      // Debit payer gold
       await storage.updateWallet(payerWallet.id, {
-        usdBalance: (payerBalance - amount).toFixed(2),
+        goldGrams: (payerGoldBalance - goldGrams).toFixed(6),
       });
       
-      // Credit requester
-      const requesterBalance = parseFloat(requesterWallet.usdBalance.toString());
+      // Credit requester gold
+      const requesterGoldBalance = parseFloat(requesterWallet.goldGrams.toString());
       await storage.updateWallet(requesterWallet.id, {
-        usdBalance: (requesterBalance + amount).toFixed(2),
+        goldGrams: (requesterGoldBalance + goldGrams).toFixed(6),
       });
       
-      // Create transactions
+      // Create transactions with gold grams
       const senderTx = await storage.createTransaction({
         userId: payer.id,
         type: 'Send',
         status: 'Completed',
-        amountUsd: amount.toFixed(2),
+        amountUsd: amountUsd.toFixed(2),
+        goldGrams: goldGrams.toFixed(6),
+        goldPricePerGram: pricePerGram.toFixed(2),
         recipientEmail: requester.email,
         recipientUserId: requester.id,
         description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
@@ -15413,7 +15418,9 @@ ${message}
         userId: requester.id,
         type: 'Receive',
         status: 'Completed',
-        amountUsd: amount.toFixed(2),
+        amountUsd: amountUsd.toFixed(2),
+        goldGrams: goldGrams.toFixed(6),
+        goldPricePerGram: pricePerGram.toFixed(2),
         senderEmail: payer.email,
         description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
@@ -15426,7 +15433,8 @@ ${message}
         referenceNumber,
         senderId: payer.id,
         recipientId: requester.id,
-        amountUsd: amount.toFixed(2),
+        amountUsd: amountUsd.toFixed(2),
+        goldGrams: goldGrams.toFixed(6),
         channel: request.channel,
         recipientIdentifier: requester.email,
         memo: request.memo,
