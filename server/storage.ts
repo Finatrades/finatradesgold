@@ -2090,22 +2090,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPendingInvitesByEmail(email: string): Promise<PeerTransfer[]> {
+    // Detect invitation transfers by recipientId being null (works without is_invite column)
     return await db.select().from(peerTransfers)
       .where(and(
         eq(peerTransfers.recipientIdentifier, email.toLowerCase()),
         eq(peerTransfers.status, 'Pending'),
-        eq(peerTransfers.isInvite, true),
         isNull(peerTransfers.recipientId)
       ))
       .orderBy(desc(peerTransfers.createdAt));
   }
 
   async getExpiredInviteTransfers(): Promise<PeerTransfer[]> {
+    // Detect invitation transfers by recipientId being null (works without is_invite column)
     const now = new Date();
     return await db.select().from(peerTransfers)
       .where(and(
         eq(peerTransfers.status, 'Pending'),
-        eq(peerTransfers.isInvite, true),
         isNull(peerTransfers.recipientId),
         sql`${peerTransfers.expiresAt} < ${now}`
       ))

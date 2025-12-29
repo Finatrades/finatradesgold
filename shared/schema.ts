@@ -2330,12 +2330,9 @@ export const peerTransfers = pgTable("peer_transfers", {
   goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }), // Gold price at time of transfer
   channel: peerTransferChannelEnum("channel").notNull(), // How the transfer was initiated
   recipientIdentifier: varchar("recipient_identifier", { length: 255 }).notNull(), // email, finatrades_id, or qr token
-  memo: text("memo"),
+  memo: text("memo"), // For invitations: stores JSON with {isInvite, invitationToken, senderReferralCode}
   status: peerTransferStatusEnum("status").notNull().default('Completed'),
   requiresApproval: boolean("requires_approval").notNull().default(false), // Whether recipient needs to accept
-  isInvite: boolean("is_invite").notNull().default(false), // True if recipient is not registered yet
-  invitationToken: varchar("invitation_token", { length: 255 }), // Token for invitation-based claim
-  senderReferralCode: varchar("sender_referral_code", { length: 100 }), // Sender's referral code for new user registration
   senderTransactionId: varchar("sender_transaction_id", { length: 255 }).references(() => transactions.id),
   recipientTransactionId: varchar("recipient_transaction_id", { length: 255 }).references(() => transactions.id),
   expiresAt: timestamp("expires_at"), // When pending transfer expires (auto-reject)

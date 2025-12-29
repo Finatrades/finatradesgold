@@ -171,28 +171,38 @@ export async function processExpiredInviteTransfers(): Promise<{ expired: number
   try {
     console.log('[Invite Expiry] Scanning for expired invitation transfers...');
     
-    // Find expired invite transfers
+    // Find expired invite transfers by recipientId being null (works without is_invite column)
     const now = new Date();
     let expiredInvites: typeof peerTransfers.$inferSelect[] = [];
     try {
       expiredInvites = await db.select().from(peerTransfers)
         .where(and(
           eq(peerTransfers.status, 'Pending'),
-          eq(peerTransfers.isInvite, true),
           isNull(peerTransfers.recipientId),
           sql`${peerTransfers.expiresAt} < ${now}`
         ));
     } catch (columnError: unknown) {
-      // If is_invite column doesn't exist yet, skip gracefully
-      if (columnError instanceof Error && columnError.message.includes('column "is_invite" does not exist')) {
-        console.log('[Invite Expiry] is_invite column not found - schema migration needed. Skipping...');
-        return { expired: 0, errors: [] };
-      }
-      throw columnError;
+      console.error('[Invite Expiry] Query failed:', columnError);
+      return { expired: 0, errors: [(columnError as Error).message] };
     }
     
     for (const invite of expiredInvites) {
       try {
+        // Parse memo to verify this is actually an invite (not just any transfer with null recipientId)
+        let inviteMetadata: { isInvite?: boolean } = {};
+        try {
+          if (invite.memo && invite.memo.startsWith('{')) {
+            inviteMetadata = JSON.parse(invite.memo);
+          }
+        } catch (e) {
+          // memo is not JSON, skip this transfer
+        }
+        
+        // Only process if this is actually an invite (has isInvite flag in memo)
+        if (!inviteMetadata.isInvite) {
+          continue;
+        }
+        
         const goldAmount = parseFloat(invite.amountGold || '0');
         
         // Use transaction to ensure atomic refund

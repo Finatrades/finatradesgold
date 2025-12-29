@@ -917,10 +917,32 @@ ${message}
       });
       
       // Check for pending invitation transfers to this email
+      let inviteSenderReferralCode: string | undefined;
       try {
         const pendingInvites = await storage.getPendingInvitesByEmail(user.email);
         for (const invite of pendingInvites) {
-          if (invite.status === 'Pending' && invite.isInvite && !invite.recipientId) {
+          // Detect invitation by recipientId being null
+          if (invite.status === 'Pending' && !invite.recipientId) {
+            // Parse memo to get invite metadata (isInvite, invitationToken, senderReferralCode)
+            let inviteMetadata: { isInvite?: boolean; invitationToken?: string; senderReferralCode?: string | null; originalMemo?: string } = {};
+            try {
+              if (invite.memo && invite.memo.startsWith('{')) {
+                inviteMetadata = JSON.parse(invite.memo);
+              }
+            } catch (e) {
+              // memo is not JSON, treat as plain text
+            }
+            
+            // Only process if this is actually an invite (has isInvite flag in memo)
+            if (!inviteMetadata.isInvite) {
+              continue;
+            }
+            
+            // Extract sender's referral code for registration bonus
+            if (inviteMetadata.senderReferralCode) {
+              inviteSenderReferralCode = inviteMetadata.senderReferralCode;
+            }
+            
             // Claim the invitation transfer
             const goldAmount = parseFloat(invite.amountGold || '0');
             const goldPrice = parseFloat(invite.goldPriceUsdPerGram || '0');
@@ -940,7 +962,7 @@ ${message}
               amountUsd: (goldAmount * goldPrice).toFixed(2),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               senderEmail: invite.recipientIdentifier,
-              description: `Claimed invitation transfer from registration`,
+              description: inviteMetadata.originalMemo || `Claimed invitation transfer from registration`,
               referenceId: invite.referenceNumber,
               sourceModule: 'finapay',
               completedAt: new Date(),
@@ -1006,10 +1028,13 @@ ${message}
         // Don't fail registration if invitation claiming fails
       }
       
-      // Handle referral code if provided
-      if (referralCode) {
+      // Use sender's referral code from invitation if user didn't provide one
+      const effectiveReferralCode = referralCode || inviteSenderReferralCode;
+      
+      // Handle referral code (from form or invitation) if provided
+      if (effectiveReferralCode) {
         try {
-          const referral = await storage.getReferralByCode(referralCode);
+          const referral = await storage.getReferralByCode(effectiveReferralCode);
           if (referral && referral.status === 'Active' && !referral.referredId) {
             // Link the referral to this new user
             await storage.updateReferral(referral.id, {
@@ -1017,7 +1042,7 @@ ${message}
               referredEmail: user.email,
               status: 'Pending', // Will be marked as Completed after first deposit
             });
-            console.log(`[Registration] Linked referral ${referralCode} to new user ${user.email}`);
+            console.log(`[Registration] Linked referral ${effectiveReferralCode} to new user ${user.email}`);
           }
         } catch (refError) {
           console.error('[Registration] Referral linking failed:', refError);
@@ -1032,7 +1057,9 @@ ${message}
         actionType: "create",
         actor: user.id,
         actorRole: "user",
-        details: referralCode ? `User registered with referral code ${referralCode}` : "User registered - pending email verification",
+        details: effectiveReferralCode 
+          ? `User registered with referral code ${effectiveReferralCode}${inviteSenderReferralCode ? ' (from invitation)' : ''}` 
+          : "User registered - pending email verification",
       });
       
       // Create welcome notification
@@ -15036,6 +15063,14 @@ ${message}
         });
         
         // Create pending invite transfer (no recipientId)
+        // Store invitation data in memo as JSON since AWS RDS may not have new columns yet
+        const inviteMetadata = JSON.stringify({
+          isInvite: true,
+          invitationToken,
+          senderReferralCode: senderReferralCode || null,
+          originalMemo: memo || null,
+        });
+        
         const inviteTransfer = await storage.createPeerTransfer({
           referenceNumber,
           senderId: sender.id,
@@ -15045,12 +15080,9 @@ ${message}
           goldPriceUsdPerGram: goldPrice.toFixed(2),
           channel,
           recipientIdentifier,
-          memo,
+          memo: inviteMetadata,
           status: 'Pending',
           requiresApproval: true,
-          isInvite: true,
-          invitationToken,
-          senderReferralCode: senderReferralCode || undefined,
           expiresAt,
           senderTransactionId: senderTx.id,
         });
