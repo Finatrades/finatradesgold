@@ -767,23 +767,38 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Platform Invitation',
     type: 'email' as const,
     module: 'auth',
-    subject: '{{sender_name}} invited you to Finatrades',
+    subject: '{{sender_name}} sent you {{amount}} gold - Claim within 24 hours!',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">You're Invited!</h1>
+        <div style="background: linear-gradient(135deg, #8A2BE2, #4B0082); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">You've Received Gold!</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
           <p>Hello,</p>
-          <p><strong>{{sender_name}}</strong> wants to send you <strong>{{amount}}</strong> via Finatrades!</p>
+          <p><strong>{{sender_name}}</strong> has sent you <strong>{{amount}}</strong> of physical gold via Finatrades!</p>
+          
+          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0; color: #92400e;"><strong>⏰ Important:</strong> This gold is reserved for you for <strong>24 hours</strong>. Claim it before it expires!</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
+            <p style="font-size: 28px; font-weight: bold; color: #8A2BE2; margin: 0;">{{amount}}</p>
+            <p style="color: #6b7280; margin: 5px 0 0 0;">of physical gold waiting for you</p>
+          </div>
+          
           <p>Finatrades is a gold-backed digital financial platform where you can:</p>
-          <ul>
-            <li>Buy and store physical gold digitally</li>
-            <li>Send and receive money instantly</li>
-            <li>Grow your wealth with BNSL plans</li>
+          <ul style="color: #374151;">
+            <li>Own and store physical gold digitally</li>
+            <li>Send gold to anyone, anywhere</li>
+            <li>Access trade finance with gold-backed security</li>
           </ul>
+          
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{register_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Join Finatrades</a>
+            <a href="{{register_url}}" style="background: linear-gradient(135deg, #8A2BE2, #A342FF); color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Claim Your Gold</a>
+          </p>
+          
+          <p style="text-align: center; color: #6b7280; margin-top: 15px; font-size: 13px;">
+            After registering, your gold will be automatically credited to your wallet.
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -793,8 +808,8 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     `,
     variables: [
       { name: 'sender_name', description: 'Name of the person inviting' },
-      { name: 'amount', description: 'Amount they want to send' },
-      { name: 'register_url', description: 'Registration link' },
+      { name: 'amount', description: 'Amount of gold being sent' },
+      { name: 'register_url', description: 'Registration link with referral code' },
     ],
     status: 'published' as const,
   },
