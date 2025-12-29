@@ -139,6 +139,7 @@ export interface TransactionalStorage {
   createCertificateDelivery(insertDelivery: InsertCertificateDelivery): Promise<CertificateDelivery>;
   generateInvoiceNumber(): Promise<string>;
   updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined>;
+  updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined>;
 }
 
 function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
@@ -220,6 +221,10 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
     async updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined> {
       const [request] = await txDb.update(buyGoldRequests).set({ ...updates, updatedAt: new Date() }).where(eq(buyGoldRequests.id, id)).returning();
       return request || undefined;
+    },
+    async updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined> {
+      const [transfer] = await txDb.update(peerTransfers).set({ ...updates, updatedAt: new Date() }).where(eq(peerTransfers.id, id)).returning();
+      return transfer || undefined;
     }
   };
 }
