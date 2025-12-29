@@ -165,11 +165,6 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   // Check for METALS_API_KEY environment variable first (primary source)
   const metalsApiKey = process.env.METALS_API_KEY;
   
-  // If no API key available from either source, throw error
-  if (!metalsApiKey && !config.apiKey) {
-    throw new Error('Gold Price API key is not configured. Please add METALS_API_KEY secret or configure in admin panel.');
-  }
-  
   // Check in-memory cache first
   if (cachedPrice && cachedPrice.expiresAt > new Date()) {
     return cachedPrice.data;
@@ -178,14 +173,16 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
   try {
     let priceData: GoldPriceData;
     
-    // Always use Metals-API.com with METALS_API_KEY secret as primary
+    // Try Metals-API.com with API key if available
     if (metalsApiKey) {
       priceData = await fetchFromMetalsApi(metalsApiKey);
     } else if (config.apiKey) {
       // Fallback to admin configured key
       priceData = await fetchFromMetalsApi(config.apiKey);
     } else {
-      throw new Error('No API key available');
+      // No API key configured, go directly to free backup
+      console.log('[GoldPrice] No API key configured, using free gold-api.com...');
+      priceData = await fetchFromGoldApiCom();
     }
     
     // Apply markup if configured
