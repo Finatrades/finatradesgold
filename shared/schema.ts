@@ -591,6 +591,14 @@ export const finatradesCorporateKyc = pgTable("finatrades_corporate_kyc", {
     authorizedSignatories?: { url: string; uploaded: boolean; };
   }>(),
   
+  // Document Expiry Tracking
+  tradeLicenseExpiryDate: varchar("trade_license_expiry_date", { length: 20 }),
+  directorPassportExpiryDate: varchar("director_passport_expiry_date", { length: 20 }),
+  expiryReminderSent30Days: boolean("expiry_reminder_sent_30_days").default(false),
+  expiryReminderSent14Days: boolean("expiry_reminder_sent_14_days").default(false),
+  expiryReminderSent7Days: boolean("expiry_reminder_sent_7_days").default(false),
+  expiryReminderSentExpired: boolean("expiry_reminder_sent_expired").default(false),
+  
   // Section 4: Banking Details
   bankName: varchar("bank_name", { length: 255 }),
   bankBranchAddress: text("bank_branch_address"),
@@ -643,6 +651,13 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
   idBackUrl: text("id_back_url"),
   passportUrl: text("passport_url"),
   addressProofUrl: text("address_proof_url"),
+  
+  // Document Expiry Tracking
+  passportExpiryDate: varchar("passport_expiry_date", { length: 20 }),
+  expiryReminderSent30Days: boolean("expiry_reminder_sent_30_days").default(false),
+  expiryReminderSent14Days: boolean("expiry_reminder_sent_14_days").default(false),
+  expiryReminderSent7Days: boolean("expiry_reminder_sent_7_days").default(false),
+  expiryReminderSentExpired: boolean("expiry_reminder_sent_expired").default(false),
   
   // Liveness face capture
   livenessVerified: boolean("liveness_verified").default(false),
