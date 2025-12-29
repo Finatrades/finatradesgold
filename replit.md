@@ -66,6 +66,7 @@ The platform uses a client-server architecture with a React frontend and an Expr
 
 **Authentication & Authorization:**
 - **Method**: Email/password authentication.
+- **Email Verification**: Mandatory before login (6-digit OTP, 10-minute expiry).
 - **Session Storage**: PostgreSQL.
 - **Roles**: `user` and `admin`.
 - **KYC Levels**: Multi-tier status (Not Started, In Progress, Approved, Rejected).

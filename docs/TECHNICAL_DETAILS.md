@@ -1369,6 +1369,21 @@ FinaBridge is a gold-backed trade finance platform connecting importers and expo
 | **Session Storage** | PostgreSQL with connect-pg-simple |
 | **Session Expiry** | Configurable |
 
+### Email Verification
+| Feature | Description |
+|---------|-------------|
+| **Requirement** | Mandatory before login |
+| **OTP Code** | 6-digit code sent via email |
+| **Code Expiry** | 10 minutes |
+| **Rate Limit** | 5 requests per 5 minutes |
+| **Skip Option** | Not available (email verification is enforced) |
+
+**Flow:**
+1. User registers with email/password
+2. System sends 6-digit verification code
+3. User enters code on verification page
+4. Only after verification can user log in
+
 ### Multi-Factor Authentication (MFA)
 | Method | Description |
 |--------|-------------|
