@@ -809,15 +809,13 @@ export default function FinaVault() {
                                     <React.Fragment key={entry.id}>
                                       {/* Parent Row */}
                                       <tr 
-                                        className={`hover:bg-gray-50 ${hasChildren ? 'cursor-pointer' : ''}`}
-                                        onClick={() => hasChildren && toggleLedgerRow(entry.id)}
+                                        className="hover:bg-gray-50 cursor-pointer"
+                                        onClick={() => toggleLedgerRow(entry.id)}
                                       >
                                         <td className="p-4 w-8">
-                                          {hasChildren && (
-                                            <span className="text-muted-foreground">
-                                              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                            </span>
-                                          )}
+                                          <span className="text-muted-foreground">
+                                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                          </span>
                                         </td>
                                         <td className="p-4 text-muted-foreground">
                                           {new Date(entry.createdAt).toLocaleDateString()}
@@ -884,8 +882,60 @@ export default function FinaVault() {
                                         </td>
                                       </tr>
                                       
+                                      {/* Expanded Details Row */}
+                                      {isExpanded && (
+                                        <tr className="bg-gray-50/70 border-l-4 border-l-primary">
+                                          <td colSpan={9} className="p-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                              <div>
+                                                <p className="text-xs text-muted-foreground uppercase mb-1">Full Reference ID</p>
+                                                <p className="font-mono text-xs bg-gray-100 px-2 py-1 rounded inline-block">
+                                                  {entry.referenceId || entry.transactionId || entry.id}
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p className="text-xs text-muted-foreground uppercase mb-1">Date & Time</p>
+                                                <p className="text-foreground">
+                                                  {new Date(entry.createdAt).toLocaleString()}
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p className="text-xs text-muted-foreground uppercase mb-1">Gold Price at Transaction</p>
+                                                <p className="text-foreground">
+                                                  {entry.goldPriceUsdPerGram 
+                                                    ? `$${safeParseFloat(entry.goldPriceUsdPerGram).toFixed(2)}/g`
+                                                    : entry.valueUsd && safeParseFloat(entry.goldGrams) > 0
+                                                    ? `$${(safeParseFloat(entry.valueUsd) / safeParseFloat(entry.goldGrams)).toFixed(2)}/g`
+                                                    : 'N/A'}
+                                                </p>
+                                              </div>
+                                              {entry.description && (
+                                                <div className="md:col-span-3">
+                                                  <p className="text-xs text-muted-foreground uppercase mb-1">Description</p>
+                                                  <p className="text-foreground">{entry.description}</p>
+                                                </div>
+                                              )}
+                                              {(entry.senderEmail || entry.recipientEmail) && (
+                                                <div className="md:col-span-3">
+                                                  <p className="text-xs text-muted-foreground uppercase mb-1">
+                                                    {entry.senderEmail ? 'Sender' : 'Recipient'}
+                                                  </p>
+                                                  <p className="text-foreground">{entry.senderEmail || entry.recipientEmail}</p>
+                                                </div>
+                                              )}
+                                              {entry.memo && (
+                                                <div className="md:col-span-3">
+                                                  <p className="text-xs text-muted-foreground uppercase mb-1">Memo</p>
+                                                  <p className="text-foreground">{entry.memo}</p>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      )}
+                                      
                                       {/* Child Rows (Certificates) - shown when expanded */}
-                                      {isExpanded && group.children.map((child: any) => (
+                                      {isExpanded && group.children.length > 0 && group.children.map((child: any) => (
                                         <tr key={child.id} className="bg-gray-50/50 border-l-4 border-l-primary/20">
                                           <td className="p-4 w-8"></td>
                                           <td className="p-4 text-muted-foreground text-xs">
