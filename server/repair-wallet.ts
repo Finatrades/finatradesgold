@@ -1,7 +1,7 @@
 import { db } from './db';
-import { wallets, transactions, peerTransfers, notifications } from '@shared/schema';
+import { wallets, transactions, peerTransfers } from '@shared/schema';
 import { eq, and, sql, isNull } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
+import { storage } from './storage';
 
 export async function repairCorruptedWallets(): Promise<{ fixed: number; errors: string[] }> {
   const errors: string[] = [];
@@ -228,19 +228,20 @@ export async function processExpiredInviteTransfers(): Promise<{ expired: number
               updatedAt: new Date()
             })
             .where(eq(peerTransfers.id, invite.id));
-          
-          // Create bell notification for sender about expired invitation
-          await tx.insert(notifications).values({
-            id: randomUUID(),
+        });
+        
+        // Create bell notification for sender about expired invitation (outside transaction for proper socket emit)
+        try {
+          await storage.createNotification({
             userId: invite.senderId,
             title: 'Invitation Expired',
             message: `Your invitation to ${invite.recipientIdentifier} expired. ${goldAmount.toFixed(4)}g gold refunded to your wallet.`,
             type: 'transaction',
             link: '/finapay',
-            read: false,
-            createdAt: new Date(),
           });
-        });
+        } catch (notifErr) {
+          console.error(`[Invite Expiry] Failed to create notification for sender ${invite.senderId}:`, notifErr);
+        }
         
         console.log(`[Invite Expiry] Expired and refunded transfer ${invite.referenceNumber}: ${goldAmount.toFixed(4)}g`);
         expired++;
