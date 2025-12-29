@@ -1077,8 +1077,7 @@ export const walletTypeEnum = pgEnum('wallet_type', [
   'FinaPay',      // Main user wallet
   'BNSL',         // BNSL dedicated wallet
   'FinaBridge',   // FinaBridge trade wallet
-  'External',     // External (deposits/withdrawals)
-  'Escrow'        // Escrow for pending invitation transfers
+  'External'      // External (deposits/withdrawals/escrow)
 ]);
 
 // Central ledger tracking all gold ownership changes
