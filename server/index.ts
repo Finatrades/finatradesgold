@@ -12,6 +12,53 @@ import { RedisStore } from "connect-redis";
 import { pool } from "./db";
 import { getRedisClient } from "./redis-client";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
+// Rate limiting configurations for different security levels
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  message: { message: "Too many login attempts. Please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+});
+
+export const otpRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 5, // 5 attempts per window
+  message: { message: "Too many OTP attempts. Please try again after 5 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+});
+
+export const passwordResetRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 attempts per hour
+  message: { message: "Too many password reset requests. Please try again after 1 hour." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+});
+
+export const withdrawalRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 withdrawal requests per hour
+  message: { message: "Too many withdrawal requests. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => (req.session as any)?.user?.id || req.ip || 'unknown',
+});
+
+export const apiRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute for general API
+  message: { message: "Too many requests. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+});
 
 // Extend express-session types
 declare module "express-session" {

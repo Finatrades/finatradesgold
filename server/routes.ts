@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
 import { db, pool } from "./db";
 import crypto from "crypto";
+import { authRateLimiter, otpRateLimiter, passwordResetRateLimiter, withdrawalRateLimiter, apiRateLimiter } from "./index";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
@@ -863,8 +864,8 @@ ${message}
   // AUTHENTICATION & USER MANAGEMENT
   // ============================================================================
   
-  // Register new user
-  app.post("/api/auth/register", async (req, res) => {
+  // Register new user (rate limited)
+  app.post("/api/auth/register", authRateLimiter, async (req, res) => {
     try {
       // Check if registrations are enabled
       const { getSystemSettings } = await import("./index");
@@ -1008,8 +1009,8 @@ ${message}
     }
   });
   
-  // Verify email with code
-  app.post("/api/auth/verify-email", async (req, res) => {
+  // Verify email with code (rate limited)
+  app.post("/api/auth/verify-email", otpRateLimiter, async (req, res) => {
     try {
       const { email, code } = req.body;
       const user = await storage.getUserByEmail(email);
@@ -1176,7 +1177,7 @@ ${message}
   }, 6 * 60 * 60 * 1000); // Run every 6 hours
 
   // Login with rate limiting
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authRateLimiter, async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -1817,8 +1818,8 @@ ${message}
   // PASSWORD RESET
   // ============================================================================
   
-  // Request password reset
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  // Request password reset (rate limited)
+  app.post("/api/auth/forgot-password", passwordResetRateLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
@@ -1884,8 +1885,8 @@ ${message}
     }
   });
   
-  // Reset password with token
-  app.post("/api/auth/reset-password", async (req, res) => {
+  // Reset password with token (rate limited)
+  app.post("/api/auth/reset-password", passwordResetRateLimiter, async (req, res) => {
     try {
       const { token, password } = req.body;
       
@@ -10742,8 +10743,8 @@ ${message}
     }
   });
   
-  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN
-  app.post("/api/withdrawal-requests", ensureAuthenticated, requireKycApproved, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
+  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN + rate limit
+  app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd, ...bankDetails } = req.body;
       
@@ -20249,8 +20250,8 @@ ${message}
     }
   });
 
-  // Request OTP for an action
-  app.post("/api/otp/request", async (req, res) => {
+  // Request OTP for an action (rate limited)
+  app.post("/api/otp/request", otpRateLimiter, async (req, res) => {
     try {
       const { userId, action, metadata } = req.body;
       
@@ -20342,8 +20343,8 @@ ${message}
     }
   });
 
-  // Verify OTP code
-  app.post("/api/otp/verify", async (req, res) => {
+  // Verify OTP code (rate limited)
+  app.post("/api/otp/verify", otpRateLimiter, async (req, res) => {
     try {
       const { otpId, code, userId, action } = req.body;
       
