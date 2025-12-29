@@ -15108,11 +15108,12 @@ ${message}
         }
         
         // Send invitation email
-        sendEmail(recipientIdentifier, EMAIL_TEMPLATES.INVITATION, {
+        const emailResult = await sendEmail(recipientIdentifier, EMAIL_TEMPLATES.INVITATION, {
           sender_name: `${sender.firstName} ${sender.lastName}`,
           amount: `${goldAmount.toFixed(4)}g`,
           register_url: registerUrl,
-        }).catch(err => console.error('[Email] Invitation transfer email failed:', err));
+        });
+        console.log(`[Email] Invitation email to ${recipientIdentifier}: ${emailResult.success ? 'sent' : 'failed'} - ${emailResult.messageId || emailResult.error}`);
         
         // Create audit log
         await storage.createAuditLog({
