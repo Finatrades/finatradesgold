@@ -507,200 +507,504 @@ The platform supports two KYC modes:
 
 ## FinaPay - Digital Wallet System
 
+### Overview
+FinaPay is the core digital wallet for buying, selling, storing, and transferring gold. Each user gets a wallet upon registration.
+
 ### Wallet Structure
 Each user has a single wallet with:
-| Field | Description |
-|-------|-------------|
-| `goldGrams` | Gold balance in grams (6 decimal precision) |
-| `usdBalance` | USD fiat balance |
-| `eurBalance` | EUR fiat balance |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Unique wallet identifier |
+| `userId` | UUID | Owner user ID |
+| `goldGrams` | Decimal(18,6) | Gold balance in grams (6 decimal precision) |
+| `usdBalance` | Decimal(18,2) | USD fiat balance |
+| `eurBalance` | Decimal(18,2) | EUR fiat balance |
+| `createdAt` | Timestamp | Wallet creation date |
+| `updatedAt` | Timestamp | Last update timestamp |
+
+### API Endpoints
+
+#### Wallet Operations
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/wallet/:userId` | Owner/Admin | Get wallet balance |
+
+#### Transaction Operations
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/transactions/:userId` | Owner/Admin | Get user transactions |
+| POST | `/api/transactions` | KYC + Idempotency | Create new transaction |
+| PATCH | `/api/transactions/:id` | Authenticated | Update transaction status |
+
+#### Deposit Operations
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/deposit-requests/:userId` | Owner/Admin | Get deposit requests |
+| POST | `/api/deposit-requests` | KYC + Idempotency | Create deposit request |
+
+#### Withdrawal Operations
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/withdrawal-requests/:userId` | Owner/Admin | Get withdrawal requests |
+| POST | `/api/withdrawal-requests` | KYC + PIN + Idempotency | Create withdrawal request |
 
 ### Transaction Types
-| Type | Description |
-|------|-------------|
-| `Buy` | Purchase gold with fiat |
-| `Sell` | Sell gold for fiat |
-| `Send` | Send gold to another user |
-| `Receive` | Receive gold from another user |
-| `Swap` | Currency swap |
-| `Deposit` | Add fiat to wallet |
-| `Withdrawal` | Withdraw fiat from wallet |
+| Type | Description | Fee Applicable |
+|------|-------------|----------------|
+| `Buy` | Purchase gold with fiat | Yes |
+| `Sell` | Sell gold for fiat | Yes |
+| `Send` | Send gold to another user | Yes |
+| `Receive` | Receive gold from another user | No |
+| `Swap` | Currency swap (USD ↔ EUR) | Yes |
+| `Deposit` | Add fiat to wallet | Method-dependent |
+| `Withdrawal` | Withdraw fiat to bank account | Yes |
 
 ### Transaction Statuses
-| Status | Description |
-|--------|-------------|
-| `Draft` | Transaction not yet submitted |
-| `Pending` | Awaiting processing |
-| `Pending Verification` | Requires additional verification |
-| `Approved` | Approved by admin |
-| `Processing` | Being processed |
-| `Completed` | Successfully completed |
-| `Failed` | Transaction failed |
-| `Cancelled` | Cancelled by user |
-| `Rejected` | Rejected by admin |
+| Status | Description | User Action |
+|--------|-------------|-------------|
+| `Draft` | Transaction not yet submitted | Can edit/delete |
+| `Pending` | Awaiting processing | Can cancel |
+| `Pending Verification` | Requires additional verification | Upload documents |
+| `Approved` | Approved by admin | None |
+| `Processing` | Being processed | None |
+| `Completed` | Successfully completed | None |
+| `Failed` | Transaction failed | Retry/contact support |
+| `Cancelled` | Cancelled by user | None |
+| `Rejected` | Rejected by admin | Contact support |
 
 ### P2P Transfer Features
-- **Accept/Reject**: Users can require approval for incoming transfers
-- **Auto-Accept Timeout**: Configurable hours before auto-accept
-- **Transfer Limits**: Configurable min/max amounts
-- **Fee Structure**: Percentage-based fees
+| Feature | Description | Configuration |
+|---------|-------------|---------------|
+| **Accept/Reject** | Recipients can approve incoming transfers | User preference |
+| **Auto-Accept Timeout** | Hours before auto-accept | `transferApprovalTimeout` (default: 24h) |
+| **Transfer Limits** | Min/max amounts per transfer | Platform config |
+| **Fee Structure** | Percentage-based fees | Platform config |
+| **Recipient Search** | Find users by email or Finatrades ID | Real-time search |
+
+### Payment Request System
+| Feature | Description |
+|---------|-------------|
+| **Create Request** | User creates payment request with amount and optional message |
+| **Share Request** | Request ID/link shared with payer |
+| **Notification** | Payer receives notification |
+| **Fulfill/Decline** | Payer can pay or decline the request |
+| **Expiry** | Requests expire after configurable period |
+
+### Deposit Methods
+| Method | Processing Time | Fees |
+|--------|-----------------|------|
+| Bank Transfer | 1-3 business days | Platform fee |
+| Card Payment (NGenius) | Instant | Card processing fee |
+| Crypto (Binance Pay) | Near-instant | Network fee |
 
 ---
 
 ## FinaVault - Gold Storage System
 
+### Overview
+FinaVault provides secure physical gold storage in certified vaults. Users can store physical gold bars with allocated or pooled storage options.
+
 ### Vault Holding Types
-| Type | Description |
-|------|-------------|
-| Digital Ownership | Gold owned digitally (Finatrades custody) |
-| Physical Storage | Physical gold stored in vault (Wingold custody) |
+| Type | Description | Custody |
+|------|-------------|---------|
+| Digital Ownership | Gold owned digitally | Finatrades |
+| Physical Storage | Physical gold bars in vault | Wingold & Metals DMCC |
 
 ### Vault Holding Fields
-| Field | Description |
-|-------|-------------|
-| `goldGrams` | Amount of gold in grams |
-| `vaultLocation` | Physical vault location |
-| `wingoldStorageRef` | Wingold storage reference |
-| `storageType` | 'allocated' or 'pooled' |
-| `status` | 'active', 'pending_withdrawal', 'withdrawn' |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Unique holding identifier |
+| `userId` | UUID | Owner user ID |
+| `goldGrams` | Decimal(18,6) | Amount of gold in grams |
+| `vaultLocation` | String | Physical vault location |
+| `wingoldStorageRef` | String | Wingold storage reference number |
+| `storageType` | Enum | 'allocated' or 'pooled' |
+| `status` | Enum | 'active', 'pending_withdrawal', 'withdrawn' |
+| `isPhysicallyDeposited` | Boolean | Whether gold is physically in vault |
+| `barSerialNumber` | String | Physical bar serial (if allocated) |
+| `purity` | Decimal | Gold purity (e.g., 999.9) |
+
+### API Endpoints
+
+#### Vault Holdings
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/vault/:userId` | Owner/Admin | Get vault holdings |
+| GET | `/api/vault/ownership/:userId` | Owner/Admin | Get ownership certificates |
+| GET | `/api/vault/ledger/:userId` | Owner/Admin | Get vault ledger history |
+| GET | `/api/vault/activity/:userId` | Owner/Admin | Get vault activity log |
+| POST | `/api/vault` | Authenticated | Create vault holding |
+| PATCH | `/api/vault/:id` | Authenticated | Update vault holding |
+
+#### Physical Deposits
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/vault/deposits/:userId` | Owner/Admin | Get deposit requests |
+| GET | `/api/vault/deposit/:id` | Authenticated | Get deposit details |
+| POST | `/api/vault/deposit` | KYC | Create physical deposit request |
+
+#### Physical Withdrawals
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/vault/withdrawals/:userId` | Owner/Admin | Get withdrawal requests |
+| GET | `/api/vault/withdrawal/:id` | Authenticated | Get withdrawal details |
+| POST | `/api/vault/withdrawal` | KYC | Create withdrawal request |
+
+#### Physical Delivery
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/vault/physical-deliveries/:userId` | Owner/Admin | Get delivery requests |
+| POST | `/api/vault/physical-delivery` | KYC | Request physical delivery |
+
+#### Gold Bars
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/vault/gold-bars/:userId` | Owner/Admin | Get allocated gold bars |
+
+#### Vault Transfers & Gifts
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/vault/transfers/:userId` | Owner/Admin | Get vault transfers |
+| POST | `/api/vault/transfers` | KYC | Create vault transfer |
+| GET | `/api/vault/gifts/:userId` | Owner/Admin | Get gold gifts |
+| POST | `/api/vault/gifts` | KYC | Send gold as gift |
+| POST | `/api/vault/gifts/:id/claim` | Authenticated | Claim gold gift |
+
+#### Storage & Insurance
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/vault/storage-fees/:userId` | Owner/Admin | Get storage fee history |
+| GET | `/api/vault/insurance/:userId` | Owner/Admin | Get insurance coverage |
+| GET | `/api/vault/locations` | Authenticated | Get available vault locations |
 
 ### Default Vault Location
 **Dubai - Wingold & Metals DMCC**
+- Address: Jumeirah Lakes Towers, Dubai, UAE
+- Insurance: Lloyd's of London
+- Security: 24/7 armed security, biometric access
+
+### Storage Types
+| Type | Description | Minimum | Fees |
+|------|-------------|---------|------|
+| **Allocated** | Specific bars assigned to user | 100g | Higher storage fee |
+| **Pooled** | Shared pool, fractional ownership | 1g | Lower storage fee |
+
+### Physical Delivery Options
+| Option | Description | Timeframe |
+|--------|-------------|-----------|
+| **Vault Pickup** | Collect from vault location | Same day |
+| **Insured Courier** | Delivered to address | 3-5 business days |
+| **International Shipping** | Cross-border delivery | 7-14 business days |
 
 ---
 
 ## BNSL - Buy Now Sell Later
 
 ### Overview
-BNSL allows users to lock gold for a fixed term and earn guaranteed returns.
+BNSL (Buy Now Sell Later) is an investment program where users lock gold for a fixed term and earn guaranteed annual returns. The platform uses the locked gold for trade finance operations and shares profits with users.
 
 ### Plan Terms and Returns
-| Term | Annual Margin |
-|------|---------------|
-| 12 months | 10% |
-| 24 months | 11% |
-| 36 months | 12% |
+| Term | Annual Margin | Total Return |
+|------|---------------|--------------|
+| 12 months | 10% | 10% |
+| 24 months | 11% | 22% |
+| 36 months | 12% | 36% |
 
 ### BNSL Plan Structure
-| Field | Description |
-|-------|-------------|
-| `contractId` | Unique contract identifier |
-| `tenorMonths` | Lock period in months |
-| `agreedMarginAnnualPercent` | Agreed annual return percentage |
-| `goldSoldGrams` | Amount of gold locked |
-| `enrollmentPriceUsdPerGram` | Gold price at enrollment |
-| `basePriceComponentUsd` | Base value in USD |
-| `startDate` | Plan start date |
-| `maturityDate` | Plan maturity date |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Unique plan identifier |
+| `userId` | UUID | Owner user ID |
+| `contractId` | String | Unique contract identifier (BNSL-XXXXXX) |
+| `tenorMonths` | Integer | Lock period (12, 24, or 36 months) |
+| `agreedMarginAnnualPercent` | Decimal | Agreed annual return percentage |
+| `goldSoldGrams` | Decimal(18,6) | Amount of gold locked |
+| `enrollmentPriceUsdPerGram` | Decimal | Gold price at enrollment |
+| `basePriceComponentUsd` | Decimal | Base value in USD |
+| `startDate` | Date | Plan start date |
+| `maturityDate` | Date | Plan maturity date |
+| `status` | Enum | Plan status |
+
+### API Endpoints
+
+#### BNSL Plans
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/bnsl/plans/:userId` | Owner/Admin | Get user's BNSL plans |
+| GET | `/api/bnsl/templates` | Public | Get available plan templates |
+| POST | `/api/bnsl/plans` | KYC + Idempotency | Create new BNSL plan |
+| PATCH | `/api/bnsl/plans/:id` | Authenticated | Update plan status |
+
+#### BNSL Wallet
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/bnsl/wallet/:userId` | Owner/Admin | Get BNSL wallet balance |
+| GET | `/api/bnsl/ledger/:userId` | Owner/Admin | Get BNSL ledger history |
+| POST | `/api/bnsl/wallet/transfer` | KYC + Idempotency | Transfer gold to BNSL |
+| POST | `/api/bnsl/wallet/withdraw` | KYC + Idempotency | Withdraw from BNSL |
+
+#### BNSL Payouts
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/bnsl/payouts/:planId` | Authenticated | Get plan payouts |
+| POST | `/api/bnsl/payouts` | Authenticated | Process payout |
+| PATCH | `/api/bnsl/payouts/:id` | Authenticated | Update payout status |
+
+#### Early Termination
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/bnsl/early-termination/:planId` | Authenticated | Get termination quote |
+| POST | `/api/bnsl/early-termination` | KYC | Request early termination |
+
+#### BNSL Agreements
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/bnsl/agreements/plan/:planId` | Authenticated | Get plan agreement |
+| GET | `/api/bnsl/agreements/user/:userId` | Owner/Admin | Get user's agreements |
+| POST | `/api/bnsl/agreements` | Authenticated | Create agreement |
+| PATCH | `/api/bnsl/agreements/:id` | Authenticated | Sign agreement |
+| POST | `/api/bnsl/agreements/:id/send-email` | Authenticated | Email agreement copy |
+| GET | `/api/bnsl/agreements/:id/download` | Authenticated | Download PDF |
 
 ### BNSL Plan Statuses
-| Status | Description |
-|--------|-------------|
-| `Pending Activation` | Plan created, awaiting activation |
-| `Active` | Plan is active, returns accruing |
-| `Maturing` | Approaching maturity |
-| `Completed` | Plan completed successfully |
-| `Early Termination Requested` | User requested early exit |
-| `Early Terminated` | Early exit processed |
-| `Defaulted` | Plan defaulted |
-| `Cancelled` | Plan cancelled |
+| Status | Description | User Actions |
+|--------|-------------|--------------|
+| `Pending Activation` | Plan created, awaiting activation | Sign agreement |
+| `Active` | Plan is active, returns accruing | View payouts, request early exit |
+| `Maturing` | Approaching maturity (30 days) | Prepare for completion |
+| `Completed` | Plan completed successfully | Gold returned to wallet |
+| `Early Termination Requested` | User requested early exit | Await processing |
+| `Early Terminated` | Early exit processed | Gold returned (minus penalties) |
+| `Defaulted` | Plan defaulted | Contact support |
+| `Cancelled` | Plan cancelled before activation | None |
 
 ### Payout Structure
-- **Accrual**: Returns accrue daily
-- **Payout Frequency**: Quarterly payouts
-- **Payout Method**: Credited as gold grams to wallet
+| Feature | Description |
+|---------|-------------|
+| **Accrual Method** | Returns accrue daily based on annual rate |
+| **Payout Frequency** | Quarterly payouts (every 3 months) |
+| **Payout Method** | Credited as gold grams to FinaPay wallet |
+| **Payout Calculation** | `(goldGrams × annualRate × daysInPeriod) / 365` |
 
-### Early Termination
-| Field | Description |
-|-------|-------------|
-| `adminFeePercent` | Administrative fee percentage |
-| `penaltyPercent` | Early exit penalty percentage |
-| `totalDeductionsUsd` | Total deductions applied |
-| `netValueUsd` | Net value after deductions |
-| `finalGoldGrams` | Gold returned to user |
+### Early Termination Fees
+| Field | Description | Typical Value |
+|-------|-------------|---------------|
+| `adminFeePercent` | Administrative fee | 2% |
+| `penaltyPercent` | Early exit penalty | 5-10% based on time remaining |
+| `totalDeductionsUsd` | Total deductions applied | Calculated |
+| `netValueUsd` | Net value after deductions | Calculated |
+| `finalGoldGrams` | Gold returned to user | Principal minus penalties |
 
 ### Eligibility Requirements
-- Minimum gold: 1 gram
-- Completed KYC verification (Tier 1 or higher)
-- Account in good standing
-- No active disputes
+| Requirement | Details |
+|-------------|---------|
+| **Minimum Gold** | 1 gram |
+| **KYC Level** | Tier 1 (Basic) or higher |
+| **Account Status** | Good standing, no active disputes |
+| **Wallet Balance** | Sufficient gold to transfer |
+
+### BNSL Workflow
+1. **Select Plan** → Choose term (12/24/36 months)
+2. **Transfer Gold** → Move gold from FinaPay to BNSL wallet
+3. **Sign Agreement** → Digital signature on terms
+4. **Activation** → Plan becomes active
+5. **Earn Returns** → Quarterly payouts credited
+6. **Maturity** → Full gold + returns returned
 
 ---
 
 ## FinaBridge - Trade Finance
 
 ### Overview
-FinaBridge facilitates gold-backed trade finance between importers and exporters.
+FinaBridge is a gold-backed trade finance platform connecting importers and exporters. It enables businesses to use gold as collateral for international trade transactions, reducing counterparty risk and providing secure settlement.
+
+### User Roles
+| Role | Description | Capabilities |
+|------|-------------|--------------|
+| **Importer** | Buys goods from exporters | Create trade requests, accept proposals |
+| **Exporter** | Sells goods to importers | View requests, submit proposals |
+| **Both** | Can act as either party | Full access to both sides |
+
+### API Endpoints
+
+#### Trade Cases
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/trade/cases/:userId` | Owner/Admin | Get user's trade cases |
+| POST | `/api/trade/cases` | KYC | Create trade case |
+| PATCH | `/api/trade/cases/:id` | Authenticated | Update trade case |
+
+#### Trade Documents
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/trade/documents/:caseId` | Authenticated | Get case documents |
+| POST | `/api/trade/documents` | Authenticated | Upload document |
+| PATCH | `/api/trade/documents/:id` | Authenticated | Update document |
+
+#### Importer Operations
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/importer/requests/:userId` | Owner/Admin | Get import requests |
+| POST | `/api/finabridge/importer/requests` | KYC | Create import request |
+| POST | `/api/finabridge/importer/requests/:id/submit` | Authenticated | Submit request |
+| GET | `/api/finabridge/importer/requests/:id/forwarded-proposals` | Authenticated | Get received proposals |
+| POST | `/api/finabridge/importer/proposals/:proposalId/accept` | Authenticated | Accept proposal |
+| POST | `/api/finabridge/importer/proposals/:proposalId/decline` | Authenticated | Decline proposal |
+
+#### Exporter Operations
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/exporter/open-requests/:userId` | Owner/Admin | View open import requests |
+| GET | `/api/finabridge/exporter/proposals/:userId` | Owner/Admin | Get submitted proposals |
+| POST | `/api/finabridge/exporter/proposals` | KYC | Submit proposal |
+| PUT | `/api/finabridge/exporter/proposals/:id` | Authenticated | Update proposal |
+
+#### FinaBridge Wallet
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/wallet/:userId` | Owner/Admin | Get FinaBridge wallet |
+| GET | `/api/finabridge/ledger/:userId` | Owner/Admin | Get wallet ledger |
+| POST | `/api/finabridge/wallet/:userId/fund` | Owner/Admin | Fund wallet |
+| POST | `/api/finabridge/wallet/:userId/withdraw` | Owner/Admin | Withdraw from wallet |
+
+#### Settlement & Escrow
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/settlement-holds/:userId` | Owner/Admin | Get active escrow holds |
+
+#### Disputes
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/disputes/user/:userId` | Owner/Admin | Get user's disputes |
+| GET | `/api/finabridge/disputes/:id` | Authenticated | Get dispute details |
+| POST | `/api/finabridge/disputes` | Authenticated | Raise dispute |
+| POST | `/api/finabridge/disputes/:id/comments` | Authenticated | Add dispute comment |
+
+#### Shipments & Certificates
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/shipments/:tradeRequestId` | Authenticated | Get shipment status |
+| GET | `/api/finabridge/certificates/:tradeRequestId` | Authenticated | Get trade certificates |
+| POST | `/api/finabridge/certificates` | Authenticated | Generate certificate |
+
+#### Ratings & Trust
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/exporter/:userId/trust-score` | Authenticated | Get exporter trust score |
+| GET | `/api/finabridge/exporter/:userId/ratings` | Authenticated | Get exporter ratings |
+| POST | `/api/finabridge/ratings` | Authenticated | Submit rating |
+| GET | `/api/finabridge/risk-assessment/:tradeRequestId` | Authenticated | Get risk assessment |
+
+#### Agreements
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/finabridge/agreements/user/:userId` | Owner/Admin | Get user's agreements |
+| GET | `/api/finabridge/agreements/:id` | Authenticated | Get agreement details |
+| POST | `/api/finabridge/agreements` | Authenticated | Create agreement |
+| POST | `/api/finabridge/accept-disclaimer/:userId` | Owner/Admin | Accept FinaBridge disclaimer |
 
 ### Trade Case Structure
-| Field | Description |
-|-------|-------------|
-| `caseNumber` | Unique case identifier |
-| `companyName` | Trading company name |
-| `tradeType` | Import or Export |
-| `commodityType` | Type of commodity |
-| `tradeValueUsd` | Total trade value in USD |
-| `buyerName` | Buyer company name |
-| `sellerName` | Seller company name |
-| `originCountry` | Origin country |
-| `destinationCountry` | Destination country |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Unique case identifier |
+| `caseNumber` | String | Human-readable case number (FB-XXXXXX) |
+| `userId` | UUID | Creator user ID |
+| `companyName` | String | Trading company name |
+| `tradeType` | Enum | 'Import' or 'Export' |
+| `commodityType` | String | Type of commodity being traded |
+| `tradeValueUsd` | Decimal | Total trade value in USD |
+| `buyerName` | String | Buyer company name |
+| `sellerName` | String | Seller company name |
+| `originCountry` | String | Origin country code |
+| `destinationCountry` | String | Destination country code |
+| `riskLevel` | Enum | Low, Medium, High, Critical |
+| `status` | Enum | Current trade status |
 
 ### Trade Case Statuses
-| Status | Description |
-|--------|-------------|
-| `Draft` | Case in draft mode |
-| `Submitted` | Case submitted for review |
-| `Under Review` | Being reviewed by operations |
-| `Approved` | Approved by compliance |
-| `Active` | Trade is active |
-| `Settled` | Trade completed and settled |
-| `Cancelled` | Trade cancelled |
-| `Rejected` | Trade rejected |
+| Status | Description | Next Actions |
+|--------|-------------|--------------|
+| `Draft` | Case in draft mode | Edit, submit |
+| `Submitted` | Submitted for review | Await review |
+| `Under Review` | Being reviewed by operations | Await decision |
+| `Approved` | Approved by compliance | Activate trade |
+| `Active` | Trade is active | Monitor, upload docs |
+| `Settled` | Trade completed and settled | Rate counterparty |
+| `Cancelled` | Trade cancelled | None |
+| `Rejected` | Trade rejected | Appeal or create new |
 
 ### Approval Workflow
-1. **Operations Approval**: Initial review by operations team
-2. **Compliance Approval**: Compliance team review
-3. **Final Approval**: Trade becomes active
+| Step | Role | Actions | SLA |
+|------|------|---------|-----|
+| 1. **Submission** | User | Submit trade request | - |
+| 2. **Operations Review** | Operations Team | Verify documents, check validity | 24 hours |
+| 3. **Compliance Review** | Compliance Team | AML/KYC checks, risk assessment | 48 hours |
+| 4. **Final Approval** | Authorized Signatory | Approve or reject | 24 hours |
 
 ### Risk Levels
-| Level | Description |
-|-------|-------------|
-| `Low` | Low risk trade |
-| `Medium` | Medium risk, standard monitoring |
-| `High` | High risk, enhanced monitoring |
-| `Critical` | Critical risk, escalated review |
+| Level | Description | Review Requirements |
+|-------|-------------|---------------------|
+| `Low` | Established partners, low value | Standard review |
+| `Medium` | New partners, moderate value | Enhanced due diligence |
+| `High` | High value, complex structure | Senior approval required |
+| `Critical` | PEP involved, high-risk jurisdiction | Executive approval required |
 
 ### Deal Room Features
-- **Participants**: Buyer, seller, and intermediaries
-- **Document Sharing**: Secure document upload/download
-- **Chat**: Real-time messaging between participants
-- **Agreement Acceptance**: Digital agreement signing
-- **Dispute Resolution**: Formal dispute process
+| Feature | Description |
+|---------|-------------|
+| **Participants** | Buyer, seller, and platform intermediaries |
+| **Document Sharing** | Secure upload/download with version control |
+| **Real-time Chat** | Socket.IO messaging between participants |
+| **Agreement Acceptance** | Digital signature on trade terms |
+| **Dispute Resolution** | Formal dispute process with arbitration |
+| **Activity Log** | Complete audit trail of all actions |
 
 ### Trade Documents
-| Document Type | Description |
-|---------------|-------------|
-| Invoice | Commercial invoice |
-| Bill of Lading | Shipping document |
-| Certificate of Origin | Country of origin certificate |
-| Insurance Certificate | Cargo insurance |
-| Packing List | Detailed packing information |
-| Quality Certificate | Quality inspection certificate |
+| Document Type | Required | Description |
+|---------------|----------|-------------|
+| Commercial Invoice | Yes | Detailed invoice for goods |
+| Bill of Lading | Yes | Shipping document from carrier |
+| Certificate of Origin | Yes | Country of origin certification |
+| Insurance Certificate | Yes | Cargo insurance coverage |
+| Packing List | Yes | Detailed packing information |
+| Quality Certificate | Optional | Quality inspection results |
+| Customs Declaration | Conditional | For cross-border trades |
+| Bank Guarantee | Conditional | For high-value trades |
 
 ### Shipment Tracking
-| Status | Description |
-|--------|-------------|
-| `Pending` | Shipment not started |
-| `Picked Up` | Cargo picked up |
-| `In Transit` | Cargo in transit |
-| `Customs` | At customs clearance |
-| `Delivered` | Delivered to destination |
+| Status | Description | Trigger |
+|--------|-------------|---------|
+| `Pending` | Shipment not started | Trade approved |
+| `Picked Up` | Cargo picked up | Carrier confirmation |
+| `In Transit` | Cargo in transit | GPS tracking update |
+| `Customs` | At customs clearance | Customs notification |
+| `Delivered` | Delivered to destination | Delivery confirmation |
+| `Disputed` | Delivery disputed | User raises dispute |
 
 ### Settlement Process
-1. **Gold Lock**: Gold locked in escrow at trade initiation
-2. **Document Verification**: All documents verified
-3. **Shipment Confirmation**: Shipment delivered and confirmed
-4. **Gold Release**: Gold released to appropriate party
+| Step | Action | Gold Movement |
+|------|--------|---------------|
+| 1. **Trade Initiation** | Both parties agree to terms | Gold locked in escrow |
+| 2. **Document Upload** | All required documents uploaded | No movement |
+| 3. **Document Verification** | Platform verifies documents | No movement |
+| 4. **Shipment** | Goods shipped to destination | No movement |
+| 5. **Delivery Confirmation** | Buyer confirms receipt | No movement |
+| 6. **Settlement** | Trade completed | Gold released to seller |
+
+### FinaBridge Wallet
+| Field | Description |
+|-------|-------------|
+| `availableGoldGrams` | Gold available for trading |
+| `lockedGoldGrams` | Gold locked in active trades |
+| `incomingLockedGoldGrams` | Gold pending release from completed trades |
+
+### Trust Score System
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| **Completed Trades** | 30% | Number of successful trades |
+| **Trade Volume** | 20% | Total USD volume traded |
+| **Rating Average** | 25% | Average rating from counterparties |
+| **Dispute Rate** | 15% | Percentage of trades with disputes |
+| **Account Age** | 10% | Time since account creation |
 
 ---
 
