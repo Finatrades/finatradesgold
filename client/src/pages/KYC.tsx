@@ -6,28 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, BadgeCheck, Crown, Briefcase, Plus, Trash2, Landmark, CreditCard } from 'lucide-react';
+import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, Plus, Trash2, Landmark, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-
-type KycTier = 'tier_1_basic' | 'tier_2_enhanced' | 'tier_3_corporate';
-type KycModeType = 'finatrades';
-
-interface TierConfig {
-  id: KycTier;
-  name: string;
-  description: string;
-  limits: string;
-  sla: string;
-  requirements: string[];
-  icon: React.ReactNode;
-  recommended?: boolean;
-}
 
 interface BeneficialOwner {
   name: string;
@@ -36,36 +21,6 @@ interface BeneficialOwner {
   shareholdingPercentage: number;
 }
 
-const TIER_CONFIGS: TierConfig[] = [
-  {
-    id: 'tier_1_basic',
-    name: 'Basic',
-    description: 'Quick verification for casual users',
-    limits: 'Up to $5,000/month',
-    sla: '24 hours',
-    requirements: ['Government-issued ID'],
-    icon: <BadgeCheck className="w-6 h-6" />,
-  },
-  {
-    id: 'tier_2_enhanced',
-    name: 'Enhanced',
-    description: 'Full verification for active traders',
-    limits: 'Up to $50,000/month',
-    sla: '3 business days',
-    requirements: ['Government-issued ID', 'Liveness check', 'Proof of address'],
-    icon: <Crown className="w-6 h-6" />,
-    recommended: true,
-  },
-  {
-    id: 'tier_3_corporate',
-    name: 'Corporate',
-    description: 'Business verification for companies',
-    limits: 'Unlimited',
-    sla: '5 business days',
-    requirements: ['Company registration', 'Director ID', 'Liveness check', 'Proof of business address', 'Beneficial owner info'],
-    icon: <Briefcase className="w-6 h-6" />,
-  },
-];
 
 const COUNTRIES = [
   { code: 'AF', name: 'Afghanistan' }, { code: 'AL', name: 'Albania' }, { code: 'DZ', name: 'Algeria' },
@@ -191,26 +146,9 @@ export default function KYC() {
   
   const existingSubmission = existingKycData?.submission;
   
-  const kycMode: KycModeType = 'finatrades';
-  
-  // === KYCAML MODE STATE (Existing Tiered KYC) ===
-  const [activeStep, setActiveStep] = useState('tier_select');
-  const [selectedTier, setSelectedTier] = useState<KycTier | null>(null);
-  const [progress, setProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form States for tiered KYC
-  const [idType, setIdType] = useState('passport');
-  const [uploadedFiles, setUploadedFiles] = useState<{front?: File, back?: File, selfie?: File, utility?: File, company_doc?: File, beneficial_owner?: File}>({});
   
-  // Required form fields
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [nationality, setNationality] = useState('');
-  const [fullAddress, setFullAddress] = useState('');
-  const [registrationNumber, setRegistrationNumber] = useState('');
-  const [jurisdiction, setJurisdiction] = useState('');
-  
-  // === FINATRADES MODE STATE ===
+  // Finatrades mode state - shared between personal and corporate
   const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>('personal_info');
   
   // Personal Information (pre-filled from user where available)
@@ -359,14 +297,6 @@ export default function KYC() {
         
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         setCapturedSelfie(dataUrl);
-        
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const file = new File([blob], 'liveness-selfie.jpg', { type: 'image/jpeg' });
-            setUploadedFiles(prev => ({...prev, selfie: file}));
-          }
-        }, 'image/jpeg', 0.8);
-        
         stopLivenessCamera();
         toast.success('Liveness verified! Photo captured.');
       }
@@ -458,20 +388,8 @@ export default function KYC() {
   const retakeLiveness = useCallback(() => {
     setCapturedSelfie(null);
     setLivenessVerified(false);
-    setUploadedFiles(prev => {
-      const newFiles = {...prev};
-      delete newFiles.selfie;
-      return newFiles;
-    });
     startLivenessCamera();
   }, [startLivenessCamera]);
-  
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back' | 'selfie' | 'utility' | 'company_doc' | 'beneficial_owner') => {
-    if (e.target.files && e.target.files[0]) {
-      setUploadedFiles(prev => ({...prev, [type]: e.target.files![0]}));
-      toast.success(`${type.replace('_', ' ').charAt(0).toUpperCase() + type.replace('_', ' ').slice(1)} uploaded successfully`);
-    }
-  };
   
   const handleCorpDocUpload = (e: React.ChangeEvent<HTMLInputElement>, type: keyof typeof corpDocs) => {
     if (e.target.files && e.target.files[0]) {
@@ -480,13 +398,6 @@ export default function KYC() {
     }
   };
 
-  const getTierConfig = () => TIER_CONFIGS.find(t => t.id === selectedTier);
-
-  const requiresSelfie = selectedTier === 'tier_2_enhanced' || selectedTier === 'tier_3_corporate';
-  const requiresProofOfAddress = selectedTier === 'tier_2_enhanced' || selectedTier === 'tier_3_corporate';
-  const requiresCompanyDocs = selectedTier === 'tier_3_corporate';
-  const isCorporateTier = selectedTier === 'tier_3_corporate';
-
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -494,142 +405,6 @@ export default function KYC() {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  };
-
-  const validatePersonalStep = () => {
-    if (isCorporateTier) {
-      if (!registrationNumber.trim()) {
-        toast.error("Registration number is required");
-        return false;
-      }
-      if (!jurisdiction.trim()) {
-        toast.error("Jurisdiction is required");
-        return false;
-      }
-    } else {
-      if (!dateOfBirth) {
-        toast.error("Date of birth is required");
-        return false;
-      }
-      if (!nationality.trim()) {
-        toast.error("Nationality is required");
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const validateAddressStep = () => {
-    if (!fullAddress.trim()) {
-      toast.error("Full address is required");
-      return false;
-    }
-    if (!uploadedFiles.utility) {
-      toast.error("Proof of address document is required");
-      return false;
-    }
-    return true;
-  };
-
-  const handleNextStep = (next: string, progressValue: number, validate?: () => boolean) => {
-    if (validate && !validate()) {
-      return;
-    }
-    setActiveStep(next);
-    setProgress(progressValue);
-  };
-
-  // === KYCAML MODE SUBMISSION ===
-  const handleComplete = async () => {
-    if (!user || !selectedTier) return;
-    
-    if (requiresProofOfAddress && !validateAddressStep()) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      const documents: {
-        idProof?: { url: string; type: string };
-        selfie?: { url: string; type: string };
-        proofOfAddress?: { url: string; type: string };
-        businessRegistration?: { url: string; type: string };
-        beneficialOwner?: { url: string; type: string };
-      } = {};
-      
-      if (uploadedFiles.front) {
-        const base64 = await fileToBase64(uploadedFiles.front);
-        documents.idProof = { url: base64, type: idType };
-      }
-      
-      if (uploadedFiles.selfie) {
-        const base64 = await fileToBase64(uploadedFiles.selfie);
-        documents.selfie = { url: base64, type: 'selfie' };
-      }
-      
-      if (uploadedFiles.utility) {
-        const base64 = await fileToBase64(uploadedFiles.utility);
-        documents.proofOfAddress = { url: base64, type: 'utility_bill' };
-      }
-      
-      if (uploadedFiles.company_doc) {
-        const base64 = await fileToBase64(uploadedFiles.company_doc);
-        documents.businessRegistration = { url: base64, type: 'company_registration' };
-      }
-      
-      if (uploadedFiles.beneficial_owner) {
-        const base64 = await fileToBase64(uploadedFiles.beneficial_owner);
-        documents.beneficialOwner = { url: base64, type: 'beneficial_owner' };
-      }
-      
-      const tierConfig = getTierConfig();
-      
-      const response = await fetch('/api/kyc/submit-tiered', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          tier: selectedTier,
-          accountType: isCorporateTier ? 'business' : 'personal',
-          fullName: `${user.firstName} ${user.lastName}`,
-          country: nationality || user.country || 'Not specified',
-          dateOfBirth: dateOfBirth || null,
-          address: fullAddress,
-          companyName: user.companyName,
-          registrationNumber: isCorporateTier ? registrationNumber : user.registrationNumber,
-          jurisdiction: isCorporateTier ? jurisdiction : null,
-          documents: Object.keys(documents).length > 0 ? documents : null,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to submit KYC');
-      }
-      
-      await refreshUser();
-      
-      addNotification({
-        title: 'KYC Verification Submitted',
-        message: `Your ${tierConfig?.name} verification is under review. Expected processing: ${tierConfig?.sla}.`,
-        type: 'success'
-      });
-      
-      toast.success("KYC Verification Submitted", {
-        description: `Your ${tierConfig?.name} verification is under review. Expected processing: ${tierConfig?.sla}.`
-      });
-      
-      setLocation('/dashboard');
-    } catch (error) {
-      toast.error("Submission Failed", {
-        description: "Please try again later."
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   // === FINATRADES PERSONAL KYC SUBMISSION ===
@@ -1013,24 +788,9 @@ export default function KYC() {
   }
 
   const isBusiness = user.accountType === 'business';
-  const tierConfig = getTierConfig();
-
-  // Calculate total steps and current step for progress (KYCAML mode)
-  const getSteps = () => {
-    const steps = ['tier_select', 'personal'];
-    if (requiresCompanyDocs) steps.push('company_docs');
-    steps.push('document');
-    if (requiresSelfie) steps.push('selfie');
-    if (requiresProofOfAddress) steps.push('address');
-    return steps;
-  };
-
-  const steps = getSteps();
-  const currentStepIndex = steps.indexOf(activeStep);
-  const calculatedProgress = selectedTier ? Math.round(((currentStepIndex + 1) / steps.length) * 100) : 0;
 
   // === FINATRADES MODE: PERSONAL ACCOUNT KYC ===
-  if (kycMode === 'finatrades' && !isBusiness) {
+  if (!isBusiness) {
     const stepOrder = ['personal_info', 'documents', 'liveness', 'complete'];
     const currentStepIdx = stepOrder.indexOf(finatradesStep);
     const finatradesProgress = Math.round(((currentStepIdx + 1) / stepOrder.length) * 100);
@@ -1513,7 +1273,7 @@ export default function KYC() {
   }
 
   // === FINATRADES MODE: CORPORATE ACCOUNT KYC ===
-  if (kycMode === 'finatrades' && isBusiness) {
+  if (isBusiness) {
     const corpProgress = Math.round((corporateStep / 5) * 100);
     
     return (
@@ -2108,551 +1868,9 @@ export default function KYC() {
     );
   }
 
-  // === KYCAML MODE (Original Tiered KYC Flow) ===
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="min-h-screen py-12 bg-background">
-        <div className="container mx-auto px-6 max-w-4xl">
-          
-          <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Identity Verification</h1>
-            <p className="text-muted-foreground">
-              {activeStep === 'tier_select' 
-                ? 'Choose your verification level based on your trading needs.'
-                : `Complete your ${tierConfig?.name || ''} verification to unlock platform features.`}
-            </p>
-          </div>
 
-          {selectedTier && (
-            <div className="mb-8">
-              <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
-                <span className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Expected processing: {tierConfig?.sla}
-                </span>
-                <span>{calculatedProgress}%</span>
-              </div>
-              <Progress value={calculatedProgress} className="h-2 bg-muted" />
-            </div>
-          )}
-
-          <div className="grid md:grid-cols-12 gap-8">
-            
-            {/* Sidebar Steps */}
-            <div className="md:col-span-4 space-y-4">
-              <StepItem 
-                title="Select Tier"
-                description="Choose verification level" 
-                icon={<ShieldCheck className="w-5 h-5" />} 
-                isActive={activeStep === 'tier_select'} 
-                isCompleted={activeStep !== 'tier_select' && !!selectedTier}
-              />
-              {selectedTier && (
-                <>
-                  <StepItem 
-                    title={isCorporateTier ? "Company Info" : "Personal Info"}
-                    description="Review details" 
-                    icon={isCorporateTier ? <Building className="w-5 h-5" /> : <User className="w-5 h-5" />} 
-                    isActive={activeStep === 'personal'} 
-                    isCompleted={steps.indexOf(activeStep) > steps.indexOf('personal')}
-                  />
-                  {requiresCompanyDocs && (
-                    <StepItem 
-                      title="Corporate Docs" 
-                      description="Registration & Articles" 
-                      icon={<FileText className="w-5 h-5" />} 
-                      isActive={activeStep === 'company_docs'} 
-                      isCompleted={steps.indexOf(activeStep) > steps.indexOf('company_docs')}
-                    />
-                  )}
-                  <StepItem 
-                    title={isCorporateTier ? "Director ID" : "ID Verification"}
-                    description="Upload Passport/ID" 
-                    icon={<User className="w-5 h-5" />} 
-                    isActive={activeStep === 'document'} 
-                    isCompleted={steps.indexOf(activeStep) > steps.indexOf('document')}
-                  />
-                  {requiresSelfie && (
-                    <StepItem 
-                      title="Liveness Check" 
-                      description="Take a selfie" 
-                      icon={<Camera className="w-5 h-5" />} 
-                      isActive={activeStep === 'selfie'} 
-                      isCompleted={steps.indexOf(activeStep) > steps.indexOf('selfie')}
-                    />
-                  )}
-                  {requiresProofOfAddress && (
-                    <StepItem 
-                      title="Proof of Address" 
-                      description="Utility Bill / Bank Statement" 
-                      icon={<AlertCircle className="w-5 h-5" />} 
-                      isActive={activeStep === 'address'} 
-                      isCompleted={calculatedProgress === 100}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Main Content */}
-            <div className="md:col-span-8">
-              <Card className="border-border shadow-sm">
-                
-                {/* STEP 0: Tier Selection */}
-                {activeStep === 'tier_select' && (
-                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <CardHeader>
-                      <CardTitle>Choose Verification Level</CardTitle>
-                      <CardDescription>Select the tier that matches your trading needs. Higher tiers unlock greater limits.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {TIER_CONFIGS.map((tier) => (
-                        <div
-                          key={tier.id}
-                          data-testid={`tier-card-${tier.id}`}
-                          onClick={() => setSelectedTier(tier.id)}
-                          className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                            selectedTier === tier.id 
-                              ? 'border-primary bg-primary/5 shadow-md' 
-                              : 'border-border hover:border-primary/50 hover:bg-muted/30'
-                          }`}
-                        >
-                          {tier.recommended && (
-                            <div className="absolute -top-2 right-4 px-2 py-0.5 bg-primary text-white text-xs font-bold rounded-full">
-                              Recommended
-                            </div>
-                          )}
-                          <div className="flex items-start gap-4">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-                              selectedTier === tier.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                            }`}>
-                              {tier.icon}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-foreground">{tier.name}</h3>
-                                <span className="text-xs text-muted-foreground">• {tier.sla}</span>
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-1">{tier.description}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                  {tier.limits}
-                                </span>
-                              </div>
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {tier.requirements.map((req, idx) => (
-                                  <span key={idx} className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                                    {req}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            {selectedTier === tier.id && (
-                              <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                    <CardFooter className="flex justify-end">
-                      <Button 
-                        onClick={() => {
-                          if (!selectedTier) {
-                            toast.error("Please select a verification tier");
-                            return;
-                          }
-                          setActiveStep('personal');
-                        }}
-                        className="bg-primary text-white hover:bg-primary/90"
-                        data-testid="button-continue-tier"
-                      >
-                        Continue
-                      </Button>
-                    </CardFooter>
-                  </div>
-                )}
-
-                {/* STEP 1: Personal / Company Info */}
-                {activeStep === 'personal' && (
-                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <CardHeader>
-                      <CardTitle>{isCorporateTier ? "Company Information" : "Personal Information"}</CardTitle>
-                      <CardDescription>{isCorporateTier ? "Confirm company details for verification." : "Confirm your details for verification."}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Full Name</Label>
-                          <Input value={`${user.firstName} ${user.lastName}`} disabled className="bg-muted" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Email</Label>
-                          <Input value={user.email} disabled className="bg-muted" />
-                        </div>
-                      </div>
-
-                      {isCorporateTier ? (
-                        <>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Company Name</Label>
-                              <Input value={user.companyName || ''} disabled className="bg-muted" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Registration Number <span className="text-red-500">*</span></Label>
-                              <Input 
-                                value={registrationNumber} 
-                                onChange={(e) => setRegistrationNumber(e.target.value)} 
-                                placeholder="Enter registration number" 
-                                data-testid="input-registration-number"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Jurisdiction <span className="text-red-500">*</span></Label>
-                            <Input 
-                              value={jurisdiction} 
-                              onChange={(e) => setJurisdiction(e.target.value)} 
-                              placeholder="Country/State of incorporation" 
-                              data-testid="input-jurisdiction"
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="space-y-2">
-                            <Label>Date of Birth <span className="text-red-500">*</span></Label>
-                            <Input 
-                              type="date" 
-                              value={dateOfBirth} 
-                              onChange={(e) => setDateOfBirth(e.target.value)}
-                              data-testid="input-dob"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Nationality <span className="text-red-500">*</span></Label>
-                            <Input 
-                              value={nationality} 
-                              onChange={(e) => setNationality(e.target.value)} 
-                              placeholder="Your nationality"
-                              data-testid="input-nationality"
-                            />
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => setActiveStep('tier_select')} data-testid="button-back-tier">
-                        Back
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          if (!validatePersonalStep()) return;
-                          setActiveStep(requiresCompanyDocs ? 'company_docs' : 'document');
-                        }}
-                        className="bg-primary text-white hover:bg-primary/90"
-                        data-testid="button-continue-personal"
-                      >
-                        Confirm & Continue
-                      </Button>
-                    </CardFooter>
-                  </div>
-                )}
-
-                {/* STEP 1.5: Company Docs (Corporate Tier Only) */}
-                {activeStep === 'company_docs' && requiresCompanyDocs && (
-                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <CardHeader>
-                      <CardTitle>Corporate Documents</CardTitle>
-                      <CardDescription>Upload Certificate of Incorporation or Extract from Registry.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 transition-colors">
-                         <input type="file" id="company-doc-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'company_doc')} />
-                         <label htmlFor="company-doc-upload" className="cursor-pointer flex flex-col items-center">
-                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${uploadedFiles.company_doc ? 'bg-green-100 text-green-600' : 'bg-secondary/10 text-secondary'}`}>
-                             {uploadedFiles.company_doc ? <CheckCircle2 className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
-                           </div>
-                           <span className="font-medium text-foreground">
-                             {uploadedFiles.company_doc ? uploadedFiles.company_doc.name : 'Upload Certificate of Incorporation'}
-                           </span>
-                           <span className="text-xs text-muted-foreground mt-1">PDF, JPG or PNG (Max 10MB)</span>
-                         </label>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => setActiveStep('personal')}>Back</Button>
-                      <Button 
-                        onClick={() => setActiveStep('document')}
-                        disabled={!uploadedFiles.company_doc}
-                        className="bg-primary text-white hover:bg-primary/90"
-                      >
-                        Continue
-                      </Button>
-                    </CardFooter>
-                  </div>
-                )}
-
-                {/* STEP 2: Document Upload */}
-                {activeStep === 'document' && (
-                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <CardHeader>
-                      <CardTitle>{isCorporateTier ? "Director ID Verification" : "Document Verification"}</CardTitle>
-                      <CardDescription>Upload a valid government-issued ID{isCorporateTier ? " for the authorized representative" : ""}.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <Tabs defaultValue="passport" className="w-full" onValueChange={setIdType}>
-                        <TabsList className="grid w-full grid-cols-3 bg-muted">
-                          <TabsTrigger value="passport">Passport</TabsTrigger>
-                          <TabsTrigger value="id_card">National ID</TabsTrigger>
-                          <TabsTrigger value="license">License</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-
-                      <div className="grid gap-6">
-                        <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 transition-colors">
-                           <input type="file" id="front-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'front')} />
-                           <label htmlFor="front-upload" className="cursor-pointer flex flex-col items-center">
-                             <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${uploadedFiles.front ? 'bg-green-100 text-green-600' : 'bg-secondary/10 text-secondary'}`}>
-                               {uploadedFiles.front ? <CheckCircle2 className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
-                             </div>
-                             <span className="font-medium text-foreground">
-                               {uploadedFiles.front ? uploadedFiles.front.name : `Upload ${idType === 'passport' ? 'Passport Page' : 'Front of ID'}`}
-                             </span>
-                             <span className="text-xs text-muted-foreground mt-1">JPG, PNG or PDF (Max 5MB)</span>
-                           </label>
-                        </div>
-
-                        {idType !== 'passport' && (
-                          <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 transition-colors">
-                             <input type="file" id="back-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'back')} />
-                             <label htmlFor="back-upload" className="cursor-pointer flex flex-col items-center">
-                               <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${uploadedFiles.back ? 'bg-green-100 text-green-600' : 'bg-secondary/10 text-secondary'}`}>
-                                 {uploadedFiles.back ? <CheckCircle2 className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
-                               </div>
-                               <span className="font-medium text-foreground">
-                                 {uploadedFiles.back ? uploadedFiles.back.name : 'Upload Back of ID'}
-                               </span>
-                               <span className="text-xs text-muted-foreground mt-1">JPG, PNG or PDF (Max 5MB)</span>
-                             </label>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => setActiveStep(requiresCompanyDocs ? 'company_docs' : 'personal')}>Back</Button>
-                      <Button 
-                        onClick={() => {
-                          if (requiresSelfie) {
-                            setActiveStep('selfie');
-                          } else if (requiresProofOfAddress) {
-                            setActiveStep('address');
-                          } else {
-                            handleComplete();
-                          }
-                        }}
-                        disabled={!uploadedFiles.front || (idType !== 'passport' && !uploadedFiles.back)}
-                        className="bg-primary text-white hover:bg-primary/90"
-                      >
-                        {requiresSelfie || requiresProofOfAddress ? 'Continue' : 'Submit'}
-                      </Button>
-                    </CardFooter>
-                  </div>
-                )}
-
-                {/* STEP 3: Selfie with Liveness Detection (Enhanced/Corporate only) */}
-                {activeStep === 'selfie' && requiresSelfie && (
-                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <CardHeader>
-                      <CardTitle>Liveness Check</CardTitle>
-                      <CardDescription>We need to verify you're a real person, not a photo. Follow the instructions below.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col items-center py-6">
-                       <canvas ref={canvasRef} className="hidden" />
-                       
-                       {capturedSelfie && (
-                         <div className="text-center">
-                           <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
-                             <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
-                           </div>
-                           <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
-                             <CheckCircle2 className="w-5 h-5" />
-                             <span className="font-medium">Liveness Verified!</span>
-                           </div>
-                           <Button 
-                             type="button"
-                             onClick={retakeLiveness}
-                             variant="outline"
-                             className="gap-2"
-                             data-testid="button-retake-liveness"
-                           >
-                             <RefreshCw className="w-4 h-4" />
-                             Retake Photo
-                           </Button>
-                         </div>
-                       )}
-
-                       {!cameraStream && !capturedSelfie && (
-                         <div className="text-center">
-                           <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6">
-                             <Camera className="w-16 h-16 text-muted-foreground" />
-                           </div>
-                           <Button 
-                             type="button"
-                             onClick={startLivenessCamera}
-                             variant="secondary"
-                             className="gap-2 mb-4"
-                             data-testid="button-start-liveness"
-                           >
-                             <Camera className="w-5 h-5" />
-                             Start Liveness Check
-                           </Button>
-                           <p className="text-xs text-muted-foreground max-w-xs">
-                             Please ensure your face is well-lit and centered. No glasses or hats.
-                           </p>
-                         </div>
-                       )}
-
-                       {cameraError && (
-                         <div className="text-center text-red-500 py-4">
-                           <p>{cameraError}</p>
-                           <Button type="button" onClick={startLivenessCamera} variant="outline" className="mt-2">
-                             Try Again
-                           </Button>
-                         </div>
-                       )}
-
-                       {cameraStream && !capturedSelfie && (
-                         <div className="relative w-full max-w-xs">
-                           <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-primary">
-                             <video
-                               ref={videoRef}
-                               autoPlay
-                               playsInline
-                               muted
-                               className="w-full h-full object-cover"
-                               style={{ transform: 'scaleX(-1)' }}
-                             />
-                             {!isCameraReady && (
-                               <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                                 <p className="text-white text-sm">Loading camera...</p>
-                               </div>
-                             )}
-                           </div>
-                           
-                           {isCameraReady && (
-                             <div className="mt-4 w-full">
-                               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                 <span>Movement Detection</span>
-                                 <span>{Math.round(movementProgress)}%</span>
-                               </div>
-                               <Progress value={movementProgress} className="h-2" />
-                             </div>
-                           )}
-                           
-                           <div className="mt-4 text-center">
-                             <p className="text-sm font-medium text-primary animate-pulse">
-                               {instruction}
-                             </p>
-                             <p className="text-xs text-muted-foreground mt-2">
-                               Slowly turn your head left and right to verify liveness
-                             </p>
-                           </div>
-                           
-                           <div className="mt-4 flex justify-center">
-                             <Button 
-                               type="button"
-                               onClick={stopLivenessCamera}
-                               variant="outline"
-                               size="sm"
-                             >
-                               Cancel
-                             </Button>
-                           </div>
-                         </div>
-                       )}
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => { stopLivenessCamera(); setActiveStep('document'); }}>Back</Button>
-                      <Button 
-                        onClick={() => {
-                          if (requiresProofOfAddress) {
-                            setActiveStep('address');
-                          } else {
-                            handleComplete();
-                          }
-                        }}
-                        disabled={!capturedSelfie}
-                        className="bg-primary text-white hover:bg-primary/90"
-                      >
-                        {requiresProofOfAddress ? 'Continue' : 'Submit'}
-                      </Button>
-                    </CardFooter>
-                  </div>
-                )}
-
-                {/* STEP 4: Address (Enhanced/Corporate only) */}
-                {activeStep === 'address' && requiresProofOfAddress && (
-                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <CardHeader>
-                      <CardTitle>{isCorporateTier ? "Proof of Business Address" : "Proof of Address"}</CardTitle>
-                      <CardDescription>Upload a recent utility bill or bank statement (max 3 months old).</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       <div className="space-y-2">
-                          <Label>Full {isBusiness ? "Business " : ""}Address <span className="text-red-500">*</span></Label>
-                          <Input 
-                            value={fullAddress}
-                            onChange={(e) => setFullAddress(e.target.value)}
-                            placeholder="Street Address, City, Zip Code" 
-                            className="bg-background" 
-                          />
-                       </div>
-
-                       <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 transition-colors mt-4">
-                          <input type="file" id="utility-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'utility')} />
-                          <label htmlFor="utility-upload" className="cursor-pointer flex flex-col items-center">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${uploadedFiles.utility ? 'bg-green-100 text-green-600' : 'bg-secondary/10 text-secondary'}`}>
-                              {uploadedFiles.utility ? <CheckCircle2 className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
-                            </div>
-                            <span className="font-medium text-foreground">
-                              {uploadedFiles.utility ? uploadedFiles.utility.name : 'Upload Document'}
-                            </span>
-                            <span className="text-xs text-muted-foreground mt-1">PDF, JPG or PNG (Max 10MB)</span>
-                          </label>
-                       </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <Button variant="outline" onClick={() => setActiveStep(requiresSelfie ? 'selfie' : 'document')}>Back</Button>
-                      <Button 
-                        onClick={handleComplete}
-                        disabled={isSubmitting}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold w-32"
-                      >
-                        {isSubmitting ? 'Submitting...' : 'Submit'}
-                      </Button>
-                    </CardFooter>
-                  </div>
-                )}
-
-              </Card>
-
-              <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
-                <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Bank-Grade Security</h4>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                    Your data is encrypted using AES-256 and stored in compliant Swiss data centers. We never share your personal information without consent.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Fallback - should not reach here as all paths are covered above
+  return null;
 }
 
 function StepItem({ title, description, icon, isActive, isCompleted }: { title: string, description: string, icon: React.ReactNode, isActive: boolean, isCompleted: boolean }) {
