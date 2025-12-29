@@ -101,9 +101,19 @@ export async function repairOrphanedTransfers(): Promise<{ fixed: number; errors
     for (const tx of pendingSends) {
       if (!tx.referenceId) continue;
       
-      // Check if peer_transfer exists
-      const [existingTransfer] = await db.select().from(peerTransfers)
-        .where(eq(peerTransfers.referenceNumber, tx.referenceId));
+      // Check if peer_transfer exists - handle missing column gracefully
+      let existingTransfer: typeof peerTransfers.$inferSelect | undefined;
+      try {
+        const [result] = await db.select().from(peerTransfers)
+          .where(eq(peerTransfers.referenceNumber, tx.referenceId));
+        existingTransfer = result;
+      } catch (columnErr: unknown) {
+        if (columnErr instanceof Error && columnErr.message.includes('column "is_invite" does not exist')) {
+          console.log('[Transfer Repair] is_invite column not found - schema migration needed. Skipping...');
+          return { fixed: 0, errors: [] };
+        }
+        throw columnErr;
+      }
       
       if (!existingTransfer && tx.recipientUserId) {
         console.log(`[Transfer Repair] Found orphaned transaction: ${tx.referenceId}`);
@@ -163,52 +173,65 @@ export async function processExpiredInviteTransfers(): Promise<{ expired: number
     
     // Find expired invite transfers
     const now = new Date();
-    const expiredInvites = await db.select().from(peerTransfers)
-      .where(and(
-        eq(peerTransfers.status, 'Pending'),
-        eq(peerTransfers.isInvite, true),
-        isNull(peerTransfers.recipientId),
-        sql`${peerTransfers.expiresAt} < ${now}`
-      ));
+    let expiredInvites: typeof peerTransfers.$inferSelect[] = [];
+    try {
+      expiredInvites = await db.select().from(peerTransfers)
+        .where(and(
+          eq(peerTransfers.status, 'Pending'),
+          eq(peerTransfers.isInvite, true),
+          isNull(peerTransfers.recipientId),
+          sql`${peerTransfers.expiresAt} < ${now}`
+        ));
+    } catch (columnError: unknown) {
+      // If is_invite column doesn't exist yet, skip gracefully
+      if (columnError instanceof Error && columnError.message.includes('column "is_invite" does not exist')) {
+        console.log('[Invite Expiry] is_invite column not found - schema migration needed. Skipping...');
+        return { expired: 0, errors: [] };
+      }
+      throw columnError;
+    }
     
     for (const invite of expiredInvites) {
       try {
         const goldAmount = parseFloat(invite.amountGold || '0');
         
-        // Refund sender's wallet
-        const [senderWallet] = await db.select().from(wallets)
-          .where(eq(wallets.userId, invite.senderId));
-        
-        if (senderWallet) {
-          const currentGold = parseFloat(senderWallet.goldGrams?.toString() || '0');
-          await db.update(wallets)
+        // Use transaction to ensure atomic refund
+        await db.transaction(async (tx) => {
+          // Refund sender's wallet
+          const [senderWallet] = await tx.select().from(wallets)
+            .where(eq(wallets.userId, invite.senderId));
+          
+          if (senderWallet) {
+            const currentGold = parseFloat(senderWallet.goldGrams?.toString() || '0');
+            await tx.update(wallets)
+              .set({ 
+                goldGrams: (currentGold + goldAmount).toFixed(6),
+                updatedAt: new Date()
+              })
+              .where(eq(wallets.id, senderWallet.id));
+          }
+          
+          // Update sender's transaction to expired
+          if (invite.senderTransactionId) {
+            await tx.update(transactions)
+              .set({ 
+                status: 'Failed',
+                description: `${invite.recipientIdentifier} did not register within 24 hours - gold refunded`,
+                updatedAt: new Date()
+              })
+              .where(eq(transactions.id, invite.senderTransactionId));
+          }
+          
+          // Update invite transfer to expired
+          await tx.update(peerTransfers)
             .set({ 
-              goldGrams: (currentGold + goldAmount).toFixed(6),
+              status: 'Expired',
+              rejectionReason: 'Recipient did not register within 24 hours',
+              respondedAt: new Date(),
               updatedAt: new Date()
             })
-            .where(eq(wallets.id, senderWallet.id));
-        }
-        
-        // Update sender's transaction to expired
-        if (invite.senderTransactionId) {
-          await db.update(transactions)
-            .set({ 
-              status: 'Failed',
-              description: `${invite.recipientIdentifier} did not register within 24 hours - gold refunded`,
-              updatedAt: new Date()
-            })
-            .where(eq(transactions.id, invite.senderTransactionId));
-        }
-        
-        // Update invite transfer to expired
-        await db.update(peerTransfers)
-          .set({ 
-            status: 'Expired',
-            rejectionReason: 'Recipient did not register within 24 hours',
-            respondedAt: new Date(),
-            updatedAt: new Date()
-          })
-          .where(eq(peerTransfers.id, invite.id));
+            .where(eq(peerTransfers.id, invite.id));
+        });
         
         console.log(`[Invite Expiry] Expired and refunded transfer ${invite.referenceNumber}: ${goldAmount.toFixed(4)}g`);
         expired++;
@@ -232,6 +255,37 @@ export async function processExpiredInviteTransfers(): Promise<{ expired: number
   }
   
   return { expired, errors };
+}
+
+// Start the periodic scheduler for expiry processing (runs every 15 minutes)
+let expiryIntervalId: NodeJS.Timeout | null = null;
+
+export function startExpiryScheduler(): void {
+  if (expiryIntervalId) {
+    console.log('[Invite Expiry] Scheduler already running');
+    return;
+  }
+  
+  // Run every 15 minutes (900000ms) to ensure 24-hour guarantee is met
+  const intervalMs = 15 * 60 * 1000;
+  
+  expiryIntervalId = setInterval(async () => {
+    try {
+      await processExpiredInviteTransfers();
+    } catch (error) {
+      console.error('[Invite Expiry] Scheduled run failed:', error);
+    }
+  }, intervalMs);
+  
+  console.log(`[Invite Expiry] Scheduler started - running every 15 minutes`);
+}
+
+export function stopExpiryScheduler(): void {
+  if (expiryIntervalId) {
+    clearInterval(expiryIntervalId);
+    expiryIntervalId = null;
+    console.log('[Invite Expiry] Scheduler stopped');
+  }
 }
 
 export async function runAllRepairs(): Promise<void> {

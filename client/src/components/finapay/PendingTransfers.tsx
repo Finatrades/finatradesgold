@@ -8,14 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Clock, ArrowDownLeft, CheckCircle, XCircle, Loader2, User, AlertTriangle, DollarSign, Send } from 'lucide-react';
+import { Clock, ArrowDownLeft, CheckCircle, XCircle, Loader2, User, AlertTriangle, DollarSign, Send, Mail, Timer } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface PendingTransfer {
   id: string;
   referenceNumber: string;
   senderId: string;
-  recipientId: string;
+  recipientId: string | null;
   amountUsd: string;
   amountGold?: string | null;
   goldPriceUsdPerGram?: string | null;
@@ -28,6 +28,7 @@ interface PendingTransfer {
   createdAt: string;
   senderName?: string;
   senderEmail?: string;
+  isInvite?: boolean;
 }
 
 interface GoldRequest {
@@ -457,35 +458,68 @@ export default function PendingTransfers() {
             {outgoingTransfers.map((transfer: PendingTransfer) => {
               const amount = formatAmount(transfer);
               const timeRemaining = getTimeRemaining(transfer.expiresAt);
+              const isInvitation = transfer.isInvite && !transfer.recipientId;
               
               return (
                 <div
                   key={transfer.id}
-                  className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm opacity-80"
+                  className={`p-4 bg-white rounded-lg shadow-sm ${
+                    isInvitation 
+                      ? 'border-2 border-purple-300' 
+                      : 'border border-gray-200 opacity-80'
+                  }`}
                   data-testid={`pending-transfer-outgoing-${transfer.id}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-blue-100 rounded-full">
-                      <Clock className="w-4 h-4 text-blue-600" />
+                    <div className={`p-2 rounded-full ${
+                      isInvitation ? 'bg-purple-100' : 'bg-blue-100'
+                    }`}>
+                      {isInvitation 
+                        ? <Mail className="w-4 h-4 text-purple-600" />
+                        : <Clock className="w-4 h-4 text-blue-600" />
+                      }
                     </div>
-                    <div>
-                      <p className="font-semibold text-lg text-blue-700">{amount.primary}</p>
+                    <div className="flex-1">
+                      <p className={`font-semibold text-lg ${
+                        isInvitation ? 'text-purple-700' : 'text-blue-700'
+                      }`}>{amount.primary}</p>
                       {amount.secondary && (
                         <p className="text-sm text-muted-foreground">{amount.secondary}</p>
                       )}
                       <p className="text-sm text-muted-foreground mt-1">
-                        Sent to {transfer.recipientIdentifier}
+                        {isInvitation ? 'Invitation sent to' : 'Sent to'} {transfer.recipientIdentifier}
                       </p>
                       {transfer.memo && (
                         <p className="text-sm text-muted-foreground italic mt-1">"{transfer.memo}"</p>
                       )}
-                      <Badge variant="outline" className="mt-2 text-amber-600 border-amber-300">
-                        Awaiting recipient approval
-                      </Badge>
+                      {isInvitation ? (
+                        <Badge className="mt-2 bg-purple-100 text-purple-700 border border-purple-300">
+                          <Mail className="w-3 h-3 mr-1" />
+                          Awaiting registration
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="mt-2 text-amber-600 border-amber-300">
+                          Awaiting recipient approval
+                        </Badge>
+                      )}
                       {timeRemaining && (
-                        <p className={`text-xs mt-1 ${timeRemaining === 'Expired' ? 'text-red-600' : 'text-muted-foreground'}`}>
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          {timeRemaining}
+                        <div className={`flex items-center gap-1 text-xs mt-2 ${
+                          timeRemaining === 'Expired' 
+                            ? 'text-red-600' 
+                            : isInvitation 
+                              ? 'text-purple-600' 
+                              : 'text-muted-foreground'
+                        }`}>
+                          <Timer className="w-3 h-3" />
+                          {isInvitation && timeRemaining !== 'Expired' 
+                            ? `24h invitation window - ${timeRemaining}`
+                            : timeRemaining
+                          }
+                        </div>
+                      )}
+                      {isInvitation && timeRemaining !== 'Expired' && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Gold will be refunded if not claimed within 24 hours
                         </p>
                       )}
                     </div>

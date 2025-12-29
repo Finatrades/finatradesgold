@@ -411,8 +411,10 @@ app.use((req, res, next) => {
   
   // AUTO-REPAIR: Fix all corrupted wallets and orphaned transfers on startup
   try {
-    const { runAllRepairs } = await import('./repair-wallet');
+    const { runAllRepairs, startExpiryScheduler } = await import('./repair-wallet');
     await runAllRepairs();
+    // Start the periodic scheduler for expiring unclaimed invitation transfers
+    startExpiryScheduler();
   } catch (error) {
     console.warn('[Data Repair] Automatic repair failed:', error);
   }
