@@ -500,7 +500,7 @@ export default function GoldBackingReport() {
       </div>
 
       <Dialog open={modalType !== null} onOpenChange={(open) => !open && handleCloseModal()}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center gap-2">
               {selectedUserId && (
@@ -526,7 +526,7 @@ export default function GoldBackingReport() {
             </div>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 pr-4">
+          <ScrollArea className="flex-1 max-h-[calc(85vh-100px)] pr-4">
             {selectedUserId ? (
               loadingProfile ? (
                 <div className="flex items-center justify-center py-12">
