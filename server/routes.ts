@@ -2078,6 +2078,153 @@ ${message}
     }
   });
   
+  // Bootstrap 2FA setup for users who need to set up MFA to login (when require2fa is enabled)
+  // This endpoint uses setupToken from login response instead of authenticated session
+  app.post("/api/mfa/bootstrap-setup", async (req, res) => {
+    try {
+      const { setupToken } = req.body;
+      
+      // Validate setup token
+      const challenge = mfaChallenges.get(setupToken);
+      if (!challenge || !challenge.setupRequired) {
+        return res.status(401).json({ message: "Invalid or expired setup token. Please login again." });
+      }
+      
+      // Check if token is expired
+      if (challenge.expiresAt < new Date()) {
+        mfaChallenges.delete(setupToken);
+        return res.status(401).json({ message: "Setup session expired. Please login again." });
+      }
+      
+      const user = await storage.getUser(challenge.userId);
+      if (!user) {
+        mfaChallenges.delete(setupToken);
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Generate a new TOTP secret
+      const secret = authenticator.generateSecret();
+      
+      // Create otpauth URL for QR code
+      const otpauthUrl = authenticator.keyuri(user.email, "Finatrades", secret);
+      
+      // Generate QR code as data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
+      
+      // Store secret temporarily (not enabled yet until verified)
+      await storage.updateUser(user.id, { mfaSecret: secret });
+      
+      res.json({
+        secret,
+        qrCode: qrCodeDataUrl,
+        message: "Scan the QR code with your authenticator app, then verify with a code"
+      });
+    } catch (error) {
+      console.error("MFA bootstrap setup error:", error);
+      res.status(400).json({ message: "Failed to setup MFA" });
+    }
+  });
+  
+  // Complete 2FA bootstrap - verify token and complete login
+  app.post("/api/mfa/bootstrap-complete", async (req, res) => {
+    try {
+      const { setupToken, token } = req.body;
+      
+      // Validate setup token
+      const challenge = mfaChallenges.get(setupToken);
+      if (!challenge || !challenge.setupRequired) {
+        return res.status(401).json({ message: "Invalid or expired setup token. Please login again." });
+      }
+      
+      // Check if token is expired
+      if (challenge.expiresAt < new Date()) {
+        mfaChallenges.delete(setupToken);
+        return res.status(401).json({ message: "Setup session expired. Please login again." });
+      }
+      
+      // Rate limiting: max 5 attempts
+      if (challenge.attempts >= 5) {
+        mfaChallenges.delete(setupToken);
+        return res.status(429).json({ message: "Too many failed attempts. Please login again." });
+      }
+      
+      const user = await storage.getUser(challenge.userId);
+      if (!user) {
+        mfaChallenges.delete(setupToken);
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!user.mfaSecret) {
+        return res.status(400).json({ message: "MFA not set up. Please run setup first." });
+      }
+      
+      // Verify the TOTP token
+      const isValid = authenticator.verify({ token, secret: user.mfaSecret });
+      
+      if (!isValid) {
+        challenge.attempts++;
+        mfaChallenges.set(setupToken, challenge);
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+      
+      // Generate backup codes
+      const backupCodes = Array.from({ length: 8 }, () =>
+        crypto.randomBytes(4).toString('hex').toUpperCase()
+      );
+      
+      const hashedBackupCodes = await Promise.all(
+        backupCodes.map(code => bcrypt.hash(code, 10))
+      );
+      
+      // Enable MFA for the user
+      await storage.updateUser(user.id, {
+        mfaEnabled: true,
+        mfaMethod: 'totp',
+        mfaBackupCodes: JSON.stringify(hashedBackupCodes),
+        lastLoginAt: new Date()
+      });
+      
+      // Clean up the challenge
+      mfaChallenges.delete(setupToken);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: user.id,
+        actionType: "update",
+        actor: user.id,
+        actorRole: user.role,
+        details: "MFA enabled via required setup during login"
+      });
+      
+      // Create session
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      req.session.adminPortal = challenge.adminPortal || false;
+      
+      // Save session explicitly
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
+      const updatedUser = await storage.getUser(user.id);
+      
+      res.json({
+        success: true,
+        message: "MFA enabled successfully. You are now logged in.",
+        backupCodes,
+        user: sanitizeUser(updatedUser || user),
+        adminPortal: challenge.adminPortal || false
+      });
+    } catch (error) {
+      console.error("MFA bootstrap complete error:", error);
+      res.status(400).json({ message: "Failed to complete MFA setup" });
+    }
+  });
+  
   // Verify MFA token during login (requires challenge token from login step)
   app.post("/api/mfa/verify", async (req, res) => {
     try {
