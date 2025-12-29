@@ -15115,6 +15115,15 @@ ${message}
         });
         console.log(`[Email] Invitation email to ${recipientIdentifier}: ${emailResult.success ? 'sent' : 'failed'} - ${emailResult.messageId || emailResult.error}`);
         
+        // Create bell notification for sender
+        await storage.createNotification({
+          userId: sender.id,
+          title: 'Invitation Sent',
+          message: `You sent ${goldAmount.toFixed(4)}g gold to ${recipientIdentifier}. They have 24 hours to register and claim it.`,
+          type: 'transaction',
+          link: '/finapay',
+        });
+        
         // Create audit log
         await storage.createAuditLog({
           entityType: 'peer_transfer',
