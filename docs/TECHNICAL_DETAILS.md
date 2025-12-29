@@ -770,6 +770,31 @@ The platform supports two KYC modes:
 | `authorizedSignatories` | JSON array of authorized signatories |
 | `ultimateBeneficialOwners` | JSON array of UBOs |
 
+### Document Expiry Notifications
+
+The system tracks document expiry dates and sends automatic email reminders to users before their KYC documents expire.
+
+#### Tracked Documents
+| Document Type | Table | Field |
+|---------------|-------|-------|
+| Passport | `finatrades_personal_kyc` | `passport_expiry_date` |
+| Trade License | `finatrades_corporate_kyc` | `trade_license_expiry_date` |
+| Director Passport | `finatrades_corporate_kyc` | `director_passport_expiry_date` |
+
+#### Reminder Schedule
+| Days Before Expiry | Reminder Type |
+|-------------------|---------------|
+| 30 days | First reminder |
+| 14 days | Second reminder |
+| 7 days | Urgent reminder |
+| 3 days | Critical reminder |
+| 1 day | Final reminder |
+
+#### Technical Implementation
+- **Scheduler**: Runs daily via `server/document-expiry.ts`
+- **Email Template**: `document_expiry_reminder` with `document_type` variable
+- **Admin Display**: Expiry dates shown in KYC review panel (`/admin/kyc`)
+
 ---
 
 ## FinaPay - Digital Wallet System
@@ -1069,6 +1094,20 @@ BNSL (Buy Now Sell Later) is an investment program where users lock gold for a f
 | **KYC Level** | Tier 1 (Basic) or higher |
 | **Account Status** | Good standing, no active disputes |
 | **Wallet Balance** | Sufficient gold to transfer |
+
+### BNSL User Interface Language
+
+The BNSL interface uses simple, everyday language to explain gold transfers:
+
+#### Transfer Modal (FinaPay → BNSL)
+- **Title**: "Locking in Today's Price"
+- **Explanation**: "When you move gold into BNSL, you secure today's USD price. This protects you from price drops, but you won't gain if prices rise while the gold is in BNSL."
+
+#### Withdraw Modal (BNSL → FinaPay)
+- **Title**: "Unlocking Your Gold"
+- **Explanation**: "Withdrawing gold returns it to FinaPay at today's market price. You'll receive current market value, which may be higher or lower than your original locked price."
+
+**Design Note**: Technical terms like "hedge" are avoided to ensure clarity for non-financial users.
 
 ### BNSL Workflow
 1. **Select Plan** → Choose term (12/24/36 months)
