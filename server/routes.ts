@@ -10808,6 +10808,15 @@ ${message}
         }).catch(err => console.error('[Email] Deposit processing notification failed:', err));
       }
       
+      // Create bell notification for deposit request submission
+      await storage.createNotification({
+        userId: req.body.userId,
+        title: 'Deposit Request Submitted',
+        message: `Your deposit request of $${parseFloat(req.body.amountUsd).toFixed(2)} has been submitted and is being processed.`,
+        type: 'transaction',
+        link: '/dashboard',
+      });
+      
       res.json({ request });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
@@ -11209,6 +11218,15 @@ ${message}
         }).catch(err => console.error('[Email] Withdrawal requested notification failed:', err));
       }
       
+      // Create bell notification for withdrawal request submission
+      await storage.createNotification({
+        userId,
+        title: 'Withdrawal Request Submitted',
+        message: `Your withdrawal request of $${parseFloat(amountUsd).toFixed(2)} has been submitted and is being processed.`,
+        type: 'transaction',
+        link: '/dashboard',
+      });
+      
       res.json({ request });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
@@ -11274,6 +11292,15 @@ ${message}
             `
           ).catch(err => console.error('[Email] Failed to send withdrawal completion:', err));
         }
+        
+        // Create bell notification for withdrawal completion
+        await storage.createNotification({
+          userId: request.userId,
+          title: 'Withdrawal Completed',
+          message: `Your withdrawal of $${parseFloat(request.amountUsd.toString()).toFixed(2)} has been processed and sent to your bank account.`,
+          type: 'transaction',
+          link: '/dashboard',
+        });
       }
       
       // If rejecting from Pending or Processing, refund the held amount back to wallet
@@ -11300,6 +11327,15 @@ ${message}
             updatedAt: new Date(),
           });
         }
+        
+        // Create bell notification for withdrawal rejection
+        await storage.createNotification({
+          userId: request.userId,
+          title: 'Withdrawal Rejected',
+          message: `Your withdrawal request of $${parseFloat(request.amountUsd.toString()).toFixed(2)} was rejected. The funds have been returned to your wallet.`,
+          type: 'transaction',
+          link: '/dashboard',
+        });
       }
       
       const updatedRequest = await storage.updateWithdrawalRequest(req.params.id, {
@@ -15856,6 +15892,23 @@ ${message}
         ).catch(err => console.error('[Email] Failed to send transfer accepted notification:', err));
       }
       
+      // Create bell notifications for both parties
+      await storage.createNotification({
+        userId: recipient.id,
+        title: 'Transfer Received',
+        message: `You received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}.`,
+        type: 'transaction',
+        link: '/finapay',
+      });
+      
+      await storage.createNotification({
+        userId: sender.id,
+        title: 'Transfer Accepted',
+        message: `${recipient.firstName} ${recipient.lastName} accepted your transfer of ${goldAmount.toFixed(4)}g gold.`,
+        type: 'transaction',
+        link: '/finapay',
+      });
+      
       res.json({ 
         message: `Accepted ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
         transaction: result.recipientTx,
@@ -15994,6 +16047,15 @@ ${message}
           `
         ).catch(err => console.error('[Email] Failed to send transfer rejected notification:', err));
       }
+      
+      // Create bell notification for sender
+      await storage.createNotification({
+        userId: sender.id,
+        title: 'Transfer Rejected',
+        message: `${recipient?.firstName || 'Recipient'} rejected your transfer of ${goldAmount.toFixed(4)}g gold. Funds refunded to your wallet.`,
+        type: 'transaction',
+        link: '/finapay',
+      });
       
       res.json({ message: "Transfer rejected. Funds have been returned to sender." });
     } catch (error) {
