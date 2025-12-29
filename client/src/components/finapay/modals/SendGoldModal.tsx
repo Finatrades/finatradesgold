@@ -398,66 +398,56 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
             )}
 
             {notFoundEmail && !inviteSent && (
-              <div className="space-y-4">
-                {/* Recipient Info Header */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300 flex-shrink-0">
-                      <UserPlus className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-foreground text-sm">Sending to New User</p>
-                      <p className="text-xs text-muted-foreground truncate">{notFoundEmail}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-xs text-purple-600 font-medium">24h to claim</p>
-                      <p className="text-xs text-muted-foreground">or refunded</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Panel - Form */}
+                <div className="space-y-3">
+                  {/* Recipient Info */}
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300 flex-shrink-0">
+                        <UserPlus className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground text-sm">New User</p>
+                        <p className="text-xs text-muted-foreground truncate">{notFoundEmail}</p>
+                      </div>
+                      <Mail className="w-4 h-4 text-purple-500" />
                     </div>
                   </div>
-                </div>
 
-                {/* Amount Input */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-sm">Amount (USD) <span className="text-red-500">*</span></Label>
-                    <span className="text-xs text-muted-foreground">Balance: ${availableGoldValueUsd.toFixed(2)}</span>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className={`bg-background pl-8 text-lg font-medium ${numericAmount > availableGoldValueUsd ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      data-testid="input-invite-amount"
-                    />
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-primary"
-                      onClick={() => setAmount(availableGoldValueUsd.toFixed(2))}
-                    >
-                      MAX
-                    </Button>
-                  </div>
-                  {numericAmount > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      ≈ {(numericAmount / currentGoldPrice).toFixed(4)}g gold at ${currentGoldPrice.toFixed(2)}/g
-                    </p>
-                  )}
-                  {numericAmount > availableGoldValueUsd && (
-                    <div className="flex items-center gap-2 text-red-500 text-xs bg-red-50 p-2 rounded-md">
-                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                      <span>Insufficient funds</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Payment Reason & Source - Side by Side */}
-                <div className="grid grid-cols-2 gap-3">
+                  {/* Amount Input */}
                   <div className="space-y-1">
-                    <Label className="text-xs">Reason <span className="text-red-500">*</span></Label>
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs">Amount (USD) <span className="text-red-500">*</span></Label>
+                      <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
+                      <Input 
+                        type="number" 
+                        placeholder="0.00" 
+                        className={`bg-background pl-7 font-medium ${numericAmount > availableGoldValueUsd ? 'border-red-500' : 'border-input'}`}
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        data-testid="input-invite-amount"
+                      />
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 text-xs text-primary px-2"
+                        onClick={() => setAmount(availableGoldValueUsd.toFixed(2))}
+                      >
+                        MAX
+                      </Button>
+                    </div>
+                    {numericAmount > availableGoldValueUsd && (
+                      <p className="text-xs text-red-500">Insufficient funds</p>
+                    )}
+                  </div>
+
+                  {/* Payment Reason */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Payment Reason <span className="text-red-500">*</span></Label>
                     <Select value={paymentReason} onValueChange={setPaymentReason}>
                       <SelectTrigger className="bg-background border-input h-9 text-xs" data-testid="select-invite-payment-reason">
                         <SelectValue placeholder="Select reason" />
@@ -471,8 +461,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Source of Funds */}
                   <div className="space-y-1">
-                    <Label className="text-xs">Source <span className="text-red-500">*</span></Label>
+                    <Label className="text-xs">Source of Funds <span className="text-red-500">*</span></Label>
                     <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
                       <SelectTrigger className="bg-background border-input h-9 text-xs" data-testid="select-invite-source-of-funds">
                         <SelectValue placeholder="Select source" />
@@ -486,77 +478,116 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
 
-                {/* Note */}
-                <div className="space-y-1">
-                  <Label className="text-xs">Note (Optional)</Label>
-                  <Input 
-                    placeholder="What's this for?" 
-                    className="bg-background border-input h-9 text-sm"
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                    data-testid="input-invite-memo"
-                  />
-                </div>
-
-                {/* Terms */}
-                {termsContent?.enabled && (
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="invite-terms" 
-                      checked={termsAccepted}
-                      onCheckedChange={(checked) => setTermsAccepted(!!checked)}
-                      data-testid="checkbox-invite-terms"
+                  {/* Note */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Note (Optional)</Label>
+                    <Input 
+                      placeholder="What's this for?" 
+                      className="bg-background border-input h-9 text-sm"
+                      value={memo}
+                      onChange={(e) => setMemo(e.target.value)}
+                      data-testid="input-invite-memo"
                     />
-                    <Label htmlFor="invite-terms" className="text-xs text-muted-foreground cursor-pointer">
-                      I agree to the terms and conditions
-                    </Label>
                   </div>
-                )}
+                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2 pt-2">
-                  <Button 
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setNotFoundEmail('');
-                      setIdentifier('');
-                      setAmount('');
-                      setPaymentReason('');
-                      setSourceOfFunds('');
-                      setMemo('');
-                    }}
-                    data-testid="button-cancel-invite"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                    onClick={handleSendInvitation}
-                    disabled={
-                      isSendingInvite || 
-                      numericAmount <= 0 || 
-                      numericAmount > availableGoldValueUsd ||
-                      !paymentReason ||
-                      !sourceOfFunds ||
-                      (termsContent?.enabled && !termsAccepted)
-                    }
-                    data-testid="button-send-invitation-transfer"
-                  >
-                    {isSendingInvite ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Send Gold
-                      </>
-                    )}
-                  </Button>
+                {/* Right Panel - Summary */}
+                <div className="space-y-3">
+                  {/* Summary Card */}
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-purple-700 text-sm mb-3">Transfer Summary</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">To:</span>
+                        <span className="font-medium text-xs truncate max-w-[140px]">{notFoundEmail}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Amount:</span>
+                        <span className="font-bold text-purple-700">${numericAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Gold:</span>
+                        <span className="font-medium">{(numericAmount / currentGoldPrice).toFixed(4)}g</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Status:</span>
+                        <span className="text-purple-600 font-medium">Pending Claim</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 24h Notice */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-amber-700 text-xs">24-Hour Window</p>
+                        <p className="text-amber-600 text-xs mt-0.5">
+                          Gold debited now. Refunded if unclaimed.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Terms */}
+                  {termsContent?.enabled && (
+                    <div className="flex items-start gap-2">
+                      <Checkbox 
+                        id="invite-terms" 
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(!!checked)}
+                        data-testid="checkbox-invite-terms"
+                        className="mt-0.5"
+                      />
+                      <Label htmlFor="invite-terms" className="text-xs text-muted-foreground cursor-pointer leading-tight">
+                        I agree to the terms and conditions for this transfer
+                      </Label>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-1">
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => {
+                        setNotFoundEmail('');
+                        setIdentifier('');
+                        setAmount('');
+                        setPaymentReason('');
+                        setSourceOfFunds('');
+                        setMemo('');
+                      }}
+                      data-testid="button-cancel-invite"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm"
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                      onClick={handleSendInvitation}
+                      disabled={
+                        isSendingInvite || 
+                        numericAmount <= 0 || 
+                        numericAmount > availableGoldValueUsd ||
+                        !paymentReason ||
+                        !sourceOfFunds ||
+                        (termsContent?.enabled && !termsAccepted)
+                      }
+                      data-testid="button-send-invitation-transfer"
+                    >
+                      {isSendingInvite ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-1" />
+                          Send Gold
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
