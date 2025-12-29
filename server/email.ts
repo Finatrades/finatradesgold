@@ -981,7 +981,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Document Expiry Reminder',
     type: 'email' as const,
     module: 'kyc',
-    subject: 'Your ID document is expiring soon - Action Required',
+    subject: 'Your {{document_type}} is expiring soon - Action Required',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
@@ -989,17 +989,18 @@ export const DEFAULT_EMAIL_TEMPLATES = [
         </div>
         <div style="padding: 30px; background: #ffffff;">
           <p>Hello {{user_name}},</p>
-          <p>This is a friendly reminder that your identification document is <strong>expiring on {{expiry_date}}</strong>.</p>
+          <p>This is a friendly reminder that your <strong>{{document_type}}</strong> is <strong>expiring on {{expiry_date}}</strong>.</p>
           
           <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <p style="margin: 0;"><strong>Days remaining:</strong> {{days_remaining}} days</p>
+            <p style="margin: 0;"><strong>Document:</strong> {{document_type}}</p>
+            <p style="margin: 8px 0 0 0;"><strong>Days remaining:</strong> {{days_remaining}} days</p>
           </div>
           
           <p>To continue using Finatrades services without interruption, please update your KYC documents before the expiry date.</p>
           
           <p><strong>What you need to do:</strong></p>
           <ol>
-            <li>Obtain a new valid ID document</li>
+            <li>Obtain a new valid document</li>
             <li>Log in to your Finatrades account</li>
             <li>Go to Settings → KYC Verification</li>
             <li>Upload your new document</li>
@@ -1017,6 +1018,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
+      { name: 'document_type', description: 'Type of document (Passport, Trade License, etc.)' },
       { name: 'expiry_date', description: 'Document expiry date' },
       { name: 'days_remaining', description: 'Number of days until expiry' },
       { name: 'kyc_url', description: 'Link to KYC page' },

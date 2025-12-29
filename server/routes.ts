@@ -20339,7 +20339,7 @@ ${message}
   // Submit Finatrades Personal KYC (personal info + documents + liveness)
   app.post("/api/finatrades-kyc/personal", async (req, res) => {
     try {
-      const { userId, personalInformation, documents, livenessCapture, livenessVerified } = req.body;
+      const { userId, personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate } = req.body;
       
       if (!userId) {
         return res.status(400).json({ message: "userId is required" });
@@ -20371,6 +20371,8 @@ ${message}
         idBackUrl: documents?.idBack?.url,
         passportUrl: documents?.passport?.url,
         addressProofUrl: documents?.addressProof?.url,
+        // Document Expiry
+        passportExpiryDate: passportExpiryDate || null,
         // Liveness
         livenessCapture,
         livenessVerified: !!livenessVerified,
@@ -20460,6 +20462,8 @@ ${message}
         hasPepOwners,
         pepDetails,
         documents,
+        tradeLicenseExpiryDate,
+        directorPassportExpiryDate,
         status
       } = req.body;
       
@@ -20495,6 +20499,8 @@ ${message}
         hasPepOwners,
         pepDetails,
         documents,
+        tradeLicenseExpiryDate: tradeLicenseExpiryDate || null,
+        directorPassportExpiryDate: directorPassportExpiryDate || null,
         representativeLiveness,
         livenessVerified: !!representativeLiveness,
         livenessVerifiedAt: representativeLiveness ? new Date() : null,

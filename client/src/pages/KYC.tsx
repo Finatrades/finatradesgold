@@ -171,6 +171,9 @@ export default function KYC() {
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [addressProofFile, setAddressProofFile] = useState<File | null>(null);
   
+  // Document expiry dates (for notification reminders)
+  const [passportExpiryDate, setPassportExpiryDate] = useState('');
+  
   // Pre-fill data from user profile
   useEffect(() => {
     if (user) {
@@ -229,6 +232,27 @@ export default function KYC() {
     taxCertificate?: File;
     pepSelfDeclaration?: File;
   }>({});
+  
+  // Corporate document expiry dates (for notification reminders)
+  const [tradeLicenseExpiryDate, setTradeLicenseExpiryDate] = useState('');
+  const [directorPassportExpiryDate, setDirectorPassportExpiryDate] = useState('');
+  
+  // Pre-fill expiry dates from existing submission
+  useEffect(() => {
+    if (existingSubmission) {
+      // Personal KYC expiry date
+      if (existingSubmission.passportExpiryDate) {
+        setPassportExpiryDate(existingSubmission.passportExpiryDate);
+      }
+      // Corporate KYC expiry dates
+      if (existingSubmission.tradeLicenseExpiryDate) {
+        setTradeLicenseExpiryDate(existingSubmission.tradeLicenseExpiryDate);
+      }
+      if (existingSubmission.directorPassportExpiryDate) {
+        setDirectorPassportExpiryDate(existingSubmission.directorPassportExpiryDate);
+      }
+    }
+  }, [existingSubmission]);
   
   // Liveness camera state (shared between modes)
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -467,6 +491,7 @@ export default function KYC() {
             addressProof: { url: addressProofBase64, uploaded: true },
             passport: passportBase64 ? { url: passportBase64, uploaded: true } : null
           },
+          passportExpiryDate: passportExpiryDate || null,
           livenessVerified: true,
           livenessCapture: capturedSelfie,
           status: 'In Progress'
@@ -550,6 +575,8 @@ export default function KYC() {
           hasPepOwners,
           pepDetails: hasPepOwners ? pepDetails : null,
           documents: docsPayload,
+          tradeLicenseExpiryDate: tradeLicenseExpiryDate || null,
+          directorPassportExpiryDate: directorPassportExpiryDate || null,
           representativeLiveness: capturedSelfie,
           status: 'In Progress'
         }),
@@ -1090,6 +1117,17 @@ export default function KYC() {
                                 <CheckCircle2 className="w-4 h-4" /> {passportFile.name}
                               </p>
                             )}
+                            <div className="mt-3">
+                              <Label className="text-sm">Passport Expiry Date</Label>
+                              <p className="text-xs text-muted-foreground mb-1">We'll send you reminders before it expires</p>
+                              <Input
+                                type="date"
+                                value={passportExpiryDate}
+                                onChange={(e) => setPassportExpiryDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                data-testid="input-passport-expiry"
+                              />
+                            </div>
                           </div>
                           
                           <div className="p-4 border-2 border-dashed rounded-lg">
@@ -1629,6 +1667,33 @@ export default function KYC() {
                             </div>
                           </div>
                         ))}
+                        
+                        <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+                          <h4 className="font-medium text-sm mb-3">Document Expiry Dates</h4>
+                          <p className="text-xs text-muted-foreground mb-4">We'll send you reminders before your documents expire</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm">Trade License Expiry</Label>
+                              <Input
+                                type="date"
+                                value={tradeLicenseExpiryDate}
+                                onChange={(e) => setTradeLicenseExpiryDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                data-testid="input-trade-license-expiry"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm">Director Passport Expiry</Label>
+                              <Input
+                                type="date"
+                                value={directorPassportExpiryDate}
+                                onChange={(e) => setDirectorPassportExpiryDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                data-testid="input-director-passport-expiry"
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </CardContent>
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" onClick={() => setCorporateStep(2)}>Back</Button>
