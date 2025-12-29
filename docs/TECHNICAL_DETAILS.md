@@ -7,18 +7,134 @@ Contact: +971568474843
 ---
 
 ## Table of Contents
-1. [Notification System](#notification-system)
-2. [Platform Configuration](#platform-configuration)
-3. [User Preferences System](#user-preferences-system)
-4. [KYC Verification System](#kyc-verification-system)
-5. [FinaPay - Digital Wallet System](#finapay---digital-wallet-system)
-6. [FinaVault - Gold Storage System](#finavault---gold-storage-system)
-7. [BNSL - Buy Now Sell Later](#bnsl---buy-now-sell-later)
-8. [FinaBridge - Trade Finance](#finabridge---trade-finance)
-9. [Payment Integrations](#payment-integrations)
-10. [Security Features](#security-features)
-11. [Certificate System](#certificate-system)
-12. [Database Schema Overview](#database-schema-overview)
+1. [Dashboard](#dashboard)
+2. [Notification System](#notification-system)
+3. [Platform Configuration](#platform-configuration)
+4. [User Preferences System](#user-preferences-system)
+5. [KYC Verification System](#kyc-verification-system)
+6. [FinaPay - Digital Wallet System](#finapay---digital-wallet-system)
+7. [FinaVault - Gold Storage System](#finavault---gold-storage-system)
+8. [BNSL - Buy Now Sell Later](#bnsl---buy-now-sell-later)
+9. [FinaBridge - Trade Finance](#finabridge---trade-finance)
+10. [Payment Integrations](#payment-integrations)
+11. [Security Features](#security-features)
+12. [Certificate System](#certificate-system)
+13. [Database Schema Overview](#database-schema-overview)
+
+---
+
+## Dashboard
+
+The user dashboard provides a comprehensive real-time view of the user's gold portfolio and financial activity.
+
+### Dashboard API Endpoint
+
+**Endpoint:** `GET /api/dashboard/:userId`  
+**Authorization:** Owner or Admin only  
+**Response Time:** Optimized single-call architecture (replaces 7 separate API calls)
+
+### KPI Cards (6 Main Cards)
+
+#### Row 1 - Gold Holdings
+
+| Card | Data Field | Description | Display Format |
+|------|------------|-------------|----------------|
+| **Gold Storage** | `totals.walletGoldGrams` | Available gold in FinaPay wallet | Grams, Kilograms, Troy Ounces |
+| **Total Gold Value (USD/EUR/AED)** | `walletGoldGrams * goldPrice` | Gold holdings in preferred currency | User's display currency |
+| **Total Gold Value (AED)** | `walletGoldGrams * goldPrice * 3.67` | Gold holdings in UAE Dirhams | AED format |
+
+#### Row 2 - Portfolio & Investments
+
+| Card | Data Field | Description | Display Format |
+|------|------------|-------------|----------------|
+| **Total Portfolio** | `totals.totalPortfolioUsd` | Overall investment value (wallet gold + USD balance + FinaBridge) | Currency format |
+| **BNSL Invested** | `totals.bnslLockedGrams` | Gold locked in Buy Now Sell Later plans | Grams/Kilograms |
+| **Total Profit** | `totals.bnslTotalProfit` | ROI earned from BNSL plans | Green currency format |
+
+### Wallet Cards Section (3 Cards)
+
+| Wallet | Fields | Description |
+|--------|--------|-------------|
+| **FinaPay Wallet** | `goldGrams`, `usdValue`, `pending`, `transactions` | Digital gold wallet for buying/selling/transferring |
+| **BNSL Wallet** | `goldGrams`, `usdValue`, `lockedGrams`, `activePlans` | Gold locked in BNSL investment plans |
+| **FinaBridge Wallet** | `goldGrams`, `usdValue`, `activeCases`, `tradeVolume` | Trade finance wallet for business users |
+
+### Credit Card Preview
+
+Visual debit card mockup displayed on the dashboard:
+- Shows user's full name (uppercase)
+- Card type: Personal or Business (based on `accountType` or `finabridgeRole`)
+- Mock card number: `4789 •••• •••• 3456`
+- Expiry: `12/28`
+
+### Banners & Status Indicators
+
+| Banner | Condition | Purpose |
+|--------|-----------|---------|
+| **Settlement Assurance** | Always visible | Shows platform's gold reserve backing ($42.134B in geological reserves) |
+| **2FA Reminder** | `!user.mfaEnabled && prefs.twoFactorReminder` | Prompts users to enable two-factor authentication |
+| **Gold Price Status** | Always visible | Shows live gold price per gram with source indicator |
+| **Balance Hidden** | `prefs.showBalance === false` | Indicates balances are hidden |
+
+### Dashboard Data Sources
+
+The dashboard fetches all data in a single optimized API call:
+
+```javascript
+// Parallel data fetching
+const [
+  wallet,           // User's FinaPay wallet
+  vaultHoldings,    // Physical vault holdings
+  transactions,     // Transaction history
+  depositRequests,  // Pending bank transfers
+  cryptoPayments,   // Crypto payment requests
+  bnslPlans,        // BNSL investment plans
+  priceData,        // Live gold price
+  notifications,    // User notifications
+  tradeCases,       // FinaBridge trade cases
+  certificates,     // Gold certificates
+  finabridgeWallet, // FinaBridge wallet
+  buyGoldRequests   // Wingold buy requests
+] = await Promise.all([...]);
+```
+
+### Dashboard Totals Calculation
+
+| Field | Calculation |
+|-------|-------------|
+| `vaultGoldGrams` | Sum of all vault holdings |
+| `vaultGoldValueUsd` | `vaultGoldGrams * goldPrice` |
+| `vaultGoldValueAed` | `vaultGoldValueUsd * 3.67` |
+| `walletGoldGrams` | `wallet.goldGrams` |
+| `walletUsdBalance` | `wallet.usdBalance` |
+| `totalPortfolioUsd` | `(walletGoldGrams * goldPrice) + walletUsdBalance + finabridgeGoldValueUsd` |
+| `bnslLockedGrams` | Sum of `goldSoldGrams` from active BNSL plans |
+| `bnslTotalProfit` | Sum of `paidMarginUsd` from active BNSL plans |
+| `pendingGoldGrams` | `pendingDepositUsd / goldPrice` |
+| `pendingDepositUsd` | Sum of pending deposits (bank + crypto) |
+
+### Transactions Display
+
+- Combined transactions from: Regular transactions, Deposit requests, Crypto payments, Buy gold requests
+- Sorted by `createdAt` descending
+- Limited to 20 most recent for dashboard
+- Excludes already-credited transactions to prevent duplicates
+
+### User Preferences Integration
+
+| Preference | Effect |
+|------------|--------|
+| `showBalance` | Hides/shows all monetary values (displays `••••••` when hidden) |
+| `compactMode` | Reduces padding and font sizes for compact display |
+| `displayCurrency` | Converts values to USD, EUR, or AED |
+| `twoFactorReminder` | Shows/hides 2FA reminder banner |
+
+### Real-time Updates
+
+The dashboard integrates with Socket.IO for real-time updates:
+- `DataSyncProvider` listens for `ledger:sync` events
+- Query cache is invalidated on relevant events (`balance_update`, `transaction`, etc.)
+- Uses `syncVersion` timestamps to prevent duplicate invalidations
 
 ---
 
