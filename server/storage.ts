@@ -2090,26 +2090,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPendingInvitesByEmail(email: string): Promise<PeerTransfer[]> {
-    // Detect invitation transfers by recipientId being null (works without is_invite column)
-    return await db.select().from(peerTransfers)
+    // Detect invitation transfers by memo containing isInvite:true JSON
+    // Query all pending transfers for this email, then filter by memo in JS
+    const transfers = await db.select().from(peerTransfers)
       .where(and(
         eq(peerTransfers.recipientIdentifier, email.toLowerCase()),
-        eq(peerTransfers.status, 'Pending'),
-        isNull(peerTransfers.recipientId)
+        eq(peerTransfers.status, 'Pending')
       ))
       .orderBy(desc(peerTransfers.createdAt));
+    
+    // Filter to only include actual invitation transfers (memo contains isInvite:true)
+    return transfers.filter(t => {
+      if (!t.memo) return false;
+      try {
+        const metadata = JSON.parse(t.memo);
+        return metadata.isInvite === true;
+      } catch {
+        return false;
+      }
+    });
   }
 
   async getExpiredInviteTransfers(): Promise<PeerTransfer[]> {
-    // Detect invitation transfers by recipientId being null (works without is_invite column)
+    // Detect invitation transfers by memo containing isInvite:true JSON
     const now = new Date();
-    return await db.select().from(peerTransfers)
+    const transfers = await db.select().from(peerTransfers)
       .where(and(
         eq(peerTransfers.status, 'Pending'),
-        isNull(peerTransfers.recipientId),
         sql`${peerTransfers.expiresAt} < ${now}`
       ))
       .orderBy(desc(peerTransfers.createdAt));
+    
+    // Filter to only include actual invitation transfers (memo contains isInvite:true)
+    return transfers.filter(t => {
+      if (!t.memo) return false;
+      try {
+        const metadata = JSON.parse(t.memo);
+        return metadata.isInvite === true;
+      } catch {
+        return false;
+      }
+    });
   }
 
   // Peer Requests (Request Money)

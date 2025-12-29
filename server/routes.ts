@@ -921,8 +921,8 @@ ${message}
       try {
         const pendingInvites = await storage.getPendingInvitesByEmail(user.email);
         for (const invite of pendingInvites) {
-          // Detect invitation by recipientId being null
-          if (invite.status === 'Pending' && !invite.recipientId) {
+          // getPendingInvitesByEmail already filters to only return actual invites (memo contains isInvite:true)
+          if (invite.status === 'Pending') {
             // Parse memo to get invite metadata (isInvite, invitationToken, senderReferralCode)
             let inviteMetadata: { isInvite?: boolean; invitationToken?: string; senderReferralCode?: string | null; originalMemo?: string } = {};
             try {
@@ -930,10 +930,11 @@ ${message}
                 inviteMetadata = JSON.parse(invite.memo);
               }
             } catch (e) {
-              // memo is not JSON, treat as plain text
+              // memo is not JSON, skip
+              continue;
             }
             
-            // Only process if this is actually an invite (has isInvite flag in memo)
+            // Double-check this is actually an invite
             if (!inviteMetadata.isInvite) {
               continue;
             }
@@ -15071,10 +15072,12 @@ ${message}
           originalMemo: memo || null,
         });
         
+        // Use sender's ID as placeholder for recipientId (AWS RDS has NOT NULL constraint)
+        // We detect invitation transfers by checking memo JSON for isInvite: true
         const inviteTransfer = await storage.createPeerTransfer({
           referenceNumber,
           senderId: sender.id,
-          recipientId: null,
+          recipientId: sender.id, // Self-reference as placeholder for pending invite
           amountUsd: usdEquivalent.toFixed(2),
           amountGold: goldAmount.toFixed(6),
           goldPriceUsdPerGram: goldPrice.toFixed(2),

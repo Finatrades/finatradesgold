@@ -188,21 +188,7 @@ export async function processExpiredInviteTransfers(): Promise<{ expired: number
     
     for (const invite of expiredInvites) {
       try {
-        // Parse memo to verify this is actually an invite (not just any transfer with null recipientId)
-        let inviteMetadata: { isInvite?: boolean } = {};
-        try {
-          if (invite.memo && invite.memo.startsWith('{')) {
-            inviteMetadata = JSON.parse(invite.memo);
-          }
-        } catch (e) {
-          // memo is not JSON, skip this transfer
-        }
-        
-        // Only process if this is actually an invite (has isInvite flag in memo)
-        if (!inviteMetadata.isInvite) {
-          continue;
-        }
-        
+        // getExpiredInviteTransfers already filters to only return actual invites (memo contains isInvite:true)
         const goldAmount = parseFloat(invite.amountGold || '0');
         
         // Use transaction to ensure atomic refund
