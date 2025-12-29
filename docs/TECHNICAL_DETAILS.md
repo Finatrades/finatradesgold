@@ -7,19 +7,286 @@ Contact: +971568474843
 ---
 
 ## Table of Contents
-1. [Dashboard](#dashboard)
-2. [Notification System](#notification-system)
-3. [Platform Configuration](#platform-configuration)
-4. [User Preferences System](#user-preferences-system)
-5. [KYC Verification System](#kyc-verification-system)
-6. [FinaPay - Digital Wallet System](#finapay---digital-wallet-system)
-7. [FinaVault - Gold Storage System](#finavault---gold-storage-system)
-8. [BNSL - Buy Now Sell Later](#bnsl---buy-now-sell-later)
-9. [FinaBridge - Trade Finance](#finabridge---trade-finance)
-10. [Payment Integrations](#payment-integrations)
-11. [Security Features](#security-features)
-12. [Certificate System](#certificate-system)
-13. [Database Schema Overview](#database-schema-overview)
+1. [Platform Overview (Simple Explanation)](#platform-overview-simple-explanation)
+2. [Dashboard](#dashboard)
+3. [Notification System](#notification-system)
+4. [Platform Configuration](#platform-configuration)
+5. [User Preferences System](#user-preferences-system)
+6. [KYC Verification System](#kyc-verification-system)
+7. [FinaPay - Digital Wallet System](#finapay---digital-wallet-system)
+8. [FinaVault - Gold Storage System](#finavault---gold-storage-system)
+9. [BNSL - Buy Now Sell Later](#bnsl---buy-now-sell-later)
+10. [FinaBridge - Trade Finance](#finabridge---trade-finance)
+11. [Payment Integrations](#payment-integrations)
+12. [Security Features](#security-features)
+13. [Certificate System](#certificate-system)
+14. [Database Schema Overview](#database-schema-overview)
+
+---
+
+## Platform Overview (Simple Explanation)
+
+This section explains how Finatrades works in simple, everyday language with practical examples.
+
+### What is Finatrades?
+
+Finatrades is a **digital bank for gold**. Instead of keeping money in a traditional bank account, users keep gold. They can buy gold, sell gold, send gold to others, store physical gold in vaults, and invest gold to earn returns.
+
+### The 4 Core Modules
+
+#### 1. FinaPay - Your Gold Wallet
+
+**Simple Explanation:** A digital wallet where gold is stored, similar to a bank account but holding gold instead of cash.
+
+**How it works:**
+1. User deposits money (bank transfer, card, or crypto)
+2. User buys gold at current market price
+3. Gold balance shown in grams (e.g., 5.25 grams)
+4. User can send gold to others, sell gold, or withdraw cash
+
+**Practical Example:**
+```
+Ahmed deposits $500 into his FinaPay wallet
+  ↓
+Gold price is $100 per gram
+  ↓
+Ahmed buys 5 grams of gold ($500 ÷ $100)
+  ↓
+His wallet shows: 5.000000 grams
+  ↓
+Later, gold price rises to $120 per gram
+  ↓
+Ahmed sells 5 grams and gets $600 (profit: $100)
+```
+
+**Database Tables Involved:** `wallets`, `transactions`, `deposit_requests`, `withdrawal_requests`
+
+---
+
+#### 2. FinaVault - Gold Storage
+
+**Simple Explanation:** A secure vault in Dubai where physical gold bars are stored and insured.
+
+**How it works:**
+1. Gold purchased through FinaPay is stored in a real vault
+2. Users receive certificates proving ownership
+3. Two storage options: Pooled (shared, cheaper) or Allocated (specific bars, expensive)
+4. Users can request physical delivery of gold bars
+
+**Practical Example:**
+```
+Sarah buys 100 grams of gold
+  ↓
+Gold is stored at Wingold & Metals DMCC vault in Dubai
+  ↓
+Sarah receives a Digital Ownership Certificate
+  ↓
+She chooses "Allocated Storage" - gets bar serial number: WG-2024-00123
+  ↓
+5 years later, Sarah requests physical delivery
+  ↓
+Gold bar is shipped to her home via insured courier
+```
+
+**Database Tables Involved:** `vault_holdings`, `gold_bars`, `vault_deposits`, `vault_withdrawals`, `physical_delivery_requests`
+
+---
+
+#### 3. BNSL - Buy Now Sell Later (Investment)
+
+**Simple Explanation:** Lock your gold for 1-3 years and earn guaranteed returns, like a fixed deposit but with gold.
+
+**How it works:**
+1. User locks gold in their wallet for a fixed term
+2. Returns are guaranteed:
+   - 12 months = 10% per year
+   - 24 months = 11% per year
+   - 36 months = 12% per year
+3. Profits paid quarterly (every 3 months)
+4. At maturity, original gold + all profits returned
+
+**Practical Example:**
+```
+Mohammed has 10 grams of gold in his wallet
+  ↓
+He enrolls in a 12-month BNSL plan
+  ↓
+Gold is locked (cannot be sold or transferred)
+  ↓
+Every 3 months, he receives profit:
+  - Month 3: +0.25 grams
+  - Month 6: +0.25 grams
+  - Month 9: +0.25 grams
+  - Month 12: +0.25 grams (final payment)
+  ↓
+Total received: 10 + 1 = 11 grams (10% return)
+```
+
+**Early Exit Example:**
+```
+Mohammed needs money after 6 months
+  ↓
+He requests early termination
+  ↓
+Penalty: 5% of remaining value
+  ↓
+He receives: ~9.75 grams (original minus penalty)
+```
+
+**Database Tables Involved:** `bnsl_plans`, `bnsl_wallets`, `bnsl_payouts`, `bnsl_early_termination_requests`, `bnsl_agreements`
+
+---
+
+#### 4. FinaBridge - Business Trade Finance
+
+**Simple Explanation:** For businesses doing international trade. Gold is used as collateral to protect both buyer and seller.
+
+**How it works:**
+1. Importer (buyer) wants to purchase goods from another country
+2. Exporter (seller) is worried about not getting paid
+3. Importer locks gold as collateral on Finatrades
+4. Exporter ships the goods
+5. When buyer confirms delivery, gold is released to seller
+6. Both parties protected - no one gets cheated
+
+**Practical Example:**
+```
+Company A (Dubai) wants to buy machinery from Company B (Germany)
+Trade value: $50,000
+  ↓
+Step 1: Company A locks $50,000 worth of gold (500 grams at $100/gram)
+  ↓
+Step 2: Company B ships machinery to Dubai
+  ↓
+Step 3: Shipment tracked: Picked Up → In Transit → Customs → Delivered
+  ↓
+Step 4: Company A inspects and confirms delivery
+  ↓
+Step 5: Finatrades releases 500 grams to Company B
+  ↓
+Trade completed successfully!
+```
+
+**Dispute Example:**
+```
+Company A receives damaged goods
+  ↓
+Company A raises a dispute on Finatrades
+  ↓
+Gold remains locked in escrow
+  ↓
+Both parties submit evidence
+  ↓
+Finatrades mediates and decides:
+  - Option A: Full refund to buyer (gold returned)
+  - Option B: Partial payment to seller
+  - Option C: Arbitration
+```
+
+**Database Tables Involved:** `trade_cases`, `trade_documents`, `trade_requests`, `exporter_proposals`, `finabridge_wallets`, `settlement_holds`, `disputes`
+
+---
+
+### Money Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        USER'S BANK                              │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼ (Deposit via Bank/Card/Crypto)
+┌─────────────────────────────────────────────────────────────────┐
+│                      FINAPAY WALLET                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │ USD Balance │    │ EUR Balance │    │ Gold (grams)│         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+└─────────────────────────────────────────────────────────────────┘
+          │                    │                    │
+          │                    │                    │
+          ▼                    ▼                    ▼
+    ┌───────────┐      ┌─────────────┐      ┌─────────────┐
+    │  CONVERT  │      │    SEND     │      │   INVEST    │
+    │  Buy/Sell │      │  P2P Gold   │      │   in BNSL   │
+    └───────────┘      └─────────────┘      └─────────────┘
+                              │                    │
+                              ▼                    ▼
+                    ┌─────────────────┐    ┌─────────────────┐
+                    │ Other User's    │    │   BNSL WALLET   │
+                    │ FinaPay Wallet  │    │ (Locked Gold)   │
+                    └─────────────────┘    └─────────────────┘
+                                                   │
+                                                   ▼
+                                           ┌─────────────────┐
+                                           │ Quarterly       │
+                                           │ Profit Payouts  │
+                                           └─────────────────┘
+```
+
+---
+
+### Platform Comparison with Traditional Banking
+
+| Feature | Traditional Bank | Finatrades |
+|---------|------------------|------------|
+| Account | Bank account | FinaPay wallet |
+| Currency | Cash (USD, EUR) | Gold (grams) |
+| Storage | Safe deposit box | FinaVault (Dubai) |
+| Investment | Fixed deposit (3-5% interest) | BNSL (10-12% returns) |
+| Transfer | Wire transfer | P2P gold transfer |
+| Business loans | Trade finance with cash | FinaBridge with gold collateral |
+
+---
+
+### Security Layers
+
+| Layer | What It Protects | How It Works |
+|-------|------------------|--------------|
+| **Password** | Account access | Minimum 8 characters, special chars required |
+| **2FA (Two-Factor)** | Login security | Code from authenticator app |
+| **Transaction PIN** | All transactions | 4-6 digit PIN for buy/sell/transfer |
+| **KYC Verification** | Identity fraud | Upload ID, selfie, liveness check |
+| **Session Timeout** | Unattended access | Auto logout after 30 minutes |
+| **Email Alerts** | Account monitoring | Notifications for all activities |
+
+---
+
+### Gold Price Example
+
+Gold prices change constantly based on global markets.
+
+**Real-time Price Display:**
+```
+Gold Price: $143.92 per gram
+Gold Price: $4,476.70 per ounce (31.1 grams)
+Gold Price: AED 528.59 per gram (at 3.67 exchange rate)
+```
+
+**Transaction Calculation Example:**
+```
+User wants to buy $1,000 worth of gold
+Current price: $143.92 per gram
+
+Calculation:
+  Gold amount = $1,000 ÷ $143.92 = 6.948276 grams
+  
+User's wallet updated:
+  Before: 0.000000 grams
+  After:  6.948276 grams
+```
+
+---
+
+### Fee Structure Overview
+
+| Transaction Type | Fee | Example |
+|------------------|-----|---------|
+| Buy Gold | 0.5% | Buy $1,000 → Fee: $5 |
+| Sell Gold | 0.5% | Sell $1,000 → Fee: $5 |
+| P2P Transfer | 0.25% | Send $500 → Fee: $1.25 |
+| Bank Withdrawal | 1% + $25 | Withdraw $1,000 → Fee: $35 |
+| Card Deposit | 2.5% | Deposit $500 → Fee: $12.50 |
+| Crypto Deposit | Network fee | Varies by blockchain |
+| Vault Storage | 0.1%/year | 100g stored → 0.1g/year |
 
 ---
 
