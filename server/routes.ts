@@ -15369,7 +15369,7 @@ ${message}
       }
       
       // Get current gold price to convert USD to gold grams
-      const { pricePerGram } = await getGoldPricePerGram();
+      const pricePerGram = await getGoldPricePerGram();
       const amountUsd = parseFloat(request.amountUsd.toString());
       const goldGrams = amountUsd / pricePerGram;
       const payerGoldBalance = parseFloat(payerWallet.goldGrams.toString());
