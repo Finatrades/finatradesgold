@@ -1379,6 +1379,28 @@ ${message}
     }
   });
   
+  // Get basic user info (for display in payment requests/transfers)
+  // Any authenticated user can fetch public info about other users
+  app.get("/api/users/:userId", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      // Return only public display information
+      res.json({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        finaCode: user.finaCode
+      });
+    } catch (error) {
+      console.error('[Get User Error]', error);
+      res.status(400).json({ message: "Failed to get user" });
+    }
+  });
+  
   // Update user profile - PROTECTED: requires matching session
   app.patch("/api/users/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
