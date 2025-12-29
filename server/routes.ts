@@ -1284,6 +1284,7 @@ ${message}
       
       res.json({ user: sanitizeUser(updatedUser || user), adminPortal: false });
     } catch (error) {
+      console.error('[Login Error]', error);
       res.status(400).json({ message: "Login failed" });
     }
   });
