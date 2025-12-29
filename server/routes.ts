@@ -1062,7 +1062,7 @@ ${message}
   });
   
   // In-memory MFA challenge store (in production, use Redis or database with TTL)
-  const mfaChallenges = new Map<string, { userId: string; expiresAt: Date; attempts: number; adminPortal?: boolean }>();
+  const mfaChallenges = new Map<string, { userId: string; expiresAt: Date; attempts: number; adminPortal?: boolean; setupRequired?: boolean }>();
   
   // SECURITY: Cryptographically secure token generation
   function generateSecureToken(length: number = 32): string {
@@ -1249,6 +1249,28 @@ ${message}
         });
       }
       
+      // SECURITY: Enforce 2FA when platform setting is enabled
+      const systemSettings = await getSystemSettings();
+      if (systemSettings.require2fa && !user.mfaEnabled) {
+        // Generate a setup token so user can set up 2FA without full session
+        const setupToken = generateSecureToken(32);
+        
+        // Store setup token with 15 minute expiry for 2FA setup
+        mfaChallenges.set(setupToken, {
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+          attempts: 0,
+          adminPortal: false,
+          setupRequired: true
+        });
+        
+        return res.json({
+          requires2faSetup: true,
+          setupToken,
+          message: "Two-factor authentication is required. Please set up 2FA to continue."
+        });
+      }
+      
       // Set session for authenticated user (SECURITY-CRITICAL)
       // Regular login does NOT grant admin portal access
       req.session.userId = user.id;
@@ -1330,6 +1352,27 @@ ${message}
           challengeToken,
           mfaMethod: user.mfaMethod,
           message: "MFA verification required" 
+        });
+      }
+      
+      // SECURITY: Enforce 2FA for admins when platform setting is enabled
+      const adminSystemSettings = await getSystemSettings();
+      if (adminSystemSettings.require2fa && !user.mfaEnabled) {
+        // Generate a setup token so admin can set up 2FA
+        const setupToken = generateSecureToken(32);
+        
+        mfaChallenges.set(setupToken, {
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+          attempts: 0,
+          adminPortal: true,
+          setupRequired: true
+        });
+        
+        return res.json({
+          requires2faSetup: true,
+          setupToken,
+          message: "Two-factor authentication is required for admin accounts. Please set up 2FA to continue."
         });
       }
       
