@@ -14985,33 +14985,17 @@ ${message}
             data: { goldGrams: goldAmount, senderId: sender.id, transferId: pendingTransfer.id },
           });
           
-          // Send email notification to recipient
+          // Send pending transfer email to recipient using proper template
           if (recipient.email) {
-            sendEmailDirect(
-              recipient.email,
-              `${sender.firstName} ${sender.lastName} sent you ${goldAmount.toFixed(4)}g gold - Action Required`,
-              `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #8A2BE2, #4B0082); padding: 30px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">Incoming Transfer</h1>
-                </div>
-                <div style="padding: 30px; background: #ffffff;">
-                  <p>Hello ${recipient.firstName},</p>
-                  <p>${sender.firstName} ${sender.lastName} has sent you gold. Please accept or reject this transfer.</p>
-                  <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                    <p style="font-size: 28px; font-weight: bold; color: #8A2BE2; margin: 0;">+${goldAmount.toFixed(4)}g Gold</p>
-                    <p style="color: #6b7280; margin: 5px 0;">from ${sender.firstName} ${sender.lastName}</p>
-                    <p style="color: #6b7280; font-size: 14px;">≈ $${(goldAmount * goldPrice).toFixed(2)}</p>
-                    ${memo ? `<p style="color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
-                  </div>
-                  ${expiresAt ? `<p style="color: #dc2626;">This transfer will expire on ${expiresAt.toLocaleDateString()}. Please respond before then.</p>` : ''}
-                  <p style="text-align: center; margin-top: 30px;">
-                    <a href="https://finatrades.com/finapay" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Accept or Reject</a>
-                  </p>
-                </div>
-              </div>
-              `
-            ).catch(err => console.error('[Email] Failed to send pending transfer notification:', err));
+            sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_PENDING, {
+              user_name: `${recipient.firstName} ${recipient.lastName}`,
+              sender_name: `${sender.firstName} ${sender.lastName}`,
+              amount: `${goldAmount.toFixed(4)}g gold`,
+              amount_usd: (goldAmount * goldPrice).toFixed(2),
+              reference_number: referenceNumber,
+              memo: memo || '',
+              expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
+            }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
           }
           
           return res.json({
@@ -15073,32 +15057,17 @@ ${message}
             data: { amountUsd: usdAmount, senderId: sender.id, transferId: pendingTransfer.id },
           });
           
-          // Send email notification to recipient
+          // Send pending USD transfer email to recipient using proper template
           if (recipient.email) {
-            sendEmailDirect(
-              recipient.email,
-              `${sender.firstName} ${sender.lastName} sent you $${usdAmount.toFixed(2)} - Action Required`,
-              `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #8A2BE2, #4B0082); padding: 30px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">Incoming Transfer</h1>
-                </div>
-                <div style="padding: 30px; background: #ffffff;">
-                  <p>Hello ${recipient.firstName},</p>
-                  <p>${sender.firstName} ${sender.lastName} has sent you money. Please accept or reject this transfer.</p>
-                  <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                    <p style="font-size: 28px; font-weight: bold; color: #8A2BE2; margin: 0;">+$${usdAmount.toFixed(2)}</p>
-                    <p style="color: #6b7280; margin: 5px 0;">from ${sender.firstName} ${sender.lastName}</p>
-                    ${memo ? `<p style="color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
-                  </div>
-                  ${expiresAt ? `<p style="color: #dc2626;">This transfer will expire on ${expiresAt.toLocaleDateString()}. Please respond before then.</p>` : ''}
-                  <p style="text-align: center; margin-top: 30px;">
-                    <a href="https://finatrades.com/finapay" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Accept or Reject</a>
-                  </p>
-                </div>
-              </div>
-              `
-            ).catch(err => console.error('[Email] Failed to send pending transfer notification:', err));
+            sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_PENDING, {
+              user_name: `${recipient.firstName} ${recipient.lastName}`,
+              sender_name: `${sender.firstName} ${sender.lastName}`,
+              amount: `$${usdAmount.toFixed(2)}`,
+              amount_usd: usdAmount.toFixed(2),
+              reference_number: referenceNumber,
+              memo: memo || '',
+              expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
+            }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
           }
           
           return res.json({
@@ -15360,36 +15329,29 @@ ${message}
           data: { goldGrams: goldAmount, senderId: sender.id },
         });
 
-        // Send email notification to recipient for gold transfer
+        // Send email notifications for gold transfer using proper templates
+        // Sender email
+        if (sender.email) {
+          sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
+            user_name: `${sender.firstName} ${sender.lastName}`,
+            recipient_name: `${recipient.firstName} ${recipient.lastName}`,
+            amount: `${goldAmount.toFixed(4)}g gold`,
+            amount_usd: (goldAmount * goldPrice).toFixed(2),
+            reference_number: referenceNumber,
+            memo: memo || '',
+          }).catch(err => console.error('[Email] Transfer sent notification failed:', err));
+        }
+        
+        // Recipient email
         if (recipient.email) {
-          sendEmailDirect(
-            recipient.email,
-            `You received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
-            `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0;">Gold Received!</h1>
-              </div>
-              <div style="padding: 30px; background: #ffffff;">
-                <p>Hello ${recipient.firstName},</p>
-                <p>Great news! You've received a gold transfer via FinaPay.</p>
-                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                  <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+${goldAmount.toFixed(4)}g Gold</p>
-                  <p style="color: #6b7280; margin: 5px 0;">from ${sender.firstName} ${sender.lastName}</p>
-                  <p style="color: #6b7280; font-size: 14px;">≈ $${(goldAmount * goldPrice).toFixed(2)}</p>
-                  ${memo ? `<p style="color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
-                </div>
-                <p>The gold has been added to your vault holdings and is securely stored.</p>
-                <p style="text-align: center; margin-top: 30px;">
-                  <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Holdings</a>
-                </p>
-              </div>
-              <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-                <p>Finatrades - Gold-Backed Digital Finance</p>
-              </div>
-            </div>
-            `
-          ).catch(err => console.error('[Email] Failed to send gold transfer notification:', err));
+          sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_RECEIVED, {
+            user_name: `${recipient.firstName} ${recipient.lastName}`,
+            sender_name: `${sender.firstName} ${sender.lastName}`,
+            amount: `${goldAmount.toFixed(4)}g gold`,
+            amount_usd: (goldAmount * goldPrice).toFixed(2),
+            reference_number: referenceNumber,
+            memo: memo || '',
+          }).catch(err => console.error('[Email] Transfer received notification failed:', err));
         }
         
         // Create bell notifications for sender and recipient
@@ -15490,35 +15452,29 @@ ${message}
           data: { amountUsd: amount, senderId: sender.id },
         });
 
-        // Send email notification to recipient for USD transfer
+        // Send email notifications for USD transfer using proper templates
+        // Sender email
+        if (sender.email) {
+          sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
+            user_name: `${sender.firstName} ${sender.lastName}`,
+            recipient_name: `${recipient.firstName} ${recipient.lastName}`,
+            amount: `$${amount.toFixed(2)}`,
+            amount_usd: amount.toFixed(2),
+            reference_number: referenceNumber,
+            memo: memo || '',
+          }).catch(err => console.error('[Email] Transfer sent notification failed:', err));
+        }
+        
+        // Recipient email
         if (recipient.email) {
-          sendEmailDirect(
-            recipient.email,
-            `You received $${amount.toFixed(2)} from ${sender.firstName} ${sender.lastName}`,
-            `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0;">Money Received!</h1>
-              </div>
-              <div style="padding: 30px; background: #ffffff;">
-                <p>Hello ${recipient.firstName},</p>
-                <p>Great news! You've received a transfer via FinaPay.</p>
-                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                  <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${amount.toFixed(2)}</p>
-                  <p style="color: #6b7280; margin: 5px 0;">from ${sender.firstName} ${sender.lastName}</p>
-                  ${memo ? `<p style="color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
-                </div>
-                <p>The funds have been added to your FinaPay wallet and are ready to use.</p>
-                <p style="text-align: center; margin-top: 30px;">
-                  <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
-                </p>
-              </div>
-              <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-                <p>Finatrades - Gold-Backed Digital Finance</p>
-              </div>
-            </div>
-            `
-          ).catch(err => console.error('[Email] Failed to send transfer notification:', err));
+          sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_RECEIVED, {
+            user_name: `${recipient.firstName} ${recipient.lastName}`,
+            sender_name: `${sender.firstName} ${sender.lastName}`,
+            amount: `$${amount.toFixed(2)}`,
+            amount_usd: amount.toFixed(2),
+            reference_number: referenceNumber,
+            memo: memo || '',
+          }).catch(err => console.error('[Email] Transfer received notification failed:', err));
         }
         
         // Create bell notifications for USD transfer
