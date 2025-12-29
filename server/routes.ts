@@ -21823,6 +21823,90 @@ ${message}
     }
   });
 
+  // Admin: Repair corrupted wallet balance by recalculating from transactions
+  app.post("/api/admin/users/:userId/repair-wallet", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { newGoldGrams } = req.body;
+      
+      // Get user's wallet
+      const wallet = await storage.getWalletByUserId(userId);
+      if (!wallet) {
+        return res.status(404).json({ message: "Wallet not found for user" });
+      }
+      
+      // Get current value (for logging)
+      const currentValue = wallet.goldGrams;
+      const isCorrupted = currentValue === null || currentValue === undefined || 
+                          (typeof currentValue === 'string' && currentValue === 'NaN') ||
+                          (typeof currentValue === 'number' && isNaN(currentValue));
+      
+      // If newGoldGrams is provided, use it; otherwise calculate from transactions
+      let calculatedBalance = 0;
+      
+      if (newGoldGrams !== undefined && newGoldGrams !== null) {
+        calculatedBalance = parseFloat(newGoldGrams);
+      } else {
+        // Recalculate from completed transactions
+        const transactions = await storage.getTransactionsByUser(userId);
+        
+        for (const tx of transactions) {
+          if (tx.status !== 'Completed') continue;
+          
+          const goldAmount = parseFloat(tx.amountGold || '0');
+          if (isNaN(goldAmount)) continue;
+          
+          switch (tx.type) {
+            case 'Buy':
+            case 'Receive':
+            case 'Deposit':
+              calculatedBalance += goldAmount;
+              break;
+            case 'Sell':
+            case 'Send':
+            case 'Withdrawal':
+              calculatedBalance -= goldAmount;
+              break;
+          }
+        }
+      }
+      
+      // Ensure non-negative
+      calculatedBalance = Math.max(0, calculatedBalance);
+      
+      // Update the wallet
+      await storage.updateWallet(wallet.id, { goldGrams: calculatedBalance.toFixed(6) });
+      
+      // Log the repair action
+      await storage.createAuditLog({
+        actor: (req.session as any)?.user?.id || 'system',
+        action: 'wallet_repair',
+        entityType: 'wallet',
+        entityId: wallet.id,
+        details: {
+          userId,
+          previousValue: currentValue,
+          newValue: calculatedBalance.toFixed(6),
+          wasCorrupted: isCorrupted,
+          method: newGoldGrams !== undefined ? 'manual' : 'calculated'
+        }
+      });
+      
+      console.log(`[Wallet Repair] User ${userId}: ${currentValue} -> ${calculatedBalance.toFixed(6)}g`);
+      
+      res.json({ 
+        success: true, 
+        message: "Wallet repaired successfully",
+        previousValue: currentValue,
+        newValue: calculatedBalance.toFixed(6),
+        wasCorrupted: isCorrupted
+      });
+    } catch (error) {
+      console.error('[Wallet Repair Error]', error);
+      res.status(500).json({ message: "Failed to repair wallet" });
+    }
+  });
+
   // Mark notification as read - with ownership verification
   app.post("/api/notifications/:notificationId/read", async (req, res) => {
     try {
