@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
 import { db, pool } from "./db";
 import crypto from "crypto";
-import { authRateLimiter, otpRateLimiter, passwordResetRateLimiter, withdrawalRateLimiter, apiRateLimiter } from "./index";
+import { authRateLimiter, otpRateLimiter, passwordResetRateLimiter, withdrawalRateLimiter, apiRateLimiter, getSystemSettings } from "./index";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
