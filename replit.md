@@ -124,6 +124,17 @@ The platform uses a client-server architecture with a React frontend and an Expr
 **Payment Integrations:**
 - **Binance Pay**: Integrated for crypto payments via API and webhooks. Requires `BINANCE_PAY_API_KEY`, `BINANCE_PAY_SECRET_KEY`, and `BINANCE_PAY_MERCHANT_ID`.
 
+**Gold Price API (Metals-API.com):**
+- **Plan**: Copper Pack ($199/year) - 2,500 calls/month, 60 req/min, 10-minute updates
+- **Smart Caching Strategy** (`server/gold-price-service.ts`):
+  - Default cache: 10 minutes (matches API update frequency)
+  - Off-peak hours (10PM-3AM UTC): Cache extended to 15 minutes
+  - Usage-based throttling: Extends cache when usage exceeds month progress
+  - ETag support: Reduces bandwidth for unchanged prices
+  - Fallback chain: metals-api.com → gold-api.com (free) → last known price → default
+- **API Usage Tracking**: Monitors monthly call count with warnings at 80% usage
+- **Environment Variable**: `METALS_API_KEY` (secret)
+
 **Mobile App (Capacitor):**
 - Configured for iOS and Android builds.
 - **Installed Plugins**: `@capacitor/camera`, `@capacitor/push-notifications`, `@capacitor/haptics`, `@capacitor/status-bar`, `@capacitor/splash-screen`, `@capacitor/filesystem`, `@capacitor/preferences`.
