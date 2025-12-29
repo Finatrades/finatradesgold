@@ -25,11 +25,17 @@ interface UserPreferences {
   displayCurrency: string;
 }
 
-function formatNumber(num: number, decimals = 2): string {
+function formatNumber(num: number | null | undefined, decimals = 2): string {
+  if (num === null || num === undefined || isNaN(num)) {
+    return '0.00';
+  }
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-function formatGrams(grams: number): string {
+function formatGrams(grams: number | null | undefined): string {
+  if (grams === null || grams === undefined || isNaN(grams)) {
+    return '0.0000 g';
+  }
   if (grams >= 1000) {
     return `${formatNumber(grams / 1000, 4)} kg`;
   }
