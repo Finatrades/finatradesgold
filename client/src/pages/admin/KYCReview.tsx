@@ -888,6 +888,29 @@ export default function KYCReview() {
                       <span className="font-medium">{selectedApplication?.occupation || 'Not provided'}</span>
                       <span className="text-gray-500">Source of Funds:</span>
                       <span className="font-medium">{selectedApplication?.sourceOfFunds || 'Not provided'}</span>
+                      {selectedApplication?.passportExpiryDate && (
+                        <>
+                          <span className="text-gray-500">Passport Expiry:</span>
+                          <span className="font-medium">{selectedApplication.passportExpiryDate}</span>
+                        </>
+                      )}
+                    </>
+                  )}
+                  
+                  {selectedApplication?.kycType === 'finatrades_corporate' && (
+                    <>
+                      {selectedApplication?.tradeLicenseExpiryDate && (
+                        <>
+                          <span className="text-gray-500">Trade License Expiry:</span>
+                          <span className="font-medium">{selectedApplication.tradeLicenseExpiryDate}</span>
+                        </>
+                      )}
+                      {selectedApplication?.directorPassportExpiryDate && (
+                        <>
+                          <span className="text-gray-500">Director Passport Expiry:</span>
+                          <span className="font-medium">{selectedApplication.directorPassportExpiryDate}</span>
+                        </>
+                      )}
                     </>
                   )}
                   
