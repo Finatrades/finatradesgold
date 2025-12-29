@@ -21830,7 +21830,7 @@ ${message}
       const { newGoldGrams } = req.body;
       
       // Get user's wallet
-      const wallet = await storage.getWalletByUserId(userId);
+      const wallet = await storage.getWallet(userId);
       if (!wallet) {
         return res.status(404).json({ message: "Wallet not found for user" });
       }
@@ -21848,7 +21848,7 @@ ${message}
         calculatedBalance = parseFloat(newGoldGrams);
       } else {
         // Recalculate from completed transactions
-        const transactions = await storage.getTransactionsByUser(userId);
+        const transactions = await storage.getUserTransactions(userId);
         
         for (const tx of transactions) {
           if (tx.status !== 'Completed') continue;

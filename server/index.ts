@@ -361,6 +361,50 @@ app.use((req, res, next) => {
     console.warn('[Enterprise] Job queue initialization skipped:', error);
   }
   
+  // ONE-TIME FIX: Repair corrupted wallet for user 8e293290-ac1b-4a0b-9b0a-d977e03a3df6
+  try {
+    const corruptedUserId = '8e293290-ac1b-4a0b-9b0a-d977e03a3df6';
+    const wallet = await storage.getWallet(corruptedUserId);
+    if (wallet) {
+      const currentValue = wallet.goldGrams;
+      const isCorrupted = currentValue === null || currentValue === undefined || 
+                          (typeof currentValue === 'string' && (currentValue === 'NaN' || currentValue === 'null')) ||
+                          (typeof currentValue === 'number' && isNaN(currentValue)) ||
+                          parseFloat(String(currentValue)) === 0 || isNaN(parseFloat(String(currentValue)));
+      
+      if (isCorrupted) {
+        // Recalculate from transactions
+        const transactions = await storage.getUserTransactions(corruptedUserId);
+        let calculatedBalance = 0;
+        
+        for (const tx of transactions) {
+          if (tx.status !== 'Completed') continue;
+          const goldAmount = parseFloat(tx.amountGold || '0');
+          if (isNaN(goldAmount)) continue;
+          
+          switch (tx.type) {
+            case 'Buy':
+            case 'Receive':
+            case 'Deposit':
+              calculatedBalance += goldAmount;
+              break;
+            case 'Sell':
+            case 'Send':
+            case 'Withdrawal':
+              calculatedBalance -= goldAmount;
+              break;
+          }
+        }
+        
+        calculatedBalance = Math.max(0, calculatedBalance);
+        await storage.updateWallet(wallet.id, { goldGrams: calculatedBalance.toFixed(6) });
+        console.log(`[Wallet Repair] Fixed corrupted wallet: ${currentValue} -> ${calculatedBalance.toFixed(6)}g`);
+      }
+    }
+  } catch (error) {
+    console.warn('[Wallet Repair] One-time fix failed:', error);
+  }
+  
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   
