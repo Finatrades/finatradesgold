@@ -316,15 +316,15 @@ export default function BnslWalletCard({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Hedging Explanation */}
+          {/* Price Lock Explanation */}
           <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-3 text-sm">
             <div className="flex items-start gap-2">
               <Lock className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-purple-700 dark:text-purple-300 mb-1">Establishing a Hedge</p>
+                <p className="font-medium text-purple-700 dark:text-purple-300 mb-1">Locking in Today's Price</p>
                 <p className="text-purple-600 dark:text-purple-400 text-xs leading-relaxed">
-                  By transferring gold to BNSL, you lock in today's USD value as your reference price. 
-                  This hedges against price drops but means you won't benefit from price increases while the gold remains in BNSL.
+                  When you move gold into BNSL, you secure today's USD price. This protects you from price drops, 
+                  but you won't gain if prices rise while the gold is in BNSL.
                 </p>
               </div>
             </div>
@@ -441,15 +441,15 @@ export default function BnslWalletCard({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Hedging Explanation */}
+          {/* Price Lock Explanation */}
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm">
             <div className="flex items-start gap-2">
               <TrendingUp className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-amber-700 dark:text-amber-300 mb-1">Unwinding Your Hedge</p>
+                <p className="font-medium text-amber-700 dark:text-amber-300 mb-1">Unlocking Your Gold</p>
                 <p className="text-amber-600 dark:text-amber-400 text-xs leading-relaxed">
-                  Withdrawing gold returns it to FinaPay at today's market price. This unwinds your hedge — 
-                  you'll receive current market value, which may be higher or lower than your original locked price.
+                  Withdrawing gold returns it to FinaPay at today's market price. 
+                  You'll receive current market value, which may be higher or lower than your original locked price.
                 </p>
               </div>
             </div>
