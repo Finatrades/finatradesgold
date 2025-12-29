@@ -499,7 +499,7 @@ async function validatePinToken(token: string | undefined, action: string): Prom
 function requirePinVerification(action: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const pinToken = req.headers['x-pin-token'] as string | undefined;
-    const userId = req.body.userId || req.params.userId;
+    const userId = req.body.userId || req.body.senderId || req.params.userId;
     
     if (!userId) {
       return res.status(400).json({ message: 'User ID required' });
