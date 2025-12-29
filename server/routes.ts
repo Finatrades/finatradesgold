@@ -14819,18 +14819,21 @@ ${message}
     }
   });
 
-  // Send money to another user (USD or Gold) - PROTECTED: requires authentication + sender verification + PIN
+  // Send gold to another user - PROTECTED: requires authentication + sender verification + PIN
+  // NOTE: Platform is gold-only. All transfers are in gold grams, USD is display-only.
   app.post("/api/finapay/send", ensureAuthenticated, requirePinVerification('send_funds'), async (req, res) => {
     try {
-      const { senderId, recipientIdentifier, amountUsd, amountGold, assetType, channel, memo } = req.body;
+      const { senderId, recipientIdentifier, amountGold, channel, memo } = req.body;
       
       // SECURITY: Verify sender matches authenticated session
       if (req.session?.userId !== senderId) {
         return res.status(403).json({ message: "Not authorized to send from this account" });
       }
       
-      // Determine asset type (default to USD for backward compatibility)
-      const isGoldTransfer = assetType === 'GOLD' || (amountGold && !amountUsd);
+      // Validate gold amount is provided (platform is gold-only)
+      if (!amountGold || parseFloat(amountGold) <= 0) {
+        return res.status(400).json({ message: "Gold amount is required for transfers" });
+      }
       
       // Get live gold price from API
       let goldPrice: number;
@@ -14847,22 +14850,20 @@ ${message}
       }
       
       // SECURITY: Check if gold is BNSL-locked before allowing transfer
-      if (isGoldTransfer) {
-        const bnslPlans = await storage.getUserBnslPlans(senderId);
-        const activePlans = bnslPlans.filter((p: any) => p.status === 'Active' || p.status === 'Pending');
-        const totalLockedGrams = activePlans.reduce((sum: number, p: any) => sum + parseFloat(p.goldGrams || '0'), 0);
-        
-        const senderWalletCheck = await storage.getWallet(senderId);
-        const availableGold = parseFloat(senderWalletCheck?.goldGrams?.toString() || '0');
-        const requestedGold = parseFloat(amountGold);
-        
-        if (availableGold - totalLockedGrams < requestedGold) {
-          return res.status(400).json({ 
-            message: `Insufficient available gold. ${totalLockedGrams.toFixed(4)}g is locked in BNSL plans.`,
-            lockedGrams: totalLockedGrams.toFixed(4),
-            availableGrams: (availableGold - totalLockedGrams).toFixed(4)
-          });
-        }
+      const bnslPlans = await storage.getUserBnslPlans(senderId);
+      const activePlans = bnslPlans.filter((p: any) => p.status === 'Active' || p.status === 'Pending');
+      const totalLockedGrams = activePlans.reduce((sum: number, p: any) => sum + parseFloat(p.goldGrams || '0'), 0);
+      
+      const senderWalletCheck = await storage.getWallet(senderId);
+      const availableGold = parseFloat(senderWalletCheck?.goldGrams?.toString() || '0');
+      const requestedGold = parseFloat(amountGold);
+      
+      if (availableGold - totalLockedGrams < requestedGold) {
+        return res.status(400).json({ 
+          message: `Insufficient available gold. ${totalLockedGrams.toFixed(4)}g is locked in BNSL plans.`,
+          lockedGrams: totalLockedGrams.toFixed(4),
+          availableGrams: (availableGold - totalLockedGrams).toFixed(4)
+        });
       }
       
       // Find recipient by email or Finatrades ID
@@ -14899,606 +14900,114 @@ ${message}
       
       // Transfer approval is always required for security
       const recipientPreferences = await storage.getUserPreferences(recipient.id);
-      const requiresApproval = true; // Always require approval for all transfers
+      const timeoutHours = recipientPreferences?.transferApprovalTimeout || 24;
+      const expiresAt = timeoutHours > 0 ? new Date(Date.now() + timeoutHours * 60 * 60 * 1000) : null;
       
-      if (requiresApproval) {
-        // Create pending transfer instead of immediate transfer
-        const timeoutHours = recipientPreferences?.transferApprovalTimeout || 24;
-        const expiresAt = timeoutHours > 0 ? new Date(Date.now() + timeoutHours * 60 * 60 * 1000) : null;
-        
-        const isGoldPendingTransfer = assetType === 'GOLD' || (amountGold && !amountUsd);
-        const goldAmount = isGoldPendingTransfer ? parseFloat(amountGold) : 0;
-        const usdAmount = !isGoldPendingTransfer ? parseFloat(amountUsd) : goldAmount * goldPrice;
-        
-        // Validate balance before creating pending transfer
-        if (isGoldPendingTransfer) {
-          const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
-          if (senderGoldBalance < goldAmount) {
-            return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
-          }
-          
-          // Debit sender immediately (held until accepted/rejected)
-          await storage.updateWallet(senderWallet.id, {
-            goldGrams: (senderGoldBalance - goldAmount).toFixed(6)
-          });
-          
-          // Create sender transaction (pending)
-          const senderTx = await storage.createTransaction({
-            userId: sender.id,
-            type: 'Send',
-            status: 'Pending',
-            amountGold: goldAmount.toFixed(6),
-            amountUsd: (goldAmount * goldPrice).toFixed(2),
-            goldPriceUsdPerGram: goldPrice.toFixed(2),
-            recipientEmail: recipient.email,
-            recipientUserId: recipient.id,
-            description: memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`,
-            referenceId: referenceNumber,
-            sourceModule: 'finapay',
-          });
-          
-          // Record ledger entry
-          const { vaultLedgerService } = await import('./vault-ledger-service');
-          await vaultLedgerService.recordLedgerEntry({
-            userId: sender.id,
-            action: 'Transfer_Send',
-            goldGrams: goldAmount,
-            goldPriceUsdPerGram: goldPrice,
-            fromWallet: 'FinaPay',
-            toWallet: 'Escrow',
-            fromStatus: 'Available',
-            toStatus: 'Pending',
-            transactionId: senderTx.id,
-            counterpartyUserId: recipient.id,
-            notes: `Pending gold transfer to ${recipient.firstName} ${recipient.lastName} (awaiting acceptance)`,
-            createdBy: 'system',
-          });
-          
-          // Create pending peer transfer
-          const pendingTransfer = await storage.createPeerTransfer({
-            referenceNumber,
-            senderId: sender.id,
-            recipientId: recipient.id,
-            amountUsd: (goldAmount * goldPrice).toFixed(2),
-            amountGold: goldAmount.toFixed(6),
-            goldPriceUsdPerGram: goldPrice.toFixed(2),
-            channel,
-            recipientIdentifier,
-            memo,
-            status: 'Pending',
-            requiresApproval: true,
-            expiresAt,
-            senderTransactionId: senderTx.id,
-          });
-          
-          // Emit real-time sync event
-          emitLedgerEvent(sender.id, {
-            type: 'balance_update',
-            module: 'finapay',
-            action: 'gold_pending',
-            data: { goldGrams: goldAmount, recipientId: recipient.id },
-          });
-          emitLedgerEvent(recipient.id, {
-            type: 'pending_transfer',
-            module: 'finapay',
-            action: 'incoming_transfer',
-            data: { goldGrams: goldAmount, senderId: sender.id, transferId: pendingTransfer.id },
-          });
-          
-          // Send pending transfer email to recipient using proper template
-          if (recipient.email) {
-            sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_PENDING, {
-              user_name: `${recipient.firstName} ${recipient.lastName}`,
-              sender_name: `${sender.firstName} ${sender.lastName}`,
-              amount: `${goldAmount.toFixed(4)}g gold`,
-              amount_usd: (goldAmount * goldPrice).toFixed(2),
-              reference_number: referenceNumber,
-              memo: memo || '',
-              expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
-            }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
-          }
-          
-          return res.json({
-            transfer: pendingTransfer,
-            pending: true,
-            message: `Transfer of ${goldAmount.toFixed(4)}g gold sent to ${recipient.firstName} ${recipient.lastName}. Awaiting their approval.`
-          });
-        } else {
-          // USD pending transfer
-          const senderBalance = parseFloat(senderWallet.usdBalance?.toString() || '0');
-          if (senderBalance < usdAmount) {
-            return res.status(400).json({ message: "Insufficient USD balance" });
-          }
-          
-          // Debit sender immediately
-          await storage.updateWallet(senderWallet.id, {
-            usdBalance: (senderBalance - usdAmount).toFixed(2)
-          });
-          
-          // Create sender transaction (pending)
-          const senderTx = await storage.createTransaction({
-            userId: sender.id,
-            type: 'Send',
-            status: 'Pending',
-            amountUsd: usdAmount.toFixed(2),
-            recipientEmail: recipient.email,
-            recipientUserId: recipient.id,
-            description: memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`,
-            referenceId: referenceNumber,
-            sourceModule: 'finapay',
-          });
-          
-          // Create pending peer transfer
-          const pendingTransfer = await storage.createPeerTransfer({
-            referenceNumber,
-            senderId: sender.id,
-            recipientId: recipient.id,
-            amountUsd: usdAmount.toFixed(2),
-            channel,
-            recipientIdentifier,
-            memo,
-            status: 'Pending',
-            requiresApproval: true,
-            expiresAt,
-            senderTransactionId: senderTx.id,
-          });
-          
-          // Emit real-time sync events
-          emitLedgerEvent(sender.id, {
-            type: 'balance_update',
-            module: 'finapay',
-            action: 'usd_pending',
-            data: { amountUsd: usdAmount, recipientId: recipient.id },
-          });
-          emitLedgerEvent(recipient.id, {
-            type: 'pending_transfer',
-            module: 'finapay',
-            action: 'incoming_transfer',
-            data: { amountUsd: usdAmount, senderId: sender.id, transferId: pendingTransfer.id },
-          });
-          
-          // Send pending USD transfer email to recipient using proper template
-          if (recipient.email) {
-            sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_PENDING, {
-              user_name: `${recipient.firstName} ${recipient.lastName}`,
-              sender_name: `${sender.firstName} ${sender.lastName}`,
-              amount: `$${usdAmount.toFixed(2)}`,
-              amount_usd: usdAmount.toFixed(2),
-              reference_number: referenceNumber,
-              memo: memo || '',
-              expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
-            }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
-          }
-          
-          return res.json({
-            transfer: pendingTransfer,
-            pending: true,
-            message: `Transfer of $${usdAmount.toFixed(2)} sent to ${recipient.firstName} ${recipient.lastName}. Awaiting their approval.`
-          });
-        }
+      // Platform is gold-only - parse gold amount
+      const goldAmount = parseFloat(amountGold);
+      const usdEquivalent = goldAmount * goldPrice;
+      
+      // Validate gold balance before creating pending transfer
+      const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
+      if (senderGoldBalance < goldAmount) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
       }
       
-      if (isGoldTransfer) {
-        // GOLD TRANSFER - Uses wallet goldGrams balance
-        const goldAmount = parseFloat(amountGold);
-        const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
-        
-        if (senderGoldBalance < goldAmount) {
-          return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
-        }
-        
-        // Get sender vault holdings (create if needed for tracking)
-        let senderHoldings = await storage.getUserVaultHoldings(sender.id);
-        let senderHolding;
-        
-        if (senderHoldings.length === 0) {
-          // Create a vault holding record to track the transfer
-          senderHolding = await storage.createVaultHolding({
-            userId: sender.id,
-            goldGrams: senderGoldBalance.toFixed(6),
-            vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            wingoldStorageRef: `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-            purchasePriceUsdPerGram: goldPrice.toFixed(2),
-            isPhysicallyDeposited: false
-          });
-        } else {
-          senderHolding = senderHoldings[0];
-          // Sync vault holding with wallet balance if they're out of sync
-          const senderHoldingGold = parseFloat(senderHolding.goldGrams?.toString() || '0');
-          if (senderHoldingGold < goldAmount && senderGoldBalance >= goldAmount) {
-            await storage.updateVaultHolding(senderHolding.id, {
-              goldGrams: senderGoldBalance.toFixed(6)
-            });
-            senderHolding.goldGrams = senderGoldBalance.toFixed(6);
-          }
-        }
-        
-        const senderHoldingGold = parseFloat(senderHolding.goldGrams?.toString() || '0');
-        
-        // Execute gold transfer atomically
-        const result = await storage.withTransaction(async (txStorage) => {
-          const generatedCertificates: any[] = [];
-          const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-          
-          // Helper to issue certificates
-          const issueCertificates = async (userId: string, txId: string, holdingId: string, wingoldRef: string, grams: number) => {
-            if (!holdingId || grams <= 0) return null;
-            
-            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
-            const digitalCert = await txStorage.createCertificate({
-              certificateNumber: docCertNum,
-              userId,
-              transactionId: txId,
-              vaultHoldingId: holdingId,
-              type: 'Digital Ownership',
-              status: 'Active',
-              goldGrams: grams.toFixed(6),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              totalValueUsd: (grams * goldPrice).toFixed(2),
-              issuer: 'Finatrades',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: wingoldRef
-            });
-            generatedCertificates.push(digitalCert);
-            
-            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
-            const storageCert = await txStorage.createCertificate({
-              certificateNumber: pscCertNum,
-              userId,
-              transactionId: txId,
-              vaultHoldingId: holdingId,
-              type: 'Physical Storage',
-              status: 'Active',
-              goldGrams: grams.toFixed(6),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              totalValueUsd: (grams * goldPrice).toFixed(2),
-              issuer: 'Wingold & Metals DMCC',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: wingoldRef
-            });
-            generatedCertificates.push(storageCert);
-            
-            return wingoldRef;
-          };
-          
-          // 1. Debit sender wallet gold
-          const newSenderGold = senderGoldBalance - goldAmount;
-          await txStorage.updateWallet(senderWallet.id, {
-            goldGrams: newSenderGold.toFixed(6)
-          });
-          
-          // 2. Credit recipient wallet gold
-          const recipientGoldBalance = parseFloat(recipientWallet.goldGrams?.toString() || '0');
-          await txStorage.updateWallet(recipientWallet.id, {
-            goldGrams: (recipientGoldBalance + goldAmount).toFixed(6)
-          });
-          
-          // 3. Update sender vault holding (reduce)
-          const newSenderHoldingGold = senderHoldingGold - goldAmount;
-          await txStorage.updateVaultHolding(senderHolding.id, {
-            goldGrams: newSenderHoldingGold.toFixed(6)
-          });
-          
-          // 4. Mark sender's old certificates as Updated
-          const senderActiveCerts = await txStorage.getUserActiveCertificates(sender.id);
-          for (const cert of senderActiveCerts) {
-            await txStorage.updateCertificate(cert.id, { 
-              status: 'Updated',
-              cancelledAt: new Date()
-            });
-          }
-          
-          // 5. Create sender transaction
-          const senderTx = await txStorage.createTransaction({
-            userId: sender.id,
-            type: 'Send',
-            status: 'Completed',
-            amountGold: goldAmount.toFixed(6),
-            amountUsd: (goldAmount * goldPrice).toFixed(2),
-            goldPriceUsdPerGram: goldPrice.toFixed(2),
-            recipientEmail: recipient.email,
-            recipientUserId: recipient.id,
-            description: memo || `Sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}`,
-            referenceId: referenceNumber,
-            sourceModule: 'finapay',
-            completedAt: new Date(),
-          });
-          
-          // 6. Issue new certificates for sender's remaining balance
-          if (newSenderHoldingGold > 0) {
-            const senderWingoldRef = senderHolding.wingoldStorageRef || generateWingoldRef();
-            await txStorage.updateVaultHolding(senderHolding.id, { wingoldStorageRef: senderWingoldRef });
-            await issueCertificates(sender.id, senderTx.id, senderHolding.id, senderWingoldRef, newSenderHoldingGold);
-          }
-          
-          // 7. Create recipient transaction
-          const recipientTx = await txStorage.createTransaction({
-            userId: recipient.id,
-            type: 'Receive',
-            status: 'Completed',
-            amountGold: goldAmount.toFixed(6),
-            amountUsd: (goldAmount * goldPrice).toFixed(2),
-            goldPriceUsdPerGram: goldPrice.toFixed(2),
-            senderEmail: sender.email,
-            description: memo || `Received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
-            referenceId: referenceNumber,
-            sourceModule: 'finapay',
-            completedAt: new Date(),
-          });
-          
-          // 8. Update or create recipient vault holding
-          const recipientHoldings = await txStorage.getUserVaultHoldings(recipient.id);
-          let recipientHoldingId: string;
-          let recipientWingoldRef: string;
-          
-          if (recipientHoldings.length > 0) {
-            const rHolding = recipientHoldings[0];
-            const rGold = parseFloat(rHolding.goldGrams?.toString() || '0');
-            recipientWingoldRef = generateWingoldRef();
-            await txStorage.updateVaultHolding(rHolding.id, {
-              goldGrams: (rGold + goldAmount).toFixed(6),
-              wingoldStorageRef: recipientWingoldRef
-            });
-            recipientHoldingId = rHolding.id;
-          } else {
-            recipientWingoldRef = generateWingoldRef();
-            const newHolding = await txStorage.createVaultHolding({
-              userId: recipient.id,
-              goldGrams: goldAmount.toFixed(6),
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: recipientWingoldRef,
-              purchasePriceUsdPerGram: goldPrice.toFixed(2),
-              isPhysicallyDeposited: false
-            });
-            recipientHoldingId = newHolding.id;
-          }
-          
-          // 9. Issue certificates for recipient
-          await issueCertificates(recipient.id, recipientTx.id, recipientHoldingId, recipientWingoldRef, goldAmount);
-          
-          // 10. Create peer transfer record
-          const transfer = await txStorage.createPeerTransfer({
-            referenceNumber,
-            senderId: sender.id,
-            recipientId: recipient.id,
-            amountUsd: (goldAmount * goldPrice).toFixed(2),
-            channel,
-            recipientIdentifier,
-            memo,
-            status: 'Completed',
-            senderTransactionId: senderTx.id,
-            recipientTransactionId: recipientTx.id,
-          });
-
-          // 11. Record ledger entries for sender and recipient
-          const { vaultLedgerService } = await import('./vault-ledger-service');
-          
-          // Sender: Transfer_Send
-          await vaultLedgerService.recordLedgerEntry({
-            userId: sender.id,
-            action: 'Transfer_Send',
-            goldGrams: goldAmount,
-            goldPriceUsdPerGram: goldPrice,
-            fromWallet: 'FinaPay',
-            toWallet: 'External',
-            fromStatus: 'Available',
-            transactionId: senderTx.id,
-            counterpartyUserId: recipient.id,
-            notes: `Sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}`,
-            createdBy: 'system',
-          });
-          
-          // Recipient: Transfer_Receive (from sender's FinaPay to recipient's FinaPay)
-          await vaultLedgerService.recordLedgerEntry({
-            userId: recipient.id,
-            action: 'Transfer_Receive',
-            goldGrams: goldAmount,
-            goldPriceUsdPerGram: goldPrice,
-            fromWallet: 'FinaPay',
-            toWallet: 'FinaPay',
-            fromStatus: 'Available',
-            toStatus: 'Available',
-            transactionId: recipientTx.id,
-            counterpartyUserId: sender.id,
-            notes: `Received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
-            createdBy: 'system',
-          });
-          
-          return { transfer, certificates: generatedCertificates, senderTx, recipientTx };
-        });
-        
-        generateTransferCertificates(
-          result.senderTx.id,
-          sender.id,
-          recipient.id,
-          goldAmount,
-          goldPrice
-        ).catch(err => console.error('[Routes] Failed to generate transfer certificates:', err));
-
-        // Emit real-time sync events for both sender and recipient
-        emitLedgerEvent(sender.id, {
-          type: 'balance_update',
-          module: 'finapay',
-          action: 'gold_sent',
-          data: { goldGrams: goldAmount, recipientId: recipient.id },
-        });
-        emitLedgerEvent(recipient.id, {
-          type: 'balance_update',
-          module: 'finapay',
-          action: 'gold_received',
-          data: { goldGrams: goldAmount, senderId: sender.id },
-        });
-
-        // Send email notifications for gold transfer using proper templates
-        // Sender email
-        if (sender.email) {
-          sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
-            user_name: `${sender.firstName} ${sender.lastName}`,
-            recipient_name: `${recipient.firstName} ${recipient.lastName}`,
-            amount: `${goldAmount.toFixed(4)}g gold`,
-            amount_usd: (goldAmount * goldPrice).toFixed(2),
-            reference_number: referenceNumber,
-            memo: memo || '',
-          }).catch(err => console.error('[Email] Transfer sent notification failed:', err));
-        }
-        
-        // Recipient email
-        if (recipient.email) {
-          sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_RECEIVED, {
-            user_name: `${recipient.firstName} ${recipient.lastName}`,
-            sender_name: `${sender.firstName} ${sender.lastName}`,
-            amount: `${goldAmount.toFixed(4)}g gold`,
-            amount_usd: (goldAmount * goldPrice).toFixed(2),
-            reference_number: referenceNumber,
-            memo: memo || '',
-          }).catch(err => console.error('[Email] Transfer received notification failed:', err));
-        }
-        
-        // Create bell notifications for sender and recipient
-        await storage.createNotification({
-          userId: sender.id,
-          title: 'Gold Sent Successfully',
-          message: `You sent ${goldAmount.toFixed(4)}g gold ($${(goldAmount * goldPrice).toFixed(2)}) to ${recipient.firstName} ${recipient.lastName}.`,
-          type: 'transaction',
-          link: '/finapay/transactions',
-        });
-        
-        await storage.createNotification({
-          userId: recipient.id,
-          title: 'Gold Received!',
-          message: `You received ${goldAmount.toFixed(4)}g gold ($${(goldAmount * goldPrice).toFixed(2)}) from ${sender.firstName} ${sender.lastName}.`,
-          type: 'transaction',
-          link: '/finapay/transactions',
-        });
-
-        res.json({ 
-          transfer: result.transfer,
-          certificates: result.certificates,
-          message: `Successfully sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}` 
-        });
-        
-      } else {
-        // USD TRANSFER (original logic)
-        const amount = parseFloat(amountUsd);
-        const senderBalance = parseFloat(senderWallet.usdBalance?.toString() || '0');
-        
-        if (senderBalance < amount) {
-          return res.status(400).json({ message: "Insufficient USD balance" });
-        }
-        
-        // Debit sender wallet
-        await storage.updateWallet(senderWallet.id, {
-          usdBalance: (senderBalance - amount).toFixed(2),
-        });
-        
-        // Credit recipient wallet
-        const recipientBalance = parseFloat(recipientWallet.usdBalance?.toString() || '0');
-        await storage.updateWallet(recipientWallet.id, {
-          usdBalance: (recipientBalance + amount).toFixed(2),
-        });
-        
-        // Create sender transaction (Send)
-        const senderTx = await storage.createTransaction({
-          userId: sender.id,
-          type: 'Send',
-          status: 'Completed',
-          amountUsd: amount.toFixed(2),
-          recipientEmail: recipient.email,
-          recipientUserId: recipient.id,
-          description: memo || `Sent to ${recipient.firstName} ${recipient.lastName}`,
-          referenceId: referenceNumber,
-          sourceModule: 'finapay',
-          completedAt: new Date(),
-        });
-        
-        // Create recipient transaction (Receive)
-        const recipientTx = await storage.createTransaction({
-          userId: recipient.id,
-          type: 'Receive',
-          status: 'Completed',
-          amountUsd: amount.toFixed(2),
-          senderEmail: sender.email,
-          description: memo || `Received from ${sender.firstName} ${sender.lastName}`,
-          referenceId: referenceNumber,
-          sourceModule: 'finapay',
-          completedAt: new Date(),
-        });
-        
-        // Create peer transfer record
-        const transfer = await storage.createPeerTransfer({
-          referenceNumber,
-          senderId: sender.id,
-          recipientId: recipient.id,
-          amountUsd: amount.toFixed(2),
-          channel,
-          recipientIdentifier,
-          memo,
-          status: 'Completed',
-          senderTransactionId: senderTx.id,
-          recipientTransactionId: recipientTx.id,
-        });
-        
-        // Emit real-time sync events for both sender and recipient
-        emitLedgerEvent(sender.id, {
-          type: 'balance_update',
-          module: 'finapay',
-          action: 'usd_sent',
-          data: { amountUsd: amount, recipientId: recipient.id },
-        });
-        emitLedgerEvent(recipient.id, {
-          type: 'balance_update',
-          module: 'finapay',
-          action: 'usd_received',
-          data: { amountUsd: amount, senderId: sender.id },
-        });
-
-        // Send email notifications for USD transfer using proper templates
-        // Sender email
-        if (sender.email) {
-          sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
-            user_name: `${sender.firstName} ${sender.lastName}`,
-            recipient_name: `${recipient.firstName} ${recipient.lastName}`,
-            amount: `$${amount.toFixed(2)}`,
-            amount_usd: amount.toFixed(2),
-            reference_number: referenceNumber,
-            memo: memo || '',
-          }).catch(err => console.error('[Email] Transfer sent notification failed:', err));
-        }
-        
-        // Recipient email
-        if (recipient.email) {
-          sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_RECEIVED, {
-            user_name: `${recipient.firstName} ${recipient.lastName}`,
-            sender_name: `${sender.firstName} ${sender.lastName}`,
-            amount: `$${amount.toFixed(2)}`,
-            amount_usd: amount.toFixed(2),
-            reference_number: referenceNumber,
-            memo: memo || '',
-          }).catch(err => console.error('[Email] Transfer received notification failed:', err));
-        }
-        
-        // Create bell notifications for USD transfer
-        await storage.createNotification({
-          userId: sender.id,
-          title: 'Transfer Sent',
-          message: `You sent $${amount.toFixed(2)} to ${recipient.firstName} ${recipient.lastName}.`,
-          type: 'transaction',
-          link: '/finapay/transactions',
-        });
-        
-        await storage.createNotification({
-          userId: recipient.id,
-          title: 'Money Received!',
-          message: `You received $${amount.toFixed(2)} from ${sender.firstName} ${sender.lastName}.`,
-          type: 'transaction',
-          link: '/finapay/transactions',
-        });
-        
-        res.json({ 
-          transfer, 
-          message: `Successfully sent $${amount.toFixed(2)} to ${recipient.firstName} ${recipient.lastName}` 
-        });
+      // Debit sender immediately (held until accepted/rejected)
+      await storage.updateWallet(senderWallet.id, {
+        goldGrams: (senderGoldBalance - goldAmount).toFixed(6)
+      });
+      
+      // Create sender transaction (pending)
+      const senderTx = await storage.createTransaction({
+        userId: sender.id,
+        type: 'Send',
+        status: 'Pending',
+        amountGold: goldAmount.toFixed(6),
+        amountUsd: usdEquivalent.toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        recipientEmail: recipient.email,
+        recipientUserId: recipient.id,
+        description: memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`,
+        referenceId: referenceNumber,
+        sourceModule: 'finapay',
+      });
+      
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: sender.id,
+        action: 'Transfer_Send',
+        goldGrams: goldAmount,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'FinaPay',
+        toWallet: 'Escrow',
+        fromStatus: 'Available',
+        toStatus: 'Pending',
+        transactionId: senderTx.id,
+        counterpartyUserId: recipient.id,
+        notes: `Pending gold transfer to ${recipient.firstName} ${recipient.lastName} (awaiting acceptance)`,
+        createdBy: 'system',
+      });
+      
+      // Create pending peer transfer
+      const pendingTransfer = await storage.createPeerTransfer({
+        referenceNumber,
+        senderId: sender.id,
+        recipientId: recipient.id,
+        amountUsd: usdEquivalent.toFixed(2),
+        amountGold: goldAmount.toFixed(6),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        channel,
+        recipientIdentifier,
+        memo,
+        status: 'Pending',
+        requiresApproval: true,
+        expiresAt,
+        senderTransactionId: senderTx.id,
+      });
+      
+      // Emit real-time sync event
+      emitLedgerEvent(sender.id, {
+        type: 'balance_update',
+        module: 'finapay',
+        action: 'gold_pending',
+        data: { goldGrams: goldAmount, recipientId: recipient.id },
+      });
+      emitLedgerEvent(recipient.id, {
+        type: 'pending_transfer',
+        module: 'finapay',
+        action: 'incoming_transfer',
+        data: { goldGrams: goldAmount, senderId: sender.id, transferId: pendingTransfer.id },
+      });
+      
+      // Create bell notification for recipient
+      await storage.createNotification({
+        userId: recipient.id,
+        title: 'Incoming Gold Transfer',
+        message: `${sender.firstName} ${sender.lastName} sent you ${goldAmount.toFixed(4)}g gold ($${usdEquivalent.toFixed(2)}). Please accept or decline.`,
+        type: 'transaction',
+        link: '/finapay',
+      });
+      
+      // Send pending transfer email to recipient using proper template
+      if (recipient.email) {
+        sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_PENDING, {
+          user_name: `${recipient.firstName} ${recipient.lastName}`,
+          sender_name: `${sender.firstName} ${sender.lastName}`,
+          amount: `${goldAmount.toFixed(4)}g gold`,
+          amount_usd: usdEquivalent.toFixed(2),
+          reference_number: referenceNumber,
+          memo: memo || '',
+          expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
+        }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
       }
+      
+      res.json({
+        transfer: pendingTransfer,
+        pending: true,
+        message: `Transfer of ${goldAmount.toFixed(4)}g gold sent to ${recipient.firstName} ${recipient.lastName}. Awaiting their approval.`
+      });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Transfer failed" });
     }
@@ -15924,16 +15433,18 @@ ${message}
         return res.status(400).json({ message: "Recipient wallet not found" });
       }
       
-      const isGoldTransfer = transfer.amountGold && parseFloat(transfer.amountGold.toString()) > 0;
-      const goldAmount = isGoldTransfer ? parseFloat(transfer.amountGold!.toString()) : 0;
+      // Platform is gold-only - all transfers are gold
+      const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
       const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
-      const usdAmount = parseFloat(transfer.amountUsd?.toString() || '0');
       
-      if (isGoldTransfer) {
-        // GOLD TRANSFER - Credit recipient
-        const result = await storage.withTransaction(async (txStorage) => {
-          const generatedCertificates: any[] = [];
-          const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      if (goldAmount <= 0) {
+        return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
+      }
+      
+      // Process gold transfer - Credit recipient
+      const result = await storage.withTransaction(async (txStorage) => {
+        const generatedCertificates: any[] = [];
+        const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
           
           // Helper to issue certificates
           const issueCertificates = async (userId: string, txId: string, holdingId: string, wingoldRef: string, grams: number) => {
@@ -16068,58 +15579,6 @@ ${message}
           data: { transferId: transfer.id, recipientId: recipient.id },
         });
         
-        res.json({ 
-          message: `Accepted ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
-          transaction: result.recipientTx,
-          certificates: result.certificates
-        });
-      } else {
-        // USD TRANSFER
-        const recipientBalance = parseFloat(recipientWallet.usdBalance?.toString() || '0');
-        await storage.updateWallet(recipientWallet.id, {
-          usdBalance: (recipientBalance + usdAmount).toFixed(2),
-        });
-        
-        // Create recipient transaction
-        const recipientTx = await storage.createTransaction({
-          userId: recipient.id,
-          type: 'Receive',
-          status: 'Completed',
-          amountUsd: usdAmount.toFixed(2),
-          senderEmail: sender.email,
-          description: transfer.memo || `Received from ${sender.firstName} ${sender.lastName}`,
-          referenceId: transfer.referenceNumber,
-          sourceModule: 'finapay',
-          completedAt: new Date(),
-        });
-        
-        // Update transfer status
-        await storage.updatePeerTransfer(transfer.id, {
-          status: 'Completed',
-          respondedAt: new Date(),
-          recipientTransactionId: recipientTx.id,
-        });
-        
-        // Emit real-time sync events
-        emitLedgerEvent(recipient.id, {
-          type: 'balance_update',
-          module: 'finapay',
-          action: 'usd_received',
-          data: { amountUsd: usdAmount, senderId: sender.id },
-        });
-        emitLedgerEvent(sender.id, {
-          type: 'transfer_accepted',
-          module: 'finapay',
-          action: 'transfer_completed',
-          data: { transferId: transfer.id, recipientId: recipient.id },
-        });
-        
-        res.json({ 
-          message: `Accepted $${usdAmount.toFixed(2)} from ${sender.firstName} ${sender.lastName}`,
-          transaction: recipientTx
-        });
-      }
-      
       // Send email notification to sender
       if (sender.email) {
         sendEmailDirect(
@@ -16135,7 +15594,7 @@ ${message}
               <p>Great news! ${recipient.firstName} ${recipient.lastName} has accepted your transfer.</p>
               <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="font-size: 28px; font-weight: bold; color: #22c55e; margin: 0;">
-                  ${isGoldTransfer ? `${goldAmount.toFixed(4)}g Gold` : `$${usdAmount.toFixed(2)}`}
+                  ${goldAmount.toFixed(4)}g Gold
                 </p>
                 <p style="color: #6b7280; margin: 5px 0;">to ${recipient.firstName} ${recipient.lastName}</p>
               </div>
@@ -16147,6 +15606,12 @@ ${message}
           `
         ).catch(err => console.error('[Email] Failed to send transfer accepted notification:', err));
       }
+      
+      res.json({ 
+        message: `Accepted ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
+        transaction: result.recipientTx,
+        certificates: result.certificates
+      });
       
     } catch (error) {
       console.error('[Routes] Error accepting transfer:', error);
@@ -16186,13 +15651,15 @@ ${message}
         return res.status(400).json({ message: "Sender wallet not found" });
       }
       
-      const isGoldTransfer = transfer.amountGold && parseFloat(transfer.amountGold.toString()) > 0;
-      const goldAmount = isGoldTransfer ? parseFloat(transfer.amountGold!.toString()) : 0;
+      // Platform is gold-only - all transfers are gold
+      const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
       const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
-      const usdAmount = parseFloat(transfer.amountUsd?.toString() || '0');
       
-      if (isGoldTransfer) {
-        // Refund gold to sender
+      if (goldAmount <= 0) {
+        return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
+      }
+      
+      // Refund gold to sender
         const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
         await storage.updateWallet(senderWallet.id, {
           goldGrams: (senderGoldBalance + goldAmount).toFixed(6)
@@ -16222,38 +15689,19 @@ ${message}
           completedAt: new Date(),
         });
         
-        // Record ledger entry
-        const { vaultLedgerService } = await import('./vault-ledger-service');
-        await vaultLedgerService.recordLedgerEntry({
-          userId: sender.id,
-          action: 'Transfer_Refund',
-          goldGrams: goldAmount,
-          goldPriceUsdPerGram: goldPrice,
-          fromWallet: 'External',
-          toWallet: 'FinaPay',
-          toStatus: 'Available',
-          notes: `Transfer rejected by ${recipient?.firstName || 'recipient'}${reason ? `: ${reason}` : ''}`,
-          createdBy: 'system',
-        });
-      } else {
-        // Refund USD to sender
-        const senderBalance = parseFloat(senderWallet.usdBalance?.toString() || '0');
-        await storage.updateWallet(senderWallet.id, {
-          usdBalance: (senderBalance + usdAmount).toFixed(2)
-        });
-        
-        // Create refund transaction
-        await storage.createTransaction({
-          userId: sender.id,
-          type: 'Refund',
-          status: 'Completed',
-          amountUsd: usdAmount.toFixed(2),
-          description: `Transfer to ${recipient?.firstName || 'user'} was rejected${reason ? `: ${reason}` : ''}`,
-          referenceId: transfer.referenceNumber,
-          sourceModule: 'finapay',
-          completedAt: new Date(),
-        });
-      }
+      // Record ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: sender.id,
+        action: 'Transfer_Refund',
+        goldGrams: goldAmount,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'External',
+        toWallet: 'FinaPay',
+        toStatus: 'Available',
+        notes: `Transfer rejected by ${recipient?.firstName || 'recipient'}${reason ? `: ${reason}` : ''}`,
+        createdBy: 'system',
+      });
       
       // Update transfer status
       await storage.updatePeerTransfer(transfer.id, {
@@ -16285,7 +15733,7 @@ ${message}
               <p>${recipient?.firstName || 'The recipient'} has rejected your transfer. The funds have been returned to your wallet.</p>
               <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="font-size: 28px; font-weight: bold; color: #dc2626; margin: 0;">
-                  ${isGoldTransfer ? `${goldAmount.toFixed(4)}g Gold` : `$${usdAmount.toFixed(2)}`} Refunded
+                  ${goldAmount.toFixed(4)}g Gold Refunded
                 </p>
                 ${reason ? `<p style="color: #6b7280; margin: 10px 0; font-style: italic;">"${reason}"</p>` : ''}
               </div>
