@@ -18405,11 +18405,14 @@ ${message}
         }
       }
       
-      // Calculate vault gold
+      // Calculate vault gold - only count physically deposited holdings to avoid double-counting with wallet gold
       const vaultHoldings = await storage.getAllVaultHoldings();
       let vaultGoldGrams = 0;
       for (const holding of vaultHoldings) {
-        vaultGoldGrams += parseFloat(holding.goldGrams || '0');
+        // Only count if physically deposited (actual physical gold in vault, not digital representation)
+        if (holding.isPhysicallyDeposited) {
+          vaultGoldGrams += parseFloat(holding.goldGrams || '0');
+        }
       }
       
       // Calculate BNSL locked gold
