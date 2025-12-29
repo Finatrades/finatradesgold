@@ -14876,32 +14876,11 @@ ${message}
         recipient = await storage.getUserByFinatradesId(recipientIdentifier);
       }
       
-      if (!recipient) {
-        return res.status(404).json({ message: "Recipient not found" });
-      }
-      
-      if (sender.id === recipient.id) {
-        return res.status(400).json({ message: "Cannot send money to yourself" });
-      }
-      
-      // Check sender wallet
+      // Check sender wallet first (needed for both registered and invitation transfers)
       const senderWallet = await storage.getWallet(sender.id);
       if (!senderWallet) {
         return res.status(400).json({ message: "Sender wallet not found" });
       }
-      
-      // Get recipient wallet
-      const recipientWallet = await storage.getWallet(recipient.id);
-      if (!recipientWallet) {
-        return res.status(400).json({ message: "Recipient wallet not found" });
-      }
-      
-      const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      // Transfer approval is always required for security
-      const recipientPreferences = await storage.getUserPreferences(recipient.id);
-      const timeoutHours = recipientPreferences?.transferApprovalTimeout || 24;
-      const expiresAt = timeoutHours > 0 ? new Date(Date.now() + timeoutHours * 60 * 60 * 1000) : null;
       
       // Platform is gold-only - parse gold amount
       const goldAmount = parseFloat(amountGold);
@@ -14912,6 +14891,141 @@ ${message}
       if (senderGoldBalance < goldAmount) {
         return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
       }
+      
+      const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Handle invitation transfer for non-registered email recipients
+      if (!recipient && channel === 'email') {
+        // Generate invitation token
+        const crypto = await import('crypto');
+        const invitationToken = crypto.randomUUID();
+        
+        // Get sender's referral code if they have one
+        let senderReferralCode: string | undefined;
+        const senderReferrals = await storage.getUserReferrals(sender.id);
+        if (senderReferrals.length > 0) {
+          senderReferralCode = senderReferrals[0].referralCode;
+        }
+        
+        // 24-hour expiry for invitation transfers
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        
+        // Debit sender immediately (held until claimed or expired)
+        await storage.updateWallet(senderWallet.id, {
+          goldGrams: (senderGoldBalance - goldAmount).toFixed(6)
+        });
+        
+        // Create sender transaction (pending)
+        const senderTx = await storage.createTransaction({
+          userId: sender.id,
+          type: 'Send',
+          status: 'Pending',
+          amountGold: goldAmount.toFixed(6),
+          amountUsd: usdEquivalent.toFixed(2),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          recipientEmail: recipientIdentifier,
+          description: memo || `Invitation transfer to ${recipientIdentifier} (awaiting registration)`,
+          referenceId: referenceNumber,
+          sourceModule: 'finapay',
+        });
+        
+        // Record ledger entry
+        const { vaultLedgerService } = await import('./vault-ledger-service');
+        await vaultLedgerService.recordLedgerEntry({
+          userId: sender.id,
+          action: 'Transfer_Send',
+          goldGrams: goldAmount,
+          goldPriceUsdPerGram: goldPrice,
+          fromWallet: 'FinaPay',
+          toWallet: 'Escrow',
+          fromStatus: 'Available',
+          toStatus: 'Pending',
+          transactionId: senderTx.id,
+          notes: `Invitation transfer to ${recipientIdentifier} (awaiting registration - expires in 24h)`,
+          createdBy: 'system',
+        });
+        
+        // Create pending invite transfer (no recipientId)
+        const inviteTransfer = await storage.createPeerTransfer({
+          referenceNumber,
+          senderId: sender.id,
+          recipientId: null,
+          amountUsd: usdEquivalent.toFixed(2),
+          amountGold: goldAmount.toFixed(6),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          channel,
+          recipientIdentifier,
+          memo,
+          status: 'Pending',
+          requiresApproval: true,
+          isInvite: true,
+          invitationToken,
+          senderReferralCode: senderReferralCode || undefined,
+          expiresAt,
+          senderTransactionId: senderTx.id,
+        });
+        
+        // Emit real-time sync event
+        emitLedgerEvent(sender.id, {
+          type: 'balance_update',
+          module: 'finapay',
+          action: 'gold_pending_invite',
+          data: { goldGrams: goldAmount, recipientEmail: recipientIdentifier },
+        });
+        
+        // Build registration URL with referral code and invitation token
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+          : 'https://finatrades.com';
+        let registerUrl = `${baseUrl}/register?invite=${invitationToken}`;
+        if (senderReferralCode) {
+          registerUrl += `&ref=${encodeURIComponent(senderReferralCode)}`;
+        }
+        
+        // Send invitation email
+        sendEmail(recipientIdentifier, EMAIL_TEMPLATES.INVITATION, {
+          sender_name: `${sender.firstName} ${sender.lastName}`,
+          amount: `${goldAmount.toFixed(4)}g`,
+          register_url: registerUrl,
+        }).catch(err => console.error('[Email] Invitation transfer email failed:', err));
+        
+        // Create audit log
+        await storage.createAuditLog({
+          entityType: 'peer_transfer',
+          entityId: inviteTransfer.id,
+          actionType: 'create',
+          actor: sender.id,
+          actorRole: 'user',
+          details: `Invitation transfer created: ${goldAmount.toFixed(4)}g gold to ${recipientIdentifier}. Token: ${invitationToken.substring(0, 8)}...`,
+        });
+        
+        return res.json({
+          transfer: inviteTransfer,
+          pending: true,
+          isInvite: true,
+          message: `Invitation sent! ${recipientIdentifier} has 24 hours to register and claim ${goldAmount.toFixed(4)}g gold.`,
+          expiresAt: expiresAt.toISOString(),
+        });
+      }
+      
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found. For email transfers to non-registered users, use the email channel." });
+      }
+      
+      if (sender.id === recipient.id) {
+        return res.status(400).json({ message: "Cannot send money to yourself" });
+      }
+      
+      // Get recipient wallet
+      const recipientWallet = await storage.getWallet(recipient.id);
+      if (!recipientWallet) {
+        return res.status(400).json({ message: "Recipient wallet not found" });
+      }
+      
+      // Transfer approval is always required for security
+      const recipientPreferences = await storage.getUserPreferences(recipient.id);
+      const timeoutHours = recipientPreferences?.transferApprovalTimeout || 24;
+      const expiresAt = timeoutHours > 0 ? new Date(Date.now() + timeoutHours * 60 * 60 * 1000) : null;
       
       // Debit sender immediately (held until accepted/rejected)
       await storage.updateWallet(senderWallet.id, {
