@@ -39,7 +39,7 @@ export default function Footer() {
                 alt="Finatrades" 
                 className="h-10 w-auto mb-2 brightness-0 invert"
               />
-              <p className="text-white/60 text-sm">Swiss-Regulated Gold Platform</p>
+              <p className="text-white/60 text-sm">Swiss Regulated Financial Gold-Backed Platform</p>
             </div>
             <div className="text-white/70 text-xs space-y-1 mb-4">
               <p><span className="font-bold">LEI-Nummer: </span>
