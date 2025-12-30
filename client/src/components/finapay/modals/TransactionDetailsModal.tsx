@@ -20,6 +20,34 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
   
   if (!transaction) return null;
 
+  const formatDescription = (description: string | undefined | null): string | null => {
+    if (!description) return null;
+    
+    try {
+      const parsed = JSON.parse(description);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.isInvite) {
+          return 'Received via invitation link';
+        }
+        if (parsed.originalMemo) {
+          return parsed.originalMemo;
+        }
+        if (parsed.memo) {
+          return parsed.memo;
+        }
+        if (parsed.note) {
+          return parsed.note;
+        }
+        return null;
+      }
+    } catch {
+      return description;
+    }
+    return description;
+  };
+
+  const displayDescription = formatDescription(transaction.description);
+
   const handleShare = async () => {
     const shareText = `Finatrades Transaction Receipt\n\nType: ${transaction.type}\nAmount: ${transaction.assetType === 'GOLD' ? `${transaction.amountGrams?.toFixed(4)} g` : `$${transaction.amountUsd.toFixed(2)}`}\nStatus: ${transaction.status}\nReference: ${transaction.referenceId}\nDate: ${new Date(transaction.timestamp).toLocaleDateString()}`;
     
@@ -89,8 +117,8 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
     addRow('Status', transaction.status);
     addRow('Reference ID', transaction.referenceId);
     addRow('Date & Time', new Date(transaction.timestamp).toLocaleString());
-    if (transaction.description) {
-      addRow('Description', transaction.description.substring(0, 40));
+    if (displayDescription) {
+      addRow('Description', displayDescription.substring(0, 40));
     }
     addRow('Network Fee', 'USD ' + (transaction.feeUsd || 0).toFixed(2));
     
@@ -196,12 +224,12 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
                 <Copy className="w-3 h-3 text-muted-foreground hover:text-foreground cursor-pointer" />
               </div>
             </div>
-            {transaction.description && (
+            {displayDescription && (
               <>
                 <Separator className="bg-border" />
                 <div className="flex justify-between items-start text-sm">
                   <span className="text-muted-foreground">Description</span>
-                  <span className="font-medium text-right max-w-[200px]">{transaction.description}</span>
+                  <span className="font-medium text-right max-w-[200px]">{displayDescription}</span>
                 </div>
               </>
             )}
