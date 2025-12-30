@@ -11520,6 +11520,7 @@ ${message}
       const requests = await storage.getUserTradeRequests(req.params.userId);
       res.json({ requests });
     } catch (error) {
+      console.error('[FinaBridge] Error fetching trade requests:', error);
       res.status(400).json({ message: "Failed to get trade requests" });
     }
   });
