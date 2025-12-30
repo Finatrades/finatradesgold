@@ -300,7 +300,7 @@ export function getNotificationStats(): {
 // Cleanup old throttle entries periodically
 setInterval(() => {
   const now = Date.now();
-  for (const [key, time] of errorThrottle.entries()) {
+  for (const [key, time] of Array.from(errorThrottle.entries())) {
     if (now - time > ERROR_THROTTLE_MS) {
       errorThrottle.delete(key);
     }
