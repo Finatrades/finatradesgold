@@ -11,8 +11,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   BarChart3, PlusCircle, Briefcase, Loader2, RefreshCw, 
   ArrowLeftRight, Package, Send, Eye, Check, X, Wallet,
-  CreditCard, Truck, Ship, Plane, Train, Shield, FileText, MessageCircle, Info, Download, CheckCircle
+  CreditCard, Truck, Ship, Plane, Train, Shield, FileText, MessageCircle, Info, Download, CheckCircle, Lock, Unlock
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -34,6 +35,8 @@ interface TradeRequest {
   expectedShipDate: string | null;
   tradeValueUsd: string;
   settlementGoldGrams: string;
+  goldPriceUsdPerGram: string | null;
+  isPriceLocked: boolean | null;
   currency: string;
   status: string;
   createdAt: string;
@@ -388,6 +391,8 @@ export default function FinaBridge() {
     expectedShipDate: '',
     tradeValueUsd: '',
     settlementGoldGrams: '',
+    goldPriceUsdPerGram: '',
+    isPriceLocked: false,
     modeOfTransport: 'Sea',
     portOfLoading: '',
     portOfDischarge: '',
@@ -554,6 +559,10 @@ export default function FinaBridge() {
       const payload = {
         importerUserId: user.id,
         ...requestForm,
+        isPriceLocked: requestForm.isPriceLocked,
+        goldPriceUsdPerGram: requestForm.isPriceLocked && requestForm.goldPriceUsdPerGram 
+          ? requestForm.goldPriceUsdPerGram 
+          : null,
         status: 'Draft',
       };
 
@@ -579,6 +588,8 @@ export default function FinaBridge() {
         expectedShipDate: '',
         tradeValueUsd: '',
         settlementGoldGrams: '',
+        goldPriceUsdPerGram: '',
+        isPriceLocked: false,
         modeOfTransport: 'Sea',
         portOfLoading: '',
         portOfDischarge: '',
@@ -1051,6 +1062,12 @@ export default function FinaBridge() {
                             <div className="text-right">
                               <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
                               <p className="text-xs text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</p>
+                              {request.isPriceLocked && (
+                                <p className="text-xs text-purple-600 flex items-center justify-end gap-1 mt-0.5">
+                                  <Lock className="w-3 h-3" />
+                                  ${request.goldPriceUsdPerGram ? parseFloat(request.goldPriceUsdPerGram).toFixed(2) : ''}/g locked
+                                </p>
+                              )}
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(request.status)}`}>
                               {request.status}
@@ -1342,13 +1359,17 @@ export default function FinaBridge() {
                             value={requestForm.tradeValueUsd}
                             onChange={(e) => {
                               const usdValue = e.target.value;
-                              const goldGrams = usdValue && currentGoldPriceUsdPerGram > 0
-                                ? (parseFloat(usdValue) / currentGoldPriceUsdPerGram).toFixed(3)
+                              const priceToUse = requestForm.isPriceLocked && requestForm.goldPriceUsdPerGram
+                                ? parseFloat(requestForm.goldPriceUsdPerGram)
+                                : currentGoldPriceUsdPerGram;
+                              const goldGrams = usdValue && priceToUse > 0
+                                ? (parseFloat(usdValue) / priceToUse).toFixed(3)
                                 : '';
                               setRequestForm({ 
                                 ...requestForm, 
                                 tradeValueUsd: usdValue,
-                                settlementGoldGrams: goldGrams
+                                settlementGoldGrams: goldGrams,
+                                goldPriceUsdPerGram: requestForm.isPriceLocked ? priceToUse.toString() : ''
                               });
                               setInsufficientFundsError(null);
                             }}
@@ -1357,7 +1378,11 @@ export default function FinaBridge() {
                             data-testid="input-trade-value"
                           />
                           <p className="text-xs text-muted-foreground">
-                            Current gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/gram
+                            {requestForm.isPriceLocked && requestForm.goldPriceUsdPerGram ? (
+                              <>Locked price: <span className="text-purple-600 font-medium">${parseFloat(requestForm.goldPriceUsdPerGram).toFixed(2)}/gram</span></>
+                            ) : (
+                              <>Current gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/gram</>
+                            )}
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -1390,16 +1415,47 @@ export default function FinaBridge() {
                             </span>
                           </div>
                           
-                          {/* Price Lock Info */}
-                          <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <Shield className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="text-amber-800 text-xs font-medium">Price Lock Protection</p>
-                                <p className="text-amber-700 text-xs mt-1">
-                                  When you move gold into FinaBridge, you secure today's USD price. This protects you from price drops, but you won't gain if prices rise while the gold is locked.
-                                </p>
+                          {/* Price Lock Toggle */}
+                          <div className="mt-2 p-3 bg-gradient-to-r from-purple-50 to-amber-50 border border-purple-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {requestForm.isPriceLocked ? (
+                                  <Lock className="w-4 h-4 text-purple-600" />
+                                ) : (
+                                  <Unlock className="w-4 h-4 text-amber-600" />
+                                )}
+                                <span className="text-sm font-medium">Lock Gold Price</span>
                               </div>
+                              <Switch
+                                checked={requestForm.isPriceLocked}
+                                onCheckedChange={(checked) => {
+                                  setRequestForm({
+                                    ...requestForm,
+                                    isPriceLocked: checked,
+                                    goldPriceUsdPerGram: checked ? currentGoldPriceUsdPerGram.toString() : ''
+                                  });
+                                }}
+                                data-testid="switch-lock-price"
+                              />
+                            </div>
+                            <div className={`text-xs p-2 rounded ${requestForm.isPriceLocked ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {requestForm.isPriceLocked ? (
+                                <div className="flex items-start gap-1.5">
+                                  <Shield className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <span className="font-medium">Price Locked at ${currentGoldPriceUsdPerGram.toFixed(2)}/gram</span>
+                                    <p className="mt-0.5 text-purple-600">Your settlement gold is protected from price fluctuations. This price will be used throughout the trade.</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start gap-1.5">
+                                  <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <span className="font-medium">Floating Price (Market Rate)</span>
+                                    <p className="mt-0.5 text-amber-600">Gold price will be recalculated at each stage using the live market rate. You may benefit from price drops but risk price increases.</p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
@@ -1799,6 +1855,12 @@ export default function FinaBridge() {
                           <div className="text-right">
                             <p className="font-bold text-xl text-primary">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
                             <p className="text-sm text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold settlement</p>
+                            {request.isPriceLocked && (
+                              <p className="text-xs text-purple-600 flex items-center justify-end gap-1 mt-0.5">
+                                <Lock className="w-3 h-3" />
+                                Price locked at ${request.goldPriceUsdPerGram ? parseFloat(request.goldPriceUsdPerGram).toFixed(2) : ''}/g
+                              </p>
+                            )}
                           </div>
                         </div>
                         

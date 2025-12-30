@@ -1695,6 +1695,8 @@ export const tradeRequests = pgTable("trade_requests", {
   
   tradeValueUsd: decimal("trade_value_usd", { precision: 18, scale: 2 }).notNull(),
   settlementGoldGrams: decimal("settlement_gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }),
+  isPriceLocked: boolean("is_price_locked").default(false),
   currency: varchar("currency", { length: 10 }).default('USD'),
   
   exporterKnown: boolean("exporter_known").default(false),
