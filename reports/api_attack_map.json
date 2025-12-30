@@ -1,0 +1,78 @@
+{
+  "summary": {
+    "total_endpoints": 533,
+    "protected_endpoints": 396,
+    "public_endpoints": 137,
+    "state_changing": 266
+  },
+  "critical_endpoints": {
+    "money_movement": [
+      {"method": "POST", "path": "/api/transactions", "auth": "ensureAuthenticated", "idempotent": true},
+      {"method": "POST", "path": "/api/deposit-requests", "auth": "ensureAuthenticated", "idempotent": true},
+      {"method": "POST", "path": "/api/withdrawal-requests", "auth": "ensureAuthenticated", "idempotent": true},
+      {"method": "POST", "path": "/api/peer-transfers/send", "auth": "ensureAuthenticated", "idempotent": true},
+      {"method": "POST", "path": "/api/buy-gold/submit", "auth": "ensureAuthenticated", "idempotent": true},
+      {"method": "POST", "path": "/api/bnsl/plans", "auth": "ensureAuthenticated", "idempotent": true}
+    ],
+    "admin_approvals": [
+      {"method": "PATCH", "path": "/api/admin/deposit-requests/:id/approve", "auth": "ensureAdminAsync + permission"},
+      {"method": "PATCH", "path": "/api/admin/withdrawal-requests/:id/approve", "auth": "ensureAdminAsync + permission"},
+      {"method": "POST", "path": "/api/admin/wallet-adjustments", "auth": "ensureAdminAsync + permission"}
+    ],
+    "auth_endpoints": [
+      {"method": "POST", "path": "/api/auth/login", "rate_limit": "10/15min"},
+      {"method": "POST", "path": "/api/auth/register", "rate_limit": "10/15min"},
+      {"method": "POST", "path": "/api/auth/forgot-password", "rate_limit": "5/hour"},
+      {"method": "POST", "path": "/api/mfa/verify", "rate_limit": "5 attempts/challenge"}
+    ]
+  },
+  "idor_targets": [
+    {"method": "GET", "path": "/api/dashboard/:userId", "protection": "ensureOwnerOrAdmin"},
+    {"method": "GET", "path": "/api/wallets/:userId", "protection": "ensureOwnerOrAdmin"},
+    {"method": "GET", "path": "/api/transactions/:userId", "protection": "ensureOwnerOrAdmin"},
+    {"method": "GET", "path": "/api/kyc/:userId", "protection": "ensureOwnerOrAdmin"},
+    {"method": "GET", "path": "/api/certificates/:userId", "protection": "ensureOwnerOrAdmin"}
+  ],
+  "attack_hypotheses": [
+    {
+      "id": "MONEY-001",
+      "name": "Double deposit submission",
+      "endpoint": "POST /api/deposit-requests",
+      "attack": "Submit same deposit twice rapidly",
+      "expected_protection": "Idempotency key check",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "MONEY-002",
+      "name": "Negative withdrawal",
+      "endpoint": "POST /api/withdrawal-requests",
+      "attack": "Submit negative amount to add funds",
+      "expected_protection": "Zod validation",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "AUTH-001",
+      "name": "OTP brute force",
+      "endpoint": "POST /api/auth/verify-email",
+      "attack": "Guess 6-digit OTP (1M combinations)",
+      "expected_protection": "Rate limit 5/5min + expiry",
+      "severity": "HIGH"
+    },
+    {
+      "id": "IDOR-001",
+      "name": "Access other user's wallet",
+      "endpoint": "GET /api/wallets/:userId",
+      "attack": "Replace userId with victim's ID",
+      "expected_protection": "ensureOwnerOrAdmin middleware",
+      "severity": "HIGH"
+    },
+    {
+      "id": "ADMIN-001",
+      "name": "Self-approve deposit",
+      "endpoint": "PATCH /api/admin/deposit-requests/:id/approve",
+      "attack": "User becomes admin and approves own deposit",
+      "expected_protection": "Role check + separate approval",
+      "severity": "CRITICAL"
+    }
+  ]
+}
