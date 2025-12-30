@@ -21,6 +21,8 @@ Contact: +971568474843
 12. [Security Features](#security-features)
 13. [Certificate System](#certificate-system)
 14. [Database Schema Overview](#database-schema-overview)
+15. [Admin System (Complete Module Reference)](#admin-system-complete-module-reference)
+16. [API Architecture](#api-architecture)
 
 ---
 
@@ -1542,6 +1544,272 @@ FinaBridge is a gold-backed trade finance platform connecting importers and expo
 
 ---
 
+## Admin System (Complete Module Reference)
+
+### Overview
+
+The Finatrades Admin Panel provides comprehensive management capabilities for platform operations. All admin endpoints are protected by multi-layer security including session authentication, role verification, and permission-based access control.
+
+### Admin Pages (36 Total)
+
+| # | Page | File | Purpose |
+|---|------|------|---------|
+| 1 | Dashboard | `AdminDashboard.tsx` | Platform statistics and overview |
+| 2 | Login | `AdminLogin.tsx` | Admin authentication with MFA |
+| 3 | Settings | `AdminSettings.tsx` | Compliance and bank account settings |
+| 4 | User Management | `UserManagement.tsx` | List, search, verify, suspend users |
+| 5 | User Details | `UserDetails.tsx` | Individual user profile and actions |
+| 6 | Employee Management | `EmployeeManagement.tsx` | Staff accounts and permissions |
+| 7 | KYC Review | `KYCReview.tsx` | Review and approve KYC submissions |
+| 8 | Payment Operations | `PaymentOperations.tsx` | Deposits, withdrawals, crypto, buy gold |
+| 9 | Transactions | `Transactions.tsx` | Unified transaction management |
+| 10 | BNSL Management | `BNSLManagement.tsx` | BNSL plans, templates, agreements |
+| 11 | FinaBridge Management | `FinaBridgeManagement.tsx` | Trade requests, proposals, deal rooms |
+| 12 | Trade Finance | `TradeFinance.tsx` | AML cases and screening |
+| 13 | Vault Management | `VaultManagement.tsx` | Vault deposits and withdrawals |
+| 14 | FinaVault Management | `FinaVaultManagement.tsx` | Gold bars and storage fees |
+| 15 | Database Backups | `DatabaseBackups.tsx` | Backup creation, restore, sync |
+| 16 | Platform Configuration | `PlatformConfiguration.tsx` | All platform settings (12 categories) |
+| 17 | Email Notifications | `EmailNotificationsManagement.tsx` | Email toggles and logs |
+| 18 | Security Settings | `SecuritySettings.tsx` | Security configurations |
+| 19 | Audit Logs | `AuditLogs.tsx` | System audit trail |
+| 20 | Account Statements | `AccountStatements.tsx` | User statements with PDF/CSV export |
+| 21 | Account Deletion | `AccountDeletionRequests.tsx` | GDPR deletion requests |
+| 22 | Gold Backing Report | `GoldBackingReport.tsx` | Gold backing verification |
+| 23 | Financial Reports | `FinancialReports.tsx` | Financial metrics and reports |
+| 24 | Compliance Dashboard | `ComplianceDashboard.tsx` | Risk profiles, AML monitoring |
+| 25 | CMS Management | `CMSManagement.tsx` | Content management system |
+| 26 | Admin Chat | `AdminChat.tsx` | AI chat agents and knowledge base |
+| 27 | Attachments | `AttachmentsManagement.tsx` | File attachment management |
+| 28 | Documents | `DocumentsManagement.tsx` | Document expiry tracking |
+| 29 | Payment Gateway | `PaymentGatewayManagement.tsx` | Gateway configuration |
+| 30 | Fee Management | `FeeManagement.tsx` | Platform fees configuration |
+| 31 | Geo Restrictions | `GeoRestrictions.tsx` | Country restrictions |
+| 32 | Referral Management | `ReferralManagement.tsx` | Referral program management |
+| 33 | Card Management | `CardManagement.tsx` | FinaCard administration |
+| 34 | System Health | `SystemHealth.tsx` | System monitoring dashboard |
+| 35 | User Preferences | `UserPreferencesManagement.tsx` | User preference templates |
+| 36 | Admin Layout | `AdminLayout.tsx` | Wrapper component with sidebar |
+
+### Admin API Endpoints
+
+#### Authentication & Session
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/login` | POST | Public | Admin-specific login |
+| `/api/mfa/verify` | POST | Auth | MFA verification |
+
+#### User Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/users` | GET | `view_users`, `manage_users` | List all users |
+| `/api/admin/users/list` | GET | Admin only | User list for dropdowns |
+| `/api/admin/users/:userId` | GET | `view_users`, `manage_users` | User details |
+| `/api/admin/users/:userId/verify-email` | POST | `manage_users` | Force verify email |
+| `/api/admin/users/:userId/suspend` | POST | `manage_users` | Suspend user |
+| `/api/admin/users/:userId/activate` | POST | `manage_users` | Activate user |
+
+#### Employee Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/employees` | GET | `manage_employees`, `view_users` | List employees |
+| `/api/admin/employees/:id` | GET | `manage_employees`, `view_users` | Employee details |
+| `/api/admin/employees` | POST | `manage_employees` | Create employee |
+| `/api/admin/employees/:id` | PATCH | `manage_employees` | Update employee |
+| `/api/admin/employees/:id/deactivate` | POST | `manage_employees` | Deactivate |
+| `/api/admin/employees/:id/activate` | POST | `manage_employees` | Activate |
+| `/api/admin/role-permissions` | GET | `manage_employees`, `manage_settings` | Get role permissions |
+| `/api/admin/role-permissions/:role` | PATCH | `manage_settings` | Update role permissions |
+
+#### KYC Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/kyc` | GET | Admin only | List KYC submissions |
+| `/api/admin/kyc/:id/screen` | POST | Admin only | Screen KYC submission |
+| `/api/admin/kyc/sla-alerts` | GET | Admin only | KYC SLA alerts |
+| `/api/kyc/:id` | PATCH | Admin only | Approve/reject KYC |
+
+#### Transaction Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/stats` | GET | Admin only | Dashboard statistics |
+| `/api/admin/pending-counts` | GET | Admin only | Pending item counts |
+| `/api/admin/unified-transactions` | GET | `view_transactions`, `manage_transactions` | All transactions |
+| `/api/admin/transactions` | GET | `view_transactions`, `manage_transactions` | Transaction list |
+| `/api/admin/transactions/:id/approve` | POST | `manage_transactions` | Approve transaction |
+| `/api/admin/transactions/:id/reject` | POST | `manage_transactions` | Reject transaction |
+
+#### Vault Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/vault` | GET | `view_vault`, `manage_vault` | Vault overview |
+| `/api/admin/vault/deposits` | GET | `view_vault`, `manage_vault` | Vault deposits |
+| `/api/admin/vault/deposits/pending` | GET | `view_vault`, `manage_vault` | Pending deposits |
+| `/api/admin/vault/deposit/:id` | PATCH | `manage_vault` | Update deposit |
+| `/api/admin/vault/withdrawals` | GET | `view_vault`, `manage_vault` | Vault withdrawals |
+| `/api/admin/vault/withdrawals/pending` | GET | `view_vault`, `manage_vault` | Pending withdrawals |
+| `/api/admin/vault/withdrawal/:id` | PATCH | `manage_vault` | Update withdrawal |
+| `/api/admin/vault/physical-deliveries` | GET | `view_vault`, `manage_vault` | Delivery requests |
+| `/api/admin/vault/physical-delivery/:id` | PATCH | `manage_vault` | Update delivery |
+| `/api/admin/vault/gold-bars` | GET | `view_vault`, `manage_vault` | Gold bar inventory |
+| `/api/admin/vault/gold-bars` | POST | `manage_vault` | Add gold bar |
+| `/api/admin/vault/gold-bars/:id/allocate` | POST | `manage_vault` | Allocate bar to user |
+| `/api/admin/vault/storage-fees` | GET | `view_vault`, `manage_vault` | Storage fees |
+| `/api/admin/vault/storage-fees/generate` | POST | `manage_vault` | Generate fees |
+| `/api/admin/vault/locations` | GET | Admin only | Vault locations |
+| `/api/admin/vault/locations` | POST | Admin only | Add location |
+| `/api/admin/vault/locations/:id` | PATCH | Admin only | Update location |
+
+#### Database & Backup Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/backups` | GET | `manage_settings` | List backups |
+| `/api/admin/backups` | POST | `manage_settings` | Create backup |
+| `/api/admin/backups/:id` | GET | `manage_settings` | Backup details |
+| `/api/admin/backups/:id/verify` | POST | `manage_settings` | Verify backup |
+| `/api/admin/backups/:id/download` | POST | `manage_settings` | Download backup |
+| `/api/admin/backups/:id/restore` | POST | `manage_settings` | Restore backup (OTP required) |
+| `/api/admin/database-sync/status` | GET | Admin only | Sync status |
+| `/api/admin/database-sync/trigger` | POST | Admin only | Trigger sync |
+| `/api/admin/database-sync/scheduler` | POST | Admin only | Configure scheduler |
+
+#### Platform Configuration
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/platform-config/public` | GET | Public | Public platform config |
+| `/api/admin/platform-config` | GET | Admin only | All configurations |
+| `/api/admin/platform-config` | POST | Admin only | Create config |
+| `/api/admin/platform-config/bulk-update` | POST | Admin only | Bulk update |
+| `/api/admin/platform-config/:id` | PATCH | Admin only | Update config |
+| `/api/admin/platform-config/:id` | DELETE | Admin only | Delete config |
+
+#### Compliance & AML
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/risk-profiles` | GET | Admin only | All risk profiles |
+| `/api/admin/risk-profiles/high-risk` | GET | Admin only | High-risk users |
+| `/api/admin/risk-profile/:userId/preview` | GET | Admin only | Preview risk score |
+| `/api/admin/risk-profiles/batch-calculate` | POST | Admin only | Recalculate all |
+| `/api/admin/aml-rules` | GET | Admin only | AML rules |
+| `/api/admin/aml-rules` | POST | Admin only | Create rule |
+| `/api/admin/aml-rules/:id` | PATCH | Admin only | Update rule |
+| `/api/admin/aml-rules/:id` | DELETE | Admin only | Delete rule |
+| `/api/admin/aml-rules/templates` | GET | Admin only | Rule templates |
+| `/api/admin/aml/evaluate-transaction` | POST | Admin only | Evaluate transaction |
+| `/api/admin/aml/alerts` | GET | Admin only | AML alerts |
+| `/api/admin/aml-cases` | GET | Admin only | AML cases list |
+| `/api/admin/aml-cases` | POST | Admin only | Create case |
+| `/api/admin/aml-cases/:id` | GET | Admin only | Case details |
+| `/api/admin/aml-cases/:id` | PATCH | Admin only | Update case |
+| `/api/admin/aml-cases/:id/notes` | POST | Admin only | Add case note |
+| `/api/admin/aml-cases/:id/screen` | POST | Admin only | Screen case |
+
+#### Gold Backing & Financial Reports
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/gold-backing-report` | GET | Admin only | Gold backing report |
+| `/api/admin/gold-backing/finapay-users` | GET | Admin only | FinaPay gold users |
+| `/api/admin/gold-backing/bnsl-users` | GET | Admin only | BNSL gold users |
+| `/api/admin/gold-backing/vault/:holdingId` | GET | Admin only | Vault holding details |
+| `/api/admin/gold-backing/vault-location/:location` | GET | Admin only | Location details |
+| `/api/admin/gold-backing/user/:userId` | GET | Admin only | User gold backing |
+| `/api/admin/gold-backing-report/pdf` | GET | Admin only | Export PDF report |
+
+#### Account Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/account-deletion-requests` | GET | Admin only | Deletion requests |
+| `/api/admin/account-deletion-requests/:id/review` | POST | Admin only | Review request |
+| `/api/admin/account-deletion-requests/:id/execute` | POST | Admin only | Execute deletion |
+| `/api/admin/account-statement/:userId` | GET | Admin only | Account statement |
+| `/api/admin/account-statement/:userId/pdf` | GET | Admin only | Statement PDF |
+| `/api/admin/account-statement/:userId/csv` | GET | Admin only | Statement CSV |
+
+#### Document & Email Management
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/document-expiry` | GET | Admin only | Expiring documents |
+| `/api/admin/document-expiry/stats` | GET | Admin only | Expiry statistics |
+| `/api/admin/document-expiry/send-reminders` | POST | Admin only | Send reminders |
+| `/api/admin/email-notifications` | GET | Admin only | Email settings |
+| `/api/admin/email-notifications/:type/toggle` | PATCH | Admin only | Toggle email type |
+| `/api/email-logs` | GET | Admin only | Email history |
+
+#### System & Health
+| Endpoint | Method | Permission | Description |
+|----------|--------|------------|-------------|
+| `/api/admin/system-health` | GET | Admin only | System health metrics |
+| `/api/admin/audit-logs` | GET | Admin only | Audit log history |
+| `/api/admin/attachments` | GET | Admin only | File attachments |
+
+### Security Middleware
+
+#### 1. ensureAdminAsync
+Verifies admin access via session-based authentication:
+- Checks for valid session
+- Validates admin role
+- Verifies admin portal login path
+- Checks employee active status
+
+```typescript
+async function ensureAdminAsync(req, res, next) {
+  // Session validation
+  // Role check (must be 'admin')
+  // Admin portal verification
+  // Employee status check
+}
+```
+
+#### 2. requirePermission
+Enforces permission-based access control:
+- Must be used after `ensureAdminAsync`
+- Super admins bypass permission checks
+- Supports multiple permission options (OR logic)
+
+```typescript
+function requirePermission(...requiredPermissions: string[]) {
+  // Check if employee has at least one required permission
+}
+```
+
+#### 3. Available Permissions
+
+| Permission | Description |
+|------------|-------------|
+| `view_users` | View user list and details |
+| `manage_users` | Modify user accounts |
+| `view_transactions` | View transaction history |
+| `manage_transactions` | Approve/reject transactions |
+| `view_kyc` | View KYC submissions |
+| `manage_kyc` | Approve/reject KYC |
+| `view_vault` | View vault operations |
+| `manage_vault` | Process vault requests |
+| `manage_employees` | Manage staff accounts |
+| `manage_settings` | Modify platform settings |
+| `view_reports` | Access financial reports |
+| `manage_bnsl` | Manage BNSL operations |
+| `manage_finabridge` | Manage trade finance |
+
+### OTP Verification for Critical Actions
+
+The following admin actions require OTP verification:
+- KYC approval/rejection
+- Deposit approval
+- Withdrawal approval
+- Database restore
+- Account deletion execution
+- Large transaction processing
+
+### Rate Limiting
+
+| Endpoint Category | Limit | Window |
+|-------------------|-------|--------|
+| Admin login | 10 requests | 15 minutes |
+| OTP verification | 5 requests | 5 minutes |
+| Sensitive operations | 10 requests | 1 hour |
+
+---
+
 ## API Architecture
 
 ### Endpoint Categories
@@ -1569,4 +1837,4 @@ FinaBridge is a gold-backed trade finance platform connecting importers and expo
 
 ---
 
-*Last Updated: December 26, 2025*
+*Last Updated: December 30, 2025*
