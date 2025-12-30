@@ -1420,6 +1420,18 @@ ${message}
         });
       }
       
+      // SECURITY: Regenerate session to prevent session fixation attacks
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error('[Session] Regeneration failed:', err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+      
       // Set session for authenticated user (SECURITY-CRITICAL)
       // Regular login does NOT grant admin portal access
       req.session.userId = user.id;
@@ -1525,6 +1537,18 @@ ${message}
           message: "Two-factor authentication is required for admin accounts. Please set up 2FA to continue."
         });
       }
+      
+      // SECURITY: Regenerate session to prevent session fixation attacks
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error('[Session] Regeneration failed:', err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
       
       // Set session for authenticated admin user with admin portal access
       req.session.userId = user.id;
@@ -2380,6 +2404,14 @@ ${message}
         details: "MFA enabled via required setup during login"
       });
       
+      // SECURITY: Regenerate session to prevent session fixation attacks
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
       // Create session
       req.session.userId = user.id;
       req.session.userRole = user.role;
@@ -2453,6 +2485,14 @@ ${message}
         // Delete challenge after successful verification
         mfaChallenges.delete(challengeToken);
         
+        // SECURITY: Regenerate session to prevent session fixation attacks
+        await new Promise<void>((resolve, reject) => {
+          req.session.regenerate((err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
         // Set session for authenticated user (SECURITY-CRITICAL)
         req.session.userId = user.id;
         req.session.userRole = user.role;
@@ -2487,6 +2527,14 @@ ${message}
             
             // Delete challenge after successful verification
             mfaChallenges.delete(challengeToken);
+            
+            // SECURITY: Regenerate session to prevent session fixation attacks
+            await new Promise<void>((resolve, reject) => {
+              req.session.regenerate((err) => {
+                if (err) reject(err);
+                else resolve();
+              });
+            });
             
             // Set session for authenticated user (SECURITY-CRITICAL)
             req.session.userId = user.id;
@@ -2728,8 +2776,18 @@ ${message}
         return res.status(403).json({ message: "Device not authorized for biometric login" });
       }
       
+      // SECURITY: Regenerate session to prevent session fixation attacks
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
       // Set session
       req.session.userId = user.id;
+      req.session.userRole = user.role;
+      req.session.adminPortal = false;
       
       // Create audit log
       await storage.createAuditLog({
