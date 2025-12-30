@@ -951,7 +951,7 @@ export default function FinaBridge() {
               </div>
               <div className="relative z-10">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  {role === 'importer' ? 'Locked in Escrow' : 'Incoming Locked Funds'}
+                  {role === 'importer' ? 'Locked in Trade' : 'Incoming Locked Funds'}
                 </p>
                 <div className="space-y-1 mb-2">
                   <div className="flex items-baseline gap-2">

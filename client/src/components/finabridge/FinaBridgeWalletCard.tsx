@@ -119,7 +119,7 @@ export default function FinaBridgeWalletCard({ wallet, role, finaPayBalanceGold,
             {/* Locked Funds */}
             <div className="bg-muted p-4 rounded-xl border border-border">
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
-                {role === 'Importer' ? "Locked in Escrow" : "Incoming Locked Funds"}
+                {role === 'Importer' ? "Locked in Trade" : "Incoming Locked Funds"}
               </p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
