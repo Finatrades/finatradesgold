@@ -826,7 +826,7 @@ export default function KYC() {
       personalCountry && personalCity && personalAddress && personalNationality && 
       personalOccupation && personalSourceOfFunds && personalDateOfBirth;
     
-    const isDocumentsComplete = idFrontFile && idBackFile && addressProofFile;
+    const isDocumentsComplete = idFrontFile && idBackFile && passportFile && passportExpiryDate && addressProofFile;
     
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -1103,7 +1103,7 @@ export default function KYC() {
                           <div className="p-4 border-2 border-dashed rounded-lg">
                             <Label className="flex items-center gap-2 mb-2">
                               <FileText className="w-4 h-4" />
-                              Passport (Optional)
+                              Passport <span className="text-red-500">*</span>
                             </Label>
                             <p className="text-xs text-muted-foreground mb-2">Format: JPG, PNG, or PDF</p>
                             <Input
@@ -1118,7 +1118,7 @@ export default function KYC() {
                               </p>
                             )}
                             <div className="mt-3">
-                              <Label className="text-sm">Passport Expiry Date</Label>
+                              <Label className="text-sm">Passport Expiry Date <span className="text-red-500">*</span></Label>
                               <p className="text-xs text-muted-foreground mb-1">We'll send you reminders before it expires</p>
                               <Input
                                 type="date"
