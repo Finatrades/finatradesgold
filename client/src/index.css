@@ -606,16 +606,38 @@ input[type="number"] {
   }
 }
 
-/* NGenius Payment SDK - Overflow Prevention */
-#hybrid-card-input,
-#hybrid-card-input * {
+/* NGenius Payment SDK - Overflow Prevention & Hide Scrollbars */
+#hybrid-card-input {
   box-sizing: border-box !important;
   max-width: 100% !important;
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#hybrid-card-input::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+#hybrid-card-input *,
+#hybrid-card-input *::-webkit-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#hybrid-card-input *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 #hybrid-card-input iframe {
   max-width: 100% !important;
   width: 100% !important;
+  overflow: hidden !important;
+  scrollbar-width: none !important;
 }
 
 #hybrid-card-input .ni-card-input-container,
@@ -624,6 +646,8 @@ input[type="number"] {
   width: 100% !important;
   max-width: 100% !important;
   overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 #hybrid-card-input input,
