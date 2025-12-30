@@ -85,6 +85,27 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
                       <p className="font-medium text-gray-900">Société Anonyme LLC</p>
                     </div>
                   </div>
+                  <div className="flex items-start gap-3">
+                    <Hash className="w-5 h-5 text-purple-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-500">LEI-Nummer</p>
+                      <a 
+                        href="https://search.gleif.org/#/record/894500AF89I6QWOX2V69/record" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="font-medium text-purple-600 hover:text-purple-700"
+                      >
+                        894500AF89I6QWOX2V69
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Hash className="w-5 h-5 text-purple-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-500">Swift code</p>
+                      <p className="font-medium text-gray-900">FNFNCHG2</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
