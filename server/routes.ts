@@ -15935,6 +15935,15 @@ ${message}
             recipientTransactionId: recipientTx.id,
           });
           
+          // 5b. Update sender's transaction to Completed
+          if (transfer.senderTransactionId) {
+            await txStorage.updateTransaction(transfer.senderTransactionId, {
+              status: 'Completed',
+              description: `Sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}`,
+              completedAt: new Date(),
+            });
+          }
+          
           // 6. Record ledger entry for recipient
           const { vaultLedgerService } = await import('./vault-ledger-service');
           await vaultLedgerService.recordLedgerEntry({
