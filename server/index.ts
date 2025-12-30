@@ -419,6 +419,14 @@ app.use((req, res, next) => {
     console.warn('[Data Repair] Automatic repair failed:', error);
   }
   
+  // Start database sync scheduler (AWS RDS → Replit every 6 hours)
+  try {
+    const { startSyncScheduler } = await import('./database-sync-scheduler');
+    startSyncScheduler();
+  } catch (error) {
+    console.warn('[DB Sync] Scheduler initialization failed:', error);
+  }
+  
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   

@@ -3553,6 +3553,66 @@ ${message}
     }
   });
 
+  // Database sync status (Admin)
+  app.get("/api/admin/database-sync/status", ensureAdminAsync, async (req, res) => {
+    try {
+      const { getSyncStatus, verifySyncStatus } = await import('./database-sync-scheduler');
+      const status = getSyncStatus();
+      const verification = await verifySyncStatus();
+      
+      res.json({
+        scheduler: status,
+        databases: verification,
+        syncDirection: 'AWS RDS → Replit (every 6 hours)'
+      });
+    } catch (error) {
+      console.error("Database sync status check failed:", error);
+      res.status(500).json({ message: "Failed to get sync status" });
+    }
+  });
+
+  // Trigger manual database sync (Admin)
+  app.post("/api/admin/database-sync/trigger", ensureAdminAsync, async (req, res) => {
+    try {
+      const { direction = 'aws-to-replit' } = req.body;
+      const { syncAwsToReplit, syncReplitToAws } = await import('./database-sync-scheduler');
+      
+      if (direction === 'replit-to-aws') {
+        console.log(`[DB Sync] Manual sync triggered by admin: Replit → AWS`);
+        const result = await syncReplitToAws();
+        res.json({ message: 'Sync completed', result });
+      } else {
+        console.log(`[DB Sync] Manual sync triggered by admin: AWS → Replit`);
+        const result = await syncAwsToReplit();
+        res.json({ message: 'Sync completed', result });
+      }
+    } catch (error) {
+      console.error("Manual database sync failed:", error);
+      res.status(500).json({ message: "Failed to trigger sync" });
+    }
+  });
+
+  // Start/stop database sync scheduler (Admin)
+  app.post("/api/admin/database-sync/scheduler", ensureAdminAsync, async (req, res) => {
+    try {
+      const { action } = req.body;
+      const { startSyncScheduler, stopSyncScheduler, getSyncStatus } = await import('./database-sync-scheduler');
+      
+      if (action === 'start') {
+        startSyncScheduler();
+        res.json({ message: 'Scheduler started', status: getSyncStatus() });
+      } else if (action === 'stop') {
+        stopSyncScheduler();
+        res.json({ message: 'Scheduler stopped', status: getSyncStatus() });
+      } else {
+        res.status(400).json({ message: 'Invalid action. Use "start" or "stop"' });
+      }
+    } catch (error) {
+      console.error("Scheduler control failed:", error);
+      res.status(500).json({ message: "Failed to control scheduler" });
+    }
+  });
+
   // Get all users (Admin)
   app.get("/api/admin/users", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
     try {
