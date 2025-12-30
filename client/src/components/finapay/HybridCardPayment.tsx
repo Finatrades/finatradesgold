@@ -630,12 +630,13 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
         id="hybrid-card-input" 
         className="border border-border rounded-xl bg-white"
         style={{ 
-          minHeight: '180px', 
+          height: '140px', 
           maxWidth: '100%', 
           width: '100%',
           overflow: 'hidden',
           scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
+          msOverflowStyle: 'none',
+          clipPath: 'inset(0)'
         }}
       >
         {!cardMounted && (

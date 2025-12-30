@@ -613,6 +613,8 @@ input[type="number"] {
   overflow: hidden !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  clip-path: inset(0) !important;
+  position: relative !important;
 }
 
 #hybrid-card-input::-webkit-scrollbar {
@@ -635,7 +637,8 @@ input[type="number"] {
 
 #hybrid-card-input iframe {
   max-width: 100% !important;
-  width: 100% !important;
+  width: calc(100% + 20px) !important;
+  margin-right: -20px !important;
   overflow: hidden !important;
   scrollbar-width: none !important;
 }
