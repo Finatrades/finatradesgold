@@ -17441,9 +17441,12 @@ ${message}
       const ngeniusHostedSessionKey = process.env.NGENIUS_HOSTED_SESSION_KEY;
 
       if (!settings?.ngeniusEnabled || !ngeniusOutletRef || !ngeniusHostedSessionKey) {
-        return res.status(400).json({ 
+        return res.json({ 
           enabled: false,
-          message: "Embedded card payments not configured" 
+          apiKey: '',
+          outletRef: '',
+          sdkUrl: '',
+          mode: 'live',
         });
       }
 
