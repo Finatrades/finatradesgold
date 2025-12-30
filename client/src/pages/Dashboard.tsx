@@ -325,8 +325,8 @@ export default function Dashboard() {
                 transactions: transactions?.length || 0
               }}
               bnslData={{
-                goldGrams: totals.bnslLockedGrams || 0,
-                usdValue: (totals.bnslLockedGrams || 0) * goldPrice,
+                goldGrams: ((totals as any).bnslWalletGoldGrams || 0) + (totals.bnslLockedGrams || 0),
+                usdValue: (((totals as any).bnslWalletGoldGrams || 0) + (totals.bnslLockedGrams || 0)) * goldPrice,
                 lockedGrams: totals.bnslLockedGrams || 0,
                 activePlans: totals.activeBnslPlans || 0
               }}
