@@ -1390,6 +1390,19 @@ export default function FinaBridge() {
                             </span>
                           </div>
                           
+                          {/* Price Lock Info */}
+                          <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <Shield className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-amber-800 text-xs font-medium">Price Lock Protection</p>
+                                <p className="text-amber-700 text-xs mt-1">
+                                  When you move gold into FinaBridge, you secure today's USD price. This protects you from price drops, but you won't gain if prices rise while the gold is locked.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
                           {requestForm.settlementGoldGrams && 
                            parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0') && (
                             <div className="mt-2 p-3 bg-purple-50 border border-purple-300 rounded-lg">

@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BnslTenor, BnslPlan } from '@/types/bnsl';
-import { ArrowRight, Wallet, ShieldCheck, AlertTriangle, CheckCircle2, FileText, Download, Loader2, Clock, TrendingUp, Calendar, PenLine, Info } from 'lucide-react';
+import { ArrowRight, Wallet, ShieldCheck, AlertTriangle, CheckCircle2, FileText, Download, Loader2, Clock, TrendingUp, Calendar, PenLine, Info, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { generateBnslAgreement } from '@/utils/generateBnslPdf';
@@ -407,6 +407,19 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Info className="w-4 h-4" />
               <span>Your gold will be sold at the locked enrollment price of <span className="font-bold text-foreground">${enrollmentPrice.toFixed(2)}/g</span></span>
+            </div>
+            
+            {/* Price Lock Info */}
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mt-3">
+              <div className="flex items-start gap-2">
+                <Shield className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-amber-800 text-xs font-medium">Price Lock Protection</p>
+                  <p className="text-amber-700 text-xs mt-1">
+                    When you move gold into BNSL, you secure today's USD price. This protects you from price drops, but you won't gain if prices rise while the gold is in BNSL.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
