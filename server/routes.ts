@@ -15942,7 +15942,41 @@ ${message}
               description: `Sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}`,
               completedAt: new Date(),
             });
+            
+            // 5c. Create Transfer Certificate for sender
+            const senderCertNum = await txStorage.generateCertificateNumber('Transfer');
+            await txStorage.createCertificate({
+              certificateNumber: senderCertNum,
+              userId: sender.id,
+              transactionId: transfer.senderTransactionId,
+              type: 'Transfer',
+              status: 'Active',
+              goldGrams: goldAmount.toFixed(6),
+              goldPriceUsdPerGram: goldPrice.toFixed(2),
+              totalValueUsd: (goldAmount * goldPrice).toFixed(2),
+              issuer: 'Finatrades',
+              fromUserId: sender.id,
+              toUserId: recipient.id,
+              issuedAt: new Date(),
+            });
           }
+          
+          // 5d. Create Transfer Certificate for recipient
+          const recipientCertNum = await txStorage.generateCertificateNumber('Transfer');
+          await txStorage.createCertificate({
+            certificateNumber: recipientCertNum,
+            userId: recipient.id,
+            transactionId: recipientTx.id,
+            type: 'Transfer',
+            status: 'Active',
+            goldGrams: goldAmount.toFixed(6),
+            goldPriceUsdPerGram: goldPrice.toFixed(2),
+            totalValueUsd: (goldAmount * goldPrice).toFixed(2),
+            issuer: 'Finatrades',
+            fromUserId: sender.id,
+            toUserId: recipient.id,
+            issuedAt: new Date(),
+          });
           
           // 6. Record ledger entry for recipient
           const { vaultLedgerService } = await import('./vault-ledger-service');
