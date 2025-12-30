@@ -54,9 +54,6 @@ export default function Footer() {
                 </a>
               </p>
               <p><span className="font-bold">Swift code: </span><span className="font-bold">FNFNCHG2</span></p>
-              <p><span className="font-bold">UID: </span>CHE-422.960.092</p>
-              <p><span className="font-bold">Registered: </span>Rue Robert-Céard 6, 1204 Geneva</p>
-              <p><span className="font-bold">FINMA </span>Regulatory Supervision</p>
             </div>
             <div className="flex gap-3">
               {socialIcons.map((social) => (
