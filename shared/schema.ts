@@ -1014,6 +1014,8 @@ export const certificates = pgTable("certificates", {
   // Transfer-related fields
   fromUserId: varchar("from_user_id", { length: 255 }).references(() => users.id), // Sender for transfers
   toUserId: varchar("to_user_id", { length: 255 }).references(() => users.id), // Recipient for transfers
+  fromUserName: varchar("from_user_name", { length: 255 }), // Sender name for certificate display
+  toUserName: varchar("to_user_name", { length: 255 }), // Recipient name for certificate display
   relatedCertificateId: varchar("related_certificate_id", { length: 255 }), // Links to parent/related certificate
   
   // BNSL-related fields

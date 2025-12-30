@@ -115,6 +115,7 @@ export async function generateTransferCertificate(data: CertificateData): Promis
   const sender = await storage.getUser(data.userId);
   if (!sender) throw new Error('Sender not found');
 
+  const senderName = `${sender.firstName} ${sender.lastName}`;
   let recipientName = data.recipientName || 'Unknown';
   if (data.recipientUserId) {
     const recipient = await storage.getUser(data.recipientUserId);
@@ -134,12 +135,14 @@ export async function generateTransferCertificate(data: CertificateData): Promis
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
     fromUserId: data.userId,
     toUserId: data.recipientUserId,
+    fromUserName: senderName,
+    toUserName: recipientName,
     issuer: 'Finatrades',
     status: 'Active'
   };
 
   const cert = await storage.createCertificate(certificateData);
-  console.log(`[Certificate] Generated Transfer Certificate: ${cert.certificateNumber}`);
+  console.log(`[Certificate] Generated Transfer Certificate: ${cert.certificateNumber} (${senderName} → ${recipientName})`);
   return cert.id;
 }
 
