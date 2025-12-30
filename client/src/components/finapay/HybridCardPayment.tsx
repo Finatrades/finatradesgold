@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, CreditCard, Lock, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -624,94 +623,35 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
-      {/* Card Form - Enlarged with Modern Styling */}
-      <Card className="border-2 shadow-xl bg-card w-full overflow-hidden">
-        <CardContent className="p-4 sm:p-6 md:p-8 overflow-hidden">
-          <div className="flex flex-wrap items-center gap-3 mb-5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="font-semibold text-lg sm:text-xl block">Card Details</span>
-              <p className="text-xs sm:text-sm text-muted-foreground">Enter your payment information</p>
-            </div>
-            <div className="flex items-center gap-1.5 bg-success-muted px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shrink-0">
-              <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
-              <span className="text-xs sm:text-sm font-medium text-success">Secure</span>
-            </div>
+      {/* Card Input Form */}
+      <div 
+        ref={containerRef}
+        id="hybrid-card-input" 
+        className="border border-border rounded-xl bg-white"
+        style={{ 
+          minHeight: '180px', 
+          maxWidth: '100%', 
+          width: '100%',
+          overflow: 'hidden',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
+      >
+        {!cardMounted && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading payment form...</p>
           </div>
-          
-          <div 
-            ref={containerRef}
-            id="hybrid-card-input" 
-            className="border-2 border-border rounded-2xl bg-white shadow-lg"
-            style={{ 
-              minHeight: '200px', 
-              maxWidth: '100%', 
-              width: '100%',
-              overflow: 'hidden',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
-            }}
-          >
-            {!cardMounted && (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                <div className="text-center space-y-2">
-                  <p className="text-sm font-medium text-foreground">Loading secure payment form...</p>
-                  <p className="text-xs text-muted-foreground max-w-xs">
-                    Please wait while we set up your secure payment. Do not refresh or leave this page.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+        )}
+      </div>
 
-          {error && cardMounted && (
-            <p className="text-sm text-destructive mt-4">{error}</p>
-          )}
+      {error && cardMounted && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
 
-          <p className="text-xs sm:text-sm text-muted-foreground mt-4 flex items-center gap-2">
-            <Lock className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-            <span>Your card details are encrypted with 256-bit SSL and processed securely</span>
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Modern Slider-Style Order Summary */}
-      <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-muted-foreground">Order Summary</span>
-          <div className="flex items-center gap-1.5">
-            <Lock className="w-3 h-3 text-success" />
-            <span className="text-xs text-muted-foreground">SSL Protected</span>
-          </div>
-        </div>
-        
-        {/* Modern Progress Slider Bar */}
-        <div className="relative h-2 bg-muted rounded-full overflow-hidden mb-4">
-          <div 
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
-            style={{ width: formValid ? '100%' : '60%' }}
-          />
-          <div className="absolute inset-y-0 right-0 w-3 h-3 -mt-0.5 bg-primary rounded-full shadow-lg border-2 border-white" 
-               style={{ right: formValid ? '0%' : '40%' }} />
-        </div>
-        
-        {/* Summary Chips */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
-            <span className="text-xs text-muted-foreground">Amount</span>
-            <span className="text-sm font-semibold">${amount.toFixed(2)}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
-            <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-sm font-medium">Card</span>
-          </div>
-          <div className="ml-auto">
-            <span className="text-xl font-bold text-primary">${amount.toFixed(2)}</span>
-          </div>
-        </div>
+      {/* Amount Display */}
+      <div className="text-center py-2">
+        <span className="text-2xl font-bold text-foreground">${amount.toFixed(2)}</span>
       </div>
 
       {/* Action Buttons */}
