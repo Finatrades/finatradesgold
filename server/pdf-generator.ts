@@ -324,12 +324,18 @@ export function generateCertificatePDF(
         ['Issued By:', certificate.issuer],
       ];
 
-      if (certificate.type === 'Transfer' && transferParties) {
-        if (transferParties.fromUser) {
-          details.push(['From:', `${transferParties.fromUser.firstName} ${transferParties.fromUser.lastName}`]);
+      if (certificate.type === 'Transfer') {
+        // Use stored names from certificate first, fall back to transferParties if available
+        const fromName = (certificate as any).fromUserName || 
+          (transferParties?.fromUser ? `${transferParties.fromUser.firstName} ${transferParties.fromUser.lastName}` : null);
+        const toName = (certificate as any).toUserName || 
+          (transferParties?.toUser ? `${transferParties.toUser.firstName} ${transferParties.toUser.lastName}` : null);
+        
+        if (fromName) {
+          details.push(['From:', fromName]);
         }
-        if (transferParties.toUser) {
-          details.push(['To:', `${transferParties.toUser.firstName} ${transferParties.toUser.lastName}`]);
+        if (toName) {
+          details.push(['To:', toName]);
         }
       }
 

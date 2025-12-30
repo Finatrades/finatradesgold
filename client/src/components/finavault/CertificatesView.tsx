@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Award, Box, ShieldCheck, Download, FileText, ChevronRight } from 'lucide-react';
+import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send } from 'lucide-react';
 
 interface Certificate {
   id: string;
@@ -23,6 +23,10 @@ interface Certificate {
   issuer: string;
   vaultLocation: string | null;
   wingoldStorageRef: string | null;
+  fromUserId: string | null;
+  toUserId: string | null;
+  fromUserName: string | null;
+  toUserName: string | null;
   issuedAt: string;
   expiresAt: string | null;
   cancelledAt: string | null;
@@ -94,8 +98,28 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
           </div>
 
           <div className="space-y-6 text-center relative z-10">
+            {/* Show transfer parties for Transfer certificates */}
+            {certificate.type === 'Transfer' && (certificate.fromUserName || certificate.toUserName) && (
+              <div className="bg-white/5 border border-[#D4AF37]/20 rounded-lg p-4 mb-4">
+                <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-3">Transfer of Ownership</p>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="text-right">
+                    <p className="text-xs text-white/50 mb-1">From</p>
+                    <p className="font-semibold text-white">{certificate.fromUserName || 'Unknown'}</p>
+                  </div>
+                  <div className="text-[#D4AF37] text-xl">→</div>
+                  <div className="text-left">
+                    <p className="text-xs text-white/50 mb-1">To</p>
+                    <p className="font-semibold text-white">{certificate.toUserName || 'Unknown'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
-              {isDigitalOwnership ? (
+              {certificate.type === 'Transfer' ? (
+                <>This certifies the transfer of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold between Finatrades users.</>
+              ) : isDigitalOwnership ? (
                 <>This certifies that the holder is the beneficial owner of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold, secured and recorded in the Finatrades digital ledger.</>
               ) : (
                 <>This certifies that <strong>{goldGrams.toFixed(4)}g</strong> of physical gold is securely stored at <strong>{certificate.vaultLocation}</strong> under custody of <strong>{certificate.issuer}</strong>.</>
@@ -176,7 +200,7 @@ export default function CertificatesView() {
   const { user } = useAuth();
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'active' | 'digital' | 'storage'>('active');
+  const [filter, setFilter] = useState<'all' | 'active' | 'digital' | 'storage' | 'transfer'>('active');
 
   const { data, isLoading } = useQuery({
     queryKey: ['certificates', user?.id],
@@ -199,6 +223,7 @@ export default function CertificatesView() {
     if (filter === 'active') return cert.status === 'Active';
     if (filter === 'digital') return cert.type === 'Digital Ownership' || cert.type === 'BNSL Lock' || cert.type === 'Trade Lock' || cert.type === 'Trade Release';
     if (filter === 'storage') return cert.type === 'Physical Storage';
+    if (filter === 'transfer') return cert.type === 'Transfer';
     return true;
   });
 
@@ -234,7 +259,7 @@ export default function CertificatesView() {
         </CardHeader>
         <CardContent className="p-6">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
-            <TabsList className="bg-muted mb-6">
+            <TabsList className="bg-muted mb-6 flex-wrap">
               <TabsTrigger value="active" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
                 Active
               </TabsTrigger>
@@ -243,6 +268,9 @@ export default function CertificatesView() {
               </TabsTrigger>
               <TabsTrigger value="storage" className="data-[state=active]:bg-gray-500 data-[state=active]:text-white">
                 Physical Storage
+              </TabsTrigger>
+              <TabsTrigger value="transfer" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+                Transfers
               </TabsTrigger>
               <TabsTrigger value="all" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white">
                 All History
@@ -262,6 +290,7 @@ export default function CertificatesView() {
             <div className="grid gap-4">
               {filteredCertificates.map((cert) => {
                 const isDigital = cert.type !== 'Physical Storage';
+                const isTransfer = cert.type === 'Transfer';
                 const goldGrams = parseFloat(cert.goldGrams || '0');
                 const totalValue = parseFloat(cert.totalValueUsd || '0');
                 
@@ -275,9 +304,11 @@ export default function CertificatesView() {
                     data-testid={`certificate-card-${cert.id}`}
                   >
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      isDigital ? 'bg-purple-100' : 'bg-gray-200'
+                      isTransfer ? 'bg-orange-100' : isDigital ? 'bg-purple-100' : 'bg-gray-200'
                     }`}>
-                      {isDigital ? (
+                      {isTransfer ? (
+                        <Send className="w-6 h-6 text-orange-600" />
+                      ) : isDigital ? (
                         <Award className="w-6 h-6 text-fuchsia-600" />
                       ) : (
                         <Box className="w-6 h-6 text-gray-500" />
@@ -286,7 +317,7 @@ export default function CertificatesView() {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${isDigital ? 'text-fuchsia-600' : 'text-gray-600'}`}>
+                        <span className={`font-semibold ${isTransfer ? 'text-orange-600' : isDigital ? 'text-fuchsia-600' : 'text-gray-600'}`}>
                           {cert.type}
                         </span>
                         <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={`text-xs ${
@@ -295,7 +326,15 @@ export default function CertificatesView() {
                           {cert.status}
                         </Badge>
                       </div>
-                      <p className="text-muted-foreground text-sm truncate">{cert.certificateNumber}</p>
+                      {isTransfer && (cert.fromUserName || cert.toUserName) ? (
+                        <p className="text-sm truncate">
+                          <span className="text-muted-foreground">{cert.fromUserName || 'Unknown'}</span>
+                          <ArrowRight className="w-3 h-3 inline mx-1 text-orange-500" />
+                          <span className="text-muted-foreground">{cert.toUserName || 'Unknown'}</span>
+                        </p>
+                      ) : (
+                        <p className="text-muted-foreground text-sm truncate">{cert.certificateNumber}</p>
+                      )}
                       <p className="text-muted-foreground/70 text-xs">Issued by {cert.issuer}</p>
                     </div>
                     
