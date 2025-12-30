@@ -432,12 +432,30 @@ app.use((req, res, next) => {
   
   await registerRoutes(httpServer, app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Send error notification for server errors (5xx)
+    if (status >= 500) {
+      import('./system-notifications').then(({ notifyError }) => {
+        notifyError({
+          error: err,
+          context: 'Express Global Error Handler',
+          route: `${req.method} ${req.path}`,
+          userId: (req as any).user?.id,
+          requestData: {
+            contentType: req.get('content-type'),
+            userAgent: req.get('user-agent')?.substring(0, 100),
+            queryKeys: Object.keys(req.query || {}),
+            bodyKeys: req.body ? Object.keys(req.body) : [],
+          },
+        }).catch(console.error);
+      }).catch(console.error);
+    }
+
     res.status(status).json({ message });
-    throw err;
+    console.error(`[Error] ${req.method} ${req.path}:`, message);
   });
 
   // importantly only setup vite in development and after

@@ -83,6 +83,7 @@ import {
 } from "./backup-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
+import { logActivity, notifyError } from "./system-notifications";
 import { format } from "date-fns";
 
 // ============================================================================
@@ -1095,6 +1096,15 @@ ${message}
         console.error('[Registration] Email send failed:', emailError);
         emailResult = { success: false, error: emailError instanceof Error ? emailError.message : 'Email failed' };
       }
+      
+      // Log platform activity
+      logActivity({
+        type: 'user_registration',
+        title: 'New User Registration',
+        description: `${user.firstName} ${user.lastName} registered (${user.email})`,
+        details: { finatradesId: user.finatradesId, hasReferral: !!effectiveReferralCode },
+        severity: 'info',
+      });
       
       res.json({ 
         user: sanitizeUser(user),
@@ -4690,6 +4700,15 @@ ${message}
         actor: userId,
         actorRole: "user",
         details: `Tiered KYC (${tier}) submitted - SLA deadline: ${slaDeadline.toISOString()}`,
+      });
+      
+      // Log platform activity
+      logActivity({
+        type: 'kyc_submission',
+        title: 'KYC Submission',
+        description: `${tier} verification submitted`,
+        details: { tier, accountType, slaDeadline: slaDeadline.toISOString() },
+        severity: 'info',
       });
       
       res.json({ submission, slaDeadline });
@@ -10884,6 +10903,15 @@ ${message}
         link: '/dashboard',
       });
       
+      // Log platform activity
+      logActivity({
+        type: 'deposit',
+        title: 'Deposit Request',
+        description: `$${parseFloat(req.body.amountUsd).toFixed(2)} deposit request from ${depositUser?.firstName || 'User'} ${depositUser?.lastName || ''}`,
+        details: { referenceNumber, method: req.body.paymentMethod },
+        severity: 'info',
+      });
+      
       res.json({ request });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
@@ -11292,6 +11320,15 @@ ${message}
         message: `Your withdrawal request of $${parseFloat(amountUsd).toFixed(2)} has been submitted and is being processed.`,
         type: 'transaction',
         link: '/dashboard',
+      });
+      
+      // Log platform activity
+      logActivity({
+        type: 'withdrawal',
+        title: 'Withdrawal Request',
+        description: `$${parseFloat(amountUsd).toFixed(2)} withdrawal request from ${withdrawUser?.firstName || 'User'} ${withdrawUser?.lastName || ''}`,
+        details: { referenceNumber, bankName },
+        severity: 'info',
       });
       
       res.json({ request });
