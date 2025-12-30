@@ -41,19 +41,22 @@ export default function Footer() {
               />
               <p className="text-white/60 text-sm">Swiss-Regulated Gold Platform</p>
             </div>
-            <div className="text-white/80 text-sm mb-4">
-              <span className="font-bold">LEI-Nummer </span>
-              <a 
-                href="https://search.gleif.org/#/record/894500AF89I6QWOX2V69/record" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="font-bold text-purple-400 hover:text-purple-300 transition-colors"
-                data-testid="link-lei"
-              >
-                894500AF89I6QWOX2V69
-              </a>
-              <span className="mx-2">|</span>
-              <span className="font-bold">Swift code: FNFNCHG2</span>
+            <div className="text-white/70 text-xs space-y-1 mb-4">
+              <p><span className="font-bold">LEI-Nummer: </span>
+                <a 
+                  href="https://search.gleif.org/#/record/894500AF89I6QWOX2V69/record" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="font-bold text-purple-400 hover:text-purple-300 transition-colors"
+                  data-testid="link-lei"
+                >
+                  894500AF89I6QWOX2V69
+                </a>
+              </p>
+              <p><span className="font-bold">Swift code: </span><span className="font-bold">FNFNCHG2</span></p>
+              <p><span className="font-bold">UID: </span>CHE-422.960.092</p>
+              <p><span className="font-bold">Registered: </span>Rue Robert-Céard 6, 1204 Geneva</p>
+              <p><span className="font-bold">FINMA </span>Regulatory Supervision</p>
             </div>
             <div className="flex gap-3">
               {socialIcons.map((social) => (
