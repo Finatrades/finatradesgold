@@ -41,7 +41,13 @@ import {
   FileArchive,
   HardDrive,
   History,
-  KeyRound
+  KeyRound,
+  ArrowRightLeft,
+  Play,
+  Pause,
+  Cloud,
+  Server,
+  Zap
 } from "lucide-react";
 
 interface Backup {
@@ -69,6 +75,28 @@ interface AuditLog {
   errorMessage: string | null;
   metadata: any;
   createdAt: string;
+}
+
+interface SyncStatus {
+  scheduler: {
+    isRunning: boolean;
+    isSyncing: boolean;
+    lastSync: {
+      success: boolean;
+      timestamp: string;
+      direction: string;
+      tablesCount?: number;
+      duration?: number;
+      error?: string;
+    } | null;
+    nextSyncIn: string | null;
+  };
+  databases: {
+    aws: { tables: number; users: number };
+    replit: { tables: number; users: number };
+    inSync: boolean;
+  };
+  syncDirection: string;
 }
 
 function formatBytes(bytes: number | null): string {
@@ -134,6 +162,71 @@ export default function DatabaseBackups() {
   
   const { data: auditLogsData, isLoading: loadingLogs } = useQuery<{ logs: AuditLog[] }>({
     queryKey: ["/api/admin/backup-audit-logs"],
+  });
+  
+  const { data: syncStatusData, isLoading: loadingSyncStatus, refetch: refetchSyncStatus } = useQuery<SyncStatus>({
+    queryKey: ["/api/admin/database-sync/status"],
+    refetchInterval: 30000,
+  });
+  
+  const triggerSyncMutation = useMutation({
+    mutationFn: async (direction: string) => {
+      const res = await fetch("/api/admin/database-sync/trigger", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "include",
+        body: JSON.stringify({ direction }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to trigger sync");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success("Database sync completed", {
+        description: data.result?.message || "Sync finished successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/database-sync/status"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Sync failed", {
+        description: error.message,
+      });
+    },
+  });
+  
+  const schedulerControlMutation = useMutation({
+    mutationFn: async (action: 'start' | 'stop') => {
+      const res = await fetch("/api/admin/database-sync/scheduler", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "include",
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to control scheduler");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success(`Scheduler ${data.message?.includes('started') ? 'started' : 'stopped'}`, {
+        description: data.status?.isRunning ? "Auto-sync is now active" : "Auto-sync is paused",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/database-sync/status"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Scheduler control failed", {
+        description: error.message,
+      });
+    },
   });
   
   const createBackupMutation = useMutation({
@@ -351,6 +444,10 @@ export default function DatabaseBackups() {
               <FileArchive className="w-4 h-4 mr-2" />
               Backups
             </TabsTrigger>
+            <TabsTrigger value="sync" data-testid="tab-sync">
+              <ArrowRightLeft className="w-4 h-4 mr-2" />
+              Database Sync
+            </TabsTrigger>
             <TabsTrigger value="audit" data-testid="tab-audit">
               <History className="w-4 h-4 mr-2" />
               Audit Log
@@ -484,6 +581,274 @@ export default function DatabaseBackups() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="sync" className="mt-4">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card data-testid="card-aws-status">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Cloud className="w-4 h-4" />
+                      AWS RDS (Primary)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {syncStatusData?.databases?.aws ? (
+                          <CheckCircle2 className="w-5 h-5 text-success" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-destructive" />
+                        )}
+                        <span className="font-medium">
+                          {syncStatusData?.databases?.aws ? "Connected" : "Checking..."}
+                        </span>
+                      </div>
+                      <div className="text-right text-sm text-muted-foreground">
+                        <div>{syncStatusData?.databases?.aws?.users?.toLocaleString() || 0} users</div>
+                        <div>{syncStatusData?.databases?.aws?.tables || 0} tables</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card data-testid="card-replit-status">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Server className="w-4 h-4" />
+                      Replit (Backup)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {syncStatusData?.databases?.replit ? (
+                          <CheckCircle2 className="w-5 h-5 text-success" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-destructive" />
+                        )}
+                        <span className="font-medium">
+                          {syncStatusData?.databases?.replit ? "Connected" : "Checking..."}
+                        </span>
+                      </div>
+                      <div className="text-right text-sm text-muted-foreground">
+                        <div>{syncStatusData?.databases?.replit?.users?.toLocaleString() || 0} users</div>
+                        <div>{syncStatusData?.databases?.replit?.tables || 0} tables</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card data-testid="card-sync-status">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <ArrowRightLeft className="w-4 h-4" />
+                      Sync Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {syncStatusData?.databases?.inSync ? (
+                          <CheckCircle2 className="w-5 h-5 text-success" />
+                        ) : (
+                          <AlertTriangle className="w-5 h-5 text-warning" />
+                        )}
+                        <span className="font-medium">
+                          {syncStatusData?.databases?.inSync ? "In Sync" : "Out of Sync"}
+                        </span>
+                      </div>
+                      {syncStatusData?.scheduler?.isSyncing && (
+                        <span className="text-sm text-info flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          Syncing...
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="w-5 h-5" />
+                      Auto-Sync Scheduler
+                    </CardTitle>
+                    <CardDescription>
+                      {syncStatusData?.syncDirection || "Automatic sync from AWS RDS to Replit backup"}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => refetchSyncStatus()}
+                      data-testid="button-refresh-sync"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Refresh
+                    </Button>
+                    {syncStatusData?.scheduler?.isRunning ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => schedulerControlMutation.mutate('stop')}
+                        disabled={schedulerControlMutation.isPending}
+                        data-testid="button-stop-scheduler"
+                      >
+                        <Pause className="w-4 h-4 mr-2" />
+                        {schedulerControlMutation.isPending ? "Stopping..." : "Stop Scheduler"}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => schedulerControlMutation.mutate('start')}
+                        disabled={schedulerControlMutation.isPending}
+                        data-testid="button-start-scheduler"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        {schedulerControlMutation.isPending ? "Starting..." : "Start Scheduler"}
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loadingSyncStatus ? (
+                    <div className="flex items-center justify-center py-8">
+                      <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Scheduler</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {syncStatusData?.scheduler?.isRunning ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                                <span className="font-medium text-success">Running</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+                                <span className="font-medium text-muted-foreground">Stopped</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Last Sync</p>
+                          <p className="font-medium mt-1">
+                            {syncStatusData?.scheduler?.lastSync?.timestamp 
+                              ? format(new Date(syncStatusData.scheduler.lastSync.timestamp), "MMM d, HH:mm")
+                              : "Never"}
+                          </p>
+                        </div>
+                        
+                        <div className="p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Next Sync In</p>
+                          <p className="font-medium mt-1">
+                            {syncStatusData?.scheduler?.nextSyncIn || "—"}
+                          </p>
+                        </div>
+                        
+                        <div className="p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Tables Synced</p>
+                          <p className="font-medium mt-1">{syncStatusData?.scheduler?.lastSync?.tablesCount || 0}</p>
+                        </div>
+                      </div>
+                      
+                      {syncStatusData?.scheduler?.lastSync && (
+                        <div className={`p-3 rounded-lg ${
+                          syncStatusData.scheduler.lastSync.success 
+                            ? 'bg-success-muted' 
+                            : 'bg-error-muted'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            {syncStatusData.scheduler.lastSync.success ? (
+                              <CheckCircle2 className="w-4 h-4 text-success" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-destructive" />
+                            )}
+                            <span className="font-medium">
+                              Last sync: {syncStatusData.scheduler.lastSync.success ? 'Success' : 'Failed'}
+                              {syncStatusData.scheduler.lastSync.error && ` - ${syncStatusData.scheduler.lastSync.error}`}
+                            </span>
+                            {syncStatusData.scheduler.lastSync.duration && (
+                              <span className="text-sm text-muted-foreground ml-auto">
+                                Duration: {(syncStatusData.scheduler.lastSync.duration / 1000).toFixed(1)}s
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Manual Sync</CardTitle>
+                  <CardDescription>Trigger a database sync manually between AWS RDS and Replit</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-4">
+                    <Button
+                      onClick={() => triggerSyncMutation.mutate('aws-to-replit')}
+                      disabled={triggerSyncMutation.isPending}
+                      data-testid="button-sync-aws-to-replit"
+                    >
+                      {triggerSyncMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Syncing...
+                        </>
+                      ) : (
+                        <>
+                          <Cloud className="w-4 h-4 mr-2" />
+                          AWS → Replit
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => triggerSyncMutation.mutate('replit-to-aws')}
+                      disabled={triggerSyncMutation.isPending}
+                      data-testid="button-sync-replit-to-aws"
+                    >
+                      {triggerSyncMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Syncing...
+                        </>
+                      ) : (
+                        <>
+                          <Server className="w-4 h-4 mr-2" />
+                          Replit → AWS
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-warning-muted rounded-lg">
+                    <p className="text-sm text-warning-muted-foreground flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Warning:</strong> Manual sync will overwrite the target database with data from the source. 
+                        AWS → Replit is the default safe direction. Use Replit → AWS only if you need to restore AWS from a backup.
+                      </span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="audit" className="mt-4">
