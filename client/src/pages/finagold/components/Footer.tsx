@@ -91,6 +91,22 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t border-white/20">
+          <div className="flex flex-col items-center gap-4 mb-4">
+            <div className="text-white/80 text-sm text-center">
+              <span className="font-bold">LEI-Nummer </span>
+              <a 
+                href="https://search.gleif.org/#/record/894500AF89I6QWOX2V69/record" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-bold text-purple-400 hover:text-purple-300 transition-colors"
+                data-testid="link-lei"
+              >
+                894500AF89I6QWOX2V69
+              </a>
+              <span className="mx-2">|</span>
+              <span className="font-bold">Swift code: FNFNCHG2</span>
+            </div>
+          </div>
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/60 text-sm">
               © {new Date().getFullYear()} Finatrades. All rights reserved.
