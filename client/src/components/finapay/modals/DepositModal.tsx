@@ -494,7 +494,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Wallet className="w-5 h-5 text-primary" />
@@ -931,7 +931,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             </div>
           </div>
         ) : step === 'card-embedded' ? (
-          <div className="py-4">
+          <div className="py-2 w-full max-w-full overflow-hidden">
             <HybridCardPayment
               key={`card-form-${cardFormKey}`}
               amount={parseFloat(amount) || 0}

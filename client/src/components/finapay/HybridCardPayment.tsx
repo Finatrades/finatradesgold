@@ -188,15 +188,20 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           style: {
             main: { 
               margin: '0', 
-              padding: '20px',
+              padding: '16px',
               backgroundColor: '#ffffff',
+              boxSizing: 'border-box',
+              maxWidth: '100%',
+              width: '100%',
+              overflow: 'hidden',
             },
             base: {
               color: '#1f2937',
-              fontSize: '16px',
+              fontSize: '15px',
               fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
               fontWeight: '500',
               lineHeight: '1.5',
+              boxSizing: 'border-box',
               '::placeholder': { 
                 color: '#9ca3af',
                 fontWeight: '400',
@@ -211,26 +216,41 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
               borderColor: '#10b981',
             },
             input: {
-              padding: '16px',
-              height: '52px',
+              padding: '14px',
+              height: '48px',
               borderRadius: '10px',
               borderColor: '#d1d5db',
               borderWidth: '1.5px',
               backgroundColor: '#f9fafb',
-              marginBottom: '16px',
+              marginBottom: '12px',
+              boxSizing: 'border-box',
+              width: '100%',
+              maxWidth: '100%',
             },
             cardNumber: {
-              marginBottom: '20px',
+              marginBottom: '16px',
+              width: '100%',
             },
             expiry: {
-              marginRight: '12px',
+              marginRight: '8px',
+              flex: '1',
+              minWidth: '0',
+            },
+            cvv: {
+              flex: '1',
+              minWidth: '0',
             },
             label: {
               fontSize: '12px',
               fontWeight: '600',
               color: '#4b5563',
-              marginBottom: '8px',
+              marginBottom: '6px',
               display: 'block',
+            },
+            row: {
+              display: 'flex',
+              gap: '12px',
+              width: '100%',
             },
           },
           onSuccess: () => setCardMounted(true),
@@ -519,36 +539,38 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     }
 
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
         <div className="text-center pb-2">
           <p className="text-xl font-bold text-foreground">${amount.toFixed(2)} USD</p>
           <p className="text-sm text-muted-foreground">Enter your card details below</p>
         </div>
 
-        <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '400px' }}>
+        <div className="border rounded-lg overflow-hidden bg-white w-full" style={{ height: '380px', maxWidth: '100%' }}>
           <iframe
             src={paymentUrl}
             className="w-full h-full border-0"
             title="Secure Payment"
             allow="payment"
+            style={{ maxWidth: '100%' }}
           />
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onCancel} className="flex-1">
+          <Button variant="outline" onClick={onCancel} className="flex-1 h-11">
             Cancel
           </Button>
           <Button
             variant="outline"
             onClick={() => window.open(paymentUrl, '_blank')}
-            className="flex-1"
+            className="flex-1 h-11"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
             Open in New Tab
           </Button>
         </div>
 
-        <p className="text-xs text-center text-muted-foreground">
+        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+          <Lock className="w-3 h-3" />
           Complete the payment above. Your wallet will be credited automatically.
         </p>
       </div>
@@ -601,29 +623,29 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
       {/* Card Form - Enlarged with Modern Styling */}
-      <Card className="border-2 shadow-xl bg-card">
-        <CardContent className="p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-primary" />
+      <Card className="border-2 shadow-xl bg-card w-full overflow-hidden">
+        <CardContent className="p-4 sm:p-6 md:p-8 overflow-hidden">
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <div>
-              <span className="font-semibold text-xl">Card Details</span>
-              <p className="text-sm text-muted-foreground">Enter your payment information</p>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-lg sm:text-xl block">Card Details</span>
+              <p className="text-xs sm:text-sm text-muted-foreground">Enter your payment information</p>
             </div>
-            <div className="ml-auto flex items-center gap-1.5 bg-success-muted px-3 py-1.5 rounded-full">
-              <Lock className="w-4 h-4 text-success" />
-              <span className="text-sm font-medium text-success">Secure</span>
+            <div className="flex items-center gap-1.5 bg-success-muted px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shrink-0">
+              <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
+              <span className="text-xs sm:text-sm font-medium text-success">Secure</span>
             </div>
           </div>
           
           <div 
             ref={containerRef}
             id="hybrid-card-input" 
-            className="border-2 border-border rounded-2xl bg-white overflow-auto shadow-lg"
-            style={{ minHeight: '200px' }}
+            className="border-2 border-border rounded-2xl bg-white shadow-lg overflow-hidden"
+            style={{ minHeight: '200px', maxWidth: '100%', width: '100%' }}
           >
             {!cardMounted && (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -642,9 +664,9 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
             <p className="text-sm text-destructive mt-4">{error}</p>
           )}
 
-          <p className="text-sm text-muted-foreground mt-5 flex items-center gap-2">
-            <Lock className="w-4 h-4" />
-            Your card details are encrypted with 256-bit SSL and processed securely
+          <p className="text-xs sm:text-sm text-muted-foreground mt-4 flex items-center gap-2">
+            <Lock className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+            <span>Your card details are encrypted with 256-bit SSL and processed securely</span>
           </p>
         </CardContent>
       </Card>

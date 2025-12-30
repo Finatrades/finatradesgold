@@ -605,3 +605,61 @@ input[type="number"] {
     opacity: 0;
   }
 }
+
+/* NGenius Payment SDK - Overflow Prevention */
+#hybrid-card-input,
+#hybrid-card-input * {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+#hybrid-card-input iframe {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+#hybrid-card-input .ni-card-input-container,
+#hybrid-card-input .ni-card-form,
+#hybrid-card-input .ni-card-input-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+#hybrid-card-input input,
+#hybrid-card-input .ni-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Responsive Card Form Adjustments */
+@media (max-width: 480px) {
+  #hybrid-card-input {
+    min-height: 220px !important;
+  }
+  
+  .ni-card-input-row,
+  #hybrid-card-input .expiry-cvv-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  #hybrid-card-input .expiry,
+  #hybrid-card-input .cvv {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* 3D Secure Container */
+#threeds-challenge-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+#threeds-challenge-container iframe {
+  max-width: 100% !important;
+  width: 100% !important;
+}
