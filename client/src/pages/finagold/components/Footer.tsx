@@ -41,11 +41,6 @@ export default function Footer() {
               />
               <p className="text-white/60 text-sm">Swiss-Regulated Gold Platform</p>
             </div>
-            <p className="text-white/70 text-sm leading-relaxed mb-4">
-              {isPersonal 
-                ? 'Your gateway to owning and managing real physical gold with complete transparency and security.'
-                : 'Enterprise-grade gold infrastructure for treasury, trade, and compliance operations.'}
-            </p>
             <div className="text-white/80 text-sm mb-4">
               <span className="font-bold">LEI-Nummer </span>
               <a 
