@@ -236,16 +236,16 @@ export default function Dashboard() {
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Row 1 */}
                 {(() => {
-                  const availableGoldGrams = totals.walletGoldGrams || 0;
-                  const availableGoldValueUsd = availableGoldGrams * goldPrice;
+                  const storedGoldGrams = totals.vaultGoldGrams || 0;
+                  const storedGoldValueUsd = totals.vaultGoldValueUsd || 0;
                   return (
                     <>
                       <KpiBox
                         title="Gold Storage"
-                        value={showBalance ? `${formatNumber(availableGoldGrams, 4)} g` : hiddenValue}
-                        secondaryValue={showBalance ? `${formatNumber(availableGoldGrams / 1000, 6)} KG` : undefined}
-                        tertiaryValue={showBalance ? `${formatNumber(availableGoldGrams / 31.1035, 4)} OZ` : undefined}
-                        subtitle="Available for withdrawal or transfer"
+                        value={showBalance ? `${formatNumber(storedGoldGrams, 4)} g` : hiddenValue}
+                        secondaryValue={showBalance ? `${formatNumber(storedGoldGrams / 1000, 6)} KG` : undefined}
+                        tertiaryValue={showBalance ? `${formatNumber(storedGoldGrams / 31.1035, 4)} OZ` : undefined}
+                        subtitle="Stored in FinaVault"
                         icon={<Database className="w-5 h-5 text-purple-600" />}
                         iconBg="bg-purple-50"
                         valueColor="text-purple-600"
@@ -253,7 +253,7 @@ export default function Dashboard() {
                       />
                       <KpiBox
                         title={`Total Gold Value (${displayCurrency})`}
-                        value={showBalance ? formatCurrency(availableGoldValueUsd) : hiddenValue}
+                        value={showBalance ? formatCurrency(storedGoldValueUsd) : hiddenValue}
                         subtitle={`Worth in ${displayCurrency}`}
                         icon={<DollarSign className="w-5 h-5 text-green-600" />}
                         iconBg="bg-green-50"
@@ -261,7 +261,7 @@ export default function Dashboard() {
                       />
                       <KpiBox
                         title="Total Gold Value (AED)"
-                        value={showBalance ? <AEDAmount amount={availableGoldValueUsd * 3.67} /> : hiddenValue}
+                        value={showBalance ? <AEDAmount amount={storedGoldValueUsd * 3.67} /> : hiddenValue}
                         subtitle="Worth in AED"
                         icon={<DollarSign className="w-5 h-5 text-blue-600" />}
                         iconBg="bg-blue-50"

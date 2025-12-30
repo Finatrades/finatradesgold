@@ -723,8 +723,13 @@ export async function registerRoutes(
       const finabridgeGoldGrams = parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0');
       const finabridgeGoldValueUsd = finabridgeGoldGrams * goldPrice;
       
-      // Note: walletGoldGrams represents the same gold stored in vault, so only count once
-      const totalPortfolioUsd = (walletGoldGrams * goldPrice) + walletUsdBalance + finabridgeGoldValueUsd;
+      // Get BNSL wallet balance (separate from locked plans)
+      const bnslWallet = await storage.getBnslWallet(userId);
+      const bnslWalletGoldGrams = parseFloat(bnslWallet?.availableGoldGrams || '0');
+      const bnslWalletValueUsd = bnslWalletGoldGrams * goldPrice;
+      
+      // Total portfolio includes: vault + FinaPay wallet + BNSL wallet + FinaBridge + USD balance
+      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + bnslWalletValueUsd + finabridgeGoldValueUsd + walletUsdBalance;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
       // Include both 'Pending' and 'Under Review' statuses as pending
@@ -789,6 +794,8 @@ export async function registerRoutes(
           vaultGoldValueAed,
           walletGoldGrams,
           walletUsdBalance,
+          bnslWalletGoldGrams,
+          bnslWalletValueUsd,
           totalPortfolioUsd,
           bnslLockedGrams,
           bnslTotalProfit,
