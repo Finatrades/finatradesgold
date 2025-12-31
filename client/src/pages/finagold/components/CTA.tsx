@@ -23,7 +23,7 @@ export default function CTA() {
   const c = content[mode];
 
   return (
-    <section className="relative py-32 overflow-hidden bg-gradient-to-b from-[#F4F6FC] to-[#EDE9FE]" data-testid="cta-section">
+    <section className="relative py-12 lg:py-32 overflow-hidden bg-gradient-to-b from-[#F4F6FC] to-[#EDE9FE]" data-testid="cta-section">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         whileInView={{ opacity: 1, scale: 1 }}

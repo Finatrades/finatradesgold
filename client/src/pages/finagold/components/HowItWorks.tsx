@@ -222,7 +222,7 @@ export default function HowItWorks() {
   }, [mode]);
 
   return (
-    <section id="how-it-works" className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE] overflow-hidden" data-testid="how-it-works-section">
+    <section id="how-it-works" className="relative py-12 lg:py-32 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE] overflow-hidden" data-testid="how-it-works-section">
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0" style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(138, 43, 226, 0.08) 1px, transparent 0)`,

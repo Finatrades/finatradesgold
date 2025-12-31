@@ -29,7 +29,7 @@ export default function Certificates() {
   const c = content[mode];
 
   return (
-    <section id="certificates" className="relative py-24 bg-gradient-to-b from-[#EDE9FE] to-[#F4F6FC]" data-testid="certificates-section">
+    <section id="certificates" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#EDE9FE] to-[#F4F6FC]" data-testid="certificates-section">
       <div className="relative max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <motion.div

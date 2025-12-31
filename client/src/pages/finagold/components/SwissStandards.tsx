@@ -8,7 +8,7 @@ export default function SwissStandards() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <section className="py-28 bg-gradient-to-b from-[#F8FAFC] to-[#FAFBFF] relative overflow-hidden">
+    <section className="py-12 lg:py-28 bg-gradient-to-b from-[#F8FAFC] to-[#FAFBFF] relative overflow-hidden">
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-50/50 blur-[150px] rounded-full" />
         <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-pink-50/30 blur-[120px] rounded-full" />

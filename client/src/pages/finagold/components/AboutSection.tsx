@@ -119,7 +119,7 @@ export default function AboutSection() {
   const data = mode === 'business' ? businessData : personalData;
 
   return (
-    <section className="py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 relative overflow-hidden">
+    <section className="py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 relative overflow-hidden">
       <div className="absolute inset-0">
         <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-100/30 blur-[150px] rounded-full" />
         <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-pink-100/20 blur-[120px] rounded-full" />

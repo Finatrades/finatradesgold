@@ -89,7 +89,7 @@ export default function Products() {
   const c = content[mode];
 
   return (
-    <section id="products" className="relative py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="products-section">
+    <section id="products" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="products-section">
       <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px]" />
 

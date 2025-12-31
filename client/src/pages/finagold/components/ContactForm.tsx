@@ -45,7 +45,7 @@ export default function ContactForm() {
   };
 
   return (
-    <section id="contact" className="py-24 relative overflow-hidden">
+    <section id="contact" className="py-12 lg:py-24 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[#EDE9FE] via-[#F4F6FC] to-[#FAFBFF]" />
       
       <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-[#8A2BE2]/5 rounded-full blur-[120px]" />

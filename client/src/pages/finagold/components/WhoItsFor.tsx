@@ -30,7 +30,7 @@ export default function WhoItsFor() {
   const c = content[mode];
 
   return (
-    <section id="who-its-for" className="relative py-24 bg-gradient-to-b from-[#F4F6FC] to-[#FAFBFF]" data-testid="who-its-for-section">
+    <section id="who-its-for" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F4F6FC] to-[#FAFBFF]" data-testid="who-its-for-section">
       <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-gradient-to-r from-[#8A2BE2]/5 to-transparent" />
       <div className="absolute top-1/3 right-1/4 w-[350px] h-[350px] bg-[#8A2BE2]/5 rounded-full blur-[100px]" />
       

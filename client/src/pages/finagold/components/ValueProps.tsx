@@ -77,7 +77,7 @@ export default function ValueProps() {
   const c = content[mode];
 
   return (
-    <section className="relative py-24 bg-gradient-to-b from-[#FAFBFF] to-[#EDE9FE]" data-testid="value-props-section">
+    <section className="relative py-12 lg:py-24 bg-gradient-to-b from-[#FAFBFF] to-[#EDE9FE]" data-testid="value-props-section">
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0" style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(138, 43, 226, 0.1) 1px, transparent 0)`,

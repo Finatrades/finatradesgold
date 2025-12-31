@@ -73,7 +73,7 @@ export default function FinatradesAdvantage() {
   const features = mode === 'business' ? businessFeatures : personalFeatures;
 
   return (
-    <section className="py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/30 to-pink-50/20 relative overflow-hidden">
+    <section className="py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/30 to-pink-50/20 relative overflow-hidden">
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-purple-100/40 to-pink-100/30 blur-[150px] rounded-full" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-to-tl from-purple-100/40 to-pink-100/30 blur-[120px] rounded-full" />
