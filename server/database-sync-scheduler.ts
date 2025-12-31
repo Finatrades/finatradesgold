@@ -239,7 +239,8 @@ export async function syncAwsToReplit(options?: {
   isSyncing = true;
 
   const replitUrl = process.env.DATABASE_URL;
-  const awsUrl = process.env.AWS_DATABASE_URL;
+  // Support new 3-database architecture with legacy fallback
+  const awsUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
 
   if (!replitUrl || !awsUrl) {
     isSyncing = false;
@@ -247,7 +248,7 @@ export async function syncAwsToReplit(options?: {
       success: false,
       timestamp: new Date(),
       direction: 'aws-to-replit',
-      error: 'Missing database URLs'
+      error: 'Missing database URLs. Set AWS_PROD_DATABASE_URL (or AWS_DATABASE_URL) and DATABASE_URL.'
     };
   }
 
@@ -427,10 +428,11 @@ export async function verifySyncStatus(): Promise<{
   inSync: boolean;
 }> {
   const replitUrl = process.env.DATABASE_URL;
-  const awsUrl = process.env.AWS_DATABASE_URL;
+  // Support new 3-database architecture with legacy fallback
+  const awsUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
 
   if (!replitUrl || !awsUrl) {
-    throw new Error('Missing database URLs');
+    throw new Error('Missing database URLs. Set AWS_PROD_DATABASE_URL (or AWS_DATABASE_URL) and DATABASE_URL.');
   }
 
   const replitTables = await getTableCount(replitUrl);

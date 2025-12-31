@@ -56,12 +56,21 @@ The platform uses a client-server architecture with a React frontend and an Expr
   - **Withdrawals**: 10 requests per hour per user
   - **General API**: 100 requests per minute (not yet applied globally)
 
-**Data Storage:**
-- **Database**: PostgreSQL with Drizzle ORM (multi-database architecture).
-- **Primary Database**: AWS RDS PostgreSQL (production) - set via `AWS_DATABASE_URL`
-- **Secondary Database**: Replit PostgreSQL (development/backup) - set via `DATABASE_URL`
+**Data Storage (3-Database Architecture - Updated Dec 2025):**
+- **Database**: PostgreSQL with Drizzle ORM (3-database architecture).
+- **Production Database**: AWS RDS PostgreSQL - set via `AWS_PROD_DATABASE_URL`
+- **Development Database**: AWS RDS PostgreSQL - set via `AWS_DEV_DATABASE_URL`
+- **Backup Database**: Replit PostgreSQL - set via `DATABASE_URL` (managed by Replit)
+- **Legacy Support**: `AWS_DATABASE_URL` still works for backward compatibility
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
 - **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs.
+
+**Environment Variable Configuration:**
+| Variable | Purpose | Environment |
+|----------|---------|-------------|
+| `AWS_PROD_DATABASE_URL` | Production database (real users) | Production only |
+| `AWS_DEV_DATABASE_URL` | Development database (testing) | Development only |
+| `DATABASE_URL` | Replit backup database | Managed by Replit |
 
 **Database Safety Architecture (Updated Dec 2025):**
 - **Auto-sync DISABLED**: The dangerous auto-sync scheduler has been disabled to prevent accidental data loss.
@@ -71,14 +80,16 @@ The platform uses a client-server architecture with a React frontend and an Expr
   - `DB_SYNC_ENABLED=true` required to enable sync
   - `ALLOW_DESTRUCTIVE_SYNC=true` required for DROP operations
   - Production restore requires `CONFIRM_PRODUCTION_RESTORE=yes`
-- **Backup Commands**:
-  - `npx tsx scripts/database-backup.ts status` - Check database status
-  - `npx tsx scripts/database-backup.ts backup aws` - Backup production
-  - `npx tsx scripts/database-backup.ts backup replit` - Backup development
-  - `npx tsx scripts/database-backup.ts push-schema aws` - Push schema to AWS
+- **Backup Commands (3-Database)**:
+  - `npx tsx scripts/database-backup.ts status` - Check all database status
+  - `npx tsx scripts/database-backup.ts backup prod` - Backup AWS Production
+  - `npx tsx scripts/database-backup.ts backup dev` - Backup AWS Development
+  - `npx tsx scripts/database-backup.ts backup backup` - Backup Replit
+  - `npx tsx scripts/database-backup.ts push-schema prod` - Push schema to AWS Production
+  - `npx tsx scripts/database-backup.ts push-schema dev` - Push schema to AWS Development
 - **Schema Push**: When deploying, always run schema push to AWS before starting app:
   - Generate: `npx drizzle-kit generate`
-  - Push to AWS: `npx tsx scripts/database-backup.ts push-schema aws`
+  - Push to Production: `npx tsx scripts/database-backup.ts push-schema prod`
 
 **Authentication & Authorization:**
 - **Method**: Email/password authentication.
