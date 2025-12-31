@@ -219,8 +219,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
               padding: '14px',
               height: '48px',
               borderRadius: '10px',
-              borderColor: '#d1d5db',
-              borderWidth: '1.5px',
+              border: '2px solid #d1d5db',
               backgroundColor: '#f9fafb',
               marginBottom: '12px',
               boxSizing: 'border-box',
@@ -230,15 +229,26 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
             cardNumber: {
               marginBottom: '16px',
               width: '100%',
+              border: '2px solid #d1d5db',
+              backgroundColor: '#f9fafb',
             },
             expiry: {
               marginRight: '8px',
               flex: '1',
               minWidth: '0',
+              border: '2px solid #d1d5db',
+              backgroundColor: '#f9fafb',
             },
             cvv: {
               flex: '1',
               minWidth: '0',
+              border: '2px solid #d1d5db',
+              backgroundColor: '#f9fafb',
+            },
+            cardholderName: {
+              border: '2px solid #d1d5db',
+              backgroundColor: '#f3f4f6',
+              marginTop: '8px',
             },
             label: {
               fontSize: '12px',
