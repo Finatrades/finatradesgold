@@ -188,19 +188,18 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           style: {
             main: { 
               margin: '0', 
-              padding: '16px',
+              padding: '12px',
               backgroundColor: '#ffffff',
               boxSizing: 'border-box',
               maxWidth: '100%',
               width: '100%',
-              overflow: 'hidden',
             },
             base: {
               color: '#1f2937',
-              fontSize: '15px',
+              fontSize: '14px',
               fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
               fontWeight: '500',
-              lineHeight: '1.5',
+              lineHeight: '1.4',
               boxSizing: 'border-box',
               '::placeholder': { 
                 color: '#9ca3af',
@@ -216,50 +215,50 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
               borderColor: '#10b981',
             },
             input: {
-              padding: '14px',
-              height: '48px',
-              borderRadius: '10px',
-              border: '2px solid #d1d5db',
+              padding: '12px',
+              height: '44px',
+              borderRadius: '8px',
+              border: '1.5px solid #d1d5db',
               backgroundColor: '#f9fafb',
-              marginBottom: '12px',
+              marginBottom: '10px',
               boxSizing: 'border-box',
               width: '100%',
               maxWidth: '100%',
             },
             cardNumber: {
-              marginBottom: '16px',
+              marginBottom: '10px',
               width: '100%',
-              border: '2px solid #d1d5db',
+              border: '1.5px solid #d1d5db',
               backgroundColor: '#f9fafb',
             },
             expiry: {
-              marginRight: '8px',
+              marginRight: '6px',
               flex: '1',
               minWidth: '0',
-              border: '2px solid #d1d5db',
+              border: '1.5px solid #d1d5db',
               backgroundColor: '#f9fafb',
             },
             cvv: {
               flex: '1',
               minWidth: '0',
-              border: '2px solid #d1d5db',
+              border: '1.5px solid #d1d5db',
               backgroundColor: '#f9fafb',
             },
             cardholderName: {
-              border: '2px solid #d1d5db',
+              border: '1.5px solid #d1d5db',
               backgroundColor: '#f3f4f6',
-              marginTop: '8px',
+              marginTop: '4px',
             },
             label: {
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: '600',
               color: '#4b5563',
-              marginBottom: '6px',
+              marginBottom: '4px',
               display: 'block',
             },
             row: {
               display: 'flex',
-              gap: '12px',
+              gap: '8px',
               width: '100%',
             },
           },
@@ -636,24 +635,15 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
-      {/* Card Input Form */}
+    <div className="flex flex-col gap-3 w-full max-w-full">
+      {/* Card Input Form - No fixed height, auto-size */}
       <div 
         ref={containerRef}
         id="hybrid-card-input" 
-        className="border border-border rounded-xl bg-white"
-        style={{ 
-          height: '280px', 
-          maxWidth: '100%', 
-          width: '100%',
-          overflow: 'hidden',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          clipPath: 'inset(0)'
-        }}
+        className="rounded-xl bg-white w-full"
       >
         {!cardMounted && (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">Loading payment form...</p>
           </div>
@@ -665,7 +655,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
       )}
 
       {/* Amount Display */}
-      <div className="text-center py-2">
+      <div className="text-center py-1">
         <span className="text-2xl font-bold text-foreground">${amount.toFixed(2)}</span>
       </div>
 
