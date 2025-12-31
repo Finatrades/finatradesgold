@@ -498,7 +498,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className={`bg-white border-border text-foreground overflow-x-hidden ${
         isCardPayment 
-          ? 'w-[95vw] max-w-lg overflow-hidden' 
+          ? 'w-[95vw] max-w-xl overflow-hidden' 
           : 'w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto'
       }`}>
         <DialogHeader>
