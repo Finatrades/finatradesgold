@@ -545,13 +545,13 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           <p className="text-sm text-muted-foreground">Enter your card details below</p>
         </div>
 
-        <div className="border rounded-lg overflow-hidden bg-white w-full" style={{ height: '380px', maxWidth: '100%' }}>
+        <div className="border rounded-lg overflow-hidden bg-white w-full" style={{ height: 'min(70vh, 600px)', maxWidth: '100%' }}>
           <iframe
             src={paymentUrl}
             className="w-full h-full border-0"
             title="Secure Payment"
             allow="payment"
-            style={{ maxWidth: '100%' }}
+            style={{ maxWidth: '100%', minHeight: '500px' }}
           />
         </div>
 

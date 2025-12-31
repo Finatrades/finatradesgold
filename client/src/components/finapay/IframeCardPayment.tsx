@@ -139,13 +139,14 @@ export default function IframeCardPayment({ amount, onSuccess, onError, onCancel
             <span>Enter your card details below</span>
           </div>
           
-          <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '450px' }}>
+          <div className="border rounded-lg overflow-hidden bg-white" style={{ height: 'min(70vh, 600px)' }}>
             <iframe
               ref={iframeRef}
               src={paymentUrl}
               className="w-full h-full border-0"
               title="Secure Card Payment"
               sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"
+              style={{ minHeight: '500px' }}
             />
           </div>
           
