@@ -56,40 +56,29 @@ The platform uses a client-server architecture with a React frontend and an Expr
   - **Withdrawals**: 10 requests per hour per user
   - **General API**: 100 requests per minute (not yet applied globally)
 
-**Data Storage (3-Database Architecture - Updated Dec 2025):**
-- **Database**: PostgreSQL with Drizzle ORM (3-database architecture).
-- **Production Database**: AWS RDS PostgreSQL - set via `AWS_PROD_DATABASE_URL`
-- **Development Database**: AWS RDS PostgreSQL - set via `AWS_DEV_DATABASE_URL`
-- **Backup Database**: Replit PostgreSQL - set via `DATABASE_URL` (managed by Replit)
-- **Legacy Support**: `AWS_DATABASE_URL` still works for backwards compatibility (maps to production)
+**Data Storage:**
+- **Database**: PostgreSQL with Drizzle ORM (multi-database architecture).
+- **Primary Database**: AWS RDS PostgreSQL (production) - set via `AWS_DATABASE_URL`
+- **Secondary Database**: Replit PostgreSQL (development/backup) - set via `DATABASE_URL`
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
 - **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs.
 
-**Database Environment Selection:**
-- `NODE_ENV=production` → Uses `AWS_PROD_DATABASE_URL`
-- `NODE_ENV=development` → Uses `AWS_DEV_DATABASE_URL`
-- Fallback chain: AWS_PROD/DEV → AWS_DATABASE_URL → DATABASE_URL
-
-**Database Safety Architecture:**
-- **Auto-sync DISABLED**: The auto-sync scheduler is disabled to prevent accidental data loss.
+**Database Safety Architecture (Updated Dec 2025):**
+- **Auto-sync DISABLED**: The dangerous auto-sync scheduler has been disabled to prevent accidental data loss.
 - **Manual Backups Only**: Use `scripts/database-backup.ts` for safe backup/restore operations.
 - **Safety Guards**: 
   - Minimum 50 tables required in source before sync allowed
   - `DB_SYNC_ENABLED=true` required to enable sync
   - `ALLOW_DESTRUCTIVE_SYNC=true` required for DROP operations
-  - `CONFIRM_PRODUCTION_RESTORE=yes` required for production restore
-  - `CONFIRM_DEV_RESTORE=yes` required for development restore
-  - `CONFIRM_PRODUCTION_SCHEMA_PUSH=yes` required for production schema push
+  - Production restore requires `CONFIRM_PRODUCTION_RESTORE=yes`
 - **Backup Commands**:
-  - `npx tsx scripts/database-backup.ts status` - Check all database status
-  - `npx tsx scripts/database-backup.ts backup prod` - Backup production
-  - `npx tsx scripts/database-backup.ts backup dev` - Backup development
-  - `npx tsx scripts/database-backup.ts backup backup` - Backup Replit
-  - `npx tsx scripts/database-backup.ts push-schema prod dev` - Push schema from prod to dev
-  - `npx tsx scripts/database-backup.ts sync prod-to-backup` - Sync production to backup
-- **Schema Push**: When deploying, always run schema push before starting app:
+  - `npx tsx scripts/database-backup.ts status` - Check database status
+  - `npx tsx scripts/database-backup.ts backup aws` - Backup production
+  - `npx tsx scripts/database-backup.ts backup replit` - Backup development
+  - `npx tsx scripts/database-backup.ts push-schema aws` - Push schema to AWS
+- **Schema Push**: When deploying, always run schema push to AWS before starting app:
   - Generate: `npx drizzle-kit generate`
-  - Push to prod: `CONFIRM_PRODUCTION_SCHEMA_PUSH=yes npx tsx scripts/database-backup.ts push-schema dev prod`
+  - Push to AWS: `npx tsx scripts/database-backup.ts push-schema aws`
 
 **Authentication & Authorization:**
 - **Method**: Email/password authentication.

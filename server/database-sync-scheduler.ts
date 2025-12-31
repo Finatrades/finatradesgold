@@ -1,16 +1,12 @@
 /**
- * Database Backup & Sync Manager (3-DATABASE ARCHITECTURE)
+ * Database Backup & Sync Manager (SAFE VERSION)
  * 
  * IMPORTANT: Auto-sync is DISABLED by default for safety.
  * This module provides manual backup and restore functions only.
  * 
  * Architecture:
- *   PRODUCTION: AWS RDS Production (AWS_PROD_DATABASE_URL)
- *   DEVELOPMENT: AWS RDS Development (AWS_DEV_DATABASE_URL)
- *   BACKUP: Replit PostgreSQL (DATABASE_URL)
- * 
- * Legacy Support:
- *   AWS_DATABASE_URL is supported for backwards compatibility
+ *   PRIMARY: AWS RDS PostgreSQL (production)
+ *   SECONDARY: Replit PostgreSQL (development/backup)
  * 
  * Safety Features:
  *   - Auto-sync DISABLED by default
@@ -25,17 +21,14 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 // Safety constants
-const MINIMUM_TABLES_FOR_SYNC = 50;
+const MINIMUM_TABLES_FOR_SYNC = 50; // Don't sync if source has fewer tables
 const SYNC_ENABLED = process.env.DB_SYNC_ENABLED === 'true';
 const ALLOW_DESTRUCTIVE_SYNC = process.env.ALLOW_DESTRUCTIVE_SYNC === 'true';
-
-// Database role types
-type DatabaseRole = 'prod' | 'dev' | 'backup';
 
 interface SyncResult {
   success: boolean;
   timestamp: Date;
-  direction: string;
+  direction: 'aws-to-replit' | 'replit-to-aws' | 'backup-only';
   tablesCount?: number;
   duration?: number;
   error?: string;
@@ -44,46 +37,12 @@ interface SyncResult {
 interface DatabaseStatus {
   url: string;
   name: string;
-  role: DatabaseRole;
   tables: number;
   hasData: boolean;
-  configured: boolean;
 }
 
 let lastSyncResult: SyncResult | null = null;
 let isSyncing = false;
-
-/**
- * Get database URL by role
- */
-function getDatabaseUrlByRole(role: DatabaseRole): string | null {
-  switch (role) {
-    case 'prod':
-      return process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL || null;
-    case 'dev':
-      return process.env.AWS_DEV_DATABASE_URL || null;
-    case 'backup':
-      return process.env.DATABASE_URL || null;
-    default:
-      return null;
-  }
-}
-
-/**
- * Get database name by role
- */
-function getDatabaseName(role: DatabaseRole): string {
-  switch (role) {
-    case 'prod':
-      return 'AWS RDS Production';
-    case 'dev':
-      return 'AWS RDS Development';
-    case 'backup':
-      return 'Replit PostgreSQL (Backup)';
-    default:
-      return 'Unknown';
-  }
-}
 
 async function runCommand(cmd: string, description: string): Promise<string> {
   console.log(`[DB Backup] ${description}...`);
@@ -115,96 +74,80 @@ async function getTableCount(dbUrl: string): Promise<number> {
 }
 
 /**
- * Check database status for all 3 databases
+ * Check database status safely
  */
 export async function getDatabaseStatus(): Promise<{
-  prod: DatabaseStatus | null;
-  dev: DatabaseStatus | null;
-  backup: DatabaseStatus | null;
+  aws: DatabaseStatus | null;
+  replit: DatabaseStatus | null;
   syncEnabled: boolean;
   destructiveSyncAllowed: boolean;
-  architecture: '3-database' | 'legacy';
 }> {
-  const roles: DatabaseRole[] = ['prod', 'dev', 'backup'];
-  const statuses: Record<string, DatabaseStatus | null> = {};
+  const awsUrl = process.env.AWS_DATABASE_URL;
+  const replitUrl = process.env.DATABASE_URL;
 
-  for (const role of roles) {
-    const url = getDatabaseUrlByRole(role);
-    if (url) {
-      const tables = await getTableCount(url);
-      statuses[role] = {
-        url: '***HIDDEN***',
-        name: getDatabaseName(role),
-        role,
-        tables,
-        hasData: tables >= MINIMUM_TABLES_FOR_SYNC,
-        configured: true
-      };
-    } else {
-      statuses[role] = null;
-    }
+  let awsStatus: DatabaseStatus | null = null;
+  let replitStatus: DatabaseStatus | null = null;
+
+  if (awsUrl) {
+    const tables = await getTableCount(awsUrl);
+    awsStatus = {
+      url: '***HIDDEN***',
+      name: 'AWS RDS (Production)',
+      tables,
+      hasData: tables >= MINIMUM_TABLES_FOR_SYNC
+    };
   }
 
-  // Determine if using new 3-database architecture or legacy
-  const hasNewArchitecture = !!(process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DEV_DATABASE_URL);
+  if (replitUrl) {
+    const tables = await getTableCount(replitUrl);
+    replitStatus = {
+      url: '***HIDDEN***',
+      name: 'Replit PostgreSQL (Development)',
+      tables,
+      hasData: tables >= MINIMUM_TABLES_FOR_SYNC
+    };
+  }
 
   return {
-    prod: statuses.prod,
-    dev: statuses.dev,
-    backup: statuses.backup,
+    aws: awsStatus,
+    replit: replitStatus,
     syncEnabled: SYNC_ENABLED,
-    destructiveSyncAllowed: ALLOW_DESTRUCTIVE_SYNC,
-    architecture: hasNewArchitecture ? '3-database' : 'legacy'
-  };
-}
-
-// Legacy alias for backwards compatibility
-export async function getAwsReplitStatus() {
-  const status = await getDatabaseStatus();
-  return {
-    aws: status.prod,
-    replit: status.backup,
-    syncEnabled: status.syncEnabled,
-    destructiveSyncAllowed: status.destructiveSyncAllowed
+    destructiveSyncAllowed: ALLOW_DESTRUCTIVE_SYNC
   };
 }
 
 /**
  * Create a backup of a database to a file (NON-DESTRUCTIVE)
+ * This is the SAFE way to backup - just creates a dump file
  */
-export async function createBackup(source: DatabaseRole | 'aws' | 'replit'): Promise<{
+export async function createBackup(source: 'aws' | 'replit'): Promise<{
   success: boolean;
   filePath?: string;
   tablesCount?: number;
   error?: string;
 }> {
-  // Map legacy names to new roles
-  let role: DatabaseRole;
-  if (source === 'aws') role = 'prod';
-  else if (source === 'replit') role = 'backup';
-  else role = source;
-
-  const dbUrl = getDatabaseUrlByRole(role);
+  const dbUrl = source === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
   
   if (!dbUrl) {
-    return { success: false, error: `Missing ${getDatabaseName(role)} database URL` };
+    return { success: false, error: `Missing ${source.toUpperCase()} database URL` };
   }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupFile = `/tmp/backup_${role}_${timestamp}.sql`;
+  const backupFile = `/tmp/backup_${source}_${timestamp}.sql`;
 
   try {
+    // First check table count
     const tableCount = await getTableCount(dbUrl);
     
     if (tableCount === 0) {
-      return { success: false, error: `${getDatabaseName(role)} has no tables - nothing to backup` };
+      return { success: false, error: `${source.toUpperCase()} database has no tables - nothing to backup` };
     }
 
-    console.log(`[DB Backup] Creating backup of ${getDatabaseName(role)} (${tableCount} tables)`);
+    console.log(`[DB Backup] Creating backup of ${source.toUpperCase()} database (${tableCount} tables)`);
     
     await runCommand(
       `pg_dump "${dbUrl}" --no-owner --no-acl -f ${backupFile}`,
-      `Exporting ${getDatabaseName(role)}`
+      `Exporting ${source.toUpperCase()} database`
     );
 
     console.log(`[DB Backup] ✅ Backup created: ${backupFile}`);
@@ -220,173 +163,198 @@ export async function createBackup(source: DatabaseRole | 'aws' | 'replit'): Pro
 }
 
 /**
- * Sync from production to backup (SAFE - primary backup flow)
+ * SAFE sync from AWS to Replit (with safety checks)
+ * This is the ONLY way to sync - with explicit validation
  */
-export async function syncProdToBackup(options?: {
+export async function syncAwsToReplit(options?: {
   force?: boolean;
+  skipValidation?: boolean;
 }): Promise<SyncResult> {
   if (isSyncing) {
     return {
       success: false,
       timestamp: new Date(),
-      direction: 'prod-to-backup',
-      error: 'Another sync operation is in progress'
+      direction: 'aws-to-replit',
+      error: 'Sync already in progress'
     };
   }
 
-  if (!SYNC_ENABLED) {
+  // Check if sync is enabled
+  if (!SYNC_ENABLED && !options?.force) {
+    console.log('[DB Backup] ⚠️ Sync is DISABLED. Set DB_SYNC_ENABLED=true to enable.');
     return {
       success: false,
       timestamp: new Date(),
-      direction: 'prod-to-backup',
-      error: 'Sync is disabled. Set DB_SYNC_ENABLED=true to enable.'
+      direction: 'aws-to-replit',
+      error: 'Sync is disabled. Set DB_SYNC_ENABLED=true environment variable to enable.'
     };
   }
 
-  const prodUrl = getDatabaseUrlByRole('prod');
-  const backupUrl = getDatabaseUrlByRole('backup');
-
-  if (!prodUrl || !backupUrl) {
+  // Check if destructive sync is allowed
+  if (!ALLOW_DESTRUCTIVE_SYNC && !options?.force) {
+    console.log('[DB Backup] ⚠️ Destructive sync is DISABLED. Set ALLOW_DESTRUCTIVE_SYNC=true to enable.');
     return {
       success: false,
       timestamp: new Date(),
-      direction: 'prod-to-backup',
-      error: 'Both production and backup databases must be configured'
+      direction: 'aws-to-replit',
+      error: 'Destructive sync is disabled. Set ALLOW_DESTRUCTIVE_SYNC=true to enable table dropping.'
     };
   }
 
-  isSyncing = true;
   const startTime = Date.now();
+  isSyncing = true;
+
+  const replitUrl = process.env.DATABASE_URL;
+  const awsUrl = process.env.AWS_DATABASE_URL;
+
+  if (!replitUrl || !awsUrl) {
+    isSyncing = false;
+    return {
+      success: false,
+      timestamp: new Date(),
+      direction: 'aws-to-replit',
+      error: 'Missing database URLs'
+    };
+  }
 
   try {
-    const tableCount = await getTableCount(prodUrl);
+    // SAFETY CHECK 1: Verify AWS has tables
+    console.log('[DB Backup] Running safety checks...');
+    const awsTableCount = await getTableCount(awsUrl);
     
-    if (tableCount < MINIMUM_TABLES_FOR_SYNC && !options?.force) {
-      throw new Error(`Production has only ${tableCount} tables. Minimum ${MINIMUM_TABLES_FOR_SYNC} required. Use force=true to override.`);
+    if (awsTableCount < MINIMUM_TABLES_FOR_SYNC && !options?.skipValidation) {
+      isSyncing = false;
+      const error = `SAFETY BLOCK: AWS RDS has only ${awsTableCount} tables (minimum: ${MINIMUM_TABLES_FOR_SYNC}). ` +
+        `This looks like an empty or corrupted database. Sync aborted to prevent data loss.`;
+      console.error(`[DB Backup] ❌ ${error}`);
+      return {
+        success: false,
+        timestamp: new Date(),
+        direction: 'aws-to-replit',
+        error
+      };
     }
 
-    // Dump production
-    console.log('[DB Backup] Dumping production database...');
-    const dumpFile = `/tmp/prod_to_backup_${Date.now()}.sql`;
-    await runCommand(`pg_dump "${prodUrl}" --no-owner --no-acl -f ${dumpFile}`, 'Dumping production');
+    console.log(`[DB Backup] ✓ AWS RDS has ${awsTableCount} tables - proceeding with sync`);
+    console.log('[DB Backup] Starting sync: AWS RDS → Replit');
 
-    // Restore to backup
-    if (ALLOW_DESTRUCTIVE_SYNC) {
-      console.log('[DB Backup] Restoring to backup database...');
-      await runCommand(`psql "${backupUrl}" -f ${dumpFile}`, 'Restoring to backup');
-    } else {
-      throw new Error('Destructive sync not allowed. Set ALLOW_DESTRUCTIVE_SYNC=true to enable.');
+    // Step 1: Create backup of Replit first (safety measure)
+    const replitBackup = await createBackup('replit');
+    if (replitBackup.success) {
+      console.log(`[DB Backup] Created safety backup of Replit: ${replitBackup.filePath}`);
     }
+
+    // Step 2: Drop tables in Replit
+    await runCommand(
+      `psql "${replitUrl}" -c "
+        DO \\$\\$ 
+        DECLARE
+            r RECORD;
+        BEGIN
+            FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+                EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+            END LOOP;
+        END \\$\\$;
+      "`,
+      'Dropping existing tables in Replit'
+    );
+
+    // Step 3: Drop custom types in Replit
+    await runCommand(
+      `psql "${replitUrl}" -c "
+        DO \\$\\$ 
+        DECLARE
+            r RECORD;
+        BEGIN
+            FOR r IN (SELECT typname FROM pg_type WHERE typnamespace = 'public'::regnamespace AND typtype = 'e') LOOP
+                EXECUTE 'DROP TYPE IF EXISTS ' || quote_ident(r.typname) || ' CASCADE';
+            END LOOP;
+        END \\$\\$;
+      "`,
+      'Dropping custom types in Replit'
+    );
+
+    // Step 4: Export from AWS RDS
+    const backupFile = `/tmp/aws_sync_${Date.now()}.sql`;
+    await runCommand(
+      `pg_dump "${awsUrl}" --no-owner --no-acl -f ${backupFile}`,
+      'Exporting from AWS RDS'
+    );
+
+    // Step 5: Import to Replit
+    await runCommand(
+      `psql "${replitUrl}" < ${backupFile} 2>&1 | grep -c "CREATE TABLE" || echo "0"`,
+      'Importing to Replit database'
+    );
+
+    // Step 6: Cleanup temp file
+    await runCommand(`rm -f ${backupFile}`, 'Cleaning up temp file');
+
+    // Step 7: Verify sync
+    const tableCountResult = await runCommand(
+      `psql "${replitUrl}" -t -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'"`,
+      'Verifying sync'
+    );
+    const tablesCount = parseInt(tableCountResult.trim()) || 0;
 
     const duration = Date.now() - startTime;
-    lastSyncResult = {
+    
+    const result: SyncResult = {
       success: true,
       timestamp: new Date(),
-      direction: 'prod-to-backup',
-      tablesCount: tableCount,
+      direction: 'aws-to-replit',
+      tablesCount,
       duration
     };
 
-    return lastSyncResult;
+    lastSyncResult = result;
+    isSyncing = false;
+
+    console.log(`[DB Backup] ✅ Sync completed successfully!`);
+    console.log(`[DB Backup] Tables synced: ${tablesCount}`);
+    console.log(`[DB Backup] Duration: ${(duration / 1000).toFixed(1)}s`);
+
+    return result;
+
   } catch (error: any) {
-    lastSyncResult = {
+    isSyncing = false;
+    const duration = Date.now() - startTime;
+    
+    const result: SyncResult = {
       success: false,
       timestamp: new Date(),
-      direction: 'prod-to-backup',
+      direction: 'aws-to-replit',
+      duration,
       error: error.message
     };
-    return lastSyncResult;
-  } finally {
-    isSyncing = false;
+
+    lastSyncResult = result;
+    console.error(`[DB Backup] ❌ Sync failed: ${error.message}`);
+
+    return result;
   }
 }
 
-// Legacy aliases for backwards compatibility
-export async function syncAwsToReplit(options?: { force?: boolean; skipValidation?: boolean }): Promise<SyncResult> {
-  return syncProdToBackup(options);
-}
-
-export async function syncReplitToAws(options?: { force?: boolean; skipValidation?: boolean }): Promise<SyncResult> {
+/**
+ * DISABLED: This function is too dangerous for a financial application
+ * Syncing TO production should only be done manually with extreme caution
+ */
+export async function syncReplitToAws(): Promise<SyncResult> {
+  console.error('[DB Backup] ❌ syncReplitToAws is DISABLED for safety.');
+  console.error('[DB Backup] Syncing development data to production is not allowed.');
+  console.error('[DB Backup] To restore production, use manual pg_restore with explicit approval.');
+  
   return {
     success: false,
     timestamp: new Date(),
-    direction: 'backup-to-prod',
-    error: 'Syncing from backup to production is blocked for safety. Use restore command with CONFIRM_PRODUCTION_RESTORE=yes'
-  };
-}
-
-/**
- * Push schema from one database to another (SCHEMA ONLY, no data)
- */
-export async function pushSchema(source: DatabaseRole, target: DatabaseRole): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  const sourceUrl = getDatabaseUrlByRole(source);
-  const targetUrl = getDatabaseUrlByRole(target);
-
-  if (!sourceUrl || !targetUrl) {
-    return { success: false, error: 'Both source and target databases must be configured' };
-  }
-
-  if (target === 'prod' && process.env.CONFIRM_PRODUCTION_SCHEMA_PUSH !== 'yes') {
-    return { 
-      success: false, 
-      error: 'Pushing schema to production requires CONFIRM_PRODUCTION_SCHEMA_PUSH=yes' 
-    };
-  }
-
-  try {
-    console.log(`[DB Backup] Pushing schema from ${getDatabaseName(source)} to ${getDatabaseName(target)}`);
-    
-    // Dump schema only
-    const schemaFile = `/tmp/schema_${source}_${Date.now()}.sql`;
-    await runCommand(
-      `pg_dump "${sourceUrl}" --schema-only --no-owner --no-acl -f ${schemaFile}`,
-      'Dumping schema'
-    );
-
-    // Apply schema
-    await runCommand(
-      `psql "${targetUrl}" -f ${schemaFile}`,
-      'Applying schema'
-    );
-
-    console.log('[DB Backup] ✅ Schema pushed successfully');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Verify sync status
- */
-export function verifySyncStatus(): { lastSync: SyncResult | null; isSyncing: boolean } {
-  return { lastSync: lastSyncResult, isSyncing };
-}
-
-/**
- * Get sync status for API
- */
-export function getSyncStatus(): {
-  enabled: boolean;
-  isRunning: boolean;
-  lastSync: SyncResult | null;
-  architecture: string;
-} {
-  const hasNewArchitecture = !!(process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DEV_DATABASE_URL);
-  
-  return {
-    enabled: SYNC_ENABLED,
-    isRunning: isSyncing,
-    lastSync: lastSyncResult,
-    architecture: hasNewArchitecture ? '3-database' : 'legacy'
+    direction: 'replit-to-aws',
+    error: 'This operation is disabled for safety. Syncing to production requires manual intervention.'
   };
 }
 
 /**
  * Start the sync scheduler - DISABLED BY DEFAULT
+ * Only starts if DB_SYNC_ENABLED=true AND ALLOW_DESTRUCTIVE_SYNC=true
  */
 export function startSyncScheduler(): void {
   console.log('[DB Backup] Auto-sync scheduler is DISABLED for safety.');
@@ -394,8 +362,62 @@ export function startSyncScheduler(): void {
   console.log('[DB Backup]   DB_SYNC_ENABLED=true');
   console.log('[DB Backup]   ALLOW_DESTRUCTIVE_SYNC=true');
   console.log('[DB Backup] Manual backups are still available via API.');
+  
+  // DO NOT start automatic sync - it's too dangerous
+  // The old scheduler has been removed for safety
 }
 
 export function stopSyncScheduler(): void {
   console.log('[DB Backup] Scheduler is already disabled');
+}
+
+export function getSyncStatus(): {
+  isRunning: boolean;
+  isSyncing: boolean;
+  lastSync: SyncResult | null;
+  syncEnabled: boolean;
+  destructiveSyncAllowed: boolean;
+} {
+  return {
+    isRunning: false, // Always false - scheduler is disabled
+    isSyncing,
+    lastSync: lastSyncResult,
+    syncEnabled: SYNC_ENABLED,
+    destructiveSyncAllowed: ALLOW_DESTRUCTIVE_SYNC
+  };
+}
+
+export async function verifySyncStatus(): Promise<{
+  replit: { tables: number; users: number };
+  aws: { tables: number; users: number };
+  inSync: boolean;
+}> {
+  const replitUrl = process.env.DATABASE_URL;
+  const awsUrl = process.env.AWS_DATABASE_URL;
+
+  if (!replitUrl || !awsUrl) {
+    throw new Error('Missing database URLs');
+  }
+
+  const replitTables = await getTableCount(replitUrl);
+  const awsTables = await getTableCount(awsUrl);
+
+  let replitUsers = 0;
+  let awsUsers = 0;
+
+  try {
+    const rUsers = await execAsync(`psql "${replitUrl}" -t -c "SELECT COUNT(*) FROM users" 2>/dev/null || echo "0"`);
+    replitUsers = parseInt(rUsers.stdout.trim()) || 0;
+  } catch {}
+
+  try {
+    const aUsers = await execAsync(`psql "${awsUrl}" -t -c "SELECT COUNT(*) FROM users" 2>/dev/null || echo "0"`);
+    awsUsers = parseInt(aUsers.stdout.trim()) || 0;
+  } catch {}
+
+  return {
+    replit: { tables: replitTables, users: replitUsers },
+    aws: { tables: awsTables, users: awsUsers },
+    inSync: replitTables === awsTables && replitUsers === awsUsers
+  };
 }

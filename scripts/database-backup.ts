@@ -1,26 +1,14 @@
 #!/usr/bin/env tsx
 /**
- * Manual Database Backup Script (3-DATABASE ARCHITECTURE)
+ * Manual Database Backup Script
  * 
  * Safe backup/restore operations for Finatrades databases.
  * 
- * Architecture:
- *   PRODUCTION: AWS RDS Production (AWS_PROD_DATABASE_URL)
- *   DEVELOPMENT: AWS RDS Development (AWS_DEV_DATABASE_URL)
- *   BACKUP: Replit PostgreSQL (DATABASE_URL)
- * 
  * Usage:
+ *   npx tsx scripts/database-backup.ts backup aws
+ *   npx tsx scripts/database-backup.ts backup replit
  *   npx tsx scripts/database-backup.ts status
- *   npx tsx scripts/database-backup.ts backup prod
- *   npx tsx scripts/database-backup.ts backup dev
- *   npx tsx scripts/database-backup.ts backup backup
  *   npx tsx scripts/database-backup.ts restore <backup-file> <target>
- *   npx tsx scripts/database-backup.ts push-schema <source> <target>
- *   npx tsx scripts/database-backup.ts sync prod-to-backup
- * 
- * Legacy support:
- *   npx tsx scripts/database-backup.ts backup aws   (maps to 'prod')
- *   npx tsx scripts/database-backup.ts backup replit (maps to 'backup')
  * 
  * This script is the SAFE way to handle database operations.
  * Auto-sync has been disabled for safety.
@@ -34,40 +22,6 @@ import * as path from 'path';
 const execAsync = promisify(exec);
 
 const BACKUP_DIR = '/tmp/finatrades_backups';
-
-type DatabaseRole = 'prod' | 'dev' | 'backup';
-
-function getDatabaseUrl(role: DatabaseRole): string | null {
-  switch (role) {
-    case 'prod':
-      return process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL || null;
-    case 'dev':
-      return process.env.AWS_DEV_DATABASE_URL || null;
-    case 'backup':
-      return process.env.DATABASE_URL || null;
-    default:
-      return null;
-  }
-}
-
-function getDatabaseName(role: DatabaseRole): string {
-  switch (role) {
-    case 'prod':
-      return 'AWS RDS Production';
-    case 'dev':
-      return 'AWS RDS Development';
-    case 'backup':
-      return 'Replit PostgreSQL (Backup)';
-    default:
-      return 'Unknown';
-  }
-}
-
-function mapLegacyRole(input: string): DatabaseRole {
-  if (input === 'aws') return 'prod';
-  if (input === 'replit') return 'backup';
-  return input as DatabaseRole;
-}
 
 async function ensureBackupDir() {
   if (!fs.existsSync(BACKUP_DIR)) {
@@ -100,72 +54,63 @@ async function getUserCount(dbUrl: string): Promise<number> {
 }
 
 async function status() {
-  console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log('║           FINATRADES DATABASE STATUS (3-DB ARCHITECTURE)      ║');
-  console.log('╚══════════════════════════════════════════════════════════════╝\n');
+  console.log('\n=== Finatrades Database Status ===\n');
   
-  const roles: DatabaseRole[] = ['prod', 'dev', 'backup'];
-  
-  for (const role of roles) {
-    const url = getDatabaseUrl(role);
-    const name = getDatabaseName(role);
-    
-    if (url) {
-      const tables = await getTableCount(url);
-      const users = await getUserCount(url);
-      const statusIcon = tables > 0 ? '✅' : '⚠️';
-      
-      console.log(`${role.toUpperCase().padEnd(8)} │ ${name}`);
-      console.log(`         │ Tables: ${tables} │ Users: ${users} │ Status: ${statusIcon} ${tables > 0 ? 'OK' : 'EMPTY'}`);
-      console.log('─────────┼────────────────────────────────────────────────────');
-    } else {
-      console.log(`${role.toUpperCase().padEnd(8)} │ ${name}`);
-      console.log(`         │ ❌ Not configured`);
-      console.log('─────────┼────────────────────────────────────────────────────');
-    }
+  const awsUrl = process.env.AWS_DATABASE_URL;
+  const replitUrl = process.env.DATABASE_URL;
+
+  if (awsUrl) {
+    const tables = await getTableCount(awsUrl);
+    const users = await getUserCount(awsUrl);
+    console.log('AWS RDS (Production):');
+    console.log(`  Tables: ${tables}`);
+    console.log(`  Users: ${users}`);
+    console.log(`  Status: ${tables > 0 ? '✅ OK' : '⚠️ EMPTY'}`);
+    console.log();
+  } else {
+    console.log('AWS RDS: ❌ Not configured (AWS_DATABASE_URL missing)\n');
   }
 
-  // Architecture info
-  console.log('\n📋 Configuration:');
-  console.log(`   AWS_PROD_DATABASE_URL: ${process.env.AWS_PROD_DATABASE_URL ? '✅ Set' : '❌ Not set'}`);
-  console.log(`   AWS_DEV_DATABASE_URL:  ${process.env.AWS_DEV_DATABASE_URL ? '✅ Set' : '❌ Not set'}`);
-  console.log(`   DATABASE_URL:          ${process.env.DATABASE_URL ? '✅ Set' : '❌ Not set'}`);
-  console.log(`   AWS_DATABASE_URL:      ${process.env.AWS_DATABASE_URL ? '⚠️ Legacy (use AWS_PROD_DATABASE_URL)' : '❌ Not set'}`);
+  if (replitUrl) {
+    const tables = await getTableCount(replitUrl);
+    const users = await getUserCount(replitUrl);
+    console.log('Replit PostgreSQL (Development):');
+    console.log(`  Tables: ${tables}`);
+    console.log(`  Users: ${users}`);
+    console.log(`  Status: ${tables > 0 ? '✅ OK' : '⚠️ EMPTY'}`);
+    console.log();
+  } else {
+    console.log('Replit PostgreSQL: ❌ Not configured (DATABASE_URL missing)\n');
+  }
 
   // List existing backups
   await ensureBackupDir();
   const backups = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.sql'));
-  console.log('\n📦 Available Backups:');
   if (backups.length > 0) {
+    console.log('Available Backups:');
     for (const backup of backups.slice(-10)) {
       const stats = fs.statSync(path.join(BACKUP_DIR, backup));
       const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-      console.log(`   ${backup} (${sizeMB} MB)`);
+      console.log(`  ${backup} (${sizeMB} MB)`);
     }
   } else {
-    console.log(`   No backups found in ${BACKUP_DIR}`);
+    console.log('No backups found in', BACKUP_DIR);
   }
   console.log();
 }
 
-async function backup(source: string) {
-  const role = mapLegacyRole(source);
-  const dbUrl = getDatabaseUrl(role);
-  const dbName = getDatabaseName(role);
+async function backup(source: 'aws' | 'replit') {
+  const dbUrl = source === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
+  const dbName = source === 'aws' ? 'AWS RDS' : 'Replit PostgreSQL';
   
   if (!dbUrl) {
     console.error(`❌ ${dbName} database URL not configured`);
-    console.error(`   Set the appropriate environment variable:`);
-    if (role === 'prod') console.error('   AWS_PROD_DATABASE_URL or AWS_DATABASE_URL');
-    if (role === 'dev') console.error('   AWS_DEV_DATABASE_URL');
-    if (role === 'backup') console.error('   DATABASE_URL');
     process.exit(1);
   }
 
-  console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║  CREATING BACKUP: ${dbName.padEnd(42)}║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝\n`);
+  console.log(`\n=== Creating Backup of ${dbName} ===\n`);
 
+  // Check table count first
   const tables = await getTableCount(dbUrl);
   if (tables === 0) {
     console.error(`❌ ${dbName} has no tables - nothing to backup`);
@@ -175,11 +120,11 @@ async function backup(source: string) {
   await ensureBackupDir();
   
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupFile = path.join(BACKUP_DIR, `backup_${role}_${timestamp}.sql`);
+  const backupFile = path.join(BACKUP_DIR, `backup_${source}_${timestamp}.sql`);
 
-  console.log(`📊 Tables to backup: ${tables}`);
-  console.log(`📁 Output file: ${backupFile}`);
-  console.log(`⏳ Backing up...`);
+  console.log(`Tables to backup: ${tables}`);
+  console.log(`Output file: ${backupFile}`);
+  console.log('Backing up...');
 
   try {
     await execAsync(
@@ -200,10 +145,9 @@ async function backup(source: string) {
   }
 }
 
-async function restore(backupFile: string, target: string) {
-  const role = mapLegacyRole(target);
-  const dbUrl = getDatabaseUrl(role);
-  const dbName = getDatabaseName(role);
+async function restore(backupFile: string, target: 'aws' | 'replit') {
+  const dbUrl = target === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
+  const dbName = target === 'aws' ? 'AWS RDS' : 'Replit PostgreSQL';
   
   if (!dbUrl) {
     console.error(`❌ ${dbName} database URL not configured`);
@@ -211,220 +155,134 @@ async function restore(backupFile: string, target: string) {
   }
 
   if (!fs.existsSync(backupFile)) {
-    // Check if it's in the backup directory
-    const fullPath = path.join(BACKUP_DIR, backupFile);
-    if (fs.existsSync(fullPath)) {
-      backupFile = fullPath;
-    } else {
-      console.error(`❌ Backup file not found: ${backupFile}`);
-      process.exit(1);
-    }
+    console.error(`❌ Backup file not found: ${backupFile}`);
+    process.exit(1);
   }
 
-  console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║                    ⚠️  RESTORE OPERATION                      ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝\n`);
+  console.log(`\n=== RESTORE OPERATION ===\n`);
   console.log(`⚠️  WARNING: This will REPLACE all data in ${dbName}!`);
-  console.log(`📁 Source: ${backupFile}`);
-  console.log(`🎯 Target: ${dbName}`);
+  console.log(`Source: ${backupFile}`);
+  console.log(`Target: ${dbName}`);
   console.log();
 
   // Safety check for production
-  if (role === 'prod') {
+  if (target === 'aws') {
     console.log('🚨 DANGER: You are about to restore to PRODUCTION database!');
-    console.log('   This operation cannot be undone.');
-    console.log('\n   To proceed, set: CONFIRM_PRODUCTION_RESTORE=yes');
+    console.log('This operation cannot be undone.');
+    console.log('\nTo proceed, set environment variable: CONFIRM_PRODUCTION_RESTORE=yes');
     
     if (process.env.CONFIRM_PRODUCTION_RESTORE !== 'yes') {
       console.log('\n❌ Restore aborted - safety check failed');
       process.exit(1);
     }
-    console.log('\n✅ Production restore confirmed');
   }
-
-  // Safety check for dev
-  if (role === 'dev') {
-    console.log('⚠️  You are about to restore to DEVELOPMENT database.');
-    console.log('   To proceed, set: CONFIRM_DEV_RESTORE=yes');
-    
-    if (process.env.CONFIRM_DEV_RESTORE !== 'yes') {
-      console.log('\n❌ Restore aborted - safety check failed');
-      process.exit(1);
-    }
-    console.log('\n✅ Development restore confirmed');
-  }
-
-  console.log('\n⏳ Restoring...');
 
   try {
+    console.log('Restoring...');
+    
+    // First, drop existing tables
     await execAsync(
-      `psql "${dbUrl}" -f "${backupFile}"`,
+      `psql "${dbUrl}" -c "
+        DO \\$\\$ 
+        DECLARE
+            r RECORD;
+        BEGIN
+            FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+                EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+            END LOOP;
+        END \\$\\$;
+      "`,
+      { maxBuffer: 10 * 1024 * 1024 }
+    );
+
+    // Drop custom types
+    await execAsync(
+      `psql "${dbUrl}" -c "
+        DO \\$\\$ 
+        DECLARE
+            r RECORD;
+        BEGIN
+            FOR r IN (SELECT typname FROM pg_type WHERE typnamespace = 'public'::regnamespace AND typtype = 'e') LOOP
+                EXECUTE 'DROP TYPE IF EXISTS ' || quote_ident(r.typname) || ' CASCADE';
+            END LOOP;
+        END \\$\\$;
+      "`,
+      { maxBuffer: 10 * 1024 * 1024 }
+    );
+
+    // Import backup
+    await execAsync(
+      `psql "${dbUrl}" < "${backupFile}"`,
       { maxBuffer: 100 * 1024 * 1024 }
     );
 
     const tables = await getTableCount(dbUrl);
     console.log(`\n✅ Restore completed successfully!`);
-    console.log(`   Tables: ${tables}`);
+    console.log(`   Tables restored: ${tables}`);
   } catch (error: any) {
     console.error(`\n❌ Restore failed: ${error.message}`);
     process.exit(1);
   }
 }
 
-async function pushSchema(source: string, target: string) {
-  const sourceRole = mapLegacyRole(source);
-  const targetRole = mapLegacyRole(target);
+async function pushSchema(target: 'aws' | 'replit') {
+  const dbUrl = target === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
+  const dbName = target === 'aws' ? 'AWS RDS' : 'Replit PostgreSQL';
   
-  const sourceUrl = getDatabaseUrl(sourceRole);
-  const targetUrl = getDatabaseUrl(targetRole);
-  
-  if (!sourceUrl) {
-    console.error(`❌ Source ${getDatabaseName(sourceRole)} not configured`);
-    process.exit(1);
-  }
-  
-  if (!targetUrl) {
-    console.error(`❌ Target ${getDatabaseName(targetRole)} not configured`);
+  if (!dbUrl) {
+    console.error(`❌ ${dbName} database URL not configured`);
     process.exit(1);
   }
 
-  console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║                    PUSH SCHEMA                                ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝\n`);
-  console.log(`📤 Source: ${getDatabaseName(sourceRole)}`);
-  console.log(`📥 Target: ${getDatabaseName(targetRole)}`);
-  console.log(`ℹ️  This pushes SCHEMA ONLY (no data)`);
+  console.log(`\n=== Push Schema to ${dbName} ===\n`);
 
-  if (targetRole === 'prod') {
-    console.log('\n🚨 DANGER: Pushing schema to PRODUCTION!');
-    console.log('   Set: CONFIRM_PRODUCTION_SCHEMA_PUSH=yes');
-    
-    if (process.env.CONFIRM_PRODUCTION_SCHEMA_PUSH !== 'yes') {
-      console.log('\n❌ Aborted - safety check failed');
-      process.exit(1);
-    }
+  // Check if migration file exists
+  const migrationDir = path.join(process.cwd(), 'migrations');
+  if (!fs.existsSync(migrationDir)) {
+    console.error('❌ No migrations directory found. Run `npx drizzle-kit generate` first.');
+    process.exit(1);
   }
 
-  console.log('\n⏳ Pushing schema...');
+  const migrations = fs.readdirSync(migrationDir).filter(f => f.endsWith('.sql'));
+  if (migrations.length === 0) {
+    console.error('❌ No migration files found.');
+    process.exit(1);
+  }
+
+  const latestMigration = migrations.sort().pop()!;
+  const migrationFile = path.join(migrationDir, latestMigration);
+
+  console.log(`Using migration: ${latestMigration}`);
+  console.log(`Target: ${dbName}`);
 
   try {
-    const schemaFile = `/tmp/schema_push_${Date.now()}.sql`;
+    // Clean up statement-breakpoint comments
+    let sql = fs.readFileSync(migrationFile, 'utf-8');
+    sql = sql.replace(/--> statement-breakpoint/g, '');
+    
+    const tempFile = `/tmp/clean_migration_${Date.now()}.sql`;
+    fs.writeFileSync(tempFile, sql);
+
+    console.log('Applying migration...');
     
     await execAsync(
-      `pg_dump "${sourceUrl}" --schema-only --no-owner --no-acl -f "${schemaFile}"`,
+      `psql "${dbUrl}" < "${tempFile}" 2>&1 | grep -E "^(CREATE|ALTER|ERROR)" | tail -20`,
       { maxBuffer: 50 * 1024 * 1024 }
     );
 
-    await execAsync(
-      `psql "${targetUrl}" -f "${schemaFile}"`,
-      { maxBuffer: 50 * 1024 * 1024 }
-    );
+    fs.unlinkSync(tempFile);
 
+    const tables = await getTableCount(dbUrl);
     console.log(`\n✅ Schema pushed successfully!`);
+    console.log(`   Tables: ${tables}`);
   } catch (error: any) {
-    console.error(`\n❌ Schema push failed: ${error.message}`);
-    process.exit(1);
+    console.error(`\n⚠️ Schema push completed with some errors (this is often OK for existing tables)`);
+    const tables = await getTableCount(dbUrl);
+    console.log(`   Tables: ${tables}`);
   }
 }
 
-async function syncProdToBackup() {
-  console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║              SYNC: PRODUCTION → BACKUP                        ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝\n`);
-
-  const prodUrl = getDatabaseUrl('prod');
-  const backupUrl = getDatabaseUrl('backup');
-
-  if (!prodUrl) {
-    console.error('❌ Production database not configured');
-    process.exit(1);
-  }
-
-  if (!backupUrl) {
-    console.error('❌ Backup database not configured');
-    process.exit(1);
-  }
-
-  console.log(`📤 Source: ${getDatabaseName('prod')}`);
-  console.log(`📥 Target: ${getDatabaseName('backup')}`);
-  console.log('\n⚠️  This will REPLACE all data in backup database!');
-  console.log('   Set: DB_SYNC_ENABLED=true and ALLOW_DESTRUCTIVE_SYNC=true');
-
-  if (process.env.DB_SYNC_ENABLED !== 'true') {
-    console.log('\n❌ Sync disabled - set DB_SYNC_ENABLED=true');
-    process.exit(1);
-  }
-
-  if (process.env.ALLOW_DESTRUCTIVE_SYNC !== 'true') {
-    console.log('\n❌ Destructive sync not allowed - set ALLOW_DESTRUCTIVE_SYNC=true');
-    process.exit(1);
-  }
-
-  console.log('\n⏳ Syncing production to backup...');
-
-  try {
-    const dumpFile = `/tmp/prod_backup_sync_${Date.now()}.sql`;
-    
-    await execAsync(
-      `pg_dump "${prodUrl}" --no-owner --no-acl -f "${dumpFile}"`,
-      { maxBuffer: 100 * 1024 * 1024 }
-    );
-
-    await execAsync(
-      `psql "${backupUrl}" -f "${dumpFile}"`,
-      { maxBuffer: 100 * 1024 * 1024 }
-    );
-
-    const tables = await getTableCount(backupUrl);
-    console.log(`\n✅ Sync completed successfully!`);
-    console.log(`   Tables synced: ${tables}`);
-  } catch (error: any) {
-    console.error(`\n❌ Sync failed: ${error.message}`);
-    process.exit(1);
-  }
-}
-
-function showHelp() {
-  console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║           FINATRADES DATABASE BACKUP TOOL                    ║
-║           3-Database Architecture                            ║
-╚══════════════════════════════════════════════════════════════╝
-
-COMMANDS:
-  status                          Show status of all databases
-  backup <role>                   Create backup (prod|dev|backup)
-  restore <file> <role>           Restore backup to database
-  push-schema <source> <target>   Push schema only (no data)
-  sync prod-to-backup             Sync production to backup
-
-ROLES:
-  prod    - AWS RDS Production (AWS_PROD_DATABASE_URL)
-  dev     - AWS RDS Development (AWS_DEV_DATABASE_URL)
-  backup  - Replit PostgreSQL (DATABASE_URL)
-
-LEGACY ALIASES:
-  aws     - Maps to 'prod'
-  replit  - Maps to 'backup'
-
-EXAMPLES:
-  npx tsx scripts/database-backup.ts status
-  npx tsx scripts/database-backup.ts backup prod
-  npx tsx scripts/database-backup.ts backup dev
-  npx tsx scripts/database-backup.ts restore backup_prod_2025-01-01.sql dev
-  npx tsx scripts/database-backup.ts push-schema prod dev
-  npx tsx scripts/database-backup.ts sync prod-to-backup
-
-SAFETY FLAGS:
-  CONFIRM_PRODUCTION_RESTORE=yes    Required for prod restore
-  CONFIRM_DEV_RESTORE=yes           Required for dev restore
-  CONFIRM_PRODUCTION_SCHEMA_PUSH=yes Required for prod schema push
-  DB_SYNC_ENABLED=true              Enable sync operations
-  ALLOW_DESTRUCTIVE_SYNC=true       Allow destructive syncs
-`);
-}
-
-// Main CLI handler
+// Main
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
@@ -434,49 +292,56 @@ async function main() {
       await status();
       break;
     case 'backup':
-      if (!args[1]) {
-        console.error('Usage: backup <prod|dev|backup>');
+      const backupSource = args[1] as 'aws' | 'replit';
+      if (!['aws', 'replit'].includes(backupSource)) {
+        console.error('Usage: npx tsx scripts/database-backup.ts backup <aws|replit>');
         process.exit(1);
       }
-      await backup(args[1]);
+      await backup(backupSource);
       break;
     case 'restore':
-      if (!args[1] || !args[2]) {
-        console.error('Usage: restore <backup-file> <prod|dev|backup>');
+      const restoreFile = args[1];
+      const restoreTarget = args[2] as 'aws' | 'replit';
+      if (!restoreFile || !['aws', 'replit'].includes(restoreTarget)) {
+        console.error('Usage: npx tsx scripts/database-backup.ts restore <backup-file> <aws|replit>');
         process.exit(1);
       }
-      await restore(args[1], args[2]);
+      await restore(restoreFile, restoreTarget);
       break;
     case 'push-schema':
-      if (!args[1] || !args[2]) {
-        console.error('Usage: push-schema <source> <target>');
+      const pushTarget = args[1] as 'aws' | 'replit';
+      if (!['aws', 'replit'].includes(pushTarget)) {
+        console.error('Usage: npx tsx scripts/database-backup.ts push-schema <aws|replit>');
         process.exit(1);
       }
-      await pushSchema(args[1], args[2]);
-      break;
-    case 'sync':
-      if (args[1] === 'prod-to-backup') {
-        await syncProdToBackup();
-      } else {
-        console.error('Usage: sync prod-to-backup');
-        process.exit(1);
-      }
-      break;
-    case 'help':
-    case '--help':
-    case '-h':
-      showHelp();
+      await pushSchema(pushTarget);
       break;
     default:
-      showHelp();
-      if (command) {
-        console.error(`\nUnknown command: ${command}`);
-      }
-      process.exit(command ? 1 : 0);
+      console.log(`
+Finatrades Database Backup Tool
+
+Usage:
+  npx tsx scripts/database-backup.ts <command> [options]
+
+Commands:
+  status                    Show database status and available backups
+  backup <aws|replit>       Create a backup of the specified database
+  restore <file> <target>   Restore a backup to the target database
+  push-schema <target>      Push schema to the target database
+
+Examples:
+  npx tsx scripts/database-backup.ts status
+  npx tsx scripts/database-backup.ts backup aws
+  npx tsx scripts/database-backup.ts backup replit
+  npx tsx scripts/database-backup.ts push-schema aws
+  npx tsx scripts/database-backup.ts restore /tmp/backup.sql replit
+
+Safety Notes:
+  - Restoring to AWS requires CONFIRM_PRODUCTION_RESTORE=yes
+  - Auto-sync has been disabled for safety
+  - Always create a backup before making changes
+      `);
   }
 }
 
-main().catch(err => {
-  console.error('Fatal error:', err);
-  process.exit(1);
-});
+main().catch(console.error);
