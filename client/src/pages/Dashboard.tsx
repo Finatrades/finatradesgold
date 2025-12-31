@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { useCurrency } from '@/context/CurrencyContext';
 import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet, ShieldCheck, Shield, EyeOff } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
@@ -95,17 +94,19 @@ export default function Dashboard() {
     staleTime: 300000,
   });
 
-  const { displayCurrency: contextDisplayCurrency, formatCurrency: contextFormatCurrency, convert } = useCurrency();
-  
   const prefs = prefsData?.preferences;
   const showBalance = prefs?.showBalance !== false;
   const twoFactorReminder = prefs?.twoFactorReminder !== false;
   const compactMode = prefs?.compactMode === true;
-  const displayCurrency = prefs?.displayCurrency || contextDisplayCurrency;
+  const displayCurrency = prefs?.displayCurrency || 'USD';
 
   const formatCurrency = (usdAmount: number) => {
-    const convertedAmount = convert(usdAmount, 'USD', displayCurrency as any);
-    return contextFormatCurrency(convertedAmount, displayCurrency as any);
+    if (displayCurrency === 'AED') {
+      return `Dh ${formatNumber(usdAmount * 3.67)}`;
+    } else if (displayCurrency === 'EUR') {
+      return `€${formatNumber(usdAmount * 0.92)}`;
+    }
+    return `$${formatNumber(usdAmount)}`;
   };
 
   const hiddenValue = '••••••';
