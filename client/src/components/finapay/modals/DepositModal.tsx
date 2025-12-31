@@ -492,14 +492,14 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     }
   };
 
-  const isFullScreen = step === 'card-embedded';
+  const isCardPayment = step === 'card-embedded';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={`bg-white border-border text-foreground overflow-y-auto overflow-x-hidden ${
-        isFullScreen 
-          ? 'w-[98vw] max-w-6xl h-[95vh] max-h-[95vh]' 
-          : 'w-[95vw] max-w-4xl max-h-[90vh]'
+      <DialogContent className={`bg-white border-border text-foreground overflow-x-hidden ${
+        isCardPayment 
+          ? 'w-[95vw] max-w-lg overflow-hidden' 
+          : 'w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto'
       }`}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">

@@ -539,23 +539,29 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     }
 
     return (
-      <div className="flex flex-col w-full h-full overflow-hidden">
-        <div className="flex-1 w-full overflow-hidden">
+      <div className="flex flex-col w-full overflow-hidden">
+        <div 
+          className="w-full" 
+          style={{ 
+            height: '320px',
+            overflow: 'hidden'
+          }}
+        >
           <iframe
             src={paymentUrl}
-            className="w-full border-0"
             title="Secure Payment"
             allow="payment"
+            scrolling="no"
             style={{ 
               width: '100%', 
-              height: 'calc(80vh - 120px)',
-              minHeight: '450px',
-              border: 'none'
+              height: '320px',
+              border: 'none',
+              overflow: 'hidden'
             }}
           />
         </div>
 
-        <div className="flex-shrink-0 pt-4 border-t mt-4">
+        <div className="pt-6">
           <p className="text-2xl font-bold text-center text-foreground mb-4">${amount.toFixed(2)}</p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={onCancel} className="flex-1 h-12">
