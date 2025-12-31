@@ -4,10 +4,16 @@
  * 
  * Safe backup/restore operations for Finatrades databases.
  * 
+ * 3-Database Architecture:
+ *   AWS_PROD_DATABASE_URL - Production database (real users)
+ *   AWS_DEV_DATABASE_URL - Development database (testing)
+ *   DATABASE_URL - Replit backup database (cold storage)
+ * 
  * Usage:
- *   npx tsx scripts/database-backup.ts backup aws
- *   npx tsx scripts/database-backup.ts backup replit
  *   npx tsx scripts/database-backup.ts status
+ *   npx tsx scripts/database-backup.ts backup prod
+ *   npx tsx scripts/database-backup.ts backup dev
+ *   npx tsx scripts/database-backup.ts backup backup
  *   npx tsx scripts/database-backup.ts restore <backup-file> <target>
  * 
  * This script is the SAFE way to handle database operations.
@@ -54,33 +60,49 @@ async function getUserCount(dbUrl: string): Promise<number> {
 }
 
 async function status() {
-  console.log('\n=== Finatrades Database Status ===\n');
+  console.log('\n=== Finatrades Database Status (3-Database Architecture) ===\n');
   
-  const awsUrl = process.env.AWS_DATABASE_URL;
-  const replitUrl = process.env.DATABASE_URL;
+  const awsProdUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
+  const awsDevUrl = process.env.AWS_DEV_DATABASE_URL;
+  const backupUrl = process.env.DATABASE_URL;
 
-  if (awsUrl) {
-    const tables = await getTableCount(awsUrl);
-    const users = await getUserCount(awsUrl);
+  // AWS Production
+  if (awsProdUrl) {
+    const tables = await getTableCount(awsProdUrl);
+    const users = await getUserCount(awsProdUrl);
     console.log('AWS RDS (Production):');
     console.log(`  Tables: ${tables}`);
     console.log(`  Users: ${users}`);
     console.log(`  Status: ${tables > 0 ? '✅ OK' : '⚠️ EMPTY'}`);
     console.log();
   } else {
-    console.log('AWS RDS: ❌ Not configured (AWS_DATABASE_URL missing)\n');
+    console.log('AWS RDS (Production): ❌ Not configured (AWS_PROD_DATABASE_URL missing)\n');
   }
 
-  if (replitUrl) {
-    const tables = await getTableCount(replitUrl);
-    const users = await getUserCount(replitUrl);
-    console.log('Replit PostgreSQL (Development):');
+  // AWS Development
+  if (awsDevUrl) {
+    const tables = await getTableCount(awsDevUrl);
+    const users = await getUserCount(awsDevUrl);
+    console.log('AWS RDS (Development):');
     console.log(`  Tables: ${tables}`);
     console.log(`  Users: ${users}`);
     console.log(`  Status: ${tables > 0 ? '✅ OK' : '⚠️ EMPTY'}`);
     console.log();
   } else {
-    console.log('Replit PostgreSQL: ❌ Not configured (DATABASE_URL missing)\n');
+    console.log('AWS RDS (Development): ❌ Not configured (AWS_DEV_DATABASE_URL missing)\n');
+  }
+
+  // Replit Backup
+  if (backupUrl) {
+    const tables = await getTableCount(backupUrl);
+    const users = await getUserCount(backupUrl);
+    console.log('Replit PostgreSQL (Backup):');
+    console.log(`  Tables: ${tables}`);
+    console.log(`  Users: ${users}`);
+    console.log(`  Status: ${tables > 0 ? '✅ OK' : '⚠️ EMPTY'}`);
+    console.log();
+  } else {
+    console.log('Replit PostgreSQL (Backup): ❌ Not configured (DATABASE_URL missing)\n');
   }
 
   // List existing backups
@@ -99,9 +121,24 @@ async function status() {
   console.log();
 }
 
-async function backup(source: 'aws' | 'replit') {
-  const dbUrl = source === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
-  const dbName = source === 'aws' ? 'AWS RDS' : 'Replit PostgreSQL';
+async function backup(source: 'prod' | 'dev' | 'backup') {
+  let dbUrl: string | undefined;
+  let dbName: string;
+  
+  switch (source) {
+    case 'prod':
+      dbUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
+      dbName = 'AWS RDS (Production)';
+      break;
+    case 'dev':
+      dbUrl = process.env.AWS_DEV_DATABASE_URL;
+      dbName = 'AWS RDS (Development)';
+      break;
+    case 'backup':
+      dbUrl = process.env.DATABASE_URL;
+      dbName = 'Replit PostgreSQL (Backup)';
+      break;
+  }
   
   if (!dbUrl) {
     console.error(`❌ ${dbName} database URL not configured`);
@@ -145,9 +182,24 @@ async function backup(source: 'aws' | 'replit') {
   }
 }
 
-async function restore(backupFile: string, target: 'aws' | 'replit') {
-  const dbUrl = target === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
-  const dbName = target === 'aws' ? 'AWS RDS' : 'Replit PostgreSQL';
+async function restore(backupFile: string, target: 'prod' | 'dev' | 'backup') {
+  let dbUrl: string | undefined;
+  let dbName: string;
+  
+  switch (target) {
+    case 'prod':
+      dbUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
+      dbName = 'AWS RDS (Production)';
+      break;
+    case 'dev':
+      dbUrl = process.env.AWS_DEV_DATABASE_URL;
+      dbName = 'AWS RDS (Development)';
+      break;
+    case 'backup':
+      dbUrl = process.env.DATABASE_URL;
+      dbName = 'Replit PostgreSQL (Backup)';
+      break;
+  }
   
   if (!dbUrl) {
     console.error(`❌ ${dbName} database URL not configured`);
@@ -166,7 +218,7 @@ async function restore(backupFile: string, target: 'aws' | 'replit') {
   console.log();
 
   // Safety check for production
-  if (target === 'aws') {
+  if (target === 'prod') {
     console.log('🚨 DANGER: You are about to restore to PRODUCTION database!');
     console.log('This operation cannot be undone.');
     console.log('\nTo proceed, set environment variable: CONFIRM_PRODUCTION_RESTORE=yes');
@@ -225,9 +277,24 @@ async function restore(backupFile: string, target: 'aws' | 'replit') {
   }
 }
 
-async function pushSchema(target: 'aws' | 'replit') {
-  const dbUrl = target === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
-  const dbName = target === 'aws' ? 'AWS RDS' : 'Replit PostgreSQL';
+async function pushSchema(target: 'prod' | 'dev' | 'backup') {
+  let dbUrl: string | undefined;
+  let dbName: string;
+  
+  switch (target) {
+    case 'prod':
+      dbUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
+      dbName = 'AWS RDS (Production)';
+      break;
+    case 'dev':
+      dbUrl = process.env.AWS_DEV_DATABASE_URL;
+      dbName = 'AWS RDS (Development)';
+      break;
+    case 'backup':
+      dbUrl = process.env.DATABASE_URL;
+      dbName = 'Replit PostgreSQL (Backup)';
+      break;
+  }
   
   if (!dbUrl) {
     console.error(`❌ ${dbName} database URL not configured`);
@@ -292,52 +359,58 @@ async function main() {
       await status();
       break;
     case 'backup':
-      const backupSource = args[1] as 'aws' | 'replit';
-      if (!['aws', 'replit'].includes(backupSource)) {
-        console.error('Usage: npx tsx scripts/database-backup.ts backup <aws|replit>');
+      const backupSource = args[1] as 'prod' | 'dev' | 'backup';
+      if (!['prod', 'dev', 'backup'].includes(backupSource)) {
+        console.error('Usage: npx tsx scripts/database-backup.ts backup <prod|dev|backup>');
         process.exit(1);
       }
       await backup(backupSource);
       break;
     case 'restore':
       const restoreFile = args[1];
-      const restoreTarget = args[2] as 'aws' | 'replit';
-      if (!restoreFile || !['aws', 'replit'].includes(restoreTarget)) {
-        console.error('Usage: npx tsx scripts/database-backup.ts restore <backup-file> <aws|replit>');
+      const restoreTarget = args[2] as 'prod' | 'dev' | 'backup';
+      if (!restoreFile || !['prod', 'dev', 'backup'].includes(restoreTarget)) {
+        console.error('Usage: npx tsx scripts/database-backup.ts restore <backup-file> <prod|dev|backup>');
         process.exit(1);
       }
       await restore(restoreFile, restoreTarget);
       break;
     case 'push-schema':
-      const pushTarget = args[1] as 'aws' | 'replit';
-      if (!['aws', 'replit'].includes(pushTarget)) {
-        console.error('Usage: npx tsx scripts/database-backup.ts push-schema <aws|replit>');
+      const pushTarget = args[1] as 'prod' | 'dev' | 'backup';
+      if (!['prod', 'dev', 'backup'].includes(pushTarget)) {
+        console.error('Usage: npx tsx scripts/database-backup.ts push-schema <prod|dev|backup>');
         process.exit(1);
       }
       await pushSchema(pushTarget);
       break;
     default:
       console.log(`
-Finatrades Database Backup Tool
+Finatrades Database Backup Tool (3-Database Architecture)
 
 Usage:
   npx tsx scripts/database-backup.ts <command> [options]
 
 Commands:
   status                    Show database status and available backups
-  backup <aws|replit>       Create a backup of the specified database
+  backup <target>           Create a backup of the specified database
   restore <file> <target>   Restore a backup to the target database
   push-schema <target>      Push schema to the target database
 
+Targets:
+  prod    - AWS RDS Production (AWS_PROD_DATABASE_URL)
+  dev     - AWS RDS Development (AWS_DEV_DATABASE_URL)
+  backup  - Replit PostgreSQL Backup (DATABASE_URL)
+
 Examples:
   npx tsx scripts/database-backup.ts status
-  npx tsx scripts/database-backup.ts backup aws
-  npx tsx scripts/database-backup.ts backup replit
-  npx tsx scripts/database-backup.ts push-schema aws
-  npx tsx scripts/database-backup.ts restore /tmp/backup.sql replit
+  npx tsx scripts/database-backup.ts backup prod
+  npx tsx scripts/database-backup.ts backup dev
+  npx tsx scripts/database-backup.ts backup backup
+  npx tsx scripts/database-backup.ts push-schema prod
+  npx tsx scripts/database-backup.ts restore /tmp/backup.sql dev
 
 Safety Notes:
-  - Restoring to AWS requires CONFIRM_PRODUCTION_RESTORE=yes
+  - Restoring to prod requires CONFIRM_PRODUCTION_RESTORE=yes
   - Auto-sync has been disabled for safety
   - Always create a backup before making changes
       `);

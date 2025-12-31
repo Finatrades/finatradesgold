@@ -7,37 +7,58 @@ import path from "path";
 const { Pool } = pg;
 
 /**
- * Multi-Database Configuration
+ * Multi-Database Configuration (3-Database Architecture)
  * 
- * PRIMARY: AWS RDS (production)
- * SECONDARY: Replit PostgreSQL (backup/fallback)
+ * PRODUCTION: AWS RDS (AWS_PROD_DATABASE_URL) - Real users
+ * DEVELOPMENT: AWS RDS (AWS_DEV_DATABASE_URL) - Testing/Development
+ * BACKUP: Replit PostgreSQL (DATABASE_URL) - Cold storage backup
  * 
  * Environment Variables:
- * - AWS_DATABASE_URL: AWS RDS connection string (primary)
- * - DATABASE_URL: Replit PostgreSQL connection string (secondary/fallback)
+ * - AWS_PROD_DATABASE_URL: AWS RDS production database
+ * - AWS_DEV_DATABASE_URL: AWS RDS development database
+ * - DATABASE_URL: Replit PostgreSQL backup database
+ * 
+ * Legacy support:
+ * - AWS_DATABASE_URL: Falls back for backward compatibility
  */
 
-// Determine primary database URL
-let primaryUrl = process.env.AWS_DATABASE_URL || process.env.DATABASE_URL;
-const secondaryUrl = process.env.DATABASE_URL;
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Determine primary database URL based on environment
+let primaryUrl: string | undefined;
+let databaseRole: 'production' | 'development' | 'legacy' = 'legacy';
+
+if (isProduction) {
+  // Production: Use AWS_PROD_DATABASE_URL
+  primaryUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
+  databaseRole = process.env.AWS_PROD_DATABASE_URL ? 'production' : 'legacy';
+} else {
+  // Development: Use AWS_DEV_DATABASE_URL, fallback to DATABASE_URL
+  primaryUrl = process.env.AWS_DEV_DATABASE_URL || process.env.AWS_DATABASE_URL || process.env.DATABASE_URL;
+  databaseRole = process.env.AWS_DEV_DATABASE_URL ? 'development' : 'legacy';
+}
+
+// Backup database is always Replit's DATABASE_URL
+const backupUrl = process.env.DATABASE_URL;
 
 if (!primaryUrl) {
   throw new Error(
-    "Database URL must be set. Set AWS_DATABASE_URL for production or DATABASE_URL for development.",
+    "Database URL must be set. Set AWS_PROD_DATABASE_URL for production or AWS_DEV_DATABASE_URL for development.",
   );
 }
 
 // Log which database is being used
-const isUsingAws = !!process.env.AWS_DATABASE_URL;
+const isUsingAws = !!(process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DEV_DATABASE_URL || process.env.AWS_DATABASE_URL);
 
 // Strip sslmode from connection string if present - we'll handle SSL via pool config
 if (isUsingAws && primaryUrl.includes('sslmode=')) {
   primaryUrl = primaryUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$/, '');
   console.log('[Database] Stripped sslmode from connection string - using pool SSL config');
 }
-console.log(`[Database] Primary: ${isUsingAws ? 'AWS RDS' : 'Replit PostgreSQL'}`);
-if (secondaryUrl && isUsingAws) {
-  console.log(`[Database] Secondary (backup): Replit PostgreSQL`);
+console.log(`[Database] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`[Database] Primary: ${isUsingAws ? `AWS RDS (${databaseRole})` : 'Replit PostgreSQL'}`);
+if (backupUrl && isUsingAws) {
+  console.log(`[Database] Backup: Replit PostgreSQL`);
 }
 
 // Configure SSL for AWS RDS connections
@@ -100,10 +121,10 @@ export const pool = new Pool({
   ssl: getAwsSslConfig(),
 });
 
-// Secondary database pool (Replit - for backup sync)
-export const secondaryPool = secondaryUrl && isUsingAws
+// Backup database pool (Replit - for backup sync)
+export const secondaryPool = backupUrl && isUsingAws
   ? new Pool({ 
-      connectionString: secondaryUrl,
+      connectionString: backupUrl,
       max: 5,
       idleTimeoutMillis: 30000,
     })

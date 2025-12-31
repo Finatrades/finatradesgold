@@ -4,9 +4,13 @@
  * IMPORTANT: Auto-sync is DISABLED by default for safety.
  * This module provides manual backup and restore functions only.
  * 
- * Architecture:
- *   PRIMARY: AWS RDS PostgreSQL (production)
- *   SECONDARY: Replit PostgreSQL (development/backup)
+ * 3-Database Architecture:
+ *   PRODUCTION: AWS RDS (AWS_PROD_DATABASE_URL) - Real users
+ *   DEVELOPMENT: AWS RDS (AWS_DEV_DATABASE_URL) - Testing
+ *   BACKUP: Replit PostgreSQL (DATABASE_URL) - Cold storage
+ * 
+ * Legacy support:
+ *   AWS_DATABASE_URL - Falls back for backward compatibility
  * 
  * Safety Features:
  *   - Auto-sync DISABLED by default
@@ -77,20 +81,23 @@ async function getTableCount(dbUrl: string): Promise<number> {
  * Check database status safely
  */
 export async function getDatabaseStatus(): Promise<{
-  aws: DatabaseStatus | null;
-  replit: DatabaseStatus | null;
+  awsProd: DatabaseStatus | null;
+  awsDev: DatabaseStatus | null;
+  backup: DatabaseStatus | null;
   syncEnabled: boolean;
   destructiveSyncAllowed: boolean;
 }> {
-  const awsUrl = process.env.AWS_DATABASE_URL;
-  const replitUrl = process.env.DATABASE_URL;
+  const awsProdUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
+  const awsDevUrl = process.env.AWS_DEV_DATABASE_URL;
+  const backupUrl = process.env.DATABASE_URL;
 
-  let awsStatus: DatabaseStatus | null = null;
-  let replitStatus: DatabaseStatus | null = null;
+  let awsProdStatus: DatabaseStatus | null = null;
+  let awsDevStatus: DatabaseStatus | null = null;
+  let backupStatus: DatabaseStatus | null = null;
 
-  if (awsUrl) {
-    const tables = await getTableCount(awsUrl);
-    awsStatus = {
+  if (awsProdUrl) {
+    const tables = await getTableCount(awsProdUrl);
+    awsProdStatus = {
       url: '***HIDDEN***',
       name: 'AWS RDS (Production)',
       tables,
@@ -98,19 +105,30 @@ export async function getDatabaseStatus(): Promise<{
     };
   }
 
-  if (replitUrl) {
-    const tables = await getTableCount(replitUrl);
-    replitStatus = {
+  if (awsDevUrl) {
+    const tables = await getTableCount(awsDevUrl);
+    awsDevStatus = {
       url: '***HIDDEN***',
-      name: 'Replit PostgreSQL (Development)',
+      name: 'AWS RDS (Development)',
+      tables,
+      hasData: tables >= MINIMUM_TABLES_FOR_SYNC
+    };
+  }
+
+  if (backupUrl) {
+    const tables = await getTableCount(backupUrl);
+    backupStatus = {
+      url: '***HIDDEN***',
+      name: 'Replit PostgreSQL (Backup)',
       tables,
       hasData: tables >= MINIMUM_TABLES_FOR_SYNC
     };
   }
 
   return {
-    aws: awsStatus,
-    replit: replitStatus,
+    awsProd: awsProdStatus,
+    awsDev: awsDevStatus,
+    backup: backupStatus,
     syncEnabled: SYNC_ENABLED,
     destructiveSyncAllowed: ALLOW_DESTRUCTIVE_SYNC
   };
@@ -120,16 +138,32 @@ export async function getDatabaseStatus(): Promise<{
  * Create a backup of a database to a file (NON-DESTRUCTIVE)
  * This is the SAFE way to backup - just creates a dump file
  */
-export async function createBackup(source: 'aws' | 'replit'): Promise<{
+export async function createBackup(source: 'aws-prod' | 'aws-dev' | 'backup'): Promise<{
   success: boolean;
   filePath?: string;
   tablesCount?: number;
   error?: string;
 }> {
-  const dbUrl = source === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
+  let dbUrl: string | undefined;
+  let dbName: string;
+  
+  switch (source) {
+    case 'aws-prod':
+      dbUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
+      dbName = 'AWS Production';
+      break;
+    case 'aws-dev':
+      dbUrl = process.env.AWS_DEV_DATABASE_URL;
+      dbName = 'AWS Development';
+      break;
+    case 'backup':
+      dbUrl = process.env.DATABASE_URL;
+      dbName = 'Replit Backup';
+      break;
+  }
   
   if (!dbUrl) {
-    return { success: false, error: `Missing ${source.toUpperCase()} database URL` };
+    return { success: false, error: `Missing ${dbName} database URL` };
   }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -239,7 +273,7 @@ export async function syncAwsToReplit(options?: {
     console.log('[DB Backup] Starting sync: AWS RDS → Replit');
 
     // Step 1: Create backup of Replit first (safety measure)
-    const replitBackup = await createBackup('replit');
+    const replitBackup = await createBackup('backup');
     if (replitBackup.success) {
       console.log(`[DB Backup] Created safety backup of Replit: ${replitBackup.filePath}`);
     }
