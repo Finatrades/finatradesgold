@@ -539,40 +539,37 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
     }
 
     return (
-      <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
-        <div className="text-center pb-2">
-          <p className="text-xl font-bold text-foreground">${amount.toFixed(2)} USD</p>
-          <p className="text-sm text-muted-foreground">Enter your card details below</p>
-        </div>
-
-        <div className="border rounded-lg overflow-hidden bg-white w-full" style={{ height: 'min(70vh, 600px)', maxWidth: '100%' }}>
+      <div className="flex flex-col w-full h-full overflow-hidden">
+        <div className="flex-1 w-full overflow-hidden">
           <iframe
             src={paymentUrl}
-            className="w-full h-full border-0"
+            className="w-full border-0"
             title="Secure Payment"
             allow="payment"
-            style={{ maxWidth: '100%', minHeight: '500px' }}
+            style={{ 
+              width: '100%', 
+              height: 'calc(80vh - 120px)',
+              minHeight: '450px',
+              border: 'none'
+            }}
           />
         </div>
 
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={onCancel} className="flex-1 h-11">
-            Cancel
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => window.open(paymentUrl, '_blank')}
-            className="flex-1 h-11"
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Open in New Tab
-          </Button>
+        <div className="flex-shrink-0 pt-4 border-t mt-4">
+          <p className="text-2xl font-bold text-center text-foreground mb-4">${amount.toFixed(2)}</p>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onCancel} className="flex-1 h-12">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => window.open(paymentUrl, '_blank')}
+              className="flex-1 h-12 bg-primary hover:bg-primary/90"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Pay ${amount.toFixed(2)}
+            </Button>
+          </div>
         </div>
-
-        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-          <Lock className="w-3 h-3" />
-          Complete the payment above. Your wallet will be credited automatically.
-        </p>
       </div>
     );
   }
