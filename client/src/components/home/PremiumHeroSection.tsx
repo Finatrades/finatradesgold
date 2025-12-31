@@ -11,7 +11,7 @@ export default function PremiumHeroSection() {
   const { accountType, setAccountType } = useAccountType();
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-purple-50/50 to-purple-50/30">
+    <section className="relative min-h-[auto] lg:min-h-[90vh] py-16 lg:py-0 flex items-center overflow-hidden bg-gradient-to-br from-white via-purple-50/50 to-purple-50/30">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-200/30 blur-[150px] rounded-full" />
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-purple-200/20 blur-[120px] rounded-full" />
