@@ -543,7 +543,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
         <div 
           className="w-full" 
           style={{ 
-            height: '420px',
+            height: '500px',
             overflow: 'hidden'
           }}
         >
@@ -554,7 +554,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
             scrolling="no"
             style={{ 
               width: '100%', 
-              height: '420px',
+              height: '500px',
               border: 'none',
               overflow: 'hidden'
             }}
