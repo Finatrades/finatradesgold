@@ -633,7 +633,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
         id="hybrid-card-input" 
         className="border border-border rounded-xl bg-white"
         style={{ 
-          height: '350px', 
+          height: '280px', 
           maxWidth: '100%', 
           width: '100%',
           overflow: 'hidden',
