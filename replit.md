@@ -59,10 +59,26 @@ The platform uses a client-server architecture with a React frontend and an Expr
 **Data Storage:**
 - **Database**: PostgreSQL with Drizzle ORM (multi-database architecture).
 - **Primary Database**: AWS RDS PostgreSQL (production) - set via `AWS_DATABASE_URL`
-- **Secondary Database**: Replit PostgreSQL (backup/development) - set via `DATABASE_URL`
+- **Secondary Database**: Replit PostgreSQL (development/backup) - set via `DATABASE_URL`
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
 - **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs.
-- **Backup Scripts**: Located in `scripts/` directory for database sync between AWS and Replit.
+
+**Database Safety Architecture (Updated Dec 2025):**
+- **Auto-sync DISABLED**: The dangerous auto-sync scheduler has been disabled to prevent accidental data loss.
+- **Manual Backups Only**: Use `scripts/database-backup.ts` for safe backup/restore operations.
+- **Safety Guards**: 
+  - Minimum 50 tables required in source before sync allowed
+  - `DB_SYNC_ENABLED=true` required to enable sync
+  - `ALLOW_DESTRUCTIVE_SYNC=true` required for DROP operations
+  - Production restore requires `CONFIRM_PRODUCTION_RESTORE=yes`
+- **Backup Commands**:
+  - `npx tsx scripts/database-backup.ts status` - Check database status
+  - `npx tsx scripts/database-backup.ts backup aws` - Backup production
+  - `npx tsx scripts/database-backup.ts backup replit` - Backup development
+  - `npx tsx scripts/database-backup.ts push-schema aws` - Push schema to AWS
+- **Schema Push**: When deploying, always run schema push to AWS before starting app:
+  - Generate: `npx drizzle-kit generate`
+  - Push to AWS: `npx tsx scripts/database-backup.ts push-schema aws`
 
 **Authentication & Authorization:**
 - **Method**: Email/password authentication.

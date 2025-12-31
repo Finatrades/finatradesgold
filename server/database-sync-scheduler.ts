@@ -1,13 +1,18 @@
 /**
- * Database Sync Scheduler
- * Automatically syncs AWS RDS (primary) to Replit (backup) every 6 hours
+ * Database Backup & Sync Manager (SAFE VERSION)
+ * 
+ * IMPORTANT: Auto-sync is DISABLED by default for safety.
+ * This module provides manual backup and restore functions only.
  * 
  * Architecture:
  *   PRIMARY: AWS RDS PostgreSQL (production)
- *   SECONDARY: Replit PostgreSQL (backup/development)
+ *   SECONDARY: Replit PostgreSQL (development/backup)
  * 
- * The sync runs in the background and keeps the Replit database
- * as a mirror of AWS RDS for disaster recovery purposes.
+ * Safety Features:
+ *   - Auto-sync DISABLED by default
+ *   - Minimum table count validation before any sync
+ *   - Explicit confirmation required for destructive operations
+ *   - Source database validation before sync
  */
 
 import { exec } from 'child_process';
@@ -15,42 +20,184 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+// Safety constants
+const MINIMUM_TABLES_FOR_SYNC = 50; // Don't sync if source has fewer tables
+const SYNC_ENABLED = process.env.DB_SYNC_ENABLED === 'true';
+const ALLOW_DESTRUCTIVE_SYNC = process.env.ALLOW_DESTRUCTIVE_SYNC === 'true';
+
 interface SyncResult {
   success: boolean;
   timestamp: Date;
-  direction: 'aws-to-replit' | 'replit-to-aws';
+  direction: 'aws-to-replit' | 'replit-to-aws' | 'backup-only';
   tablesCount?: number;
   duration?: number;
   error?: string;
 }
 
-const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-let syncInterval: NodeJS.Timeout | null = null;
+interface DatabaseStatus {
+  url: string;
+  name: string;
+  tables: number;
+  hasData: boolean;
+}
+
 let lastSyncResult: SyncResult | null = null;
 let isSyncing = false;
 
 async function runCommand(cmd: string, description: string): Promise<string> {
-  console.log(`[DB Sync] ${description}...`);
+  console.log(`[DB Backup] ${description}...`);
   try {
-    const { stdout, stderr } = await execAsync(cmd, { maxBuffer: 50 * 1024 * 1024 }); // 50MB buffer
+    const { stdout, stderr } = await execAsync(cmd, { maxBuffer: 50 * 1024 * 1024 });
     if (stderr && !stderr.includes('NOTICE') && !stderr.includes('already exists')) {
-      console.warn('[DB Sync] Warning:', stderr.substring(0, 500));
+      console.warn('[DB Backup] Warning:', stderr.substring(0, 500));
     }
     return stdout;
   } catch (error: any) {
-    console.error(`[DB Sync] Error: ${error.message}`);
+    console.error(`[DB Backup] Error: ${error.message}`);
     throw error;
   }
 }
 
-export async function syncAwsToReplit(): Promise<SyncResult> {
+/**
+ * Get table count for a database
+ */
+async function getTableCount(dbUrl: string): Promise<number> {
+  try {
+    const result = await execAsync(
+      `psql "${dbUrl}" -t -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'"`,
+      { maxBuffer: 1024 * 1024 }
+    );
+    return parseInt(result.stdout.trim()) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Check database status safely
+ */
+export async function getDatabaseStatus(): Promise<{
+  aws: DatabaseStatus | null;
+  replit: DatabaseStatus | null;
+  syncEnabled: boolean;
+  destructiveSyncAllowed: boolean;
+}> {
+  const awsUrl = process.env.AWS_DATABASE_URL;
+  const replitUrl = process.env.DATABASE_URL;
+
+  let awsStatus: DatabaseStatus | null = null;
+  let replitStatus: DatabaseStatus | null = null;
+
+  if (awsUrl) {
+    const tables = await getTableCount(awsUrl);
+    awsStatus = {
+      url: '***HIDDEN***',
+      name: 'AWS RDS (Production)',
+      tables,
+      hasData: tables >= MINIMUM_TABLES_FOR_SYNC
+    };
+  }
+
+  if (replitUrl) {
+    const tables = await getTableCount(replitUrl);
+    replitStatus = {
+      url: '***HIDDEN***',
+      name: 'Replit PostgreSQL (Development)',
+      tables,
+      hasData: tables >= MINIMUM_TABLES_FOR_SYNC
+    };
+  }
+
+  return {
+    aws: awsStatus,
+    replit: replitStatus,
+    syncEnabled: SYNC_ENABLED,
+    destructiveSyncAllowed: ALLOW_DESTRUCTIVE_SYNC
+  };
+}
+
+/**
+ * Create a backup of a database to a file (NON-DESTRUCTIVE)
+ * This is the SAFE way to backup - just creates a dump file
+ */
+export async function createBackup(source: 'aws' | 'replit'): Promise<{
+  success: boolean;
+  filePath?: string;
+  tablesCount?: number;
+  error?: string;
+}> {
+  const dbUrl = source === 'aws' ? process.env.AWS_DATABASE_URL : process.env.DATABASE_URL;
+  
+  if (!dbUrl) {
+    return { success: false, error: `Missing ${source.toUpperCase()} database URL` };
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupFile = `/tmp/backup_${source}_${timestamp}.sql`;
+
+  try {
+    // First check table count
+    const tableCount = await getTableCount(dbUrl);
+    
+    if (tableCount === 0) {
+      return { success: false, error: `${source.toUpperCase()} database has no tables - nothing to backup` };
+    }
+
+    console.log(`[DB Backup] Creating backup of ${source.toUpperCase()} database (${tableCount} tables)`);
+    
+    await runCommand(
+      `pg_dump "${dbUrl}" --no-owner --no-acl -f ${backupFile}`,
+      `Exporting ${source.toUpperCase()} database`
+    );
+
+    console.log(`[DB Backup] ✅ Backup created: ${backupFile}`);
+    
+    return {
+      success: true,
+      filePath: backupFile,
+      tablesCount: tableCount
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * SAFE sync from AWS to Replit (with safety checks)
+ * This is the ONLY way to sync - with explicit validation
+ */
+export async function syncAwsToReplit(options?: {
+  force?: boolean;
+  skipValidation?: boolean;
+}): Promise<SyncResult> {
   if (isSyncing) {
-    console.log('[DB Sync] Sync already in progress, skipping...');
     return {
       success: false,
       timestamp: new Date(),
       direction: 'aws-to-replit',
       error: 'Sync already in progress'
+    };
+  }
+
+  // Check if sync is enabled
+  if (!SYNC_ENABLED && !options?.force) {
+    console.log('[DB Backup] ⚠️ Sync is DISABLED. Set DB_SYNC_ENABLED=true to enable.');
+    return {
+      success: false,
+      timestamp: new Date(),
+      direction: 'aws-to-replit',
+      error: 'Sync is disabled. Set DB_SYNC_ENABLED=true environment variable to enable.'
+    };
+  }
+
+  // Check if destructive sync is allowed
+  if (!ALLOW_DESTRUCTIVE_SYNC && !options?.force) {
+    console.log('[DB Backup] ⚠️ Destructive sync is DISABLED. Set ALLOW_DESTRUCTIVE_SYNC=true to enable.');
+    return {
+      success: false,
+      timestamp: new Date(),
+      direction: 'aws-to-replit',
+      error: 'Destructive sync is disabled. Set ALLOW_DESTRUCTIVE_SYNC=true to enable table dropping.'
     };
   }
 
@@ -62,21 +209,42 @@ export async function syncAwsToReplit(): Promise<SyncResult> {
 
   if (!replitUrl || !awsUrl) {
     isSyncing = false;
-    const error = 'Missing database URLs (DATABASE_URL or AWS_DATABASE_URL)';
-    console.error(`[DB Sync] ${error}`);
     return {
       success: false,
       timestamp: new Date(),
       direction: 'aws-to-replit',
-      error
+      error: 'Missing database URLs'
     };
   }
 
-  console.log('[DB Sync] Starting scheduled sync: AWS RDS → Replit');
-  console.log(`[DB Sync] Timestamp: ${new Date().toISOString()}`);
-
   try {
-    // Step 1: Drop all tables in Replit to ensure clean sync
+    // SAFETY CHECK 1: Verify AWS has tables
+    console.log('[DB Backup] Running safety checks...');
+    const awsTableCount = await getTableCount(awsUrl);
+    
+    if (awsTableCount < MINIMUM_TABLES_FOR_SYNC && !options?.skipValidation) {
+      isSyncing = false;
+      const error = `SAFETY BLOCK: AWS RDS has only ${awsTableCount} tables (minimum: ${MINIMUM_TABLES_FOR_SYNC}). ` +
+        `This looks like an empty or corrupted database. Sync aborted to prevent data loss.`;
+      console.error(`[DB Backup] ❌ ${error}`);
+      return {
+        success: false,
+        timestamp: new Date(),
+        direction: 'aws-to-replit',
+        error
+      };
+    }
+
+    console.log(`[DB Backup] ✓ AWS RDS has ${awsTableCount} tables - proceeding with sync`);
+    console.log('[DB Backup] Starting sync: AWS RDS → Replit');
+
+    // Step 1: Create backup of Replit first (safety measure)
+    const replitBackup = await createBackup('replit');
+    if (replitBackup.success) {
+      console.log(`[DB Backup] Created safety backup of Replit: ${replitBackup.filePath}`);
+    }
+
+    // Step 2: Drop tables in Replit
     await runCommand(
       `psql "${replitUrl}" -c "
         DO \\$\\$ 
@@ -91,7 +259,7 @@ export async function syncAwsToReplit(): Promise<SyncResult> {
       'Dropping existing tables in Replit'
     );
 
-    // Step 2: Drop all custom types in Replit
+    // Step 3: Drop custom types in Replit
     await runCommand(
       `psql "${replitUrl}" -c "
         DO \\$\\$ 
@@ -106,23 +274,23 @@ export async function syncAwsToReplit(): Promise<SyncResult> {
       'Dropping custom types in Replit'
     );
 
-    // Step 3: Export from AWS RDS
+    // Step 4: Export from AWS RDS
     const backupFile = `/tmp/aws_sync_${Date.now()}.sql`;
     await runCommand(
       `pg_dump "${awsUrl}" --no-owner --no-acl -f ${backupFile}`,
       'Exporting from AWS RDS'
     );
 
-    // Step 4: Import to Replit
+    // Step 5: Import to Replit
     await runCommand(
       `psql "${replitUrl}" < ${backupFile} 2>&1 | grep -c "CREATE TABLE" || echo "0"`,
       'Importing to Replit database'
     );
 
-    // Step 5: Cleanup temp file
+    // Step 6: Cleanup temp file
     await runCommand(`rm -f ${backupFile}`, 'Cleaning up temp file');
 
-    // Step 6: Verify sync by counting tables
+    // Step 7: Verify sync
     const tableCountResult = await runCommand(
       `psql "${replitUrl}" -t -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'"`,
       'Verifying sync'
@@ -142,9 +310,9 @@ export async function syncAwsToReplit(): Promise<SyncResult> {
     lastSyncResult = result;
     isSyncing = false;
 
-    console.log(`[DB Sync] ✅ Sync completed successfully!`);
-    console.log(`[DB Sync] Tables synced: ${tablesCount}`);
-    console.log(`[DB Sync] Duration: ${(duration / 1000).toFixed(1)}s`);
+    console.log(`[DB Backup] ✅ Sync completed successfully!`);
+    console.log(`[DB Backup] Tables synced: ${tablesCount}`);
+    console.log(`[DB Backup] Duration: ${(duration / 1000).toFixed(1)}s`);
 
     return result;
 
@@ -161,153 +329,61 @@ export async function syncAwsToReplit(): Promise<SyncResult> {
     };
 
     lastSyncResult = result;
-
-    console.error(`[DB Sync] ❌ Sync failed after ${(duration / 1000).toFixed(1)}s`);
-    console.error(`[DB Sync] Error: ${error.message}`);
+    console.error(`[DB Backup] ❌ Sync failed: ${error.message}`);
 
     return result;
   }
 }
 
+/**
+ * DISABLED: This function is too dangerous for a financial application
+ * Syncing TO production should only be done manually with extreme caution
+ */
 export async function syncReplitToAws(): Promise<SyncResult> {
-  if (isSyncing) {
-    console.log('[DB Sync] Sync already in progress, skipping...');
-    return {
-      success: false,
-      timestamp: new Date(),
-      direction: 'replit-to-aws',
-      error: 'Sync already in progress'
-    };
-  }
-
-  const startTime = Date.now();
-  isSyncing = true;
-
-  const replitUrl = process.env.DATABASE_URL;
-  const awsUrl = process.env.AWS_DATABASE_URL;
-
-  if (!replitUrl || !awsUrl) {
-    isSyncing = false;
-    return {
-      success: false,
-      timestamp: new Date(),
-      direction: 'replit-to-aws',
-      error: 'Missing database URLs'
-    };
-  }
-
-  console.log('[DB Sync] Starting sync: Replit → AWS RDS');
-  console.log(`[DB Sync] ⚠️ WARNING: This will overwrite AWS production data!`);
-
-  try {
-    const backupFile = `/tmp/replit_sync_${Date.now()}.sql`;
-
-    // Export from Replit
-    await runCommand(
-      `pg_dump "${replitUrl}" --no-owner --no-acl -f ${backupFile}`,
-      'Exporting from Replit'
-    );
-
-    // Import to AWS (this will fail on conflicts but data will be updated)
-    await runCommand(
-      `psql "${awsUrl}" < ${backupFile} 2>&1 | tail -5`,
-      'Importing to AWS RDS'
-    );
-
-    // Cleanup
-    await runCommand(`rm -f ${backupFile}`, 'Cleaning up temp file');
-
-    const duration = Date.now() - startTime;
-    
-    const result: SyncResult = {
-      success: true,
-      timestamp: new Date(),
-      direction: 'replit-to-aws',
-      duration
-    };
-
-    lastSyncResult = result;
-    isSyncing = false;
-
-    console.log(`[DB Sync] ✅ Sync to AWS completed!`);
-    return result;
-
-  } catch (error: any) {
-    isSyncing = false;
-    
-    return {
-      success: false,
-      timestamp: new Date(),
-      direction: 'replit-to-aws',
-      error: error.message
-    };
-  }
+  console.error('[DB Backup] ❌ syncReplitToAws is DISABLED for safety.');
+  console.error('[DB Backup] Syncing development data to production is not allowed.');
+  console.error('[DB Backup] To restore production, use manual pg_restore with explicit approval.');
+  
+  return {
+    success: false,
+    timestamp: new Date(),
+    direction: 'replit-to-aws',
+    error: 'This operation is disabled for safety. Syncing to production requires manual intervention.'
+  };
 }
 
+/**
+ * Start the sync scheduler - DISABLED BY DEFAULT
+ * Only starts if DB_SYNC_ENABLED=true AND ALLOW_DESTRUCTIVE_SYNC=true
+ */
 export function startSyncScheduler(): void {
-  if (syncInterval) {
-    console.log('[DB Sync] Scheduler already running');
-    return;
-  }
-
-  const awsUrl = process.env.AWS_DATABASE_URL;
-  const replitUrl = process.env.DATABASE_URL;
-
-  if (!awsUrl || !replitUrl) {
-    console.log('[DB Sync] Scheduler not started - missing database URLs');
-    return;
-  }
-
-  console.log('[DB Sync] Starting auto-sync scheduler');
-  console.log(`[DB Sync] Sync interval: every 6 hours`);
-  console.log(`[DB Sync] Direction: AWS RDS → Replit (backup)`);
-
-  // Run first sync after 1 minute to allow server to fully start
-  setTimeout(() => {
-    console.log('[DB Sync] Running initial sync...');
-    syncAwsToReplit().catch(console.error);
-  }, 60 * 1000);
-
-  // Then run every 6 hours
-  syncInterval = setInterval(() => {
-    console.log('[DB Sync] Running scheduled sync...');
-    syncAwsToReplit().catch(console.error);
-  }, SYNC_INTERVAL_MS);
-
-  console.log('[DB Sync] Scheduler started successfully');
+  console.log('[DB Backup] Auto-sync scheduler is DISABLED for safety.');
+  console.log('[DB Backup] To enable, set both:');
+  console.log('[DB Backup]   DB_SYNC_ENABLED=true');
+  console.log('[DB Backup]   ALLOW_DESTRUCTIVE_SYNC=true');
+  console.log('[DB Backup] Manual backups are still available via API.');
+  
+  // DO NOT start automatic sync - it's too dangerous
+  // The old scheduler has been removed for safety
 }
 
 export function stopSyncScheduler(): void {
-  if (syncInterval) {
-    clearInterval(syncInterval);
-    syncInterval = null;
-    console.log('[DB Sync] Scheduler stopped');
-  }
+  console.log('[DB Backup] Scheduler is already disabled');
 }
 
 export function getSyncStatus(): {
   isRunning: boolean;
   isSyncing: boolean;
   lastSync: SyncResult | null;
-  nextSyncIn: string | null;
+  syncEnabled: boolean;
+  destructiveSyncAllowed: boolean;
 } {
-  let nextSyncIn: string | null = null;
-  
-  if (syncInterval && lastSyncResult) {
-    const elapsed = Date.now() - lastSyncResult.timestamp.getTime();
-    const remaining = SYNC_INTERVAL_MS - elapsed;
-    if (remaining > 0) {
-      const hours = Math.floor(remaining / (60 * 60 * 1000));
-      const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-      nextSyncIn = `${hours}h ${minutes}m`;
-    }
-  }
-
   return {
-    isRunning: syncInterval !== null,
+    isRunning: false, // Always false - scheduler is disabled
     isSyncing,
     lastSync: lastSyncResult,
-    nextSyncIn
+    syncEnabled: SYNC_ENABLED,
+    destructiveSyncAllowed: ALLOW_DESTRUCTIVE_SYNC
   };
 }
 
@@ -323,34 +399,25 @@ export async function verifySyncStatus(): Promise<{
     throw new Error('Missing database URLs');
   }
 
-  const replitTables = await runCommand(
-    `psql "${replitUrl}" -t -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'"`,
-    'Counting Replit tables'
-  );
+  const replitTables = await getTableCount(replitUrl);
+  const awsTables = await getTableCount(awsUrl);
 
-  const awsTables = await runCommand(
-    `psql "${awsUrl}" -t -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'"`,
-    'Counting AWS tables'
-  );
+  let replitUsers = 0;
+  let awsUsers = 0;
 
-  const replitUsers = await runCommand(
-    `psql "${replitUrl}" -t -c "SELECT COUNT(*) FROM users" 2>/dev/null || echo "0"`,
-    'Counting Replit users'
-  );
+  try {
+    const rUsers = await execAsync(`psql "${replitUrl}" -t -c "SELECT COUNT(*) FROM users" 2>/dev/null || echo "0"`);
+    replitUsers = parseInt(rUsers.stdout.trim()) || 0;
+  } catch {}
 
-  const awsUsers = await runCommand(
-    `psql "${awsUrl}" -t -c "SELECT COUNT(*) FROM users" 2>/dev/null || echo "0"`,
-    'Counting AWS users'
-  );
-
-  const rTables = parseInt(replitTables.trim()) || 0;
-  const aTables = parseInt(awsTables.trim()) || 0;
-  const rUsers = parseInt(replitUsers.trim()) || 0;
-  const aUsers = parseInt(awsUsers.trim()) || 0;
+  try {
+    const aUsers = await execAsync(`psql "${awsUrl}" -t -c "SELECT COUNT(*) FROM users" 2>/dev/null || echo "0"`);
+    awsUsers = parseInt(aUsers.stdout.trim()) || 0;
+  } catch {}
 
   return {
-    replit: { tables: rTables, users: rUsers },
-    aws: { tables: aTables, users: aUsers },
-    inSync: rTables === aTables && rUsers === aUsers
+    replit: { tables: replitTables, users: replitUsers },
+    aws: { tables: awsTables, users: awsUsers },
+    inSync: replitTables === awsTables && replitUsers === awsUsers
   };
 }
