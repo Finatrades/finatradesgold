@@ -688,6 +688,10 @@ export const wallets = pgTable("wallets", {
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   usdBalance: decimal("usd_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   eurBalance: decimal("eur_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  gbpBalance: decimal("gbp_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  aedBalance: decimal("aed_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  chfBalance: decimal("chf_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  sarBalance: decimal("sar_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -705,8 +709,16 @@ export const transactions = pgTable("transactions", {
   amountGold: decimal("amount_gold", { precision: 18, scale: 6 }),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
   amountEur: decimal("amount_eur", { precision: 18, scale: 2 }),
+  amountGbp: decimal("amount_gbp", { precision: 18, scale: 2 }),
+  amountAed: decimal("amount_aed", { precision: 18, scale: 2 }),
+  
+  primaryCurrency: varchar("primary_currency", { length: 10 }).notNull().default('USD'),
+  primaryAmount: decimal("primary_amount", { precision: 18, scale: 2 }),
+  exchangeRateToUsd: decimal("exchange_rate_to_usd", { precision: 18, scale: 8 }),
+  exchangeRateId: varchar("exchange_rate_id", { length: 255 }),
   
   goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  goldPriceInPrimaryCurrency: decimal("gold_price_in_primary_currency", { precision: 12, scale: 2 }),
   
   recipientEmail: varchar("recipient_email", { length: 255 }),
   senderEmail: varchar("sender_email", { length: 255 }),
@@ -3645,3 +3657,102 @@ export const insertAccountDeletionRequestSchema = createInsertSchema(accountDele
 });
 export type InsertAccountDeletionRequest = z.infer<typeof insertAccountDeletionRequestSchema>;
 export type AccountDeletionRequest = typeof accountDeletionRequests.$inferSelect;
+
+// ============================================
+// MULTI-CURRENCY SUPPORT
+// ============================================
+
+export const supportedCurrencyCodeEnum = pgEnum('supported_currency_code', [
+  'USD', 'EUR', 'GBP', 'AED', 'CHF', 'SAR', 'KWD', 'BHD', 'QAR', 'OMR'
+]);
+
+export const supportedCurrencies = pgTable("supported_currencies", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 10 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  symbol: varchar("symbol", { length: 10 }).notNull(),
+  symbolPosition: varchar("symbol_position", { length: 10 }).notNull().default('before'),
+  decimalPlaces: integer("decimal_places").notNull().default(2),
+  isActive: boolean("is_active").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSupportedCurrencySchema = createInsertSchema(supportedCurrencies).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSupportedCurrency = z.infer<typeof insertSupportedCurrencySchema>;
+export type SupportedCurrency = typeof supportedCurrencies.$inferSelect;
+
+export const exchangeRates = pgTable("exchange_rates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  baseCurrency: varchar("base_currency", { length: 10 }).notNull().default('USD'),
+  quoteCurrency: varchar("quote_currency", { length: 10 }).notNull(),
+  rate: decimal("rate", { precision: 18, scale: 8 }).notNull(),
+  inverseRate: decimal("inverse_rate", { precision: 18, scale: 8 }).notNull(),
+  provider: varchar("provider", { length: 50 }).notNull().default('internal'),
+  validFrom: timestamp("valid_from").notNull().defaultNow(),
+  validUntil: timestamp("valid_until"),
+  isActive: boolean("is_active").notNull().default(true),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertExchangeRateSchema = createInsertSchema(exchangeRates).omit({ id: true, createdAt: true });
+export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
+export type ExchangeRate = typeof exchangeRates.$inferSelect;
+
+export const exchangeRateHistoryUpdateFrequencyEnum = pgEnum('exchange_rate_history_update_frequency', [
+  'realtime', 'hourly', 'daily'
+]);
+
+export const exchangeRateHistory = pgTable("exchange_rate_history", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  baseCurrency: varchar("base_currency", { length: 10 }).notNull().default('USD'),
+  quoteCurrency: varchar("quote_currency", { length: 10 }).notNull(),
+  openRate: decimal("open_rate", { precision: 18, scale: 8 }).notNull(),
+  closeRate: decimal("close_rate", { precision: 18, scale: 8 }).notNull(),
+  highRate: decimal("high_rate", { precision: 18, scale: 8 }).notNull(),
+  lowRate: decimal("low_rate", { precision: 18, scale: 8 }).notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  provider: varchar("provider", { length: 50 }).notNull().default('internal'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertExchangeRateHistorySchema = createInsertSchema(exchangeRateHistory).omit({ id: true, createdAt: true });
+export type InsertExchangeRateHistory = z.infer<typeof insertExchangeRateHistorySchema>;
+export type ExchangeRateHistoryRecord = typeof exchangeRateHistory.$inferSelect;
+
+export const currencyConversionLogs = pgTable("currency_conversion_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }),
+  fromCurrency: varchar("from_currency", { length: 10 }).notNull(),
+  toCurrency: varchar("to_currency", { length: 10 }).notNull(),
+  fromAmount: decimal("from_amount", { precision: 18, scale: 8 }).notNull(),
+  toAmount: decimal("to_amount", { precision: 18, scale: 8 }).notNull(),
+  exchangeRateUsed: decimal("exchange_rate_used", { precision: 18, scale: 8 }).notNull(),
+  exchangeRateId: varchar("exchange_rate_id", { length: 255 }).references(() => exchangeRates.id),
+  conversionType: varchar("conversion_type", { length: 50 }).notNull().default('transaction'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCurrencyConversionLogSchema = createInsertSchema(currencyConversionLogs).omit({ id: true, createdAt: true });
+export type InsertCurrencyConversionLog = z.infer<typeof insertCurrencyConversionLogSchema>;
+export type CurrencyConversionLog = typeof currencyConversionLogs.$inferSelect;
+
+export const SUPPORTED_CURRENCIES_LIST = [
+  { code: 'USD', name: 'US Dollar', symbol: '$', symbolPosition: 'before', decimalPlaces: 2 },
+  { code: 'EUR', name: 'Euro', symbol: '€', symbolPosition: 'before', decimalPlaces: 2 },
+  { code: 'GBP', name: 'British Pound', symbol: '£', symbolPosition: 'before', decimalPlaces: 2 },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ', symbolPosition: 'after', decimalPlaces: 2 },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF', symbolPosition: 'before', decimalPlaces: 2 },
+  { code: 'SAR', name: 'Saudi Riyal', symbol: '﷼', symbolPosition: 'after', decimalPlaces: 2 },
+  { code: 'KWD', name: 'Kuwaiti Dinar', symbol: 'د.ك', symbolPosition: 'after', decimalPlaces: 3 },
+  { code: 'BHD', name: 'Bahraini Dinar', symbol: '.د.ب', symbolPosition: 'after', decimalPlaces: 3 },
+  { code: 'QAR', name: 'Qatari Riyal', symbol: 'ر.ق', symbolPosition: 'after', decimalPlaces: 2 },
+  { code: 'OMR', name: 'Omani Rial', symbol: 'ر.ع.', symbolPosition: 'after', decimalPlaces: 3 },
+] as const;
+
+export type SupportedCurrencyCode = typeof SUPPORTED_CURRENCIES_LIST[number]['code'];

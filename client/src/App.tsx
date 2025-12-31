@@ -233,6 +233,7 @@ import { BrandingProvider } from "@/context/BrandingContext";
 import { CMSProvider } from "@/context/CMSContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { DataSyncProvider } from "@/hooks/useDataSync";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 
 function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -271,6 +272,7 @@ function App() {
                 <SocketProvider>
                   <DataSyncProvider>
                     <FeeProvider>
+                    <CurrencyProvider>
                     <PlatformProvider>
                       <TradeFinanceProvider>
                         <BnslProvider>
@@ -292,6 +294,7 @@ function App() {
                         </BnslProvider>
                       </TradeFinanceProvider>
                     </PlatformProvider>
+                    </CurrencyProvider>
                     </FeeProvider>
                   </DataSyncProvider>
                 </SocketProvider>

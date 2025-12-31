@@ -8,6 +8,13 @@
       "when": 1767165138913,
       "tag": "0000_spicy_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767186162760,
+      "tag": "0001_tranquil_colleen_wing",
+      "breakpoints": true
     }
   ]
 }

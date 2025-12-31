@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -38,6 +39,7 @@ interface UserPreferencesData {
 export default function Settings() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { currencies } = useCurrency();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<{ preferences: UserPreferencesData }>({
@@ -260,12 +262,16 @@ export default function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="AED">AED (Dh)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    {currencies.filter(c => c.isActive).map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.code} ({currency.symbol}) - {currency.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Gold is always stored in grams</p>
+                <p className="text-xs text-muted-foreground">
+                  Portfolio values will be displayed in your chosen currency. Gold is always stored in grams.
+                </p>
               </div>
 
               <div className="space-y-2">

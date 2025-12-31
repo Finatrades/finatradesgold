@@ -46,6 +46,7 @@ import {
 } from "./document-service";
 import { generateUserManualPDF, generateAdminManualPDF, generateCertificatePDF, generateTransactionReceiptPDF } from "./pdf-generator";
 import { getGoldPrice, getGoldPricePerGram, getGoldPriceStatus } from "./gold-price-service";
+import { currencyService, initializeCurrencyService, type CurrencyCode } from "./currency-service";
 import { 
   calculateUserRiskScore, 
   updateUserRiskProfile, 
@@ -546,6 +547,9 @@ export async function registerRoutes(
   // Seed email templates on startup (must await to ensure templates exist before handling requests)
   await seedEmailTemplates().catch(err => console.error('[Email] Failed to seed templates:', err));
   
+  // Initialize currency service (seeds currencies and exchange rates)
+  await initializeCurrencyService().catch(err => console.error('[Currency] Failed to initialize:', err));
+  
   // Start document expiry reminder scheduler
   startDocumentExpiryScheduler();
 
@@ -611,6 +615,107 @@ export async function registerRoutes(
     } catch (error) {
       console.error('[GoldPrice] Error getting status:', error);
       res.status(500).json({ message: "Failed to get gold price status" });
+    }
+  });
+
+  // ============================================================================
+  // CURRENCY API (Multi-Currency Support)
+  // ============================================================================
+
+  app.get("/api/currencies", async (req, res) => {
+    try {
+      const currencies = await currencyService.getSupportedCurrencies();
+      res.json(currencies);
+    } catch (error) {
+      console.error('[Currency] Error fetching currencies:', error);
+      res.status(500).json({ message: "Failed to fetch currencies" });
+    }
+  });
+
+  app.get("/api/exchange-rates", async (req, res) => {
+    try {
+      const baseCurrency = (req.query.base as CurrencyCode) || 'USD';
+      const rates = await currencyService.getLatestRates(baseCurrency);
+      res.json({
+        base: baseCurrency,
+        rates,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('[Currency] Error fetching exchange rates:', error);
+      res.status(500).json({ message: "Failed to fetch exchange rates" });
+    }
+  });
+
+  app.get("/api/convert", async (req, res) => {
+    try {
+      const { amount, from, to } = req.query;
+      if (!amount || !from || !to) {
+        return res.status(400).json({ message: "Missing required parameters: amount, from, to" });
+      }
+      
+      const numAmount = parseFloat(amount as string);
+      if (isNaN(numAmount)) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      const result = await currencyService.convert(
+        numAmount,
+        from as CurrencyCode,
+        to as CurrencyCode
+      );
+
+      res.json({
+        from: from,
+        to: to,
+        originalAmount: numAmount,
+        convertedAmount: result.amount,
+        rate: result.rate,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('[Currency] Error converting currency:', error);
+      res.status(500).json({ message: "Failed to convert currency" });
+    }
+  });
+
+  app.get("/api/gold-price/:currency", async (req, res) => {
+    try {
+      const currency = req.params.currency.toUpperCase() as CurrencyCode;
+      const priceData = await getGoldPrice();
+      
+      if (currency === 'USD') {
+        res.json({
+          pricePerGram: priceData.pricePerGram,
+          pricePerOunce: priceData.pricePerOunce,
+          currency: 'USD',
+          timestamp: priceData.timestamp,
+          source: priceData.source
+        });
+      } else {
+        const priceInCurrency = await currencyService.getGoldPriceInCurrency(
+          priceData.pricePerGram,
+          currency
+        );
+        const pricePerOunceInCurrency = await currencyService.getGoldPriceInCurrency(
+          priceData.pricePerOunce,
+          currency
+        );
+        
+        res.json({
+          pricePerGram: priceInCurrency,
+          pricePerOunce: pricePerOunceInCurrency,
+          currency,
+          baseCurrency: 'USD',
+          basePricePerGram: priceData.pricePerGram,
+          timestamp: priceData.timestamp,
+          source: priceData.source
+        });
+      }
+    } catch (error) {
+      console.error('[GoldPrice] Error fetching gold price in currency:', error);
+      const message = error instanceof Error ? error.message : "Failed to fetch gold price";
+      res.status(503).json({ message });
     }
   });
 
