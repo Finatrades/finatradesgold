@@ -233,7 +233,7 @@ export default function HowItWorks() {
       <div className="absolute top-1/4 left-0 w-[600px] h-[600px] bg-[#8A2BE2]/5 rounded-full blur-[200px]" />
       <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-[#FF2FBF]/5 rounded-full blur-[180px]" />
 
-      <div ref={ref} className="relative max-w-5xl mx-auto px-6">
+      <div ref={ref} className="relative max-w-7xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
