@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import type { User } from '@shared/schema';
-import { prefetchDashboardData, clearQueryCache } from '@/lib/queryClient';
+import { prefetchDashboardData, clearQueryCache, SESSION_EXPIRED_EVENT } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 import { pushNotificationManager } from '@/lib/pushNotificationManager';
+import { toast } from 'sonner';
 
 interface MfaChallenge {
   requiresMfa: boolean;
@@ -32,6 +33,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [adminPortal, setAdminPortal] = useState(false);
   const [location, setLocation] = useLocation();
+
+  const handleSessionExpired = useCallback(() => {
+    console.log('[Auth] Session expired event received, logging out...');
+    clearQueryCache();
+    setUser(null);
+    pushNotificationManager.setUser(null);
+    setAdminPortal(false);
+    localStorage.removeItem('fina_user_id');
+    sessionStorage.removeItem('adminPortalSession');
+    sessionStorage.removeItem('pendingAdminLogin');
+    
+    fetch('/api/auth/logout', { 
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'include'
+    }).catch(() => {});
+    
+    toast.error('Your session has expired. Please log in again.');
+    setLocation('/login');
+  }, [setLocation]);
+
+  useEffect(() => {
+    // Listen for session expired events from API calls
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    };
+  }, [handleSessionExpired]);
 
   useEffect(() => {
     // Check local storage on mount

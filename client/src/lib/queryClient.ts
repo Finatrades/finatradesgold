@@ -1,5 +1,17 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+export const SESSION_EXPIRED_EVENT = 'session:expired';
+
+function handleSessionExpired() {
+  const currentPath = window.location.pathname;
+  const publicPaths = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/reset-password', '/verify-email'];
+  
+  if (!publicPaths.some(path => currentPath === path || currentPath.startsWith('/reset-password'))) {
+    console.log('[Session] Session expired, redirecting to login...');
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -24,8 +36,10 @@ async function throwIfResNotOk(res: Response) {
     let friendlyMessage = errorData?.message || text;
     if (res.status === 403 && text.includes('CSRF')) {
       friendlyMessage = 'Your session may have expired. Please refresh the page and try again.';
+      handleSessionExpired();
     } else if (res.status === 401) {
       friendlyMessage = 'Please log in to continue.';
+      handleSessionExpired();
     } else if (res.status === 429) {
       friendlyMessage = 'Too many requests. Please wait a moment and try again.';
     } else if (res.status === 500) {
@@ -72,6 +86,7 @@ export const getQueryFn: <T>(options: {
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      handleSessionExpired();
       return null;
     }
 
