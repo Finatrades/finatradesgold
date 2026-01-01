@@ -85,6 +85,8 @@ import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
 import { format } from "date-fns";
+import { registerComplianceRoutes } from "./compliance-routes";
+import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -548,6 +550,15 @@ export async function registerRoutes(
   
   // Start document expiry reminder scheduler
   startDocumentExpiryScheduler();
+  
+  // Apply request sanitization middleware
+  app.use(sanitizeRequest);
+  
+  // CSRF token endpoint
+  app.get("/api/csrf-token", getCsrfTokenHandler);
+  
+  // Register compliance, reconciliation, SAR, and fraud detection routes
+  registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {

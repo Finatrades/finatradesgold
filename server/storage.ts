@@ -3889,6 +3889,188 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated || undefined;
   }
+
+  // ============================================
+  // SAR REPORTS (Suspicious Activity Reports)
+  // ============================================
+
+  async createSarReport(data: {
+    userId: string;
+    caseId?: string;
+    suspiciousActivityType: string;
+    activityDescription: string;
+    transactionIds?: string[];
+    totalAmountInvolved?: string;
+    dateRangeStart?: Date;
+    dateRangeEnd?: Date;
+    reportingOfficer?: string;
+    status?: string;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO sar_reports (
+        user_id, case_id, suspicious_activity_type, activity_description,
+        transaction_ids, total_amount_involved, date_range_start, date_range_end,
+        reporting_officer, status
+      ) VALUES (
+        ${data.userId}, ${data.caseId || null}, ${data.suspiciousActivityType},
+        ${data.activityDescription}, ${data.transactionIds || []},
+        ${data.totalAmountInvolved || null}, ${data.dateRangeStart || null},
+        ${data.dateRangeEnd || null}, ${data.reportingOfficer || null},
+        ${data.status || 'draft'}
+      ) RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async getSarReport(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM sar_reports WHERE id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async getAllSarReports(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM sar_reports ORDER BY created_at DESC
+    `);
+    return result.rows;
+  }
+
+  async updateSarReport(id: string, updates: Record<string, any>): Promise<any> {
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      setClauses.push(`${snakeKey} = $${values.length + 1}`);
+      values.push(value);
+    });
+    
+    if (setClauses.length === 0) return null;
+    
+    setClauses.push(`updated_at = NOW()`);
+    values.push(id);
+    
+    const result = await db.execute(sql.raw(`
+      UPDATE sar_reports SET ${setClauses.join(', ')}
+      WHERE id = $${values.length}
+      RETURNING *
+    `));
+    return result.rows[0] || null;
+  }
+
+  // ============================================
+  // FRAUD ALERTS
+  // ============================================
+
+  async createFraudAlert(data: {
+    userId: string;
+    transactionId?: string;
+    alertType: string;
+    severity: string;
+    description: string;
+    status?: string;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO fraud_alerts (
+        user_id, transaction_id, alert_type, severity, description, status
+      ) VALUES (
+        ${data.userId}, ${data.transactionId || null}, ${data.alertType},
+        ${data.severity}, ${data.description}, ${data.status || 'new'}
+      ) RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async getFraudAlert(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM fraud_alerts WHERE id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async getAllFraudAlerts(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM fraud_alerts ORDER BY created_at DESC
+    `);
+    return result.rows;
+  }
+
+  async getUserFraudAlerts(userId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM fraud_alerts WHERE user_id = ${userId} ORDER BY created_at DESC
+    `);
+    return result.rows;
+  }
+
+  async updateFraudAlert(id: string, updates: {
+    status?: string;
+    resolvedBy?: string;
+    resolvedAt?: Date;
+    notes?: string;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE fraud_alerts SET
+        status = COALESCE(${updates.status}, status),
+        resolved_by = COALESCE(${updates.resolvedBy}, resolved_by),
+        resolved_at = COALESCE(${updates.resolvedAt}, resolved_at),
+        notes = COALESCE(${updates.notes}, notes),
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  // ============================================
+  // RECONCILIATION REPORTS
+  // ============================================
+
+  async createReconciliationReport(data: {
+    reportDate: Date;
+    totalGoldGrams?: string;
+    totalUsdValue?: string;
+    transactionCount?: number;
+    depositCount?: number;
+    withdrawalCount?: number;
+    discrepancies?: any[];
+    status?: string;
+    generatedBy?: string;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO reconciliation_reports (
+        report_date, total_gold_grams, total_usd_value, transaction_count,
+        deposit_count, withdrawal_count, discrepancies, status, generated_by
+      ) VALUES (
+        ${data.reportDate}, ${data.totalGoldGrams || '0'}, ${data.totalUsdValue || '0'},
+        ${data.transactionCount || 0}, ${data.depositCount || 0}, ${data.withdrawalCount || 0},
+        ${JSON.stringify(data.discrepancies || [])}, ${data.status || 'balanced'},
+        ${data.generatedBy || null}
+      ) RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async getReconciliationReport(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM reconciliation_reports WHERE id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async getReconciliationReportByDate(date: Date): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM reconciliation_reports WHERE report_date = ${date}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async getAllReconciliationReports(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM reconciliation_reports ORDER BY report_date DESC
+    `);
+    return result.rows;
+  }
 }
 
 export const storage = new DatabaseStorage();

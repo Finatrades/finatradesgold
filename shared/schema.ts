@@ -3610,6 +3610,140 @@ export type InsertTradeRiskAssessment = z.infer<typeof insertTradeRiskAssessment
 export type TradeRiskAssessment = typeof tradeRiskAssessments.$inferSelect;
 
 // ============================================
+// SAR (SUSPICIOUS ACTIVITY REPORTS)
+// ============================================
+
+export const sarStatusEnum = pgEnum('sar_status', [
+  'draft', 'under_review', 'approved', 'filed', 'rejected'
+]);
+
+export const sarActivityTypeEnum = pgEnum('sar_activity_type', [
+  'structuring', 'unusual_transaction_pattern', 'high_risk_jurisdiction',
+  'identity_concern', 'source_of_funds_concern', 'terrorist_financing_suspicion',
+  'money_laundering_suspicion', 'other'
+]);
+
+export const sarReports = pgTable("sar_reports", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  reportNumber: varchar("report_number", { length: 50 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  caseId: varchar("case_id", { length: 255 }).references(() => amlCases.id),
+  
+  activityType: sarActivityTypeEnum("activity_type").notNull(),
+  activityDescription: text("activity_description").notNull(),
+  
+  transactionIds: json("transaction_ids").$type<string[]>(),
+  totalAmountInvolved: decimal("total_amount_involved", { precision: 20, scale: 2 }).notNull(),
+  dateRangeStart: date("date_range_start").notNull(),
+  dateRangeEnd: date("date_range_end").notNull(),
+  
+  reportingOfficer: varchar("reporting_officer", { length: 255 }).notNull(),
+  supervisorReviewed: boolean("supervisor_reviewed").default(false),
+  supervisorReviewedBy: varchar("supervisor_reviewed_by", { length: 255 }),
+  supervisorReviewedAt: timestamp("supervisor_reviewed_at"),
+  
+  status: sarStatusEnum("status").notNull().default('draft'),
+  filedWithRegulator: boolean("filed_with_regulator").default(false),
+  filedAt: timestamp("filed_at"),
+  regulatorReferenceNumber: varchar("regulator_reference_number", { length: 100 }),
+  
+  notes: text("notes"),
+  attachments: json("attachments").$type<string[]>(),
+  
+  createdBy: varchar("created_by", { length: 255 }).notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSarReportSchema = createInsertSchema(sarReports).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSarReport = z.infer<typeof insertSarReportSchema>;
+export type SarReport = typeof sarReports.$inferSelect;
+
+// ============================================
+// FRAUD ALERTS
+// ============================================
+
+export const fraudAlertTypeEnum = pgEnum('fraud_alert_type', [
+  'velocity_breach', 'unusual_amount', 'geographic_anomaly', 
+  'device_change', 'pattern_match', 'manual_flag'
+]);
+
+export const fraudAlertSeverityEnum = pgEnum('fraud_alert_severity', [
+  'low', 'medium', 'high', 'critical'
+]);
+
+export const fraudAlertStatusEnum = pgEnum('fraud_alert_status', [
+  'new', 'investigating', 'confirmed_fraud', 'false_positive', 'resolved'
+]);
+
+export const fraudAlerts = pgTable("fraud_alerts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }),
+  
+  alertType: fraudAlertTypeEnum("alert_type").notNull(),
+  severity: fraudAlertSeverityEnum("severity").notNull(),
+  description: text("description").notNull(),
+  
+  riskScore: integer("risk_score"),
+  riskFactors: json("risk_factors").$type<Record<string, any>>(),
+  
+  status: fraudAlertStatusEnum("status").notNull().default('new'),
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
+  resolution: text("resolution"),
+  resolvedBy: varchar("resolved_by", { length: 255 }).references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  
+  detectedAt: timestamp("detected_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFraudAlertSchema = createInsertSchema(fraudAlerts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFraudAlert = z.infer<typeof insertFraudAlertSchema>;
+export type FraudAlert = typeof fraudAlerts.$inferSelect;
+
+// ============================================
+// RECONCILIATION REPORTS
+// ============================================
+
+export const reconciliationStatusEnum = pgEnum('reconciliation_status', [
+  'balanced', 'discrepancy_found', 'pending_review', 'resolved'
+]);
+
+export const reconciliationReports = pgTable("reconciliation_reports", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  reportDate: date("report_date").notNull(),
+  
+  totalGoldGrams: decimal("total_gold_grams", { precision: 20, scale: 4 }).notNull(),
+  totalUsdValue: decimal("total_usd_value", { precision: 20, scale: 2 }).notNull(),
+  
+  transactionCount: integer("transaction_count").notNull(),
+  depositCount: integer("deposit_count").notNull(),
+  withdrawalCount: integer("withdrawal_count").notNull(),
+  
+  goldInflow: decimal("gold_inflow", { precision: 20, scale: 4 }).notNull(),
+  goldOutflow: decimal("gold_outflow", { precision: 20, scale: 4 }).notNull(),
+  netGoldChange: decimal("net_gold_change", { precision: 20, scale: 4 }).notNull(),
+  
+  discrepancies: json("discrepancies").$type<any[]>(),
+  status: reconciliationStatusEnum("status").notNull().default('balanced'),
+  
+  generatedBy: varchar("generated_by", { length: 255 }),
+  reviewedBy: varchar("reviewed_by", { length: 255 }),
+  reviewedAt: timestamp("reviewed_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertReconciliationReportSchema = createInsertSchema(reconciliationReports).omit({ id: true, createdAt: true });
+export type InsertReconciliationReport = z.infer<typeof insertReconciliationReportSchema>;
+export type ReconciliationReport = typeof reconciliationReports.$inferSelect;
+
+// ============================================
 // ACCOUNT DELETION REQUESTS
 // ============================================
 
