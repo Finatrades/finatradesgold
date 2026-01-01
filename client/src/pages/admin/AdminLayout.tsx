@@ -206,7 +206,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Platform Config', href: '/admin/platform-config' },
         { label: 'Database Backups', href: '/admin/database-backups' },
         { label: 'Geo Restrictions', href: '/admin/geo-restrictions' },
-        { label: 'Settings', href: '/admin/settings' },
+        { label: 'Admin Resources', href: '/admin/settings' },
       ]
     }
   ];
