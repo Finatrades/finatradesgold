@@ -356,7 +356,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Link href="/admin/settings">
                     <DropdownMenuItem className="cursor-pointer" data-testid="link-admin-settings">
                       <Settings className="w-4 h-4 mr-2" />
-                      Settings
+                      Admin Resources
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/admin/security">
