@@ -1321,14 +1321,15 @@ export function generateAdminManualPDF(): Promise<Buffer> {
       const addBulletPoint = (text: string, indent = 0) => {
         const x = 60 + indent;
         doc.fillColor(FINATRADES_ORANGE).fontSize(11).text('•', x - 10, doc.y, { continued: true });
-        doc.fillColor('#4b5563').font('Helvetica').text(' ' + text, { lineGap: 2 });
+        doc.fillColor('#4b5563').font('Helvetica').text(' ' + text, { width: pageWidth - indent - 20, lineGap: 2 });
         doc.moveDown(0.2);
       };
 
       const addNumberedStep = (number: number, text: string) => {
+        const stepY = doc.y;
         doc.fillColor(FINATRADES_ORANGE).fontSize(11).font('Helvetica-Bold')
-           .text(`${number}.`, 60, doc.y, { continued: true, width: 20 });
-        doc.fillColor('#4b5563').font('Helvetica').text(' ' + text, { lineGap: 2 });
+           .text(`${number}.`, 60, stepY);
+        doc.fillColor('#4b5563').font('Helvetica').text(text, 80, stepY, { width: pageWidth - 40, lineGap: 2 });
         doc.moveDown(0.3);
       };
 
