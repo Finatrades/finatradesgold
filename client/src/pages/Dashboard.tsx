@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet, ShieldCheck, Shield, EyeOff } from 'lucide-react';
+import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet, ShieldCheck, Shield, EyeOff, FileSignature } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
 import { AEDAmount } from '@/components/ui/DirhamSymbol';
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
 
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 import DashboardWalletCards from '@/components/dashboard/DashboardWalletCards';
@@ -94,6 +95,69 @@ export default function Dashboard() {
     staleTime: 300000,
   });
 
+  // Check KYC agreement status for the banner
+  const { data: kycData } = useQuery<{ 
+    hasKyc: boolean; 
+    kycType: 'personal' | 'corporate'; 
+    kycId: string;
+    status: string;
+    agreementStatus: string;
+  }>({
+    queryKey: ['kyc-agreement-status', user?.id],
+    queryFn: async () => {
+      try {
+        // Try personal KYC first
+        const personalRes = await apiRequest('GET', `/api/finatrades-kyc/personal/${user?.id}`);
+        if (personalRes.ok) {
+          const responseData = await personalRes.json();
+          // Handle both single object and array response formats
+          const data = Array.isArray(responseData) ? responseData[0] : responseData;
+          if (data && data.id) {
+            return {
+              hasKyc: true,
+              kycType: 'personal' as const,
+              kycId: data.id,
+              status: data.status || '',
+              agreementStatus: data.agreementStatus || 'pending'
+            };
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching personal KYC:', e);
+      }
+      
+      try {
+        // Try corporate KYC
+        const corpRes = await apiRequest('GET', `/api/finatrades-kyc/corporate/${user?.id}`);
+        if (corpRes.ok) {
+          const responseData = await corpRes.json();
+          // Handle both single object and array response formats
+          const data = Array.isArray(responseData) ? responseData[0] : responseData;
+          if (data && data.id) {
+            return {
+              hasKyc: true,
+              kycType: 'corporate' as const,
+              kycId: data.id,
+              status: data.status || '',
+              agreementStatus: data.agreementStatus || 'pending'
+            };
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching corporate KYC:', e);
+      }
+      
+      return { hasKyc: false, kycType: 'personal', kycId: '', status: '', agreementStatus: '' };
+    },
+    enabled: !!user?.id,
+    staleTime: 60000,
+  });
+
+  // Show agreement banner if KYC is submitted (In Progress or Pending Review) but agreement not completed
+  const kycSubmitted = kycData?.hasKyc && 
+    ['In Progress', 'Pending Review', 'Approved'].includes(kycData?.status || '');
+  const showAgreementBanner = kycSubmitted && kycData?.agreementStatus !== 'completed';
+
   const prefs = prefsData?.preferences;
   const showBalance = prefs?.showBalance !== false;
   const twoFactorReminder = prefs?.twoFactorReminder !== false;
@@ -160,6 +224,26 @@ export default function Dashboard() {
             </svg>
           </div>
         </div>
+
+        {/* Agreement Signing Banner */}
+        {showAgreementBanner && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-50 via-fuchsia-50 to-purple-50 border border-purple-300" data-testid="banner-sign-agreement">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center">
+                <FileSignature className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-purple-800">Sign Customer Agreement</p>
+                <p className="text-xs text-purple-600">Please sign the customer agreement to complete your verification and access all platform features</p>
+              </div>
+            </div>
+            <Link href="/kyc">
+              <Button size="sm" className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white">
+                Sign Agreement
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* 2FA Reminder Banner */}
         {twoFactorReminder && !user.mfaEnabled && (
