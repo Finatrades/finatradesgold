@@ -14,16 +14,50 @@ import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
 import { useAdminOtp } from '@/hooks/useAdminOtp';
 
-// Helper to detect if URL is a PDF (check before getImageSrc to avoid wrong MIME type)
+// Helper to detect document type from URL or base64 content
+function detectDocumentType(url: string): 'pdf' | 'image' | 'doc' | 'unknown' {
+  if (!url) return 'unknown';
+  
+  // Check data URI MIME types
+  if (url.startsWith('data:application/pdf')) return 'pdf';
+  if (url.startsWith('data:image/')) return 'image';
+  if (url.startsWith('data:application/msword') || 
+      url.startsWith('data:application/vnd.openxmlformats-officedocument')) return 'doc';
+  
+  // Check file extensions
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.endsWith('.pdf')) return 'pdf';
+  if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg') || 
+      lowerUrl.endsWith('.png') || lowerUrl.endsWith('.gif') || 
+      lowerUrl.endsWith('.webp')) return 'image';
+  if (lowerUrl.endsWith('.doc') || lowerUrl.endsWith('.docx')) return 'doc';
+  
+  // Check raw base64 magic bytes
+  if (url.length > 100 && !url.includes('/')) {
+    // PDF magic bytes %PDF- encoded as base64 = JVBERi0
+    if (url.startsWith('JVBERi0')) return 'pdf';
+    // DOCX/ZIP magic bytes (PK..) = UEsDBBQ or UEsDBA
+    if (url.startsWith('UEsDBBQ') || url.startsWith('UEsDBA')) return 'doc';
+    // Old DOC magic bytes (D0 CF 11 E0) = 0M8R4KGx
+    if (url.startsWith('0M8R4KGx')) return 'doc';
+    // Image magic bytes
+    if (url.startsWith('/9j/')) return 'image'; // JPEG
+    if (url.startsWith('iVBORw')) return 'image'; // PNG
+    if (url.startsWith('R0lGOD')) return 'image'; // GIF
+    if (url.startsWith('UklGR')) return 'image'; // WEBP
+  }
+  
+  return 'unknown';
+}
+
+// Helper to detect if URL is a PDF
 function isPdfUrl(url: string): boolean {
-  if (!url) return false;
-  // Check for data URL with PDF MIME type
-  if (url.startsWith('data:application/pdf')) return true;
-  // Check for file extension
-  if (url.toLowerCase().endsWith('.pdf')) return true;
-  // Check for raw base64 PDF content (PDF magic bytes %PDF- encoded as base64 = JVBERi0)
-  if (url.length > 100 && url.startsWith('JVBERi0')) return true;
-  return false;
+  return detectDocumentType(url) === 'pdf';
+}
+
+// Helper to detect if URL is a Word document (DOC/DOCX)
+function isDocUrl(url: string): boolean {
+  return detectDocumentType(url) === 'doc';
 }
 
 // Helper to ensure proper document URL format (handles base64 without prefix)
@@ -35,22 +69,28 @@ function getDocumentSrc(url: string): string {
   }
   // If looks like base64 (long string without slashes at start), add data URI prefix
   if (url.length > 100 && !url.includes('/')) {
-    // Check for PDF first (PDF magic bytes %PDF- encoded as base64 = JVBERi0)
-    if (url.startsWith('JVBERi0')) {
-      return `data:application/pdf;base64,${url}`;
+    const docType = detectDocumentType(url);
+    
+    switch (docType) {
+      case 'pdf':
+        return `data:application/pdf;base64,${url}`;
+      case 'doc':
+        // DOCX files
+        if (url.startsWith('UEsDBBQ') || url.startsWith('UEsDBA')) {
+          return `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${url}`;
+        }
+        // Old DOC files
+        return `data:application/msword;base64,${url}`;
+      case 'image':
+        if (url.startsWith('/9j/')) return `data:image/jpeg;base64,${url}`;
+        if (url.startsWith('iVBORw')) return `data:image/png;base64,${url}`;
+        if (url.startsWith('R0lGOD')) return `data:image/gif;base64,${url}`;
+        if (url.startsWith('UklGR')) return `data:image/webp;base64,${url}`;
+        return `data:image/jpeg;base64,${url}`;
+      default:
+        // Default to octet-stream for unknown types
+        return `data:application/octet-stream;base64,${url}`;
     }
-    // Try to detect image type from base64 header
-    if (url.startsWith('/9j/')) {
-      return `data:image/jpeg;base64,${url}`;
-    } else if (url.startsWith('iVBORw')) {
-      return `data:image/png;base64,${url}`;
-    } else if (url.startsWith('R0lGOD')) {
-      return `data:image/gif;base64,${url}`;
-    } else if (url.startsWith('UklGR')) {
-      return `data:image/webp;base64,${url}`;
-    }
-    // Default to jpeg if unknown
-    return `data:image/jpeg;base64,${url}`;
   }
   return url;
 }
@@ -84,7 +124,7 @@ function base64ToBlobUrl(dataUrl: string): string {
   }
 }
 
-// In-platform document viewer component that handles both images and PDFs
+// In-platform document viewer component that handles images, PDFs, and DOC files
 function DocumentViewer({ 
   isOpen, 
   onClose, 
@@ -98,8 +138,10 @@ function DocumentViewer({
 }) {
   const printRef = useRef<HTMLDivElement>(null);
   
-  // First check if raw URL is PDF, then convert to proper format
-  const isPdf = isPdfUrl(documentUrl);
+  // Detect document type
+  const docType = detectDocumentType(documentUrl);
+  const isPdf = docType === 'pdf';
+  const isDoc = docType === 'doc';
   // Convert to proper data URL format (adds correct MIME type prefix)
   const formattedUrl = getDocumentSrc(documentUrl);
   const imageSrc = formattedUrl;
@@ -167,16 +209,29 @@ function DocumentViewer({
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = isPdf && pdfBlobUrl ? pdfBlobUrl : documentUrl;
-    link.download = `${documentName.replace(/\s+/g, '_')}.${isPdf ? 'pdf' : 'jpg'}`;
+    // Create blob URL for download
+    const downloadUrl = formattedUrl.startsWith('data:') ? base64ToBlobUrl(formattedUrl) : formattedUrl;
+    link.href = downloadUrl;
+    // Determine file extension based on document type
+    let fileExt = 'jpg';
+    if (isPdf) fileExt = 'pdf';
+    else if (isDoc) fileExt = formattedUrl.includes('openxmlformats') ? 'docx' : 'doc';
+    link.download = `${documentName.replace(/\s+/g, '_')}.${fileExt}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    // Clean up blob URL after download
+    if (downloadUrl.startsWith('blob:')) {
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    }
   };
 
   const handleOpenInNewTab = () => {
     if (isPdf && pdfBlobUrl) {
       window.open(pdfBlobUrl, '_blank');
+    } else if (isDoc) {
+      // DOC files can't be opened in browser, trigger download instead
+      handleDownload();
     } else {
       window.open(imageSrc, '_blank');
     }
@@ -204,7 +259,20 @@ function DocumentViewer({
           </DialogTitle>
         </DialogHeader>
         <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[75vh] bg-gray-100 rounded-lg p-4">
-          {isPdf ? (
+          {isDoc ? (
+            /* Word documents can't be previewed in browser */
+            <div className="flex flex-col items-center justify-center p-8 bg-white rounded">
+              <FileText className="w-16 h-16 mb-4 text-blue-500" />
+              <p className="text-gray-700 font-medium mb-2">Word Document</p>
+              <p className="text-gray-500 text-sm mb-4 text-center">
+                Word documents cannot be previewed in the browser.<br />
+                Please download to view the document.
+              </p>
+              <Button variant="default" onClick={handleDownload} data-testid="button-doc-download">
+                Download Document
+              </Button>
+            </div>
+          ) : isPdf ? (
             pdfBlobUrl ? (
               <div className="w-full h-[70vh] relative">
                 {pdfLoading && (
