@@ -72,23 +72,9 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-purple-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Date of Formation</p>
-                      <p className="font-medium text-gray-900">29.01.2019</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <FileCheck className="w-5 h-5 text-purple-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Type of Corporation</p>
-                      <p className="font-medium text-gray-900">Société Anonyme LLC</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
                     <Hash className="w-5 h-5 text-purple-500 mt-0.5" />
                     <div>
-                      <p className="text-sm text-gray-500">LEI-Nummer</p>
+                      <p className="text-sm text-gray-500">LEI Number</p>
                       <a 
                         href="https://search.gleif.org/#/record/894500AF89I6QWOX2V69/record" 
                         target="_blank" 
@@ -102,8 +88,22 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
                   <div className="flex items-start gap-3">
                     <Hash className="w-5 h-5 text-purple-500 mt-0.5" />
                     <div>
-                      <p className="text-sm text-gray-500">Swift code</p>
+                      <p className="text-sm text-gray-500">SWIFT Code</p>
                       <p className="font-medium text-gray-900">FNFNCHG2</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-purple-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-500">Date of Formation</p>
+                      <p className="font-medium text-gray-900">29.01.2019</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <FileCheck className="w-5 h-5 text-purple-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-500">Type of Corporation</p>
+                      <p className="font-medium text-gray-900">Société Anonyme LLC</p>
                     </div>
                   </div>
                 </div>
