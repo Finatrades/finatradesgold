@@ -60,19 +60,19 @@ export default function PremiumHeroSection() {
 
             <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
               <span className="bg-gradient-to-r from-purple-500 to-purple-500 bg-clip-text text-transparent">
-                Finatrades
+                FinaGold
               </span>
               <br />
               <span className="text-gray-900">
                 {accountType === 'personal' 
-                  ? 'Personal Gold-Backed Financial Infrastructure'
+                  ? 'Your Digital Gold for Financial Transactions'
                   : 'Regulated Gold-Backed Financial Infrastructure'}
               </span>
             </h1>
 
             <p className="text-lg text-gray-600 mb-8 max-w-xl leading-relaxed">
               {accountType === 'personal' 
-                ? 'Designed for individuals seeking secure gold storage, digital payments, and wealth growth through our regulated platform.'
+                ? 'Save, store, and use real gold value through a secure, modern online account. Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through BNSL plans.'
                 : 'Designed for corporates, importers, exporters, trading houses, and institutional partners.'}
             </p>
             
