@@ -67,26 +67,13 @@ function FinagoldContent() {
           --popover-foreground: #ffffff;
         }
         
-        .finagold-landing * {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(234, 194, 107, 0.3) transparent;
+        .finagold-landing {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
         }
         
-        .finagold-landing ::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .finagold-landing ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        
-        .finagold-landing ::-webkit-scrollbar-thumb {
-          background: rgba(234, 194, 107, 0.3);
-          border-radius: 3px;
-        }
-        
-        .finagold-landing ::-webkit-scrollbar-thumb:hover {
-          background: rgba(234, 194, 107, 0.5);
+        .finagold-landing::-webkit-scrollbar {
+          display: none;
         }
 
         @media (prefers-reduced-motion: reduce) {
