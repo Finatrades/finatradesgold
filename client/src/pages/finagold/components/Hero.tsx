@@ -177,7 +177,7 @@ export default function Hero() {
           </motion.div>
         )}
       </AnimatePresence>
-    <section id="home" className="relative min-h-[auto] lg:min-h-screen pt-20 lg:pt-28 pb-12 lg:pb-20 overflow-hidden" data-testid="hero-section">
+    <section id="home" className="relative min-h-[auto] lg:min-h-screen pt-20 lg:pt-28 pb-12 lg:pb-20 overflow-x-hidden" data-testid="hero-section">
       {/* Light gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE]" />
       
@@ -194,7 +194,7 @@ export default function Hero() {
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px]" />
 
       <div className="relative max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center lg:min-h-[calc(100vh-200px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center lg:min-h-[calc(100vh-200px)]">
           <AnimatePresence mode="wait">
             <motion.div
               key={mode}
