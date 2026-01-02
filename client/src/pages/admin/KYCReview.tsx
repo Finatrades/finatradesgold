@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, XCircle, FileText, User, Building, RefreshCw, Clock, AlertCircle, Printer, X, Camera, CreditCard, MapPin, ExternalLink, Download } from 'lucide-react';
+import { CheckCircle2, XCircle, FileText, User, Building, RefreshCw, Clock, AlertCircle, Printer, X, Camera, CreditCard, MapPin } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -273,68 +273,46 @@ function DocumentViewer({
               </Button>
             </div>
           ) : isPdf ? (
-            <div className="w-full h-[70vh] relative flex flex-col items-center justify-center bg-white rounded">
-              {pdfBlobUrl ? (
-                <>
-                  {pdfLoading && !pdfError && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded z-10">
-                      <FileText className="w-16 h-16 mb-4 text-purple-500 animate-pulse" />
-                      <p className="text-gray-500">Loading PDF...</p>
-                    </div>
-                  )}
-                  {pdfError ? (
-                    <div className="flex flex-col items-center justify-center h-full bg-white rounded p-8">
-                      <FileText className="w-16 h-16 mb-4 text-gray-400" />
-                      <p className="text-gray-700 font-medium mb-2">PDF Preview Unavailable</p>
-                      <p className="text-gray-500 text-sm mb-4 text-center">
-                        Your browser may not support embedded PDF viewing.
-                      </p>
-                      <div className="flex gap-2">
-                        <Button variant="default" onClick={handleOpenInNewTab} data-testid="button-pdf-fallback">
-                          Open PDF in New Tab
-                        </Button>
-                        <Button variant="outline" onClick={handleDownload}>
-                          Download PDF
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <embed
-                      src={pdfBlobUrl}
-                      type="application/pdf"
-                      className="w-full h-full border-0 rounded"
-                      title={documentName}
-                      data-testid="embed-document-preview"
-                      onLoad={() => setPdfLoading(false)}
-                    />
-                  )}
-                  {/* Always show action buttons for PDFs */}
-                  {!pdfError && (
-                    <div className="absolute bottom-4 right-4 flex gap-2 z-20">
-                      <Button size="sm" variant="secondary" onClick={handleOpenInNewTab} className="shadow-lg">
-                        <ExternalLink className="w-4 h-4 mr-1" /> Open in New Tab
-                      </Button>
-                      <Button size="sm" variant="secondary" onClick={handleDownload} className="shadow-lg">
-                        <Download className="w-4 h-4 mr-1" /> Download
-                      </Button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center p-8 text-gray-500">
-                  <FileText className="w-16 h-16 mb-4 animate-pulse" />
-                  <p>Preparing PDF...</p>
-                  <div className="flex gap-2 mt-4">
-                    <Button variant="default" onClick={handleOpenInNewTab}>
-                      Open in New Tab
-                    </Button>
-                    <Button variant="outline" onClick={handleDownload}>
-                      Download PDF
+            pdfBlobUrl ? (
+              <div className="w-full h-[70vh] relative">
+                {pdfLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded">
+                    <FileText className="w-16 h-16 mb-4 text-gray-400 animate-pulse" />
+                    <p className="text-gray-500">Loading PDF...</p>
+                  </div>
+                )}
+                {pdfError ? (
+                  <div className="flex flex-col items-center justify-center h-full bg-white rounded p-8">
+                    <FileText className="w-16 h-16 mb-4 text-gray-400" />
+                    <p className="text-gray-700 font-medium mb-2">PDF Preview Unavailable</p>
+                    <p className="text-gray-500 text-sm mb-4 text-center">
+                      Your browser may not support embedded PDF viewing.
+                    </p>
+                    <Button variant="default" onClick={handleOpenInNewTab} data-testid="button-pdf-fallback">
+                      Open PDF in New Tab
                     </Button>
                   </div>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <iframe 
+                    src={pdfBlobUrl}
+                    className="w-full h-full border-0 rounded bg-white"
+                    title={documentName}
+                    data-testid="iframe-document-preview"
+                    onLoad={() => setPdfLoading(false)}
+                    onError={() => {
+                      setPdfLoading(false);
+                      setPdfError(true);
+                    }}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+                <FileText className="w-16 h-16 mb-4 animate-pulse" />
+                <p>Loading PDF...</p>
+                <p className="text-xs mt-2">If the PDF doesn't load, try clicking "Open in New Tab"</p>
+              </div>
+            )
           ) : (
             <img 
               src={imageSrc} 

@@ -103,8 +103,6 @@ app.use(helmet({
       ],
       frameSrc: [
         "'self'", 
-        "blob:",
-        "data:",
         "https:",
         "https://paypage.ngenius-payments.com",
         "https://paypage-uat.ngenius-payments.com",
