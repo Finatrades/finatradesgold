@@ -9,7 +9,7 @@ const content = {
   personal: {
     badge: 'Swiss-Regulated Platform',
     headline: 'FinaGold',
-    subheadline: 'Your Personal Digital Gold Account',
+    subheadline: 'Your Personal Digital Gold Account, By Invitation & Endorsement Only',
     paragraph: "Own real, physical gold in a secure digital wallet. Save in gold, send to friends and family, spend anywhere, and grow your wealth through BNSL holding plans — all from one simple account.",
     primaryCta: 'Get Started',
     secondaryCta: 'Sign In',
@@ -19,7 +19,7 @@ const content = {
   business: {
     badge: 'Swiss-Regulated Platform',
     headline: 'Finatrades',
-    subheadline: 'Regulated Gold-Backed Solutions, By Invitation & Endorsement Only',
+    subheadline: 'Regulated Gold-Backed Solutions',
     paragraph: 'Designed for corporates, importers, exporters, trading houses, and institutional partners.\n\nThrough a strategic partnership with Wingold & Metals DMCC, Finatrades converts physical gold holdings into digitally recorded, settlement-ready balances within its regulated infrastructure.',
     primaryCta: 'Get Started',
     secondaryCta: 'Sign In',
