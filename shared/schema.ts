@@ -616,6 +616,13 @@ export const finatradesCorporateKyc = pgTable("finatrades_corporate_kyc", {
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
   
+  // DocuSign Agreement Tracking
+  agreementEnvelopeId: varchar("agreement_envelope_id", { length: 255 }),
+  agreementStatus: varchar("agreement_status", { length: 50 }).default('pending'),
+  agreementSentAt: timestamp("agreement_sent_at"),
+  agreementCompletedAt: timestamp("agreement_completed_at"),
+  signedDocumentUrl: text("signed_document_url"),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -669,6 +676,13 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
   reviewedBy: varchar("reviewed_by", { length: 255 }),
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
+  
+  // DocuSign Agreement Tracking
+  agreementEnvelopeId: varchar("agreement_envelope_id", { length: 255 }),
+  agreementStatus: varchar("agreement_status", { length: 50 }).default('pending'),
+  agreementSentAt: timestamp("agreement_sent_at"),
+  agreementCompletedAt: timestamp("agreement_completed_at"),
+  signedDocumentUrl: text("signed_document_url"),
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

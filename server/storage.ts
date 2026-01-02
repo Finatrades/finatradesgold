@@ -656,12 +656,16 @@ export interface IStorage {
   
   // Finatrades Personal KYC
   getFinatradesPersonalKyc(userId: string): Promise<FinatradesPersonalKyc | undefined>;
+  getFinatradesPersonalKycById(id: string): Promise<FinatradesPersonalKyc | undefined>;
+  getFinatradesPersonalKycByEnvelopeId(envelopeId: string): Promise<FinatradesPersonalKyc | undefined>;
   getAllFinatradesPersonalKyc(): Promise<FinatradesPersonalKyc[]>;
   createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc>;
   updateFinatradesPersonalKyc(id: string, updates: Partial<FinatradesPersonalKyc>): Promise<FinatradesPersonalKyc | undefined>;
   
   // Finatrades Corporate KYC
   getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined>;
+  getFinatradesCorporateKycById(id: string): Promise<FinatradesCorporateKyc | undefined>;
+  getFinatradesCorporateKycByEnvelopeId(envelopeId: string): Promise<FinatradesCorporateKyc | undefined>;
   getAllFinatradesCorporateKyc(): Promise<FinatradesCorporateKyc[]>;
   createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc>;
   updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined>;
@@ -2957,6 +2961,16 @@ export class DatabaseStorage implements IStorage {
     return kyc || undefined;
   }
 
+  async getFinatradesPersonalKycById(id: string): Promise<FinatradesPersonalKyc | undefined> {
+    const [kyc] = await db.select().from(finatradesPersonalKyc).where(eq(finatradesPersonalKyc.id, id));
+    return kyc || undefined;
+  }
+
+  async getFinatradesPersonalKycByEnvelopeId(envelopeId: string): Promise<FinatradesPersonalKyc | undefined> {
+    const [kyc] = await db.select().from(finatradesPersonalKyc).where(eq(finatradesPersonalKyc.agreementEnvelopeId, envelopeId));
+    return kyc || undefined;
+  }
+
   async getAllFinatradesPersonalKyc(): Promise<FinatradesPersonalKyc[]> {
     return await db.select().from(finatradesPersonalKyc).orderBy(desc(finatradesPersonalKyc.createdAt));
   }
@@ -2977,6 +2991,16 @@ export class DatabaseStorage implements IStorage {
 
   async getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined> {
     const [kyc] = await db.select().from(finatradesCorporateKyc).where(eq(finatradesCorporateKyc.userId, userId)).orderBy(desc(finatradesCorporateKyc.createdAt)).limit(1);
+    return kyc || undefined;
+  }
+
+  async getFinatradesCorporateKycById(id: string): Promise<FinatradesCorporateKyc | undefined> {
+    const [kyc] = await db.select().from(finatradesCorporateKyc).where(eq(finatradesCorporateKyc.id, id));
+    return kyc || undefined;
+  }
+
+  async getFinatradesCorporateKycByEnvelopeId(envelopeId: string): Promise<FinatradesCorporateKyc | undefined> {
+    const [kyc] = await db.select().from(finatradesCorporateKyc).where(eq(finatradesCorporateKyc.agreementEnvelopeId, envelopeId));
     return kyc || undefined;
   }
 
