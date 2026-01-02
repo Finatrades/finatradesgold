@@ -4,6 +4,7 @@ import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 const goldBarsImage = '/attached_assets/image_1767361888205.png';
 const finaPayImage = '/attached_assets/image_1767363090551.png';
+const globalTradeImage = '/attached_assets/image_1767363153550.png';
 
 const content = {
   personal: {
@@ -61,6 +62,7 @@ const content = {
         description: 'Monitor your imports and exports in real time, track gold-backed settlements and streamline every step of your cross-border business operations.',
         cta: 'Explore FinaBridge',
         href: '/finabridge-landing',
+        image: globalTradeImage,
       },
       {
         icon: TrendingUp,
