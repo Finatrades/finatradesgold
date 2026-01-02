@@ -5,6 +5,7 @@ import { useMode } from '../context/ModeContext';
 const goldBarsImage = '/attached_assets/image_1767361888205.png';
 const finaPayImage = '/attached_assets/image_1767363090551.png';
 const globalTradeImage = '/attached_assets/image_1767363153550.png';
+const bnslImage = '/attached_assets/image_1767363213860.png';
 
 const content = {
   personal: {
@@ -33,6 +34,7 @@ const content = {
         description: 'Get substantial margins and guaranteed returns thanks to our BNSL Plans.',
         cta: 'Explore BNSL',
         href: '/bnsl-landing',
+        image: bnslImage,
       },
     ],
   },
@@ -70,6 +72,7 @@ const content = {
         description: 'Get substantial margins and guaranteed returns thanks to our BNSL Plans.',
         cta: 'Explore BNSL',
         href: '/bnsl-landing',
+        image: bnslImage,
       },
     ],
   },
