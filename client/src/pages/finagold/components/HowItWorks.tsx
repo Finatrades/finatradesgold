@@ -116,17 +116,17 @@ function StepNode({
   totalSteps: number;
 }) {
   const isLeft = index % 2 === 0;
-  const row = Math.floor(index / 2);
   
   return (
     <motion.div
-      initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
+      initial={{ opacity: 0, x: 0, y: 20 }}
       animate={{ 
         opacity: isActive || isCompleted ? 1 : 0.3,
         x: 0,
+        y: 0,
       }}
       transition={{ duration: 0.6, delay: index * 0.15 }}
-      className={`relative flex items-center gap-6 ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}
+      className="relative flex items-start gap-4 md:gap-6 flex-row"
     >
       <motion.div
         animate={{
@@ -136,22 +136,22 @@ function StepNode({
             : '0 0 0 0 rgba(234, 194, 107, 0)',
         }}
         transition={{ duration: 0.8, repeat: isActive ? Infinity : 0, repeatDelay: 2 }}
-        className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+        className={`relative z-10 w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
           isActive || isCompleted
             ? 'bg-gradient-to-br from-[#8A2BE2]/20 to-[#FF2FBF]/10 border-2 border-[#8A2BE2]'
             : 'bg-white border border-[#8A2BE2]/10'
         }`}
       >
-        <step.icon className={`w-8 h-8 transition-colors duration-500 ${
+        <step.icon className={`w-6 h-6 md:w-8 md:h-8 transition-colors duration-500 ${
           isActive || isCompleted ? 'text-[#8A2BE2]' : 'text-gray-400'
         }`} />
         
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: isActive ? 1 : 0 }}
-          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#8A2BE2] flex items-center justify-center"
+          className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 rounded-full bg-[#8A2BE2] flex items-center justify-center"
         >
-          <span className="text-white text-xs font-bold">{step.number}</span>
+          <span className="text-white text-[10px] md:text-xs font-bold">{step.number}</span>
         </motion.div>
       </motion.div>
 
@@ -162,7 +162,7 @@ function StepNode({
           y: 0,
         }}
         transition={{ duration: 0.5, delay: index * 0.15 + 0.2 }}
-        className={`flex-1 p-6 rounded-2xl backdrop-blur-sm transition-all duration-500 ${
+        className={`flex-1 p-4 md:p-6 rounded-xl md:rounded-2xl backdrop-blur-sm transition-all duration-500 ${
           isActive
             ? 'bg-white border-2 border-[#8A2BE2]/40 shadow-lg shadow-[#8A2BE2]/10'
             : isCompleted
@@ -170,8 +170,8 @@ function StepNode({
             : 'bg-white/70 border border-[#8A2BE2]/10'
         }`}
       >
-        <div className="flex items-center gap-3 mb-2">
-          <span className={`text-sm font-bold transition-colors duration-500 ${
+        <div className="flex items-center gap-2 md:gap-3 mb-2">
+          <span className={`text-xs md:text-sm font-bold transition-colors duration-500 ${
             isActive ? 'text-[#8A2BE2]' : 'text-gray-500'
           }`}>
             Step {step.number}
@@ -186,12 +186,12 @@ function StepNode({
             </motion.span>
           )}
         </div>
-        <h3 className={`text-lg font-semibold mb-2 transition-colors duration-500 ${
+        <h3 className={`text-base md:text-lg font-semibold mb-1 md:mb-2 transition-colors duration-500 ${
           isActive || isCompleted ? 'text-[#0D0D0D]' : 'text-gray-500'
         }`}>
           {step.title}
         </h3>
-        <p className={`text-sm leading-relaxed transition-colors duration-500 ${
+        <p className={`text-xs md:text-sm leading-relaxed transition-colors duration-500 ${
           isActive ? 'text-gray-600' : 'text-gray-500'
         }`}>
           {step.description}
@@ -265,7 +265,8 @@ export default function HowItWorks() {
         </motion.div>
 
         <div className="relative">
-          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2">
+          {/* Timeline line - left on mobile, center on desktop */}
+          <div className="absolute left-7 md:left-1/2 top-0 bottom-0 w-px md:-translate-x-1/2">
             <motion.div
               initial={{ scaleY: 0 }}
               animate={{ scaleY: isInView ? 1 : 0 }}
@@ -279,7 +280,7 @@ export default function HowItWorks() {
                 initial={{ scale: 0 }}
                 animate={{ scale: activeStep >= index ? 1 : 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
-                className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#8A2BE2] shadow-lg shadow-[#8A2BE2]/50"
+                className="absolute left-0 md:left-1/2 -translate-x-1/2 w-3 h-3 md:w-4 md:h-4 rounded-full bg-[#8A2BE2] shadow-lg shadow-[#8A2BE2]/50"
                 style={{ top: `${(index / (c.steps.length - 1)) * 100}%` }}
               >
                 <motion.div
@@ -291,11 +292,12 @@ export default function HowItWorks() {
             ))}
           </div>
 
-          <div className="space-y-12">
+          {/* Steps container - stacked on mobile, alternating on desktop */}
+          <div className="space-y-6 md:space-y-12 pl-16 md:pl-0">
             {c.steps.map((step, index) => (
               <div
                 key={`${mode}-${step.number}`}
-                className={`flex ${index % 2 === 0 ? 'justify-start pr-[52%]' : 'justify-end pl-[52%]'}`}
+                className="flex"
               >
                 <StepNode
                   step={step}
