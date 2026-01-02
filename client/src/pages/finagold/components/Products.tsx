@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
+import goldBarsImage from '@assets/image_1767361888205.png';
+import finaPayImage from '@assets/image_1767361897967.png';
 
 const content = {
   personal: {
@@ -14,6 +16,7 @@ const content = {
         description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
         cta: 'Explore FinaVault',
         href: '/finavault-landing',
+        image: goldBarsImage,
       },
       {
         icon: Wallet,
@@ -21,6 +24,7 @@ const content = {
         description: 'Send and receive payments through the platform, manage your wallet and spend anywhere using your gold-backed debit card.',
         cta: 'Explore FinaPay',
         href: '/finapay-landing',
+        image: finaPayImage,
       },
       {
         icon: TrendingUp,
@@ -41,6 +45,7 @@ const content = {
         description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
         cta: 'Explore FinaVault',
         href: '/finavault-landing',
+        image: goldBarsImage,
       },
       {
         icon: Wallet,
@@ -48,6 +53,7 @@ const content = {
         description: 'Send and receive payments through the platform, manage your wallet and spend anywhere using your gold-backed debit card.',
         cta: 'Explore FinaPay',
         href: '/finapay-landing',
+        image: finaPayImage,
       },
       {
         icon: Building2,
@@ -136,9 +142,19 @@ export default function Products() {
               className="group flex flex-col items-center text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300"
               data-testid={`product-card-${index}`}
             >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8A2BE2]/10 to-[#FF2FBF]/15 flex items-center justify-center mb-6 group-hover:from-[#8A2BE2]/20 group-hover:to-[#FF2FBF]/25 transition-all duration-300">
-                <product.icon className="w-8 h-8 text-[#8A2BE2]" strokeWidth={1.5} />
-              </div>
+              {product.image ? (
+                <div className="w-full h-40 mb-6 flex items-center justify-center overflow-hidden rounded-xl">
+                  <img 
+                    src={product.image} 
+                    alt={product.title} 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8A2BE2]/10 to-[#FF2FBF]/15 flex items-center justify-center mb-6 group-hover:from-[#8A2BE2]/20 group-hover:to-[#FF2FBF]/25 transition-all duration-300">
+                  <product.icon className="w-8 h-8 text-[#8A2BE2]" strokeWidth={1.5} />
+                </div>
+              )}
 
               <h3 className="text-lg font-bold text-[#0D0D0D] mb-3">
                 {product.title}
