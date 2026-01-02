@@ -293,21 +293,24 @@ export default function HowItWorks() {
           </div>
 
           {/* Steps container - stacked on mobile, alternating on desktop */}
-          <div className="space-y-4 md:space-y-12 md:pl-0">
-            {c.steps.map((step, index) => (
-              <div
-                key={`${mode}-${step.number}`}
-                className="flex"
-              >
-                <StepNode
-                  step={step}
-                  index={index}
-                  isActive={activeStep === index}
-                  isCompleted={activeStep > index}
-                  totalSteps={c.steps.length}
-                />
-              </div>
-            ))}
+          <div className="space-y-4 md:space-y-12">
+            {c.steps.map((step, index) => {
+              const isLeft = index % 2 === 0;
+              return (
+                <div
+                  key={`${mode}-${step.number}`}
+                  className={`flex md:w-[calc(50%-2rem)] ${isLeft ? 'md:mr-auto md:pr-8' : 'md:ml-auto md:pl-8'}`}
+                >
+                  <StepNode
+                    step={step}
+                    index={index}
+                    isActive={activeStep === index}
+                    isCompleted={activeStep > index}
+                    totalSteps={c.steps.length}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
 
