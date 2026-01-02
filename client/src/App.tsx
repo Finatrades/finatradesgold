@@ -59,6 +59,24 @@ function ProtectedRoute({ path, component: Component }: { path: string, componen
   );
 }
 
+function PublicRoute({ path, component: Component }: { path: string, component: React.ComponentType }) {
+  const { user, loading } = useAuth();
+
+  return (
+    <Route path={path}>
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : user ? (
+        <Redirect to="/dashboard" />
+      ) : (
+        <Component />
+      )}
+    </Route>
+  );
+}
+
 import Profile from "@/pages/Profile";
 import Security from "@/pages/Security";
 import Referral from "@/pages/Referral";
@@ -127,8 +145,8 @@ function Router() {
     <>
       <ScrollToTop />
       <Switch>
-      <Route path="/" component={FinagoldLanding} />
-      <Route path="/finagold" component={FinagoldLanding} />
+      <PublicRoute path="/" component={FinagoldLanding} />
+      <PublicRoute path="/finagold" component={FinagoldLanding} />
       <Route path="/finagold/bnsl" component={BNSLLanding} />
       <Route path="/finagold/finapay" component={FinaPayLanding} />
       <Route path="/finagold/finavault" component={FinaVaultLanding} />
