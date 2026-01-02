@@ -349,11 +349,11 @@ export default function Hero() {
                   <motion.button
                     onClick={() => setShowRegulatory(true)}
                     whileHover={{ scale: 1.02 }}
-                    className="absolute -top-4 right-4 sm:right-8 flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-50 border border-red-400 backdrop-blur-md shadow-lg cursor-pointer hover:border-red-500 hover:bg-red-100 transition-colors"
+                    className="absolute -top-4 right-4 sm:right-8 flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-600 border border-red-700 backdrop-blur-md shadow-lg cursor-pointer hover:bg-red-700 transition-colors"
                   >
-                    <span className="text-red-600 text-sm font-bold">+</span>
-                    <span className="text-red-600 text-xs font-medium">Swiss-Regulated Platform</span>
-                    <span className="text-red-400 text-xs">○</span>
+                    <span className="text-white text-sm font-bold">+</span>
+                    <span className="text-white text-xs font-medium">Swiss-Regulated Platform</span>
+                    <span className="text-white/70 text-xs">○</span>
                   </motion.button>
 
                 </motion.div>
