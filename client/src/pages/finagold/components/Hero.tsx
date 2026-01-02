@@ -9,7 +9,7 @@ const content = {
   personal: {
     badge: 'Swiss-Regulated Platform',
     headline: 'FinaGold',
-    subheadline: 'Your Personal Digital Gold Account, By Invitation & Endorsement Only',
+    subheadline: 'Your Digital Gold for Financial Transactions, By Invitation & Endorsement Only',
     paragraph: "Own real, physical gold in a secure digital wallet. Save in gold, send to friends and family, spend anywhere, and grow your wealth through BNSL holding plans — all from one simple account.",
     primaryCta: 'Get Started',
     secondaryCta: 'Sign In',
