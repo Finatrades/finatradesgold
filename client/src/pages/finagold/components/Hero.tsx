@@ -280,6 +280,59 @@ export default function Hero() {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </motion.div>
+
+              {/* Mobile Card - visible only on mobile/tablet */}
+              <motion.div variants={itemVariants} className="lg:hidden mt-8">
+                <div className={`w-full max-w-[320px] mx-auto h-[200px] rounded-2xl bg-gradient-to-br from-[#3D1A5C] via-[#2A0055] to-[#1a0a30] border-2 ${isPersonal ? 'border-[#8A2BE2]/60' : 'border-[#A342FF]/70'} p-4 shadow-xl shadow-[#8A2BE2]/30 relative overflow-hidden`}>
+                  {/* Header row: Logo + Active badge */}
+                  <div className="flex justify-between items-center mb-3 relative z-10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#A342FF] text-sm">✦</span>
+                      <span className="text-white font-bold text-sm tracking-wide">{isPersonal ? <>FINA<span className="text-[#FFD700]">GOLD</span></> : <>FINA<span className="text-[#A342FF]">TRADES</span></>}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[8px] text-green-400 font-bold uppercase px-2 py-0.5 bg-green-400/15 rounded-full border border-green-400/30">Active</span>
+                    </div>
+                  </div>
+                  
+                  {/* Chip + Card type row */}
+                  <div className="flex items-center gap-3 mb-3 relative z-10">
+                    <div className="w-10 h-7 rounded-md bg-gradient-to-br from-purple-400 via-purple-500 to-pink-500 shadow-md relative overflow-hidden">
+                      <div className="absolute inset-0 flex flex-col justify-center gap-[2px] py-1.5">
+                        <div className="h-[1.5px] bg-purple-700/60 mx-1" />
+                        <div className="h-[1.5px] bg-purple-700/60 mx-1" />
+                        <div className="h-[1.5px] bg-purple-700/60 mx-1" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#A342FF]" />
+                        <span className="text-white font-semibold text-xs tracking-wide">{isPersonal ? 'PERSONAL GOLD' : 'ENTERPRISE GOLD'}</span>
+                      </div>
+                      <p className="text-gray-400 text-[8px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
+                    </div>
+                  </div>
+                  
+                  {/* Card number */}
+                  <div className="mb-3 relative z-10">
+                    <p className="text-white text-lg tracking-[0.12em] font-medium">
+                      {isPersonal ? '4789' : '5892'} <span className="text-white/60">••••</span> <span className="text-white/60">••••</span> {isPersonal ? '3456' : '7821'}
+                    </p>
+                  </div>
+                  
+                  {/* Bottom row: Card holder + Valid thru */}
+                  <div className="flex justify-between items-end relative z-10">
+                    <div>
+                      <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
+                      <p className="text-white text-xs font-semibold">{isPersonal ? 'FINAGOLD USER' : 'FINATRADES CORPORATE'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Valid Thru</p>
+                      <p className="text-white text-xs font-semibold">12/28</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           </AnimatePresence>
 
