@@ -25,10 +25,10 @@ export default function PremiumHeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-purple-200 shadow-sm mb-6">
-              <Sparkles className="w-4 h-4 text-purple-500" />
-              <span className="text-sm font-medium text-purple-700">{t('hero.swissRegulated')}</span>
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 shadow-sm mb-6">
+              <Sparkles className="w-4 h-4 text-white" />
+              <span className="text-sm font-medium text-white">{t('hero.swissRegulated')}</span>
+              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
             </div>
 
             <div className="inline-flex items-center p-1 rounded-full bg-white border border-gray-200 shadow-sm mb-8">
@@ -111,9 +111,9 @@ export default function PremiumHeroSection() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative hidden lg:block"
           >
-            <div className="absolute -top-4 right-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-purple-200 shadow-sm z-10">
-              <div className="w-2 h-2 rounded-full bg-green-400" />
-              <span className="text-xs font-medium text-purple-700">Swiss-Regulated Platform</span>
+            <div className="absolute -top-4 right-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-600 shadow-sm z-10">
+              <div className="w-2 h-2 rounded-full bg-white" />
+              <span className="text-xs font-medium text-white">Swiss-Regulated Platform</span>
             </div>
             
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 shadow-2xl overflow-hidden">
