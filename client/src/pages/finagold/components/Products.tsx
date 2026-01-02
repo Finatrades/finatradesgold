@@ -2,8 +2,8 @@ import { motion } from 'framer-motion';
 import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
-import goldBarsImage from '@assets/image_1767361888205.png';
-import finaPayImage from '@assets/image_1767361897967.png';
+const goldBarsImage = '/attached_assets/image_1767361888205.png';
+const finaPayImage = '/attached_assets/image_1767361897967.png';
 
 const content = {
   personal: {
