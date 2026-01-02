@@ -160,6 +160,9 @@ app.use(
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Serve attached_assets for product images
+app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
 const httpServer = createServer(app);
 
 declare module "http" {
