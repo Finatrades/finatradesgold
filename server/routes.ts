@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage, type TransactionalStorage } from "./storage";
 import { db, pool } from "./db";
@@ -20310,7 +20311,8 @@ ${message}
   });
 
   // Submit Finatrades Personal KYC (personal info + documents + liveness)
-  app.post("/api/finatrades-kyc/personal", async (req, res) => {
+  // Use larger body limit for liveness capture base64 images
+  app.post("/api/finatrades-kyc/personal", express.json({ limit: '100mb' }), async (req, res) => {
     try {
       const { userId, personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate } = req.body;
       
