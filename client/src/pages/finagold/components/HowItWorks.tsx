@@ -126,7 +126,7 @@ function StepNode({
         y: 0,
       }}
       transition={{ duration: 0.6, delay: index * 0.15 }}
-      className="relative flex items-start gap-4 md:gap-6 flex-row"
+      className="relative flex flex-col md:flex-row items-start gap-3 md:gap-6"
     >
       <motion.div
         animate={{
@@ -136,7 +136,7 @@ function StepNode({
             : '0 0 0 0 rgba(234, 194, 107, 0)',
         }}
         transition={{ duration: 0.8, repeat: isActive ? Infinity : 0, repeatDelay: 2 }}
-        className={`relative z-10 w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+        className={`relative z-10 w-12 h-12 md:w-20 md:h-20 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
           isActive || isCompleted
             ? 'bg-gradient-to-br from-[#8A2BE2]/20 to-[#FF2FBF]/10 border-2 border-[#8A2BE2]'
             : 'bg-white border border-[#8A2BE2]/10'
@@ -265,8 +265,8 @@ export default function HowItWorks() {
         </motion.div>
 
         <div className="relative">
-          {/* Timeline line - left on mobile, center on desktop */}
-          <div className="absolute left-7 md:left-1/2 top-0 bottom-0 w-px md:-translate-x-1/2">
+          {/* Timeline line - hidden on mobile, center on desktop */}
+          <div className="hidden md:block absolute md:left-1/2 top-0 bottom-0 w-px md:-translate-x-1/2">
             <motion.div
               initial={{ scaleY: 0 }}
               animate={{ scaleY: isInView ? 1 : 0 }}
@@ -280,7 +280,7 @@ export default function HowItWorks() {
                 initial={{ scale: 0 }}
                 animate={{ scale: activeStep >= index ? 1 : 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
-                className="absolute left-0 md:left-1/2 -translate-x-1/2 w-3 h-3 md:w-4 md:h-4 rounded-full bg-[#8A2BE2] shadow-lg shadow-[#8A2BE2]/50"
+                className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#8A2BE2] shadow-lg shadow-[#8A2BE2]/50"
                 style={{ top: `${(index / (c.steps.length - 1)) * 100}%` }}
               >
                 <motion.div
@@ -293,7 +293,7 @@ export default function HowItWorks() {
           </div>
 
           {/* Steps container - stacked on mobile, alternating on desktop */}
-          <div className="space-y-6 md:space-y-12 pl-16 md:pl-0">
+          <div className="space-y-4 md:space-y-12 md:pl-0">
             {c.steps.map((step, index) => (
               <div
                 key={`${mode}-${step.number}`}
