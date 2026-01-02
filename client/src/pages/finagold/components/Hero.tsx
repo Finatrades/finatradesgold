@@ -208,11 +208,11 @@ export default function Hero() {
               <motion.div variants={itemVariants}>
                 <button 
                   onClick={() => setShowRegulatory(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-red-300 hover:border-red-400 hover:bg-red-50 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 hover:bg-red-700 transition-all cursor-pointer"
                 >
-                  <span className="text-red-500 text-sm font-bold">+</span>
-                  <span className="text-red-500 text-sm font-medium">{c.badge}</span>
-                  <span className="text-red-400 text-xs">○</span>
+                  <span className="text-white text-sm font-bold">+</span>
+                  <span className="text-white text-sm font-medium">{c.badge}</span>
+                  <span className="text-white/70 text-xs">○</span>
                 </button>
               </motion.div>
 
