@@ -46,7 +46,7 @@ const itemVariants = {
 };
 
 export default function Hero() {
-  const { mode, isPersonal } = useMode();
+  const { mode, isPersonal, setMode } = useMode();
   const c = content[mode];
   const [showRegulatory, setShowRegulatory] = useState(false);
 
@@ -213,6 +213,32 @@ export default function Hero() {
                   <span className="text-white text-sm font-bold">+</span>
                   <span className="text-white text-sm font-medium">{c.badge}</span>
                   <span className="text-white/70 text-xs">○</span>
+                </button>
+              </motion.div>
+
+              {/* Personal / Business Toggle */}
+              <motion.div variants={itemVariants} className="flex items-center gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm w-fit">
+                <button
+                  onClick={() => setMode('personal')}
+                  className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-medium transition-all ${
+                    isPersonal 
+                      ? 'bg-gradient-to-r from-[#8A2BE2] to-[#A342FF] text-white shadow-md' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  data-testid="toggle-personal"
+                >
+                  Personal
+                </button>
+                <button
+                  onClick={() => setMode('business')}
+                  className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-medium transition-all ${
+                    !isPersonal 
+                      ? 'bg-gradient-to-r from-[#8A2BE2] to-[#A342FF] text-white shadow-md' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  data-testid="toggle-business"
+                >
+                  Business
                 </button>
               </motion.div>
 
