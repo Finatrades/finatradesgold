@@ -147,19 +147,17 @@ export default function Products() {
               className="group flex flex-col items-center text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300"
               data-testid={`product-card-${index}`}
             >
-              {product.image ? (
-                <div className="w-full h-40 mb-6 flex items-center justify-center overflow-hidden rounded-xl">
-                  <img 
-                    src={product.image} 
-                    alt={product.title} 
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              ) : (
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8A2BE2]/10 to-[#FF2FBF]/15 flex items-center justify-center mb-6 group-hover:from-[#8A2BE2]/20 group-hover:to-[#FF2FBF]/25 transition-all duration-300">
-                  <product.icon className="w-8 h-8 text-[#8A2BE2]" strokeWidth={1.5} />
-                </div>
-              )}
+              <div className="w-full h-48 mb-6 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#F8F4FF] to-[#FAFBFF]">
+                <img 
+                  src={product.image || ''} 
+                  alt={product.title} 
+                  className="max-w-full max-h-full object-contain p-2"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
 
               <h3 className="text-lg font-bold text-[#0D0D0D] mb-3">
                 {product.title}
