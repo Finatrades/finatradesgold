@@ -249,9 +249,19 @@ export default function Hero() {
 
               {/* Dark subtitle */}
               <motion.h2 variants={itemVariants} className="text-xl sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight text-balance">
-                {c.subheadline.split(',').map((part, i) => (
-                  <span key={i}>{part}{i === 0 ? ',' : ''}<br className="hidden md:block" /></span>
-                ))}
+                {c.subheadline.includes('By Invitation') ? (
+                  <>
+                    <span>{c.subheadline.split(', By')[0]}</span>
+                    <br className="hidden sm:block" />
+                    <span className="bg-gradient-to-r from-[#8A2BE2] via-[#DC2626] to-[#DC2626] bg-clip-text text-transparent">
+                      By Invitation & Endorsement Only
+                    </span>
+                  </>
+                ) : (
+                  c.subheadline.split(',').map((part, i) => (
+                    <span key={i}>{part}{i === 0 ? ',' : ''}<br className="hidden md:block" /></span>
+                  ))
+                )}
               </motion.h2>
 
               {/* Gray paragraph */}
