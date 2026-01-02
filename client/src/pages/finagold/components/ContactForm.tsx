@@ -62,7 +62,7 @@ export default function ContactForm() {
             <MessageSquare className="w-4 h-4" />
             Get In Touch
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-[#0D0D0D] mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0D0D0D] mb-4 text-balance">
             Contact <span className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] bg-clip-text text-transparent">Us</span>
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -93,7 +93,7 @@ export default function ContactForm() {
                       value={formData.name}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50"
+                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
                       placeholder="John Smith"
                       data-testid="input-contact-name"
                     />
@@ -109,7 +109,7 @@ export default function ContactForm() {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50"
+                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
                       placeholder="john@example.com"
                       data-testid="input-contact-email"
                     />
@@ -127,7 +127,7 @@ export default function ContactForm() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50"
+                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
                       placeholder="+971 50 123 4567"
                       data-testid="input-contact-phone"
                     />
@@ -143,7 +143,7 @@ export default function ContactForm() {
                         name="company"
                         value={formData.company}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50"
+                        className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
                         placeholder="Your Company Ltd"
                         data-testid="input-contact-company"
                       />
@@ -158,7 +158,7 @@ export default function ContactForm() {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50"
+                    className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
                     data-testid="select-contact-subject"
                   >
                     <option value="">Select a subject</option>
@@ -181,7 +181,7 @@ export default function ContactForm() {
                     onChange={handleChange}
                     required
                     rows={5}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 resize-none"
+                    className="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 resize-none text-base"
                     placeholder="How can we help you?"
                     data-testid="textarea-contact-message"
                   />
@@ -190,7 +190,7 @@ export default function ContactForm() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-8 py-4 rounded-xl font-semibold hover:from-[#EA580C] hover:to-[#DC2626] transition-all shadow-lg shadow-[#F97316]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-8 py-4 min-h-[56px] rounded-xl text-base font-semibold hover:from-[#EA580C] hover:to-[#DC2626] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid="btn-contact-submit"
                 >
                   {isSubmitting ? (

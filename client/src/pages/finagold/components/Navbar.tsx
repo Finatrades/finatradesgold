@@ -151,8 +151,9 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden text-white p-2"
+            className="lg:hidden text-white p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:bg-white/10 transition-colors"
             data-testid="mobile-menu-toggle"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -164,15 +165,15 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden mt-4 pb-4 border-t border-white/20 pt-4"
+              className="lg:hidden mt-4 pb-6 border-t border-white/20 pt-4 max-h-[calc(100dvh-80px)] overflow-y-auto"
             >
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 {visibleLinks.map((link) => (
                   link.isAnchor ? (
                     <a
                       key={link.href}
                       href={link.href}
-                      className="px-4 py-3 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                      className="px-4 py-4 min-h-[48px] rounded-lg text-base font-medium text-white/80 hover:text-white active:bg-white/10 transition-all flex items-center"
                       onClick={() => setMobileOpen(false)}
                     >
                       {link.label}
@@ -181,10 +182,10 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     <Link 
                       key={link.href} 
                       href={link.href}
-                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-4 py-4 min-h-[48px] rounded-lg text-base font-medium transition-all flex items-center ${
                         isActive(link.href)
                           ? 'bg-purple-600 text-white'
-                          : 'text-white/80 hover:text-white hover:bg-white/10'
+                          : 'text-white/80 hover:text-white active:bg-white/10'
                       }`}
                       onClick={() => setMobileOpen(false)}
                     >
@@ -192,10 +193,10 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     </Link>
                   )
                 ))}
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-3 mt-4">
                   <button
                     onClick={() => setMode('personal')}
-                    className={`flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                    className={`flex-1 px-4 py-3 min-h-[48px] rounded-full text-sm font-medium transition-all active:scale-95 ${
                       isPersonal
                         ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                         : 'bg-white/10 text-white/70 border border-white/20'
@@ -205,7 +206,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                   </button>
                   <button
                     onClick={() => setMode('business')}
-                    className={`flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                    className={`flex-1 px-4 py-3 min-h-[48px] rounded-full text-sm font-medium transition-all active:scale-95 ${
                       !isPersonal
                         ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                         : 'bg-white/10 text-white/70 border border-white/20'
@@ -216,13 +217,13 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 </div>
                 <Link 
                   href="/sign-in"
-                  className="block border border-white/30 text-white px-6 py-3 rounded-full text-sm font-semibold w-full mt-2 text-center hover:bg-white/10"
+                  className="block border border-white/30 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full mt-3 text-center active:bg-white/10 transition-all flex items-center justify-center"
                 >
                   Sign In
                 </Link>
                 <Link 
                   href="/get-started"
-                  className="block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full text-sm font-semibold w-full text-center"
+                  className="block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full text-center active:scale-[0.98] transition-all flex items-center justify-center"
                 >
                   Get Started
                 </Link>

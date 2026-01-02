@@ -217,29 +217,29 @@ export default function Hero() {
               </motion.div>
 
               {/* Pink/Magenta gradient title */}
-              <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
+              <motion.h1 variants={itemVariants} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
                 <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">Finatrades</span>
               </motion.h1>
 
               {/* Dark subtitle */}
-              <motion.h2 variants={itemVariants} className="text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight">
+              <motion.h2 variants={itemVariants} className="text-xl sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight text-balance">
                 {c.subheadline.split(',').map((part, i) => (
                   <span key={i}>{part}{i === 0 ? ',' : ''}<br className="hidden md:block" /></span>
                 ))}
               </motion.h2>
 
               {/* Gray paragraph */}
-              <motion.p variants={itemVariants} className="text-[#4A4A4A] leading-relaxed max-w-xl whitespace-pre-line">
+              <motion.p variants={itemVariants} className="text-[#4A4A4A] text-sm sm:text-base leading-relaxed max-w-xl whitespace-pre-line">
                 {c.paragraph}
               </motion.p>
 
               {/* CTA Buttons - Sign In outline, Get Started orange */}
-              <motion.div variants={itemVariants} className="flex flex-wrap gap-4 pt-4">
-                <Link href="/sign-in" className="group flex items-center gap-2 border border-gray-300 text-[#0D0D0D] bg-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all" data-testid="btn-sign-in">
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+                <Link href="/sign-in" className="group flex items-center justify-center gap-2 border border-gray-300 text-[#0D0D0D] bg-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto" data-testid="btn-sign-in">
                   {c.secondaryCta}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link href="/get-started" className="group flex items-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-8 py-4 rounded-full text-sm font-semibold hover:from-[#EA580C] hover:to-[#DC2626] transition-all shadow-lg shadow-[#F97316]/25" data-testid="btn-get-started">
+                <Link href="/get-started" className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:from-[#EA580C] hover:to-[#DC2626] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 w-full sm:w-auto" data-testid="btn-get-started">
                   {c.primaryCta}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>

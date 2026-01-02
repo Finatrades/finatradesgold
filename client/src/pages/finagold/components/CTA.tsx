@@ -59,7 +59,7 @@ export default function CTA() {
               key={mode}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight"
+              className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-6 leading-tight text-balance"
             >
               {c.headline.includes('Gold') ? (
                 <>
@@ -72,18 +72,18 @@ export default function CTA() {
               )}
             </motion.h2>
             
-            <p className="text-lg text-gray-400 mb-10 max-w-xl mx-auto">
+            <p className="text-base sm:text-lg text-gray-400 mb-10 max-w-xl mx-auto px-2 sm:px-0">
               {isPersonal 
                 ? 'Open your personal account and start saving in real, physical gold today.'
                 : 'Partner with Finatrades to strengthen your treasury and trade operations.'}
             </p>
 
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/get-started" className="group flex items-center gap-2 bg-[#F97316] text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#EA580C] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 cursor-pointer" data-testid="cta-primary">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0">
+              <Link href="/get-started" className="group flex items-center justify-center gap-2 bg-[#F97316] text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-[#EA580C] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 cursor-pointer w-full sm:w-auto" data-testid="cta-primary">
                 {c.primaryCta}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <a href="/finagold#contact" className="group flex items-center gap-2 border border-white/30 text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-white/10 hover:border-white/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer" data-testid="cta-secondary">
+              <a href="/finagold#contact" className="group flex items-center justify-center gap-2 border border-white/30 text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-white/10 hover:border-white/50 active:scale-[0.98] transition-all cursor-pointer w-full sm:w-auto" data-testid="cta-secondary">
                 <c.secondaryIcon className="w-4 h-4" />
                 {c.secondaryCta}
               </a>

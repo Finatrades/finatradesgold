@@ -29,7 +29,7 @@ export default function Footer() {
   const { isPersonal } = useMode();
 
   return (
-    <footer id="contact" className="relative py-16 bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]" data-testid="footer">
+    <footer id="contact" className="relative py-16 pb-[calc(4rem+env(safe-area-inset-bottom))] bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]" data-testid="footer">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-2">

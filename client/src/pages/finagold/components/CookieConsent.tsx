@@ -55,7 +55,7 @@ export default function CookieConsent() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50"
+            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 pb-[env(safe-area-inset-bottom)]"
           >
             <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
               <div className="p-6">
@@ -125,25 +125,25 @@ export default function CookieConsent() {
                   )}
                 </AnimatePresence>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     variant="outline"
                     onClick={handleDeclineAll}
-                    className="flex-1 rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                    className="flex-1 rounded-full border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[48px] text-base active:scale-[0.98]"
                   >
                     Decline all
                   </Button>
                   {showSettings ? (
                     <Button
                       onClick={handleSaveSettings}
-                      className="flex-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white"
+                      className="flex-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white min-h-[48px] text-base active:scale-[0.98]"
                     >
                       Save settings
                     </Button>
                   ) : (
                     <Button
                       onClick={handleAcceptAll}
-                      className="flex-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white"
+                      className="flex-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white min-h-[48px] text-base active:scale-[0.98]"
                     >
                       Accept all
                     </Button>
@@ -162,7 +162,7 @@ export default function CookieConsent() {
       {!show && (
         <button
           onClick={() => setShow(true)}
-          className="fixed bottom-4 left-4 z-50 w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+          className="fixed bottom-4 left-4 z-50 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all mb-[env(safe-area-inset-bottom)]"
           title="Cookie settings"
         >
           <Cookie className="w-5 h-5 text-purple-600" />
