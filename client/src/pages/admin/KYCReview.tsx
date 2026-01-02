@@ -273,46 +273,71 @@ function DocumentViewer({
               </Button>
             </div>
           ) : isPdf ? (
-            pdfBlobUrl ? (
-              <div className="w-full h-[70vh] relative">
-                {pdfLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded">
-                    <FileText className="w-16 h-16 mb-4 text-gray-400 animate-pulse" />
-                    <p className="text-gray-500">Loading PDF...</p>
-                  </div>
-                )}
-                {pdfError ? (
-                  <div className="flex flex-col items-center justify-center h-full bg-white rounded p-8">
-                    <FileText className="w-16 h-16 mb-4 text-gray-400" />
-                    <p className="text-gray-700 font-medium mb-2">PDF Preview Unavailable</p>
-                    <p className="text-gray-500 text-sm mb-4 text-center">
-                      Your browser may not support embedded PDF viewing.
-                    </p>
-                    <Button variant="default" onClick={handleOpenInNewTab} data-testid="button-pdf-fallback">
-                      Open PDF in New Tab
-                    </Button>
-                  </div>
-                ) : (
-                  <iframe 
-                    src={pdfBlobUrl}
-                    className="w-full h-full border-0 rounded bg-white"
-                    title={documentName}
-                    data-testid="iframe-document-preview"
-                    onLoad={() => setPdfLoading(false)}
-                    onError={() => {
-                      setPdfLoading(false);
-                      setPdfError(true);
-                    }}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-8 text-gray-500">
-                <FileText className="w-16 h-16 mb-4 animate-pulse" />
-                <p>Loading PDF...</p>
-                <p className="text-xs mt-2">If the PDF doesn't load, try clicking "Open in New Tab"</p>
-              </div>
-            )
+            <div className="w-full h-[70vh] relative flex flex-col items-center justify-center">
+              {pdfBlobUrl ? (
+                <>
+                  {pdfLoading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded z-10">
+                      <FileText className="w-16 h-16 mb-4 text-gray-400 animate-pulse" />
+                      <p className="text-gray-500">Loading PDF...</p>
+                    </div>
+                  )}
+                  {pdfError ? (
+                    <div className="flex flex-col items-center justify-center h-full bg-white rounded p-8">
+                      <FileText className="w-16 h-16 mb-4 text-gray-400" />
+                      <p className="text-gray-700 font-medium mb-2">PDF Preview Unavailable</p>
+                      <p className="text-gray-500 text-sm mb-4 text-center">
+                        Your browser may not support embedded PDF viewing.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button variant="default" onClick={handleOpenInNewTab} data-testid="button-pdf-fallback">
+                          Open PDF in New Tab
+                        </Button>
+                        <Button variant="outline" onClick={handleDownload}>
+                          Download PDF
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <object
+                      data={pdfBlobUrl}
+                      type="application/pdf"
+                      className="w-full h-full border-0 rounded bg-white"
+                      title={documentName}
+                      data-testid="object-document-preview"
+                      onLoad={() => setPdfLoading(false)}
+                      onError={() => {
+                        setPdfLoading(false);
+                        setPdfError(true);
+                      }}
+                    >
+                      {/* Fallback if object tag fails */}
+                      <div className="flex flex-col items-center justify-center h-full bg-white rounded p-8">
+                        <FileText className="w-16 h-16 mb-4 text-red-400" />
+                        <p className="text-gray-700 font-medium mb-2">PDF Cannot Be Displayed</p>
+                        <p className="text-gray-500 text-sm mb-4 text-center">
+                          Your browser doesn't support inline PDF viewing.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button variant="default" onClick={handleOpenInNewTab}>
+                            Open in New Tab
+                          </Button>
+                          <Button variant="outline" onClick={handleDownload}>
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </object>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+                  <FileText className="w-16 h-16 mb-4 animate-pulse" />
+                  <p>Loading PDF...</p>
+                  <p className="text-xs mt-2">If the PDF doesn't load, try clicking "Open in New Tab"</p>
+                </div>
+              )}
+            </div>
           ) : (
             <img 
               src={imageSrc} 
