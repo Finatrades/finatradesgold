@@ -205,7 +205,7 @@ export default function Hero() {
               className="space-y-8"
             >
               {/* Red regulatory badge - opens modal */}
-              <motion.div variants={itemVariants}>
+              <motion.div variants={itemVariants} className="mt-6 sm:mt-0">
                 <button 
                   onClick={() => setShowRegulatory(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 hover:bg-red-700 transition-all cursor-pointer"
