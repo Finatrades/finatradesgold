@@ -16178,21 +16178,14 @@ ${message}
         return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
       }
       
-      // Refund gold to sender
+      // Refund gold to sender's wallet only (Send deducted from wallet, not vault)
         const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
         await storage.updateWallet(senderWallet.id, {
           goldGrams: (senderGoldBalance + goldAmount).toFixed(6)
         });
         
-        // Update sender's vault holding
-        const senderHoldings = await storage.getUserVaultHoldings(sender.id);
-        if (senderHoldings.length > 0) {
-          const sHolding = senderHoldings[0];
-          const sGold = parseFloat(sHolding.goldGrams?.toString() || '0');
-          await storage.updateVaultHolding(sHolding.id, {
-            goldGrams: (sGold + goldAmount).toFixed(6)
-          });
-        }
+        // NOTE: We do NOT update vault holding because Send only deducted from wallet
+        // Updating vault would create a double credit (wallet + vault = 2x the gold)
         
         // Create refund transaction for sender
         await storage.createTransaction({
@@ -19079,8 +19072,8 @@ ${message}
         const amountGold = parseFloat(tx.amountGold || '0');
         
         // All transaction types affect gold balance
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
-          // Credits: gold comes in
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
+          // Credits: gold comes in (including refunds from rejected transfers)
           openingGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           // Debits: gold goes out
@@ -19108,8 +19101,8 @@ ${message}
         
         // All transactions affect GOLD balance only
         // USD is shown for reference (the value at time of transaction)
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
-          // Credits: gold comes in
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
+          // Credits: gold comes in (including refunds from rejected transfers)
           creditGold = amountGold > 0 ? amountGold : null;
           runningGold += amountGold;
           totalCreditsGold += amountGold;
@@ -19229,7 +19222,7 @@ ${message}
       
       for (const tx of priorTransactions) {
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           openingGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           openingGold -= amountGold;
@@ -19254,7 +19247,7 @@ ${message}
       
       for (const tx of periodTransactions) {
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           runningGold += amountGold;
           totalCreditsGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
@@ -19362,7 +19355,7 @@ ${message}
         let debit = '';
         let credit = '';
         
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           credit = amountGold.toFixed(4);
           runningGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
@@ -19442,7 +19435,7 @@ ${message}
       
       for (const tx of priorTransactions) {
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           runningGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           runningGold -= amountGold;
@@ -19459,7 +19452,7 @@ ${message}
         let debitGold = '';
         let creditGold = '';
         
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           creditGold = amountGold.toFixed(4);
           runningGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
@@ -19530,7 +19523,7 @@ ${message}
       
       for (const tx of priorTransactions) {
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           openingGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           openingGold -= amountGold;
@@ -19555,7 +19548,7 @@ ${message}
       
       for (const tx of periodTransactions) {
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           runningGold += amountGold;
           totalCreditsGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
@@ -19658,7 +19651,7 @@ ${message}
         let debit = '';
         let credit = '';
         
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           credit = amountGold.toFixed(4);
           runningGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
@@ -19740,7 +19733,7 @@ ${message}
       
       for (const tx of priorTransactions) {
         const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           runningGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
           runningGold -= amountGold;
@@ -19757,7 +19750,7 @@ ${message}
         let debitGold = '';
         let creditGold = '';
         
-        if (['Deposit', 'Receive', 'Buy'].includes(tx.type)) {
+        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
           creditGold = amountGold.toFixed(4);
           runningGold += amountGold;
         } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
