@@ -147,7 +147,7 @@ export default function Products() {
               className="group flex flex-col items-center text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300"
               data-testid={`product-card-${index}`}
             >
-              <div className="w-full h-48 mb-6 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#F8F4FF] to-[#FAFBFF]">
+              <div className="w-full h-48 mb-6 flex items-center justify-center overflow-hidden">
                 <img 
                   src={product.image || ''} 
                   alt={product.title} 
