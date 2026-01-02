@@ -13,7 +13,6 @@ import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
 import Register from "@/pages/Register";
 import KYC from "@/pages/KYC";
-import AgreementSigned from "@/pages/AgreementSigned";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -182,7 +181,6 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/verify-certificate" component={VerifyCertificate} />
       <Route path="/kyc" component={KYC} />
-      <Route path="/kyc/agreement-signed" component={AgreementSigned} />
       
       {/* User Dashboard Routes */}
       <ProtectedRoute path="/dashboard" component={Dashboard} />

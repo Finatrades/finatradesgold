@@ -87,7 +87,6 @@ import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
-import docusignRoutes from "./docusign-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 
 // ============================================================================
@@ -558,9 +557,6 @@ export async function registerRoutes(
   
   // Register compliance, reconciliation, SAR, and fraud detection routes
   registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
-
-  // Register DocuSign routes for agreement signing
-  app.use("/api/docusign", docusignRoutes);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {
