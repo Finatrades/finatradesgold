@@ -14,8 +14,20 @@ import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
 import { useAdminOtp } from '@/hooks/useAdminOtp';
 
-// Helper to ensure proper image URL format (handles base64 without prefix)
-function getImageSrc(url: string): string {
+// Helper to detect if URL is a PDF (check before getImageSrc to avoid wrong MIME type)
+function isPdfUrl(url: string): boolean {
+  if (!url) return false;
+  // Check for data URL with PDF MIME type
+  if (url.startsWith('data:application/pdf')) return true;
+  // Check for file extension
+  if (url.toLowerCase().endsWith('.pdf')) return true;
+  // Check for raw base64 PDF content (PDF magic bytes %PDF- encoded as base64 = JVBERi0)
+  if (url.length > 100 && url.startsWith('JVBERi0')) return true;
+  return false;
+}
+
+// Helper to ensure proper document URL format (handles base64 without prefix)
+function getDocumentSrc(url: string): string {
   if (!url) return '';
   // If already a data URI or HTTP URL, return as-is
   if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
@@ -23,6 +35,10 @@ function getImageSrc(url: string): string {
   }
   // If looks like base64 (long string without slashes at start), add data URI prefix
   if (url.length > 100 && !url.includes('/')) {
+    // Check for PDF first (PDF magic bytes %PDF- encoded as base64 = JVBERi0)
+    if (url.startsWith('JVBERi0')) {
+      return `data:application/pdf;base64,${url}`;
+    }
     // Try to detect image type from base64 header
     if (url.startsWith('/9j/')) {
       return `data:image/jpeg;base64,${url}`;
@@ -39,10 +55,9 @@ function getImageSrc(url: string): string {
   return url;
 }
 
-// Helper to detect if URL is a PDF
-function isPdfUrl(url: string): boolean {
-  if (!url) return false;
-  return url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf');
+// Alias for backward compatibility
+function getImageSrc(url: string): string {
+  return getDocumentSrc(url);
 }
 
 // Convert base64 data URL to Blob URL for secure PDF viewing
@@ -82,8 +97,12 @@ function DocumentViewer({
   documentName: string; 
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  
+  // First check if raw URL is PDF, then convert to proper format
   const isPdf = isPdfUrl(documentUrl);
-  const imageSrc = isPdf ? documentUrl : getImageSrc(documentUrl);
+  // Convert to proper data URL format (adds correct MIME type prefix)
+  const formattedUrl = getDocumentSrc(documentUrl);
+  const imageSrc = formattedUrl;
   
   // Create blob URL for PDF to avoid iframe security restrictions
   const [pdfBlobUrl, setPdfBlobUrl] = React.useState<string>('');
@@ -93,18 +112,21 @@ function DocumentViewer({
   React.useEffect(() => {
     setPdfLoading(true);
     setPdfError(false);
-    if (isPdf && documentUrl.startsWith('data:')) {
-      const blobUrl = base64ToBlobUrl(documentUrl);
-      setPdfBlobUrl(blobUrl);
-      return () => {
-        if (blobUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(blobUrl);
-        }
-      };
-    } else if (isPdf) {
-      setPdfBlobUrl(documentUrl);
+    if (isPdf) {
+      // Use the formatted URL which now has proper data: prefix
+      if (formattedUrl.startsWith('data:')) {
+        const blobUrl = base64ToBlobUrl(formattedUrl);
+        setPdfBlobUrl(blobUrl);
+        return () => {
+          if (blobUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(blobUrl);
+          }
+        };
+      } else {
+        setPdfBlobUrl(formattedUrl);
+      }
     }
-  }, [documentUrl, isPdf]);
+  }, [formattedUrl, isPdf]);
   
   const handlePrint = () => {
     if (isPdf && pdfBlobUrl) {
