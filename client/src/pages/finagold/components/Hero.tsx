@@ -327,7 +327,7 @@ export default function Hero() {
                     <div className="flex justify-between items-center mb-4 relative z-10">
                       <div className="flex items-center gap-2">
                         <span className="text-[#A342FF] text-lg">✦</span>
-                        <span className="text-white font-bold text-lg tracking-wide">FINA<span className="text-[#A342FF]">TRADES</span></span>
+                        <span className="text-white font-bold text-lg tracking-wide">{isPersonal ? <>FINA<span className="text-[#A342FF]">GOLD</span></> : <>FINA<span className="text-[#A342FF]">TRADES</span></>}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-green-400 font-bold uppercase px-3 py-1 bg-green-400/15 rounded-full border border-green-400/30">Active</span>
@@ -367,7 +367,7 @@ export default function Hero() {
                       <div className="flex gap-8">
                         <div>
                           <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Card Holder</p>
-                          <p className="text-white text-sm font-semibold">{isPersonal ? 'FINATRADES USER' : 'FINATRADES CORPORATE'}</p>
+                          <p className="text-white text-sm font-semibold">{isPersonal ? 'FINAGOLD USER' : 'FINATRADES CORPORATE'}</p>
                         </div>
                         <div>
                           <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Valid Thru</p>
