@@ -236,15 +236,12 @@ const memoryStorage = multer.memoryStorage();
 const multerStorage = isR2Configured() ? memoryStorage : diskStorage;
 
 // Validate both mimetype and file extension for security
+// Only allow PDF, DOC, JPEG, PNG formats
 const allowedMimeTypes: Record<string, string[]> = {
   'image/jpeg': ['.jpg', '.jpeg'],
   'image/png': ['.png'],
-  'image/gif': ['.gif'],
   'application/pdf': ['.pdf'],
   'application/msword': ['.doc'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'application/vnd.ms-excel': ['.xls'],
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
 };
 
 const upload = multer({ 
@@ -258,7 +255,7 @@ const upload = multer({
     if (allowedExts && allowedExts.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images, PDFs, and office documents are allowed.'));
+      cb(new Error('Invalid file type. Only PDF, DOC, JPEG, and PNG files are allowed.'));
     }
   }
 });

@@ -968,7 +968,7 @@ Version 1.0 - Effective Date: January 2025
                 ref={fileInputRef}
                 onChange={handleFileUpload}
                 className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                accept=".pdf,.jpg,.jpeg,.png,.doc"
               />
               <Button
                 variant="ghost"

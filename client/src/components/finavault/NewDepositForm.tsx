@@ -405,13 +405,13 @@ export default function NewDepositForm({ onSubmit, onCancel }: NewDepositFormPro
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 border-2 border-dashed border-border rounded-lg hover:border-secondary/50 transition-colors text-center cursor-pointer relative bg-muted/10">
-                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileChange(e, 'Invoice')} />
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileChange(e, 'Invoice')} />
                 <UploadCloud className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm font-medium text-foreground">Upload Invoice</p>
                 <p className="text-xs text-muted-foreground">Proof of purchase</p>
               </div>
               <div className="p-4 border-2 border-dashed border-border rounded-lg hover:border-secondary/50 transition-colors text-center cursor-pointer relative bg-muted/10">
-                 <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileChange(e, 'Certificate')} />
+                 <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileChange(e, 'Certificate')} />
                  <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                  <p className="text-sm font-medium text-foreground">Upload Certificate</p>
                  <p className="text-xs text-muted-foreground">Assay / Purity</p>

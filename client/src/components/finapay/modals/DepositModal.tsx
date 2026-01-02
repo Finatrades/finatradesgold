@@ -783,7 +783,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <input 
                     type="file" 
                     ref={fileInputRef}
-                    accept="image/*,.pdf"
+                    accept=".pdf,.jpg,.jpeg,.png"
                     onChange={handleFileUpload}
                     className="hidden"
                     data-testid="input-proof-file"
@@ -1179,7 +1179,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <Label>Transaction Receipt (Optional)</Label>
               <input
                 type="file"
-                accept="image/*,.pdf"
+                accept=".pdf,.jpg,.jpeg,.png"
                 ref={cryptoReceiptInputRef}
                 onChange={handleCryptoReceiptUpload}
                 className="hidden"

@@ -1244,7 +1244,7 @@ export default function FinaBridge() {
                               <input
                                 type="file"
                                 multiple
-                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                                accept=".pdf,.jpg,.jpeg,.png,.doc"
                                 className="hidden"
                                 onChange={(e) => {
                                   if (e.target.files) {
@@ -1254,7 +1254,7 @@ export default function FinaBridge() {
                                 data-testid="input-file-upload"
                               />
                             </label>
-                            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 10MB each)</p>
+                            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC (Max 10MB each)</p>
                             <p className="text-xs text-muted-foreground">{uploadedFiles.length} file(s) uploaded</p>
                             {uploadedFiles.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-2 justify-center">
@@ -2347,7 +2347,7 @@ export default function FinaBridge() {
                     <input
                       type="file"
                       multiple
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files) {
