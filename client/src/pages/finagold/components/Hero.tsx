@@ -244,7 +244,7 @@ export default function Hero() {
 
               {/* Pink/Magenta gradient title */}
               <motion.h1 variants={itemVariants} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
-                <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">Finatrades</span>
+                <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">{c.headline}</span>
               </motion.h1>
 
               {/* Dark subtitle */}
