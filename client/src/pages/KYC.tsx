@@ -147,6 +147,7 @@ export default function KYC() {
   const existingSubmission = existingKycData?.submission;
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sendingAgreement, setSendingAgreement] = useState(false);
   
   // Finatrades mode state - shared between personal and corporate
   const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>('personal_info');
@@ -502,19 +503,58 @@ export default function KYC() {
         throw new Error('Failed to submit KYC');
       }
       
+      const kycResult = await response.json();
+      const kycId = kycResult.submission?.id || kycResult.id;
+      
       await refreshUser();
       
+      if (kycId) {
+        const loadingToastId = toast.loading("Preparing agreement for signing...");
+        
+        try {
+          const agreementResponse = await fetch(`/api/docusign/kyc/${kycId}/send-agreement`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ kycType: 'personal' }),
+          });
+          
+          if (agreementResponse.ok) {
+            const agreementData = await agreementResponse.json();
+            if (agreementData.signingUrl) {
+              if (loadingToastId) toast.dismiss(loadingToastId);
+              toast.success("Redirecting to sign agreement...");
+              window.location.href = agreementData.signingUrl;
+              return;
+            } else {
+              if (loadingToastId) toast.dismiss(loadingToastId);
+              toast.error("Failed to get signing URL. Please try again from KYC page.");
+            }
+          } else {
+            if (loadingToastId) toast.dismiss(loadingToastId);
+            const errorData = await agreementResponse.json().catch(() => ({}));
+            toast.error(errorData.error || "Failed to send agreement. Please try again from KYC page.");
+          }
+        } catch (docuSignError) {
+          if (loadingToastId) toast.dismiss(loadingToastId);
+          console.error('DocuSign error:', docuSignError);
+          toast.error("Agreement service unavailable. Please sign the agreement from your KYC status page.");
+        }
+      }
+      
       addNotification({
-        title: 'KYC Verification Submitted',
-        message: 'Your identity verification is under review. Expected processing: 24 hours.',
-        type: 'success'
+        title: 'KYC Submitted - Agreement Pending',
+        message: 'Your KYC has been submitted. Please sign the customer agreement to complete verification.',
+        type: 'info'
       });
       
-      toast.success("KYC Verification Submitted", {
-        description: "Your verification is under review. Expected processing: 24 hours."
+      toast.info("KYC Submitted - Please Sign Agreement", {
+        description: "Visit your KYC page to sign the customer agreement."
       });
       
-      setLocation('/dashboard');
+      setLocation('/kyc');
     } catch (error) {
       toast.error("Submission Failed", {
         description: "Please try again later."
@@ -586,19 +626,58 @@ export default function KYC() {
         throw new Error('Failed to submit KYC');
       }
       
+      const kycResult = await response.json();
+      const kycId = kycResult.submission?.id || kycResult.id;
+      
       await refreshUser();
       
+      if (kycId) {
+        const loadingToastId = toast.loading("Preparing agreement for signing...");
+        
+        try {
+          const agreementResponse = await fetch(`/api/docusign/kyc/${kycId}/send-agreement`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ kycType: 'corporate' }),
+          });
+          
+          if (agreementResponse.ok) {
+            const agreementData = await agreementResponse.json();
+            if (agreementData.signingUrl) {
+              if (loadingToastId) toast.dismiss(loadingToastId);
+              toast.success("Redirecting to sign agreement...");
+              window.location.href = agreementData.signingUrl;
+              return;
+            } else {
+              if (loadingToastId) toast.dismiss(loadingToastId);
+              toast.error("Failed to get signing URL. Please try again from KYC page.");
+            }
+          } else {
+            if (loadingToastId) toast.dismiss(loadingToastId);
+            const errorData = await agreementResponse.json().catch(() => ({}));
+            toast.error(errorData.error || "Failed to send agreement. Please try again from KYC page.");
+          }
+        } catch (docuSignError) {
+          if (loadingToastId) toast.dismiss(loadingToastId);
+          console.error('DocuSign error:', docuSignError);
+          toast.error("Agreement service unavailable. Please sign the agreement from your KYC status page.");
+        }
+      }
+      
       addNotification({
-        title: 'Corporate KYC Submitted',
-        message: 'Your corporate verification is under review. Expected processing: 5 business days.',
-        type: 'success'
+        title: 'Corporate KYC Submitted - Agreement Pending',
+        message: 'Your KYC has been submitted. Please sign the customer agreement to complete verification.',
+        type: 'info'
       });
       
-      toast.success("Corporate KYC Submitted", {
-        description: "Your verification is under review. Expected processing: 5 business days."
+      toast.info("Corporate KYC Submitted - Please Sign Agreement", {
+        description: "Visit your KYC page to sign the customer agreement."
       });
       
-      setLocation('/dashboard');
+      setLocation('/kyc');
     } catch (error) {
       toast.error("Submission Failed", {
         description: "Please try again later."
@@ -644,6 +723,64 @@ export default function KYC() {
   if (existingSubmission && ['In Progress', 'Pending Review'].includes(existingSubmission.status)) {
     const isCorporate = user?.accountType === 'business';
     const expectedDays = isCorporate ? '5 business days' : '24 hours';
+    const agreementStatus = existingSubmission.agreementStatus;
+    const agreementNotSent = !existingSubmission.agreementEnvelopeId;
+    const needsToSign = agreementStatus === 'sent' || (existingSubmission.agreementEnvelopeId && agreementStatus !== 'completed');
+    
+    const handleSendAgreement = async () => {
+      setSendingAgreement(true);
+      try {
+        const kycType = isCorporate ? 'corporate' : 'personal';
+        const response = await fetch(`/api/docusign/kyc/${existingSubmission.id}/send-agreement`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest' 
+          },
+          body: JSON.stringify({ kycType }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.signingUrl) {
+            toast.success("Redirecting to sign agreement...");
+            window.location.href = data.signingUrl;
+          } else {
+            toast.error('Agreement sent but no signing URL. Please refresh the page.');
+            window.location.reload();
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          toast.error(errorData.error || 'Failed to send agreement');
+        }
+      } catch (error) {
+        toast.error('Error sending agreement');
+      } finally {
+        setSendingAgreement(false);
+      }
+    };
+    
+    const handleSignAgreement = async () => {
+      try {
+        const kycType = isCorporate ? 'corporate' : 'personal';
+        const response = await fetch(`/api/docusign/kyc/${existingSubmission.id}/signing-url?kycType=${kycType}`, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.signingUrl) {
+            window.location.href = data.signingUrl;
+          } else {
+            toast.error('Could not get signing URL');
+          }
+        } else {
+          toast.error('Failed to get signing URL');
+        }
+      } catch (error) {
+        toast.error('Error getting signing URL');
+      }
+    };
     
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -660,6 +797,68 @@ export default function KYC() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {agreementNotSent && (
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <FileText className="w-5 h-5 text-red-600" />
+                      <span className="font-semibold text-red-800">Agreement Required</span>
+                    </div>
+                    <p className="text-sm text-red-700 mb-3">
+                      You must sign the customer agreement before your KYC can be approved.
+                    </p>
+                    <Button 
+                      onClick={handleSendAgreement}
+                      disabled={sendingAgreement}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white"
+                      data-testid="button-send-agreement"
+                    >
+                      {sendingAgreement ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Preparing Agreement...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4 mr-2" />
+                          Sign Customer Agreement
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+                
+                {needsToSign && (
+                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <FileText className="w-5 h-5 text-amber-600" />
+                      <span className="font-semibold text-amber-800">Agreement Signature Required</span>
+                    </div>
+                    <p className="text-sm text-amber-700 mb-3">
+                      Please sign the customer agreement to complete your KYC verification.
+                    </p>
+                    <Button 
+                      onClick={handleSignAgreement}
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                      data-testid="button-sign-agreement"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Sign Agreement Now
+                    </Button>
+                  </div>
+                )}
+                
+                {agreementStatus === 'completed' && (
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <span className="font-semibold text-green-800">Agreement Signed</span>
+                    </div>
+                    <p className="text-sm text-green-700">
+                      Your customer agreement has been signed successfully.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-center gap-3 mb-2">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -687,6 +886,7 @@ export default function KYC() {
                   </div>
                   <ul className="text-sm text-purple-700 space-y-1 ml-8 list-disc">
                     <li>Our team reviews your submitted documents</li>
+                    {(agreementNotSent || needsToSign) && <li className="font-semibold">Sign the customer agreement (action required)</li>}
                     <li>You'll receive an email notification with the result</li>
                     <li>Once approved, all platform features will be unlocked</li>
                   </ul>

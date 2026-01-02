@@ -1244,6 +1244,31 @@ export default function KYCReview() {
                           )}
                         </div>
                       </div>
+                      
+                      {/* Agreement Status */}
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Customer Agreement</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedApplication?.agreementStatus === 'completed' ? (
+                            <Badge className="bg-green-100 text-green-700">
+                              <CheckCircle2 className="w-3 h-3 mr-1" /> Signed
+                            </Badge>
+                          ) : selectedApplication?.agreementStatus === 'sent' ? (
+                            <Badge className="bg-yellow-100 text-yellow-700">
+                              <Clock className="w-3 h-3 mr-1" /> Awaiting Signature
+                            </Badge>
+                          ) : selectedApplication?.agreementEnvelopeId ? (
+                            <Badge className="bg-blue-100 text-blue-700">
+                              <Clock className="w-3 h-3 mr-1" /> {selectedApplication.agreementStatus}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">Not Sent</Badge>
+                          )}
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -1331,25 +1356,42 @@ export default function KYCReview() {
             </div>
 
             {selectedApplication?.status === 'In Progress' && (
-              <DialogFooter className="gap-2 sm:gap-0">
-                <Button 
-                  variant="destructive" 
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={rejectMutation.isPending}
-                  data-testid="button-reject-kyc"
-                >
-                  <XCircle className="w-4 h-4 mr-2" /> Reject
-                </Button>
-                <Button 
-                  className="bg-green-600 hover:bg-green-700" 
-                  onClick={handleApprove}
-                  disabled={approveMutation.isPending}
-                  data-testid="button-approve-kyc"
-                >
-                  {approveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                  Approve & Verify
-                </Button>
-              </DialogFooter>
+              <>
+                {selectedApplication?.agreementStatus !== 'completed' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                    <div className="flex items-center gap-2 text-amber-800">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        {selectedApplication?.agreementEnvelopeId ? 'Agreement Not Signed' : 'Agreement Not Sent'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Customer must sign the customer agreement before KYC can be approved.
+                      {!selectedApplication?.agreementEnvelopeId && ' Customer needs to initiate agreement signing from their KYC page.'}
+                    </p>
+                  </div>
+                )}
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowRejectDialog(true)}
+                    disabled={rejectMutation.isPending}
+                    data-testid="button-reject-kyc"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" /> Reject
+                  </Button>
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700" 
+                    onClick={handleApprove}
+                    disabled={approveMutation.isPending || selectedApplication?.agreementStatus !== 'completed'}
+                    data-testid="button-approve-kyc"
+                    title={selectedApplication?.agreementStatus !== 'completed' ? 'Customer must sign agreement first' : ''}
+                  >
+                    {approveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    Approve & Verify
+                  </Button>
+                </DialogFooter>
+              </>
             )}
           </DialogContent>
         </Dialog>
