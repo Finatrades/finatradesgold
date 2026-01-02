@@ -77,6 +77,20 @@ function PublicRoute({ path, component: Component }: { path: string, component: 
   );
 }
 
+function HomeRedirect() {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  return <Redirect to={user ? "/dashboard" : "/finagold"} />;
+}
+
 import Profile from "@/pages/Profile";
 import Security from "@/pages/Security";
 import Referral from "@/pages/Referral";
@@ -145,8 +159,8 @@ function Router() {
     <>
       <ScrollToTop />
       <Switch>
-      <PublicRoute path="/" component={FinagoldLanding} />
-      <PublicRoute path="/finagold" component={FinagoldLanding} />
+      <Route path="/" component={HomeRedirect} />
+      <Route path="/finagold" component={FinagoldLanding} />
       <Route path="/finagold/bnsl" component={BNSLLanding} />
       <Route path="/finagold/finapay" component={FinaPayLanding} />
       <Route path="/finagold/finavault" component={FinaVaultLanding} />
