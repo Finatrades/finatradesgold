@@ -3,7 +3,7 @@ import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 const goldBarsImage = '/attached_assets/image_1767361888205.png';
-const finaPayImage = '/attached_assets/image_1767361897967.png';
+const finaPayImage = '/attached_assets/image_1767363090551.png';
 
 const content = {
   personal: {
