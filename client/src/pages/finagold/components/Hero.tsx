@@ -8,8 +8,8 @@ import finatradesLogo from '@/assets/finatrades-logo.png';
 const content = {
   personal: {
     badge: 'Swiss-Regulated Platform',
-    headline: 'Finatrades',
-    subheadline: 'Your Digital Gold, Simplified',
+    headline: 'FinaGold',
+    subheadline: 'Your Digital Gold for Financial Transactions',
     paragraph: "Save, store, and use real gold value through a secure, modern online account. Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through BNSL plans.",
     primaryCta: 'Get Started',
     secondaryCta: 'Sign In',
