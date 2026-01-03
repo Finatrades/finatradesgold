@@ -54,3 +54,6 @@ AWS_RDS_RELAXED_SSL = "true"
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
 PRODUCTION_DOMAIN = "demo.finatrades.com"
+
+[userenv.development]
+FORCE_REPLIT_DB = "true"

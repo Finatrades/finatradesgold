@@ -387,23 +387,62 @@ export async function syncReplitToAws(): Promise<SyncResult> {
   };
 }
 
+let syncInterval: ReturnType<typeof setInterval> | null = null;
+
 /**
- * Start the sync scheduler - DISABLED BY DEFAULT
+ * Start the hourly sync scheduler
+ * Syncs AWS Production → Replit PostgreSQL (backup) every hour
  * Only starts if DB_SYNC_ENABLED=true AND ALLOW_DESTRUCTIVE_SYNC=true
  */
 export function startSyncScheduler(): void {
-  console.log('[DB Backup] Auto-sync scheduler is DISABLED for safety.');
-  console.log('[DB Backup] To enable, set both:');
-  console.log('[DB Backup]   DB_SYNC_ENABLED=true');
-  console.log('[DB Backup]   ALLOW_DESTRUCTIVE_SYNC=true');
-  console.log('[DB Backup] Manual backups are still available via API.');
-  
-  // DO NOT start automatic sync - it's too dangerous
-  // The old scheduler has been removed for safety
+  if (!SYNC_ENABLED) {
+    console.log('[DB Backup] Hourly backup sync is DISABLED.');
+    console.log('[DB Backup] To enable hourly AWS Prod → Replit backup, set:');
+    console.log('[DB Backup]   DB_SYNC_ENABLED=true');
+    console.log('[DB Backup]   ALLOW_DESTRUCTIVE_SYNC=true');
+    console.log('[DB Backup] Manual backups are still available via API.');
+    return;
+  }
+
+  if (!ALLOW_DESTRUCTIVE_SYNC) {
+    console.log('[DB Backup] Hourly sync requires ALLOW_DESTRUCTIVE_SYNC=true');
+    return;
+  }
+
+  if (syncInterval) {
+    console.log('[DB Backup] Scheduler already running');
+    return;
+  }
+
+  const SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+  console.log('[DB Backup] ✅ Starting hourly backup scheduler (AWS Prod → Replit)');
+  console.log('[DB Backup] Next sync in 1 hour');
+
+  syncInterval = setInterval(async () => {
+    console.log('[DB Backup] Running scheduled hourly backup...');
+    try {
+      // Use normal sync (not forced) so safety checks remain effective
+      const result = await syncAwsToReplit();
+      if (result.success) {
+        console.log(`[DB Backup] ✅ Hourly backup complete: ${result.tablesCount} tables synced`);
+      } else {
+        console.error(`[DB Backup] ❌ Hourly backup failed: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error(`[DB Backup] ❌ Hourly backup error: ${error.message}`);
+    }
+  }, SYNC_INTERVAL_MS);
 }
 
 export function stopSyncScheduler(): void {
-  console.log('[DB Backup] Scheduler is already disabled');
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+    console.log('[DB Backup] Scheduler stopped');
+  } else {
+    console.log('[DB Backup] Scheduler was not running');
+  }
 }
 
 export function getSyncStatus(): {
@@ -414,7 +453,7 @@ export function getSyncStatus(): {
   destructiveSyncAllowed: boolean;
 } {
   return {
-    isRunning: false, // Always false - scheduler is disabled
+    isRunning: syncInterval !== null,
     isSyncing,
     lastSync: lastSyncResult,
     syncEnabled: SYNC_ENABLED,

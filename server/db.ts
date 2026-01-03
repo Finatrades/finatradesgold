@@ -31,23 +31,31 @@ const isReplitEnv = !!(process.env.REPL_ID || process.env.REPL_SLUG || process.e
 let primaryUrl: string | undefined;
 let databaseRole: 'production' | 'development' | 'legacy' | 'replit' = 'legacy';
 
+// FORCE_REPLIT_DB=true can be set to force using Replit PostgreSQL even when AWS_DEV_DATABASE_URL is configured
+const forceReplitDb = process.env.FORCE_REPLIT_DB === 'true';
+
 if (isProduction) {
   // Production: Use AWS_PROD_DATABASE_URL
   primaryUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
   databaseRole = process.env.AWS_PROD_DATABASE_URL ? 'production' : 'legacy';
-} else if (process.env.AWS_DEV_DATABASE_URL) {
-  // Development: Use AWS_DEV_DATABASE_URL (both Replit and external environments)
+} else if (process.env.AWS_DEV_DATABASE_URL && !forceReplitDb) {
+  // Development with AWS: Use AWS_DEV_DATABASE_URL when available
+  // Note: In Replit IDE, external PostgreSQL connections may be blocked
   primaryUrl = process.env.AWS_DEV_DATABASE_URL;
   databaseRole = 'development';
   console.log('[Database] Using AWS RDS Development database');
-} else if (isReplitEnv && process.env.DATABASE_URL) {
-  // Fallback: Use Replit PostgreSQL if no AWS dev URL configured
+} else if (process.env.DATABASE_URL) {
+  // Fallback to Replit PostgreSQL (or forced via FORCE_REPLIT_DB=true)
   primaryUrl = process.env.DATABASE_URL;
   databaseRole = 'replit';
-  console.log('[Database] Fallback: Using Replit PostgreSQL (no AWS_DEV_DATABASE_URL)');
+  if (forceReplitDb) {
+    console.log('[Database] FORCE_REPLIT_DB enabled - using Replit PostgreSQL');
+  } else {
+    console.log('[Database] Using Replit PostgreSQL (no AWS_DEV_DATABASE_URL)');
+  }
 } else {
   // Legacy fallback
-  primaryUrl = process.env.AWS_DATABASE_URL || process.env.DATABASE_URL;
+  primaryUrl = process.env.AWS_DATABASE_URL;
   databaseRole = 'legacy';
 }
 

@@ -69,15 +69,24 @@ The platform uses a client-server architecture with a React frontend and an Expr
 | Variable | Purpose | Environment |
 |----------|---------|-------------|
 | `AWS_PROD_DATABASE_URL` | Production database (real users) | Production only |
-| `AWS_DEV_DATABASE_URL` | Development database (testing) | Development only |
-| `DATABASE_URL` | Replit backup database | Managed by Replit |
+| `AWS_DEV_DATABASE_URL` | Development database (testing) | Deployed dev environments |
+| `DATABASE_URL` | Replit PostgreSQL (dev + backup) | Replit IDE development |
 
-**Database Safety Architecture (Updated Dec 2025):**
-- **Auto-sync DISABLED**: The dangerous auto-sync scheduler has been disabled to prevent accidental data loss.
-- **Manual Backups Only**: Use `scripts/database-backup.ts` for safe backup/restore operations.
+**Note:** In Replit IDE, `DATABASE_URL` is used for development because Replit blocks external PostgreSQL connections. `AWS_DEV_DATABASE_URL` is used when deployed to a non-Replit development environment.
+
+**Database Connection Priority (in non-production):**
+1. If `FORCE_REPLIT_DB=true` → Use Replit PostgreSQL (DATABASE_URL)
+2. If `AWS_DEV_DATABASE_URL` is set → Use AWS RDS Development
+3. Otherwise → Fall back to DATABASE_URL (Replit PostgreSQL)
+
+For Replit IDE development, set `FORCE_REPLIT_DB=true` to ensure Replit PostgreSQL is used (external connections are blocked).
+
+**Database Safety Architecture (Updated Jan 2026):**
+- **Hourly Backup Sync**: AWS Production → Replit PostgreSQL (requires `DB_SYNC_ENABLED=true` and `ALLOW_DESTRUCTIVE_SYNC=true`)
+- **Manual Backups**: Use `scripts/database-backup.ts` for safe backup/restore operations.
 - **Safety Guards**: 
   - Minimum 50 tables required in source before sync allowed
-  - `DB_SYNC_ENABLED=true` required to enable sync
+  - `DB_SYNC_ENABLED=true` required to enable hourly backup sync
   - `ALLOW_DESTRUCTIVE_SYNC=true` required for DROP operations
   - Production restore requires `CONFIRM_PRODUCTION_RESTORE=yes`
 - **Backup Commands (3-Database)**:
@@ -90,6 +99,12 @@ The platform uses a client-server architecture with a React frontend and an Expr
 - **Schema Push**: When deploying, always run schema push to AWS before starting app:
   - Generate: `npx drizzle-kit generate`
   - Push to Production: `npx tsx scripts/database-backup.ts push-schema prod`
+
+**Hourly Backup Configuration:**
+To enable automatic hourly backup from AWS Production to Replit PostgreSQL:
+1. Set environment variables: `DB_SYNC_ENABLED=true` and `ALLOW_DESTRUCTIVE_SYNC=true`
+2. The scheduler will sync every hour from AWS_PROD_DATABASE_URL → DATABASE_URL (Replit)
+3. Safety checks ensure source has at least 50 tables before syncing
 
 **Authentication & Authorization:**
 - **Method**: Email/password authentication.
