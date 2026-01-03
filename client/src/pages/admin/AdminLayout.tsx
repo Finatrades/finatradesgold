@@ -102,7 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   const employeePermissions: string[] = employeeData?.employee?.permissions || [];
-  const hasNoEmployeeRecord = employeeData === null || (employeeData && !employeeData.employee);
+  const hasNoEmployeeRecord = employeeData === null || employeeData === undefined || (employeeData && !employeeData.employee);
   const isSuperAdmin = hasNoEmployeeRecord || employeeData?.employee?.role === 'super_admin';
 
   const hasMenuPermission = (menuPath: string): boolean => {
