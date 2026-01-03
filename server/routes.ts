@@ -24851,5 +24851,310 @@ ${message}
     }
   });
 
+  // ============================================
+  // ENTERPRISE ROLE-BASED ACCESS CONTROL (RBAC)
+  // ============================================
+  
+  // Get all admin roles
+  app.get("/api/admin/rbac/roles", ensureAdminAsync, async (req, res) => {
+    try {
+      const roles = await storage.getAllAdminRoles();
+      res.json({ roles });
+    } catch (error) {
+      console.error('Get roles error:', error);
+      res.status(500).json({ error: 'Failed to get roles' });
+    }
+  });
+
+  // Get single role with permissions
+  app.get("/api/admin/rbac/roles/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const role = await storage.getAdminRole(req.params.id);
+      if (!role) {
+        return res.status(404).json({ error: 'Role not found' });
+      }
+      const permissions = await storage.getRolePermissions(req.params.id);
+      res.json({ role, permissions });
+    } catch (error) {
+      console.error('Get role error:', error);
+      res.status(500).json({ error: 'Failed to get role' });
+    }
+  });
+
+  // Create admin role
+  app.post("/api/admin/rbac/roles", ensureAdminAsync, async (req, res) => {
+    try {
+      const { name, description, department, riskLevel } = req.body;
+      if (!name) {
+        return res.status(400).json({ error: 'Role name is required' });
+      }
+      const role = await storage.createAdminRole({
+        name,
+        description,
+        department,
+        riskLevel: riskLevel || 'Low',
+        createdBy: req.session?.userId
+      });
+      res.json({ role });
+    } catch (error) {
+      console.error('Create role error:', error);
+      res.status(500).json({ error: 'Failed to create role' });
+    }
+  });
+
+  // Update admin role
+  app.patch("/api/admin/rbac/roles/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const role = await storage.updateAdminRole(req.params.id, req.body);
+      if (!role) {
+        return res.status(404).json({ error: 'Role not found' });
+      }
+      res.json({ role });
+    } catch (error) {
+      console.error('Update role error:', error);
+      res.status(500).json({ error: 'Failed to update role' });
+    }
+  });
+
+  // Delete admin role
+  app.delete("/api/admin/rbac/roles/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const deleted = await storage.deleteAdminRole(req.params.id);
+      if (!deleted) {
+        return res.status(400).json({ error: 'Cannot delete system role or role not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete role error:', error);
+      res.status(500).json({ error: 'Failed to delete role' });
+    }
+  });
+
+  // Get all admin components
+  app.get("/api/admin/rbac/components", ensureAdminAsync, async (req, res) => {
+    try {
+      const components = await storage.getAllAdminComponents();
+      res.json({ components });
+    } catch (error) {
+      console.error('Get components error:', error);
+      res.status(500).json({ error: 'Failed to get components' });
+    }
+  });
+
+  // Update role-component permission
+  app.post("/api/admin/rbac/permissions", ensureAdminAsync, async (req, res) => {
+    try {
+      const { roleId, componentId, permissions } = req.body;
+      if (!roleId || !componentId) {
+        return res.status(400).json({ error: 'Role ID and Component ID are required' });
+      }
+      const result = await storage.updateRoleComponentPermission(roleId, componentId, permissions);
+      res.json({ permission: result });
+    } catch (error) {
+      console.error('Update permission error:', error);
+      res.status(500).json({ error: 'Failed to update permission' });
+    }
+  });
+
+  // Get user role assignments
+  app.get("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, async (req, res) => {
+    try {
+      const assignments = await storage.getUserRoleAssignments(req.params.userId);
+      res.json({ assignments });
+    } catch (error) {
+      console.error('Get user roles error:', error);
+      res.status(500).json({ error: 'Failed to get user roles' });
+    }
+  });
+
+  // Assign role to user
+  app.post("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, async (req, res) => {
+    try {
+      const { roleId, expiresAt } = req.body;
+      if (!roleId) {
+        return res.status(400).json({ error: 'Role ID is required' });
+      }
+      const assignment = await storage.assignUserRole(
+        req.params.userId,
+        roleId,
+        req.session?.userId || '',
+        expiresAt ? new Date(expiresAt) : undefined
+      );
+      res.json({ assignment });
+    } catch (error) {
+      console.error('Assign role error:', error);
+      res.status(500).json({ error: 'Failed to assign role' });
+    }
+  });
+
+  // Revoke role from user
+  app.delete("/api/admin/rbac/users/:userId/roles/:roleId", ensureAdminAsync, async (req, res) => {
+    try {
+      const revoked = await storage.revokeUserRole(req.params.userId, req.params.roleId);
+      res.json({ success: revoked });
+    } catch (error) {
+      console.error('Revoke role error:', error);
+      res.status(500).json({ error: 'Failed to revoke role' });
+    }
+  });
+
+  // Get current user's effective permissions
+  app.get("/api/admin/rbac/my-permissions", ensureAdminAsync, async (req, res) => {
+    try {
+      const permissions = await storage.getUserEffectivePermissions(req.session?.userId || '');
+      res.json({ permissions });
+    } catch (error) {
+      console.error('Get permissions error:', error);
+      res.status(500).json({ error: 'Failed to get permissions' });
+    }
+  });
+
+  // Get task definitions
+  app.get("/api/admin/rbac/tasks", ensureAdminAsync, async (req, res) => {
+    try {
+      const tasks = await storage.getAllTaskDefinitions();
+      res.json({ tasks });
+    } catch (error) {
+      console.error('Get tasks error:', error);
+      res.status(500).json({ error: 'Failed to get task definitions' });
+    }
+  });
+
+  // Get approval queue
+  app.get("/api/admin/rbac/approvals", ensureAdminAsync, async (req, res) => {
+    try {
+      const { status, initiatorId } = req.query;
+      const queue = await storage.getApprovalQueue({
+        status: status as string,
+        initiatorId: initiatorId as string
+      });
+      res.json({ queue });
+    } catch (error) {
+      console.error('Get approval queue error:', error);
+      res.status(500).json({ error: 'Failed to get approval queue' });
+    }
+  });
+
+  // Get pending approvals for current user
+  app.get("/api/admin/rbac/pending-approvals", ensureAdminAsync, async (req, res) => {
+    try {
+      const pendingApprovals = await storage.getPendingApprovalsForUser(req.session?.userId || '');
+      res.json({ approvals: pendingApprovals });
+    } catch (error) {
+      console.error('Get pending approvals error:', error);
+      res.status(500).json({ error: 'Failed to get pending approvals' });
+    }
+  });
+
+  // Get single approval item with history
+  app.get("/api/admin/rbac/approvals/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const approval = await storage.getApprovalQueueItem(req.params.id);
+      if (!approval) {
+        return res.status(404).json({ error: 'Approval not found' });
+      }
+      const history = await storage.getApprovalHistory(req.params.id);
+      res.json({ approval, history });
+    } catch (error) {
+      console.error('Get approval error:', error);
+      res.status(500).json({ error: 'Failed to get approval' });
+    }
+  });
+
+  // Process approval (L1 approve, final approve, or reject)
+  app.post("/api/admin/rbac/approvals/:id/process", ensureAdminAsync, async (req, res) => {
+    try {
+      const { action, comments } = req.body;
+      const approverId = req.session?.userId;
+      
+      if (!approverId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      if (!['approve_l1', 'approve_final', 'reject'].includes(action)) {
+        return res.status(400).json({ error: 'Invalid action' });
+      }
+      
+      const approval = await storage.getApprovalQueueItem(req.params.id);
+      if (!approval) {
+        return res.status(404).json({ error: 'Approval not found' });
+      }
+      
+      if (approval.initiator_id === approverId) {
+        return res.status(403).json({ error: 'Cannot approve your own request' });
+      }
+      
+      let result;
+      switch (action) {
+        case 'approve_l1':
+          result = await storage.approveL1(req.params.id, approverId, comments);
+          break;
+        case 'approve_final':
+          result = await storage.approveFinal(req.params.id, approverId, comments);
+          break;
+        case 'reject':
+          result = await storage.rejectApproval(req.params.id, approverId, comments || 'Rejected');
+          break;
+      }
+      
+      if (!result) {
+        return res.status(400).json({ error: 'Failed to process approval' });
+      }
+      
+      await storage.createApprovalHistory({
+        approvalQueueId: req.params.id,
+        action,
+        actorId: approverId,
+        comments,
+        oldValue: { status: approval.status },
+        newValue: { status: result.status },
+        ipAddress: req.ip
+      });
+      
+      res.json({ approval: result });
+    } catch (error) {
+      console.error('Process approval error:', error);
+      res.status(500).json({ error: 'Failed to process approval' });
+    }
+  });
+
+  // Create approval request
+  app.post("/api/admin/rbac/approvals", ensureAdminAsync, async (req, res) => {
+    try {
+      const { taskSlug, entityType, entityId, taskData, reason } = req.body;
+      
+      const taskDef = await storage.getTaskDefinitionBySlug(taskSlug);
+      if (!taskDef) {
+        return res.status(400).json({ error: 'Invalid task type' });
+      }
+      
+      const expiresAt = taskDef.auto_expire_hours 
+        ? new Date(Date.now() + taskDef.auto_expire_hours * 60 * 60 * 1000)
+        : undefined;
+      
+      const approval = await storage.createApprovalRequest({
+        taskDefinitionId: taskDef.id,
+        initiatorId: req.session?.userId || '',
+        entityType,
+        entityId,
+        taskData,
+        reason,
+        expiresAt
+      });
+      
+      await storage.createApprovalHistory({
+        approvalQueueId: approval.id,
+        action: 'created',
+        actorId: req.session?.userId || '',
+        newValue: { taskData, reason }
+      });
+      
+      res.json({ approval });
+    } catch (error) {
+      console.error('Create approval error:', error);
+      res.status(500).json({ error: 'Failed to create approval request' });
+    }
+  });
+
   return httpServer;
 }
