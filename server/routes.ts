@@ -64,6 +64,7 @@ import {
   seedDefaultAmlRules,
   DEFAULT_AML_RULES 
 } from "./aml-monitoring";
+import { platformLimits } from "./platform-limit-service";
 import { 
   getExpiringDocuments, 
   sendDocumentExpiryReminders, 
@@ -5624,6 +5625,29 @@ ${message}
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
       
+      // Validate platform limits for Buy/Sell transactions
+      if (transactionData.type === 'Buy' || transactionData.type === 'Sell') {
+        const user = await storage.getUser(transactionData.userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        const amountUsd = parseFloat(transactionData.amountUsd || "0");
+        const limitResult = await platformLimits.validateFullTransactionLimits(
+          amountUsd,
+          user,
+          transactionData.type as "Buy" | "Sell"
+        );
+        
+        if (!limitResult.valid) {
+          return res.status(400).json({ 
+            message: limitResult.message,
+            limit: limitResult.limit,
+            current: limitResult.current
+          });
+        }
+      }
+      
       // Require PIN verification for Sell transactions
       if (transactionData.type === 'Sell') {
         const pinToken = req.headers['x-pin-token'] as string | undefined;
@@ -11002,6 +11026,29 @@ ${message}
   // Create deposit request (User) - PROTECTED - Requires KYC
   app.post("/api/deposit-requests", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
+      const { userId, amountUsd } = req.body;
+      
+      // Validate deposit limits
+      const depositUser = await storage.getUser(userId);
+      if (!depositUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const amount = parseFloat(amountUsd);
+      const limitResult = await platformLimits.validateFullTransactionLimits(
+        amount,
+        depositUser,
+        "Deposit"
+      );
+      
+      if (!limitResult.valid) {
+        return res.status(400).json({ 
+          message: limitResult.message,
+          limit: limitResult.limit,
+          current: limitResult.current
+        });
+      }
+      
       // Generate reference number
       const referenceNumber = `DEP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const requestData = insertDepositRequestSchema.parse({
@@ -11010,8 +11057,7 @@ ${message}
       });
       const request = await storage.createDepositRequest(requestData);
       
-      // Notify all admins of new deposit request
-      const depositUser = await storage.getUser(req.body.userId);
+      // Notify all admins of new deposit request (reusing depositUser from limit validation above)
       notifyAllAdmins({
         title: 'New Deposit Request',
         message: `${depositUser?.firstName || 'User'} submitted a deposit request for $${parseFloat(req.body.amountUsd).toLocaleString()}`,
@@ -11399,6 +11445,28 @@ ${message}
         return res.status(403).json({ message: "Not authorized to create withdrawal for another user" });
       }
       
+      // Get user for limit validation
+      const withdrawUser = await storage.getUser(userId);
+      if (!withdrawUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Validate withdrawal limits
+      const amount = parseFloat(amountUsd);
+      const limitResult = await platformLimits.validateFullTransactionLimits(
+        amount,
+        withdrawUser,
+        "Withdrawal"
+      );
+      
+      if (!limitResult.valid) {
+        return res.status(400).json({ 
+          message: limitResult.message,
+          limit: limitResult.limit,
+          current: limitResult.current
+        });
+      }
+      
       // Check user has sufficient balance
       const wallet = await storage.getWallet(userId);
       if (!wallet) {
@@ -11429,8 +11497,7 @@ ${message}
       
       const request = await storage.createWithdrawalRequest(requestData);
       
-      // Notify all admins of new withdrawal request
-      const withdrawUser = await storage.getUser(userId);
+      // Notify all admins of new withdrawal request (reusing withdrawUser from limit validation above)
       notifyAllAdmins({
         title: 'New Withdrawal Request',
         message: `${withdrawUser?.firstName || 'User'} requested a withdrawal of $${parseFloat(amountUsd).toLocaleString()}`,
