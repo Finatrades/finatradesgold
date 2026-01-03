@@ -1,0 +1,886 @@
+{
+  "exportedAt": "2026-01-03T00:00:00.000Z",
+  "pages": [
+    {
+      "id": "home-personal",
+      "slug": "home-personal",
+      "title": "Home - Personal",
+      "description": "Personal mode landing page",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "home-business",
+      "slug": "home-business", 
+      "title": "Home - Business",
+      "description": "Business mode landing page",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "finavault",
+      "slug": "finavault",
+      "title": "FinaVault",
+      "description": "Secure gold storage service",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "finapay",
+      "slug": "finapay",
+      "title": "FinaPay",
+      "description": "Digital gold payments",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "bnsl",
+      "slug": "bnsl",
+      "title": "BNSL",
+      "description": "Buy Now Sell Later",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "finabridge",
+      "slug": "finabridge",
+      "title": "FinaBridge",
+      "description": "Trade finance solutions",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "finacard",
+      "slug": "finacard",
+      "title": "FinaCard",
+      "description": "Gold-backed debit card",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "about",
+      "slug": "about",
+      "title": "About Us",
+      "description": "Company information",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "terms",
+      "slug": "terms",
+      "title": "Terms & Conditions",
+      "description": "Legal terms of service",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "privacy",
+      "slug": "privacy",
+      "title": "Privacy Policy",
+      "description": "Privacy and data protection policy",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "kyc",
+      "slug": "kyc",
+      "title": "KYC Information",
+      "description": "Know Your Customer verification info",
+      "isActive": true,
+      "meta": {}
+    },
+    {
+      "id": "faq",
+      "slug": "faq",
+      "title": "FAQ",
+      "description": "Frequently asked questions",
+      "isActive": true,
+      "meta": {}
+    }
+  ],
+  "blocks": [
+    {
+      "id": "home-hero-title",
+      "pageId": "home-personal",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Your Gateway to Gold-Backed Digital Finance",
+      "defaultContent": "Your Gateway to Gold-Backed Digital Finance",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "home-hero-subtitle",
+      "pageId": "home-personal",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Buy, sell, store, and transfer physical gold seamlessly through our secure digital platform.",
+      "defaultContent": "Buy, sell, store, and transfer physical gold seamlessly through our secure digital platform.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "home-hero-cta",
+      "pageId": "home-personal",
+      "section": "hero",
+      "key": "cta_text",
+      "contentType": "text",
+      "content": "Get Started",
+      "defaultContent": "Get Started",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "home-business-hero-title",
+      "pageId": "home-business",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Enterprise Gold Solutions for Your Business",
+      "defaultContent": "Enterprise Gold Solutions for Your Business",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "home-business-hero-subtitle",
+      "pageId": "home-business",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Trade finance, corporate gold storage, and B2B payment solutions powered by physical gold.",
+      "defaultContent": "Trade finance, corporate gold storage, and B2B payment solutions powered by physical gold.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finavault-hero-title",
+      "pageId": "finavault",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Secure Gold Storage",
+      "defaultContent": "Secure Gold Storage",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finavault-hero-subtitle",
+      "pageId": "finavault",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Store your physical gold in LBMA-accredited vaults with full insurance and audit trails.",
+      "defaultContent": "Store your physical gold in LBMA-accredited vaults with full insurance and audit trails.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finavault-features-title",
+      "pageId": "finavault",
+      "section": "features",
+      "key": "title",
+      "contentType": "text",
+      "content": "Why Choose FinaVault?",
+      "defaultContent": "Why Choose FinaVault?",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finavault-feature-1",
+      "pageId": "finavault",
+      "section": "features",
+      "key": "feature_1",
+      "contentType": "text",
+      "content": "100% Allocated Storage - Your gold is physically segregated and belongs only to you.",
+      "defaultContent": "100% Allocated Storage - Your gold is physically segregated and belongs only to you.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finavault-feature-2",
+      "pageId": "finavault",
+      "section": "features",
+      "key": "feature_2",
+      "contentType": "text",
+      "content": "Full Insurance - Complete coverage against theft, damage, and loss.",
+      "defaultContent": "Full Insurance - Complete coverage against theft, damage, and loss.",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "finavault-feature-3",
+      "pageId": "finavault",
+      "section": "features",
+      "key": "feature_3",
+      "contentType": "text",
+      "content": "Quarterly Audits - Regular third-party audits ensure your holdings are always verified.",
+      "defaultContent": "Quarterly Audits - Regular third-party audits ensure your holdings are always verified.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "finapay-hero-title",
+      "pageId": "finapay",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Digital Gold Payments",
+      "defaultContent": "Digital Gold Payments",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finapay-hero-subtitle",
+      "pageId": "finapay",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Send and receive gold instantly to anyone, anywhere in the world.",
+      "defaultContent": "Send and receive gold instantly to anyone, anywhere in the world.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finapay-features-title",
+      "pageId": "finapay",
+      "section": "features",
+      "key": "title",
+      "contentType": "text",
+      "content": "Seamless Gold Transfers",
+      "defaultContent": "Seamless Gold Transfers",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finapay-feature-1",
+      "pageId": "finapay",
+      "section": "features",
+      "key": "feature_1",
+      "contentType": "text",
+      "content": "Instant Transfers - Send gold to other Finatrades users in seconds.",
+      "defaultContent": "Instant Transfers - Send gold to other Finatrades users in seconds.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finapay-feature-2",
+      "pageId": "finapay",
+      "section": "features",
+      "key": "feature_2",
+      "contentType": "text",
+      "content": "Low Fees - Competitive transaction fees for all transfers.",
+      "defaultContent": "Low Fees - Competitive transaction fees for all transfers.",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "finapay-feature-3",
+      "pageId": "finapay",
+      "section": "features",
+      "key": "feature_3",
+      "contentType": "text",
+      "content": "QR Code Payments - Scan and pay with gold using QR codes.",
+      "defaultContent": "QR Code Payments - Scan and pay with gold using QR codes.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "bnsl-hero-title",
+      "pageId": "bnsl",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Buy Now, Sell Later",
+      "defaultContent": "Buy Now, Sell Later",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "bnsl-hero-subtitle",
+      "pageId": "bnsl",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Lock in today's gold price and sell at a future date for guaranteed returns.",
+      "defaultContent": "Lock in today's gold price and sell at a future date for guaranteed returns.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "bnsl-features-title",
+      "pageId": "bnsl",
+      "section": "features",
+      "key": "title",
+      "contentType": "text",
+      "content": "How BNSL Works",
+      "defaultContent": "How BNSL Works",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "bnsl-feature-1",
+      "pageId": "bnsl",
+      "section": "features",
+      "key": "feature_1",
+      "contentType": "text",
+      "content": "Choose Your Plan - Select from 3, 6, or 12-month investment terms.",
+      "defaultContent": "Choose Your Plan - Select from 3, 6, or 12-month investment terms.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "bnsl-feature-2",
+      "pageId": "bnsl",
+      "section": "features",
+      "key": "feature_2",
+      "contentType": "text",
+      "content": "Lock Your Price - Your purchase price is fixed at the time of investment.",
+      "defaultContent": "Lock Your Price - Your purchase price is fixed at the time of investment.",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "bnsl-feature-3",
+      "pageId": "bnsl",
+      "section": "features",
+      "key": "feature_3",
+      "contentType": "text",
+      "content": "Guaranteed Returns - Earn fixed returns based on your chosen plan.",
+      "defaultContent": "Guaranteed Returns - Earn fixed returns based on your chosen plan.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "finabridge-hero-title",
+      "pageId": "finabridge",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Trade Finance Solutions",
+      "defaultContent": "Trade Finance Solutions",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finabridge-hero-subtitle",
+      "pageId": "finabridge",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Leverage your gold holdings as collateral for international trade financing.",
+      "defaultContent": "Leverage your gold holdings as collateral for international trade financing.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finabridge-features-title",
+      "pageId": "finabridge",
+      "section": "features",
+      "key": "title",
+      "contentType": "text",
+      "content": "Enterprise Trade Finance",
+      "defaultContent": "Enterprise Trade Finance",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finabridge-feature-1",
+      "pageId": "finabridge",
+      "section": "features",
+      "key": "feature_1",
+      "contentType": "text",
+      "content": "Gold-Backed Credit Lines - Use your gold as collateral for trade financing.",
+      "defaultContent": "Gold-Backed Credit Lines - Use your gold as collateral for trade financing.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finabridge-feature-2",
+      "pageId": "finabridge",
+      "section": "features",
+      "key": "feature_2",
+      "contentType": "text",
+      "content": "Document Management - Secure document handling for LC and trade documents.",
+      "defaultContent": "Document Management - Secure document handling for LC and trade documents.",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "finabridge-feature-3",
+      "pageId": "finabridge",
+      "section": "features",
+      "key": "feature_3",
+      "contentType": "text",
+      "content": "Expert Support - Dedicated trade finance advisors for your business.",
+      "defaultContent": "Expert Support - Dedicated trade finance advisors for your business.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "finacard-hero-title",
+      "pageId": "finacard",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Gold-Backed Debit Card",
+      "defaultContent": "Gold-Backed Debit Card",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finacard-hero-subtitle",
+      "pageId": "finacard",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Spend your gold anywhere in the world with the Finatrades debit card.",
+      "defaultContent": "Spend your gold anywhere in the world with the Finatrades debit card.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finacard-features-title",
+      "pageId": "finacard",
+      "section": "features",
+      "key": "title",
+      "contentType": "text",
+      "content": "Coming Soon",
+      "defaultContent": "Coming Soon",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "finacard-feature-1",
+      "pageId": "finacard",
+      "section": "features",
+      "key": "feature_1",
+      "contentType": "text",
+      "content": "Global Acceptance - Use your card at millions of merchants worldwide.",
+      "defaultContent": "Global Acceptance - Use your card at millions of merchants worldwide.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "finacard-feature-2",
+      "pageId": "finacard",
+      "section": "features",
+      "key": "feature_2",
+      "contentType": "text",
+      "content": "Real-Time Conversion - Gold is converted to fiat at the point of sale.",
+      "defaultContent": "Real-Time Conversion - Gold is converted to fiat at the point of sale.",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "finacard-feature-3",
+      "pageId": "finacard",
+      "section": "features",
+      "key": "feature_3",
+      "contentType": "text",
+      "content": "Cashback in Gold - Earn gold rewards on every purchase.",
+      "defaultContent": "Cashback in Gold - Earn gold rewards on every purchase.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "about-hero-title",
+      "pageId": "about",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "About Finatrades",
+      "defaultContent": "About Finatrades",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "about-hero-subtitle",
+      "pageId": "about",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Pioneering the future of gold-backed digital finance.",
+      "defaultContent": "Pioneering the future of gold-backed digital finance.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "about-mission-title",
+      "pageId": "about",
+      "section": "mission",
+      "key": "title",
+      "contentType": "text",
+      "content": "Our Mission",
+      "defaultContent": "Our Mission",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "about-mission-content",
+      "pageId": "about",
+      "section": "mission",
+      "key": "content",
+      "contentType": "richtext",
+      "content": "To democratize access to gold ownership and create a seamless bridge between traditional gold assets and modern digital finance. We believe everyone deserves access to the stability and security that gold provides.",
+      "defaultContent": "To democratize access to gold ownership and create a seamless bridge between traditional gold assets and modern digital finance. We believe everyone deserves access to the stability and security that gold provides.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "about-values-title",
+      "pageId": "about",
+      "section": "values",
+      "key": "title",
+      "contentType": "text",
+      "content": "Our Values",
+      "defaultContent": "Our Values",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "about-value-1",
+      "pageId": "about",
+      "section": "values",
+      "key": "value_1",
+      "contentType": "text",
+      "content": "Security First - Your assets are protected by enterprise-grade security.",
+      "defaultContent": "Security First - Your assets are protected by enterprise-grade security.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "about-value-2",
+      "pageId": "about",
+      "section": "values",
+      "key": "value_2",
+      "contentType": "text",
+      "content": "Transparency - Full visibility into your holdings and transactions.",
+      "defaultContent": "Transparency - Full visibility into your holdings and transactions.",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "about-value-3",
+      "pageId": "about",
+      "section": "values",
+      "key": "value_3",
+      "contentType": "text",
+      "content": "Innovation - Continuously improving our platform with cutting-edge technology.",
+      "defaultContent": "Innovation - Continuously improving our platform with cutting-edge technology.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "terms-content",
+      "pageId": "terms",
+      "section": "main",
+      "key": "content",
+      "contentType": "richtext",
+      "content": "<h2>Terms and Conditions</h2><p>Welcome to Finatrades. By using our services, you agree to these terms.</p><h3>1. Account Registration</h3><p>You must be at least 18 years old to create an account. You are responsible for maintaining the confidentiality of your account credentials.</p><h3>2. Gold Transactions</h3><p>All gold transactions are conducted in grams. Prices are based on live market rates plus applicable fees.</p><h3>3. KYC Requirements</h3><p>You must complete identity verification to access certain features. This is required by regulatory compliance.</p><h3>4. Fees</h3><p>Transaction fees, storage fees, and other charges are disclosed before each transaction.</p><h3>5. Limitation of Liability</h3><p>Finatrades is not liable for market price fluctuations or losses arising from gold price changes.</p>",
+      "defaultContent": "<h2>Terms and Conditions</h2><p>Welcome to Finatrades. By using our services, you agree to these terms.</p>",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "privacy-content",
+      "pageId": "privacy",
+      "section": "main",
+      "key": "content",
+      "contentType": "richtext",
+      "content": "<h2>Privacy Policy</h2><p>Your privacy is important to us. This policy explains how we collect, use, and protect your information.</p><h3>Information We Collect</h3><p>We collect personal information you provide during registration, KYC verification, and transactions.</p><h3>How We Use Your Information</h3><p>Your information is used to provide services, verify identity, process transactions, and comply with regulations.</p><h3>Data Security</h3><p>We employ industry-standard security measures to protect your data.</p><h3>Third-Party Sharing</h3><p>We do not sell your personal information. We only share data with partners necessary to provide our services.</p>",
+      "defaultContent": "<h2>Privacy Policy</h2><p>Your privacy is important to us.</p>",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "kyc-hero-title",
+      "pageId": "kyc",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Identity Verification",
+      "defaultContent": "Identity Verification",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "kyc-hero-subtitle",
+      "pageId": "kyc",
+      "section": "hero",
+      "key": "subtitle",
+      "contentType": "text",
+      "content": "Complete your KYC to unlock all platform features.",
+      "defaultContent": "Complete your KYC to unlock all platform features.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "kyc-levels-title",
+      "pageId": "kyc",
+      "section": "levels",
+      "key": "title",
+      "contentType": "text",
+      "content": "Verification Tiers",
+      "defaultContent": "Verification Tiers",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "kyc-level-basic",
+      "pageId": "kyc",
+      "section": "levels",
+      "key": "level_basic",
+      "contentType": "text",
+      "content": "Basic - Email verification and basic personal information.",
+      "defaultContent": "Basic - Email verification and basic personal information.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "kyc-level-enhanced",
+      "pageId": "kyc",
+      "section": "levels",
+      "key": "level_enhanced",
+      "contentType": "text",
+      "content": "Enhanced - Government ID verification and address proof.",
+      "defaultContent": "Enhanced - Government ID verification and address proof.",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "kyc-level-corporate",
+      "pageId": "kyc",
+      "section": "levels",
+      "key": "level_corporate",
+      "contentType": "text",
+      "content": "Corporate - Business registration and beneficial ownership documentation.",
+      "defaultContent": "Corporate - Business registration and beneficial ownership documentation.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "faq-hero-title",
+      "pageId": "faq",
+      "section": "hero",
+      "key": "title",
+      "contentType": "text",
+      "content": "Frequently Asked Questions",
+      "defaultContent": "Frequently Asked Questions",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "faq-q1",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q1_question",
+      "contentType": "text",
+      "content": "What is Finatrades?",
+      "defaultContent": "What is Finatrades?",
+      "status": "published",
+      "order": 1
+    },
+    {
+      "id": "faq-a1",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q1_answer",
+      "contentType": "richtext",
+      "content": "Finatrades is a gold-backed digital finance platform that allows you to buy, sell, store, and transfer physical gold through our secure digital platform.",
+      "defaultContent": "Finatrades is a gold-backed digital finance platform.",
+      "status": "published",
+      "order": 2
+    },
+    {
+      "id": "faq-q2",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q2_question",
+      "contentType": "text",
+      "content": "Is my gold physically stored?",
+      "defaultContent": "Is my gold physically stored?",
+      "status": "published",
+      "order": 3
+    },
+    {
+      "id": "faq-a2",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q2_answer",
+      "contentType": "richtext",
+      "content": "Yes, all gold is 100% allocated and stored in LBMA-accredited vaults. Your gold is physically segregated and belongs only to you.",
+      "defaultContent": "Yes, all gold is physically stored.",
+      "status": "published",
+      "order": 4
+    },
+    {
+      "id": "faq-q3",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q3_question",
+      "contentType": "text",
+      "content": "What are the fees?",
+      "defaultContent": "What are the fees?",
+      "status": "published",
+      "order": 5
+    },
+    {
+      "id": "faq-a3",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q3_answer",
+      "contentType": "richtext",
+      "content": "Fees vary by transaction type. All fees are transparently displayed before you confirm any transaction. Storage fees are charged monthly based on your holdings.",
+      "defaultContent": "Fees are transparently displayed.",
+      "status": "published",
+      "order": 6
+    },
+    {
+      "id": "faq-q4",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q4_question",
+      "contentType": "text",
+      "content": "How do I withdraw my gold?",
+      "defaultContent": "How do I withdraw my gold?",
+      "status": "published",
+      "order": 7
+    },
+    {
+      "id": "faq-a4",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q4_answer",
+      "contentType": "richtext",
+      "content": "You can request physical delivery of your gold or convert it to fiat currency and withdraw to your bank account. Delivery options and fees depend on your location.",
+      "defaultContent": "You can request physical delivery or convert to fiat.",
+      "status": "published",
+      "order": 8
+    }
+  ],
+  "templates": [],
+  "labels": [
+    {
+      "id": "lbl-company-name",
+      "key": "company_name",
+      "value": "Finatrades",
+      "defaultValue": "Finatrades",
+      "category": "branding",
+      "description": "Company name displayed across the platform"
+    },
+    {
+      "id": "lbl-tagline",
+      "key": "tagline",
+      "value": "Gold-Backed Digital Finance",
+      "defaultValue": "Gold-Backed Digital Finance",
+      "category": "branding",
+      "description": "Company tagline"
+    },
+    {
+      "id": "lbl-contact-email",
+      "key": "contact_email",
+      "value": "support@finatrades.com",
+      "defaultValue": "support@finatrades.com",
+      "category": "contact",
+      "description": "Support email address"
+    },
+    {
+      "id": "lbl-contact-phone",
+      "key": "contact_phone",
+      "value": "+971568474843",
+      "defaultValue": "+971568474843",
+      "category": "contact",
+      "description": "Contact phone number"
+    },
+    {
+      "id": "lbl-footer-copyright",
+      "key": "footer_copyright",
+      "value": "2026 Finatrades. All rights reserved.",
+      "defaultValue": "2026 Finatrades. All rights reserved.",
+      "category": "footer",
+      "description": "Copyright text in footer"
+    },
+    {
+      "id": "lbl-currency-primary",
+      "key": "currency_primary",
+      "value": "USD",
+      "defaultValue": "USD",
+      "category": "settings",
+      "description": "Primary display currency"
+    },
+    {
+      "id": "lbl-currency-secondary",
+      "key": "currency_secondary",
+      "value": "AED",
+      "defaultValue": "AED",
+      "category": "settings",
+      "description": "Secondary display currency"
+    },
+    {
+      "id": "lbl-gold-unit",
+      "key": "gold_unit",
+      "value": "grams",
+      "defaultValue": "grams",
+      "category": "settings",
+      "description": "Gold weight unit"
+    },
+    {
+      "id": "lbl-btn-get-started",
+      "key": "btn_get_started",
+      "value": "Get Started",
+      "defaultValue": "Get Started",
+      "category": "buttons",
+      "description": "Get started button text"
+    },
+    {
+      "id": "lbl-btn-learn-more",
+      "key": "btn_learn_more",
+      "value": "Learn More",
+      "defaultValue": "Learn More",
+      "category": "buttons",
+      "description": "Learn more button text"
+    },
+    {
+      "id": "lbl-btn-contact-us",
+      "key": "btn_contact_us",
+      "value": "Contact Us",
+      "defaultValue": "Contact Us",
+      "category": "buttons",
+      "description": "Contact us button text"
+    },
+    {
+      "id": "lbl-nav-home",
+      "key": "nav_home",
+      "value": "Home",
+      "defaultValue": "Home",
+      "category": "navigation",
+      "description": "Home navigation link"
+    },
+    {
+      "id": "lbl-nav-about",
+      "key": "nav_about",
+      "value": "About",
+      "defaultValue": "About",
+      "category": "navigation",
+      "description": "About navigation link"
+    },
+    {
+      "id": "lbl-nav-products",
+      "key": "nav_products",
+      "value": "Products",
+      "defaultValue": "Products",
+      "category": "navigation",
+      "description": "Products navigation link"
+    },
+    {
+      "id": "lbl-nav-contact",
+      "key": "nav_contact",
+      "value": "Contact",
+      "defaultValue": "Contact",
+      "category": "navigation",
+      "description": "Contact navigation link"
+    }
+  ]
+}
