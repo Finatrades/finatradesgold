@@ -7,52 +7,31 @@ import path from "path";
 const { Pool } = pg;
 
 /**
- * Multi-Database Configuration (3-Database Architecture)
+ * 2-Database Architecture
  * 
  * PRODUCTION: AWS RDS (AWS_PROD_DATABASE_URL) - Real users
- * DEVELOPMENT: AWS RDS (AWS_DEV_DATABASE_URL) - Testing/Development
- * BACKUP: Replit PostgreSQL (DATABASE_URL) - Cold storage backup
+ * DEVELOPMENT/BACKUP: Replit PostgreSQL (DATABASE_URL) - Development & backup
  * 
  * Environment Variables:
  * - AWS_PROD_DATABASE_URL: AWS RDS production database
- * - AWS_DEV_DATABASE_URL: AWS RDS development database
- * - DATABASE_URL: Replit PostgreSQL backup database
- * 
- * Legacy support:
- * - AWS_DATABASE_URL: Falls back for backward compatibility
+ * - DATABASE_URL: Replit PostgreSQL (development + backup)
  */
 
 const isProduction = process.env.NODE_ENV === 'production';
-
-// Detect Replit environment - Replit intercepts AWS RDS DNS, so we must use their DATABASE_URL
-const isReplitEnv = !!(process.env.REPL_ID || process.env.REPL_SLUG || process.env.REPLIT);
 
 // Determine primary database URL based on environment
 let primaryUrl: string | undefined;
 let databaseRole: 'production' | 'development' | 'legacy' | 'replit' = 'legacy';
 
-// FORCE_REPLIT_DB=true can be set to force using Replit PostgreSQL even when AWS_DEV_DATABASE_URL is configured
-const forceReplitDb = process.env.FORCE_REPLIT_DB === 'true';
-
 if (isProduction) {
   // Production: Use AWS_PROD_DATABASE_URL
   primaryUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
   databaseRole = process.env.AWS_PROD_DATABASE_URL ? 'production' : 'legacy';
-} else if (process.env.AWS_DEV_DATABASE_URL && !forceReplitDb) {
-  // Development with AWS: Use AWS_DEV_DATABASE_URL when available
-  // Note: In Replit IDE, external PostgreSQL connections may be blocked
-  primaryUrl = process.env.AWS_DEV_DATABASE_URL;
-  databaseRole = 'development';
-  console.log('[Database] Using AWS RDS Development database');
 } else if (process.env.DATABASE_URL) {
-  // Fallback to Replit PostgreSQL (or forced via FORCE_REPLIT_DB=true)
+  // Development: Use Replit PostgreSQL
   primaryUrl = process.env.DATABASE_URL;
   databaseRole = 'replit';
-  if (forceReplitDb) {
-    console.log('[Database] FORCE_REPLIT_DB enabled - using Replit PostgreSQL');
-  } else {
-    console.log('[Database] Using Replit PostgreSQL (no AWS_DEV_DATABASE_URL)');
-  }
+  console.log('[Database] Using Replit PostgreSQL for development');
 } else {
   // Legacy fallback
   primaryUrl = process.env.AWS_DATABASE_URL;
@@ -64,13 +43,12 @@ const backupUrl = process.env.DATABASE_URL;
 
 if (!primaryUrl) {
   throw new Error(
-    "Database URL must be set. Set AWS_PROD_DATABASE_URL for production or AWS_DEV_DATABASE_URL for development.",
+    "Database URL must be set. Set AWS_PROD_DATABASE_URL for production or DATABASE_URL for development.",
   );
 }
 
 // Log which database is being used
-// In Replit development, we use Replit's DATABASE_URL even if AWS vars are set
-const isUsingAws = databaseRole !== 'replit' && !!(process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DEV_DATABASE_URL || process.env.AWS_DATABASE_URL);
+const isUsingAws = databaseRole === 'production' || databaseRole === 'legacy';
 
 // Strip sslmode from connection string if present - we'll handle SSL via pool config
 if (isUsingAws && primaryUrl.includes('sslmode=')) {

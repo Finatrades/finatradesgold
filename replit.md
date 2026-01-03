@@ -56,12 +56,10 @@ The platform uses a client-server architecture with a React frontend and an Expr
   - **Withdrawals**: 10 requests per hour per user
   - **General API**: 100 requests per minute (not yet applied globally)
 
-**Data Storage (3-Database Architecture - Updated Dec 2025):**
-- **Database**: PostgreSQL with Drizzle ORM (3-database architecture).
+**Data Storage (2-Database Architecture - Updated Jan 2026):**
+- **Database**: PostgreSQL with Drizzle ORM.
 - **Production Database**: AWS RDS PostgreSQL - set via `AWS_PROD_DATABASE_URL`
-- **Development Database**: AWS RDS PostgreSQL - set via `AWS_DEV_DATABASE_URL`
-- **Backup Database**: Replit PostgreSQL - set via `DATABASE_URL` (managed by Replit)
-- **Legacy Support**: `AWS_DATABASE_URL` still works for backward compatibility
+- **Development/Backup Database**: Replit PostgreSQL - set via `DATABASE_URL` (managed by Replit)
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
 - **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs.
 
@@ -69,17 +67,7 @@ The platform uses a client-server architecture with a React frontend and an Expr
 | Variable | Purpose | Environment |
 |----------|---------|-------------|
 | `AWS_PROD_DATABASE_URL` | Production database (real users) | Production only |
-| `AWS_DEV_DATABASE_URL` | Development database (testing) | Deployed dev environments |
-| `DATABASE_URL` | Replit PostgreSQL (dev + backup) | Replit IDE development |
-
-**Note:** In Replit IDE, `DATABASE_URL` is used for development because Replit blocks external PostgreSQL connections. `AWS_DEV_DATABASE_URL` is used when deployed to a non-Replit development environment.
-
-**Database Connection Priority (in non-production):**
-1. If `FORCE_REPLIT_DB=true` → Use Replit PostgreSQL (DATABASE_URL)
-2. If `AWS_DEV_DATABASE_URL` is set → Use AWS RDS Development
-3. Otherwise → Fall back to DATABASE_URL (Replit PostgreSQL)
-
-For Replit IDE development, set `FORCE_REPLIT_DB=true` to ensure Replit PostgreSQL is used (external connections are blocked).
+| `DATABASE_URL` | Replit PostgreSQL (dev + backup) | Development |
 
 **Database Safety Architecture (Updated Jan 2026):**
 - **Hourly Backup Sync**: AWS Production → Replit PostgreSQL (requires `DB_SYNC_ENABLED=true` and `ALLOW_DESTRUCTIVE_SYNC=true`)
@@ -89,13 +77,11 @@ For Replit IDE development, set `FORCE_REPLIT_DB=true` to ensure Replit PostgreS
   - `DB_SYNC_ENABLED=true` required to enable hourly backup sync
   - `ALLOW_DESTRUCTIVE_SYNC=true` required for DROP operations
   - Production restore requires `CONFIRM_PRODUCTION_RESTORE=yes`
-- **Backup Commands (3-Database)**:
+- **Backup Commands**:
   - `npx tsx scripts/database-backup.ts status` - Check all database status
   - `npx tsx scripts/database-backup.ts backup prod` - Backup AWS Production
-  - `npx tsx scripts/database-backup.ts backup dev` - Backup AWS Development
   - `npx tsx scripts/database-backup.ts backup backup` - Backup Replit
   - `npx tsx scripts/database-backup.ts push-schema prod` - Push schema to AWS Production
-  - `npx tsx scripts/database-backup.ts push-schema dev` - Push schema to AWS Development
 - **Schema Push**: When deploying, always run schema push to AWS before starting app:
   - Generate: `npx drizzle-kit generate`
   - Push to Production: `npx tsx scripts/database-backup.ts push-schema prod`
