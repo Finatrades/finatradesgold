@@ -22,6 +22,7 @@ import DepositModal from '@/components/finapay/modals/DepositModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 
 import { useLocation, useSearch } from 'wouter';
+import { ShieldAlert } from 'lucide-react';
 
 export default function FinaPay() {
   const { user } = useAuth();
@@ -31,6 +32,18 @@ export default function FinaPay() {
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
+  
+  // KYC verification check - only allow actions if KYC is approved
+  const isKycApproved = user?.kycStatus === 'Approved';
+  
+  const handleKycRequired = () => {
+    toast({
+      title: "KYC Verification Required",
+      description: "Please complete your KYC verification to access this feature.",
+      variant: "destructive",
+    });
+    setLocation('/kyc');
+  };
   
   const [depositCallbackStatus, setDepositCallbackStatus] = useState<'success' | 'cancelled' | 'checking' | null>(null);
   const [depositCallbackDetails, setDepositCallbackDetails] = useState<{ amount?: string; orderRef?: string } | null>(null);
@@ -321,13 +334,38 @@ export default function FinaPay() {
           </div>
         </div>
 
+        {/* KYC Warning Banner */}
+        {!isKycApproved && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="p-2 bg-amber-100 rounded-full">
+              <ShieldAlert className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-amber-800">KYC Verification Required</h4>
+              <p className="text-sm text-amber-700">Complete your identity verification to access all FinaPay features.</p>
+            </div>
+            <Button onClick={() => setLocation('/kyc')} className="bg-amber-500 hover:bg-amber-600 text-white">
+              Verify Now
+            </Button>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <button
-            onClick={() => setActiveModal('deposit')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
+            onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
+            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
+              isKycApproved 
+                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
+                : 'border-gray-200 opacity-60 cursor-not-allowed'
+            }`}
             data-testid="button-add-funds"
           >
+            {!isKycApproved && (
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
             <div className="p-3 bg-green-100 rounded-full">
               <Plus className="w-5 h-5 text-green-600" />
             </div>
@@ -335,19 +373,33 @@ export default function FinaPay() {
           </button>
 
           <button
-            onClick={() => setActiveModal('buyWingold')}
-            className="flex flex-row items-center gap-2 px-5 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-all shadow-md"
+            onClick={() => isKycApproved ? setActiveModal('buyWingold') : handleKycRequired()}
+            className={`relative flex flex-row items-center justify-center gap-2 px-5 py-3 rounded-lg text-white font-medium transition-all shadow-md ${
+              isKycApproved 
+                ? 'bg-green-500 hover:bg-green-600' 
+                : 'bg-gray-400 cursor-not-allowed'
+            }`}
             data-testid="button-buy-gold"
           >
+            {!isKycApproved && <Lock className="w-4 h-4 absolute top-2 right-2" />}
             <ShoppingCart className="w-5 h-5" />
             <span className="text-sm font-medium">Buy Gold Bar</span>
           </button>
 
           <button
-            onClick={() => setActiveModal('sell')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
+            onClick={() => isKycApproved ? setActiveModal('sell') : handleKycRequired()}
+            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
+              isKycApproved 
+                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
+                : 'border-gray-200 opacity-60 cursor-not-allowed'
+            }`}
             data-testid="button-sell-gold"
           >
+            {!isKycApproved && (
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
             <div className="p-3 bg-purple-100 rounded-full">
               <Coins className="w-5 h-5 text-purple-600" />
             </div>
@@ -355,10 +407,19 @@ export default function FinaPay() {
           </button>
 
           <button
-            onClick={() => setActiveModal('withdraw')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
+            onClick={() => isKycApproved ? setActiveModal('withdraw') : handleKycRequired()}
+            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
+              isKycApproved 
+                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
+                : 'border-gray-200 opacity-60 cursor-not-allowed'
+            }`}
             data-testid="button-withdrawals"
           >
+            {!isKycApproved && (
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
             <div className="p-3 bg-purple-100 rounded-full">
               <ArrowUpRight className="w-5 h-5 text-purple-600" />
             </div>
@@ -366,10 +427,19 @@ export default function FinaPay() {
           </button>
 
           <button
-            onClick={() => setActiveModal('send')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
+            onClick={() => isKycApproved ? setActiveModal('send') : handleKycRequired()}
+            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
+              isKycApproved 
+                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
+                : 'border-gray-200 opacity-60 cursor-not-allowed'
+            }`}
             data-testid="button-send-funds"
           >
+            {!isKycApproved && (
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
             <div className="p-3 bg-blue-100 rounded-full">
               <Send className="w-5 h-5 text-blue-600" />
             </div>
@@ -377,10 +447,19 @@ export default function FinaPay() {
           </button>
 
           <button
-            onClick={() => setActiveModal('request')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-border hover:border-purple-300 hover:bg-purple-50 transition-all"
+            onClick={() => isKycApproved ? setActiveModal('request') : handleKycRequired()}
+            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
+              isKycApproved 
+                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
+                : 'border-gray-200 opacity-60 cursor-not-allowed'
+            }`}
             data-testid="button-request-funds"
           >
+            {!isKycApproved && (
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
             <div className="p-3 bg-teal-100 rounded-full">
               <ArrowDownLeft className="w-5 h-5 text-teal-600" />
             </div>
