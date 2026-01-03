@@ -44,7 +44,9 @@ import {
   CreditCard,
   User,
   Settings,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Upload
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { ContentPage, ContentBlock, Template } from '@shared/schema';
@@ -56,6 +58,8 @@ export default function CMSManagement() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('pages');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
@@ -92,6 +96,92 @@ export default function CMSManagement() {
       });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleExportToSeed = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch('/api/admin/cms/export', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ 
+          title: 'CMS Data Exported', 
+          description: `Data saved to: ${data.filePath}` 
+        });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast({ 
+        title: 'Export Failed', 
+        description: error instanceof Error ? error.message : 'Failed to export CMS data',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadJSON = async () => {
+    try {
+      const res = await fetch('/api/admin/cms/export/json', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cms-seed-data-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'Download Started', description: 'CMS data JSON file is downloading.' });
+    } catch (error) {
+      toast({ 
+        title: 'Download Failed', 
+        description: 'Failed to download CMS data',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleImportFromSeed = async () => {
+    if (!confirm('This will import CMS data from the seed file. Existing data with matching IDs will be updated. Continue?')) {
+      return;
+    }
+    setIsImporting(true);
+    try {
+      const res = await fetch('/api/admin/cms/import', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ 
+          title: 'CMS Data Imported', 
+          description: `Pages: ${data.counts.pages.inserted} new, ${data.counts.pages.updated} updated. Blocks: ${data.counts.blocks.inserted} new, ${data.counts.blocks.updated} updated.` 
+        });
+        await handleSyncAllCMS();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast({ 
+        title: 'Import Failed', 
+        description: error instanceof Error ? error.message : 'Failed to import CMS data',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -340,21 +430,52 @@ export default function CMSManagement() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900" data-testid="text-cms-title">Content Management</h1>
             <p className="text-gray-500 mt-1">Manage website content, blocks, and templates</p>
           </div>
-          <Button
-            onClick={handleSyncAllCMS}
-            disabled={isSyncing}
-            variant="outline"
-            className="gap-2"
-            data-testid="button-sync-cms"
-          >
-            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Syncing...' : 'Sync All CMS Data'}
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={handleDownloadJSON}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-download-cms"
+            >
+              <Download className="w-4 h-4" />
+              Download JSON
+            </Button>
+            <Button
+              onClick={handleExportToSeed}
+              disabled={isExporting}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-export-cms"
+            >
+              <Database className={`w-4 h-4 ${isExporting ? 'animate-pulse' : ''}`} />
+              {isExporting ? 'Exporting...' : 'Export to Seed'}
+            </Button>
+            <Button
+              onClick={handleImportFromSeed}
+              disabled={isImporting}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-import-cms"
+            >
+              <Upload className={`w-4 h-4 ${isImporting ? 'animate-pulse' : ''}`} />
+              {isImporting ? 'Importing...' : 'Import from Seed'}
+            </Button>
+            <Button
+              onClick={handleSyncAllCMS}
+              disabled={isSyncing}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-sync-cms"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing...' : 'Sync All'}
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

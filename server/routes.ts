@@ -15017,6 +15017,90 @@ ${message}
     }
   });
   
+  // === CMS Export/Import (Seed) ===
+  
+  // Export all CMS data to seed file
+  app.post("/api/admin/cms/export", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { exportCMSToFile } = await import('../scripts/cms-seed');
+      const filePath = await exportCMSToFile();
+      
+      res.json({ 
+        success: true, 
+        message: 'CMS data exported successfully',
+        filePath 
+      });
+    } catch (error) {
+      console.error('[CMS Export] Error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to export CMS data" });
+    }
+  });
+  
+  // Get current CMS data as JSON (for download)
+  app.get("/api/admin/cms/export/json", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { exportCMSData } = await import('../scripts/cms-seed');
+      const data = await exportCMSData();
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="cms-seed-data-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(data);
+    } catch (error) {
+      console.error('[CMS Export] Error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to export CMS data" });
+    }
+  });
+  
+  // Import CMS data from seed file
+  app.post("/api/admin/cms/import", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { importCMSFromFile } = await import('../scripts/cms-seed');
+      const result = await importCMSFromFile();
+      
+      res.json({ 
+        success: true, 
+        message: 'CMS data imported successfully',
+        counts: result.counts
+      });
+    } catch (error) {
+      console.error('[CMS Import] Error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to import CMS data" });
+    }
+  });
+  
+  // Import CMS data from uploaded JSON
+  app.post("/api/admin/cms/import/json", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { seedCMSData } = await import('../scripts/cms-seed');
+      const result = await seedCMSData(req.body);
+      
+      res.json({ 
+        success: true, 
+        message: 'CMS data imported successfully',
+        counts: result.counts
+      });
+    } catch (error) {
+      console.error('[CMS Import] Error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to import CMS data" });
+    }
+  });
+  
   // === Media Assets ===
   
   // Get all media assets (Admin)
