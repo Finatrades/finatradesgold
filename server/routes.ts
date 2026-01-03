@@ -624,6 +624,69 @@ export async function registerRoutes(
   });
 
   // ============================================================================
+  // CURRENCY EXCHANGE RATE API
+  // ============================================================================
+  
+  const { getExchangeRate, getAllRates, convertCurrency } = await import('./currency-service');
+  
+  // Get exchange rate for a currency pair
+  app.get("/api/exchange-rate", async (req, res) => {
+    try {
+      const from = (req.query.from as string || 'USD').toUpperCase();
+      const to = (req.query.to as string || 'AED').toUpperCase();
+      
+      const result = await getExchangeRate(from, to);
+      res.json({
+        from,
+        to,
+        rate: result.rate,
+        source: result.source,
+        timestamp: new Date(result.timestamp).toISOString()
+      });
+    } catch (error) {
+      console.error('[Currency] Error fetching exchange rate:', error);
+      res.status(500).json({ message: "Failed to fetch exchange rate" });
+    }
+  });
+  
+  // Get all exchange rates (from USD base)
+  app.get("/api/exchange-rates", async (req, res) => {
+    try {
+      const rates = await getAllRates();
+      res.json({
+        base: rates.base,
+        rates: rates.rates,
+        timestamp: new Date(rates.timestamp).toISOString()
+      });
+    } catch (error) {
+      console.error('[Currency] Error fetching all rates:', error);
+      res.status(500).json({ message: "Failed to fetch exchange rates" });
+    }
+  });
+  
+  // Convert currency amount
+  app.get("/api/convert-currency", async (req, res) => {
+    try {
+      const amount = parseFloat(req.query.amount as string) || 1;
+      const from = (req.query.from as string || 'USD').toUpperCase();
+      const to = (req.query.to as string || 'AED').toUpperCase();
+      
+      const result = await convertCurrency(amount, from, to);
+      res.json({
+        amount,
+        from,
+        to,
+        convertedAmount: result.convertedAmount,
+        rate: result.rate,
+        source: result.source
+      });
+    } catch (error) {
+      console.error('[Currency] Error converting currency:', error);
+      res.status(500).json({ message: "Failed to convert currency" });
+    }
+  });
+
+  // ============================================================================
   // UNIFIED DASHBOARD API (Performance Optimized)
   // ============================================================================
   

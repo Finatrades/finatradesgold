@@ -117,6 +117,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       fetchFees();
       fetchGoldPrice();
       fetchTerms();
+      fetchExchangeRates();
       
       // Preload NGenius SDK in background when modal opens
       preloadNGeniusSDK().catch(() => {
@@ -146,8 +147,31 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     }
   };
 
-  // Currency conversion rate (AED to USD)
-  const AED_TO_USD_RATE = 3.67;
+  // Exchange rates state (fetched from API)
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ AED: 3.6725 });
+  const [rateSource, setRateSource] = useState<string>('default');
+  
+  // Fetch live exchange rates
+  const fetchExchangeRates = async () => {
+    try {
+      const response = await fetch('/api/exchange-rates');
+      const data = await response.json();
+      if (data.rates) {
+        setExchangeRates(data.rates);
+        setRateSource('live');
+        console.log('[Currency] Live rates loaded:', data.rates.AED);
+      }
+    } catch (error) {
+      console.warn('[Currency] Failed to fetch rates, using defaults');
+    }
+  };
+  
+  // Get exchange rate for a currency (from USD base)
+  const getRate = (currency: string): number => {
+    const curr = currency?.toUpperCase();
+    if (!curr || curr === 'USD') return 1;
+    return exchangeRates[curr] || 1;
+  };
   
   // Get currency symbol for display
   const getCurrencySymbol = (currency: string): string => {
@@ -155,6 +179,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       case 'AED': return 'AED ';
       case 'EUR': return '€';
       case 'GBP': return '£';
+      case 'SAR': return 'SAR ';
+      case 'QAR': return 'QAR ';
       default: return '$';
     }
   };
@@ -162,8 +188,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   // Convert amount to USD for internal calculations
   const convertToUsd = (amount: number, currency: string): number => {
     if (!currency || currency.toUpperCase() === 'USD') return amount;
-    if (currency.toUpperCase() === 'AED') return amount / AED_TO_USD_RATE;
-    return amount; // Default to 1:1 for unknown currencies
+    const rate = getRate(currency);
+    return amount / rate;
   };
 
   const calculateFee = (amountValue: number): number => {
@@ -188,7 +214,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     const goldGrams = goldPrice?.pricePerGram && netDepositUsd > 0 ? netDepositUsd / goldPrice.pricePerGram : 0;
     
     // Convert fee back to original currency for display
-    const feeInOriginalCurrency = accountCurrency.toUpperCase() === 'AED' ? feeAmount * AED_TO_USD_RATE : feeAmount;
+    const feeInOriginalCurrency = accountCurrency.toUpperCase() !== 'USD' ? feeAmount * getRate(accountCurrency) : feeAmount;
     const netDepositOriginal = amountNum - feeInOriginalCurrency;
     
     return { 
@@ -745,7 +771,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   </div>
                   {selectedAccount?.currency !== 'USD' && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      ≈ ${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toFixed(2)} USD (rate: 1 USD = {AED_TO_USD_RATE} AED)
+                      ≈ ${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toFixed(2)} USD (rate: 1 USD = {getRate(selectedAccount?.currency || 'USD').toFixed(4)} {selectedAccount?.currency})
                     </p>
                   )}
                 </div>
