@@ -9976,24 +9976,16 @@ ${message}
   // Create BNSL plan (locks gold from BNSL wallet)
   app.post("/api/bnsl/plans", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
+      // SECURITY: Use authenticated session user ID
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const isAdmin = req.session?.userRole === 'admin';
+      
       // Auto-generate contractId if not provided
       const contractId = req.body.contractId || `BNSL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      // Validate BNSL limits
-      const bnslUser = await storage.getUser(req.body.userId);
-      if (!bnslUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const amountUsd = parseFloat(req.body.totalMarginComponentUsd || req.body.saleValue || "0");
-      const bnslLimitResult = await platformLimits.validateBNSLLimits(amountUsd);
-      if (!bnslLimitResult.valid) {
-        return res.status(400).json({ 
-          message: bnslLimitResult.message,
-          limit: bnslLimitResult.limit,
-          current: bnslLimitResult.current
-        });
-      }
       
       // Convert date strings to Date objects
       const startDate = typeof req.body.startDate === 'string' ? new Date(req.body.startDate) : req.body.startDate;
@@ -10002,6 +9994,7 @@ ${message}
       // Set remainingMarginUsd to totalMarginComponentUsd if not provided
       const remainingMarginUsd = req.body.remainingMarginUsd || req.body.totalMarginComponentUsd;
       
+      // Parse and validate schema first
       const planData = insertBnslPlanSchema.parse({
         ...req.body,
         contractId,
@@ -10009,6 +10002,29 @@ ${message}
         maturityDate,
         remainingMarginUsd
       });
+      
+      // SECURITY: Enforce userId from session - non-admins can only create for themselves
+      if (!isAdmin) {
+        planData.userId = sessionUserId;
+      } else if (!planData.userId) {
+        planData.userId = sessionUserId;
+      }
+      
+      // Validate BNSL amount limits using PARSED data
+      const amountUsd = parseFloat(planData.totalMarginComponentUsd || planData.saleValue || "0");
+      if (isNaN(amountUsd) || amountUsd <= 0) {
+        return res.status(400).json({ message: "Invalid BNSL amount" });
+      }
+      
+      const bnslLimitResult = await platformLimits.validateBNSLAmount(amountUsd);
+      if (!bnslLimitResult.valid) {
+        return res.status(400).json({ 
+          message: bnslLimitResult.message,
+          limit: bnslLimitResult.limit,
+          current: bnslLimitResult.current
+        });
+      }
+      
       const goldGrams = parseFloat(planData.goldSoldGrams);
       
       // Get BNSL wallet and verify sufficient funds
@@ -11874,26 +11890,44 @@ ${message}
   // Create new trade request (Importer) - Requires KYC
   app.post("/api/finabridge/importer/requests", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, async (req, res) => {
     try {
-      // Validate FinaBridge limits
-      const tradeUser = await storage.getUser(req.body.importerId);
-      if (!tradeUser) {
-        return res.status(404).json({ message: "User not found" });
+      // SECURITY: Use authenticated session user ID
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
       }
       
-      const amountUsd = parseFloat(req.body.tradeValueUsd || req.body.amount || "0");
-      const finaBridgeLimitResult = await platformLimits.validateFinaBridgeLimits(amountUsd, tradeUser);
-      if (!finaBridgeLimitResult.valid) {
-        return res.status(400).json({ 
-          message: finaBridgeLimitResult.message,
-          limit: finaBridgeLimitResult.limit,
-          current: finaBridgeLimitResult.current
-        });
-      }
+      const isAdmin = req.session?.userRole === 'admin';
       
+      // Parse and validate schema first
       const requestData = insertTradeRequestSchema.parse({
         ...req.body,
         tradeRefId: generateTradeRefId(),
       });
+      
+      // SECURITY: Enforce importerId from session - non-admins can only create for themselves
+      if (!isAdmin) {
+        requestData.importerId = sessionUserId;
+        requestData.importerUserId = sessionUserId;
+      } else if (!requestData.importerId) {
+        requestData.importerId = sessionUserId;
+        requestData.importerUserId = sessionUserId;
+      }
+      
+      // Validate FinaBridge trade case value limits using PARSED data
+      const amountUsd = parseFloat(requestData.tradeValueUsd || "0");
+      if (isNaN(amountUsd) || amountUsd <= 0) {
+        return res.status(400).json({ message: "Invalid trade value" });
+      }
+      
+      const tradeCaseLimitResult = await platformLimits.validateTradeCaseValue(amountUsd);
+      if (!tradeCaseLimitResult.valid) {
+        return res.status(400).json({ 
+          message: tradeCaseLimitResult.message,
+          limit: tradeCaseLimitResult.limit,
+          current: tradeCaseLimitResult.current
+        });
+      }
+      
       const tradeRequest = await storage.createTradeRequest(requestData);
       
       await storage.createAuditLog({
@@ -11912,7 +11946,7 @@ ${message}
   });
   
   // Submit trade request (change from Draft to Open)
-  app.post("/api/finabridge/importer/requests/:id/submit", ensureAuthenticated, async (req, res) => {
+  app.post("/api/finabridge/importer/requests/:id/submit", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
     try {
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) {
