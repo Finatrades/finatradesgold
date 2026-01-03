@@ -15393,6 +15393,25 @@ ${message}
         return res.status(404).json({ message: "Sender not found" });
       }
       
+      // Calculate USD equivalent for limit validation
+      const goldAmount = parseFloat(amountGold);
+      const usdEquivalentForLimits = goldAmount * goldPrice;
+      
+      // Validate P2P transfer limits
+      const limitResult = await platformLimits.validateFullTransactionLimits(
+        usdEquivalentForLimits,
+        sender,
+        "Send"
+      );
+      
+      if (!limitResult.valid) {
+        return res.status(400).json({ 
+          message: limitResult.message,
+          limit: limitResult.limit,
+          current: limitResult.current
+        });
+      }
+      
       // SECURITY: Check if gold is BNSL-locked before allowing transfer
       const bnslPlans = await storage.getUserBnslPlans(senderId);
       const activePlans = bnslPlans.filter((p: any) => p.status === 'Active' || p.status === 'Pending');
@@ -15426,8 +15445,7 @@ ${message}
         return res.status(400).json({ message: "Sender wallet not found" });
       }
       
-      // Platform is gold-only - parse gold amount
-      const goldAmount = parseFloat(amountGold);
+      // Platform is gold-only - calculate USD equivalent (goldAmount already parsed above for limit validation)
       const usdEquivalent = goldAmount * goldPrice;
       
       // Validate gold balance before creating pending transfer
