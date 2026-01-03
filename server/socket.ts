@@ -222,6 +222,67 @@ export function setupSocketIO(httpServer: HttpServer) {
     });
 
     // ============================================================================
+    // WEBRTC SIGNALING
+    // ============================================================================
+
+    // Handle WebRTC offer (caller sends to callee)
+    socket.on("webrtc:offer", (data: { 
+      sessionId: string; 
+      offer: RTCSessionDescriptionInit;
+      callerId: string;
+      callType: 'audio' | 'video';
+    }) => {
+      console.log(`[WebRTC] Offer from ${data.callerId} in session ${data.sessionId}`);
+      socket.to(`session-${data.sessionId}`).emit('webrtc:offer', {
+        sessionId: data.sessionId,
+        offer: data.offer,
+        callerId: data.callerId,
+        callType: data.callType,
+      });
+    });
+
+    // Handle WebRTC answer (callee responds to caller)
+    socket.on("webrtc:answer", (data: { 
+      sessionId: string; 
+      answer: RTCSessionDescriptionInit;
+      answererId: string;
+    }) => {
+      console.log(`[WebRTC] Answer from ${data.answererId} in session ${data.sessionId}`);
+      socket.to(`session-${data.sessionId}`).emit('webrtc:answer', {
+        sessionId: data.sessionId,
+        answer: data.answer,
+        answererId: data.answererId,
+      });
+    });
+
+    // Handle ICE candidate exchange
+    socket.on("webrtc:ice-candidate", (data: { 
+      sessionId: string; 
+      candidate: RTCIceCandidateInit;
+      senderId: string;
+    }) => {
+      socket.to(`session-${data.sessionId}`).emit('webrtc:ice-candidate', {
+        sessionId: data.sessionId,
+        candidate: data.candidate,
+        senderId: data.senderId,
+      });
+    });
+
+    // Handle call renegotiation (for adding/removing tracks)
+    socket.on("webrtc:renegotiate", (data: { 
+      sessionId: string; 
+      offer: RTCSessionDescriptionInit;
+      senderId: string;
+    }) => {
+      console.log(`[WebRTC] Renegotiation from ${data.senderId} in session ${data.sessionId}`);
+      socket.to(`session-${data.sessionId}`).emit('webrtc:renegotiate', {
+        sessionId: data.sessionId,
+        offer: data.offer,
+        senderId: data.senderId,
+      });
+    });
+
+    // ============================================================================
     // DEAL ROOM (Trade Case Conversations)
     // ============================================================================
 
