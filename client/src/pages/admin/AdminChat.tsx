@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Search, Send, MoreVertical, Phone, Video, Clock, CheckCheck, User, PhoneOff, PhoneIncoming, Bot, Settings, MessageSquare, Activity, Edit2, Save, BookOpen, Plus, Trash2, Eye, EyeOff, FileText, FolderOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useChat, ChatProvider } from '@/context/ChatContext';
+import { CallOverlay, IncomingCallModal } from '@/components/chat/CallOverlay';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -711,7 +712,7 @@ function KnowledgeBaseManagement() {
 }
 
 function ConversationsPanel() {
-  const { sessions, currentSession, selectSession, sendMessage, initiateCall, activeCall, endCall, isConnected, isTyping, incomingCall, acceptCall, rejectCall } = useChat();
+  const { sessions, currentSession, selectSession, sendMessage, initiateCall, activeCall, endCall, isConnected, isTyping, incomingCall, acceptCall, rejectCall, localStream, remoteStream, toggleMute, toggleVideo } = useChat();
   const [messageInput, setMessageInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -738,73 +739,20 @@ function ConversationsPanel() {
   return (
     <>
       {/* Incoming Call Modal */}
-      <Dialog open={!!incomingCall} onOpenChange={() => rejectCall()}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PhoneIncoming className="w-5 h-5 text-green-500 animate-pulse" />
-              Incoming {incomingCall?.callType === 'video' ? 'Video' : 'Audio'} Call
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center py-6">
-            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-              <User className="w-10 h-10 text-purple-500" />
-            </div>
-            <p className="text-lg font-semibold">{incomingCall?.callerName}</p>
-            <p className="text-sm text-gray-500">is calling you...</p>
-          </div>
-          <div className="flex justify-center gap-4">
-            <Button 
-              variant="destructive" 
-              size="lg" 
-              onClick={rejectCall}
-              className="rounded-full w-14 h-14"
-              data-testid="button-reject-call"
-            >
-              <PhoneOff className="w-6 h-6" />
-            </Button>
-            <Button 
-              size="lg" 
-              onClick={acceptCall}
-              className="rounded-full w-14 h-14 bg-green-500 hover:bg-green-600"
-              data-testid="button-accept-call"
-            >
-              <Phone className="w-6 h-6" />
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Active Call Overlay */}
-      {activeCall && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
-            <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              {activeCall.callType === 'video' ? (
-                <Video className="w-12 h-12 text-purple-500" />
-              ) : (
-                <Phone className="w-12 h-12 text-purple-500" />
-              )}
-            </div>
-            <h2 className="text-xl font-bold mb-2">
-              {activeCall.callType === 'video' ? 'Video' : 'Audio'} Call Active
-            </h2>
-            <p className="text-gray-500 mb-6">Connected to user</p>
-            <div className="flex justify-center gap-4">
-              <Button 
-                variant="destructive" 
-                size="lg"
-                onClick={endCall}
-                className="rounded-full px-8"
-                data-testid="button-end-call"
-              >
-                <PhoneOff className="w-5 h-5 mr-2" />
-                End Call
-              </Button>
-            </div>
-          </div>
-        </div>
+      {incomingCall && (
+        <IncomingCallModal
+          callerName={incomingCall.callerName}
+          callType={incomingCall.callType}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+        />
       )}
+
+      {/* Active Call Overlay with WebRTC Video/Audio */}
+      <CallOverlay 
+        callerName={currentSession?.userName || 'User'} 
+        isVisible={!!activeCall} 
+      />
 
       <div className="h-[calc(100vh-8rem)] flex bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         

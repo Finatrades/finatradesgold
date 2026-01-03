@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useChat, ChatProvider } from "@/context/ChatContext";
 import { useAuth } from "@/context/AuthContext";
+import { CallOverlay, IncomingCallModal } from "@/components/chat/CallOverlay";
 
 interface ChatbotMessage {
   id: string;
@@ -89,7 +90,7 @@ interface GuestInfo {
 
 function FloatingAgentChatContent() {
   const { user } = useAuth();
-  const { currentSession, sendMessage, createSession, selectSession, sessions, startGuestSession, guestId } = useChat();
+  const { currentSession, sendMessage, createSession, selectSession, sessions, startGuestSession, guestId, incomingCall, acceptCall, rejectCall, activeCall } = useChat();
   
   const [isOpen, setIsOpen] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(agents[0]);
@@ -348,6 +349,22 @@ function FloatingAgentChatContent() {
 
   return (
     <>
+      {/* Incoming Call Modal - shown globally for users */}
+      {incomingCall && (
+        <IncomingCallModal
+          callerName={incomingCall.callerName}
+          callType={incomingCall.callType}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+        />
+      )}
+
+      {/* Active Call Overlay - shown when user is in a call */}
+      <CallOverlay 
+        callerName={incomingCall?.callerName || 'Support'} 
+        isVisible={!!activeCall} 
+      />
+
       {/* Notification Bubble */}
       <AnimatePresence>
         {showNotification && !isOpen && (
