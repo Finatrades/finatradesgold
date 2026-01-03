@@ -43,7 +43,8 @@ import {
   TrendingUp,
   CreditCard,
   User,
-  Settings
+  Settings,
+  RefreshCw
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { ContentPage, ContentBlock, Template } from '@shared/schema';
@@ -54,6 +55,7 @@ export default function CMSManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('pages');
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
@@ -62,6 +64,36 @@ export default function CMSManagement() {
   const [editingBlock, setEditingBlock] = useState<ContentBlock | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+
+  const handleSyncAllCMS = async () => {
+    setIsSyncing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/cms/pages'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/cms/blocks'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/cms/templates'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/cms/labels'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/branding'] }),
+      ]);
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/cms/pages'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/cms/blocks'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/cms/templates'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/cms/labels'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/branding'] });
+      toast({ 
+        title: 'CMS Data Synced', 
+        description: 'All content has been refreshed from the database.' 
+      });
+    } catch (error) {
+      toast({ 
+        title: 'Sync Failed', 
+        description: 'Failed to refresh CMS data. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const { data: pagesData, isLoading: pagesLoading } = useQuery({
     queryKey: ['/api/admin/cms/pages'],
@@ -313,6 +345,16 @@ export default function CMSManagement() {
             <h1 className="text-3xl font-bold text-gray-900" data-testid="text-cms-title">Content Management</h1>
             <p className="text-gray-500 mt-1">Manage website content, blocks, and templates</p>
           </div>
+          <Button
+            onClick={handleSyncAllCMS}
+            disabled={isSyncing}
+            variant="outline"
+            className="gap-2"
+            data-testid="button-sync-cms"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync All CMS Data'}
+          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
