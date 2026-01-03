@@ -5646,7 +5646,7 @@ ${message}
   // app.patch("/api/wallet/:id") - INTENTIONALLY REMOVED
   
   // Create transaction - all transactions start as Pending and require admin approval
-  app.post("/api/transactions", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/transactions", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
       
@@ -9559,7 +9559,7 @@ ${message}
   });
 
   // Transfer gold from FinaPay wallet to BNSL wallet
-  app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/bnsl/wallet/transfer", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, goldGrams } = req.body;
       
@@ -9658,7 +9658,7 @@ ${message}
   });
 
   // Transfer gold from BNSL wallet to FinaPay wallet (withdraw)
-  app.post("/api/bnsl/wallet/withdraw", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/bnsl/wallet/withdraw", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, goldGrams } = req.body;
       
@@ -9974,10 +9974,26 @@ ${message}
   });
   
   // Create BNSL plan (locks gold from BNSL wallet)
-  app.post("/api/bnsl/plans", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/bnsl/plans", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
       // Auto-generate contractId if not provided
       const contractId = req.body.contractId || `BNSL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Validate BNSL limits
+      const bnslUser = await storage.getUser(req.body.userId);
+      if (!bnslUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const amountUsd = parseFloat(req.body.totalMarginComponentUsd || req.body.saleValue || "0");
+      const bnslLimitResult = await platformLimits.validateBNSLLimits(amountUsd);
+      if (!bnslLimitResult.valid) {
+        return res.status(400).json({ 
+          message: bnslLimitResult.message,
+          limit: bnslLimitResult.limit,
+          current: bnslLimitResult.current
+        });
+      }
       
       // Convert date strings to Date objects
       const startDate = typeof req.body.startDate === 'string' ? new Date(req.body.startDate) : req.body.startDate;
@@ -11049,7 +11065,7 @@ ${message}
   });
   
   // Create deposit request (User) - PROTECTED - Requires KYC
-  app.post("/api/deposit-requests", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
+  app.post("/api/deposit-requests", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd } = req.body;
       
@@ -11461,7 +11477,7 @@ ${message}
   });
   
   // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN + rate limit
-  app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
+  app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, checkMaintenanceMode, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd, ...bankDetails } = req.body;
       
@@ -11856,8 +11872,24 @@ ${message}
   });
   
   // Create new trade request (Importer) - Requires KYC
-  app.post("/api/finabridge/importer/requests", ensureAuthenticated, requireKycApproved, async (req, res) => {
+  app.post("/api/finabridge/importer/requests", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, async (req, res) => {
     try {
+      // Validate FinaBridge limits
+      const tradeUser = await storage.getUser(req.body.importerId);
+      if (!tradeUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const amountUsd = parseFloat(req.body.tradeValueUsd || req.body.amount || "0");
+      const finaBridgeLimitResult = await platformLimits.validateFinaBridgeLimits(amountUsd, tradeUser);
+      if (!finaBridgeLimitResult.valid) {
+        return res.status(400).json({ 
+          message: finaBridgeLimitResult.message,
+          limit: finaBridgeLimitResult.limit,
+          current: finaBridgeLimitResult.current
+        });
+      }
+      
       const requestData = insertTradeRequestSchema.parse({
         ...req.body,
         tradeRefId: generateTradeRefId(),
@@ -15390,7 +15422,7 @@ ${message}
 
   // Send gold to another user - PROTECTED: requires authentication + sender verification + PIN
   // NOTE: Platform is gold-only. All transfers are in gold grams, USD is display-only.
-  app.post("/api/finapay/send", ensureAuthenticated, requirePinVerification('send_funds'), async (req, res) => {
+  app.post("/api/finapay/send", ensureAuthenticated, checkMaintenanceMode, requirePinVerification('send_funds'), async (req, res) => {
     try {
       const { senderId, recipientIdentifier, amountGold, channel, memo } = req.body;
       
