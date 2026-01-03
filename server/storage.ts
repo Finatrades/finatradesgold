@@ -3245,18 +3245,18 @@ export class DatabaseStorage implements IStorage {
       { category: 'gold_pricing', configKey: 'storage_fee_percent', configValue: '0.5', configType: 'number', displayName: 'Storage Fee (Annual %)', description: 'Annual custody fee for vault holdings', displayOrder: 3 },
       { category: 'gold_pricing', configKey: 'gold_price_cache_minutes', configValue: '5', configType: 'number', displayName: 'Price Cache Duration (min)', description: 'How long to cache API gold price', displayOrder: 4 },
 
-      // Transaction Limits - Tier 1
-      { category: 'transaction_limits', configKey: 'tier1_daily_limit', configValue: '5000', configType: 'number', displayName: 'Tier 1 Daily Limit (USD)', description: 'Maximum daily transactions for Tier 1 users', displayOrder: 1 },
-      { category: 'transaction_limits', configKey: 'tier1_monthly_limit', configValue: '20000', configType: 'number', displayName: 'Tier 1 Monthly Limit (USD)', description: 'Maximum monthly transactions for Tier 1 users', displayOrder: 2 },
-      { category: 'transaction_limits', configKey: 'tier1_single_max', configValue: '2000', configType: 'number', displayName: 'Tier 1 Single Transaction Max (USD)', description: 'Maximum single transaction for Tier 1 users', displayOrder: 3 },
-      // Transaction Limits - Tier 2
-      { category: 'transaction_limits', configKey: 'tier2_daily_limit', configValue: '50000', configType: 'number', displayName: 'Tier 2 Daily Limit (USD)', description: 'Maximum daily transactions for Tier 2 users', displayOrder: 4 },
-      { category: 'transaction_limits', configKey: 'tier2_monthly_limit', configValue: '250000', configType: 'number', displayName: 'Tier 2 Monthly Limit (USD)', description: 'Maximum monthly transactions for Tier 2 users', displayOrder: 5 },
-      { category: 'transaction_limits', configKey: 'tier2_single_max', configValue: '25000', configType: 'number', displayName: 'Tier 2 Single Transaction Max (USD)', description: 'Maximum single transaction for Tier 2 users', displayOrder: 6 },
-      // Transaction Limits - Tier 3
-      { category: 'transaction_limits', configKey: 'tier3_daily_limit', configValue: '500000', configType: 'number', displayName: 'Tier 3 Daily Limit (USD)', description: 'Maximum daily transactions for Tier 3 users', displayOrder: 7 },
-      { category: 'transaction_limits', configKey: 'tier3_monthly_limit', configValue: '0', configType: 'number', displayName: 'Tier 3 Monthly Limit (USD)', description: '0 means unlimited', displayOrder: 8 },
-      { category: 'transaction_limits', configKey: 'tier3_single_max', configValue: '500000', configType: 'number', displayName: 'Tier 3 Single Transaction Max (USD)', description: 'Maximum single transaction for Tier 3 users', displayOrder: 9 },
+      // Transaction Limits - Unverified Users (No KYC)
+      { category: 'transaction_limits', configKey: 'tier1_daily_limit', configValue: '5000', configType: 'number', displayName: 'Unverified - Daily Limit (USD)', description: 'Maximum daily transactions for users without KYC', displayOrder: 1 },
+      { category: 'transaction_limits', configKey: 'tier1_monthly_limit', configValue: '20000', configType: 'number', displayName: 'Unverified - Monthly Limit (USD)', description: 'Maximum monthly transactions for users without KYC', displayOrder: 2 },
+      { category: 'transaction_limits', configKey: 'tier1_single_max', configValue: '2000', configType: 'number', displayName: 'Unverified - Max Per Transaction (USD)', description: 'Maximum single transaction for users without KYC', displayOrder: 3 },
+      // Transaction Limits - Basic KYC Verified
+      { category: 'transaction_limits', configKey: 'tier2_daily_limit', configValue: '50000', configType: 'number', displayName: 'Basic KYC - Daily Limit (USD)', description: 'Maximum daily transactions for basic verified users', displayOrder: 4 },
+      { category: 'transaction_limits', configKey: 'tier2_monthly_limit', configValue: '250000', configType: 'number', displayName: 'Basic KYC - Monthly Limit (USD)', description: 'Maximum monthly transactions for basic verified users', displayOrder: 5 },
+      { category: 'transaction_limits', configKey: 'tier2_single_max', configValue: '25000', configType: 'number', displayName: 'Basic KYC - Max Per Transaction (USD)', description: 'Maximum single transaction for basic verified users', displayOrder: 6 },
+      // Transaction Limits - Enhanced KYC (Full Verification)
+      { category: 'transaction_limits', configKey: 'tier3_daily_limit', configValue: '500000', configType: 'number', displayName: 'Enhanced KYC - Daily Limit (USD)', description: 'Maximum daily transactions for fully verified users', displayOrder: 7 },
+      { category: 'transaction_limits', configKey: 'tier3_monthly_limit', configValue: '0', configType: 'number', displayName: 'Enhanced KYC - Monthly Limit (USD)', description: '0 means unlimited', displayOrder: 8 },
+      { category: 'transaction_limits', configKey: 'tier3_single_max', configValue: '500000', configType: 'number', displayName: 'Enhanced KYC - Max Per Transaction (USD)', description: 'Maximum single transaction for fully verified users', displayOrder: 9 },
       { category: 'transaction_limits', configKey: 'min_trade_amount', configValue: '50', configType: 'number', displayName: 'Minimum Trade Amount (USD)', description: 'Minimum amount for any buy/sell transaction', displayOrder: 10 },
 
       // Deposit Limits

@@ -69,7 +69,7 @@ const CATEGORY_INFO: Record<string, { label: string; icon: React.ReactNode; desc
   transaction_limits: { 
     label: 'Transaction Limits', 
     icon: <Shield className="h-4 w-4" />, 
-    description: 'Set daily/monthly limits per KYC tier' 
+    description: 'Set transaction limits by KYC verification level' 
   },
   deposit_limits: { 
     label: 'Deposit Limits', 
