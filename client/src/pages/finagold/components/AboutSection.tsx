@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Building2, FileCheck, Globe, Users, BarChart3, Briefcase, Shield, Vault, Gem, Eye, Coins, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { useMode } from '../context/ModeContext';
+import DOMPurify from 'dompurify';
 
 const personalData = {
   title: 'About Finatrades',
@@ -160,7 +161,7 @@ export default function AboutSection() {
               {card.description && (
                 <p 
                   className="text-gray-600"
-                  dangerouslySetInnerHTML={{ __html: card.description }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(card.description) }}
                 />
               )}
               {card.benefits && (
