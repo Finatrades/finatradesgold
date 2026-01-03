@@ -832,6 +832,7 @@ export default function FinaBridge() {
       <FinaBridgeDisclaimerModal 
         open={showDisclaimer} 
         onAccept={handleDisclaimerAccept}
+        onClose={() => setLocation('/dashboard')}
       />
       
       <div className="max-w-6xl mx-auto space-y-8 pb-12">

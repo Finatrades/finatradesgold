@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, Shield, Scale, FileText, ArrowLeft, Package, Ship, ArrowLeftRight, Loader2 } from 'lucide-react';
+import { AlertTriangle, Shield, Scale, FileText, ArrowLeft, Package, Ship, ArrowLeftRight, Loader2, X } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -121,9 +121,10 @@ End of Terms & Conditions
 interface FinaBridgeDisclaimerModalProps {
   open: boolean;
   onAccept: (role: FinaBridgeRole) => void;
+  onClose?: () => void;
 }
 
-export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridgeDisclaimerModalProps) {
+export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: FinaBridgeDisclaimerModalProps) {
   const [accepted, setAccepted] = useState(false);
   const [showFullTerms, setShowFullTerms] = useState(false);
   const [selectedRole, setSelectedRole] = useState<FinaBridgeRole | null>(null);
@@ -314,15 +315,37 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
         {/* Header */}
         <DialogHeader className="p-4 bg-gradient-to-r from-purple-500 to-purple-500 text-white flex-shrink-0">
           <div className="flex items-center gap-3">
+            {onClose && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onClose}
+                className="text-white hover:bg-white/20 p-2"
+                data-testid="button-close-disclaimer"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            )}
             <div className="p-2 bg-white/20 rounded-lg">
               <Shield className="w-6 h-6" />
             </div>
-            <div>
+            <div className="flex-1">
               <DialogTitle className="text-xl font-bold text-white">FinaBridge Compliance Disclaimer</DialogTitle>
               <DialogDescription className="text-white/90 mt-1">
                 Please read and accept before proceeding
               </DialogDescription>
             </div>
+            {onClose && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onClose}
+                className="text-white hover:bg-white/20 p-2"
+                data-testid="button-x-close-disclaimer"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            )}
           </div>
         </DialogHeader>
 
