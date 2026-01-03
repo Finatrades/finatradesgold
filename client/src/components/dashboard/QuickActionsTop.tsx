@@ -134,7 +134,7 @@ export default function QuickActionsTop() {
 
   return (
     <>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3" data-testid="quick-actions-container">
         {actions.map((action, index) => {
           const isLocked = action.requiresKyc && !isKycApproved;
           

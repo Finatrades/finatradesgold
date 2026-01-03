@@ -17,6 +17,9 @@ import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import CertificatesCard from '@/components/dashboard/CertificatesCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
+import { useDashboardTour } from '@/hooks/useDashboardTour';
+import { TourButton } from '@/components/tour/TourProvider';
+import { HelpCircle } from 'lucide-react';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -82,6 +85,7 @@ export default function Dashboard() {
   const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading, tradeCounts, finaBridge } = useDashboardData();
   const [showAssuranceDialog, setShowAssuranceDialog] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  const { startTour, tourId } = useDashboardTour();
 
   const { data: prefsData } = useQuery<{ preferences: UserPreferences }>({
     queryKey: ['preferences', user?.id],
@@ -216,12 +220,15 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-gray-900">Welcome back, {userName}</h1>
             <p className="text-gray-500 text-sm">Here's an overview of your portfolio performance</p>
           </div>
-          {user.finatradesId && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-xl">
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Finatrades ID</span>
-              <span className="text-sm font-bold text-purple-700 font-mono">{user.finatradesId}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <TourButton tourId={tourId} className="border-purple-200 text-purple-700 hover:bg-purple-50" />
+            {user.finatradesId && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-xl">
+                <span className="text-xs text-gray-500 uppercase tracking-wide">Finatrades ID</span>
+                <span className="text-sm font-bold text-purple-700 font-mono">{user.finatradesId}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Quick Actions */}

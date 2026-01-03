@@ -265,6 +265,7 @@ import { BrandingProvider } from "@/context/BrandingContext";
 import { CMSProvider } from "@/context/CMSContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { DataSyncProvider } from "@/hooks/useDataSync";
+import { TourProvider } from "@/components/tour/TourProvider";
 
 function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -311,11 +312,13 @@ function App() {
                               <AccountTypeProvider>
                                 <NotificationProvider>
                                   <TooltipProvider>
-                                    <Toaster />
-                                    <SonnerToaster position="top-right" richColors />
-                                    <MaintenanceGuard>
-                                      <Router />
-                                    </MaintenanceGuard>
+                                    <TourProvider>
+                                      <Toaster />
+                                      <SonnerToaster position="top-right" richColors />
+                                      <MaintenanceGuard>
+                                        <Router />
+                                      </MaintenanceGuard>
+                                    </TourProvider>
                                   </TooltipProvider>
                                 </NotificationProvider>
                               </AccountTypeProvider>
