@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Link } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { format, subMonths, startOfMonth, endOfMonth, subDays } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -23,6 +24,53 @@ export default function Profile() {
   const [statementFrom, setStatementFrom] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [statementTo, setStatementTo] = useState(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [isGeneratingStatement, setIsGeneratingStatement] = useState(false);
+  
+  // Fetch user stats from dashboard
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboard', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/dashboard/${user.id}`);
+      return response.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 60000, // 1 minute
+  });
+  
+  // Calculate stats from dashboard data
+  const tradeCount = dashboardData?.transactions?.length || 0;
+  const totalVolumeGrams = dashboardData?.transactions?.reduce((sum: number, tx: any) => {
+    return sum + (parseFloat(tx.amountGold) || 0);
+  }, 0) || 0;
+  
+  // Format volume for display
+  const formatVolume = (grams: number): string => {
+    if (grams >= 1000) {
+      return `${(grams / 1000).toFixed(1)}kg`;
+    }
+    return `${grams.toFixed(1)}g`;
+  };
+  
+  // Format member since date
+  const getMemberSince = (): string => {
+    if (!user?.createdAt) return 'N/A';
+    try {
+      return format(new Date(user.createdAt), 'MMM yyyy');
+    } catch {
+      return 'N/A';
+    }
+  };
+  
+  // Get KYC tier/level text
+  const getKycLevel = (): string => {
+    if (!user?.kycStatus) return 'Basic Access';
+    switch (user.kycStatus) {
+      case 'Approved': return 'Full Access';
+      case 'In Progress': return 'Pending Verification';
+      case 'Rejected': return 'Verification Failed';
+      default: return 'Basic Access';
+    }
+  };
   
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -122,11 +170,11 @@ export default function Profile() {
               
               <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-primary">24</p>
+                  <p className="text-2xl font-bold text-primary">{tradeCount}</p>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Trades</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-primary">1.2kg</p>
+                  <p className="text-2xl font-bold text-primary">{formatVolume(totalVolumeGrams)}</p>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Volume</p>
                 </div>
               </div>
@@ -141,7 +189,7 @@ export default function Profile() {
                   <div>
                     <p className="font-medium">{isKycApproved ? 'Identity Verified' : 'Identity Unverified'}</p>
                     {isKycApproved ? (
-                       <p className="text-xs text-muted-foreground">Level 2 Access</p>
+                       <p className="text-xs text-muted-foreground">{getKycLevel()}</p>
                     ) : (
                        <Link href="/kyc">
                          <p className="text-xs text-purple-600 font-medium hover:underline cursor-pointer">Complete KYC Now</p>
@@ -155,7 +203,7 @@ export default function Profile() {
                   </div>
                   <div>
                     <p className="font-medium">Member Since</p>
-                    <p className="text-xs text-muted-foreground">Dec 2024</p>
+                    <p className="text-xs text-muted-foreground">{getMemberSince()}</p>
                   </div>
                 </div>
               </div>
