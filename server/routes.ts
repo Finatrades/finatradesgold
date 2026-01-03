@@ -15022,7 +15022,7 @@ ${message}
   // Export all CMS data to seed file
   app.post("/api/admin/cms/export", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       
@@ -15043,7 +15043,7 @@ ${message}
   // Get current CMS data as JSON (for download)
   app.get("/api/admin/cms/export/json", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       
@@ -15062,7 +15062,7 @@ ${message}
   // Import CMS data from seed file
   app.post("/api/admin/cms/import", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       
@@ -15083,7 +15083,7 @@ ${message}
   // Import CMS data from uploaded JSON
   app.post("/api/admin/cms/import/json", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       
@@ -15149,13 +15149,13 @@ ${message}
   // Update branding settings (Admin only)
   app.patch("/api/admin/branding", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       const updates = req.body;
       const settings = await storage.updateBrandingSettings({
         ...updates,
-        updatedBy: req.user.id
+        updatedBy: req.session.userId
       });
       res.json({ settings });
     } catch (error) {
