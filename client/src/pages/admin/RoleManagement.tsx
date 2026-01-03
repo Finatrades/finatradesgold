@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import AdminLayout from "./AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -196,12 +197,13 @@ export default function RoleManagement() {
   }, {} as Record<string, AdminComponent[]>);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Role Management</h1>
-          <p className="text-muted-foreground">Manage admin roles and permissions for the platform</p>
-        </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Role Management</h1>
+            <p className="text-muted-foreground">Manage admin roles and permissions for the platform</p>
+          </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button data-testid="create-role-btn">
@@ -475,7 +477,7 @@ export default function RoleManagement() {
                 if (selectedRole) {
                   updateRoleMutation.mutate({
                     id: selectedRole.id,
-                    data: { name: selectedRole.name, description: selectedRole.description, isActive: selectedRole.is_active },
+                    data: { name: selectedRole.name, description: selectedRole.description, is_active: selectedRole.is_active },
                   });
                 }
               }}
@@ -485,6 +487,7 @@ export default function RoleManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

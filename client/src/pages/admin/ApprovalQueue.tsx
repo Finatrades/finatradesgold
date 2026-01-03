@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import AdminLayout from "./AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -149,12 +150,13 @@ export default function ApprovalQueue() {
   const canReject = selectedApproval?.status === "pending_l1" || selectedApproval?.status === "pending_final";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Approval Queue</h1>
-          <p className="text-muted-foreground">Review and process pending approval requests</p>
-        </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Approval Queue</h1>
+            <p className="text-muted-foreground">Review and process pending approval requests</p>
+          </div>
         {pendingApprovals.length > 0 && (
           <Badge variant="destructive" className="text-lg px-4 py-2">
             {pendingApprovals.length} Pending
@@ -442,6 +444,7 @@ export default function ApprovalQueue() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
