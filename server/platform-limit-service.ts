@@ -735,21 +735,12 @@ export class PlatformLimitService {
     user: User,
     transactionType: "Buy" | "Sell" | "Send" | "Deposit" | "Withdrawal"
   ): Promise<LimitValidationResult> {
+    // Validate minimum trade amount (applies to all transactions)
     const minTradeResult = await this.validateMinTradeAmount(amountUsd);
     if (!minTradeResult.valid) return minTradeResult;
 
-    const singleResult = await this.validateSingleTransactionLimit(amountUsd, user);
-    if (!singleResult.valid) return singleResult;
-
-    if (transactionType === "Buy" || transactionType === "Sell") {
-      const totals = await this.getUserTransactionTotals(user.id);
-      
-      const dailyResult = await this.validateDailyTransactionLimit(amountUsd, user, totals.dailyTotal);
-      if (!dailyResult.valid) return dailyResult;
-
-      const monthlyResult = await this.validateMonthlyTransactionLimit(amountUsd, user, totals.monthlyTotal);
-      if (!monthlyResult.valid) return monthlyResult;
-    }
+    // NOTE: KYC tier-based limits (single/daily/monthly) have been removed
+    // All users now have the same transaction limits regardless of KYC status
 
     if (transactionType === "Send") {
       const totals = await this.getUserP2PTotals(user.id);
