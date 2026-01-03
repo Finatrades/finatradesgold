@@ -1479,7 +1479,10 @@ export default function KYC() {
                           </div>
                         </div>
                       </CardContent>
-                      <CardFooter className="flex justify-end">
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => setLocation('/dashboard')} data-testid="button-back-dashboard">
+                          Back
+                        </Button>
                         <Button 
                           onClick={() => {
                             if (!companyName.trim() || !corporateRegNumber.trim()) {
