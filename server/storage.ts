@@ -4095,6 +4095,408 @@ export class DatabaseStorage implements IStorage {
     `);
     return result.rows;
   }
+
+  // ============================================
+  // ROLE-BASED ACCESS CONTROL (RBAC) SYSTEM
+  // ============================================
+
+  // Admin Roles
+  async getAllAdminRoles(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM admin_roles ORDER BY name ASC
+    `);
+    return result.rows;
+  }
+
+  async getAdminRole(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM admin_roles WHERE id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async createAdminRole(data: {
+    name: string;
+    description?: string;
+    department?: string;
+    riskLevel?: string;
+    isSystem?: boolean;
+    createdBy?: string;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO admin_roles (name, description, department, risk_level, is_system, created_by)
+      VALUES (${data.name}, ${data.description || null}, ${data.department || null}, 
+              ${data.riskLevel || 'Low'}, ${data.isSystem || false}, ${data.createdBy || null})
+      RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async updateAdminRole(id: string, updates: Record<string, any>): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE admin_roles SET
+        name = COALESCE(${updates.name}, name),
+        description = COALESCE(${updates.description}, description),
+        department = COALESCE(${updates.department}, department),
+        risk_level = COALESCE(${updates.riskLevel}, risk_level),
+        is_active = COALESCE(${updates.isActive}, is_active),
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  async deleteAdminRole(id: string): Promise<boolean> {
+    const result = await db.execute(sql`
+      DELETE FROM admin_roles WHERE id = ${id} AND is_system = false
+    `);
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Admin Components
+  async getAllAdminComponents(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM admin_components ORDER BY sort_order ASC, name ASC
+    `);
+    return result.rows;
+  }
+
+  async getAdminComponent(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM admin_components WHERE id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  // Role-Component Permissions
+  async getRolePermissions(roleId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT rcp.*, ac.name as component_name, ac.slug as component_slug, ac.category
+      FROM role_component_permissions rcp
+      JOIN admin_components ac ON rcp.component_id = ac.id
+      WHERE rcp.role_id = ${roleId}
+    `);
+    return result.rows;
+  }
+
+  async updateRoleComponentPermission(roleId: string, componentId: string, permissions: {
+    canView?: boolean;
+    canCreate?: boolean;
+    canEdit?: boolean;
+    canApproveL1?: boolean;
+    canApproveFinal?: boolean;
+    canReject?: boolean;
+    canExport?: boolean;
+    canDelete?: boolean;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO role_component_permissions (role_id, component_id, can_view, can_create, can_edit, can_approve_l1, can_approve_final, can_reject, can_export, can_delete)
+      VALUES (${roleId}, ${componentId}, 
+              ${permissions.canView ?? false}, ${permissions.canCreate ?? false}, ${permissions.canEdit ?? false},
+              ${permissions.canApproveL1 ?? false}, ${permissions.canApproveFinal ?? false}, ${permissions.canReject ?? false},
+              ${permissions.canExport ?? false}, ${permissions.canDelete ?? false})
+      ON CONFLICT (role_id, component_id) DO UPDATE SET
+        can_view = ${permissions.canView ?? false},
+        can_create = ${permissions.canCreate ?? false},
+        can_edit = ${permissions.canEdit ?? false},
+        can_approve_l1 = ${permissions.canApproveL1 ?? false},
+        can_approve_final = ${permissions.canApproveFinal ?? false},
+        can_reject = ${permissions.canReject ?? false},
+        can_export = ${permissions.canExport ?? false},
+        can_delete = ${permissions.canDelete ?? false},
+        updated_at = NOW()
+      RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  // User Role Assignments
+  async getUserRoleAssignments(userId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT ura.*, ar.name as role_name, ar.risk_level, ar.department
+      FROM user_role_assignments ura
+      JOIN admin_roles ar ON ura.role_id = ar.id
+      WHERE ura.user_id = ${userId} AND ura.is_active = true
+    `);
+    return result.rows;
+  }
+
+  async assignUserRole(userId: string, roleId: string, assignedBy: string, expiresAt?: Date): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO user_role_assignments (user_id, role_id, assigned_by, expires_at)
+      VALUES (${userId}, ${roleId}, ${assignedBy}, ${expiresAt || null})
+      RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async revokeUserRole(userId: string, roleId: string): Promise<boolean> {
+    const result = await db.execute(sql`
+      UPDATE user_role_assignments SET is_active = false
+      WHERE user_id = ${userId} AND role_id = ${roleId}
+    `);
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getUserEffectivePermissions(userId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT DISTINCT ac.slug as component_slug, ac.path,
+        MAX(CASE WHEN rcp.can_view THEN 1 ELSE 0 END)::boolean as can_view,
+        MAX(CASE WHEN rcp.can_create THEN 1 ELSE 0 END)::boolean as can_create,
+        MAX(CASE WHEN rcp.can_edit THEN 1 ELSE 0 END)::boolean as can_edit,
+        MAX(CASE WHEN rcp.can_approve_l1 THEN 1 ELSE 0 END)::boolean as can_approve_l1,
+        MAX(CASE WHEN rcp.can_approve_final THEN 1 ELSE 0 END)::boolean as can_approve_final,
+        MAX(CASE WHEN rcp.can_reject THEN 1 ELSE 0 END)::boolean as can_reject,
+        MAX(CASE WHEN rcp.can_export THEN 1 ELSE 0 END)::boolean as can_export,
+        MAX(CASE WHEN rcp.can_delete THEN 1 ELSE 0 END)::boolean as can_delete
+      FROM user_role_assignments ura
+      JOIN role_component_permissions rcp ON ura.role_id = rcp.role_id
+      JOIN admin_components ac ON rcp.component_id = ac.id
+      WHERE ura.user_id = ${userId} AND ura.is_active = true
+        AND (ura.expires_at IS NULL OR ura.expires_at > NOW())
+      GROUP BY ac.slug, ac.path
+    `);
+    return result.rows;
+  }
+
+  // Task Definitions
+  async getAllTaskDefinitions(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT td.*, 
+        fa.name as first_approver_role_name,
+        sa.name as final_approver_role_name
+      FROM task_definitions td
+      LEFT JOIN admin_roles fa ON td.first_approver_role_id = fa.id
+      LEFT JOIN admin_roles sa ON td.final_approver_role_id = sa.id
+      ORDER BY td.category, td.name
+    `);
+    return result.rows;
+  }
+
+  async getTaskDefinition(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM task_definitions WHERE id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async getTaskDefinitionBySlug(slug: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT * FROM task_definitions WHERE slug = ${slug}
+    `);
+    return result.rows[0] || null;
+  }
+
+  // Approval Queue
+  async getApprovalQueue(filters?: {
+    status?: string;
+    initiatorId?: string;
+    approverId?: string;
+  }): Promise<any[]> {
+    let query = sql`
+      SELECT aq.*, td.name as task_name, td.slug as task_slug, td.category,
+        u.email as initiator_email, u.first_name as initiator_name
+      FROM approval_queue aq
+      JOIN task_definitions td ON aq.task_definition_id = td.id
+      JOIN users u ON aq.initiator_id = u.id
+      WHERE 1=1
+    `;
+    
+    if (filters?.status) {
+      query = sql`${query} AND aq.status = ${filters.status}`;
+    }
+    if (filters?.initiatorId) {
+      query = sql`${query} AND aq.initiator_id = ${filters.initiatorId}`;
+    }
+    
+    query = sql`${query} ORDER BY aq.created_at DESC`;
+    
+    const result = await db.execute(query);
+    return result.rows;
+  }
+
+  async getApprovalQueueItem(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      SELECT aq.*, td.name as task_name, td.slug as task_slug, td.category,
+        u.email as initiator_email, u.first_name as initiator_name
+      FROM approval_queue aq
+      JOIN task_definitions td ON aq.task_definition_id = td.id
+      JOIN users u ON aq.initiator_id = u.id
+      WHERE aq.id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async createApprovalRequest(data: {
+    taskDefinitionId: string;
+    initiatorId: string;
+    entityType?: string;
+    entityId?: string;
+    taskData?: Record<string, any>;
+    priority?: string;
+    reason?: string;
+    expiresAt?: Date;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO approval_queue (task_definition_id, initiator_id, entity_type, entity_id, task_data, priority, reason, expires_at)
+      VALUES (${data.taskDefinitionId}, ${data.initiatorId}, ${data.entityType || null}, ${data.entityId || null},
+              ${JSON.stringify(data.taskData || {})}, ${data.priority || 'normal'}, ${data.reason || null}, ${data.expiresAt || null})
+      RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async approveL1(id: string, approverId: string, comments?: string): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE approval_queue SET
+        status = 'pending_final',
+        l1_approver_id = ${approverId},
+        l1_approved_at = NOW(),
+        l1_comments = ${comments || null},
+        updated_at = NOW()
+      WHERE id = ${id} AND status = 'pending_l1'
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  async approveFinal(id: string, approverId: string, comments?: string): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE approval_queue SET
+        status = 'approved',
+        final_approver_id = ${approverId},
+        final_approved_at = NOW(),
+        final_comments = ${comments || null},
+        updated_at = NOW()
+      WHERE id = ${id} AND status = 'pending_final'
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  async rejectApproval(id: string, rejectedBy: string, reason: string): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE approval_queue SET
+        status = 'rejected',
+        rejected_by = ${rejectedBy},
+        rejected_at = NOW(),
+        rejection_reason = ${reason},
+        updated_at = NOW()
+      WHERE id = ${id} AND status IN ('pending_l1', 'pending_final')
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  async markApprovalExecuted(id: string): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE approval_queue SET executed_at = NOW(), updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  // Approval History
+  async createApprovalHistory(data: {
+    approvalQueueId: string;
+    action: string;
+    actorId: string;
+    actorRole?: string;
+    oldValue?: Record<string, any>;
+    newValue?: Record<string, any>;
+    comments?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    sessionId?: string;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO approval_history (approval_queue_id, action, actor_id, actor_role, old_value, new_value, comments, ip_address, user_agent, session_id)
+      VALUES (${data.approvalQueueId}, ${data.action}, ${data.actorId}, ${data.actorRole || null},
+              ${JSON.stringify(data.oldValue || {})}, ${JSON.stringify(data.newValue || {})},
+              ${data.comments || null}, ${data.ipAddress || null}, ${data.userAgent || null}, ${data.sessionId || null})
+      RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async getApprovalHistory(approvalQueueId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT ah.*, u.email as actor_email, u.first_name as actor_name
+      FROM approval_history ah
+      JOIN users u ON ah.actor_id = u.id
+      WHERE ah.approval_queue_id = ${approvalQueueId}
+      ORDER BY ah.created_at ASC
+    `);
+    return result.rows;
+  }
+
+  // Emergency Overrides
+  async createEmergencyOverride(data: {
+    approvalQueueId?: string;
+    reason: string;
+    approver1Id: string;
+  }): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO emergency_overrides (approval_queue_id, reason, approver1_id)
+      VALUES (${data.approvalQueueId || null}, ${data.reason}, ${data.approver1Id})
+      RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async confirmEmergencyOverride(id: string, approver2Id: string): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE emergency_overrides SET
+        approver2_id = ${approver2Id},
+        approver2_at = NOW(),
+        status = 'approved',
+        executed_at = NOW()
+      WHERE id = ${id} AND status = 'pending_second' AND approver1_id != ${approver2Id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  // User permission check helper
+  async checkUserPermission(userId: string, componentSlug: string, action: string): Promise<boolean> {
+    const permissions = await this.getUserEffectivePermissions(userId);
+    const componentPerms = permissions.find(p => p.component_slug === componentSlug);
+    if (!componentPerms) return false;
+    
+    const actionMap: Record<string, string> = {
+      'view': 'can_view',
+      'create': 'can_create',
+      'edit': 'can_edit',
+      'approve_l1': 'can_approve_l1',
+      'approve_final': 'can_approve_final',
+      'reject': 'can_reject',
+      'export': 'can_export',
+      'delete': 'can_delete'
+    };
+    
+    return componentPerms[actionMap[action]] === true;
+  }
+
+  // Get pending approvals for a user (items they can approve)
+  async getPendingApprovalsForUser(userId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT aq.*, td.name as task_name, td.slug as task_slug, td.category,
+        u.email as initiator_email, u.first_name as initiator_name
+      FROM approval_queue aq
+      JOIN task_definitions td ON aq.task_definition_id = td.id
+      JOIN users u ON aq.initiator_id = u.id
+      JOIN user_role_assignments ura ON ura.user_id = ${userId} AND ura.is_active = true
+      WHERE (
+        (aq.status = 'pending_l1' AND td.first_approver_role_id = ura.role_id)
+        OR (aq.status = 'pending_final' AND td.final_approver_role_id = ura.role_id)
+      )
+      AND aq.initiator_id != ${userId}
+      ORDER BY aq.created_at ASC
+    `);
+    return result.rows;
+  }
 }
 
 export const storage = new DatabaseStorage();
