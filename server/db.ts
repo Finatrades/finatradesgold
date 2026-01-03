@@ -35,15 +35,20 @@ if (isProduction) {
   // Production: Use AWS_PROD_DATABASE_URL
   primaryUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
   databaseRole = process.env.AWS_PROD_DATABASE_URL ? 'production' : 'legacy';
+} else if (process.env.AWS_DEV_DATABASE_URL) {
+  // Development: Use AWS_DEV_DATABASE_URL (both Replit and external environments)
+  primaryUrl = process.env.AWS_DEV_DATABASE_URL;
+  databaseRole = 'development';
+  console.log('[Database] Using AWS RDS Development database');
 } else if (isReplitEnv && process.env.DATABASE_URL) {
-  // Replit Development: Use DATABASE_URL because Replit intercepts AWS RDS connections
+  // Fallback: Use Replit PostgreSQL if no AWS dev URL configured
   primaryUrl = process.env.DATABASE_URL;
   databaseRole = 'replit';
-  console.log('[Database] Replit environment detected - using Replit PostgreSQL');
+  console.log('[Database] Fallback: Using Replit PostgreSQL (no AWS_DEV_DATABASE_URL)');
 } else {
-  // External Development: Use AWS_DEV_DATABASE_URL, fallback to DATABASE_URL
-  primaryUrl = process.env.AWS_DEV_DATABASE_URL || process.env.AWS_DATABASE_URL || process.env.DATABASE_URL;
-  databaseRole = process.env.AWS_DEV_DATABASE_URL ? 'development' : 'legacy';
+  // Legacy fallback
+  primaryUrl = process.env.AWS_DATABASE_URL || process.env.DATABASE_URL;
+  databaseRole = 'legacy';
 }
 
 // Backup database is always Replit's DATABASE_URL
