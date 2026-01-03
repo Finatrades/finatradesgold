@@ -255,6 +255,203 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
 };
 
 // ============================================
+// ENTERPRISE ROLE & PERMISSION MANAGEMENT
+// ============================================
+
+// Permission actions
+export const permissionActionEnum = pgEnum('permission_action', [
+  'view', 'create', 'edit', 'approve_l1', 'approve_final', 'reject', 'export', 'delete'
+]);
+
+// Approval status
+export const approvalStatusEnum = pgEnum('approval_status', [
+  'pending_l1', 'pending_final', 'approved', 'rejected', 'expired', 'cancelled'
+]);
+
+// Dynamic Roles (Super Admin creates these)
+export const adminRoles = pgTable("admin_roles", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  department: varchar("department", { length: 100 }),
+  riskLevel: riskLevelEnum("risk_level").notNull().default('Low'),
+  isSystem: boolean("is_system").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAdminRoleSchema = createInsertSchema(adminRoles)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAdminRole = z.infer<typeof insertAdminRoleSchema>;
+export type AdminRole = typeof adminRoles.$inferSelect;
+
+// Admin Components (modular admin sections)
+export const adminComponents = pgTable("admin_components", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  category: varchar("category", { length: 100 }).notNull(),
+  description: text("description"),
+  path: varchar("path", { length: 255 }),
+  icon: varchar("icon", { length: 50 }),
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAdminComponentSchema = createInsertSchema(adminComponents)
+  .omit({ id: true, createdAt: true });
+export type InsertAdminComponent = z.infer<typeof insertAdminComponentSchema>;
+export type AdminComponent = typeof adminComponents.$inferSelect;
+
+// Role Component Permissions (permission matrix per role per component)
+export const roleComponentPermissions = pgTable("role_component_permissions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  roleId: varchar("role_id", { length: 255 }).notNull().references(() => adminRoles.id, { onDelete: 'cascade' }),
+  componentId: varchar("component_id", { length: 255 }).notNull().references(() => adminComponents.id, { onDelete: 'cascade' }),
+  canView: boolean("can_view").notNull().default(false),
+  canCreate: boolean("can_create").notNull().default(false),
+  canEdit: boolean("can_edit").notNull().default(false),
+  canApproveL1: boolean("can_approve_l1").notNull().default(false),
+  canApproveFinal: boolean("can_approve_final").notNull().default(false),
+  canReject: boolean("can_reject").notNull().default(false),
+  canExport: boolean("can_export").notNull().default(false),
+  canDelete: boolean("can_delete").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertRoleComponentPermissionSchema = createInsertSchema(roleComponentPermissions)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertRoleComponentPermission = z.infer<typeof insertRoleComponentPermissionSchema>;
+export type RoleComponentPermission = typeof roleComponentPermissions.$inferSelect;
+
+// User Role Assignments (link users to roles)
+export const userRoleAssignments = pgTable("user_role_assignments", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  roleId: varchar("role_id", { length: 255 }).notNull().references(() => adminRoles.id, { onDelete: 'cascade' }),
+  assignedBy: varchar("assigned_by", { length: 255 }),
+  assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+export const insertUserRoleAssignmentSchema = createInsertSchema(userRoleAssignments)
+  .omit({ id: true, assignedAt: true });
+export type InsertUserRoleAssignment = z.infer<typeof insertUserRoleAssignmentSchema>;
+export type UserRoleAssignment = typeof userRoleAssignments.$inferSelect;
+
+// Task Definitions (all approvable tasks)
+export const taskDefinitions = pgTable("task_definitions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  componentId: varchar("component_id", { length: 255 }).references(() => adminComponents.id),
+  category: varchar("category", { length: 100 }),
+  requiresApproval: boolean("requires_approval").notNull().default(false),
+  firstApproverRoleId: varchar("first_approver_role_id", { length: 255 }).references(() => adminRoles.id),
+  finalApproverRoleId: varchar("final_approver_role_id", { length: 255 }).references(() => adminRoles.id),
+  slaHours: integer("sla_hours").default(24),
+  autoExpireHours: integer("auto_expire_hours").default(72),
+  requiresReason: boolean("requires_reason").notNull().default(false),
+  allowedInitiatorRoles: json("allowed_initiator_roles").$type<string[]>(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTaskDefinitionSchema = createInsertSchema(taskDefinitions)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTaskDefinition = z.infer<typeof insertTaskDefinitionSchema>;
+export type TaskDefinition = typeof taskDefinitions.$inferSelect;
+
+// Approval Queue (pending tasks)
+export const approvalQueue = pgTable("approval_queue", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  taskDefinitionId: varchar("task_definition_id", { length: 255 }).notNull().references(() => taskDefinitions.id),
+  initiatorId: varchar("initiator_id", { length: 255 }).notNull().references(() => users.id),
+  entityType: varchar("entity_type", { length: 100 }),
+  entityId: varchar("entity_id", { length: 255 }),
+  taskData: json("task_data").$type<Record<string, any>>(),
+  status: approvalStatusEnum("status").notNull().default('pending_l1'),
+  priority: varchar("priority", { length: 20 }).default('normal'),
+  reason: text("reason"),
+  l1ApproverId: varchar("l1_approver_id", { length: 255 }).references(() => users.id),
+  l1ApprovedAt: timestamp("l1_approved_at"),
+  l1Comments: text("l1_comments"),
+  finalApproverId: varchar("final_approver_id", { length: 255 }).references(() => users.id),
+  finalApprovedAt: timestamp("final_approved_at"),
+  finalComments: text("final_comments"),
+  rejectedBy: varchar("rejected_by", { length: 255 }).references(() => users.id),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  expiresAt: timestamp("expires_at"),
+  executedAt: timestamp("executed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertApprovalQueueSchema = createInsertSchema(approvalQueue)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertApprovalQueue = z.infer<typeof insertApprovalQueueSchema>;
+export type ApprovalQueueItem = typeof approvalQueue.$inferSelect;
+
+// Approval History (audit trail)
+export const approvalHistory = pgTable("approval_history", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  approvalQueueId: varchar("approval_queue_id", { length: 255 }).notNull().references(() => approvalQueue.id, { onDelete: 'cascade' }),
+  action: varchar("action", { length: 50 }).notNull(),
+  actorId: varchar("actor_id", { length: 255 }).notNull().references(() => users.id),
+  actorRole: varchar("actor_role", { length: 100 }),
+  oldValue: json("old_value").$type<Record<string, any>>(),
+  newValue: json("new_value").$type<Record<string, any>>(),
+  comments: text("comments"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  sessionId: varchar("session_id", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertApprovalHistorySchema = createInsertSchema(approvalHistory)
+  .omit({ id: true, createdAt: true });
+export type InsertApprovalHistory = z.infer<typeof insertApprovalHistorySchema>;
+export type ApprovalHistoryEntry = typeof approvalHistory.$inferSelect;
+
+// Emergency Overrides (2-approver emergency actions)
+export const emergencyOverrides = pgTable("emergency_overrides", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  approvalQueueId: varchar("approval_queue_id", { length: 255 }).references(() => approvalQueue.id),
+  reason: text("reason").notNull(),
+  approver1Id: varchar("approver1_id", { length: 255 }).notNull().references(() => users.id),
+  approver1At: timestamp("approver1_at").notNull().defaultNow(),
+  approver2Id: varchar("approver2_id", { length: 255 }).references(() => users.id),
+  approver2At: timestamp("approver2_at"),
+  status: varchar("status", { length: 50 }).notNull().default('pending_second'),
+  executedAt: timestamp("executed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertEmergencyOverrideSchema = createInsertSchema(emergencyOverrides)
+  .omit({ id: true, createdAt: true });
+export type InsertEmergencyOverride = z.infer<typeof insertEmergencyOverrideSchema>;
+export type EmergencyOverride = typeof emergencyOverrides.$inferSelect;
+
+// Admin Component Actions Enum (for permission checks)
+export const ADMIN_PERMISSION_ACTIONS = [
+  'view', 'create', 'edit', 'approve_l1', 'approve_final', 'reject', 'export', 'delete'
+] as const;
+export type AdminPermissionAction = typeof ADMIN_PERMISSION_ACTIONS[number];
+
+// Admin Component Categories
+export const ADMIN_COMPONENT_CATEGORIES = [
+  'dashboard', 'users', 'finance', 'products', 'system', 'reports'
+] as const;
+
+// ============================================
 // KYC
 // ============================================
 
