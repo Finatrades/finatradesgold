@@ -22165,7 +22165,7 @@ ${message}
       
       // Log the repair action
       await storage.createAuditLog({
-        actor: (req.session as any)?.user?.id || 'system',
+        actor: req.session?.userId || 'system',
         action: 'wallet_repair',
         entityType: 'wallet',
         entityId: wallet.id,
@@ -22202,8 +22202,8 @@ ${message}
         return res.status(404).json({ message: "Notification not found" });
       }
       // Verify ownership: user can only mark their own notifications as read
-      const sessionUserId = (req.session as any)?.user?.id;
-      const isAdmin = (req.session as any)?.user?.isAdmin;
+      const sessionUserId = req.session?.userId;
+      const isAdmin = req.session?.userRole === 'admin';
       if (notification.userId !== sessionUserId && !isAdmin) {
         return res.status(403).json({ message: "Not authorized to modify this notification" });
       }
@@ -22234,8 +22234,8 @@ ${message}
         return res.status(404).json({ message: "Notification not found" });
       }
       // Verify ownership: user can only delete their own notifications
-      const sessionUserId = (req.session as any)?.user?.id;
-      const isAdmin = (req.session as any)?.user?.isAdmin;
+      const sessionUserId = req.session?.userId;
+      const isAdmin = req.session?.userRole === 'admin';
       if (notification.userId !== sessionUserId && !isAdmin) {
         return res.status(403).json({ message: "Not authorized to delete this notification" });
       }
@@ -23316,8 +23316,8 @@ ${message}
         return res.status(404).json({ message: "Notification not found" });
       }
       // Verify ownership
-      const sessionUserId = (req.session as any)?.user?.id;
-      const isAdmin = (req.session as any)?.user?.isAdmin;
+      const sessionUserId = req.session?.userId;
+      const isAdmin = req.session?.userRole === 'admin';
       if (notification.userId !== sessionUserId && !isAdmin) {
         return res.status(403).json({ message: "Not authorized to modify this notification" });
       }
@@ -23346,8 +23346,8 @@ ${message}
         return res.status(404).json({ message: "Notification not found" });
       }
       // Verify ownership
-      const sessionUserId = (req.session as any)?.user?.id;
-      const isAdmin = (req.session as any)?.user?.isAdmin;
+      const sessionUserId = req.session?.userId;
+      const isAdmin = req.session?.userRole === 'admin';
       if (notification.userId !== sessionUserId && !isAdmin) {
         return res.status(403).json({ message: "Not authorized to delete this notification" });
       }
@@ -23375,7 +23375,7 @@ ${message}
   // Register device token for push notifications
   app.post("/api/push/register", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.session as any)?.user?.id;
+      const userId = req.session?.userId;
       const { token, platform, deviceName, deviceId } = req.body;
       
       if (!token || !platform) {
@@ -23399,7 +23399,7 @@ ${message}
   // Unregister device token
   app.post("/api/push/unregister", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.session as any)?.user?.id;
+      const userId = req.session?.userId;
       const { token } = req.body;
       
       if (!token) {
@@ -23419,7 +23419,7 @@ ${message}
   // Get user's registered devices
   app.get("/api/push/devices", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.session as any)?.user?.id;
+      const userId = req.session?.userId;
       const { getUserDeviceTokens } = await import('./push-notifications');
       const tokens = await getUserDeviceTokens(userId);
       
@@ -23433,7 +23433,7 @@ ${message}
   // Unregister all device tokens for user (used during logout)
   app.post("/api/push/unregister-all", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.session as any)?.user?.id;
+      const userId = req.session?.userId;
       const { unregisterAllDeviceTokens } = await import('./push-notifications');
       const count = await unregisterAllDeviceTokens(userId);
       
