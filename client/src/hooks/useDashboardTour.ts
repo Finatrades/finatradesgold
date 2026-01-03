@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTour, type TourStep } from '@/components/tour/TourProvider';
 
 const DASHBOARD_TOUR_ID = 'dashboard-tour';
@@ -49,16 +49,31 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
   },
 ];
 
-export function useDashboardTour() {
-  const tour = useTour();
+export function useDashboardTour(options?: { autoStart?: boolean }) {
+  const { registerTour, startTour, hasCompletedTour } = useTour();
+  const hasRegisteredRef = useRef(false);
+  const hasAutoStartedRef = useRef(false);
 
   useEffect(() => {
-    tour.registerTour(DASHBOARD_TOUR_ID, DASHBOARD_TOUR_STEPS);
-  }, [tour]);
+    if (!hasRegisteredRef.current) {
+      hasRegisteredRef.current = true;
+      registerTour(DASHBOARD_TOUR_ID, DASHBOARD_TOUR_STEPS);
+    }
+  }, [registerTour]);
+
+  useEffect(() => {
+    if (options?.autoStart && !hasAutoStartedRef.current && !hasCompletedTour(DASHBOARD_TOUR_ID)) {
+      hasAutoStartedRef.current = true;
+      const timer = setTimeout(() => {
+        startTour(DASHBOARD_TOUR_ID);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [options?.autoStart, startTour, hasCompletedTour]);
 
   return {
-    startTour: () => tour.startTour(DASHBOARD_TOUR_ID),
-    hasCompleted: tour.hasCompletedTour(DASHBOARD_TOUR_ID),
+    startTour: () => startTour(DASHBOARD_TOUR_ID),
+    hasCompleted: hasCompletedTour(DASHBOARD_TOUR_ID),
     tourId: DASHBOARD_TOUR_ID,
   };
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { X, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
@@ -43,20 +43,30 @@ export function TourProvider({ children }: TourProviderProps) {
   const [activeTourId, setActiveTourId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
-  const [completedTours, setCompletedTours] = useState<Set<string>>(() => {
+  const [isMounted, setIsMounted] = useState(false);
+  const [completedTours, setCompletedTours] = useState<Set<string>>(new Set());
+  const registeredToursRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    setIsMounted(true);
     try {
       const saved = localStorage.getItem('finatrades_completed_tours');
-      return saved ? new Set(JSON.parse(saved)) : new Set();
+      if (saved) {
+        setCompletedTours(new Set(JSON.parse(saved)));
+      }
     } catch {
-      return new Set();
     }
-  });
+  }, []);
 
   const isRunning = activeTourId !== null;
   const activeSteps = activeTourId ? tours[activeTourId] || [] : [];
   const currentStepData = activeSteps[currentStep];
 
   const registerTour = useCallback((tourId: string, steps: TourStep[]) => {
+    if (registeredToursRef.current.has(tourId)) {
+      return;
+    }
+    registeredToursRef.current.add(tourId);
     setTours(prev => ({ ...prev, [tourId]: steps }));
   }, []);
 
@@ -68,7 +78,10 @@ export function TourProvider({ children }: TourProviderProps) {
     setCompletedTours(prev => {
       const next = new Set(prev);
       next.add(tourId);
-      localStorage.setItem('finatrades_completed_tours', JSON.stringify([...next]));
+      try {
+        localStorage.setItem('finatrades_completed_tours', JSON.stringify([...next]));
+      } catch {
+      }
       return next;
     });
   }, []);
@@ -89,51 +102,76 @@ export function TourProvider({ children }: TourProviderProps) {
     setTargetElement(null);
   }, [activeTourId, markTourComplete]);
 
+  const skipToNextValidStep = useCallback((fromStep: number, direction: 'forward' | 'backward' = 'forward'): number => {
+    const steps = activeSteps;
+    let nextStep = direction === 'forward' ? fromStep + 1 : fromStep - 1;
+    
+    while (nextStep >= 0 && nextStep < steps.length) {
+      const element = document.querySelector(steps[nextStep].target);
+      if (element) {
+        return nextStep;
+      }
+      nextStep = direction === 'forward' ? nextStep + 1 : nextStep - 1;
+    }
+    
+    return direction === 'forward' ? steps.length : -1;
+  }, [activeSteps]);
+
   const nextStep = useCallback(() => {
-    if (currentStep < activeSteps.length - 1) {
-      setCurrentStep(prev => prev + 1);
+    const next = skipToNextValidStep(currentStep, 'forward');
+    if (next < activeSteps.length) {
+      setCurrentStep(next);
     } else {
       endTour();
     }
-  }, [currentStep, activeSteps.length, endTour]);
+  }, [currentStep, activeSteps.length, skipToNextValidStep, endTour]);
 
   const prevStep = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+    const prev = skipToNextValidStep(currentStep, 'backward');
+    if (prev >= 0) {
+      setCurrentStep(prev);
     }
-  }, [currentStep]);
+  }, [currentStep, skipToNextValidStep]);
 
   useEffect(() => {
-    if (currentStepData?.target) {
-      const findElement = () => {
-        const element = document.querySelector(currentStepData.target) as HTMLElement;
-        if (element) {
-          setTargetElement(element);
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!currentStepData?.target) return;
+    
+    const findElement = () => {
+      const element = document.querySelector(currentStepData.target) as HTMLElement;
+      if (element) {
+        setTargetElement(element);
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        setTargetElement(null);
+        const next = skipToNextValidStep(currentStep, 'forward');
+        if (next < activeSteps.length) {
+          setTimeout(() => setCurrentStep(next), 100);
         } else {
-          setTargetElement(null);
+          endTour();
         }
-      };
-      
-      const timer = setTimeout(findElement, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [currentStepData]);
+      }
+    };
+    
+    const timer = setTimeout(findElement, 100);
+    return () => clearTimeout(timer);
+  }, [currentStepData, currentStep, activeSteps.length, skipToNextValidStep, endTour]);
+
+  const contextValue = useMemo(() => ({
+    isRunning,
+    currentStep,
+    startTour,
+    endTour,
+    nextStep,
+    prevStep,
+    registerTour,
+    hasCompletedTour,
+    markTourComplete,
+  }), [isRunning, currentStep, startTour, endTour, nextStep, prevStep, registerTour, hasCompletedTour, markTourComplete]);
 
   return (
-    <TourContext.Provider value={{
-      isRunning,
-      currentStep,
-      startTour,
-      endTour,
-      nextStep,
-      prevStep,
-      registerTour,
-      hasCompletedTour,
-      markTourComplete,
-    }}>
+    <TourContext.Provider value={contextValue}>
       {children}
-      {isRunning && currentStepData && createPortal(
+      {isMounted && isRunning && currentStepData && targetElement && createPortal(
         <TourOverlay
           step={currentStepData}
           stepNumber={currentStep + 1}
@@ -155,7 +193,7 @@ interface TourOverlayProps {
   step: TourStep;
   stepNumber: number;
   totalSteps: number;
-  targetElement: HTMLElement | null;
+  targetElement: HTMLElement;
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
@@ -179,49 +217,47 @@ function TourOverlay({
   const padding = step.spotlightPadding || 8;
 
   useEffect(() => {
-    if (targetElement) {
-      const rect = targetElement.getBoundingClientRect();
-      const scrollY = window.scrollY;
-      const scrollX = window.scrollX;
-      
-      setSpotlightRect({
-        top: rect.top + scrollY - padding,
-        left: rect.left + scrollX - padding,
-        width: rect.width + padding * 2,
-        height: rect.height + padding * 2,
-      });
+    const rect = targetElement.getBoundingClientRect();
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+    
+    setSpotlightRect({
+      top: rect.top + scrollY - padding,
+      left: rect.left + scrollX - padding,
+      width: rect.width + padding * 2,
+      height: rect.height + padding * 2,
+    });
 
-      const placement = step.placement || 'bottom';
-      let top = 0;
-      let left = 0;
-      const tooltipWidth = 320;
-      const tooltipHeight = 180;
-      const margin = 16;
+    const placement = step.placement || 'bottom';
+    let top = 0;
+    let left = 0;
+    const tooltipWidth = 320;
+    const tooltipHeight = 180;
+    const margin = 16;
 
-      switch (placement) {
-        case 'top':
-          top = rect.top + scrollY - tooltipHeight - margin;
-          left = rect.left + scrollX + rect.width / 2 - tooltipWidth / 2;
-          break;
-        case 'bottom':
-          top = rect.bottom + scrollY + margin;
-          left = rect.left + scrollX + rect.width / 2 - tooltipWidth / 2;
-          break;
-        case 'left':
-          top = rect.top + scrollY + rect.height / 2 - tooltipHeight / 2;
-          left = rect.left + scrollX - tooltipWidth - margin;
-          break;
-        case 'right':
-          top = rect.top + scrollY + rect.height / 2 - tooltipHeight / 2;
-          left = rect.right + scrollX + margin;
-          break;
-      }
-
-      left = Math.max(16, Math.min(left, window.innerWidth - tooltipWidth - 16));
-      top = Math.max(16, top);
-
-      setTooltipPosition({ top, left });
+    switch (placement) {
+      case 'top':
+        top = rect.top + scrollY - tooltipHeight - margin;
+        left = rect.left + scrollX + rect.width / 2 - tooltipWidth / 2;
+        break;
+      case 'bottom':
+        top = rect.bottom + scrollY + margin;
+        left = rect.left + scrollX + rect.width / 2 - tooltipWidth / 2;
+        break;
+      case 'left':
+        top = rect.top + scrollY + rect.height / 2 - tooltipHeight / 2;
+        left = rect.left + scrollX - tooltipWidth - margin;
+        break;
+      case 'right':
+        top = rect.top + scrollY + rect.height / 2 - tooltipHeight / 2;
+        left = rect.right + scrollX + margin;
+        break;
     }
+
+    left = Math.max(16, Math.min(left, window.innerWidth - tooltipWidth - 16));
+    top = Math.max(16, top);
+
+    setTooltipPosition({ top, left });
   }, [targetElement, step.placement, padding]);
 
   return (
@@ -241,16 +277,14 @@ function TourOverlay({
           <defs>
             <mask id="spotlight-mask">
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              {targetElement && (
-                <rect
-                  x={spotlightRect.left}
-                  y={spotlightRect.top}
-                  width={spotlightRect.width}
-                  height={spotlightRect.height}
-                  rx="8"
-                  fill="black"
-                />
-              )}
+              <rect
+                x={spotlightRect.left}
+                y={spotlightRect.top}
+                width={spotlightRect.width}
+                height={spotlightRect.height}
+                rx="8"
+                fill="black"
+              />
             </mask>
           </defs>
           <rect
@@ -263,72 +297,70 @@ function TourOverlay({
           />
         </svg>
 
-        {targetElement && (
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="absolute bg-white rounded-xl shadow-2xl border border-purple-200 overflow-hidden"
-            style={{
-              top: tooltipPosition.top,
-              left: tooltipPosition.left,
-              width: 320,
-              pointerEvents: 'auto',
-              zIndex: 10000,
-            }}
-          >
-            <div className="bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-white" />
-                <span className="text-white font-semibold">{step.title}</span>
-              </div>
-              <button
-                onClick={onClose}
-                className="text-white/80 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="absolute bg-white rounded-xl shadow-2xl border border-purple-200 overflow-hidden"
+          style={{
+            top: tooltipPosition.top,
+            left: tooltipPosition.left,
+            width: 320,
+            pointerEvents: 'auto',
+            zIndex: 10000,
+          }}
+        >
+          <div className="bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-white" />
+              <span className="text-white font-semibold">{step.title}</span>
             </div>
-            
-            <div className="p-4">
-              <p className="text-gray-600 text-sm leading-relaxed">{step.content}</p>
-            </div>
-            
-            <div className="px-4 pb-4 flex items-center justify-between">
-              <span className="text-xs text-gray-400">
-                Step {stepNumber} of {totalSteps}
-              </span>
-              <div className="flex gap-2">
-                {!isFirst && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onPrev}
-                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Back
-                  </Button>
-                )}
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="p-4">
+            <p className="text-gray-600 text-sm leading-relaxed">{step.content}</p>
+          </div>
+          
+          <div className="px-4 pb-4 flex items-center justify-between">
+            <span className="text-xs text-gray-400">
+              Step {stepNumber} of {totalSteps}
+            </span>
+            <div className="flex gap-2">
+              {!isFirst && (
                 <Button
+                  variant="outline"
                   size="sm"
-                  onClick={onNext}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={onPrev}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
                 >
-                  {isLast ? 'Finish' : 'Next'}
-                  {!isLast && <ChevronRight className="w-4 h-4 ml-1" />}
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
                 </Button>
-              </div>
+              )}
+              <Button
+                size="sm"
+                onClick={onNext}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {isLast ? 'Finish' : 'Next'}
+                {!isLast && <ChevronRight className="w-4 h-4 ml-1" />}
+              </Button>
             </div>
-            
-            <div className="h-1 bg-gray-100">
-              <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-300"
-                style={{ width: `${(stepNumber / totalSteps) * 100}%` }}
-              />
-            </div>
-          </motion.div>
-        )}
+          </div>
+          
+          <div className="h-1 bg-gray-100">
+            <div 
+              className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-300"
+              style={{ width: `${(stepNumber / totalSteps) * 100}%` }}
+            />
+          </div>
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   );
