@@ -133,6 +133,10 @@ export default function CMSManagement() {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'include'
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || 'Failed to fetch CMS data');
+      }
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -147,7 +151,7 @@ export default function CMSManagement() {
     } catch (error) {
       toast({ 
         title: 'Download Failed', 
-        description: 'Failed to download CMS data',
+        description: error instanceof Error ? error.message : 'Failed to download CMS data',
         variant: 'destructive'
       });
     }
