@@ -277,6 +277,31 @@ function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// Middleware to check if platform is in maintenance mode
+// Admin routes are exempt from this check
+async function checkMaintenanceMode(req: Request, res: Response, next: NextFunction) {
+  try {
+    const isMaintenanceMode = await platformLimits.isMaintenanceMode();
+    if (isMaintenanceMode) {
+      // Check if user is admin (exempt from maintenance mode)
+      if (req.session?.userId) {
+        const user = await storage.getUser(req.session.userId);
+        if (user?.role === 'admin') {
+          return next();
+        }
+      }
+      return res.status(503).json({ 
+        message: "Platform is currently undergoing maintenance. Please try again later.",
+        maintenanceMode: true
+      });
+    }
+    next();
+  } catch (error) {
+    // If config check fails, allow request to proceed (fail-open for availability)
+    next();
+  }
+}
+
 // Middleware to ensure authenticated user matches the userId param
 // This prevents users from accessing other users' data
 async function ensureOwnerOrAdmin(req: Request, res: Response, next: NextFunction) {
