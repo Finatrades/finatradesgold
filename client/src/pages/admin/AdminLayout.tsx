@@ -167,6 +167,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'User Management', href: '/admin/users' },
         { label: 'Employees', href: '/admin/employees' },
+        { label: 'Role Management', href: '/admin/roles' },
         { label: 'KYC Reviews', href: '/admin/kyc' },
         { label: 'Compliance', href: '/admin/compliance' },
         { label: 'Referrals', href: '/admin/referrals' },
@@ -197,6 +198,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: 'System',
       icon: <Settings className="w-4 h-4" />,
       items: [
+        { label: 'Approval Queue', href: '/admin/approvals' },
         { label: 'Documents', href: '/admin/documents' },
         { label: 'Attachments', href: '/admin/attachments' },
         { label: 'Support Chat', href: '/admin/chat' },

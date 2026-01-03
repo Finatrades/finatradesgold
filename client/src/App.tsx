@@ -128,6 +128,8 @@ import { FinaPayProvider } from "@/context/FinaPayContext";
 import AdminChat from "@/pages/admin/AdminChat";
 import CMSManagement from "@/pages/admin/CMSManagement";
 import EmployeeManagement from "@/pages/admin/EmployeeManagement";
+import RoleManagement from "@/pages/admin/RoleManagement";
+import ApprovalQueue from "@/pages/admin/ApprovalQueue";
 import PaymentGatewayManagement from "@/pages/admin/PaymentGatewayManagement";
 import PlatformConfiguration from "@/pages/admin/PlatformConfiguration";
 import SecuritySettings from "@/pages/admin/SecuritySettings";
@@ -218,6 +220,8 @@ function Router() {
       <Route path="/admin/chat" component={AdminChat} />
       <Route path="/admin/cms" component={CMSManagement} />
       <Route path="/admin/employees" component={EmployeeManagement} />
+      <Route path="/admin/roles" component={RoleManagement} />
+      <Route path="/admin/approvals" component={ApprovalQueue} />
       <Route path="/admin/payment-gateways" component={PaymentGatewayManagement} />
       <Route path="/admin/platform-config" component={PlatformConfiguration} />
       <Route path="/admin/database-backups" component={DatabaseBackups} />
