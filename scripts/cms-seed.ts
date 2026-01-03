@@ -152,7 +152,9 @@ const runCLI = async () => {
   process.exit(0);
 };
 
-if (require.main === module) {
+// ES module check for CLI execution
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
   runCLI().catch(err => {
     console.error('[CMS Seed] Error:', err);
     process.exit(1);
