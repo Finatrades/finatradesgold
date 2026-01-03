@@ -1337,49 +1337,65 @@ export default function KYC() {
               <Progress value={corpProgress} className="h-2 bg-muted" />
             </div>
 
-            <div className="grid md:grid-cols-12 gap-8">
-              
-              {/* Sidebar Steps */}
-              <div className="md:col-span-3 space-y-3">
-                <StepItem 
-                  title="Corporate Details"
-                  description="Company information" 
-                  icon={<Building className="w-5 h-5" />} 
-                  isActive={corporateStep === 1} 
-                  isCompleted={corporateStep > 1}
-                />
-                <StepItem 
-                  title="Beneficial Owners"
-                  description="Ownership structure" 
-                  icon={<User className="w-5 h-5" />} 
-                  isActive={corporateStep === 2} 
-                  isCompleted={corporateStep > 2}
-                />
-                <StepItem 
-                  title="Documents"
-                  description="Corporate documents" 
-                  icon={<FileText className="w-5 h-5" />} 
-                  isActive={corporateStep === 3} 
-                  isCompleted={corporateStep > 3}
-                />
-                <StepItem 
-                  title="Representative"
-                  description="Liveness verification" 
-                  icon={<Camera className="w-5 h-5" />} 
-                  isActive={corporateStep === 4} 
-                  isCompleted={corporateStep > 4}
-                />
-                <StepItem 
-                  title="Review & Submit"
-                  description="Final submission" 
-                  icon={<CheckCircle2 className="w-5 h-5" />} 
-                  isActive={corporateStep === 5} 
-                  isCompleted={false}
-                />
+            {/* Horizontal Tab/Card Navigation */}
+            <div className="mb-8">
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+                {[
+                  { step: 1, title: 'Corporate Details', icon: <Building className="w-6 h-6" /> },
+                  { step: 2, title: 'Beneficial Owners', icon: <User className="w-6 h-6" /> },
+                  { step: 3, title: 'Documents', icon: <FileText className="w-6 h-6" /> },
+                  { step: 4, title: 'Representative', icon: <Camera className="w-6 h-6" /> },
+                  { step: 5, title: 'Review & Submit', icon: <CheckCircle2 className="w-6 h-6" /> },
+                ].map(({ step, title, icon }) => {
+                  const isActive = corporateStep === step;
+                  const isCompleted = corporateStep > step;
+                  
+                  return (
+                    <button
+                      key={step}
+                      onClick={() => {
+                        if (isCompleted) setCorporateStep(step);
+                      }}
+                      disabled={!isCompleted && !isActive}
+                      className={`
+                        relative p-4 rounded-xl border-2 transition-all duration-200 text-center
+                        ${isActive 
+                          ? 'bg-primary border-primary text-white shadow-lg scale-105' 
+                          : isCompleted 
+                            ? 'bg-card border-primary/30 text-foreground hover:border-primary/50 cursor-pointer hover:shadow-md' 
+                            : 'bg-muted/50 border-border text-muted-foreground cursor-not-allowed opacity-60'
+                        }
+                      `}
+                      aria-selected={isActive}
+                      data-testid={`tab-step-${step}`}
+                    >
+                      <div className={`
+                        w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center
+                        ${isActive 
+                          ? 'bg-white/20' 
+                          : isCompleted 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'bg-muted'
+                        }
+                      `}>
+                        {isCompleted && !isActive ? (
+                          <CheckCircle2 className="w-6 h-6 text-primary" />
+                        ) : (
+                          icon
+                        )}
+                      </div>
+                      <span className="text-xs font-medium leading-tight block">{title}</span>
+                      {isActive && (
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-white rounded-full" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Main Content */}
-              <div className="md:col-span-9">
+            {/* Main Content */}
+            <div className="max-w-4xl mx-auto">
                 <Card className="border-border shadow-sm">
                   
                   {/* STEP 1: Corporate Details */}
@@ -1916,19 +1932,18 @@ export default function KYC() {
                     </div>
                   )}
 
-                </Card>
+              </Card>
 
-                <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
-                  <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Secure Processing</h4>
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                      Your corporate documents are encrypted and processed in compliance with international data protection regulations.
-                    </p>
-                  </div>
+              <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+                <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Secure Processing</h4>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    Your corporate documents are encrypted and processed in compliance with international data protection regulations.
+                  </p>
                 </div>
-
               </div>
+
             </div>
           </div>
         </div>
