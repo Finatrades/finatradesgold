@@ -183,8 +183,8 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept }: FinaBridge
             </div>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0 px-6 py-4">
-            <div className="prose prose-sm max-w-none text-gray-700">
+          <ScrollArea className="flex-1 min-h-0 h-[calc(85vh-200px)] overflow-y-auto">
+            <div className="prose prose-sm max-w-none text-gray-700 px-6 py-4">
               <h2 className="text-lg font-bold text-gray-900 mb-4">1. Introduction</h2>
               <p className="mb-2">1.1. Finatrades provides a regulated Gold-Backed Trade Infrastructure designed for corporates, importers, exporters, trading houses, and institutional partners.</p>
               <p className="mb-2">1.2. FinaBridge is a Gold-Backed Trade Infrastructure enabling structured trade support for buyers and sellers through verified gold-backed value, transparent documentation, and coordinated settlement flows for international trade operations.</p>
