@@ -144,6 +144,16 @@ import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
 import UserPreferencesManagement from "@/pages/admin/UserPreferencesManagement";
 import AccountDeletionRequests from "@/pages/admin/AccountDeletionRequests";
+import AuditTrail from "@/pages/admin/AuditTrail";
+import RevenueAnalytics from "@/pages/admin/RevenueAnalytics";
+import DailyReconciliation from "@/pages/admin/DailyReconciliation";
+import RiskExposure from "@/pages/admin/RiskExposure";
+import SuspiciousActivityReports from "@/pages/admin/SuspiciousActivityReports";
+import ScheduledJobs from "@/pages/admin/ScheduledJobs";
+import ApiLogs from "@/pages/admin/ApiLogs";
+import SettlementQueue from "@/pages/admin/SettlementQueue";
+import LiquidityDashboard from "@/pages/admin/LiquidityDashboard";
+import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
@@ -232,6 +242,16 @@ function Router() {
       <Route path="/admin/email-notifications" component={EmailNotificationsManagement} />
       <Route path="/admin/user-preferences" component={UserPreferencesManagement} />
       <Route path="/admin/account-deletion-requests" component={AccountDeletionRequests} />
+      <Route path="/admin/audit-trail" component={AuditTrail} />
+      <Route path="/admin/revenue-analytics" component={RevenueAnalytics} />
+      <Route path="/admin/daily-reconciliation" component={DailyReconciliation} />
+      <Route path="/admin/risk-exposure" component={RiskExposure} />
+      <Route path="/admin/sar-reports" component={SuspiciousActivityReports} />
+      <Route path="/admin/scheduled-jobs" component={ScheduledJobs} />
+      <Route path="/admin/api-logs" component={ApiLogs} />
+      <Route path="/admin/settlement-queue" component={SettlementQueue} />
+      <Route path="/admin/liquidity" component={LiquidityDashboard} />
+      <Route path="/admin/regulatory-reports" component={RegulatoryReports} />
       
       {/* Renamed/Consolidated Modules */}
       <Route path="/admin/finapay" component={PaymentOperations} />

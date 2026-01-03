@@ -3990,3 +3990,212 @@ export const insertAccountDeletionRequestSchema = createInsertSchema(accountDele
 });
 export type InsertAccountDeletionRequest = z.infer<typeof insertAccountDeletionRequestSchema>;
 export type AccountDeletionRequest = typeof accountDeletionRequests.$inferSelect;
+
+// ============================================
+// SCHEDULED JOBS (Background Tasks)
+// ============================================
+
+export const scheduledJobStatusEnum = pgEnum('scheduled_job_status', [
+  'active', 'paused', 'completed', 'failed', 'running'
+]);
+
+export const scheduledJobs = pgTable("scheduled_jobs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  cronExpression: varchar("cron_expression", { length: 100 }),
+  intervalMs: integer("interval_ms"),
+  
+  status: scheduledJobStatusEnum("status").notNull().default('active'),
+  
+  lastRunAt: timestamp("last_run_at"),
+  lastRunDurationMs: integer("last_run_duration_ms"),
+  lastRunResult: text("last_run_result"),
+  lastError: text("last_error"),
+  
+  nextRunAt: timestamp("next_run_at"),
+  runCount: integer("run_count").notNull().default(0),
+  failCount: integer("fail_count").notNull().default(0),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertScheduledJobSchema = createInsertSchema(scheduledJobs).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertScheduledJob = z.infer<typeof insertScheduledJobSchema>;
+export type ScheduledJob = typeof scheduledJobs.$inferSelect;
+
+// Scheduled Job Runs (History)
+export const scheduledJobRuns = pgTable("scheduled_job_runs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id", { length: 255 }).notNull().references(() => scheduledJobs.id),
+  
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  durationMs: integer("duration_ms"),
+  
+  success: boolean("success"),
+  result: text("result"),
+  error: text("error"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertScheduledJobRunSchema = createInsertSchema(scheduledJobRuns).omit({ id: true, createdAt: true });
+export type InsertScheduledJobRun = z.infer<typeof insertScheduledJobRunSchema>;
+export type ScheduledJobRun = typeof scheduledJobRuns.$inferSelect;
+
+// ============================================
+// SETTLEMENT QUEUE
+// ============================================
+
+export const settlementStatusEnum = pgEnum('settlement_status', [
+  'pending', 'processing', 'completed', 'failed', 'cancelled'
+]);
+
+export const settlementTypeEnum = pgEnum('settlement_type', [
+  'withdrawal', 'bnsl_payout', 'trade_finance', 'refund', 'commission'
+]);
+
+export const settlementQueue = pgTable("settlement_queue", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceId: varchar("reference_id", { length: 255 }).notNull().unique(),
+  
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  type: settlementTypeEnum("type").notNull(),
+  
+  amountUsd: decimal("amount_usd", { precision: 20, scale: 2 }).notNull(),
+  amountGold: decimal("amount_gold", { precision: 20, scale: 6 }),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  
+  paymentMethod: varchar("payment_method", { length: 100 }),
+  bankDetails: json("bank_details").$type<Record<string, any>>(),
+  
+  status: settlementStatusEnum("status").notNull().default('pending'),
+  priority: integer("priority").notNull().default(5),
+  
+  scheduledFor: timestamp("scheduled_for"),
+  processedAt: timestamp("processed_at"),
+  processedBy: varchar("processed_by", { length: 255 }),
+  
+  externalRef: varchar("external_ref", { length: 255 }),
+  notes: text("notes"),
+  errorMessage: text("error_message"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSettlementQueueSchema = createInsertSchema(settlementQueue).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSettlementQueue = z.infer<typeof insertSettlementQueueSchema>;
+export type SettlementQueueItem = typeof settlementQueue.$inferSelect;
+
+// ============================================
+// REVENUE TRACKING
+// ============================================
+
+export const revenueEntries = pgTable("revenue_entries", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  date: date("date").notNull(),
+  module: varchar("module", { length: 100 }).notNull(),
+  revenueType: varchar("revenue_type", { length: 100 }).notNull(),
+  
+  transactionId: varchar("transaction_id", { length: 255 }),
+  userId: varchar("user_id", { length: 255 }),
+  
+  grossAmountUsd: decimal("gross_amount_usd", { precision: 20, scale: 2 }).notNull(),
+  feeAmountUsd: decimal("fee_amount_usd", { precision: 20, scale: 2 }).notNull(),
+  netAmountUsd: decimal("net_amount_usd", { precision: 20, scale: 2 }).notNull(),
+  
+  goldGrams: decimal("gold_grams", { precision: 20, scale: 6 }),
+  spreadPercent: decimal("spread_percent", { precision: 10, scale: 4 }),
+  
+  metadata: json("metadata").$type<Record<string, any>>(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertRevenueEntrySchema = createInsertSchema(revenueEntries).omit({ id: true, createdAt: true });
+export type InsertRevenueEntry = z.infer<typeof insertRevenueEntrySchema>;
+export type RevenueEntry = typeof revenueEntries.$inferSelect;
+
+// ============================================
+// LIQUIDITY TRACKING
+// ============================================
+
+export const liquiditySnapshots = pgTable("liquidity_snapshots", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  snapshotDate: timestamp("snapshot_date").notNull(),
+  
+  totalGoldGrams: decimal("total_gold_grams", { precision: 20, scale: 6 }).notNull(),
+  totalGoldValueUsd: decimal("total_gold_value_usd", { precision: 20, scale: 2 }).notNull(),
+  
+  totalCashUsd: decimal("total_cash_usd", { precision: 20, scale: 2 }).notNull(),
+  totalCashAed: decimal("total_cash_aed", { precision: 20, scale: 2 }).notNull(),
+  
+  pendingWithdrawalsUsd: decimal("pending_withdrawals_usd", { precision: 20, scale: 2 }).notNull(),
+  pendingDepositsUsd: decimal("pending_deposits_usd", { precision: 20, scale: 2 }).notNull(),
+  
+  bnslObligationsUsd: decimal("bnsl_obligations_usd", { precision: 20, scale: 2 }).notNull(),
+  tradeFinanceLockedUsd: decimal("trade_finance_locked_usd", { precision: 20, scale: 2 }).notNull(),
+  
+  availableLiquidityUsd: decimal("available_liquidity_usd", { precision: 20, scale: 2 }).notNull(),
+  liquidityRatio: decimal("liquidity_ratio", { precision: 10, scale: 4 }).notNull(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertLiquiditySnapshotSchema = createInsertSchema(liquiditySnapshots).omit({ id: true, createdAt: true });
+export type InsertLiquiditySnapshot = z.infer<typeof insertLiquiditySnapshotSchema>;
+export type LiquiditySnapshot = typeof liquiditySnapshots.$inferSelect;
+
+// ============================================
+// REGULATORY REPORTS
+// ============================================
+
+export const regulatoryReportTypeEnum = pgEnum('regulatory_report_type', [
+  'daily_summary', 'weekly_summary', 'monthly_summary',
+  'aml_report', 'kyc_report', 'transaction_report',
+  'customer_due_diligence', 'risk_assessment', 'audit_report'
+]);
+
+export const regulatoryReportStatusEnum = pgEnum('regulatory_report_status', [
+  'draft', 'generated', 'reviewed', 'submitted', 'archived'
+]);
+
+export const regulatoryReports = pgTable("regulatory_reports", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  reportType: regulatoryReportTypeEnum("report_type").notNull(),
+  reportPeriodStart: date("report_period_start").notNull(),
+  reportPeriodEnd: date("report_period_end").notNull(),
+  
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  reportData: json("report_data").$type<Record<string, any>>(),
+  summary: text("summary"),
+  
+  status: regulatoryReportStatusEnum("status").notNull().default('draft'),
+  
+  generatedBy: varchar("generated_by", { length: 255 }).references(() => users.id),
+  generatedAt: timestamp("generated_at"),
+  
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
+  submittedTo: varchar("submitted_to", { length: 255 }),
+  submittedAt: timestamp("submitted_at"),
+  
+  fileUrl: text("file_url"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertRegulatoryReportSchema = createInsertSchema(regulatoryReports).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertRegulatoryReport = z.infer<typeof insertRegulatoryReportSchema>;
+export type RegulatoryReport = typeof regulatoryReports.$inferSelect;

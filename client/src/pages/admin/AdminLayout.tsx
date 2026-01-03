@@ -28,7 +28,14 @@ import {
   Gift,
   Globe,
   ChevronDown,
-  Activity
+  Activity,
+  BarChart3,
+  Scale,
+  AlertTriangle,
+  Clock,
+  Terminal,
+  Coins,
+  FileCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -70,6 +77,16 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/settings': ['manage_settings'],
   '/admin/referrals': ['view_users', 'manage_users'],
   '/admin/account-deletion-requests': ['view_users', 'manage_users'],
+  '/admin/audit-trail': ['view_reports'],
+  '/admin/revenue-analytics': ['view_reports', 'generate_reports'],
+  '/admin/daily-reconciliation': ['view_reports', 'generate_reports'],
+  '/admin/risk-exposure': ['view_reports'],
+  '/admin/sar-reports': ['view_kyc', 'manage_kyc'],
+  '/admin/regulatory-reports': ['view_reports', 'generate_reports'],
+  '/admin/scheduled-jobs': ['manage_settings'],
+  '/admin/api-logs': ['manage_settings'],
+  '/admin/settlement-queue': ['view_transactions', 'manage_transactions'],
+  '/admin/liquidity': ['view_reports'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -180,8 +197,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'Transactions', href: '/admin/transactions' },
         { label: 'Account Statements', href: '/admin/account-statements' },
+        { label: 'Revenue Analytics', href: '/admin/revenue-analytics' },
+        { label: 'Daily Reconciliation', href: '/admin/daily-reconciliation' },
+        { label: 'Settlement Queue', href: '/admin/settlement-queue' },
+        { label: 'Liquidity Dashboard', href: '/admin/liquidity' },
         { label: 'Payment Gateways', href: '/admin/payment-gateways' },
         { label: 'Fee Management', href: '/admin/fees' },
+      ]
+    },
+    {
+      title: 'Compliance',
+      icon: <Shield className="w-4 h-4" />,
+      items: [
+        { label: 'Audit Trail', href: '/admin/audit-trail' },
+        { label: 'Risk Exposure', href: '/admin/risk-exposure' },
+        { label: 'SAR Reports', href: '/admin/sar-reports' },
+        { label: 'Regulatory Reports', href: '/admin/regulatory-reports' },
+      ]
+    },
+    {
+      title: 'Operations',
+      icon: <Activity className="w-4 h-4" />,
+      items: [
+        { label: 'Scheduled Jobs', href: '/admin/scheduled-jobs' },
+        { label: 'API & Error Logs', href: '/admin/api-logs' },
       ]
     },
     {
