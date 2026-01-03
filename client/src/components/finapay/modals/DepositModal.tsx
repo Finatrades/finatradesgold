@@ -146,6 +146,26 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     }
   };
 
+  // Currency conversion rate (AED to USD)
+  const AED_TO_USD_RATE = 3.67;
+  
+  // Get currency symbol for display
+  const getCurrencySymbol = (currency: string): string => {
+    switch (currency?.toUpperCase()) {
+      case 'AED': return 'AED ';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      default: return '$';
+    }
+  };
+  
+  // Convert amount to USD for internal calculations
+  const convertToUsd = (amount: number, currency: string): number => {
+    if (!currency || currency.toUpperCase() === 'USD') return amount;
+    if (currency.toUpperCase() === 'AED') return amount / AED_TO_USD_RATE;
+    return amount; // Default to 1:1 for unknown currencies
+  };
+
   const calculateFee = (amountValue: number): number => {
     if (!depositFee || amountValue <= 0) return 0;
     let fee = 0;
@@ -161,10 +181,27 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   const getDepositSummary = () => {
     const amountNum = parseFloat(amount) || 0;
-    const feeAmount = calculateFee(amountNum);
-    const netDeposit = amountNum - feeAmount;
-    const goldGrams = goldPrice?.pricePerGram && netDeposit > 0 ? netDeposit / goldPrice.pricePerGram : 0;
-    return { amountNum, feeAmount, netDeposit, goldGrams };
+    const accountCurrency = selectedAccount?.currency || 'USD';
+    const amountInUsd = convertToUsd(amountNum, accountCurrency);
+    const feeAmount = calculateFee(amountInUsd); // Fee calculated in USD
+    const netDepositUsd = amountInUsd - feeAmount;
+    const goldGrams = goldPrice?.pricePerGram && netDepositUsd > 0 ? netDepositUsd / goldPrice.pricePerGram : 0;
+    
+    // Convert fee back to original currency for display
+    const feeInOriginalCurrency = accountCurrency.toUpperCase() === 'AED' ? feeAmount * AED_TO_USD_RATE : feeAmount;
+    const netDepositOriginal = amountNum - feeInOriginalCurrency;
+    
+    return { 
+      amountNum, 
+      amountInUsd,
+      feeAmount, 
+      feeInOriginalCurrency,
+      netDeposit: netDepositOriginal, 
+      netDepositUsd,
+      goldGrams,
+      currency: accountCurrency,
+      currencySymbol: getCurrencySymbol(accountCurrency)
+    };
   };
 
   const resetForm = () => {
@@ -692,18 +729,25 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {/* Right Panel - Deposit Information */}
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium">Amount (USD) *</Label>
+                  <Label className="text-sm font-medium">Amount ({selectedAccount?.currency || 'USD'}) *</Label>
                   <div className="relative mt-1.5">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                      {getCurrencySymbol(selectedAccount?.currency || 'USD').trim()}
+                    </span>
                     <Input 
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0.00"
-                      className="pl-9 h-11"
+                      className={selectedAccount?.currency === 'AED' ? 'pl-12 h-11' : 'pl-7 h-11'}
                       data-testid="input-deposit-amount"
                     />
                   </div>
+                  {selectedAccount?.currency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ≈ ${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toFixed(2)} USD (rate: 1 USD = {AED_TO_USD_RATE} AED)
+                    </p>
+                  )}
                 </div>
 
                 {parseFloat(amount) > 0 && (
@@ -715,18 +759,30 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Deposit Amount:</span>
-                        <span className="font-medium">${getDepositSummary().amountNum.toFixed(2)}</span>
+                        <span className="font-medium">{getDepositSummary().currencySymbol}{getDepositSummary().amountNum.toFixed(2)}</span>
                       </div>
+                      {selectedAccount?.currency !== 'USD' && (
+                        <div className="flex justify-between text-muted-foreground text-xs">
+                          <span>USD Equivalent:</span>
+                          <span>${getDepositSummary().amountInUsd.toFixed(2)}</span>
+                        </div>
+                      )}
                       {depositFee && getDepositSummary().feeAmount > 0 && (
                         <div className="flex justify-between text-warning">
                           <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
-                          <span>-${getDepositSummary().feeAmount.toFixed(2)}</span>
+                          <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeInOriginalCurrency.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
-                        <span>Net Credit to Wallet:</span>
-                        <span className="text-success">${getDepositSummary().netDeposit.toFixed(2)}</span>
+                        <span>Net Credit to Wallet (USD):</span>
+                        <span className="text-success">${getDepositSummary().netDepositUsd.toFixed(2)}</span>
                       </div>
+                      {selectedAccount?.currency !== 'USD' && (
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>({selectedAccount?.currency} equivalent):</span>
+                          <span>{getDepositSummary().currencySymbol}{getDepositSummary().netDeposit.toFixed(2)}</span>
+                        </div>
+                      )}
                       {goldPrice?.pricePerGram && getDepositSummary().goldGrams > 0 && (
                         <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
                           <span className="flex items-center gap-1">
