@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { 
   Shield, 
   AlertTriangle, 
@@ -26,12 +28,30 @@ import {
   TrendingUp,
   UserCheck,
   FileWarning,
-  Scale
+  Scale,
+  Plus,
+  Edit2,
+  Trash2,
+  Gavel
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { format } from 'date-fns';
+
+interface AmlRule {
+  id: string;
+  ruleName: string;
+  ruleCode: string;
+  description: string;
+  ruleType: string;
+  conditions: Record<string, unknown>;
+  actionType: string;
+  priority: number;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+}
 
 export default function ComplianceDashboard() {
   const { user: adminUser } = useAuth();
@@ -42,6 +62,20 @@ export default function ComplianceDashboard() {
   const [caseStatus, setCaseStatus] = useState('');
   const [selectedRiskProfile, setSelectedRiskProfile] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [showRuleDialog, setShowRuleDialog] = useState(false);
+  const [editingRule, setEditingRule] = useState<AmlRule | null>(null);
+  const [ruleForm, setRuleForm] = useState({
+    ruleName: '',
+    ruleCode: '',
+    description: '',
+    ruleType: 'threshold',
+    actionType: 'alert',
+    priority: 5,
+    conditions: {} as Record<string, unknown>,
+    isActive: true
+  });
+  const [conditionsJson, setConditionsJson] = useState('{}');
 
   const { data: alertsData, isLoading: alertsLoading, refetch: refetchAlerts } = useQuery({
     queryKey: ['admin-aml-alerts'],
@@ -155,11 +189,195 @@ export default function ComplianceDashboard() {
     },
     onSuccess: () => {
       toast.success('AML rules seeded successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-aml-rules'] });
     },
     onError: () => {
       toast.error('Failed to seed AML rules');
     },
   });
+
+  const { data: rulesData, isLoading: rulesLoading, refetch: refetchRules } = useQuery({
+    queryKey: ['admin-aml-rules'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/aml-rules');
+      if (!res.ok) throw new Error('Failed to fetch AML rules');
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  const createRuleMutation = useMutation({
+    mutationFn: async (data: typeof ruleForm) => {
+      const res = await fetch('/api/admin/aml-rules', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ ...data, createdBy: adminUser?.id }),
+      });
+      if (!res.ok) throw new Error('Failed to create rule');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('AML rule created successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-aml-rules'] });
+      closeRuleDialog();
+    },
+    onError: () => {
+      toast.error('Failed to create AML rule');
+    },
+  });
+
+  const updateRuleMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<typeof ruleForm> }) => {
+      const res = await fetch(`/api/admin/aml-rules/${id}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to update rule');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('AML rule updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-aml-rules'] });
+      closeRuleDialog();
+    },
+    onError: () => {
+      toast.error('Failed to update AML rule');
+    },
+  });
+
+  const deleteRuleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/aml-rules/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete rule');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('AML rule deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-aml-rules'] });
+    },
+    onError: () => {
+      toast.error('Failed to delete AML rule');
+    },
+  });
+
+  const toggleRuleMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const res = await fetch(`/api/admin/aml-rules/${id}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ isActive }),
+      });
+      if (!res.ok) throw new Error('Failed to toggle rule');
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Rule ${variables.isActive ? 'enabled' : 'disabled'}`);
+      queryClient.invalidateQueries({ queryKey: ['admin-aml-rules'] });
+    },
+    onError: () => {
+      toast.error('Failed to toggle rule');
+    },
+  });
+
+  const amlRules: AmlRule[] = rulesData || [];
+
+  const openCreateRule = () => {
+    setEditingRule(null);
+    setRuleForm({
+      ruleName: '',
+      ruleCode: '',
+      description: '',
+      ruleType: 'threshold',
+      actionType: 'alert',
+      priority: 5,
+      conditions: {},
+      isActive: true
+    });
+    setConditionsJson('{}');
+    setShowRuleDialog(true);
+  };
+
+  const openEditRule = (rule: AmlRule) => {
+    setEditingRule(rule);
+    setRuleForm({
+      ruleName: rule.ruleName,
+      ruleCode: rule.ruleCode,
+      description: rule.description,
+      ruleType: rule.ruleType,
+      actionType: rule.actionType,
+      priority: rule.priority,
+      conditions: rule.conditions,
+      isActive: rule.isActive
+    });
+    setConditionsJson(JSON.stringify(rule.conditions, null, 2));
+    setShowRuleDialog(true);
+  };
+
+  const closeRuleDialog = () => {
+    setShowRuleDialog(false);
+    setEditingRule(null);
+    setRuleForm({
+      ruleName: '',
+      ruleCode: '',
+      description: '',
+      ruleType: 'threshold',
+      actionType: 'alert',
+      priority: 5,
+      conditions: {},
+      isActive: true
+    });
+    setConditionsJson('{}');
+  };
+
+  const handleSaveRule = () => {
+    let parsedConditions = {};
+    try {
+      parsedConditions = JSON.parse(conditionsJson);
+    } catch {
+      toast.error('Invalid JSON in conditions');
+      return;
+    }
+
+    const data = { ...ruleForm, conditions: parsedConditions };
+
+    if (editingRule) {
+      updateRuleMutation.mutate({ id: editingRule.id, data });
+    } else {
+      createRuleMutation.mutate(data);
+    }
+  };
+
+  const getConditionTemplate = (ruleType: string): string => {
+    switch (ruleType) {
+      case 'threshold':
+        return JSON.stringify({ amountThreshold: 10000, currency: "USD" }, null, 2);
+      case 'velocity':
+        return JSON.stringify({ transactionCount: 5, timeWindowHours: 24 }, null, 2);
+      case 'pattern':
+        return JSON.stringify({ amountThreshold: 9000, transactionCount: 3, timeWindowHours: 48 }, null, 2);
+      case 'geography':
+        return JSON.stringify({ highRiskCountries: ["North Korea", "Iran", "Syria"] }, null, 2);
+      default:
+        return '{}';
+    }
+  };
 
   const openCases = alertsData?.openCases || [];
   const highPriorityCases = alertsData?.highPriorityCases || [];
@@ -222,6 +440,7 @@ export default function ComplianceDashboard() {
     refetchProfiles();
     refetchLogs();
     refetchAuditLogs();
+    refetchRules();
   };
 
   const filteredCases = allCases.filter((c: any) => 
@@ -260,9 +479,12 @@ export default function ComplianceDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-gray-100 p-1 rounded-xl">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-gray-100 p-1 rounded-xl">
             <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-overview">
               <BarChart3 className="w-4 h-4 mr-2" /> Overview
+            </TabsTrigger>
+            <TabsTrigger value="rules" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-rules">
+              <Gavel className="w-4 h-4 mr-2" /> AML Rules
             </TabsTrigger>
             <TabsTrigger value="cases" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-cases">
               <FileWarning className="w-4 h-4 mr-2" /> AML Cases
@@ -413,6 +635,165 @@ export default function ComplianceDashboard() {
                       ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="rules" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Gavel className="w-5 h-5 text-purple-500" />
+                      AML Monitoring Rules ({amlRules.length})
+                    </CardTitle>
+                    <CardDescription>Configure rules for automatic transaction monitoring and alerts</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => seedRulesMutation.mutate()} disabled={seedRulesMutation.isPending} data-testid="button-seed-rules-tab">
+                      <Scale className="w-4 h-4 mr-2" /> Seed Defaults
+                    </Button>
+                    <Button onClick={openCreateRule} data-testid="button-create-rule">
+                      <Plus className="w-4 h-4 mr-2" /> Create Rule
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {rulesLoading ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : amlRules.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Gavel className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <p className="mb-4">No AML rules configured</p>
+                    <Button variant="outline" onClick={() => seedRulesMutation.mutate()} disabled={seedRulesMutation.isPending}>
+                      <Scale className="w-4 h-4 mr-2" /> Seed Default Rules
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rule Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Code</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Priority</th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Active</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {amlRules.map((rule) => (
+                          <tr key={rule.id} className="hover:bg-gray-50 transition-colors" data-testid={`rule-row-${rule.id}`}>
+                            <td className="px-4 py-3">
+                              <div>
+                                <p className="font-medium">{rule.ruleName}</p>
+                                <p className="text-xs text-gray-500 max-w-xs truncate">{rule.description}</p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <code className="text-xs bg-gray-100 px-2 py-1 rounded">{rule.ruleCode}</code>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant="outline" className="capitalize">{rule.ruleType}</Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge className={
+                                rule.actionType === 'block' ? 'bg-red-500 text-white' :
+                                rule.actionType === 'escalate' ? 'bg-purple-500 text-white' :
+                                rule.actionType === 'flag' ? 'bg-yellow-500 text-white' :
+                                'bg-blue-500 text-white'
+                              }>
+                                {rule.actionType}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  rule.priority >= 9 ? 'bg-red-500' :
+                                  rule.priority >= 7 ? 'bg-purple-500' :
+                                  rule.priority >= 5 ? 'bg-yellow-500' :
+                                  'bg-green-500'
+                                }`} />
+                                <span className="text-sm">{rule.priority}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <Switch
+                                checked={rule.isActive}
+                                onCheckedChange={(checked) => toggleRuleMutation.mutate({ id: rule.id, isActive: checked })}
+                                disabled={toggleRuleMutation.isPending}
+                                data-testid={`switch-rule-${rule.id}`}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => openEditRule(rule)}
+                                  data-testid={`button-edit-rule-${rule.id}`}
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => {
+                                    if (confirm(`Delete rule "${rule.ruleName}"?`)) {
+                                      deleteRuleMutation.mutate(rule.id);
+                                    }
+                                  }}
+                                  disabled={deleteRuleMutation.isPending}
+                                  data-testid={`button-delete-rule-${rule.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-500">Threshold Rules</p>
+                  <p className="text-2xl font-bold">{amlRules.filter(r => r.ruleType === 'threshold').length}</p>
+                  <p className="text-xs text-gray-400 mt-1">Amount-based triggers</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-500">Velocity Rules</p>
+                  <p className="text-2xl font-bold">{amlRules.filter(r => r.ruleType === 'velocity').length}</p>
+                  <p className="text-xs text-gray-400 mt-1">Transaction count triggers</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-500">Pattern Rules</p>
+                  <p className="text-2xl font-bold">{amlRules.filter(r => r.ruleType === 'pattern').length}</p>
+                  <p className="text-xs text-gray-400 mt-1">Behavior detection</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-500">Active Rules</p>
+                  <p className="text-2xl font-bold text-green-600">{amlRules.filter(r => r.isActive).length}</p>
+                  <p className="text-xs text-gray-400 mt-1">Currently monitoring</p>
                 </CardContent>
               </Card>
             </div>
@@ -898,6 +1279,161 @@ export default function ComplianceDashboard() {
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${calculateRiskMutation.isPending ? 'animate-spin' : ''}`} />
                 Recalculate Risk
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showRuleDialog} onOpenChange={(open) => !open && closeRuleDialog()}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingRule ? 'Edit AML Rule' : 'Create AML Rule'}</DialogTitle>
+              <DialogDescription>
+                {editingRule ? 'Update the rule configuration' : 'Configure a new rule for transaction monitoring'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ruleName">Rule Name</Label>
+                  <Input
+                    id="ruleName"
+                    placeholder="e.g., Large Transaction Alert"
+                    value={ruleForm.ruleName}
+                    onChange={(e) => setRuleForm({ ...ruleForm, ruleName: e.target.value })}
+                    data-testid="input-rule-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ruleCode">Rule Code</Label>
+                  <Input
+                    id="ruleCode"
+                    placeholder="e.g., LARGE_TXN_10K"
+                    value={ruleForm.ruleCode}
+                    onChange={(e) => setRuleForm({ ...ruleForm, ruleCode: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
+                    data-testid="input-rule-code"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe what this rule does..."
+                  value={ruleForm.description}
+                  onChange={(e) => setRuleForm({ ...ruleForm, description: e.target.value })}
+                  rows={2}
+                  data-testid="input-rule-description"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Rule Type</Label>
+                  <Select 
+                    value={ruleForm.ruleType} 
+                    onValueChange={(value) => {
+                      setRuleForm({ ...ruleForm, ruleType: value });
+                      setConditionsJson(getConditionTemplate(value));
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-rule-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="threshold">Threshold (Amount)</SelectItem>
+                      <SelectItem value="velocity">Velocity (Count)</SelectItem>
+                      <SelectItem value="pattern">Pattern (Behavior)</SelectItem>
+                      <SelectItem value="geography">Geography (Location)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Action Type</Label>
+                  <Select 
+                    value={ruleForm.actionType} 
+                    onValueChange={(value) => setRuleForm({ ...ruleForm, actionType: value })}
+                  >
+                    <SelectTrigger data-testid="select-action-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alert">Alert (Notify Admin)</SelectItem>
+                      <SelectItem value="flag">Flag (Mark for Review)</SelectItem>
+                      <SelectItem value="block">Block (Stop Transaction)</SelectItem>
+                      <SelectItem value="escalate">Escalate (Create Case)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="priority">Priority (1-10)</Label>
+                  <Input
+                    id="priority"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={ruleForm.priority}
+                    onChange={(e) => setRuleForm({ ...ruleForm, priority: parseInt(e.target.value) || 5 })}
+                    data-testid="input-priority"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Conditions (JSON)</Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setConditionsJson(getConditionTemplate(ruleForm.ruleType))}
+                    type="button"
+                  >
+                    Load Template
+                  </Button>
+                </div>
+                <Textarea
+                  placeholder='{"amountThreshold": 10000}'
+                  value={conditionsJson}
+                  onChange={(e) => setConditionsJson(e.target.value)}
+                  rows={5}
+                  className="font-mono text-sm"
+                  data-testid="input-conditions"
+                />
+                <p className="text-xs text-gray-500">
+                  {ruleForm.ruleType === 'threshold' && 'Use: amountThreshold, currency, timeWindowHours (optional)'}
+                  {ruleForm.ruleType === 'velocity' && 'Use: transactionCount, timeWindowHours'}
+                  {ruleForm.ruleType === 'pattern' && 'Use: amountThreshold, transactionCount, timeWindowHours, maxAmount'}
+                  {ruleForm.ruleType === 'geography' && 'Use: highRiskCountries (array of country names)'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={ruleForm.isActive}
+                  onCheckedChange={(checked) => setRuleForm({ ...ruleForm, isActive: checked })}
+                  data-testid="switch-rule-active"
+                />
+                <Label>Rule is active</Label>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={closeRuleDialog}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveRule}
+                disabled={createRuleMutation.isPending || updateRuleMutation.isPending || !ruleForm.ruleName || !ruleForm.ruleCode}
+                data-testid="button-save-rule"
+              >
+                {(createRuleMutation.isPending || updateRuleMutation.isPending) ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                )}
+                {editingRule ? 'Update Rule' : 'Create Rule'}
               </Button>
             </DialogFooter>
           </DialogContent>
