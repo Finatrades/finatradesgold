@@ -20721,7 +20721,7 @@ ${message}
   });
 
   // Get Finatrades Personal KYC status
-  app.get("/api/finatrades-kyc/personal/:userId", async (req, res) => {
+  app.get("/api/finatrades-kyc/personal/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
       const submission = await storage.getFinatradesPersonalKyc(userId);
@@ -20733,7 +20733,7 @@ ${message}
   });
 
   // Submit Finatrades Corporate KYC (questionnaire)
-  app.post("/api/finatrades-kyc/corporate", async (req, res) => {
+  app.post("/api/finatrades-kyc/corporate", ensureAuthenticated, async (req, res) => {
     try {
       const { 
         userId, 
@@ -20851,7 +20851,7 @@ ${message}
   });
 
   // Get Finatrades Corporate KYC status
-  app.get("/api/finatrades-kyc/corporate/:userId", async (req, res) => {
+  app.get("/api/finatrades-kyc/corporate/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
       const submission = await storage.getFinatradesCorporateKyc(userId);
