@@ -158,26 +158,18 @@ import Announcements from "@/pages/admin/Announcements";
 import BankStatementImport from "@/pages/admin/BankStatementImport";
 import CacheManagement from "@/pages/admin/CacheManagement";
 import ChargebackTracker from "@/pages/admin/ChargebackTracker";
-import ChurnAnalysis from "@/pages/admin/ChurnAnalysis";
-import CompetitorMonitor from "@/pages/admin/CompetitorMonitor";
 import CounterpartyRisk from "@/pages/admin/CounterpartyRisk";
 import CurrencyExchange from "@/pages/admin/CurrencyExchange";
-import CustomerAcquisition from "@/pages/admin/CustomerAcquisition";
-import CustomerLifetimeValue from "@/pages/admin/CustomerLifetimeValue";
 import DailyCashPosition from "@/pages/admin/DailyCashPosition";
 import DBQueryMonitor from "@/pages/admin/DBQueryMonitor";
 import ErrorTracking from "@/pages/admin/ErrorTracking";
-import ExecutiveDashboard from "@/pages/admin/ExecutiveDashboard";
 import FeatureFlags from "@/pages/admin/FeatureFlags";
 import FeedbackDashboard from "@/pages/admin/FeedbackDashboard";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
-import MarketingTracker from "@/pages/admin/MarketingTracker";
 import MobileVersionControl from "@/pages/admin/MobileVersionControl";
-import PartnerDashboard from "@/pages/admin/PartnerDashboard";
 import QueueMonitor from "@/pages/admin/QueueMonitor";
 import RateLimitMonitor from "@/pages/admin/RateLimitMonitor";
 import SessionManagement from "@/pages/admin/SessionManagement";
-import UserActivityHeatmap from "@/pages/admin/UserActivityHeatmap";
 import WebhookStatus from "@/pages/admin/WebhookStatus";
 import WireTransferTracking from "@/pages/admin/WireTransferTracking";
 import QADepositTest from "@/pages/QADepositTest";
@@ -309,14 +301,6 @@ function Router() {
       <Route path="/admin/interest-calculator" component={InterestCalculator} />
       
       {/* Analytics & Business Intelligence */}
-      <Route path="/admin/executive" component={ExecutiveDashboard} />
-      <Route path="/admin/customer-ltv" component={CustomerLifetimeValue} />
-      <Route path="/admin/customer-acquisition" component={CustomerAcquisition} />
-      <Route path="/admin/churn-analysis" component={ChurnAnalysis} />
-      <Route path="/admin/user-activity" component={UserActivityHeatmap} />
-      <Route path="/admin/marketing" component={MarketingTracker} />
-      <Route path="/admin/competitors" component={CompetitorMonitor} />
-      <Route path="/admin/partners" component={PartnerDashboard} />
       
       {/* System & DevOps */}
       <Route path="/admin/cache" component={CacheManagement} />

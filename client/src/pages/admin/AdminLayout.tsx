@@ -176,14 +176,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Financial Reports', href: '/admin/financial-reports' },
         { label: 'Gold Backing Report', href: '/admin/gold-backing' },
         { label: 'System Health', href: '/admin/system-health' },
-        { label: 'Executive Dashboard', href: '/admin/executive' },
-        { label: 'Customer LTV', href: '/admin/customer-ltv' },
-        { label: 'Customer Acquisition', href: '/admin/customer-acquisition' },
-        { label: 'Churn Analysis', href: '/admin/churn-analysis' },
-        { label: 'User Activity', href: '/admin/user-activity' },
-        { label: 'Marketing', href: '/admin/marketing' },
-        { label: 'Competitors', href: '/admin/competitors' },
-        { label: 'Partners', href: '/admin/partners' },
       ]
     },
     {
