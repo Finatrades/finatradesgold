@@ -457,7 +457,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="hidden lg:block border-t border-border bg-card/50" data-testid="admin-nav-bar">
           <div className="px-4 lg:px-6">
-            <div className="flex items-center justify-center gap-6 py-2.5">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 py-2">
               {currentSectionItems.map((item) => {
                 const badgeCount = getBadgeCount(item.href);
                 return (
