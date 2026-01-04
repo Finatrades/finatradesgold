@@ -176,6 +176,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Financial Reports', href: '/admin/financial-reports' },
         { label: 'Gold Backing Report', href: '/admin/gold-backing' },
         { label: 'System Health', href: '/admin/system-health' },
+        { label: 'Executive Dashboard', href: '/admin/executive' },
+        { label: 'Customer LTV', href: '/admin/customer-ltv' },
+        { label: 'Customer Acquisition', href: '/admin/customer-acquisition' },
+        { label: 'Churn Analysis', href: '/admin/churn-analysis' },
+        { label: 'User Activity', href: '/admin/user-activity' },
+        { label: 'Marketing', href: '/admin/marketing' },
+        { label: 'Competitors', href: '/admin/competitors' },
+        { label: 'Partners', href: '/admin/partners' },
       ]
     },
     {
@@ -201,6 +209,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Daily Reconciliation', href: '/admin/daily-reconciliation' },
         { label: 'Settlement Queue', href: '/admin/settlement-queue' },
         { label: 'Liquidity Dashboard', href: '/admin/liquidity' },
+        { label: 'Cash Position', href: '/admin/cash-position' },
+        { label: 'Wire Transfers', href: '/admin/wire-transfers' },
+        { label: 'Currency Exchange', href: '/admin/currency-exchange' },
+        { label: 'Bank Statements', href: '/admin/bank-statements' },
+        { label: 'Chargebacks', href: '/admin/chargebacks' },
+        { label: 'Counterparty Risk', href: '/admin/counterparty-risk' },
+        { label: 'Interest Calculator', href: '/admin/interest-calculator' },
         { label: 'Payment Gateways', href: '/admin/payment-gateways' },
         { label: 'Fee Management', href: '/admin/fees' },
       ]
@@ -221,6 +236,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'Scheduled Jobs', href: '/admin/scheduled-jobs' },
         { label: 'API & Error Logs', href: '/admin/api-logs' },
+        { label: 'Error Tracking', href: '/admin/errors' },
+        { label: 'Queue Monitor', href: '/admin/queues' },
+        { label: 'Cache Management', href: '/admin/cache' },
+        { label: 'Rate Limits', href: '/admin/rate-limits' },
+        { label: 'Sessions', href: '/admin/sessions' },
+        { label: 'DB Monitor', href: '/admin/db-monitor' },
+        { label: 'Webhooks', href: '/admin/webhooks' },
+        { label: 'Feature Flags', href: '/admin/feature-flags' },
+        { label: 'Mobile Versions', href: '/admin/mobile-versions' },
       ]
     },
     {
@@ -248,6 +272,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Database Backups', href: '/admin/database-backups' },
         { label: 'Geo Restrictions', href: '/admin/geo-restrictions' },
         { label: 'Admin Resources', href: '/admin/settings' },
+        { label: 'Announcements', href: '/admin/announcements' },
+        { label: 'Feedback', href: '/admin/feedback' },
       ]
     }
   ];
