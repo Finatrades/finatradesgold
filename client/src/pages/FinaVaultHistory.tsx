@@ -111,13 +111,13 @@ export default function FinaVaultHistory() {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'approved':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-green-100 text-green-700';
       case 'pending':
       case 'in_progress':
-        return 'bg-purple-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400';
+        return 'bg-purple-100 text-fuchsia-700';
       case 'rejected':
       case 'cancelled':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-red-100 text-red-700';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -252,7 +252,7 @@ export default function FinaVaultHistory() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    isCredit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                                    isCredit ? 'bg-green-100' : 'bg-red-100'
                                   }`}>
                                     {getActionIcon(entry.action)}
                                   </div>
@@ -356,8 +356,8 @@ export default function FinaVaultHistory() {
                               <div className="flex items-center gap-2">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                                   tx.type === 'deposit' 
-                                    ? 'bg-green-100 dark:bg-green-900/30' 
-                                    : 'bg-red-100 dark:bg-red-900/30'
+                                    ? 'bg-green-100' 
+                                    : 'bg-red-100'
                                 }`}>
                                   {tx.type === 'deposit' 
                                     ? <ArrowDownRight className="w-4 h-4 text-green-600" />

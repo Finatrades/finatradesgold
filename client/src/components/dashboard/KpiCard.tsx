@@ -27,8 +27,8 @@ export default function KpiCard({ title, value, definition, subValue, icon, dela
       whileHover={{ scale: 1.03, y: -4 }}
       whileTap={{ scale: 0.98 }}
     >
-      <Card className="h-full p-5 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 border border-white/50 dark:border-zinc-800/50 hover:border-[#D4AF37]/40 hover:shadow-xl hover:shadow-[#D4AF37]/10 transition-all duration-300 group relative overflow-hidden rounded-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#F4E4BC]/10 dark:from-[#D4AF37]/10 dark:to-[#F4E4BC]/5 pointer-events-none" />
+      <Card className="h-full p-5 bg-white/70 backdrop-blur-xl shadow-lg shadow-black/5 border border-white/50 hover:border-[#D4AF37]/40 hover:shadow-xl hover:shadow-[#D4AF37]/10 transition-all duration-300 group relative overflow-hidden rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#F4E4BC]/10 pointer-events-none" />
         
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-3">
@@ -48,7 +48,7 @@ export default function KpiCard({ title, value, definition, subValue, icon, dela
               )}
             </div>
             {icon && (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#F4E4BC]/30 dark:from-[#D4AF37]/30 dark:to-[#F4E4BC]/20 flex items-center justify-center text-[#D4AF37] group-hover:scale-110 transition-transform duration-300">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#F4E4BC]/30 flex items-center justify-center text-[#D4AF37] group-hover:scale-110 transition-transform duration-300">
                 {icon}
               </div>
             )}
@@ -57,7 +57,7 @@ export default function KpiCard({ title, value, definition, subValue, icon, dela
           <div className="space-y-1">
             <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
             {subValue && (
-              <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">{subValue}</p>
+              <p className="text-xs text-gray-600 font-medium">{subValue}</p>
             )}
           </div>
         </div>

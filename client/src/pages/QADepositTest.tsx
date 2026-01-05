@@ -168,7 +168,7 @@ export default function QADepositTest() {
 
   if (!hasAccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3 text-red-500">
@@ -182,14 +182,14 @@ export default function QADepositTest() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="qa-title">
+            <h1 className="text-2xl font-bold text-gray-900" data-testid="qa-title">
               QA Deposit Test Runner
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-gray-500">
               Automated end-to-end deposit testing
             </p>
           </div>
@@ -305,7 +305,7 @@ export default function QADepositTest() {
               {step === 'confirm' && (
                 <div className="space-y-4">
                   <Label>Confirm Test Details</Label>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Email:</span>
                       <span className="font-medium">{testEmail}</span>
@@ -331,8 +331,8 @@ export default function QADepositTest() {
               {step === 'approve' && (
                 <div className="space-y-4">
                   <Label>Approval Decision</Label>
-                  <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <p className="text-sm text-purple-700">
                       Ready to execute {method?.toUpperCase()} deposit of ${parseFloat(amount || '0').toLocaleString()} for {testEmail}
                     </p>
                   </div>
@@ -376,10 +376,10 @@ export default function QADepositTest() {
                   </div>
 
                   {result.status === 'CONFIRMED' && (
-                    <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 space-y-2">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Transaction ID:</span>
-                        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
                           {result.transactionId?.substring(0, 20)}...
                         </code>
                       </div>
@@ -456,10 +456,10 @@ export default function QADepositTest() {
                         key={i}
                         className={`p-2 rounded ${
                           log.event.includes('FAIL') || log.event.includes('ERROR')
-                            ? 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300'
+                            ? 'bg-red-50 text-red-700'
                             : log.event.includes('CONFIRMED') || log.event.includes('PASS')
-                            ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300'
-                            : 'bg-gray-50 dark:bg-gray-800'
+                            ? 'bg-green-50 text-green-700'
+                            : 'bg-gray-50'
                         }`}
                       >
                         <div className="flex justify-between">
@@ -498,19 +498,19 @@ export default function QADepositTest() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-4 text-sm">
-              <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
+              <div className="bg-gray-50 rounded p-3">
                 <p className="text-gray-500">Test User</p>
                 <p className="font-medium">{testEmail}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
+              <div className="bg-gray-50 rounded p-3">
                 <p className="text-gray-500">Min Deposit</p>
                 <p className="font-medium">${limits.minDeposit}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
+              <div className="bg-gray-50 rounded p-3">
                 <p className="text-gray-500">Max Deposit</p>
                 <p className="font-medium">${limits.maxDeposit.toLocaleString()}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
+              <div className="bg-gray-50 rounded p-3">
                 <p className="text-gray-500">QA Mode</p>
                 <p className="font-medium">{config?.qaMode ? 'Active' : 'Inactive'}</p>
               </div>

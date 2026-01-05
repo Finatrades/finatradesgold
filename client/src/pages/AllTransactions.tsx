@@ -135,11 +135,11 @@ export default function AllTransactions() {
 
   const getModuleColor = (module: string) => {
     switch (module) {
-      case 'finapay': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'finavault': return 'bg-purple-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400';
-      case 'bnsl': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
-      case 'finabridge': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+      case 'finapay': return 'bg-blue-100 text-blue-700';
+      case 'finavault': return 'bg-purple-100 text-fuchsia-700';
+      case 'bnsl': return 'bg-purple-100 text-purple-700';
+      case 'finabridge': return 'bg-green-100 text-green-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -163,13 +163,13 @@ export default function AllTransactions() {
   const getStatusBadge = (status: string) => {
     switch (status.toUpperCase()) {
       case 'COMPLETED':
-        return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-700"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
       case 'PENDING':
-        return <Badge className="bg-purple-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
+        return <Badge className="bg-purple-100 text-fuchsia-700"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
       case 'LOCKED':
-        return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>;
+        return <Badge className="bg-blue-100 text-blue-700"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>;
       case 'FAILED':
-        return <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"><XCircle className="w-3 h-3 mr-1" /> Failed</Badge>;
+        return <Badge className="bg-red-100 text-red-700"><XCircle className="w-3 h-3 mr-1" /> Failed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -178,11 +178,11 @@ export default function AllTransactions() {
   const getSyncStatusIndicator = () => {
     switch (syncStatus) {
       case 'syncing':
-        return <span className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400"><RefreshCw className="w-3 h-3 animate-spin" /> Syncing...</span>;
+        return <span className="flex items-center gap-1.5 text-xs text-blue-600"><RefreshCw className="w-3 h-3 animate-spin" /> Syncing...</span>;
       case 'error':
-        return <span className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400"><AlertCircle className="w-3 h-3" /> Error</span>;
+        return <span className="flex items-center gap-1.5 text-xs text-red-600"><AlertCircle className="w-3 h-3" /> Error</span>;
       default:
-        return <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400"><CheckCircle2 className="w-3 h-3" /> Updated {format(lastUpdated, 'HH:mm:ss')}</span>;
+        return <span className="flex items-center gap-1.5 text-xs text-green-600"><CheckCircle2 className="w-3 h-3" /> Updated {format(lastUpdated, 'HH:mm:ss')}</span>;
     }
   };
 
@@ -211,7 +211,7 @@ export default function AllTransactions() {
       
       return (
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700">
+          <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
             <ArrowUpRight className="w-3 h-3 mr-0.5" />
             Sent
           </Badge>
@@ -235,7 +235,7 @@ export default function AllTransactions() {
       
       return (
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700">
+          <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
             <ArrowDownLeft className="w-3 h-3 mr-0.5" />
             Received
           </Badge>
@@ -430,9 +430,9 @@ export default function AllTransactions() {
               </div>
 
               {selectedTx.status === 'Pending' && !selectedTx.grams && selectedTx.usd && (
-                <div className="bg-purple-50 dark:bg-fuchsia-900/20 border border-purple-200 dark:border-fuchsia-700 rounded-lg p-3 text-sm">
-                  <p className="font-medium text-fuchsia-800 dark:text-purple-300 mb-1">Important Notice:</p>
-                  <p className="text-fuchsia-700 dark:text-fuchsia-400 text-xs leading-relaxed">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm">
+                  <p className="font-medium text-fuchsia-800 mb-1">Important Notice:</p>
+                  <p className="text-fuchsia-700 text-xs leading-relaxed">
                     Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
                     After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.
                   </p>

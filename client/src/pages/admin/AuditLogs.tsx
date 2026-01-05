@@ -128,10 +128,10 @@ export default function AuditLogs() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="page-title">
+            <h1 className="text-3xl font-bold text-gray-900" data-testid="page-title">
               Audit Logs
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-gray-500 mt-1">
               Track all system activities and changes
             </p>
           </div>
@@ -145,7 +145,7 @@ export default function AuditLogs() {
           <Card data-testid="stat-total">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                <div className="p-3 rounded-full bg-purple-100">
                   <FileText className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
@@ -159,7 +159,7 @@ export default function AuditLogs() {
           <Card data-testid="stat-today">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <div className="p-3 rounded-full bg-blue-100">
                   <Calendar className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
@@ -173,7 +173,7 @@ export default function AuditLogs() {
           <Card data-testid="stat-users">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
+                <div className="p-3 rounded-full bg-green-100">
                   <User className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
@@ -187,7 +187,7 @@ export default function AuditLogs() {
           <Card data-testid="stat-entities">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                <div className="p-3 rounded-full bg-purple-100">
                   <Activity className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
@@ -267,7 +267,7 @@ export default function AuditLogs() {
                       const performer = log.performedBy ? users[log.performedBy] : null;
                       
                       return (
-                        <tr key={log.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800" data-testid={`row-log-${log.id}`}>
+                        <tr key={log.id} className="border-b hover:bg-gray-50" data-testid={`row-log-${log.id}`}>
                           <td className="py-3 px-4 text-sm text-gray-500">
                             {format(new Date(log.createdAt), 'MMM d, yyyy HH:mm:ss')}
                           </td>
@@ -291,7 +291,7 @@ export default function AuditLogs() {
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-mono">
+                            <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
                               {log.entityId.substring(0, 12)}...
                             </code>
                           </td>
@@ -337,7 +337,7 @@ export default function AuditLogs() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Entity ID</p>
-                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{selectedLog.entityId}</code>
+                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">{selectedLog.entityId}</code>
                   </div>
                   {selectedLog.performedBy && users[selectedLog.performedBy] && (
                     <div>
@@ -357,7 +357,7 @@ export default function AuditLogs() {
                 {selectedLog.previousData && Object.keys(selectedLog.previousData).length > 0 && (
                   <div>
                     <p className="text-sm text-gray-500 mb-2">Previous Data</p>
-                    <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded text-xs overflow-auto max-h-40">
+                    <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-40">
                       {JSON.stringify(selectedLog.previousData, null, 2)}
                     </pre>
                   </div>
@@ -366,7 +366,7 @@ export default function AuditLogs() {
                 {selectedLog.newData && Object.keys(selectedLog.newData).length > 0 && (
                   <div>
                     <p className="text-sm text-gray-500 mb-2">New Data</p>
-                    <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded text-xs overflow-auto max-h-40">
+                    <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-40">
                       {JSON.stringify(selectedLog.newData, null, 2)}
                     </pre>
                   </div>
@@ -375,7 +375,7 @@ export default function AuditLogs() {
                 {selectedLog.userAgent && (
                   <div>
                     <p className="text-sm text-gray-500 mb-2">User Agent</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 break-all">{selectedLog.userAgent}</p>
+                    <p className="text-xs text-gray-600 break-all">{selectedLog.userAgent}</p>
                   </div>
                 )}
               </div>

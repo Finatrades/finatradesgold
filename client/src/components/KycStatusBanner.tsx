@@ -20,8 +20,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
           title: 'Identity Verification Required',
           message: 'Complete your KYC verification to unlock all features. Your account is currently in view-only mode.',
-          bgColor: 'bg-amber-50 dark:bg-amber-900/20',
-          borderColor: 'border-amber-200 dark:border-amber-700',
+          bgColor: 'bg-amber-50',
+          borderColor: 'border-amber-200',
           buttonText: 'Verify Now',
           canDismiss: false
         };
@@ -30,8 +30,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <ShieldCheck className="w-5 h-5 text-blue-500" />,
           title: 'Verification In Progress',
           message: 'Your KYC verification is being reviewed. Features will be unlocked once approved.',
-          bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-          borderColor: 'border-blue-200 dark:border-blue-700',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200',
           buttonText: 'Check Status',
           canDismiss: true
         };
@@ -40,8 +40,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <AlertTriangle className="w-5 h-5 text-red-500" />,
           title: 'Verification Rejected',
           message: 'Your KYC verification was not approved. Please re-submit with valid documents.',
-          bgColor: 'bg-red-50 dark:bg-red-900/20',
-          borderColor: 'border-red-200 dark:border-red-700',
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200',
           buttonText: 'Re-submit',
           canDismiss: false
         };

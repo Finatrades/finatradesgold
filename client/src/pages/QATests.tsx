@@ -114,11 +114,11 @@ export default function QATests() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl" data-testid="qa-tests-page">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Beaker className="h-8 w-8 text-purple-500" />
           QA Test Harness
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-gray-600 mt-2">
           Automated testing system for Finatrades platform
         </p>
       </div>
@@ -285,7 +285,7 @@ export default function QATests() {
                           {suite.tests.map((test, tidx) => (
                             <div
                               key={tidx}
-                              className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded"
+                              className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
                               data-testid={`test-result-${test.testName}`}
                             >
                               <span className="text-sm">{test.testName}</span>
@@ -322,7 +322,7 @@ export default function QATests() {
                 </Button>
               </CardTitle>
               <CardDescription>
-                Default password for all test accounts: <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{accounts?.password || "Test123!@#"}</code>
+                Default password for all test accounts: <code className="bg-gray-100 px-2 py-1 rounded">{accounts?.password || "Test123!@#"}</code>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -408,10 +408,10 @@ export default function QATests() {
                         key={idx}
                         className={`p-3 rounded text-sm font-mono ${
                           log.level === "error"
-                            ? "bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500"
+                            ? "bg-red-50 border-l-4 border-red-500"
                             : log.level === "warn"
-                            ? "bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500"
-                            : "bg-gray-50 dark:bg-gray-800 border-l-4 border-gray-300"
+                            ? "bg-yellow-50 border-l-4 border-yellow-500"
+                            : "bg-gray-50 border-l-4 border-gray-300"
                         }`}
                         data-testid={`log-entry-${idx}`}
                       >
@@ -423,7 +423,7 @@ export default function QATests() {
                           </div>
                         </div>
                         <div className="font-semibold">{log.event}</div>
-                        {log.testName && <div className="text-gray-600 dark:text-gray-400">{log.testName}</div>}
+                        {log.testName && <div className="text-gray-600">{log.testName}</div>}
                         {log.details && (
                           <pre className="mt-1 text-xs overflow-x-auto">{JSON.stringify(log.details, null, 2)}</pre>
                         )}

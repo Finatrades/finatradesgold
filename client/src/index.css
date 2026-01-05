@@ -282,11 +282,7 @@ input[type="number"] {
   box-shadow: 0 8px 32px rgba(138, 43, 226, 0.1);
 }
 
-.dark .glass-card {
-  background: rgba(26, 10, 46, 0.7);
-  border: 1px solid rgba(163, 66, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
+/* Light mode only - .dark .glass-card removed */
 
 /* Premium Gold Shimmer Effect */
 .gold-shimmer {
@@ -320,9 +316,7 @@ input[type="number"] {
   box-shadow: 0 20px 40px rgba(138, 43, 226, 0.15);
 }
 
-.dark .hover-lift:hover {
-  box-shadow: 0 20px 40px rgba(163, 66, 255, 0.2);
-}
+/* Light mode only - .dark .hover-lift:hover removed */
 
 /* Animated Gradient Border */
 .gradient-border {
@@ -430,10 +424,7 @@ input[type="number"] {
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.dark .premium-card {
-  background: linear-gradient(135deg, rgba(26, 10, 46, 0.95) 0%, rgba(42, 0, 85, 0.9) 100%);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-}
+/* Light mode only - .dark .premium-card removed */
 
 /* Stats Card with Animated Background */
 .stats-card {

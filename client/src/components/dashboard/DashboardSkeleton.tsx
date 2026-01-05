@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 
 function SkeletonPulse({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-zinc-700 dark:via-zinc-600 dark:to-zinc-700 rounded ${className}`} />
+    <div className={`animate-pulse bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded ${className}`} />
   );
 }
 
@@ -42,7 +42,7 @@ export function TransactionRowSkeleton() {
 
 export function TransactionsTableSkeleton() {
   return (
-    <Card className="p-6 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-lg border border-white/50 dark:border-zinc-800/50 min-h-[300px] rounded-2xl">
+    <Card className="p-6 bg-white/70 backdrop-blur-xl shadow-lg border border-white/50 min-h-[300px] rounded-2xl">
       <div className="flex justify-between items-center mb-6">
         <SkeletonPulse className="h-5 w-36" />
         <SkeletonPulse className="h-4 w-16" />

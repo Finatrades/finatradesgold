@@ -229,7 +229,7 @@ export default function ChargebackTracker() {
                     {filtered.map((cb) => {
                       const isUrgent = new Date(cb.deadline) < new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
                       return (
-                        <tr key={cb.id} className={`border-b hover:bg-muted/50 ${isUrgent && cb.status === 'open' ? 'bg-red-50 dark:bg-red-950/10' : ''}`}>
+                        <tr key={cb.id} className={`border-b hover:bg-muted/50 ${isUrgent && cb.status === 'open' ? 'bg-red-50' : ''}`}>
                           <td className="py-3 px-2">
                             <code className="text-sm bg-muted px-2 py-0.5 rounded">{cb.transactionId}</code>
                           </td>

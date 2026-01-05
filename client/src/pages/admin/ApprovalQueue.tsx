@@ -324,8 +324,8 @@ export default function ApprovalQueue() {
                     )}
 
                     {selectedApproval.l1_approved_at && (
-                      <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
+                      <div className="p-4 border rounded-lg bg-green-50">
+                        <div className="flex items-center gap-2 text-green-700 mb-2">
                           <CheckCircle className="h-4 w-4" />
                           <span className="font-medium">L1 Approved</span>
                         </div>
@@ -337,8 +337,8 @@ export default function ApprovalQueue() {
                     )}
 
                     {selectedApproval.final_approved_at && (
-                      <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
+                      <div className="p-4 border rounded-lg bg-green-50">
+                        <div className="flex items-center gap-2 text-green-700 mb-2">
                           <CheckCircle className="h-4 w-4" />
                           <span className="font-medium">Final Approved</span>
                         </div>
@@ -350,8 +350,8 @@ export default function ApprovalQueue() {
                     )}
 
                     {selectedApproval.rejected_at && (
-                      <div className="p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
-                        <div className="flex items-center gap-2 text-red-700 dark:text-red-400 mb-2">
+                      <div className="p-4 border rounded-lg bg-red-50">
+                        <div className="flex items-center gap-2 text-red-700 mb-2">
                           <XCircle className="h-4 w-4" />
                           <span className="font-medium">Rejected</span>
                         </div>

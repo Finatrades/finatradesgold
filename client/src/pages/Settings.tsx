@@ -392,7 +392,7 @@ export default function Settings() {
             <CardDescription>Control how you receive payments and transfers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-green-50 dark:bg-green-950/20">
+            <div className="flex items-center justify-between p-4 rounded-lg border bg-green-50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
                   <ArrowDownLeft className="w-5 h-5 text-green-600" />
@@ -400,7 +400,7 @@ export default function Settings() {
                 <div>
                   <div className="flex items-center gap-2">
                     <Label className="text-base">Transfer Approval</Label>
-                    <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded-full">
+                    <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
                       Always Enabled
                     </span>
                   </div>

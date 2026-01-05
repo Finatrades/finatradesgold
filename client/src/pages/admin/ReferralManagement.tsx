@@ -161,10 +161,10 @@ export default function ReferralManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="page-title">
+            <h1 className="text-3xl font-bold text-gray-900" data-testid="page-title">
               Referral Management
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-gray-500 mt-1">
               Track and manage user referrals and rewards
             </p>
           </div>
@@ -178,7 +178,7 @@ export default function ReferralManagement() {
           <Card data-testid="stat-total">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                <div className="p-3 rounded-full bg-purple-100">
                   <Users className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
@@ -192,7 +192,7 @@ export default function ReferralManagement() {
           <Card data-testid="stat-active">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <div className="p-3 rounded-full bg-blue-100">
                   <Clock className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
@@ -206,7 +206,7 @@ export default function ReferralManagement() {
           <Card data-testid="stat-completed">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
+                <div className="p-3 rounded-full bg-green-100">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
@@ -220,7 +220,7 @@ export default function ReferralManagement() {
           <Card data-testid="stat-rewards">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                <div className="p-3 rounded-full bg-purple-100">
                   <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
@@ -293,10 +293,10 @@ export default function ReferralManagement() {
                       const referred = referral.referredId ? users[referral.referredId] : null;
                       
                       return (
-                        <tr key={referral.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800" data-testid={`row-referral-${referral.id}`}>
+                        <tr key={referral.id} className="border-b hover:bg-gray-50" data-testid={`row-referral-${referral.id}`}>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
-                              <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono">
+                              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
                                 {referral.referralCode}
                               </code>
                               <Button

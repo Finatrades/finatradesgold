@@ -47,15 +47,15 @@ export default function GeoRestrictionNotice() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md text-center shadow-2xl"
+          className="bg-white rounded-2xl p-8 max-w-md text-center shadow-2xl"
         >
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Globe className="w-8 h-8 text-red-600 dark:text-red-400" />
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Globe className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Service Unavailable
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
+          <p className="text-gray-600 mb-4">
             {restriction.countryName && (
               <span className="block text-sm text-gray-500 mb-2">
                 Detected location: {restriction.countryName}
@@ -63,7 +63,7 @@ export default function GeoRestrictionNotice() {
             )}
             {restriction.message || 'Our services are not available in your region.'}
           </p>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-sm text-gray-500">
             If you believe this is an error, please contact our support team.
           </div>
         </motion.div>

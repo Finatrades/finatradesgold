@@ -1292,11 +1292,11 @@ export default function KYC() {
 
                 </Card>
 
-                <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+                <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                   <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Bank-Grade Security</h4>
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    <h4 className="text-sm font-bold text-blue-900">Bank-Grade Security</h4>
+                    <p className="text-xs text-blue-700 mt-1">
                       Your data is encrypted using AES-256 and stored in compliant data centers. We never share your personal information without consent.
                     </p>
                   </div>
@@ -1911,8 +1911,8 @@ export default function KYC() {
                           </div>
                         </div>
                         
-                        <div className="p-4 border border-purple-200 bg-purple-50 dark:bg-fuchsia-900/20 dark:border-fuchsia-700 rounded-lg">
-                          <p className="text-sm text-fuchsia-800 dark:text-purple-200">
+                        <div className="p-4 border border-purple-200 bg-purple-50 rounded-lg">
+                          <p className="text-sm text-fuchsia-800">
                             By submitting this application, I confirm that all information provided is accurate and complete. 
                             I understand that providing false information may result in rejection or account termination.
                           </p>
@@ -1934,11 +1934,11 @@ export default function KYC() {
 
               </Card>
 
-              <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+              <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                 <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Secure Processing</h4>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  <h4 className="text-sm font-bold text-blue-900">Secure Processing</h4>
+                  <p className="text-xs text-blue-700 mt-1">
                     Your corporate documents are encrypted and processed in compliance with international data protection regulations.
                   </p>
                 </div>

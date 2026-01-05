@@ -13,7 +13,7 @@ import { Menu, Clock, LogOut, User, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import ThemeToggle from '@/components/ThemeToggle';
+// Light mode only - ThemeToggle removed
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'wouter';
 import { format } from 'date-fns';
@@ -69,8 +69,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <LanguageSwitcher />
               </div>
 
-              <ThemeToggle />
-
               <NotificationCenter />
               
               <DropdownMenu>
@@ -97,7 +95,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                       {user.lastLoginAt && (
-                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-1">
+                        <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                           <Clock className="w-3 h-3" />
                           Signed in: {format(new Date(user.lastLoginAt), 'MMM d, h:mm a')}
                         </p>

@@ -124,14 +124,14 @@ export default function BNSLHistory() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-green-100 text-green-700';
       case 'completed':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+        return 'bg-blue-100 text-blue-700';
       case 'pending':
       case 'pending approval':
-        return 'bg-purple-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400';
+        return 'bg-purple-100 text-fuchsia-700';
       case 'early terminated':
-        return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+        return 'bg-orange-100 text-orange-700';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -151,7 +151,7 @@ export default function BNSLHistory() {
         </div>
 
         {wallet && (
-          <Card className="bg-gradient-to-r from-purple-50 to-fuchsia-50 dark:from-purple-900/20 dark:to-fuchsia-900/20 border-purple-200 dark:border-purple-800">
+          <Card className="bg-gradient-to-r from-purple-50 to-fuchsia-50 border-purple-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -250,7 +250,7 @@ export default function BNSLHistory() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    isCredit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                                    isCredit ? 'bg-green-100' : 'bg-red-100'
                                   }`}>
                                     {getActionIcon(entry.action)}
                                   </div>
@@ -350,7 +350,7 @@ export default function BNSLHistory() {
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
                                   <TrendingUp className="w-4 h-4 text-purple-600" />
                                 </div>
                                 <div>

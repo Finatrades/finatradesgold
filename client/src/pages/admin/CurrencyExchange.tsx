@@ -256,12 +256,12 @@ export default function CurrencyExchange() {
           </CardContent>
         </Card>
 
-        <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+        <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-6 h-6 text-yellow-500 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-yellow-700 dark:text-yellow-400">Rate Configuration Note</h3>
+                <h3 className="font-semibold text-yellow-700">Rate Configuration Note</h3>
                 <p className="text-sm mt-1">
                   Buy spread is added to the mid rate (users pay more). Sell spread is subtracted from the mid rate (users receive less).
                   Auto-update pulls rates from external APIs hourly. Manual rates remain fixed until changed.

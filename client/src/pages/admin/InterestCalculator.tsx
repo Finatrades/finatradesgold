@@ -167,7 +167,7 @@ export default function InterestCalculator() {
                   <p className="text-xs text-muted-foreground">{goldGrams}g @ ${goldPrice}/g</p>
                 </div>
 
-                <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                <div className="p-4 bg-green-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-4 h-4 text-green-600" />
                     <span className="text-sm text-muted-foreground">Total Interest</span>
@@ -176,7 +176,7 @@ export default function InterestCalculator() {
                   <p className="text-xs text-muted-foreground">Platform pays user</p>
                 </div>
 
-                <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                <div className="p-4 bg-purple-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="w-4 h-4 text-purple-600" />
                     <span className="text-sm text-muted-foreground">Total Payout</span>
@@ -203,7 +203,7 @@ export default function InterestCalculator() {
                   <p className="text-xs text-muted-foreground">Annual yield</p>
                 </div>
 
-                <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                <div className="p-4 bg-orange-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-4 h-4 text-orange-600" />
                     <span className="text-sm text-muted-foreground">Break-Even Price</span>

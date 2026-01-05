@@ -125,15 +125,15 @@ export default function FinaBridgeHistory() {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'settled':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-green-100 text-green-700';
       case 'open':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+        return 'bg-blue-100 text-blue-700';
       case 'in_progress':
       case 'pending':
-        return 'bg-purple-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400';
+        return 'bg-purple-100 text-fuchsia-700';
       case 'cancelled':
       case 'disputed':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-red-100 text-red-700';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -153,7 +153,7 @@ export default function FinaBridgeHistory() {
         </div>
 
         {wallet && (
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -255,7 +255,7 @@ export default function FinaBridgeHistory() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    isCredit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                                    isCredit ? 'bg-green-100' : 'bg-red-100'
                                   }`}>
                                     {getActionIcon(entry.action)}
                                   </div>
@@ -355,7 +355,7 @@ export default function FinaBridgeHistory() {
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                                   <Ship className="w-4 h-4 text-blue-600" />
                                 </div>
                                 <div>
@@ -371,8 +371,8 @@ export default function FinaBridgeHistory() {
                             <td className="py-3 px-4">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 trade.userRole === 'importer' 
-                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-green-100 text-green-700'
                               }`}>
                                 {trade.userRole === 'importer' ? 'Importer' : 'Exporter'}
                               </span>

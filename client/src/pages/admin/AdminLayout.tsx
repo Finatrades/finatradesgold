@@ -48,7 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
-import ThemeToggle from '@/components/ThemeToggle';
+// Light mode only - ThemeToggle removed
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const MENU_PERMISSION_MAP: Record<string, string[]> = {
@@ -374,7 +374,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </nav>
 
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <ThemeToggle />
               <NotificationCenter />
               
               <div className="h-8 w-px bg-border" />

@@ -78,11 +78,11 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  Queued: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  Sending: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  Sent: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  Failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  Bounced: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  Queued: 'bg-yellow-100 text-yellow-800',
+  Sending: 'bg-blue-100 text-blue-800',
+  Sent: 'bg-green-100 text-green-800',
+  Failed: 'bg-red-100 text-red-800',
+  Bounced: 'bg-purple-100 text-purple-800',
 };
 
 export default function EmailNotificationsManagement() {
@@ -216,8 +216,8 @@ export default function EmailNotificationsManagement() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <Mail className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Mail className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{logs.length}</p>
@@ -229,8 +229,8 @@ export default function EmailNotificationsManagement() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{totalSent}</p>
@@ -242,8 +242,8 @@ export default function EmailNotificationsManagement() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-100 dark:bg-red-900 rounded-lg">
-                  <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                <div className="p-3 bg-red-100 rounded-lg">
+                  <XCircle className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{totalFailed}</p>
@@ -255,8 +255,8 @@ export default function EmailNotificationsManagement() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-                  <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <Clock className="w-6 h-6 text-yellow-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{totalPending}</p>

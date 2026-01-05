@@ -292,13 +292,13 @@ export default function PlatformConfiguration() {
                   <Badge 
                     key={code} 
                     variant="secondary"
-                    className="flex items-center gap-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                    className="flex items-center gap-1 bg-red-100 text-red-700"
                   >
                     {country?.name || code}
                     <button
                       type="button"
                       onClick={() => removeCountry(code)}
-                      className="ml-1 hover:bg-red-200 dark:hover:bg-red-800 rounded-full p-0.5"
+                      className="ml-1 hover:bg-red-200 rounded-full p-0.5"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -330,8 +330,8 @@ export default function PlatformConfiguration() {
                     return (
                       <div
                         key={country.code}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                          isBlocked ? 'bg-red-50 dark:bg-red-900/20' : ''
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
+                          isBlocked ? 'bg-red-50' : ''
                         }`}
                         onClick={() => toggleCountry(country.code)}
                       >
@@ -409,11 +409,11 @@ export default function PlatformConfiguration() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Settings className="h-6 w-6 text-purple-500" />
               Platform Configuration
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-gray-500 mt-1">
               Centralized control for all platform fees, limits, and settings
             </p>
           </div>
@@ -441,9 +441,9 @@ export default function PlatformConfiguration() {
         </div>
 
         {hasChanges && (
-          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 flex items-center gap-2">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-purple-500" />
-            <span className="text-sm text-purple-700 dark:text-purple-300">
+            <span className="text-sm text-purple-700">
               You have unsaved changes. Click "Save Changes" to apply them.
             </span>
           </div>
@@ -453,8 +453,8 @@ export default function PlatformConfiguration() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Database className="h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Configuration Found</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4 text-center max-w-md">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Configuration Found</h3>
+              <p className="text-gray-500 mb-4 text-center max-w-md">
                 The platform configuration has not been initialized yet. Click below to set up default values.
               </p>
               <Button onClick={seedDefaults} className="bg-purple-500 hover:bg-purple-600" data-testid="button-seed-defaults-empty">
@@ -483,8 +483,8 @@ export default function PlatformConfiguration() {
                           onClick={() => setActiveTab(category)}
                           className={`flex items-center justify-between px-4 py-3 text-left border-l-2 transition-colors ${
                             isActive 
-                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' 
-                              : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                              ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                              : 'border-transparent hover:bg-gray-50 text-gray-600'
                           }`}
                           data-testid={`tab-${category}`}
                         >
@@ -518,13 +518,13 @@ export default function PlatformConfiguration() {
                 <CardContent>
                   <div className="space-y-6">
                     {getCategoryConfigs(activeTab).map((config) => (
-                      <div key={config.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start py-4 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                      <div key={config.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start py-4 border-b border-gray-100 last:border-0">
                         <div>
                           <Label htmlFor={config.id} className="font-medium">
                             {config.displayName}
                           </Label>
                           {config.description && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            <p className="text-sm text-gray-500 mt-1">
                               {config.description}
                             </p>
                           )}

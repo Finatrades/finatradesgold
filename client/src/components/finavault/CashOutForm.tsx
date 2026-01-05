@@ -503,7 +503,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
 
       {/* Right Column: Market Info */}
       <div className="space-y-6">
-        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border-purple-200 dark:border-purple-800 backdrop-blur-sm sticky top-24">
+        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200 backdrop-blur-sm sticky top-24">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-primary">Market Snapshot</CardTitle>
           </CardHeader>
@@ -520,7 +520,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               </p>
             </div>
             
-            <Separator className="bg-purple-200 dark:bg-purple-800" />
+            <Separator className="bg-purple-200" />
             
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
@@ -533,7 +533,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               </div>
             </div>
 
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded text-xs text-muted-foreground leading-relaxed">
+            <div className="p-3 bg-purple-100 rounded text-xs text-muted-foreground leading-relaxed">
               <AlertCircle className="w-3 h-3 inline mr-1 mb-0.5" />
               All withdrawal requests require admin approval. Processing times vary by method.
             </div>
