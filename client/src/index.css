@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* Light mode only - dark variant removed */
 
 @theme inline {
   --color-background: var(--background);
@@ -151,67 +151,7 @@
   --error-muted-foreground: #991b1b;
 }
 
-.dark {
-  /* Dark Theme - Purple accent on dark */
-  
-  /* Dark Background */
-  --background: #0D001E;
-  --foreground: #f9fafb;
-
-  /* Cards */
-  --card: #1a0a2e;
-  --card-foreground: #f9fafb;
-
-  --popover: #1a0a2e;
-  --popover-foreground: #f9fafb;
-
-  /* Primary - Purple */
-  --primary: #A342FF;
-  --primary-foreground: #ffffff;
-
-  /* Secondary */
-  --secondary: #2A0055;
-  --secondary-foreground: #f9fafb;
-
-  /* Muted backgrounds */
-  --muted: #2A0055;
-  --muted-foreground: #9ca3af;
-
-  /* Accent - Purple tint */
-  --accent: #4B0082;
-  --accent-foreground: #f9fafb;
-
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-
-  --border: #4B0082;
-  --input: #2A0055;
-  --ring: #A342FF;
-
-  --radius: var(--brand-border-radius);
-
-  /* Semantic Status Colors - Dark Mode (subdued to match dark palette) */
-  --success: #22c55e;
-  --success-foreground: #ffffff;
-  --success-muted: #052e16;
-  --success-muted-foreground: #4ade80;
-  
-  --warning: #f59e0b;
-  --warning-foreground: #ffffff;
-  --warning-muted: #451a03;
-  --warning-muted-foreground: #fbbf24;
-  
-  --info: #3b82f6;
-  --info-foreground: #ffffff;
-  --info-muted: #172554;
-  --info-muted-foreground: #60a5fa;
-  
-  /* Note: error aliases destructive for consistency */
-  --error: var(--destructive);
-  --error-foreground: var(--destructive-foreground);
-  --error-muted: #450a0a;
-  --error-muted-foreground: #f87171;
-}
+/* Light mode only - .dark class removed */
 
 @layer base {
   * {

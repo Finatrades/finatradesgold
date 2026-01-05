@@ -4,7 +4,7 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "next-themes";
+// Light mode only - dark mode disabled
 import NotFound from "@/pages/not-found";
 import MaintenancePage from "@/pages/MaintenancePage";
 import FinaVault from "@/pages/FinaVault";
@@ -345,8 +345,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
         <BrandingProvider>
           <CMSProvider>
             <UserProvider>
@@ -385,7 +384,6 @@ function App() {
           </CMSProvider>
         </BrandingProvider>
       </QueryClientProvider>
-    </ThemeProvider>
   );
 }
 
