@@ -789,6 +789,21 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(kycSubmissions).orderBy(desc(kycSubmissions.createdAt));
   }
 
+  async getKycSubmissionsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: KycSubmission[]; total: number }> {
+    const { status, limit = 50, offset = 0 } = options;
+    let query = db.select().from(kycSubmissions);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(kycSubmissions);
+    if (status && status !== "all") {
+      query = query.where(eq(kycSubmissions.status, status as any));
+      countQuery = countQuery.where(eq(kycSubmissions.status, status as any));
+    }
+    const [data, countResult] = await Promise.all([
+      query.orderBy(desc(kycSubmissions.createdAt)).limit(limit).offset(offset),
+      countQuery
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
+  }
+
   // Wallets
   async getWallet(userId: string): Promise<Wallet | undefined> {
     const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
@@ -2975,8 +2990,21 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(finatradesPersonalKyc).orderBy(desc(finatradesPersonalKyc.createdAt));
   }
 
+  async getFinatradesPersonalKycPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: FinatradesPersonalKyc[]; total: number }> {
+    const { status, limit = 50, offset = 0 } = options;
+    let query = db.select().from(finatradesPersonalKyc);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(finatradesPersonalKyc);
+    if (status && status !== "all") {
+      query = query.where(eq(finatradesPersonalKyc.status, status as any));
+      countQuery = countQuery.where(eq(finatradesPersonalKyc.status, status as any));
+    }
+    const [data, countResult] = await Promise.all([
+      query.orderBy(desc(finatradesPersonalKyc.createdAt)).limit(limit).offset(offset),
+      countQuery
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
+  }
   async createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc> {
-    const [newKyc] = await db.insert(finatradesPersonalKyc).values(kyc).returning();
     return newKyc;
   }
 
@@ -3008,6 +3036,20 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(finatradesCorporateKyc).orderBy(desc(finatradesCorporateKyc.createdAt));
   }
 
+  async getFinatradesCorporateKycPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: FinatradesCorporateKyc[]; total: number }> {
+    const { status, limit = 50, offset = 0 } = options;
+    let query = db.select().from(finatradesCorporateKyc);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(finatradesCorporateKyc);
+    if (status && status !== "all") {
+      query = query.where(eq(finatradesCorporateKyc.status, status as any));
+      countQuery = countQuery.where(eq(finatradesCorporateKyc.status, status as any));
+    }
+    const [data, countResult] = await Promise.all([
+      query.orderBy(desc(finatradesCorporateKyc.createdAt)).limit(limit).offset(offset),
+      countQuery
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
+  }
   async createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc> {
     const [newKyc] = await db.insert(finatradesCorporateKyc).values(kyc).returning();
     return newKyc;

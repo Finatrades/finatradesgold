@@ -4753,41 +4753,52 @@ ${message}
   // Get all KYC submissions (Admin)
   app.get("/api/admin/kyc", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
-      // Fetch all KYC types with individual error handling
-      let kycAmlArray: any[] = [];
-      let personalArray: any[] = [];
-      let corporateArray: any[] = [];
+      const startTime = Date.now();
+      const { status, type, page = '1', limit = '50' } = req.query;
+      const pageNum = Math.max(1, parseInt(page as string) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 50));
+      const statusFilter = (status as string) || 'all';
+      const typeFilter = (type as string) || 'all';
       
-      try {
-        const kycAml = await storage.getAllKycSubmissions();
-        kycAmlArray = Array.isArray(kycAml) ? kycAml : [];
-      } catch (e: any) {
-        console.error("Error fetching KYC AML submissions:", e);
-      }
+      // For merged tables, we need to fetch enough records to paginate properly
+      // We fetch 2x the limit from each table to ensure we have enough after merging
+      const fetchLimit = limitNum * 3;
       
-      try {
-        const personal = await storage.getAllFinatradesPersonalKyc();
-        personalArray = Array.isArray(personal) ? personal : [];
-      } catch (e: any) {
-        console.error("Error fetching personal KYC:", e);
-      }
+      // Run all queries in PARALLEL with database-level limits
+      const [kycAmlResult, personalResult, corporateResult] = await Promise.all([
+        typeFilter === 'all' || typeFilter === 'kycAml' 
+          ? (storage as any).getKycSubmissionsPaginated?.({ status: statusFilter, limit: fetchLimit, offset: 0 })
+              .catch((e: any) => { console.error("KYC AML error:", e); return { data: [], total: 0 }; })
+            ?? storage.getAllKycSubmissions().then((data: any) => ({ data: data.slice(0, fetchLimit), total: data.length })).catch(() => ({ data: [], total: 0 }))
+          : Promise.resolve({ data: [], total: 0 }),
+          
+        typeFilter === 'all' || typeFilter === 'finatrades_personal'
+          ? (storage as any).getFinatradesPersonalKycPaginated?.({ status: statusFilter, limit: fetchLimit, offset: 0 })
+              .catch((e: any) => { console.error("Personal KYC error:", e); return { data: [], total: 0 }; })
+            ?? storage.getAllFinatradesPersonalKyc().then((data: any) => ({ data: data.slice(0, fetchLimit), total: data.length })).catch(() => ({ data: [], total: 0 }))
+          : Promise.resolve({ data: [], total: 0 }),
+          
+        typeFilter === 'all' || typeFilter === 'finatrades_corporate'
+          ? (storage as any).getFinatradesCorporateKycPaginated?.({ status: statusFilter, limit: fetchLimit, offset: 0 })
+              .catch((e: any) => { console.error("Corporate KYC error:", e); return { data: [], total: 0 }; })
+            ?? storage.getAllFinatradesCorporateKyc().then((data: any) => ({ data: data.slice(0, fetchLimit), total: data.length })).catch(() => ({ data: [], total: 0 }))
+          : Promise.resolve({ data: [], total: 0 })
+      ]);
       
-      try {
-        const corporate = await storage.getAllFinatradesCorporateKyc();
-        corporateArray = Array.isArray(corporate) ? corporate : [];
-      } catch (e: any) {
-        console.error("Error fetching corporate KYC:", e);
-      }
+      const kycAmlArray = Array.isArray(kycAmlResult?.data) ? kycAmlResult.data : [];
+      const personalArray = Array.isArray(personalResult?.data) ? personalResult.data : [];
+      const corporateArray = Array.isArray(corporateResult?.data) ? corporateResult.data : [];
       
-      // Simple normalization without complex operations
+      // Calculate total from filtered counts
+      const totalRecords = (kycAmlResult?.total || 0) + (personalResult?.total || 0) + (corporateResult?.total || 0);
+      
+      // Normalize all submissions
       const allSubmissions: any[] = [];
       
-      // Add kycAml submissions
       for (const s of kycAmlArray) {
         if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
       }
       
-      // Add personal submissions
       for (const s of personalArray) {
         if (s) allSubmissions.push({
           ...s,
@@ -4797,7 +4808,6 @@ ${message}
         });
       }
       
-      // Add corporate submissions - use companyName as fullName for display
       for (const s of corporateArray) {
         if (s) allSubmissions.push({
           ...s,
@@ -4815,7 +4825,25 @@ ${message}
         return dateB - dateA;
       });
       
-      return res.json({ submissions: allSubmissions });
+      // Paginate the merged and sorted results
+      const startIndex = (pageNum - 1) * limitNum;
+      const paginatedSubmissions = allSubmissions.slice(startIndex, startIndex + limitNum);
+      const totalPages = Math.ceil(totalRecords / limitNum);
+      
+      const duration = Date.now() - startTime;
+      console.log(`[KYC] Admin query: ${duration}ms, ${totalRecords} total, page ${pageNum}/${totalPages}`);
+      
+      return res.json({ 
+        submissions: paginatedSubmissions,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalRecords,
+          totalPages,
+          hasMore: pageNum < totalPages
+        },
+        timing: { durationMs: duration }
+      });
     } catch (error: any) {
       console.error("KYC endpoint error:", error);
       return res.status(500).json({ message: "Failed to fetch KYC submissions", error: error?.message });
@@ -4825,7 +4853,8 @@ ${message}
   // ============================================================================
   // KYC WORKFLOW - TIERED VERIFICATION & STATE MACHINE
   // ============================================================================
-
+  // ============================================================================
+  // ============================================================================
   // Submit tiered KYC with SLA tracking
   app.post("/api/kyc/submit-tiered", ensureAuthenticated, async (req, res) => {
     try {
