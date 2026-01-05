@@ -15957,9 +15957,24 @@ ${message}
         return res.status(404).json({ message: "Request not found" });
       }
       
-      // Only requester or target can download attachment
+      // Only requester or recipient can download attachment
       const userId = (req.user as any)?.id;
-      if (request.requesterId !== userId && request.targetId !== userId) {
+      const userEmail = (req.user as any)?.email;
+      const userFinatradesId = (req.user as any)?.finatradesId;
+      
+      // Check if user is the requester
+      const isRequester = request.requesterId === userId;
+      
+      // Check if user is the target by ID
+      const isTargetById = request.targetId && request.targetId === userId;
+      
+      // Check if user matches the target identifier (email or finatrades ID)
+      const isTargetByIdentifier = request.targetIdentifier && (
+        request.targetIdentifier.toLowerCase() === userEmail?.toLowerCase() ||
+        request.targetIdentifier.toUpperCase() === userFinatradesId?.toUpperCase()
+      );
+      
+      if (!isRequester && !isTargetById && !isTargetByIdentifier) {
         return res.status(403).json({ message: "Not authorized to download this attachment" });
       }
       
