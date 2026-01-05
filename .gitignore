@@ -4,3 +4,33 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads (user-generated content)
+uploads/
+
+# Cache
+.cache/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# IDE
+.idea/
+.vscode/
+
+# Environment files (secrets should not be committed)
+.env.local
+.env.production
+
+# Build artifacts
+build/
+
+# Test coverage
+coverage/
