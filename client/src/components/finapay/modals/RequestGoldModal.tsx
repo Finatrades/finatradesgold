@@ -111,12 +111,34 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
     
     try {
       const isFinatradesId = targetIdentifier && targetIdentifier.toUpperCase().startsWith('FT');
+      
+      let attachmentData = null;
+      let attachmentName = null;
+      let attachmentMime = null;
+      let attachmentSize = null;
+      
+      if (invoiceFile) {
+        attachmentName = invoiceFile.name;
+        attachmentMime = invoiceFile.type;
+        attachmentSize = invoiceFile.size;
+        attachmentData = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(invoiceFile);
+        });
+      }
+      
       const res = await apiRequest('POST', '/api/finapay/request', {
         requesterId: user.id,
         targetIdentifier: targetIdentifier || null,
         amountUsd: numericAmount.toFixed(2),
         channel: !targetIdentifier ? 'qr_code' : (isFinatradesId ? 'finatrades_id' : 'email'),
         memo: memo || null,
+        attachmentData,
+        attachmentName,
+        attachmentMime,
+        attachmentSize,
       });
       
       const data = await res.json();

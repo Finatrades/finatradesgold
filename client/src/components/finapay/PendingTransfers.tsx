@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Clock, ArrowDownLeft, CheckCircle, XCircle, Loader2, User, AlertTriangle, DollarSign, Send, Mail, Timer } from 'lucide-react';
+import { Clock, ArrowDownLeft, CheckCircle, XCircle, Loader2, User, AlertTriangle, DollarSign, Send, Mail, Timer, Paperclip, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface PendingTransfer {
@@ -47,6 +47,10 @@ interface GoldRequest {
   createdAt: string;
   requesterName?: string;
   requesterEmail?: string;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
+  attachmentMime?: string | null;
+  attachmentSize?: number | null;
 }
 
 interface UserInfo {
@@ -571,6 +575,31 @@ export default function PendingTransfers() {
                         )}
                         {request.memo && (
                           <p className="text-sm text-muted-foreground italic mt-1">"{request.memo}"</p>
+                        )}
+                        {request.attachmentName && (
+                          <div className="mt-2">
+                            <a
+                              href={request.attachmentUrl || '#'}
+                              download={request.attachmentName}
+                              className="inline-flex items-center gap-1.5 text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-md hover:bg-purple-100 transition-colors"
+                              onClick={(e) => {
+                                if (request.attachmentUrl) {
+                                  e.preventDefault();
+                                  const link = document.createElement('a');
+                                  link.href = request.attachmentUrl;
+                                  link.download = request.attachmentName || 'attachment';
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }
+                              }}
+                              data-testid={`link-attachment-${request.id}`}
+                            >
+                              <Paperclip className="w-3 h-3" />
+                              <span className="max-w-32 truncate">{request.attachmentName}</span>
+                              <Download className="w-3 h-3" />
+                            </a>
+                          </div>
                         )}
                         {timeRemaining && (
                           <p className={`text-xs mt-1 ${timeRemaining === 'Expired' ? 'text-red-600' : 'text-amber-600'}`}>

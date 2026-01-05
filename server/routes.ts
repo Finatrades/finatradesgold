@@ -15948,6 +15948,36 @@ ${message}
     }
   });
 
+  // Download attachment for a payment request - PROTECTED
+  app.get("/api/finapay/requests/:id/attachment", ensureAuthenticated, async (req, res) => {
+    try {
+      const request = await storage.getPeerRequest(req.params.id);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      // Only requester or target can download attachment
+      const userId = (req.user as any)?.id;
+      if (request.requesterId !== userId && request.targetId !== userId) {
+        return res.status(403).json({ message: "Not authorized to download this attachment" });
+      }
+      
+      if (!request.attachmentUrl) {
+        return res.status(404).json({ message: "No attachment found" });
+      }
+      
+      res.json({
+        attachmentUrl: request.attachmentUrl,
+        attachmentName: request.attachmentName,
+        attachmentMime: request.attachmentMime,
+        attachmentSize: request.attachmentSize,
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get attachment" });
+    }
+  });
+
   // Pay a money request - PROTECTED
   app.post("/api/finapay/requests/:id/pay", ensureAuthenticated, async (req, res) => {
     try {
