@@ -851,6 +851,38 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(transactions).orderBy(desc(transactions.createdAt));
   }
 
+  async getTransactionsPaginated(options: { status?: string; type?: string; limit?: number; offset?: number }): Promise<{ data: Partial<Transaction>[]; total: number }> {
+    const { status, type, limit = 50, offset = 0 } = options;
+    const lightweightColumns = {
+      id: transactions.id,
+      userId: transactions.userId,
+      type: transactions.type,
+      status: transactions.status,
+      amountGold: transactions.amountGold,
+      amountUsd: transactions.amountUsd,
+      goldPriceUsdPerGram: transactions.goldPriceUsdPerGram,
+      recipientEmail: transactions.recipientEmail,
+      referenceId: transactions.referenceId,
+      sourceModule: transactions.sourceModule,
+      createdAt: transactions.createdAt,
+      completedAt: transactions.completedAt,
+    };
+    const conditions: any[] = [];
+    if (status && status !== "all") conditions.push(eq(transactions.status, status as any));
+    if (type && type !== "all") conditions.push(eq(transactions.type, type as any));
+    
+    const baseQuery = conditions.length > 0 ? and(...conditions) : undefined;
+    const [data, countResult] = await Promise.all([
+      baseQuery 
+        ? db.select(lightweightColumns).from(transactions).where(baseQuery).orderBy(desc(transactions.createdAt)).limit(limit).offset(offset)
+        : db.select(lightweightColumns).from(transactions).orderBy(desc(transactions.createdAt)).limit(limit).offset(offset),
+      baseQuery
+        ? db.select({ count: sql<number>`count(*)` }).from(transactions).where(baseQuery)
+        : db.select({ count: sql<number>`count(*)` }).from(transactions)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
+  }
+
   async updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
     const [transaction] = await db.update(transactions).set(updates).where(eq(transactions.id, id)).returning();
     return transaction || undefined;
@@ -1106,6 +1138,36 @@ export class DatabaseStorage implements IStorage {
 
   async getAllTradeCases(): Promise<TradeCase[]> {
     return await db.select().from(tradeCases).orderBy(desc(tradeCases.createdAt));
+  }
+
+  async getTradeCasesPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<TradeCase>[]; total: number }> {
+    const { status, limit = 50, offset = 0 } = options;
+    const lightweightColumns = {
+      id: tradeCases.id,
+      caseNumber: tradeCases.caseNumber,
+      userId: tradeCases.userId,
+      companyName: tradeCases.companyName,
+      tradeType: tradeCases.tradeType,
+      commodityType: tradeCases.commodityType,
+      tradeValueUsd: tradeCases.tradeValueUsd,
+      status: tradeCases.status,
+      riskLevel: tradeCases.riskLevel,
+      opsApproval: tradeCases.opsApproval,
+      complianceApproval: tradeCases.complianceApproval,
+      riskApproval: tradeCases.riskApproval,
+      createdAt: tradeCases.createdAt,
+      updatedAt: tradeCases.updatedAt,
+    };
+    const baseQuery = status && status !== "all" ? eq(tradeCases.status, status as any) : undefined;
+    const [data, countResult] = await Promise.all([
+      baseQuery
+        ? db.select(lightweightColumns).from(tradeCases).where(baseQuery).orderBy(desc(tradeCases.createdAt)).limit(limit).offset(offset)
+        : db.select(lightweightColumns).from(tradeCases).orderBy(desc(tradeCases.createdAt)).limit(limit).offset(offset),
+      baseQuery
+        ? db.select({ count: sql<number>`count(*)` }).from(tradeCases).where(baseQuery)
+        : db.select({ count: sql<number>`count(*)` }).from(tradeCases)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
   }
 
   async createTradeCase(insertTradeCase: InsertTradeCase): Promise<TradeCase> {
@@ -1604,6 +1666,30 @@ export class DatabaseStorage implements IStorage {
 
   async getAllChatSessions(): Promise<ChatSession[]> {
     return await db.select().from(chatSessions).orderBy(desc(chatSessions.lastMessageAt));
+  }
+
+  async getChatSessionsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<ChatSession>[]; total: number }> {
+    const { status, limit = 50, offset = 0 } = options;
+    const lightweightColumns = {
+      id: chatSessions.id,
+      userId: chatSessions.userId,
+      agentId: chatSessions.agentId,
+      status: chatSessions.status,
+      guestName: chatSessions.guestName,
+      guestEmail: chatSessions.guestEmail,
+      lastMessageAt: chatSessions.lastMessageAt,
+      createdAt: chatSessions.createdAt,
+    };
+    const baseQuery = status && status !== "all" ? eq(chatSessions.status, status as any) : undefined;
+    const [data, countResult] = await Promise.all([
+      baseQuery
+        ? db.select(lightweightColumns).from(chatSessions).where(baseQuery).orderBy(desc(chatSessions.lastMessageAt)).limit(limit).offset(offset)
+        : db.select(lightweightColumns).from(chatSessions).orderBy(desc(chatSessions.lastMessageAt)).limit(limit).offset(offset),
+      baseQuery
+        ? db.select({ count: sql<number>`count(*)` }).from(chatSessions).where(baseQuery)
+        : db.select({ count: sql<number>`count(*)` }).from(chatSessions)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
   }
 
   async createChatSession(insertSession: InsertChatSession): Promise<ChatSession> {
@@ -2236,6 +2322,33 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(vaultDepositRequests).orderBy(desc(vaultDepositRequests.createdAt));
   }
 
+  async getVaultDepositRequestsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<VaultDepositRequest>[]; total: number }> {
+    const { status, limit = 50, offset = 0 } = options;
+    const lightweightColumns = {
+      id: vaultDepositRequests.id,
+      referenceNumber: vaultDepositRequests.referenceNumber,
+      userId: vaultDepositRequests.userId,
+      vaultLocation: vaultDepositRequests.vaultLocation,
+      depositType: vaultDepositRequests.depositType,
+      totalDeclaredWeightGrams: vaultDepositRequests.totalDeclaredWeightGrams,
+      deliveryMethod: vaultDepositRequests.deliveryMethod,
+      status: vaultDepositRequests.status,
+      reviewedBy: vaultDepositRequests.reviewedBy,
+      createdAt: vaultDepositRequests.createdAt,
+      updatedAt: vaultDepositRequests.updatedAt,
+    };
+    const baseQuery = status && status !== "all" ? eq(vaultDepositRequests.status, status as any) : undefined;
+    const [data, countResult] = await Promise.all([
+      baseQuery
+        ? db.select(lightweightColumns).from(vaultDepositRequests).where(baseQuery).orderBy(desc(vaultDepositRequests.createdAt)).limit(limit).offset(offset)
+        : db.select(lightweightColumns).from(vaultDepositRequests).orderBy(desc(vaultDepositRequests.createdAt)).limit(limit).offset(offset),
+      baseQuery
+        ? db.select({ count: sql<number>`count(*)` }).from(vaultDepositRequests).where(baseQuery)
+        : db.select({ count: sql<number>`count(*)` }).from(vaultDepositRequests)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
+  }
+
   async getPendingVaultDepositRequests(): Promise<VaultDepositRequest[]> {
     return await db.select().from(vaultDepositRequests)
       .where(or(
@@ -2285,6 +2398,33 @@ export class DatabaseStorage implements IStorage {
 
   async getAllVaultWithdrawalRequests(): Promise<VaultWithdrawalRequest[]> {
     return await db.select().from(vaultWithdrawalRequests).orderBy(desc(vaultWithdrawalRequests.createdAt));
+  }
+
+  async getVaultWithdrawalRequestsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<VaultWithdrawalRequest>[]; total: number }> {
+    const { status, limit = 50, offset = 0 } = options;
+    const lightweightColumns = {
+      id: vaultWithdrawalRequests.id,
+      referenceNumber: vaultWithdrawalRequests.referenceNumber,
+      userId: vaultWithdrawalRequests.userId,
+      vaultLocation: vaultWithdrawalRequests.vaultLocation,
+      withdrawalType: vaultWithdrawalRequests.withdrawalType,
+      totalRequestedWeightGrams: vaultWithdrawalRequests.totalRequestedWeightGrams,
+      deliveryMethod: vaultWithdrawalRequests.deliveryMethod,
+      status: vaultWithdrawalRequests.status,
+      reviewedBy: vaultWithdrawalRequests.reviewedBy,
+      createdAt: vaultWithdrawalRequests.createdAt,
+      updatedAt: vaultWithdrawalRequests.updatedAt,
+    };
+    const baseQuery = status && status !== "all" ? eq(vaultWithdrawalRequests.status, status as any) : undefined;
+    const [data, countResult] = await Promise.all([
+      baseQuery
+        ? db.select(lightweightColumns).from(vaultWithdrawalRequests).where(baseQuery).orderBy(desc(vaultWithdrawalRequests.createdAt)).limit(limit).offset(offset)
+        : db.select(lightweightColumns).from(vaultWithdrawalRequests).orderBy(desc(vaultWithdrawalRequests.createdAt)).limit(limit).offset(offset),
+      baseQuery
+        ? db.select({ count: sql<number>`count(*)` }).from(vaultWithdrawalRequests).where(baseQuery)
+        : db.select({ count: sql<number>`count(*)` }).from(vaultWithdrawalRequests)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
   }
 
   async getPendingVaultWithdrawalRequests(): Promise<VaultWithdrawalRequest[]> {
@@ -2766,6 +2906,33 @@ export class DatabaseStorage implements IStorage {
 
   async getAllAuditLogs(): Promise<AuditLog[]> {
     return await db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp));
+  }
+
+  async getAuditLogsPaginated(options: { entityType?: string; actionType?: string; limit?: number; offset?: number }): Promise<{ data: Partial<AuditLog>[]; total: number }> {
+    const { entityType, actionType, limit = 50, offset = 0 } = options;
+    const lightweightColumns = {
+      id: auditLogs.id,
+      entityType: auditLogs.entityType,
+      entityId: auditLogs.entityId,
+      actor: auditLogs.actor,
+      actorRole: auditLogs.actorRole,
+      actionType: auditLogs.actionType,
+      timestamp: auditLogs.timestamp,
+    };
+    const conditions: any[] = [];
+    if (entityType && entityType !== "all") conditions.push(eq(auditLogs.entityType, entityType));
+    if (actionType && actionType !== "all") conditions.push(eq(auditLogs.actionType, actionType));
+    
+    const baseQuery = conditions.length > 0 ? and(...conditions) : undefined;
+    const [data, countResult] = await Promise.all([
+      baseQuery
+        ? db.select(lightweightColumns).from(auditLogs).where(baseQuery).orderBy(desc(auditLogs.timestamp)).limit(limit).offset(offset)
+        : db.select(lightweightColumns).from(auditLogs).orderBy(desc(auditLogs.timestamp)).limit(limit).offset(offset),
+      baseQuery
+        ? db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(baseQuery)
+        : db.select({ count: sql<number>`count(*)` }).from(auditLogs)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
   }
 
   // ============================================
