@@ -789,9 +789,21 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(kycSubmissions).orderBy(desc(kycSubmissions.createdAt));
   }
 
-  async getKycSubmissionsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: KycSubmission[]; total: number }> {
+  async getKycSubmissionsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<KycSubmission>[]; total: number }> {
     const { status, limit = 50, offset = 0 } = options;
-    let query = db.select().from(kycSubmissions);
+    const lightweightColumns = {
+      id: kycSubmissions.id,
+      userId: kycSubmissions.userId,
+      accountType: kycSubmissions.accountType,
+      tier: kycSubmissions.tier,
+      fullName: kycSubmissions.fullName,
+      status: kycSubmissions.status,
+      screeningStatus: kycSubmissions.screeningStatus,
+      riskLevel: kycSubmissions.riskLevel,
+      createdAt: kycSubmissions.createdAt,
+      updatedAt: kycSubmissions.updatedAt,
+    };
+    let query = db.select(lightweightColumns).from(kycSubmissions);
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(kycSubmissions);
     if (status && status !== "all") {
       query = query.where(eq(kycSubmissions.status, status as any));
@@ -2990,9 +3002,22 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(finatradesPersonalKyc).orderBy(desc(finatradesPersonalKyc.createdAt));
   }
 
-  async getFinatradesPersonalKycPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: FinatradesPersonalKyc[]; total: number }> {
+  async getFinatradesPersonalKycPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<FinatradesPersonalKyc>[]; total: number }> {
     const { status, limit = 50, offset = 0 } = options;
-    let query = db.select().from(finatradesPersonalKyc);
+    const lightweightColumns = {
+      id: finatradesPersonalKyc.id,
+      userId: finatradesPersonalKyc.userId,
+      fullName: finatradesPersonalKyc.fullName,
+      email: finatradesPersonalKyc.email,
+      phone: finatradesPersonalKyc.phone,
+      country: finatradesPersonalKyc.country,
+      status: finatradesPersonalKyc.status,
+      livenessVerified: finatradesPersonalKyc.livenessVerified,
+      agreementStatus: finatradesPersonalKyc.agreementStatus,
+      createdAt: finatradesPersonalKyc.createdAt,
+      updatedAt: finatradesPersonalKyc.updatedAt,
+    };
+    let query = db.select(lightweightColumns).from(finatradesPersonalKyc);
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(finatradesPersonalKyc);
     if (status && status !== "all") {
       query = query.where(eq(finatradesPersonalKyc.status, status as any));
@@ -3005,6 +3030,7 @@ export class DatabaseStorage implements IStorage {
     return { data, total: Number(countResult[0]?.count || 0) };
   }
   async createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc> {
+    const [newKyc] = await db.insert(finatradesPersonalKyc).values(kyc).returning();
     return newKyc;
   }
 
@@ -3036,9 +3062,23 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(finatradesCorporateKyc).orderBy(desc(finatradesCorporateKyc.createdAt));
   }
 
-  async getFinatradesCorporateKycPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: FinatradesCorporateKyc[]; total: number }> {
+  async getFinatradesCorporateKycPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<FinatradesCorporateKyc>[]; total: number }> {
     const { status, limit = 50, offset = 0 } = options;
-    let query = db.select().from(finatradesCorporateKyc);
+    const lightweightColumns = {
+      id: finatradesCorporateKyc.id,
+      userId: finatradesCorporateKyc.userId,
+      companyName: finatradesCorporateKyc.companyName,
+      registrationNumber: finatradesCorporateKyc.registrationNumber,
+      countryOfIncorporation: finatradesCorporateKyc.countryOfIncorporation,
+      companyType: finatradesCorporateKyc.companyType,
+      emailAddress: finatradesCorporateKyc.emailAddress,
+      status: finatradesCorporateKyc.status,
+      livenessVerified: finatradesCorporateKyc.livenessVerified,
+      agreementStatus: finatradesCorporateKyc.agreementStatus,
+      createdAt: finatradesCorporateKyc.createdAt,
+      updatedAt: finatradesCorporateKyc.updatedAt,
+    };
+    let query = db.select(lightweightColumns).from(finatradesCorporateKyc);
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(finatradesCorporateKyc);
     if (status && status !== "all") {
       query = query.where(eq(finatradesCorporateKyc.status, status as any));
