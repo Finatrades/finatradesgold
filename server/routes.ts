@@ -15820,11 +15820,23 @@ ${message}
   // Create money request - PROTECTED
   app.post("/api/finapay/request", ensureAuthenticated, async (req, res) => {
     try {
-      const { requesterId, targetIdentifier, amountUsd, channel, memo } = req.body;
+      const { requesterId, targetIdentifier, amountUsd, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize } = req.body;
       
       const requester = await storage.getUser(requesterId);
       if (!requester) {
         return res.status(404).json({ message: "Requester not found" });
+      }
+      
+      // Validate attachment if provided
+      if (attachmentData) {
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+        const allowedMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+        if (attachmentSize > MAX_SIZE) {
+          return res.status(400).json({ message: "Attachment size must be less than 5MB" });
+        }
+        if (!allowedMimes.includes(attachmentMime)) {
+          return res.status(400).json({ message: "Attachment must be PDF, PNG, or JPG" });
+        }
       }
       
       // Generate reference and QR payload
@@ -15856,6 +15868,10 @@ ${message}
         qrPayload,
         status: 'Pending',
         expiresAt,
+        attachmentUrl: attachmentData || null,
+        attachmentName: attachmentName || null,
+        attachmentMime: attachmentMime || null,
+        attachmentSize: attachmentSize || null,
       });
       
       // Generate QR code as data URL
