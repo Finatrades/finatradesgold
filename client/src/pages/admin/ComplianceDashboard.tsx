@@ -296,7 +296,7 @@ export default function ComplianceDashboard() {
     },
   });
 
-  const amlRules: AmlRule[] = rulesData || [];
+  const amlRules: AmlRule[] = rulesData?.rules || [];
 
   const openCreateRule = () => {
     setEditingRule(null);
