@@ -5753,6 +5753,22 @@ ${message}
     }
   });
 
+  // Paginated user transactions endpoint for better performance
+  app.get("/api/transactions/:userId/paginated", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { status, type, limit = '20', offset = '0' } = req.query;
+      const result = await storage.getUserTransactionsPaginated(req.params.userId, {
+        status: status as string | undefined,
+        type: type as string | undefined,
+        limit: parseInt(limit as string, 10),
+        offset: parseInt(offset as string, 10),
+      });
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transactions" });
+    }
+  });
+
   // ============================================================================
   // UNIFIED TRANSACTIONS API (All Modules)
   // ============================================================================
@@ -9448,6 +9464,21 @@ ${message}
     try {
       const plans = await storage.getUserBnslPlans(req.params.userId);
       res.json({ plans });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get BNSL plans" });
+    }
+  });
+
+  // Paginated BNSL plans endpoint for better performance
+  app.get("/api/bnsl/plans/:userId/paginated", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { status, limit = '20', offset = '0' } = req.query;
+      const result = await storage.getUserBnslPlansPaginated(req.params.userId, {
+        status: status as string | undefined,
+        limit: parseInt(limit as string, 10),
+        offset: parseInt(offset as string, 10),
+      });
+      res.json(result);
     } catch (error) {
       res.status(400).json({ message: "Failed to get BNSL plans" });
     }
@@ -15843,6 +15874,21 @@ ${message}
       res.json({ transfers });
     } catch (error) {
       res.status(400).json({ message: "Failed to get received transfers" });
+    }
+  });
+
+  // Paginated P2P transfers endpoint for better performance
+  app.get("/api/finapay/transfers/:userId/paginated", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { status, limit = '20', offset = '0' } = req.query;
+      const result = await storage.getPeerTransfersPaginated(req.params.userId, {
+        status: status as string | undefined,
+        limit: parseInt(limit as string, 10),
+        offset: parseInt(offset as string, 10),
+      });
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get transfers" });
     }
   });
 

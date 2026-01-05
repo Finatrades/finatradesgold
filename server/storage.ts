@@ -888,6 +888,34 @@ export class DatabaseStorage implements IStorage {
     return transaction || undefined;
   }
 
+  async getUserTransactionsPaginated(userId: string, options: { status?: string; type?: string; limit?: number; offset?: number }): Promise<{ data: Partial<Transaction>[]; total: number }> {
+    const { status, type, limit = 20, offset = 0 } = options;
+    const lightweightColumns = {
+      id: transactions.id,
+      userId: transactions.userId,
+      type: transactions.type,
+      status: transactions.status,
+      amountGold: transactions.amountGold,
+      amountUsd: transactions.amountUsd,
+      goldPriceUsdPerGram: transactions.goldPriceUsdPerGram,
+      recipientEmail: transactions.recipientEmail,
+      referenceId: transactions.referenceId,
+      sourceModule: transactions.sourceModule,
+      createdAt: transactions.createdAt,
+      completedAt: transactions.completedAt,
+    };
+    const conditions: any[] = [eq(transactions.userId, userId)];
+    if (status && status !== "all") conditions.push(eq(transactions.status, status as any));
+    if (type && type !== "all") conditions.push(eq(transactions.type, type as any));
+    
+    const whereClause = and(...conditions);
+    const [data, countResult] = await Promise.all([
+      db.select(lightweightColumns).from(transactions).where(whereClause).orderBy(desc(transactions.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)` }).from(transactions).where(whereClause)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
+  }
+
   // Vault Holdings
   async getVaultHolding(id: string): Promise<VaultHolding | undefined> {
     const [holding] = await db.select().from(vaultHoldings).where(eq(vaultHoldings.id, id));
@@ -922,6 +950,36 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(bnslPlans).where(eq(bnslPlans.userId, userId)).orderBy(desc(bnslPlans.createdAt));
   }
 
+  async getUserBnslPlansPaginated(userId: string, options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<BnslPlan>[]; total: number }> {
+    const { status, limit = 20, offset = 0 } = options;
+    const lightweightColumns = {
+      id: bnslPlans.id,
+      contractId: bnslPlans.contractId,
+      userId: bnslPlans.userId,
+      templateName: bnslPlans.templateName,
+      tenorMonths: bnslPlans.tenorMonths,
+      agreedMarginAnnualPercent: bnslPlans.agreedMarginAnnualPercent,
+      goldSoldGrams: bnslPlans.goldSoldGrams,
+      enrollmentPriceUsdPerGram: bnslPlans.enrollmentPriceUsdPerGram,
+      totalSaleProceedsUsd: bnslPlans.totalSaleProceedsUsd,
+      startDate: bnslPlans.startDate,
+      maturityDate: bnslPlans.maturityDate,
+      status: bnslPlans.status,
+      paidMarginUsd: bnslPlans.paidMarginUsd,
+      remainingMarginUsd: bnslPlans.remainingMarginUsd,
+      createdAt: bnslPlans.createdAt,
+    };
+    const conditions: any[] = [eq(bnslPlans.userId, userId)];
+    if (status && status !== "all") conditions.push(eq(bnslPlans.status, status as any));
+    
+    const whereClause = and(...conditions);
+    const [data, countResult] = await Promise.all([
+      db.select(lightweightColumns).from(bnslPlans).where(whereClause).orderBy(desc(bnslPlans.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)` }).from(bnslPlans).where(whereClause)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
+  }
+
   async getAllBnslPlans(): Promise<BnslPlan[]> {
     return await db.select().from(bnslPlans).orderBy(desc(bnslPlans.createdAt));
   }
@@ -942,6 +1000,36 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(peerTransfers).where(
       or(eq(peerTransfers.senderId, userId), eq(peerTransfers.recipientId, userId))
     ).orderBy(desc(peerTransfers.createdAt));
+  }
+
+  async getPeerTransfersPaginated(userId: string, options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<PeerTransfer>[]; total: number }> {
+    const { status, limit = 20, offset = 0 } = options;
+    const lightweightColumns = {
+      id: peerTransfers.id,
+      referenceNumber: peerTransfers.referenceNumber,
+      senderId: peerTransfers.senderId,
+      recipientId: peerTransfers.recipientId,
+      amountUsd: peerTransfers.amountUsd,
+      amountGold: peerTransfers.amountGold,
+      goldPriceUsdPerGram: peerTransfers.goldPriceUsdPerGram,
+      channel: peerTransfers.channel,
+      recipientIdentifier: peerTransfers.recipientIdentifier,
+      status: peerTransfers.status,
+      requiresApproval: peerTransfers.requiresApproval,
+      expiresAt: peerTransfers.expiresAt,
+      respondedAt: peerTransfers.respondedAt,
+      createdAt: peerTransfers.createdAt,
+    };
+    const userCondition = or(eq(peerTransfers.senderId, userId), eq(peerTransfers.recipientId, userId));
+    const conditions: any[] = [userCondition!];
+    if (status && status !== "all") conditions.push(eq(peerTransfers.status, status as any));
+    
+    const whereClause = and(...conditions);
+    const [data, countResult] = await Promise.all([
+      db.select(lightweightColumns).from(peerTransfers).where(whereClause).orderBy(desc(peerTransfers.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)` }).from(peerTransfers).where(whereClause)
+    ]);
+    return { data, total: Number(countResult[0]?.count || 0) };
   }
 
   async createBnslPlan(insertPlan: InsertBnslPlan): Promise<BnslPlan> {
