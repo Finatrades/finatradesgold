@@ -13,8 +13,6 @@ import { usePlatform } from '@/context/PlatformContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface PaymentMethods {
-  stripe: { enabled: boolean; publishableKey?: string | null };
-  paypal: { enabled: boolean; clientId?: string | null; mode?: string | null };
   bankTransfer: {
     enabled: boolean;
     bankName?: string | null;
@@ -99,7 +97,6 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
         
         // Set default method - prefer crypto if wallets available
         if (walletsData.wallets?.length > 0) setMethod('crypto');
-        else if (methodsData.stripe?.enabled) setMethod('card');
         else if (methodsData.bankTransfer?.enabled) setMethod('bank');
       }).catch(() => {
         setPaymentMethods(null);
@@ -278,7 +275,6 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
 
   const hasCryptoWallets = cryptoWallets.length > 0;
   const enabledMethodsCount = 
-    (paymentMethods?.stripe?.enabled ? 1 : 0) + 
     (hasCryptoWallets ? 1 : 0) + 
     (paymentMethods?.bankTransfer?.enabled ? 1 : 0);
 
@@ -478,15 +474,6 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, spreadPercent
                     }} 
                     className={`grid gap-2 ${enabledMethodsCount === 1 ? 'grid-cols-1' : enabledMethodsCount === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}
                   >
-                    {paymentMethods?.stripe?.enabled && (
-                      <div>
-                        <RadioGroupItem value="card" id="card" className="peer sr-only" />
-                        <Label htmlFor="card" className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-white shadow-sm hover:bg-muted/50 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 transition-all text-xs text-center h-20 text-foreground">
-                          <CreditCard className="w-5 h-5 mb-1" />
-                          Card
-                        </Label>
-                      </div>
-                    )}
                     {hasCryptoWallets && (
                       <div>
                         <RadioGroupItem value="crypto" id="crypto" className="peer sr-only" />

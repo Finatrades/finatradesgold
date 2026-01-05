@@ -20217,8 +20217,8 @@ ${message}
       
       if (!settings[0]) {
         return res.json({
-          stripe: { enabled: false },
-          paypal: { enabled: false },
+          
+          
           bankTransfer: { enabled: false },
           binancePay: { enabled: false },
           minDeposit: 10,
@@ -20228,15 +20228,6 @@ ${message}
 
       const s = settings[0];
       res.json({
-        stripe: { 
-          enabled: s.stripeEnabled,
-          publishableKey: s.stripeEnabled ? s.stripePublishableKey : null
-        },
-        paypal: { 
-          enabled: s.paypalEnabled,
-          clientId: s.paypalEnabled ? s.paypalClientId : null,
-          mode: s.paypalEnabled ? s.paypalMode : null
-        },
         bankTransfer: { 
           enabled: s.bankTransferEnabled,
           accounts: s.bankTransferEnabled ? s.bankAccounts : [],

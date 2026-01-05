@@ -2781,22 +2781,6 @@ export type BrandingSettings = typeof brandingSettings.$inferSelect;
 export const paymentGatewaySettings = pgTable("payment_gateway_settings", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   
-  // Stripe Configuration
-  stripeEnabled: boolean("stripe_enabled").notNull().default(false),
-  stripePublishableKey: text("stripe_publishable_key"),
-  stripeSecretKey: text("stripe_secret_key"),
-  stripeWebhookSecret: text("stripe_webhook_secret"),
-  stripeFeePercent: decimal("stripe_fee_percent", { precision: 5, scale: 2 }).default('2.9'),
-  stripeFixedFee: decimal("stripe_fixed_fee", { precision: 10, scale: 2 }).default('0.30'),
-  
-  // PayPal Configuration
-  paypalEnabled: boolean("paypal_enabled").notNull().default(false),
-  paypalClientId: text("paypal_client_id"),
-  paypalClientSecret: text("paypal_client_secret"),
-  paypalMode: varchar("paypal_mode", { length: 20 }).default('sandbox'), // 'sandbox' or 'live'
-  paypalFeePercent: decimal("paypal_fee_percent", { precision: 5, scale: 2 }).default('2.9'),
-  paypalFixedFee: decimal("paypal_fixed_fee", { precision: 10, scale: 2 }).default('0.30'),
-  
   // Bank Transfer / Wire Configuration
   bankTransferEnabled: boolean("bank_transfer_enabled").notNull().default(false),
   bankAccounts: json("bank_accounts").$type<{

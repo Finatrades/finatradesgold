@@ -62,18 +62,6 @@ const SUPPORTED_CURRENCIES = [
 ];
 
 interface PaymentGatewaySettings {
-  stripeEnabled: boolean;
-  stripePublishableKey: string;
-  stripeSecretKey: string;
-  stripeWebhookSecret: string;
-  stripeFeePercent: string;
-  stripeFixedFee: string;
-  paypalEnabled: boolean;
-  paypalClientId: string;
-  paypalClientSecret: string;
-  paypalMode: string;
-  paypalFeePercent: string;
-  paypalFixedFee: string;
   bankTransferEnabled: boolean;
   bankAccounts: BankAccount[];
   bankInstructions: string;
@@ -99,18 +87,6 @@ interface PaymentGatewaySettings {
 export default function PaymentGatewayManagement() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<PaymentGatewaySettings>({
-    stripeEnabled: false,
-    stripePublishableKey: '',
-    stripeSecretKey: '',
-    stripeWebhookSecret: '',
-    stripeFeePercent: '2.9',
-    stripeFixedFee: '0.30',
-    paypalEnabled: false,
-    paypalClientId: '',
-    paypalClientSecret: '',
-    paypalMode: 'sandbox',
-    paypalFeePercent: '2.9',
-    paypalFixedFee: '0.30',
     bankTransferEnabled: false,
     bankAccounts: [],
     bankInstructions: '',
@@ -170,18 +146,6 @@ export default function PaymentGatewayManagement() {
       const data = await res.json();
       if (data) {
         setSettings({
-          stripeEnabled: data.stripeEnabled || false,
-          stripePublishableKey: data.stripePublishableKey || '',
-          stripeSecretKey: data.stripeSecretKey || '',
-          stripeWebhookSecret: data.stripeWebhookSecret || '',
-          stripeFeePercent: data.stripeFeePercent || '2.9',
-          stripeFixedFee: data.stripeFixedFee || '0.30',
-          paypalEnabled: data.paypalEnabled || false,
-          paypalClientId: data.paypalClientId || '',
-          paypalClientSecret: data.paypalClientSecret || '',
-          paypalMode: data.paypalMode || 'sandbox',
-          paypalFeePercent: data.paypalFeePercent || '2.9',
-          paypalFixedFee: data.paypalFixedFee || '0.30',
           bankTransferEnabled: data.bankTransferEnabled || false,
           bankAccounts: data.bankAccounts || [],
           bankInstructions: data.bankInstructions || '',
@@ -450,25 +414,7 @@ export default function PaymentGatewayManagement() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className={settings.stripeEnabled ? 'border-green-500' : ''}>
-          <CardContent className="pt-6 text-center">
-            <CreditCard className={`w-8 h-8 mx-auto mb-2 ${settings.stripeEnabled ? 'text-green-500' : 'text-muted-foreground'}`} />
-            <p className="font-semibold">Stripe</p>
-            <p className={`text-sm ${settings.stripeEnabled ? 'text-green-500' : 'text-muted-foreground'}`}>
-              {settings.stripeEnabled ? 'Enabled' : 'Disabled'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={settings.paypalEnabled ? 'border-blue-500' : ''}>
-          <CardContent className="pt-6 text-center">
-            <Wallet className={`w-8 h-8 mx-auto mb-2 ${settings.paypalEnabled ? 'text-blue-500' : 'text-muted-foreground'}`} />
-            <p className="font-semibold">PayPal</p>
-            <p className={`text-sm ${settings.paypalEnabled ? 'text-blue-500' : 'text-muted-foreground'}`}>
-              {settings.paypalEnabled ? 'Enabled' : 'Disabled'}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className={settings.bankTransferEnabled ? 'border-purple-500' : ''}>
           <CardContent className="pt-6 text-center">
             <Landmark className={`w-8 h-8 mx-auto mb-2 ${settings.bankTransferEnabled ? 'text-purple-500' : 'text-muted-foreground'}`} />
@@ -498,14 +444,8 @@ export default function PaymentGatewayManagement() {
         </Card>
       </div>
 
-      <Tabs defaultValue="stripe" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-          <TabsTrigger value="stripe" data-testid="tab-stripe">
-            <CreditCard className="w-4 h-4 mr-2" /> Stripe
-          </TabsTrigger>
-          <TabsTrigger value="paypal" data-testid="tab-paypal">
-            <Wallet className="w-4 h-4 mr-2" /> PayPal
-          </TabsTrigger>
+      <Tabs defaultValue="bank" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="bank" data-testid="tab-bank">
             <Landmark className="w-4 h-4 mr-2" /> Bank
           </TabsTrigger>
@@ -519,172 +459,6 @@ export default function PaymentGatewayManagement() {
             <TrendingUp className="w-4 h-4 mr-2" /> Gold API
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="stripe">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Stripe Configuration</CardTitle>
-                  <CardDescription>Accept credit/debit card payments via Stripe</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label>Enable Stripe</Label>
-                  <Switch
-                    checked={settings.stripeEnabled}
-                    onCheckedChange={(checked) => setSettings(prev => ({ ...prev, stripeEnabled: checked }))}
-                    data-testid="switch-stripe-enabled"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Publishable Key</Label>
-                  <Input
-                    placeholder="pk_test_..."
-                    value={settings.stripePublishableKey}
-                    onChange={(e) => setSettings(prev => ({ ...prev, stripePublishableKey: e.target.value }))}
-                    data-testid="input-stripe-publishable-key"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Secret Key</Label>
-                  <div className="relative">
-                    <Input
-                      type={showSecrets['stripeSecret'] ? 'text' : 'password'}
-                      placeholder="sk_test_..."
-                      value={settings.stripeSecretKey}
-                      onChange={(e) => setSettings(prev => ({ ...prev, stripeSecretKey: e.target.value }))}
-                      data-testid="input-stripe-secret-key"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => toggleSecret('stripeSecret')}
-                    >
-                      {showSecrets['stripeSecret'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Webhook Secret</Label>
-                  <div className="relative">
-                    <Input
-                      type={showSecrets['stripeWebhook'] ? 'text' : 'password'}
-                      placeholder="whsec_..."
-                      value={settings.stripeWebhookSecret}
-                      onChange={(e) => setSettings(prev => ({ ...prev, stripeWebhookSecret: e.target.value }))}
-                      data-testid="input-stripe-webhook-secret"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => toggleSecret('stripeWebhook')}
-                    >
-                      {showSecrets['stripeWebhook'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Fee Percentage (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={settings.stripeFeePercent}
-                    onChange={(e) => setSettings(prev => ({ ...prev, stripeFeePercent: e.target.value }))}
-                    data-testid="input-stripe-fee-percent"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="paypal">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>PayPal Configuration</CardTitle>
-                  <CardDescription>Accept PayPal payments</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label>Enable PayPal</Label>
-                  <Switch
-                    checked={settings.paypalEnabled}
-                    onCheckedChange={(checked) => setSettings(prev => ({ ...prev, paypalEnabled: checked }))}
-                    data-testid="switch-paypal-enabled"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Client ID</Label>
-                  <Input
-                    placeholder="PayPal Client ID"
-                    value={settings.paypalClientId}
-                    onChange={(e) => setSettings(prev => ({ ...prev, paypalClientId: e.target.value }))}
-                    data-testid="input-paypal-client-id"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Client Secret</Label>
-                  <div className="relative">
-                    <Input
-                      type={showSecrets['paypalSecret'] ? 'text' : 'password'}
-                      placeholder="PayPal Client Secret"
-                      value={settings.paypalClientSecret}
-                      onChange={(e) => setSettings(prev => ({ ...prev, paypalClientSecret: e.target.value }))}
-                      data-testid="input-paypal-client-secret"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => toggleSecret('paypalSecret')}
-                    >
-                      {showSecrets['paypalSecret'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Mode</Label>
-                  <Select
-                    value={settings.paypalMode}
-                    onValueChange={(value) => setSettings(prev => ({ ...prev, paypalMode: value }))}
-                  >
-                    <SelectTrigger data-testid="select-paypal-mode">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sandbox">Sandbox (Testing)</SelectItem>
-                      <SelectItem value="live">Live (Production)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Fee Percentage (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={settings.paypalFeePercent}
-                    onChange={(e) => setSettings(prev => ({ ...prev, paypalFeePercent: e.target.value }))}
-                    data-testid="input-paypal-fee-percent"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="bank">
           <Card>
