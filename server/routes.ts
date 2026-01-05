@@ -20635,7 +20635,7 @@ ${message}
 
   // Submit Finatrades Personal KYC (personal info + documents + liveness)
   // Use larger body limit for liveness capture base64 images
-  app.post("/api/finatrades-kyc/personal", express.json({ limit: '100mb' }), async (req, res) => {
+  app.post("/api/finatrades-kyc/personal", ensureAuthenticated, express.json({ limit: '100mb' }), async (req, res) => {
     try {
       const { userId, personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate } = req.body;
       
