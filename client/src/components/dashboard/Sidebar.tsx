@@ -29,6 +29,7 @@ interface MenuItem {
   icon: React.ReactNode;
   label: string;
   href: string;
+  variant?: 'default' | 'danger';
 }
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) {
@@ -66,30 +67,38 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     mainMenuItems.splice(1, 0, { 
       icon: <ShieldCheck className="w-5 h-5" />, 
       label: 'Verify Identity', 
-      href: '/kyc' 
+      href: '/kyc',
+      variant: 'danger'
     });
   }
 
   const isActive = (path: string) => location === path;
 
-  const renderMenuItem = (item: MenuItem) => (
-    <Link key={item.href} href={item.href}>
-      <div 
-        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
-          isActive(item.href) 
-            ? 'bg-primary text-primary-foreground shadow-md' 
-            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-        }`}
-        onClick={() => setIsOpen(false)}
-        data-testid={`sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
-      >
-        <div className={isActive(item.href) ? 'text-primary-foreground' : ''}>
-          {item.icon}
+  const renderMenuItem = (item: MenuItem) => {
+    const isDanger = item.variant === 'danger';
+    return (
+      <Link key={item.href} href={item.href}>
+        <div 
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
+            isActive(item.href) 
+              ? isDanger 
+                ? 'bg-red-600 text-white shadow-md' 
+                : 'bg-primary text-primary-foreground shadow-md'
+              : isDanger
+                ? 'text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold'
+                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+          }`}
+          onClick={() => setIsOpen(false)}
+          data-testid={`sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
+        >
+          <div className={isActive(item.href) ? 'text-inherit' : isDanger ? 'text-red-600' : ''}>
+            {item.icon}
+          </div>
+          <span className="font-medium">{item.label}</span>
         </div>
-        <span className="font-medium">{item.label}</span>
-      </div>
-    </Link>
-  );
+      </Link>
+    );
+  };
 
   return (
     <>
