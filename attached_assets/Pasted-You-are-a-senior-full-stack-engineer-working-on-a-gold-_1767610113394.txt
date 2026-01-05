@@ -1,0 +1,109 @@
+You are a senior full-stack engineer working on a gold-backed fintech wallet app (FinaPay). 
+Bug: In Wallet > Request Funds, user can “Attach Invoice (Optional)” (PDF/Image), but when request is sent, recipient sees the request details WITHOUT the attached file. Fix end-to-end so attachment is stored, linked to the request, returned in APIs, and visible/downloadable to the recipient.
+
+GOAL
+1) Sender can attach PDF/PNG/JPG while creating a payment request.
+2) Attachment is uploaded, validated (type/size), stored securely, and linked to the request in DB.
+3) Recipient sees attachment in “Pending Items / Payment Requests” card and can open/download it.
+4) Attachment is also included in notifications payload (as a link or attachment metadata).
+5) Add tests + logs + migration if needed.
+
+STEP-BY-STEP TASKS
+
+A) FIND CURRENT FLOW
+- Locate Request Funds UI component and the API call it makes on “Create Request”.
+- Identify backend endpoint (e.g., POST /api/payment-requests or /request-funds).
+- Check what currently happens with file input:
+  - Is it ignored?
+  - Is frontend not sending it?
+  - Is backend not accepting multipart/form-data?
+  - Is it uploaded but not saved to DB?
+- Confirm recipient fetch endpoint (e.g., GET /api/payment-requests?status=pending) does not return attachment fields.
+
+B) DATABASE / MODEL UPDATE
+If payment request table/model does not support attachment, add fields:
+- attachment_id (nullable) OR attachment_url (nullable)
+- attachment_name
+- attachment_mime
+- attachment_size
+- attachment_checksum (optional)
+- created_by_user_id, recipient_user_id (already exists)
+Create a separate table if you already have an uploads/files table:
+files:
+- id, owner_user_id, entity_type ("payment_request"), entity_id, storage_key/url, mime, size, original_name, created_at
+Run migration and update ORM/schema accordingly.
+
+C) FILE UPLOAD HANDLING (SECURE)
+Implement one of these patterns (choose best based on existing stack):
+Option 1: Backend receives multipart/form-data on create request:
+- POST /api/payment-requests (multipart)
+- fields: amount, note, recipientId + file: attachment
+- Validate:
+  - max size 5MB (as UI says)
+  - allow: application/pdf, image/png, image/jpeg
+- Store file:
+  - If using S3 / Cloud storage: upload and store storage_key + signed URL generation
+  - If local storage in Replit dev: store to /uploads and store path, but design so prod can use S3 easily
+- Return attachment metadata in response.
+
+Option 2: Two-step upload (recommended):
+1) POST /api/uploads -> returns fileId + url
+2) POST /api/payment-requests with attachmentFileId
+This is cleaner and avoids big multipart on business endpoints.
+Implement whichever matches the existing code style.
+
+Security requirements:
+- Attachments must be accessible ONLY to:
+  - request sender
+  - request recipient
+  - admins (if applicable)
+- Never expose raw storage key. Use signed URLs or an authenticated download endpoint:
+  GET /api/payment-requests/:id/attachment
+  -> checks auth user is sender/recipient -> streams file OR returns signed URL.
+
+D) API CHANGES
+Update the create request endpoint to save attachment reference.
+Update fetch endpoints so recipient sees:
+- attachment: { id, name, mime, size, downloadUrl } (downloadUrl should be authenticated endpoint or signed URL)
+Also update “request details” endpoint (if exists) to include attachment.
+
+E) FRONTEND FIX
+1) Ensure the file input actually passes data:
+- If multipart: send FormData with fields + file
+- If two-step: upload first then send fileId with request creation
+2) Recipient UI:
+- In Pending Items request card, show:
+  - “Attachment: Invoice.pdf” (or “1 attachment”)
+  - Button: “View / Download”
+- On click:
+  - open downloadUrl in new tab OR fetch blob then open
+3) Sender UI:
+- After create request success, show attachment name in confirmation (optional).
+
+F) NOTIFICATIONS / REALTIME (IF EXISTS)
+If your system sends notifications (in-app, email, push):
+- Include attachment metadata in payload
+- Do NOT include the raw file, only link + name
+- Ensure recipient notification card can show “Attachment included”.
+
+G) TESTS + QA CHECKLIST
+Add tests (unit/integration depending on stack):
+- Create request without attachment (should still work)
+- Create request with valid PDF
+- Reject invalid type (e.g., .exe)
+- Reject >5MB
+- Recipient fetch sees attachment metadata
+- Unauthorized user cannot download attachment (403)
+Manual QA:
+- Sender attaches file -> creates request -> recipient sees it and opens successfully
+- Decline/Pay still works and attachment remains in request history
+
+H) OUTPUT REQUIRED
+Provide:
+1) Files changed list
+2) Migration (if any)
+3) Updated endpoints + payload examples
+4) Any env vars needed (S3_BUCKET, etc.)
+5) Short summary of the root cause you found (frontend not sending vs backend not storing)
+
+Now implement the fix in code with clean structure, comments, and no breaking changes.
