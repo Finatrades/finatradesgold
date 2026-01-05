@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-01-03T14:39:19.530Z",
+  "exportedAt": "2026-01-05T12:30:41.773Z",
   "pages": [
     {
       "id": "home-personal",
@@ -99,36 +99,6 @@
     }
   ],
   "blocks": [
-    {
-      "id": "finavault-hero-title",
-      "pageId": "finavault",
-      "section": "hero",
-      "key": "title",
-      "label": null,
-      "type": "text",
-      "content": "Secure Gold Storage",
-      "defaultContent": "Secure Gold Storage",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "finavault-hero-subtitle",
-      "pageId": "finavault",
-      "section": "hero",
-      "key": "subtitle",
-      "label": null,
-      "type": "text",
-      "content": "Store your physical gold in LBMA-accredited vaults with full insurance and audit trails.",
-      "defaultContent": "Store your physical gold in LBMA-accredited vaults with full insurance and audit trails.",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
     {
       "id": "finavault-features-title",
       "pageId": "finavault",
@@ -610,89 +580,29 @@
       "publishedAt": null
     },
     {
-      "id": "kyc-hero-title",
-      "pageId": "kyc",
+      "id": "finavault-hero-subtitle",
+      "pageId": "finavault",
+      "section": "hero",
+      "key": "subtitle",
+      "label": null,
+      "type": "text",
+      "content": "Store your physical gold in LBMA-accredited vaults with full insurance and audit trails.",
+      "defaultContent": "Store your physical gold in LBMA-accredited vaults with full insurance and audit trails.",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "finavault-hero-title",
+      "pageId": "finavault",
       "section": "hero",
       "key": "title",
       "label": null,
       "type": "text",
-      "content": "Identity Verification",
-      "defaultContent": "Identity Verification",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "faq-a1",
-      "pageId": "faq",
-      "section": "questions",
-      "key": "q1_answer",
-      "label": null,
-      "type": "text",
-      "content": "Finatrades is a gold-backed digital finance platform that allows you to buy, sell, store, and transfer physical gold through our secure digital platform.",
-      "defaultContent": "Finatrades is a gold-backed digital finance platform.",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "faq-q2",
-      "pageId": "faq",
-      "section": "questions",
-      "key": "q2_question",
-      "label": null,
-      "type": "text",
-      "content": "Is my gold physically stored?",
-      "defaultContent": "Is my gold physically stored?",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "faq-a2",
-      "pageId": "faq",
-      "section": "questions",
-      "key": "q2_answer",
-      "label": null,
-      "type": "text",
-      "content": "Yes, all gold is 100% allocated and stored in LBMA-accredited vaults. Your gold is physically segregated and belongs only to you.",
-      "defaultContent": "Yes, all gold is physically stored.",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "faq-q3",
-      "pageId": "faq",
-      "section": "questions",
-      "key": "q3_question",
-      "label": null,
-      "type": "text",
-      "content": "What are the fees?",
-      "defaultContent": "What are the fees?",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "faq-a3",
-      "pageId": "faq",
-      "section": "questions",
-      "key": "q3_answer",
-      "label": null,
-      "type": "text",
-      "content": "Fees vary by transaction type. All fees are transparently displayed before you confirm any transaction. Storage fees are charged monthly based on your holdings.",
-      "defaultContent": "Fees are transparently displayed.",
+      "content": "Secure Gold Storage",
+      "defaultContent": "Secure Gold Storage",
       "metadata": null,
       "sortOrder": 0,
       "status": "published",
@@ -723,36 +633,6 @@
       "type": "text",
       "content": "You can request physical delivery of your gold or convert it to fiat currency and withdraw to your bank account. Delivery options and fees depend on your location.",
       "defaultContent": "You can request physical delivery or convert to fiat.",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "home-hero-title",
-      "pageId": "home-personal",
-      "section": "hero",
-      "key": "title",
-      "label": null,
-      "type": "text",
-      "content": "Your Gateway to Gold-Backed Digital Finance",
-      "defaultContent": "Your Gateway to Gold-Backed Digital Finance",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "home-hero-subtitle",
-      "pageId": "home-personal",
-      "section": "hero",
-      "key": "subtitle",
-      "label": null,
-      "type": "text",
-      "content": "Buy, sell, store, and transfer physical gold seamlessly through our secure digital platform.",
-      "defaultContent": "Buy, sell, store, and transfer physical gold seamlessly through our secure digital platform.",
       "metadata": null,
       "sortOrder": 0,
       "status": "published",
@@ -925,21 +805,6 @@
       "publishedAt": null
     },
     {
-      "id": "kyc-hero-subtitle",
-      "pageId": "kyc",
-      "section": "hero",
-      "key": "subtitle",
-      "label": null,
-      "type": "text",
-      "content": "Complete your KYC to unlock all platform features.",
-      "defaultContent": "Complete your KYC to unlock all platform features.",
-      "metadata": null,
-      "sortOrder": 0,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
       "id": "kyc-levels-title",
       "pageId": "kyc",
       "section": "levels",
@@ -978,6 +843,141 @@
       "type": "text",
       "content": "What is Finatrades?",
       "defaultContent": "What is Finatrades?",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "faq-q2",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q2_question",
+      "label": null,
+      "type": "text",
+      "content": "Is my gold physically stored?",
+      "defaultContent": "Is my gold physically stored?",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "faq-a2",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q2_answer",
+      "label": null,
+      "type": "text",
+      "content": "Yes, all gold is 100% allocated and stored in LBMA-accredited vaults. Your gold is physically segregated and belongs only to you.",
+      "defaultContent": "Yes, all gold is physically stored.",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "home-hero-title",
+      "pageId": "home-personal",
+      "section": "hero",
+      "key": "title",
+      "label": null,
+      "type": "text",
+      "content": "Your Gateway to Gold-Backed Digital Finance",
+      "defaultContent": "Your Gateway to Gold-Backed Digital Finance",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "home-hero-subtitle",
+      "pageId": "home-personal",
+      "section": "hero",
+      "key": "subtitle",
+      "label": null,
+      "type": "text",
+      "content": "Buy, sell, store, and transfer physical gold seamlessly through our secure digital platform.",
+      "defaultContent": "Buy, sell, store, and transfer physical gold seamlessly through our secure digital platform.",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "kyc-hero-title",
+      "pageId": "kyc",
+      "section": "hero",
+      "key": "title",
+      "label": null,
+      "type": "text",
+      "content": "Identity Verification",
+      "defaultContent": "Identity Verification",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "faq-a1",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q1_answer",
+      "label": null,
+      "type": "text",
+      "content": "Finatrades is a gold-backed digital finance platform that allows you to buy, sell, store, and transfer physical gold through our secure digital platform.",
+      "defaultContent": "Finatrades is a gold-backed digital finance platform.",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "faq-q3",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q3_question",
+      "label": null,
+      "type": "text",
+      "content": "What are the fees?",
+      "defaultContent": "What are the fees?",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "faq-a3",
+      "pageId": "faq",
+      "section": "questions",
+      "key": "q3_answer",
+      "label": null,
+      "type": "text",
+      "content": "Fees vary by transaction type. All fees are transparently displayed before you confirm any transaction. Storage fees are charged monthly based on your holdings.",
+      "defaultContent": "Fees are transparently displayed.",
+      "metadata": null,
+      "sortOrder": 0,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "kyc-hero-subtitle",
+      "pageId": "kyc",
+      "section": "hero",
+      "key": "subtitle",
+      "label": null,
+      "type": "text",
+      "content": "Complete your KYC to unlock all platform features.",
+      "defaultContent": "Complete your KYC to unlock all platform features.",
       "metadata": null,
       "sortOrder": 0,
       "status": "published",
@@ -1037,29 +1037,6 @@
       "publishedAt": null
     },
     {
-      "id": "2f7b5253-37b0-43e0-8780-52dc4edebadc",
-      "slug": "email_verification",
-      "name": "Email Verification",
-      "type": "email",
-      "module": "auth",
-      "subject": "Verify your Finatrades account",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Email Verification</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your verification code is:</p>\n          <div style=\"background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;\">\n            <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;\">{{verification_code}}</span>\n          </div>\n          <p>This code expires in <strong>10 minutes</strong>.</p>\n          <p>If you didn't request this code, please ignore this email.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "verification_code",
-          "description": "6-digit verification code"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
       "id": "c437dc3d-b8f7-4c3f-b4d5-fc3b428ab295",
       "slug": "kyc_approved",
       "name": "KYC Approved",
@@ -1102,6 +1079,29 @@
         {
           "name": "kyc_url",
           "description": "Link to KYC page"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "2f7b5253-37b0-43e0-8780-52dc4edebadc",
+      "slug": "email_verification",
+      "name": "Email Verification",
+      "type": "email",
+      "module": "auth",
+      "subject": "Verify your Finatrades account",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Email Verification</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your verification code is:</p>\n          <div style=\"background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;\">\n            <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;\">{{verification_code}}</span>\n          </div>\n          <p>This code expires in <strong>10 minutes</strong>.</p>\n          <p>If you didn't request this code, please ignore this email.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "verification_code",
+          "description": "6-digit verification code"
         }
       ],
       "previewData": null,
@@ -1195,6 +1195,41 @@
       "publishedAt": null
     },
     {
+      "id": "4ff16e2a-e89d-40cd-ab67-0e20b743732a",
+      "slug": "bnsl_payment_reminder",
+      "name": "BNSL Payment Reminder",
+      "type": "email",
+      "module": "bnsl",
+      "subject": "Payment reminder - ${{amount}} due on {{due_date}}",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Payment Reminder</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>This is a friendly reminder that your BNSL payment is due soon.</p>\n          <div style=\"background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Plan:</td><td style=\"text-align: right; font-weight: bold;\">{{plan_name}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Amount Due:</td><td style=\"text-align: right; font-weight: bold; color: #f59e0b;\">${{amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Due Date:</td><td style=\"text-align: right;\">{{due_date}}</td></tr>\n            </table>\n          </div>\n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{payment_url}}\" style=\"background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Make Payment</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "plan_name",
+          "description": "BNSL plan name"
+        },
+        {
+          "name": "amount",
+          "description": "Payment amount"
+        },
+        {
+          "name": "due_date",
+          "description": "Payment due date"
+        },
+        {
+          "name": "payment_url",
+          "description": "Link to make payment"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
       "id": "e2371bbf-844e-48f1-862c-4ba983a29b5d",
       "slug": "new_device_login",
       "name": "New Device Login",
@@ -1226,41 +1261,6 @@
         {
           "name": "security_url",
           "description": "Link to security settings"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "2c2acc81-f0a6-4179-b81a-344728597187",
-      "slug": "document_expiry_reminder",
-      "name": "Document Expiry Reminder",
-      "type": "email",
-      "module": "kyc",
-      "subject": "Your {{document_type}} is expiring soon - Action Required",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Document Expiry Notice</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>This is a friendly reminder that your <strong>{{document_type}}</strong> is <strong>expiring on {{expiry_date}}</strong>.</p>\n          \n          <div style=\"background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;\">\n            <p style=\"margin: 0;\"><strong>Document:</strong> {{document_type}}</p>\n            <p style=\"margin: 8px 0 0 0;\"><strong>Days remaining:</strong> {{days_remaining}} days</p>\n          </div>\n          \n          <p>To continue using Finatrades services without interruption, please update your KYC documents before the expiry date.</p>\n          \n          <p><strong>What you need to do:</strong></p>\n          <ol>\n            <li>Obtain a new valid document</li>\n            <li>Log in to your Finatrades account</li>\n            <li>Go to Settings → KYC Verification</li>\n            <li>Upload your new document</li>\n          </ol>\n          \n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{kyc_url}}\" style=\"background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Update Documents</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>If you have already renewed your documents, please disregard this message.</p>\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "document_type",
-          "description": "Type of document (Passport, Trade License, etc.)"
-        },
-        {
-          "name": "expiry_date",
-          "description": "Document expiry date"
-        },
-        {
-          "name": "days_remaining",
-          "description": "Number of days until expiry"
-        },
-        {
-          "name": "kyc_url",
-          "description": "Link to KYC page"
         }
       ],
       "previewData": null,
@@ -1311,6 +1311,41 @@
         {
           "name": "security_url",
           "description": "Link to security settings"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "2c2acc81-f0a6-4179-b81a-344728597187",
+      "slug": "document_expiry_reminder",
+      "name": "Document Expiry Reminder",
+      "type": "email",
+      "module": "kyc",
+      "subject": "Your {{document_type}} is expiring soon - Action Required",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Document Expiry Notice</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>This is a friendly reminder that your <strong>{{document_type}}</strong> is <strong>expiring on {{expiry_date}}</strong>.</p>\n          \n          <div style=\"background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;\">\n            <p style=\"margin: 0;\"><strong>Document:</strong> {{document_type}}</p>\n            <p style=\"margin: 8px 0 0 0;\"><strong>Days remaining:</strong> {{days_remaining}} days</p>\n          </div>\n          \n          <p>To continue using Finatrades services without interruption, please update your KYC documents before the expiry date.</p>\n          \n          <p><strong>What you need to do:</strong></p>\n          <ol>\n            <li>Obtain a new valid document</li>\n            <li>Log in to your Finatrades account</li>\n            <li>Go to Settings → KYC Verification</li>\n            <li>Upload your new document</li>\n          </ol>\n          \n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{kyc_url}}\" style=\"background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Update Documents</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>If you have already renewed your documents, please disregard this message.</p>\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "document_type",
+          "description": "Type of document (Passport, Trade License, etc.)"
+        },
+        {
+          "name": "expiry_date",
+          "description": "Document expiry date"
+        },
+        {
+          "name": "days_remaining",
+          "description": "Number of days until expiry"
+        },
+        {
+          "name": "kyc_url",
+          "description": "Link to KYC page"
         }
       ],
       "previewData": null,
@@ -1506,6 +1541,37 @@
       "publishedAt": null
     },
     {
+      "id": "f72d5476-256f-4c1d-9b1d-3ff063f50b20",
+      "slug": "account_locked",
+      "name": "Account Locked",
+      "type": "email",
+      "module": "auth",
+      "subject": "Your Finatrades account has been locked",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Account Locked</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your account has been temporarily locked due to <strong>{{lock_reason}}</strong>.</p>\n          <div style=\"background: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;\">\n            <p style=\"margin: 0;\">Your account will be unlocked after {{unlock_time}}.</p>\n          </div>\n          <p>If you believe this was a mistake, please contact our support team.</p>\n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{support_url}}\" style=\"background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Contact Support</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "lock_reason",
+          "description": "Reason for account lock"
+        },
+        {
+          "name": "unlock_time",
+          "description": "Time until unlock"
+        },
+        {
+          "name": "support_url",
+          "description": "Link to support"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
       "id": "f7090356-1da3-44d7-b9b3-8b734a141d0b",
       "slug": "low_balance_alert",
       "name": "Low Balance Alert",
@@ -1603,37 +1669,6 @@
       "publishedAt": null
     },
     {
-      "id": "06a4fffb-e796-40e3-92fd-a7fe1021f46f",
-      "slug": "trade_case_created",
-      "name": "Trade Case Created",
-      "type": "email",
-      "module": "trade_finance",
-      "subject": "Trade case created - {{case_id}}",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Trade Case Created</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your trade finance case has been successfully created.</p>\n          <div style=\"background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Case ID:</td><td style=\"text-align: right; font-weight: bold;\">{{case_id}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Type:</td><td style=\"text-align: right;\">{{case_type}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Amount:</td><td style=\"text-align: right;\">${{amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Status:</td><td style=\"text-align: right;\"><span style=\"color: #3b82f6;\">Pending Review</span></td></tr>\n            </table>\n          </div>\n          <p>Our team will review your case and update you on the next steps.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "case_id",
-          "description": "Trade case ID"
-        },
-        {
-          "name": "case_type",
-          "description": "Type of trade case"
-        },
-        {
-          "name": "amount",
-          "description": "Trade amount"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
       "id": "bc5f7cc6-aa69-40b9-abfe-ef2fee02da13",
       "slug": "trade_case_status_update",
       "name": "Trade Case Status Update",
@@ -1669,6 +1704,37 @@
       "publishedAt": null
     },
     {
+      "id": "06a4fffb-e796-40e3-92fd-a7fe1021f46f",
+      "slug": "trade_case_created",
+      "name": "Trade Case Created",
+      "type": "email",
+      "module": "trade_finance",
+      "subject": "Trade case created - {{case_id}}",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Trade Case Created</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your trade finance case has been successfully created.</p>\n          <div style=\"background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Case ID:</td><td style=\"text-align: right; font-weight: bold;\">{{case_id}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Type:</td><td style=\"text-align: right;\">{{case_type}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Amount:</td><td style=\"text-align: right;\">${{amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Status:</td><td style=\"text-align: right;\"><span style=\"color: #3b82f6;\">Pending Review</span></td></tr>\n            </table>\n          </div>\n          <p>Our team will review your case and update you on the next steps.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "case_id",
+          "description": "Trade case ID"
+        },
+        {
+          "name": "case_type",
+          "description": "Type of trade case"
+        },
+        {
+          "name": "amount",
+          "description": "Trade amount"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
       "id": "2b9a9380-d810-4477-a05f-1445c19c26f5",
       "slug": "finabridge_proposal_accepted",
       "name": "Trade Proposal Accepted",
@@ -1696,37 +1762,6 @@
         {
           "name": "dashboard_url",
           "description": "Dashboard URL"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "c7b8a1e5-6da1-4528-b1b8-a38c8e40a91f",
-      "slug": "trade_case_approved",
-      "name": "Trade Case Approved",
-      "type": "email",
-      "module": "trade_finance",
-      "subject": "Trade case {{case_id}} approved!",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Case Approved!</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Great news! Your trade finance case has been approved.</p>\n          <div style=\"background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Case ID:</td><td style=\"text-align: right; font-weight: bold;\">{{case_id}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Credit Limit:</td><td style=\"text-align: right; font-weight: bold; color: #22c55e;\">${{credit_limit}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Valid Until:</td><td style=\"text-align: right;\">{{valid_until}}</td></tr>\n            </table>\n          </div>\n          <p>You can now proceed with your trade transactions.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "case_id",
-          "description": "Trade case ID"
-        },
-        {
-          "name": "credit_limit",
-          "description": "Approved credit limit"
-        },
-        {
-          "name": "valid_until",
-          "description": "Validity date"
         }
       ],
       "previewData": null,
@@ -1805,6 +1840,37 @@
       "publishedAt": null
     },
     {
+      "id": "c7b8a1e5-6da1-4528-b1b8-a38c8e40a91f",
+      "slug": "trade_case_approved",
+      "name": "Trade Case Approved",
+      "type": "email",
+      "module": "trade_finance",
+      "subject": "Trade case {{case_id}} approved!",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Case Approved!</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Great news! Your trade finance case has been approved.</p>\n          <div style=\"background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Case ID:</td><td style=\"text-align: right; font-weight: bold;\">{{case_id}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Credit Limit:</td><td style=\"text-align: right; font-weight: bold; color: #22c55e;\">${{credit_limit}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Valid Until:</td><td style=\"text-align: right;\">{{valid_until}}</td></tr>\n            </table>\n          </div>\n          <p>You can now proceed with your trade transactions.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "case_id",
+          "description": "Trade case ID"
+        },
+        {
+          "name": "credit_limit",
+          "description": "Approved credit limit"
+        },
+        {
+          "name": "valid_until",
+          "description": "Validity date"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
       "id": "0ecda586-d887-4dc8-b594-98920037cb67",
       "slug": "finabridge_settlement_released",
       "name": "Settlement Gold Released",
@@ -1875,37 +1941,6 @@
       "publishedAt": null
     },
     {
-      "id": "4d0aaa5d-ffea-4310-979b-a09bf97cabd9",
-      "slug": "finabridge_proposal_declined",
-      "name": "Trade Proposal Declined",
-      "type": "email",
-      "module": "trade_finance",
-      "subject": "Trade proposal for {{trade_ref}} has been declined",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Proposal Declined</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>The trade proposal you submitted has been declined.</p>\n          <div style=\"background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Trade Reference:</td><td style=\"text-align: right; font-weight: bold;\">{{trade_ref}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Proposal Amount:</td><td style=\"text-align: right;\">${{proposal_amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Declined Reason:</td><td style=\"text-align: right;\">{{decline_reason}}</td></tr>\n            </table>\n          </div>\n          <p>You may submit a revised proposal if you wish to continue with this trade.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades FinaBridge - Trade Finance Solutions</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "trade_ref",
-          "description": "Trade reference ID"
-        },
-        {
-          "name": "proposal_amount",
-          "description": "Proposal amount"
-        },
-        {
-          "name": "decline_reason",
-          "description": "Reason for decline"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
       "id": "e273891f-1b20-4c45-8b0d-efb2dc1d9dc7",
       "slug": "finabridge_deal_room_created",
       "name": "Deal Room Created",
@@ -1933,6 +1968,37 @@
         {
           "name": "created_date",
           "description": "Creation date"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "4d0aaa5d-ffea-4310-979b-a09bf97cabd9",
+      "slug": "finabridge_proposal_declined",
+      "name": "Trade Proposal Declined",
+      "type": "email",
+      "module": "trade_finance",
+      "subject": "Trade proposal for {{trade_ref}} has been declined",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Proposal Declined</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>The trade proposal you submitted has been declined.</p>\n          <div style=\"background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Trade Reference:</td><td style=\"text-align: right; font-weight: bold;\">{{trade_ref}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Proposal Amount:</td><td style=\"text-align: right;\">${{proposal_amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Declined Reason:</td><td style=\"text-align: right;\">{{decline_reason}}</td></tr>\n            </table>\n          </div>\n          <p>You may submit a revised proposal if you wish to continue with this trade.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades FinaBridge - Trade Finance Solutions</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "trade_ref",
+          "description": "Trade reference ID"
+        },
+        {
+          "name": "proposal_amount",
+          "description": "Proposal amount"
+        },
+        {
+          "name": "decline_reason",
+          "description": "Reason for decline"
         }
       ],
       "previewData": null,
@@ -1972,45 +2038,6 @@
         {
           "name": "usd_value",
           "description": "USD value"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "64207b59-769e-4045-bc8f-ed96a55cfccc",
-      "slug": "annual_tax_statement",
-      "name": "Annual Tax Statement",
-      "type": "email",
-      "module": "account",
-      "subject": "Your {{year}} Annual Tax Statement",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #059669, #047857); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Annual Tax Statement</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your annual tax statement for the year {{year}} is now available.</p>\n          <div style=\"background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <h3 style=\"color: #047857; margin-top: 0;\">Annual Summary</h3>\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Total Gold Purchased:</td><td style=\"text-align: right;\">{{total_purchases_gold}}g</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Total Gold Sold:</td><td style=\"text-align: right;\">{{total_sales_gold}}g</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Realized Gains/Losses:</td><td style=\"text-align: right; font-weight: bold;\">${{realized_gains}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Year-End Holdings:</td><td style=\"text-align: right;\">{{year_end_gold}}g</td></tr>\n            </table>\n          </div>\n          <p style=\"color: #6b7280; font-size: 14px;\"><em>Note: This statement is for informational purposes only. Please consult your tax advisor for filing requirements.</em></p>\n          <p>Your detailed tax statement is attached to this email.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "year",
-          "description": "Tax year"
-        },
-        {
-          "name": "total_purchases_gold",
-          "description": "Total gold purchased"
-        },
-        {
-          "name": "total_sales_gold",
-          "description": "Total gold sold"
-        },
-        {
-          "name": "realized_gains",
-          "description": "Realized gains/losses"
-        },
-        {
-          "name": "year_end_gold",
-          "description": "Year-end gold holdings"
         }
       ],
       "previewData": null,
@@ -2101,6 +2128,45 @@
       "publishedAt": null
     },
     {
+      "id": "64207b59-769e-4045-bc8f-ed96a55cfccc",
+      "slug": "annual_tax_statement",
+      "name": "Annual Tax Statement",
+      "type": "email",
+      "module": "account",
+      "subject": "Your {{year}} Annual Tax Statement",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #059669, #047857); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Annual Tax Statement</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your annual tax statement for the year {{year}} is now available.</p>\n          <div style=\"background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <h3 style=\"color: #047857; margin-top: 0;\">Annual Summary</h3>\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Total Gold Purchased:</td><td style=\"text-align: right;\">{{total_purchases_gold}}g</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Total Gold Sold:</td><td style=\"text-align: right;\">{{total_sales_gold}}g</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Realized Gains/Losses:</td><td style=\"text-align: right; font-weight: bold;\">${{realized_gains}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Year-End Holdings:</td><td style=\"text-align: right;\">{{year_end_gold}}g</td></tr>\n            </table>\n          </div>\n          <p style=\"color: #6b7280; font-size: 14px;\"><em>Note: This statement is for informational purposes only. Please consult your tax advisor for filing requirements.</em></p>\n          <p>Your detailed tax statement is attached to this email.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "year",
+          "description": "Tax year"
+        },
+        {
+          "name": "total_purchases_gold",
+          "description": "Total gold purchased"
+        },
+        {
+          "name": "total_sales_gold",
+          "description": "Total gold sold"
+        },
+        {
+          "name": "realized_gains",
+          "description": "Realized gains/losses"
+        },
+        {
+          "name": "year_end_gold",
+          "description": "Year-end gold holdings"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
       "id": "abebcb87-9cc1-4a02-9dfb-6bb64b1061d8",
       "slug": "monthly_statement",
       "name": "Monthly Account Statement",
@@ -2144,45 +2210,6 @@
         {
           "name": "net_change_gold",
           "description": "Net change in gold"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "b388503a-ba28-413f-965f-eda208a887e7",
-      "slug": "certificate_trade_release",
-      "name": "Trade Release Certificate",
-      "type": "certificate",
-      "module": "finabridge",
-      "subject": "Trade Release Certificate - {{certificate_number}}",
-      "body": "\n      <div style=\"font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #16a34a; padding: 40px; background: linear-gradient(135deg, #f0fdf4, #dcfce7);\">\n        <div style=\"text-align: center; border-bottom: 2px solid #16a34a; padding-bottom: 20px; margin-bottom: 30px;\">\n          <div style=\"font-size: 14px; color: #166534; letter-spacing: 2px; margin-bottom: 10px;\">FINABRIDGE</div>\n          <h1 style=\"color: #166534; font-size: 32px; margin: 0; letter-spacing: 3px;\">TRADE RELEASE CERTIFICATE</h1>\n          <p style=\"color: #16a34a; font-size: 14px; margin-top: 10px;\">Trade Finance Collateral Release</p>\n        </div>\n        <div style=\"text-align: center; margin: 30px 0;\">\n          <p style=\"font-size: 16px; color: #44403c;\">This certifies that</p>\n          <p style=\"font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;\">{{owner_name}}</p>\n          <p style=\"font-size: 16px; color: #44403c;\">has successfully released the following gold from trade collateral</p>\n          <p style=\"font-size: 36px; font-weight: bold; color: #16a34a; margin: 15px 0;\">{{gold_amount}} grams</p>\n        </div>\n        <div style=\"background: #dcfce7; padding: 20px; border-radius: 8px; margin: 30px 0;\">\n          <table style=\"width: 100%; border-collapse: collapse;\">\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Certificate Number:</td><td style=\"text-align: right; font-weight: bold;\">{{certificate_number}}</td></tr>\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Trade Case ID:</td><td style=\"text-align: right;\">{{trade_case_id}}</td></tr>\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Release Date:</td><td style=\"text-align: right;\">{{release_date}}</td></tr>\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Released Value:</td><td style=\"text-align: right; font-weight: bold;\">${{released_value}}</td></tr>\n          </table>\n        </div>\n        <div style=\"text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #22c55e;\">\n          <p style=\"font-size: 12px; color: #166534;\">Trade completed successfully. Gold collateral has been released.</p>\n          <p style=\"font-size: 12px; color: #166534;\">Funds are now available in your Finatrades wallet.</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "owner_name",
-          "description": "Certificate owner name"
-        },
-        {
-          "name": "gold_amount",
-          "description": "Gold amount released"
-        },
-        {
-          "name": "certificate_number",
-          "description": "Certificate number"
-        },
-        {
-          "name": "trade_case_id",
-          "description": "Trade case ID"
-        },
-        {
-          "name": "release_date",
-          "description": "Release date"
-        },
-        {
-          "name": "released_value",
-          "description": "Released value in USD"
         }
       ],
       "previewData": null,
@@ -2273,6 +2300,45 @@
         {
           "name": "invoice_date",
           "description": "Invoice date"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "b388503a-ba28-413f-965f-eda208a887e7",
+      "slug": "certificate_trade_release",
+      "name": "Trade Release Certificate",
+      "type": "certificate",
+      "module": "finabridge",
+      "subject": "Trade Release Certificate - {{certificate_number}}",
+      "body": "\n      <div style=\"font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; border: 3px double #16a34a; padding: 40px; background: linear-gradient(135deg, #f0fdf4, #dcfce7);\">\n        <div style=\"text-align: center; border-bottom: 2px solid #16a34a; padding-bottom: 20px; margin-bottom: 30px;\">\n          <div style=\"font-size: 14px; color: #166534; letter-spacing: 2px; margin-bottom: 10px;\">FINABRIDGE</div>\n          <h1 style=\"color: #166534; font-size: 32px; margin: 0; letter-spacing: 3px;\">TRADE RELEASE CERTIFICATE</h1>\n          <p style=\"color: #16a34a; font-size: 14px; margin-top: 10px;\">Trade Finance Collateral Release</p>\n        </div>\n        <div style=\"text-align: center; margin: 30px 0;\">\n          <p style=\"font-size: 16px; color: #44403c;\">This certifies that</p>\n          <p style=\"font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;\">{{owner_name}}</p>\n          <p style=\"font-size: 16px; color: #44403c;\">has successfully released the following gold from trade collateral</p>\n          <p style=\"font-size: 36px; font-weight: bold; color: #16a34a; margin: 15px 0;\">{{gold_amount}} grams</p>\n        </div>\n        <div style=\"background: #dcfce7; padding: 20px; border-radius: 8px; margin: 30px 0;\">\n          <table style=\"width: 100%; border-collapse: collapse;\">\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Certificate Number:</td><td style=\"text-align: right; font-weight: bold;\">{{certificate_number}}</td></tr>\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Trade Case ID:</td><td style=\"text-align: right;\">{{trade_case_id}}</td></tr>\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Release Date:</td><td style=\"text-align: right;\">{{release_date}}</td></tr>\n            <tr><td style=\"padding: 8px 0; color: #166534;\">Released Value:</td><td style=\"text-align: right; font-weight: bold;\">${{released_value}}</td></tr>\n          </table>\n        </div>\n        <div style=\"text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #22c55e;\">\n          <p style=\"font-size: 12px; color: #166534;\">Trade completed successfully. Gold collateral has been released.</p>\n          <p style=\"font-size: 12px; color: #166534;\">Funds are now available in your Finatrades wallet.</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "owner_name",
+          "description": "Certificate owner name"
+        },
+        {
+          "name": "gold_amount",
+          "description": "Gold amount released"
+        },
+        {
+          "name": "certificate_number",
+          "description": "Certificate number"
+        },
+        {
+          "name": "trade_case_id",
+          "description": "Trade case ID"
+        },
+        {
+          "name": "release_date",
+          "description": "Release date"
+        },
+        {
+          "name": "released_value",
+          "description": "Released value in USD"
         }
       ],
       "previewData": null,
@@ -2487,33 +2553,33 @@
       "publishedAt": null
     },
     {
-      "id": "806208fe-e762-4465-82a7-de5396d3ffc4",
-      "slug": "transfer_sent",
-      "name": "Transfer Sent",
+      "id": "0e86ad1a-a366-451a-b8c2-2b0042a03c4e",
+      "slug": "invoice_delivery",
+      "name": "Invoice Delivery",
       "type": "email",
-      "module": "p2p",
-      "subject": "You sent {{gold_amount}}g gold to {{recipient_name}}",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Transfer Sent</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your gold transfer has been initiated.</p>\n          <div style=\"background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">To:</td><td style=\"text-align: right; font-weight: bold;\">{{recipient_name}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Amount:</td><td style=\"text-align: right;\">{{gold_amount}}g gold</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Value:</td><td style=\"text-align: right;\">${{usd_value}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Reference:</td><td style=\"text-align: right;\">{{reference_id}}</td></tr>\n            </table>\n          </div>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "module": "finapay",
+      "subject": "Invoice {{invoice_number}} - Gold Purchase",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Invoice</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Dear {{user_name}},</p>\n          <p>Please find attached your invoice for the recent gold purchase.</p>\n          \n          <div style=\"background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Invoice No:</td><td style=\"text-align: right; font-weight: bold;\">{{invoice_number}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Date:</td><td style=\"text-align: right;\">{{invoice_date}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Gold Amount:</td><td style=\"text-align: right;\">{{gold_amount}}g</td></tr>\n              <tr><td style=\"padding: 8px 0; border-top: 1px solid #e5e7eb; margin-top: 10px;\"><strong>Total Amount:</strong></td><td style=\"text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold; color: #f97316;\">{{total_amount}}</td></tr>\n            </table>\n          </div>\n\n          <p>Thank you for your purchase!</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
       "variables": [
         {
           "name": "user_name",
-          "description": "Sender's name"
+          "description": "User's full name"
         },
         {
-          "name": "recipient_name",
-          "description": "Recipient's name"
+          "name": "invoice_number",
+          "description": "Invoice number"
+        },
+        {
+          "name": "invoice_date",
+          "description": "Invoice date"
         },
         {
           "name": "gold_amount",
-          "description": "Amount of gold transferred"
+          "description": "Amount of gold in grams"
         },
         {
-          "name": "usd_value",
-          "description": "USD value"
-        },
-        {
-          "name": "reference_id",
-          "description": "Transaction reference"
+          "name": "total_amount",
+          "description": "Total amount paid"
         }
       ],
       "previewData": null,
@@ -2572,41 +2638,6 @@
         {
           "name": "upload_url",
           "description": "Link to upload documents"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "0e86ad1a-a366-451a-b8c2-2b0042a03c4e",
-      "slug": "invoice_delivery",
-      "name": "Invoice Delivery",
-      "type": "email",
-      "module": "finapay",
-      "subject": "Invoice {{invoice_number}} - Gold Purchase",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Invoice</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Dear {{user_name}},</p>\n          <p>Please find attached your invoice for the recent gold purchase.</p>\n          \n          <div style=\"background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Invoice No:</td><td style=\"text-align: right; font-weight: bold;\">{{invoice_number}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Date:</td><td style=\"text-align: right;\">{{invoice_date}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Gold Amount:</td><td style=\"text-align: right;\">{{gold_amount}}g</td></tr>\n              <tr><td style=\"padding: 8px 0; border-top: 1px solid #e5e7eb; margin-top: 10px;\"><strong>Total Amount:</strong></td><td style=\"text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold; color: #f97316;\">{{total_amount}}</td></tr>\n            </table>\n          </div>\n\n          <p>Thank you for your purchase!</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "invoice_number",
-          "description": "Invoice number"
-        },
-        {
-          "name": "invoice_date",
-          "description": "Invoice date"
-        },
-        {
-          "name": "gold_amount",
-          "description": "Amount of gold in grams"
-        },
-        {
-          "name": "total_amount",
-          "description": "Total amount paid"
         }
       ],
       "previewData": null,
@@ -2681,68 +2712,6 @@
       "publishedAt": null
     },
     {
-      "id": "4ff16e2a-e89d-40cd-ab67-0e20b743732a",
-      "slug": "bnsl_payment_reminder",
-      "name": "BNSL Payment Reminder",
-      "type": "email",
-      "module": "bnsl",
-      "subject": "Payment reminder - ${{amount}} due on {{due_date}}",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Payment Reminder</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>This is a friendly reminder that your BNSL payment is due soon.</p>\n          <div style=\"background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Plan:</td><td style=\"text-align: right; font-weight: bold;\">{{plan_name}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Amount Due:</td><td style=\"text-align: right; font-weight: bold; color: #f59e0b;\">${{amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Due Date:</td><td style=\"text-align: right;\">{{due_date}}</td></tr>\n            </table>\n          </div>\n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{payment_url}}\" style=\"background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Make Payment</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "plan_name",
-          "description": "BNSL plan name"
-        },
-        {
-          "name": "amount",
-          "description": "Payment amount"
-        },
-        {
-          "name": "due_date",
-          "description": "Payment due date"
-        },
-        {
-          "name": "payment_url",
-          "description": "Link to make payment"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "8a6f27f1-406f-4beb-b9bb-8f783495f622",
-      "slug": "withdrawal_completed",
-      "name": "Withdrawal Completed",
-      "type": "email",
-      "module": "transactions",
-      "subject": "Your withdrawal of ${{amount}} is complete",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Withdrawal Complete</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your withdrawal has been successfully processed and sent to your account.</p>\n          <div style=\"background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;\">\n            <p style=\"font-size: 32px; font-weight: bold; color: #22c55e; margin: 0;\">${{amount}}</p>\n            <p style=\"color: #6b7280; margin: 10px 0 0 0;\">Reference: {{reference_id}}</p>\n          </div>\n          <p>The funds should appear in your bank account within 1-2 business days.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "amount",
-          "description": "Withdrawal amount"
-        },
-        {
-          "name": "reference_id",
-          "description": "Transaction reference"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
       "id": "08bbb27c-015f-4751-b062-c911590fcd9c",
       "slug": "kyc_pending_review",
       "name": "KYC Pending Review",
@@ -2797,37 +2766,6 @@
       "publishedAt": null
     },
     {
-      "id": "f72d5476-256f-4c1d-9b1d-3ff063f50b20",
-      "slug": "account_locked",
-      "name": "Account Locked",
-      "type": "email",
-      "module": "auth",
-      "subject": "Your Finatrades account has been locked",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Account Locked</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your account has been temporarily locked due to <strong>{{lock_reason}}</strong>.</p>\n          <div style=\"background: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;\">\n            <p style=\"margin: 0;\">Your account will be unlocked after {{unlock_time}}.</p>\n          </div>\n          <p>If you believe this was a mistake, please contact our support team.</p>\n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{support_url}}\" style=\"background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Contact Support</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "lock_reason",
-          "description": "Reason for account lock"
-        },
-        {
-          "name": "unlock_time",
-          "description": "Time until unlock"
-        },
-        {
-          "name": "support_url",
-          "description": "Link to support"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
       "id": "50440f94-e020-4159-834c-09178bd465d0",
       "slug": "certificate_bnsl_lock",
       "name": "BNSL Lock Certificate",
@@ -2863,37 +2801,6 @@
         {
           "name": "total_value",
           "description": "Total locked value"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "b61d00ad-9c47-48b3-b067-7ff6ed20d3fc",
-      "slug": "suspicious_activity",
-      "name": "Suspicious Activity Alert",
-      "type": "email",
-      "module": "auth",
-      "subject": "Suspicious activity detected on your Finatrades account",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Security Alert</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>We detected suspicious activity on your account:</p>\n          <div style=\"background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;\">\n            <p style=\"margin: 0;\"><strong>Activity:</strong> {{activity_description}}</p>\n            <p style=\"margin: 10px 0 0 0;\"><strong>Time:</strong> {{activity_time}}</p>\n          </div>\n          <p><strong>Recommended actions:</strong></p>\n          <ol>\n            <li>Change your password immediately</li>\n            <li>Enable two-factor authentication</li>\n            <li>Review your recent transactions</li>\n          </ol>\n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{security_url}}\" style=\"background: #ef4444; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Secure My Account</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "activity_description",
-          "description": "Description of suspicious activity"
-        },
-        {
-          "name": "activity_time",
-          "description": "Time of activity"
-        },
-        {
-          "name": "security_url",
-          "description": "Link to security settings"
         }
       ],
       "previewData": null,
@@ -2961,56 +2868,29 @@
       "publishedAt": null
     },
     {
-      "id": "f2c00dc2-267e-431a-afc7-b18320d60784",
-      "slug": "trade_case_rejected",
-      "name": "Trade Case Rejected",
+      "id": "806208fe-e762-4465-82a7-de5396d3ffc4",
+      "slug": "transfer_sent",
+      "name": "Transfer Sent",
       "type": "email",
-      "module": "trade_finance",
-      "subject": "Trade case {{trade_ref}} has been rejected",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Trade Case Rejected</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>We regret to inform you that your trade case has been rejected.</p>\n          <div style=\"background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Trade Reference:</td><td style=\"text-align: right; font-weight: bold;\">{{trade_ref}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Rejection Reason:</td><td style=\"text-align: right;\">{{rejection_reason}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Rejected On:</td><td style=\"text-align: right;\">{{rejection_date}}</td></tr>\n            </table>\n          </div>\n          <p>If you have questions about this decision, please contact our support team.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades FinaBridge - Trade Finance Solutions</p>\n        </div>\n      </div>\n    ",
+      "module": "p2p",
+      "subject": "You sent {{gold_amount}}g gold to {{recipient_name}}",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Transfer Sent</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your gold transfer has been initiated.</p>\n          <div style=\"background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">To:</td><td style=\"text-align: right; font-weight: bold;\">{{recipient_name}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Amount:</td><td style=\"text-align: right;\">{{gold_amount}}g gold</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Value:</td><td style=\"text-align: right;\">${{usd_value}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Reference:</td><td style=\"text-align: right;\">{{reference_id}}</td></tr>\n            </table>\n          </div>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
       "variables": [
         {
           "name": "user_name",
-          "description": "User's full name"
+          "description": "Sender's name"
         },
         {
-          "name": "trade_ref",
-          "description": "Trade reference ID"
+          "name": "recipient_name",
+          "description": "Recipient's name"
         },
         {
-          "name": "rejection_reason",
-          "description": "Reason for rejection"
+          "name": "gold_amount",
+          "description": "Amount of gold transferred"
         },
         {
-          "name": "rejection_date",
-          "description": "Date of rejection"
-        }
-      ],
-      "previewData": null,
-      "status": "published",
-      "version": 1,
-      "publishedAt": null
-    },
-    {
-      "id": "f2deef9d-4551-47d4-ba5b-0eb4f0388b8c",
-      "slug": "withdrawal_requested",
-      "name": "Withdrawal Requested",
-      "type": "email",
-      "module": "transactions",
-      "subject": "Withdrawal request for ${{amount}} received",
-      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Withdrawal Requested</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your withdrawal request has been submitted and is pending review.</p>\n          <div style=\"background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Amount:</td><td style=\"text-align: right; font-weight: bold;\">${{amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Method:</td><td style=\"text-align: right;\">{{withdrawal_method}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Reference:</td><td style=\"text-align: right;\">{{reference_id}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Status:</td><td style=\"text-align: right;\"><span style=\"color: #f59e0b;\">Pending</span></td></tr>\n            </table>\n          </div>\n          <p>Processing typically takes 1-3 business days. You'll receive updates via email.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
-      "variables": [
-        {
-          "name": "user_name",
-          "description": "User's full name"
-        },
-        {
-          "name": "amount",
-          "description": "Withdrawal amount"
-        },
-        {
-          "name": "withdrawal_method",
-          "description": "Payment method"
+          "name": "usd_value",
+          "description": "USD value"
         },
         {
           "name": "reference_id",
@@ -3050,6 +2930,126 @@
         {
           "name": "next_due_date",
           "description": "Next payment due date"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "f2deef9d-4551-47d4-ba5b-0eb4f0388b8c",
+      "slug": "withdrawal_requested",
+      "name": "Withdrawal Requested",
+      "type": "email",
+      "module": "transactions",
+      "subject": "Withdrawal request for ${{amount}} received",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Withdrawal Requested</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your withdrawal request has been submitted and is pending review.</p>\n          <div style=\"background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Amount:</td><td style=\"text-align: right; font-weight: bold;\">${{amount}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Method:</td><td style=\"text-align: right;\">{{withdrawal_method}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Reference:</td><td style=\"text-align: right;\">{{reference_id}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Status:</td><td style=\"text-align: right;\"><span style=\"color: #f59e0b;\">Pending</span></td></tr>\n            </table>\n          </div>\n          <p>Processing typically takes 1-3 business days. You'll receive updates via email.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "amount",
+          "description": "Withdrawal amount"
+        },
+        {
+          "name": "withdrawal_method",
+          "description": "Payment method"
+        },
+        {
+          "name": "reference_id",
+          "description": "Transaction reference"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "8a6f27f1-406f-4beb-b9bb-8f783495f622",
+      "slug": "withdrawal_completed",
+      "name": "Withdrawal Completed",
+      "type": "email",
+      "module": "transactions",
+      "subject": "Your withdrawal of ${{amount}} is complete",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Withdrawal Complete</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>Your withdrawal has been successfully processed and sent to your account.</p>\n          <div style=\"background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;\">\n            <p style=\"font-size: 32px; font-weight: bold; color: #22c55e; margin: 0;\">${{amount}}</p>\n            <p style=\"color: #6b7280; margin: 10px 0 0 0;\">Reference: {{reference_id}}</p>\n          </div>\n          <p>The funds should appear in your bank account within 1-2 business days.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "amount",
+          "description": "Withdrawal amount"
+        },
+        {
+          "name": "reference_id",
+          "description": "Transaction reference"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "b61d00ad-9c47-48b3-b067-7ff6ed20d3fc",
+      "slug": "suspicious_activity",
+      "name": "Suspicious Activity Alert",
+      "type": "email",
+      "module": "auth",
+      "subject": "Suspicious activity detected on your Finatrades account",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Security Alert</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>We detected suspicious activity on your account:</p>\n          <div style=\"background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;\">\n            <p style=\"margin: 0;\"><strong>Activity:</strong> {{activity_description}}</p>\n            <p style=\"margin: 10px 0 0 0;\"><strong>Time:</strong> {{activity_time}}</p>\n          </div>\n          <p><strong>Recommended actions:</strong></p>\n          <ol>\n            <li>Change your password immediately</li>\n            <li>Enable two-factor authentication</li>\n            <li>Review your recent transactions</li>\n          </ol>\n          <p style=\"text-align: center; margin-top: 30px;\">\n            <a href=\"{{security_url}}\" style=\"background: #ef4444; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;\">Secure My Account</a>\n          </p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades - Gold-Backed Digital Finance</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "activity_description",
+          "description": "Description of suspicious activity"
+        },
+        {
+          "name": "activity_time",
+          "description": "Time of activity"
+        },
+        {
+          "name": "security_url",
+          "description": "Link to security settings"
+        }
+      ],
+      "previewData": null,
+      "status": "published",
+      "version": 1,
+      "publishedAt": null
+    },
+    {
+      "id": "f2c00dc2-267e-431a-afc7-b18320d60784",
+      "slug": "trade_case_rejected",
+      "name": "Trade Case Rejected",
+      "type": "email",
+      "module": "trade_finance",
+      "subject": "Trade case {{trade_ref}} has been rejected",
+      "body": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n        <div style=\"background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 30px; text-align: center;\">\n          <h1 style=\"color: white; margin: 0;\">Trade Case Rejected</h1>\n        </div>\n        <div style=\"padding: 30px; background: #ffffff;\">\n          <p>Hello {{user_name}},</p>\n          <p>We regret to inform you that your trade case has been rejected.</p>\n          <div style=\"background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;\">\n            <table style=\"width: 100%; border-collapse: collapse;\">\n              <tr><td style=\"padding: 8px 0;\">Trade Reference:</td><td style=\"text-align: right; font-weight: bold;\">{{trade_ref}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Rejection Reason:</td><td style=\"text-align: right;\">{{rejection_reason}}</td></tr>\n              <tr><td style=\"padding: 8px 0;\">Rejected On:</td><td style=\"text-align: right;\">{{rejection_date}}</td></tr>\n            </table>\n          </div>\n          <p>If you have questions about this decision, please contact our support team.</p>\n        </div>\n        <div style=\"padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;\">\n          <p>Finatrades FinaBridge - Trade Finance Solutions</p>\n        </div>\n      </div>\n    ",
+      "variables": [
+        {
+          "name": "user_name",
+          "description": "User's full name"
+        },
+        {
+          "name": "trade_ref",
+          "description": "Trade reference ID"
+        },
+        {
+          "name": "rejection_reason",
+          "description": "Reason for rejection"
+        },
+        {
+          "name": "rejection_date",
+          "description": "Date of rejection"
         }
       ],
       "previewData": null,
