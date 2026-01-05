@@ -294,8 +294,6 @@ function Router() {
       {/* Analytics & Business Intelligence */}
       
       {/* System & DevOps */}
-      <Route path="/admin/queues" component={QueueMonitor} />
-      <Route path="/admin/errors" component={ErrorTracking} />
       
       {/* Communication */}
       <Route path="/admin/announcements" component={Announcements} />
