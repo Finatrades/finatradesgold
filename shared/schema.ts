@@ -2582,6 +2582,10 @@ export const peerRequests = pgTable("peer_requests", {
   status: peerRequestStatusEnum("status").notNull().default('Pending'),
   fulfilledTransferId: varchar("fulfilled_transfer_id", { length: 255 }).references(() => peerTransfers.id),
   declineReason: text("decline_reason"), // Optional reason for declining
+  attachmentUrl: text("attachment_url"), // Base64 or storage URL for invoice attachment
+  attachmentName: varchar("attachment_name", { length: 255 }), // Original filename
+  attachmentMime: varchar("attachment_mime", { length: 100 }), // MIME type (pdf, png, jpg)
+  attachmentSize: integer("attachment_size"), // File size in bytes
   expiresAt: timestamp("expires_at"),
   respondedAt: timestamp("responded_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
