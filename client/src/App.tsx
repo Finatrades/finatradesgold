@@ -156,21 +156,12 @@ import LiquidityDashboard from "@/pages/admin/LiquidityDashboard";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
 import BankStatementImport from "@/pages/admin/BankStatementImport";
-import CacheManagement from "@/pages/admin/CacheManagement";
 import ChargebackTracker from "@/pages/admin/ChargebackTracker";
 import CounterpartyRisk from "@/pages/admin/CounterpartyRisk";
 import CurrencyExchange from "@/pages/admin/CurrencyExchange";
 import DailyCashPosition from "@/pages/admin/DailyCashPosition";
-import DBQueryMonitor from "@/pages/admin/DBQueryMonitor";
-import ErrorTracking from "@/pages/admin/ErrorTracking";
-import FeatureFlags from "@/pages/admin/FeatureFlags";
 import FeedbackDashboard from "@/pages/admin/FeedbackDashboard";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
-import MobileVersionControl from "@/pages/admin/MobileVersionControl";
-import QueueMonitor from "@/pages/admin/QueueMonitor";
-import RateLimitMonitor from "@/pages/admin/RateLimitMonitor";
-import SessionManagement from "@/pages/admin/SessionManagement";
-import WebhookStatus from "@/pages/admin/WebhookStatus";
 import WireTransferTracking from "@/pages/admin/WireTransferTracking";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
@@ -303,15 +294,8 @@ function Router() {
       {/* Analytics & Business Intelligence */}
       
       {/* System & DevOps */}
-      <Route path="/admin/cache" component={CacheManagement} />
       <Route path="/admin/queues" component={QueueMonitor} />
-      <Route path="/admin/db-monitor" component={DBQueryMonitor} />
       <Route path="/admin/errors" component={ErrorTracking} />
-      <Route path="/admin/rate-limits" component={RateLimitMonitor} />
-      <Route path="/admin/sessions" component={SessionManagement} />
-      <Route path="/admin/webhooks" component={WebhookStatus} />
-      <Route path="/admin/feature-flags" component={FeatureFlags} />
-      <Route path="/admin/mobile-versions" component={MobileVersionControl} />
       
       {/* Communication */}
       <Route path="/admin/announcements" component={Announcements} />

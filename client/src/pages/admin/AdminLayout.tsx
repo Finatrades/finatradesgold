@@ -228,15 +228,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'Scheduled Jobs', href: '/admin/scheduled-jobs' },
         { label: 'API & Error Logs', href: '/admin/api-logs' },
-        { label: 'Error Tracking', href: '/admin/errors' },
-        { label: 'Queue Monitor', href: '/admin/queues' },
-        { label: 'Cache Management', href: '/admin/cache' },
-        { label: 'Rate Limits', href: '/admin/rate-limits' },
-        { label: 'Sessions', href: '/admin/sessions' },
-        { label: 'DB Monitor', href: '/admin/db-monitor' },
-        { label: 'Webhooks', href: '/admin/webhooks' },
-        { label: 'Feature Flags', href: '/admin/feature-flags' },
-        { label: 'Mobile Versions', href: '/admin/mobile-versions' },
       ]
     },
     {
