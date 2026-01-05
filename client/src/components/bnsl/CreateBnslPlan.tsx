@@ -269,9 +269,11 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const basePriceComponent = amount * enrollmentPrice;
   
   const selectedTenor = currentVariant?.tenorMonths || 12;
-  const annualRate = currentVariant ? parseFloat(currentVariant.marginRatePercent) / 100 : 0.08;
+  // Store rate as percentage (e.g., 10 for 10%), marginRatePercent is already in percentage format
+  const annualRatePercent = currentVariant ? parseFloat(currentVariant.marginRatePercent) : 8;
+  const annualRateDecimal = annualRatePercent / 100; // For calculations only
   const years = selectedTenor / 12;
-  const totalMarginComponent = basePriceComponent * annualRate * years;
+  const totalMarginComponent = basePriceComponent * annualRateDecimal * years;
   const numDisbursements = selectedTenor / 3;
   const quarterlyMargin = totalMarginComponent / numDisbursements;
   const totalProceeds = basePriceComponent + totalMarginComponent;
@@ -290,7 +292,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
     const draftPlan: Partial<BnslPlan> = {
       id: 'DRAFT-PREVIEW',
       tenorMonths: selectedTenor as BnslTenor,
-      agreedMarginAnnualPercent: annualRate,
+      agreedMarginAnnualPercent: annualRatePercent,
       goldSoldGrams: amount,
       enrollmentPriceUsdPerGram: enrollmentPrice,
       basePriceComponentUsd: basePriceComponent,
@@ -336,7 +338,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
     const signedAt = new Date().toISOString();
     const planData: Partial<BnslPlan> = {
       tenorMonths: selectedTenor as BnslTenor,
-      agreedMarginAnnualPercent: annualRate,
+      agreedMarginAnnualPercent: annualRatePercent,
       goldSoldGrams: amount,
       enrollmentPriceUsdPerGram: enrollmentPrice,
       basePriceComponentUsd: basePriceComponent,
