@@ -4187,3 +4187,30 @@ export const regulatoryReports = pgTable("regulatory_reports", {
 export const insertRegulatoryReportSchema = createInsertSchema(regulatoryReports).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertRegulatoryReport = z.infer<typeof insertRegulatoryReportSchema>;
 export type RegulatoryReport = typeof regulatoryReports.$inferSelect;
+
+// ============================================
+// ANNOUNCEMENTS
+// ============================================
+
+export const announcementTypeEnum = pgEnum('announcement_type', ['info', 'warning', 'success', 'critical']);
+export const announcementTargetEnum = pgEnum('announcement_target', ['all', 'users', 'admins', 'business']);
+
+export const announcements = pgTable("announcements", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: announcementTypeEnum("type").notNull().default('info'),
+  target: announcementTargetEnum("target").notNull().default('all'),
+  isActive: boolean("is_active").notNull().default(true),
+  showBanner: boolean("show_banner").notNull().default(true),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  viewCount: integer("view_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
+export type Announcement = typeof announcements.$inferSelect;

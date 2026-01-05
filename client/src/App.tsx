@@ -160,7 +160,6 @@ import ChargebackTracker from "@/pages/admin/ChargebackTracker";
 import CounterpartyRisk from "@/pages/admin/CounterpartyRisk";
 import CurrencyExchange from "@/pages/admin/CurrencyExchange";
 import DailyCashPosition from "@/pages/admin/DailyCashPosition";
-import FeedbackDashboard from "@/pages/admin/FeedbackDashboard";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
 import WireTransferTracking from "@/pages/admin/WireTransferTracking";
 import QADepositTest from "@/pages/QADepositTest";
@@ -297,7 +296,6 @@ function Router() {
       
       {/* Communication */}
       <Route path="/admin/announcements" component={Announcements} />
-      <Route path="/admin/feedback" component={FeedbackDashboard} />
       
       {/* QA Routes */}
       <Route path="/qa/tests" component={QATests} />

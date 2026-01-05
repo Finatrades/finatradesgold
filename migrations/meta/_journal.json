@@ -15,6 +15,13 @@
       "when": 1767259629547,
       "tag": "0001_sturdy_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767615194788,
+      "tag": "0002_magical_moonstone",
+      "breakpoints": true
     }
   ]
 }

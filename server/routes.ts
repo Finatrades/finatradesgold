@@ -5,7 +5,7 @@ import { storage, type TransactionalStorage } from "./storage";
 import { db, pool } from "./db";
 import crypto from "crypto";
 import { authRateLimiter, otpRateLimiter, passwordResetRateLimiter, withdrawalRateLimiter, apiRateLimiter, getSystemSettings } from "./index";
-import { eq, and, gte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, or, isNull, inArray } from "drizzle-orm";
 import { 
   insertUserSchema, insertKycSubmissionSchema, insertWalletSchema, 
   insertTransactionSchema, insertVaultHoldingSchema, insertBnslPlanSchema,
@@ -28,7 +28,7 @@ import {
   tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
   tradeRequests, tradeProposals, settlementHolds,
   geoRestrictions, geoRestrictionSettings, insertGeoRestrictionSchema,
-  sarReports, fraudAlerts, reconciliationReports, regulatoryReports,
+  sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements,
   depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable,
   wallets as walletsTable, transactions as transactionsTable,
   bnslPlans as bnslPlansTable, withdrawalRequests as withdrawalRequestsTable
@@ -25970,6 +25970,126 @@ ${message}
     } catch (error) {
       console.error('Submit regulatory report error:', error);
       res.status(500).json({ error: 'Failed to submit regulatory report' });
+    }
+  });
+
+
+  // ============================================
+  // ANNOUNCEMENTS API
+  // ============================================
+
+  // Get all announcements (admin)
+  app.get("/api/admin/announcements", ensureAdminAsync, async (req, res) => {
+    try {
+      const allAnnouncements = await db.select().from(announcements).orderBy(desc(announcements.createdAt));
+      res.json(allAnnouncements);
+    } catch (error) {
+      console.error('Get announcements error:', error);
+      res.status(500).json({ error: 'Failed to get announcements' });
+    }
+  });
+
+  // Create announcement
+  app.post("/api/admin/announcements", ensureAdminAsync, async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const { title, message, type, target, showBanner, startDate, endDate } = req.body;
+      
+      const announcement = await db.insert(announcements).values({
+        title,
+        message,
+        type: type || 'info',
+        target: target || 'all',
+        showBanner: showBanner !== false,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        createdBy: adminUser?.id,
+      }).returning();
+      
+      res.json(announcement[0]);
+    } catch (error) {
+      console.error('Create announcement error:', error);
+      res.status(500).json({ error: 'Failed to create announcement' });
+    }
+  });
+
+  // Update announcement
+  app.patch("/api/admin/announcements/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { title, message, type, target, isActive, showBanner, startDate, endDate } = req.body;
+      
+      const updateData: any = { updatedAt: new Date() };
+      if (title !== undefined) updateData.title = title;
+      if (message !== undefined) updateData.message = message;
+      if (type !== undefined) updateData.type = type;
+      if (target !== undefined) updateData.target = target;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      if (showBanner !== undefined) updateData.showBanner = showBanner;
+      if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
+      if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
+      
+      const updated = await db.update(announcements)
+        .set(updateData)
+        .where(eq(announcements.id, req.params.id))
+        .returning();
+      
+      res.json(updated[0]);
+    } catch (error) {
+      console.error('Update announcement error:', error);
+      res.status(500).json({ error: 'Failed to update announcement' });
+    }
+  });
+
+  // Delete announcement
+  app.delete("/api/admin/announcements/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      await db.delete(announcements).where(eq(announcements.id, req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete announcement error:', error);
+      res.status(500).json({ error: 'Failed to delete announcement' });
+    }
+  });
+
+  // Get active announcements for users (public, filtered by target)
+  app.get("/api/announcements", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const now = new Date();
+      
+      let targetFilters = ['all'];
+      if (user) {
+        targetFilters.push('users');
+        if (user.accountType === 'business') {
+          targetFilters.push('business');
+        }
+        if (user.role === 'admin') {
+          targetFilters.push('admins');
+        }
+      }
+      
+      const activeAnnouncements = await db.select()
+        .from(announcements)
+        .where(
+          and(
+            eq(announcements.isActive, true),
+            inArray(announcements.target, targetFilters as any),
+            or(
+              isNull(announcements.startDate),
+              lte(announcements.startDate, now)
+            ),
+            or(
+              isNull(announcements.endDate),
+              gte(announcements.endDate, now)
+            )
+          )
+        )
+        .orderBy(desc(announcements.createdAt));
+      
+      res.json(activeAnnouncements);
+    } catch (error) {
+      console.error('Get active announcements error:', error);
+      res.status(500).json({ error: 'Failed to get announcements' });
     }
   });
 
