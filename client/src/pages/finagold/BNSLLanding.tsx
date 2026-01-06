@@ -466,7 +466,8 @@ function HowItWorksSection() {
         </motion.div>
 
         <div className="relative">
-          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2">
+          {/* Desktop: Center timeline */}
+          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2">
             <motion.div
               initial={{ scaleY: 0 }}
               animate={{ scaleY: isInView ? 1 : 0 }}
@@ -492,7 +493,17 @@ function HowItWorksSection() {
             ))}
           </div>
 
-          <div className="space-y-12">
+          {/* Mobile: Left timeline */}
+          <div className="lg:hidden absolute left-6 top-0 bottom-0 w-px">
+            <motion.div
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: isInView ? 1 : 0 }}
+              transition={{ duration: 1.5, ease: 'easeOut' }}
+              className="w-full h-full bg-gradient-to-b from-purple-500 via-purple-400/50 to-purple-300/20 origin-top"
+            />
+          </div>
+
+          <div className="space-y-8 lg:space-y-12">
             {steps.map((step, index) => {
               const isLeft = index % 2 === 0;
               const isActive = activeStep === index;
@@ -501,17 +512,25 @@ function HowItWorksSection() {
               return (
                 <div
                   key={step.number}
-                  className={`flex ${isLeft ? 'justify-start pr-[52%]' : 'justify-end pl-[52%]'}`}
+                  className={`flex justify-start pl-14 lg:pl-0 ${isLeft ? 'lg:justify-start lg:pr-[52%]' : 'lg:justify-end lg:pl-[52%]'}`}
                 >
                   <motion.div
-                    initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
+                    initial={{ opacity: 0, x: -30 }}
                     animate={{ 
                       opacity: isActive || isCompleted ? 1 : 0.3,
                       x: 0,
                     }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className={`relative flex items-center gap-6 ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}
+                    className={`relative flex items-start lg:items-center gap-4 lg:gap-6 flex-row ${isLeft ? '' : 'lg:flex-row-reverse'}`}
                   >
+                    {/* Mobile: Left-aligned dot indicator */}
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: activeStep >= index ? 1 : 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="lg:hidden absolute -left-[38px] top-2 w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-200"
+                    />
+                    
                     <motion.div
                       animate={{
                         scale: isActive ? [1, 1.1, 1] : 1,
@@ -520,13 +539,13 @@ function HowItWorksSection() {
                           : '0 0 0 0 rgba(138, 43, 226, 0)',
                       }}
                       transition={{ duration: 0.8, repeat: isActive ? Infinity : 0, repeatDelay: 2 }}
-                      className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                      className={`relative z-10 w-12 h-12 lg:w-16 lg:h-16 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
                         isActive || isCompleted
                           ? 'bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-400'
                           : 'bg-gray-100 border border-gray-200'
                       }`}
                     >
-                      <step.icon className={`w-7 h-7 transition-colors duration-500 ${
+                      <step.icon className={`w-5 h-5 lg:w-7 lg:h-7 transition-colors duration-500 ${
                         isActive || isCompleted ? 'text-purple-600' : 'text-gray-400'
                       }`} />
                     </motion.div>
@@ -538,19 +557,19 @@ function HowItWorksSection() {
                         y: 0,
                       }}
                       transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                      className={`flex-1 p-5 rounded-xl backdrop-blur-sm transition-all duration-500 ${
+                      className={`flex-1 p-4 lg:p-5 rounded-xl backdrop-blur-sm transition-all duration-500 ${
                         isActive
                           ? 'bg-white border-2 border-purple-300 shadow-lg shadow-purple-100'
                           : 'bg-white border border-gray-100 shadow-sm'
                       }`}
                     >
-                      <span className={`text-sm font-bold ${isActive ? 'text-purple-600' : 'text-gray-400'}`}>
+                      <span className={`text-xs lg:text-sm font-bold ${isActive ? 'text-purple-600' : 'text-gray-400'}`}>
                         Step {step.number}
                       </span>
-                      <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-gray-900' : 'text-gray-500'}`}>
+                      <h3 className={`text-base lg:text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-gray-900' : 'text-gray-500'}`}>
                         {step.title}
                       </h3>
-                      <p className={`text-sm mt-2 ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
+                      <p className={`text-xs lg:text-sm mt-2 ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
                         {step.description}
                       </p>
                     </motion.div>
