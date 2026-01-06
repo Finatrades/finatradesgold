@@ -514,7 +514,7 @@ export default function KYC() {
         description: "Your verification is now under review."
       });
       
-      setLocation('/kyc');
+      setFinatradesStep('complete');
     } catch (error) {
       toast.error("Submission Failed", {
         description: "Please try again later."
@@ -881,7 +881,7 @@ export default function KYC() {
                   description="Submit for review" 
                   icon={<CheckCircle2 className="w-5 h-5" />} 
                   isActive={finatradesStep === 'complete'} 
-                  isCompleted={false}
+                  isCompleted={finatradesStep === 'complete' || !!existingSubmission}
                 />
               </div>
 
