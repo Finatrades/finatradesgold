@@ -15571,6 +15571,10 @@ ${message}
       const payload = snapshot.payload as { pages: any[], blocks: any[], labels: any[] };
       
       // Connect to production database for the apply
+      // Temporarily allow self-signed certs for AWS RDS connection
+      const originalTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      
       const prodDbUrl = process.env.AWS_PROD_DATABASE_URL;
       if (!prodDbUrl) {
         return res.status(500).json({ message: "Production database URL not configured" });
@@ -15665,6 +15669,9 @@ ${message}
         });
       } finally {
         await prodPool.end();
+        // Restore TLS setting
+        if (originalTls !== undefined) process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalTls;
+        else delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
       }
     } catch (error) {
       console.error('[CMS Snapshot Apply] Error:', error);
