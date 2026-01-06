@@ -139,6 +139,10 @@ export default function FinaPay() {
     usdBalance: usdBalance,
     goldPriceUsdPerGram: currentGoldPriceUsdPerGram,
     usdAedRate: 3.67,
+    // GOLD-ONLY: Locked balances in grams (primary)
+    bnslLockedGrams: 0,
+    finaBridgeLockedGrams: 0,
+    // @deprecated - kept for backwards compatibility
     bnslLockedUsd: 0,
     finaBridgeLockedUsd: 0
   };

@@ -12,8 +12,10 @@ interface WalletBalanceCardsProps {
 export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalanceCardsProps) {
   // GOLD-ONLY: All values computed from gold grams
   const goldValueUsd = wallet.goldBalanceGrams * wallet.goldPriceUsdPerGram;
-  const totalLockedUsd = wallet.bnslLockedUsd + wallet.finaBridgeLockedUsd;
-  const totalLockedGrams = wallet.goldPriceUsdPerGram > 0 ? totalLockedUsd / wallet.goldPriceUsdPerGram : 0;
+  // Use gold-based locked fields as primary, fall back to computing from USD for backwards compat
+  const totalLockedGrams = (wallet.bnslLockedGrams ?? 0) + (wallet.finaBridgeLockedGrams ?? 0) || 
+    (wallet.goldPriceUsdPerGram > 0 ? (wallet.bnslLockedUsd + wallet.finaBridgeLockedUsd) / wallet.goldPriceUsdPerGram : 0);
+  const totalLockedUsd = totalLockedGrams * wallet.goldPriceUsdPerGram;
   const grandTotalGoldGrams = wallet.goldBalanceGrams + totalLockedGrams;
   const grandTotalUsd = grandTotalGoldGrams * wallet.goldPriceUsdPerGram;
 

@@ -110,11 +110,25 @@ export type Transaction = {
   description?: string;
 };
 
+/**
+ * WALLET TYPE - GOLD-ONLY COMPLIANCE
+ * 
+ * GOLD GRAMS is the single source of truth for all balances.
+ * USD values are computed dynamically from gold × current price.
+ */
 export type Wallet = {
+  // PRIMARY SOURCE OF TRUTH
   goldBalanceGrams: number;
-  usdBalance: number;
   goldPriceUsdPerGram: number;
   usdAedRate: number;
+  
+  // LOCKED GOLD BALANCES (in grams, not USD)
+  bnslLockedGrams: number;
+  finaBridgeLockedGrams: number;
+  
+  // @deprecated - DO NOT USE. Will be removed. Compute from gold × price.
+  usdBalance: number;
+  // @deprecated - Legacy fields kept for backwards compatibility only
   bnslLockedUsd: number;
   finaBridgeLockedUsd: number;
 };

@@ -652,9 +652,7 @@ export default function BNSL() {
         {/* WALLET STRIP */}
         <BnslWalletCard 
           bnslBalanceGold={bnslWalletBalance}
-          availableValueUsd={bnslAvailableValueUsd}
           lockedBalanceGold={totalLockedGold}
-          lockedValueUsd={totalLockedValueUsd}
           finaPayBalanceGold={finaPayGoldBalance}
           onTransferFromFinaPay={handleTransferFromFinaPay}
           onWithdrawToFinaPay={handleWithdrawToFinaPay}

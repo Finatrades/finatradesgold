@@ -893,11 +893,24 @@ export type FinatradesPersonalKyc = typeof finatradesPersonalKyc.$inferSelect;
 // FINAPAY - WALLETS & TRANSACTIONS
 // ============================================
 
+/**
+ * WALLET TABLE - GOLD-ONLY COMPLIANCE
+ * 
+ * GOLD GRAMS is the SINGLE SOURCE OF TRUTH for user balances.
+ * All USD values should be computed dynamically from goldGrams × currentGoldPrice.
+ * 
+ * @deprecated usdBalance, eurBalance - These fields are DEPRECATED and will be removed.
+ * They exist only for backwards compatibility. Do NOT use for new features.
+ * Always compute USD equivalent: goldGrams * currentGoldPrice
+ */
 export const wallets = pgTable("wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  // PRIMARY SOURCE OF TRUTH - gold grams owned
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  // @deprecated - DO NOT USE. Will be removed. Compute USD from gold × price instead.
   usdBalance: decimal("usd_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  // @deprecated - DO NOT USE. Will be removed. Compute EUR from gold × price instead.
   eurBalance: decimal("eur_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -907,16 +920,27 @@ export const insertWalletSchema = createInsertSchema(wallets).omit({ id: true, c
 export type InsertWallet = z.infer<typeof insertWalletSchema>;
 export type Wallet = typeof wallets.$inferSelect;
 
+/**
+ * TRANSACTIONS TABLE - GOLD-ONLY COMPLIANCE
+ * 
+ * amountGold and goldPriceUsdPerGram are the source of truth.
+ * amountUsd/amountEur are stored for HISTORICAL RECORD only (the price at transaction time).
+ * For display, recalculate if showing "current value" vs "transaction value".
+ */
 export const transactions = pgTable("transactions", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   type: transactionTypeEnum("type").notNull(),
   status: transactionStatusEnum("status").notNull().default('Pending'),
   
+  // PRIMARY: Gold amount transferred
   amountGold: decimal("amount_gold", { precision: 18, scale: 6 }),
+  // HISTORICAL RECORD: USD value at time of transaction (for audit purposes)
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
+  // HISTORICAL RECORD: EUR value at time of transaction (for audit purposes)
   amountEur: decimal("amount_eur", { precision: 18, scale: 2 }),
   
+  // Gold price at transaction time (for historical value calculation)
   goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
   
   recipientEmail: varchar("recipient_email", { length: 255 }),

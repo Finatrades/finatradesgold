@@ -9,11 +9,15 @@ import { useToast } from '@/hooks/use-toast';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 import { AEDAmount, AED_SYMBOL } from '@/components/ui/DirhamSymbol';
 
+/**
+ * BNSL Wallet Card - GOLD-ONLY COMPLIANCE
+ * 
+ * All balances are passed in gold grams. USD is computed dynamically.
+ * @deprecated availableValueUsd, lockedValueUsd - removed, use gold × currentGoldPrice
+ */
 interface BnslWalletCardProps {
   bnslBalanceGold: number;
-  availableValueUsd?: number;
   lockedBalanceGold: number;
-  lockedValueUsd?: number;
   finaPayBalanceGold: number;
   onTransferFromFinaPay: (amount: number) => Promise<boolean>;
   onWithdrawToFinaPay?: (amount: number) => Promise<boolean>;
@@ -22,9 +26,7 @@ interface BnslWalletCardProps {
 
 export default function BnslWalletCard({ 
   bnslBalanceGold, 
-  availableValueUsd,
   lockedBalanceGold,
-  lockedValueUsd, 
   finaPayBalanceGold, 
   onTransferFromFinaPay,
   onWithdrawToFinaPay,
@@ -227,73 +229,68 @@ export default function BnslWalletCard({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            {/* Available Balance - USD Value is LOCKED at transfer time */}
-            <div className="bg-muted p-4 rounded-xl border border-border relative overflow-hidden">
+            {/* Available Balance - GOLD PRIMARY */}
+            <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-xl border border-amber-200 relative overflow-hidden">
               <div className="absolute top-2 right-2">
-                <Lock className="w-4 h-4 text-muted-foreground/50" />
+                <Lock className="w-4 h-4 text-amber-400/50" />
               </div>
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Available to Invest</p>
+              <p className="text-amber-700 text-xs uppercase tracking-wider mb-2 font-semibold">Available Gold to Invest</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">{availableValueUsd != null ? 'USD Value (Locked):' : 'USD Value (Current):'}</span>
-                  <span className="text-xl font-bold text-foreground">
-                    ${(availableValueUsd ?? (bnslBalanceGold * currentGoldPrice)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <span className="text-2xl font-bold text-amber-600">
+                    {bnslBalanceGold.toFixed(4)} g
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">Gold Quantity:</span>
-                  <span className="text-base font-semibold text-fuchsia-600">
-                    {bnslBalanceGold.toFixed(4)} g
+                  <span className="text-xs text-muted-foreground">USD Equivalent:</span>
+                  <span className="text-base font-semibold text-foreground">
+                    ≈ ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">
-                {availableValueUsd != null 
-                  ? 'Price locked at transfer time. Withdrawal pays market price.'
-                  : 'Current market value. Withdrawal pays market price.'}
+                Physical gold available for new BNSL plans.
               </p>
             </div>
 
-            {/* Locked Funds - USD Value is FIXED at enrollment price */}
+            {/* Locked Gold in Plans - GOLD PRIMARY */}
             <div className="bg-muted p-4 rounded-xl border border-border relative overflow-hidden">
               <div className="absolute top-2 right-2">
                 <Lock className="w-4 h-4 text-purple-400" />
               </div>
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Locked in Plans</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Gold Locked in Plans</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">USD Value (Locked):</span>
-                  <span className="text-xl font-bold text-purple-500">
-                    ${(lockedValueUsd ?? (lockedBalanceGold * currentGoldPrice)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <span className="text-2xl font-bold text-purple-500">
+                    {lockedBalanceGold.toFixed(4)} g
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground">Gold Sold:</span>
+                  <span className="text-xs text-muted-foreground">USD Equivalent:</span>
                   <span className="text-base font-semibold text-purple-500/80">
-                    {lockedBalanceGold.toFixed(4)} g
+                    ≈ ${(lockedBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
                 <Lock className="w-3 h-3" />
-                Value locked at enrollment price (not live price).
+                Gold committed to active BNSL plans.
               </p>
             </div>
 
-            {/* Total Value */}
-            <div className="bg-muted p-4 rounded-xl border border-border">
-               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Total BNSL Value</p>
+            {/* Total Gold Holdings - GOLD PRIMARY */}
+            <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-xl border border-amber-200">
+               <p className="text-amber-700 text-xs uppercase tracking-wider mb-2 font-semibold">Total BNSL Gold</p>
                <div className="space-y-1">
                  <div className="flex items-baseline gap-2">
-                   <span className="text-xs text-muted-foreground">USD Value:</span>
-                   <span className="text-xl font-bold text-green-600">
-                     ${((bnslBalanceGold + lockedBalanceGold) * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                   <span className="text-2xl font-bold text-amber-600">
+                     {(bnslBalanceGold + lockedBalanceGold).toFixed(4)} g
                    </span>
                  </div>
                  <div className="flex items-baseline gap-2">
-                   <span className="text-xs text-muted-foreground">Gold Backing:</span>
+                   <span className="text-xs text-muted-foreground">USD Equivalent:</span>
                    <span className="text-base font-semibold text-foreground">
-                     {(bnslBalanceGold + lockedBalanceGold).toFixed(4)} g
+                     ≈ ${((bnslBalanceGold + lockedBalanceGold) * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                    </span>
                  </div>
                </div>
@@ -456,27 +453,19 @@ export default function BnslWalletCard({
           </div>
 
           <div className="space-y-4 py-4">
-             {/* USD Reference Price Comparison */}
-             <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
-               <p className="text-xs text-blue-600 uppercase tracking-wider mb-2 font-medium">USD Reference Price Comparison</p>
+             {/* Current Gold Price Info - GOLD-ONLY */}
+             <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200">
+               <p className="text-xs text-amber-700 uppercase tracking-wider mb-2 font-medium">Current Gold Price</p>
                <div className="space-y-2">
-                 {availableValueUsd != null && bnslBalanceGold > 0 && (
-                   <div className="flex justify-between items-baseline">
-                     <span className="text-sm text-muted-foreground">Locked Reference (per gram):</span>
-                     <span className="text-base font-bold text-purple-600">${(availableValueUsd / bnslBalanceGold).toFixed(2)}</span>
-                   </div>
-                 )}
                  <div className="flex justify-between items-baseline">
-                   <span className="text-sm text-muted-foreground">Current Market (per gram):</span>
-                   <span className="text-base font-bold text-green-600">${currentGoldPrice.toFixed(2)}</span>
+                   <span className="text-sm text-muted-foreground">Price per gram:</span>
+                   <span className="text-base font-bold text-amber-600">${currentGoldPrice.toFixed(2)}</span>
                  </div>
-                 {availableValueUsd != null && bnslBalanceGold > 0 && (
-                   <div className="flex justify-between items-baseline pt-2 border-t border-blue-200">
-                     <span className="text-sm text-muted-foreground">Price Change:</span>
-                     <span className={`text-base font-bold ${currentGoldPrice >= (availableValueUsd / bnslBalanceGold) ? 'text-green-600' : 'text-red-600'}`}>
-                       {currentGoldPrice >= (availableValueUsd / bnslBalanceGold) ? '+' : ''}
-                       ${(currentGoldPrice - (availableValueUsd / bnslBalanceGold)).toFixed(2)} 
-                       ({((currentGoldPrice - (availableValueUsd / bnslBalanceGold)) / (availableValueUsd / bnslBalanceGold) * 100).toFixed(1)}%)
+                 {bnslBalanceGold > 0 && (
+                   <div className="flex justify-between items-baseline pt-2 border-t border-amber-200">
+                     <span className="text-sm text-muted-foreground">Your gold value:</span>
+                     <span className="text-base font-bold text-amber-600">
+                       ≈ ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                      </span>
                    </div>
                  )}
