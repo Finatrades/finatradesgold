@@ -11,9 +11,9 @@ interface PlanTenure {
 }
 
 const planTenures: PlanTenure[] = [
-  { months: 12, label: '12 Months', rate: 8 },
+  { months: 12, label: '12 Months', rate: 10 },
   { months: 24, label: '24 Months', rate: 11 },
-  { months: 36, label: '36 Months', rate: 14 },
+  { months: 36, label: '36 Months', rate: 12 },
 ];
 
 export default function BNSLGoldPlanner() {

@@ -585,7 +585,7 @@ function CalculatorSection() {
   const [tenure, setTenure] = useState<12 | 24 | 36>(24);
   const goldPrice = 144.05;
   
-  const rates = { 12: 8, 24: 11, 36: 14 };
+  const rates = { 12: 10, 24: 11, 36: 12 };
   const rate = rates[tenure];
 
   const calculations = useMemo(() => {

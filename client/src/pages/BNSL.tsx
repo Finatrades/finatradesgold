@@ -456,7 +456,7 @@ export default function BNSL() {
     
     // Use the rate from the selected template variant (passed from CreateBnslPlan)
     // The rate is stored as a percentage (e.g., 10 for 10%), not a decimal
-    const rate = newPlanData.agreedMarginAnnualPercent || 8;
+    const rate = newPlanData.agreedMarginAnnualPercent || 10;
     
     const goldSoldGrams = newPlanData.goldSoldGrams || 0;
     const enrollmentPriceUsdPerGram = currentGoldPrice;
