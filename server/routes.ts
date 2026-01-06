@@ -15704,6 +15704,11 @@ ${message}
   // ============================================
   
   const devProdSyncCategories = {
+    cms: {
+      name: 'CMS Content',
+      description: 'Pages, blocks, and labels',
+      tables: ['content_pages', 'content_blocks', 'cms_labels'],
+    },
     platform_config: {
       name: 'Platform Config',
       description: 'Fees, limits, and system settings',
@@ -15759,6 +15764,80 @@ ${message}
     } catch (error) {
       console.error('[DEV-PROD Sync] Error getting categories:', error);
       res.status(500).json({ message: "Failed to get sync categories" });
+    }
+  });
+
+  // Compare all categories DEV vs PROD
+  app.get("/api/admin/dev-prod-sync/compare-all", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { db } = await import('./db');
+      const schema = await import('../shared/schema');
+      
+      const originalTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      
+      const prodDbUrl = process.env.AWS_PROD_DATABASE_URL;
+      if (!prodDbUrl) {
+        return res.status(500).json({ message: "Production database URL not configured" });
+      }
+      
+      const { drizzle } = await import('drizzle-orm/node-postgres');
+      const pg = await import('pg');
+      
+      const prodPool = new pg.default.Pool({ 
+        connectionString: prodDbUrl,
+        ssl: { rejectUnauthorized: false }
+      });
+      const prodDb = drizzle(prodPool, { schema });
+      
+      try {
+        const results: Record<string, { name: string; description: string; tables: string[]; hasDifferences: boolean; preview: Record<string, { dev: number; prod: number }> }> = {};
+        
+        for (const [categoryId, category] of Object.entries(devProdSyncCategories)) {
+          const preview: Record<string, { dev: number; prod: number }> = {};
+          let hasDifferences = false;
+          
+          for (const tableName of category.tables) {
+            const tableSchema = (schema as any)[tableName];
+            if (tableSchema) {
+              try {
+                const devRows = await db.select().from(tableSchema);
+                const prodRows = await prodDb.select().from(tableSchema);
+                preview[tableName] = {
+                  dev: devRows.length,
+                  prod: prodRows.length,
+                };
+                if (devRows.length !== prodRows.length) {
+                  hasDifferences = true;
+                }
+              } catch (e) {
+                preview[tableName] = { dev: 0, prod: 0 };
+              }
+            }
+          }
+          
+          results[categoryId] = {
+            name: category.name,
+            description: category.description,
+            tables: category.tables,
+            hasDifferences,
+            preview,
+          };
+        }
+        
+        res.json({ categories: results });
+      } finally {
+        await prodPool.end();
+        if (originalTls !== undefined) process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalTls;
+        else delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      }
+    } catch (error) {
+      console.error('[DEV-PROD Compare All] Error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to compare" });
     }
   });
 
