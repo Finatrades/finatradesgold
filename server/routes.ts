@@ -15499,6 +15499,7 @@ ${message}
   });
   
   // Apply a CMS snapshot (requires OTP verification)
+  // This pushes CMS content FROM dev snapshot TO production database
   app.post("/api/admin/cms/snapshots/:id/apply", async (req, res) => {
     try {
       if (!req.session.userId || req.session.userRole !== 'admin') {
@@ -15523,7 +15524,7 @@ ${message}
       const { cmsSnapshots, contentPages, contentBlocks, cmsLabels } = await import('../shared/schema');
       const { eq } = await import('drizzle-orm');
       
-      // Get snapshot
+      // Get snapshot from dev database
       const [snapshot] = await db.select().from(cmsSnapshots).where(eq(cmsSnapshots.id, req.params.id));
       if (!snapshot) {
         return res.status(404).json({ message: "Snapshot not found" });
@@ -15531,131 +15532,107 @@ ${message}
       
       const payload = snapshot.payload as { pages: any[], blocks: any[], labels: any[] };
       
-      // Apply in transaction
-      await db.transaction(async (tx) => {
-        // Clear existing CMS data
-        await tx.delete(contentBlocks);
-        await tx.delete(contentPages);
-        await tx.delete(cmsLabels);
-        
-        // Insert pages
-        if (payload.pages && payload.pages.length > 0) {
-          for (const page of payload.pages) {
-            await tx.insert(contentPages).values({
-              id: page.id,
-              slug: page.slug,
-              title: page.title,
-              description: page.description,
-              metaTitle: page.metaTitle,
-              metaDescription: page.metaDescription,
-              status: page.status || 'published',
-              createdAt: new Date(page.createdAt),
-              updatedAt: new Date(page.updatedAt || page.createdAt),
-            });
+      // Connect to production database for the apply
+      const prodDbUrl = process.env.AWS_PROD_DATABASE_URL;
+      if (!prodDbUrl) {
+        return res.status(500).json({ message: "Production database URL not configured" });
+      }
+      
+      const { drizzle } = await import('drizzle-orm/node-postgres');
+      const pg = await import('pg');
+      const prodPool = new pg.default.Pool({ connectionString: prodDbUrl });
+      const prodDb = drizzle(prodPool);
+      
+      try {
+        // Apply in transaction to production database
+        await prodDb.transaction(async (tx) => {
+          // Clear existing CMS data in production
+          await tx.delete(contentBlocks);
+          await tx.delete(contentPages);
+          await tx.delete(cmsLabels);
+          
+          // Insert pages
+          if (payload.pages && payload.pages.length > 0) {
+            for (const page of payload.pages) {
+              await tx.insert(contentPages).values({
+                id: page.id,
+                slug: page.slug,
+                title: page.title,
+                description: page.description,
+                metaTitle: page.metaTitle,
+                metaDescription: page.metaDescription,
+                status: page.status || 'published',
+                createdAt: new Date(page.createdAt),
+                updatedAt: new Date(page.updatedAt || page.createdAt),
+              });
+            }
           }
-        }
-        
-        // Insert blocks
-        if (payload.blocks && payload.blocks.length > 0) {
-          for (const block of payload.blocks) {
-            await tx.insert(contentBlocks).values({
-              id: block.id,
-              pageId: block.pageId,
-              section: block.section || block.pageId || 'default',
-              key: block.key || block.id,
-              label: block.label,
-              type: block.type || 'text',
-              content: block.content,
-              defaultContent: block.defaultContent,
-              metadata: block.metadata || block.settings,
-              sortOrder: block.sortOrder ?? block.order ?? 0,
-              status: block.status || 'published',
-              version: block.version ?? 1,
-              publishedAt: block.publishedAt ? new Date(block.publishedAt) : null,
-              createdAt: new Date(block.createdAt),
-              updatedAt: new Date(block.updatedAt || block.createdAt),
-            });
+          
+          // Insert blocks
+          if (payload.blocks && payload.blocks.length > 0) {
+            for (const block of payload.blocks) {
+              await tx.insert(contentBlocks).values({
+                id: block.id,
+                pageId: block.pageId,
+                section: block.section || block.pageId || 'default',
+                key: block.key || block.id,
+                label: block.label,
+                type: block.type || 'text',
+                content: block.content,
+                defaultContent: block.defaultContent,
+                metadata: block.metadata || block.settings,
+                sortOrder: block.sortOrder ?? block.order ?? 0,
+                status: block.status || 'published',
+                version: block.version ?? 1,
+                publishedAt: block.publishedAt ? new Date(block.publishedAt) : null,
+                createdAt: new Date(block.createdAt),
+                updatedAt: new Date(block.updatedAt || block.createdAt),
+              });
+            }
           }
-        }
-        
-        // Insert labels
-        if (payload.labels && payload.labels.length > 0) {
-          for (const label of payload.labels) {
-            await tx.insert(cmsLabels).values({
-              id: label.id,
-              key: label.key,
-              value: label.value,
-              defaultValue: label.defaultValue,
-              category: label.category,
-              description: label.description,
-              createdAt: new Date(label.createdAt),
-              updatedAt: new Date(label.updatedAt || label.createdAt),
-            });
+          
+          // Insert labels
+          if (payload.labels && payload.labels.length > 0) {
+            for (const label of payload.labels) {
+              await tx.insert(cmsLabels).values({
+                id: label.id,
+                key: label.key,
+                value: label.value,
+                defaultValue: label.defaultValue,
+                category: label.category,
+                description: label.description,
+                createdAt: new Date(label.createdAt),
+                updatedAt: new Date(label.updatedAt || label.createdAt),
+              });
+            }
           }
-        }
+        });
         
-        // Update snapshot status
-        await tx.update(cmsSnapshots).set({
+        // Update snapshot status in dev database
+        await db.update(cmsSnapshots).set({
           status: 'applied',
           appliedAt: new Date(),
           appliedBy: user.id,
           appliedByEmail: user.email,
         }).where(eq(cmsSnapshots.id, snapshot.id));
-      });
-      
-      res.json({ 
-        success: true, 
-        message: `Successfully applied snapshot ${snapshot.version}`,
-        counts: {
-          pages: payload.pages?.length || 0,
-          blocks: payload.blocks?.length || 0,
-          labels: payload.labels?.length || 0,
-        }
-      });
+        
+        res.json({ 
+          success: true, 
+          message: `Successfully applied snapshot ${snapshot.version} to production`,
+          applied: {
+            pages: payload.pages?.length || 0,
+            blocks: payload.blocks?.length || 0,
+            labels: payload.labels?.length || 0,
+          }
+        });
+      } finally {
+        await prodPool.end();
+      }
     } catch (error) {
       console.error('[CMS Snapshot Apply] Error:', error);
       res.status(500).json({ message: error instanceof Error ? error.message : "Failed to apply snapshot" });
     }
   });
-  
-  // Request OTP for snapshot apply
-  app.post("/api/admin/cms/snapshots/request-otp", async (req, res) => {
-    try {
-      if (!req.session.userId || req.session.userRole !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      
-      const user = await storage.getUser(req.session.userId);
-      if (!user) return res.status(404).json({ message: "User not found" });
-      
-      // Generate and send OTP
-      const otp = await storage.createSimpleAdminOtp(user.id, 'cms_snapshot_apply');
-      
-      // Send email using direct method
-      const { sendEmailDirect } = await import('./email');
-      const htmlBody = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #8A2BE2;">CMS Snapshot Apply - OTP Verification</h2>
-          <p>Hello ${user.firstName || 'Admin'},</p>
-          <p>You have requested to apply a CMS snapshot. Please use the following verification code:</p>
-          <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #8A2BE2;">${otp}</span>
-          </div>
-          <p><strong>Action:</strong> Apply CMS Snapshot to Production</p>
-          <p><strong>Expires in:</strong> 10 minutes</p>
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">If you did not request this action, please ignore this email and contact support immediately.</p>
-        </div>
-      `;
-      
-      await sendEmailDirect(user.email, 'CMS Snapshot Apply - OTP Verification', htmlBody);
-      
-      res.json({ success: true, message: 'OTP sent to your email' });
-    } catch (error) {
-      console.error('[CMS Snapshot OTP] Error:', error);
-      res.status(500).json({ message: "Failed to send OTP" });
-    }
-  });
-  
   // Delete a snapshot
   app.delete("/api/admin/cms/snapshots/:id", async (req, res) => {
     try {
