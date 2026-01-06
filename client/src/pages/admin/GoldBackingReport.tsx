@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { apiFetch } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -178,7 +177,7 @@ export default function GoldBackingReport() {
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
-      const response = await apiFetch('/api/admin/gold-backing-report/pdf', {
+      const response = await fetch('/api/admin/gold-backing-report/pdf', {
         method: 'GET',
         credentials: 'include',
         headers: {

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { apiFetch } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,7 @@ export default function RevenueAnalytics() {
   const { data, isLoading, refetch } = useQuery<RevenueData>({
     queryKey: ['/api/admin/revenue-analytics', period],
     queryFn: async () => {
-      const res = await apiFetch(`/api/admin/revenue-analytics?period=${period}`);
+      const res = await fetch(`/api/admin/revenue-analytics?period=${period}`);
       if (!res.ok) throw new Error('Failed to fetch revenue data');
       return res.json();
     },

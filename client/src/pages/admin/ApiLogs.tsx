@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { apiFetch } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,7 @@ export default function ApiLogs() {
       const params = new URLSearchParams();
       if (levelFilter !== 'all') params.set('level', levelFilter);
       if (sourceFilter !== 'all') params.set('source', sourceFilter);
-      const res = await apiFetch(`/api/admin/system-logs?${params.toString()}`);
+      const res = await fetch(`/api/admin/system-logs?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch system logs');
       return res.json();
     },

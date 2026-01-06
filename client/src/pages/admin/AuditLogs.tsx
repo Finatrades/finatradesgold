@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
-import { apiFetch } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,11 +43,11 @@ export default function AuditLogs() {
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const response = await apiFetch('/api/admin/audit-logs');
+      const response = await fetch('/api/admin/audit-logs');
       const data = await response.json();
       setLogs(data.logs || []);
       
-      const usersResponse = await apiFetch('/api/admin/users');
+      const usersResponse = await fetch('/api/admin/users');
       const usersData = await usersResponse.json();
       const usersMap: Record<string, User> = {};
       (usersData.users || []).forEach((user: User) => {

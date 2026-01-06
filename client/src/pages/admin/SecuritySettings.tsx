@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +64,7 @@ export default function SecuritySettings() {
   const fetchSettings = async () => {
     if (!user) return;
     try {
-      const res = await apiFetch('/api/admin/security-settings', {
+      const res = await fetch('/api/admin/security-settings', {
         headers: { 'X-Admin-User-Id': user.id }
       });
       if (!res.ok) throw new Error('Failed to fetch');
@@ -84,7 +83,7 @@ export default function SecuritySettings() {
     setSaving(true);
     try {
       const { id, ...updates } = settings;
-      const res = await apiFetch('/api/admin/security-settings', {
+      const res = await fetch('/api/admin/security-settings', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

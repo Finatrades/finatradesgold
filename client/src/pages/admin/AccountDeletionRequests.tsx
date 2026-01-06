@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient, apiFetch } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import {
   Dialog,
   DialogContent,
@@ -78,7 +78,7 @@ export default function AccountDeletionRequests() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-deletion-requests'],
     queryFn: async () => {
-      const res = await apiFetch('/api/admin/account-deletion-requests');
+      const res = await fetch('/api/admin/account-deletion-requests');
       if (!res.ok) throw new Error('Failed to fetch deletion requests');
       return res.json();
     },

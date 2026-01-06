@@ -3,7 +3,6 @@ import { useAuth } from './AuthContext';
 import { io, Socket } from 'socket.io-client';
 import { getWebRTCConfig, getMediaConstraints, isWebRTCSupported, checkMediaPermissions } from '@/lib/webrtcConfig';
 import { useToast } from '@/hooks/use-toast';
-import { apiFetch } from '@/lib/queryClient';
 
 export interface Message {
   id: string;
@@ -432,7 +431,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const loadAllSessions = async () => {
     try {
-      const response = await apiFetch('/api/admin/chat/sessions');
+      const response = await fetch('/api/admin/chat/sessions');
       if (response.ok) {
         const data = await response.json();
         const formattedSessions: ChatSession[] = await Promise.all(

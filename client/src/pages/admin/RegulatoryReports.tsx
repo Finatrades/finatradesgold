@@ -16,7 +16,7 @@ import {
   FileText, Download, RefreshCw, Plus, Eye, Send, 
   CheckCircle, Clock, Archive, Search, Calendar
 } from 'lucide-react';
-import { apiRequest, apiFetch } from '@/lib/queryClient';
+import { apiRequest } from '@/lib/queryClient';
 import { exportToPDF } from '@/lib/exportUtils';
 
 interface RegulatoryReport {
@@ -72,7 +72,7 @@ export default function RegulatoryReports() {
       const params = new URLSearchParams();
       if (typeFilter !== 'all') params.set('type', typeFilter);
       if (statusFilter !== 'all') params.set('status', statusFilter);
-      const res = await apiFetch(`/api/admin/regulatory-reports?${params.toString()}`);
+      const res = await fetch(`/api/admin/regulatory-reports?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch reports');
       return res.json();
     },
