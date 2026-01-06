@@ -59,7 +59,7 @@ function ProtectedRoute({ path, component: Component }: { path: string, componen
 }
 
 function PublicRoute({ path, component: Component }: { path: string, component: React.ComponentType }) {
-  const { user, loading } = useAuth();
+  const { user, loading, adminPortal } = useAuth();
 
   return (
     <Route path={path}>
@@ -68,7 +68,7 @@ function PublicRoute({ path, component: Component }: { path: string, component: 
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : user ? (
-        <Redirect to="/dashboard" />
+        <Redirect to={user.role === 'admin' || adminPortal ? "/admin" : "/dashboard"} />
       ) : (
         <Component />
       )}
@@ -77,7 +77,7 @@ function PublicRoute({ path, component: Component }: { path: string, component: 
 }
 
 function HomeRedirect() {
-  const { user, loading } = useAuth();
+  const { user, loading, adminPortal } = useAuth();
   
   if (loading) {
     return (
@@ -87,7 +87,16 @@ function HomeRedirect() {
     );
   }
   
-  return <Redirect to={user ? "/dashboard" : "/finagold"} />;
+  if (!user) {
+    return <Redirect to="/finagold" />;
+  }
+  
+  // Redirect admins to admin dashboard, regular users to user dashboard
+  if (user.role === 'admin' || adminPortal) {
+    return <Redirect to="/admin" />;
+  }
+  
+  return <Redirect to="/dashboard" />;
 }
 
 import Profile from "@/pages/Profile";
