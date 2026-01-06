@@ -15578,7 +15578,7 @@ ${message}
       
       const { drizzle } = await import('drizzle-orm/node-postgres');
       const pg = await import('pg');
-      const prodPool = new pg.default.Pool({ connectionString: prodDbUrl });
+      const prodPool = new pg.default.Pool({ connectionString: prodDbUrl, ssl: { rejectUnauthorized: false } });
       const prodDb = drizzle(prodPool);
       
       try {
