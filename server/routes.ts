@@ -15625,19 +15625,25 @@ ${message}
       // Generate and send OTP
       const otp = await storage.createSimpleAdminOtp(user.id, 'cms_snapshot_apply');
       
-      // Send email
-      const { sendEmail } = await import('./email');
-      await sendEmail({
-        to: user.email,
-        subject: 'CMS Snapshot Apply - OTP Verification',
-        templateSlug: 'admin-otp',
-        data: {
-          firstName: user.firstName,
-          otpCode: otp,
-          action: 'Apply CMS Snapshot to Production',
-          expiresIn: '10 minutes',
-        },
-      });
+      // Send email using direct method
+      const { sendEmailDirect } = await import('./email');
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #8A2BE2;">CMS Snapshot Apply - OTP Verification</h2>
+          <p>Hello ${user.firstName || 'Admin'},</p>
+          <p>You have requested to apply a CMS snapshot. Please use the following verification code:</p>
+          <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #8A2BE2;">${otp}</span>
+          </div>
+          <p><strong>Action:</strong> Apply CMS Snapshot to Production</p>
+          <p><strong>Expires in:</strong> 10 minutes</p>
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">If you did not request this action, please ignore this email and contact support immediately.</p>
+        </div>
+      `;
+      
+      await sendEmailDirect(user.email, 'CMS Snapshot Apply - OTP Verification', htmlBody);
+      
+      res.json({ success: true, message: 'OTP sent to your email' });
       
       res.json({ success: true, message: 'OTP sent to your email' });
     } catch (error) {
