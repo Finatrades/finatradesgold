@@ -15500,6 +15500,44 @@ ${message}
   
   // Apply a CMS snapshot (requires OTP verification)
   // This pushes CMS content FROM dev snapshot TO production database
+
+  // Request OTP for snapshot apply
+  app.post("/api/admin/cms/snapshots/request-otp", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      
+      // Generate and send OTP
+      const otp = await storage.createSimpleAdminOtp(user.id, 'cms_snapshot_apply');
+      
+      // Send email using direct method
+      const { sendEmailDirect } = await import('./email');
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #8A2BE2;">CMS Snapshot Apply - OTP Verification</h2>
+          <p>Hello ${user.firstName || 'Admin'},</p>
+          <p>You have requested to apply a CMS snapshot. Please use the following verification code:</p>
+          <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #8A2BE2;">${otp}</span>
+          </div>
+          <p><strong>Action:</strong> Apply CMS Snapshot to Production</p>
+          <p><strong>Expires in:</strong> 10 minutes</p>
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">If you did not request this action, please ignore this email and contact support immediately.</p>
+        </div>
+      `;
+      
+      await sendEmailDirect(user.email, 'CMS Snapshot Apply - OTP Verification', htmlBody);
+      
+      return res.json({ success: true, message: 'OTP sent to your email' });
+    } catch (error) {
+      console.error('[CMS Snapshot OTP] Error:', error);
+      return res.status(500).json({ message: "Failed to send OTP" });
+    }
+  });
   app.post("/api/admin/cms/snapshots/:id/apply", async (req, res) => {
     try {
       if (!req.session.userId || req.session.userRole !== 'admin') {
