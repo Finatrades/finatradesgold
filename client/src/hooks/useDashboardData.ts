@@ -80,7 +80,7 @@ interface DashboardResponse {
     vaultGoldValueUsd: number;
     vaultGoldValueAed: number;
     walletGoldGrams: number;
-    walletUsdBalance: number;
+    totalGoldGrams: number;
     totalPortfolioUsd: number;
     bnslLockedGrams: number;
     bnslTotalProfit: number;
@@ -114,7 +114,7 @@ interface DashboardData {
     vaultGoldValueUsd: number;
     vaultGoldValueAed: number;
     walletGoldGrams: number;
-    walletUsdBalance: number;
+    totalGoldGrams: number;
     totalPortfolioUsd: number;
     bnslLockedGrams: number;
     bnslTotalProfit: number;
@@ -210,7 +210,7 @@ export function useDashboardData(): DashboardData {
     vaultGoldValueUsd: 0,
     vaultGoldValueAed: 0,
     walletGoldGrams: 0,
-    walletUsdBalance: 0,
+    totalGoldGrams: 0,
     totalPortfolioUsd: 0,
     bnslLockedGrams: 0,
     bnslTotalProfit: 0,
