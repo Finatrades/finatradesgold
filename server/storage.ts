@@ -2932,42 +2932,6 @@ export class DatabaseStorage implements IStorage {
     return result.length;
   }
 
-
-  async createSimpleAdminOtp(adminId: string, actionType: string, targetId: string = 'system'): Promise<string> {
-    const crypto = await import('crypto');
-    const code = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    
-    await this.createAdminActionOtp({
-      adminId,
-      actionType: actionType as any,
-      targetId,
-      targetType: 'cms_content',
-      code,
-      expiresAt,
-      verified: false,
-      attempts: 0,
-    });
-    
-    return code;
-  }
-
-  async verifySimpleAdminOtp(adminId: string, code: string, actionType: string): Promise<boolean> {
-    const pending = await this.getPendingAdminActionOtp(adminId, actionType, 'system');
-    
-    if (!pending) return false;
-    if (new Date() > new Date(pending.expiresAt)) return false;
-    if (pending.attempts >= 5) return false;
-    
-    // Update attempts
-    await this.updateAdminActionOtp(pending.id, { attempts: pending.attempts + 1 });
-    
-    if (pending.code !== code) return false;
-    
-    // Mark as verified
-    await this.updateAdminActionOtp(pending.id, { verified: true, verifiedAt: new Date() });
-    return true;
-  }
   // ============================================
   // PASSWORD RESET TOKENS
   // ============================================
