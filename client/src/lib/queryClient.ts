@@ -85,7 +85,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const path = queryKey.join("/") as string;
+    const url = getApiUrl(path);
+    const res = await fetch(url, {
       credentials: "include",
     });
 
@@ -122,7 +124,8 @@ export function prefetchDashboardData(userId: string) {
   return queryClient.prefetchQuery({
     queryKey: ['dashboard', userId],
     queryFn: async () => {
-      const res = await fetch(`/api/dashboard/${userId}`, { credentials: 'include' });
+      const url = getApiUrl(`/api/dashboard/${userId}`);
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to prefetch dashboard');
       const data = await res.json();
       const loadTime = (performance.now() - startTime).toFixed(0);
