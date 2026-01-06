@@ -503,10 +503,16 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
     setSubmitting(true);
     try {
+      // Gold-first: Always send goldGrams and goldPriceUsdPerGram
+      const currentGoldPrice = goldPrice?.pricePerGram || 0;
+      const goldGramsToSubmit = summary.goldGrams > 0 ? summary.goldGrams : (currentGoldPrice > 0 ? amountUsdToSubmit / currentGoldPrice : 0);
+      
       const res = await apiRequest('POST', '/api/deposit-requests', {
         userId: user.id,
         bankAccountId: selectedAccount.id,
         amountUsd: amountUsdToSubmit.toFixed(2),
+        goldGrams: goldGramsToSubmit.toFixed(6),
+        goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
         targetBankName: selectedAccount.bankName,
         targetAccountName: selectedAccount.accountName,
         targetAccountNumber: selectedAccount.accountNumber,

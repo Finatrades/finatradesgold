@@ -10,12 +10,18 @@ interface WalletBalanceCardsProps {
 }
 
 export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalanceCardsProps) {
-  const goldValueUsd = wallet.goldBalanceGrams * wallet.goldPriceUsdPerGram;
-  const totalAvailableUsd = wallet.usdBalance + goldValueUsd;
+  // Gold-first: Gold grams is the canonical balance, USD is computed dynamically
+  const goldPrice = wallet.goldPriceUsdPerGram || 0;
+  const availableGoldGrams = wallet.goldBalanceGrams || 0;
+  const availableUsd = availableGoldGrams * goldPrice;
+  
+  // Locked gold computed from USD values (for backward compat with existing data)
   const totalLockedUsd = wallet.bnslLockedUsd + wallet.finaBridgeLockedUsd;
-  const totalLockedGrams = wallet.goldPriceUsdPerGram > 0 ? totalLockedUsd / wallet.goldPriceUsdPerGram : 0;
-  const grandTotalUsd = totalAvailableUsd + totalLockedUsd;
-  const grandTotalGoldGrams = wallet.goldBalanceGrams + totalLockedGrams;
+  const totalLockedGrams = goldPrice > 0 ? totalLockedUsd / goldPrice : 0;
+  
+  // Grand totals - gold is primary
+  const grandTotalGoldGrams = availableGoldGrams + totalLockedGrams;
+  const grandTotalUsd = grandTotalGoldGrams * goldPrice;
 
   return (
     <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
@@ -38,7 +44,7 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
-        {/* Available Balance */}
+        {/* Available Balance - GOLD FIRST */}
         <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
           <div className="absolute right-2 bottom-2 opacity-5">
             <Wallet className="w-20 h-20 text-purple-500" />
@@ -47,29 +53,25 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-foreground">
-                  ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-2xl font-bold text-fuchsia-600">
+                  {availableGoldGrams.toFixed(4)} g
                 </span>
+                <span className="text-sm font-medium text-foreground">gold</span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Gold Owned:</span>
-                <span className="text-lg font-semibold text-fuchsia-600">
-                  {wallet.goldBalanceGrams.toFixed(4)} g
+                <span className="text-xs text-muted-foreground">USD Equivalent:</span>
+                <span className="text-lg font-semibold text-foreground">
+                  ${availableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                {wallet.usdBalance > 0 && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    + ${wallet.usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} cash
-                  </span>
-                )}
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Funds available for trading and transfers.
+              Your real balance is gold. USD is calculated at ${goldPrice.toFixed(2)}/g.
             </p>
           </div>
         </div>
 
-        {/* Locked Assets */}
+        {/* Locked Assets - GOLD FIRST */}
         <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
           <div className="absolute right-2 bottom-2 opacity-5">
             <Lock className="w-20 h-20 text-purple-500" />
@@ -79,40 +81,42 @@ export default function WalletBalanceCards({ wallet, onTransfer }: WalletBalance
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-purple-500">
-                  ${totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {totalLockedGrams.toFixed(4)} g
                 </span>
+                <span className="text-sm font-medium text-purple-500/80">gold</span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Gold Locked:</span>
+                <span className="text-xs text-muted-foreground">USD Equivalent:</span>
                 <span className="text-lg font-semibold text-purple-500/80">
-                  {totalLockedGrams.toFixed(4)} g
+                  ${totalLockedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               <Lock className="w-3 h-3 inline mr-1" />
-              Assets locked in active plans and trades.
+              Gold locked in active plans and trades.
             </p>
           </div>
         </div>
 
-        {/* Total Value */}
+        {/* Total Value - GOLD FIRST */}
         <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
           <div className="absolute right-2 bottom-2 opacity-5">
             <TrendingUp className="w-20 h-20 text-purple-500" />
           </div>
           <div className="relative z-10">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Gold Holdings</p>
             <div className="space-y-1 mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-purple-500">
-                  ${grandTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-2xl font-bold text-foreground">
+                  {grandTotalGoldGrams.toFixed(4)} g
                 </span>
+                <span className="text-sm font-medium text-foreground">gold</span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Total Gold:</span>
-                <span className="text-lg font-semibold text-foreground">
-                  {grandTotalGoldGrams.toFixed(4)} g
+                <span className="text-xs text-muted-foreground">USD Equivalent:</span>
+                <span className="text-lg font-semibold text-purple-500">
+                  ${grandTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>

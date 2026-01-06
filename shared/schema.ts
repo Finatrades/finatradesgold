@@ -897,6 +897,8 @@ export const wallets = pgTable("wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  // DEPRECATED: USD/EUR balances are computed dynamically from goldGrams × currentGoldPrice
+  // Kept for backward compatibility - will be phased out
   usdBalance: decimal("usd_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   eurBalance: decimal("eur_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1012,7 +1014,10 @@ export const depositRequests = pgTable("deposit_requests", {
   targetSwiftCode: varchar("target_swift_code", { length: 100 }),
   targetIban: varchar("target_iban", { length: 100 }),
   targetCurrency: varchar("target_currency", { length: 10 }),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  // Gold-first: goldGrams is the canonical value, USD is computed from goldGrams × goldPriceUsdPerGram
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(), // Kept for display/reporting, computed from gold
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
   paymentMethod: varchar("payment_method", { length: 100 }).notNull().default('Bank Transfer'),
   senderBankName: varchar("sender_bank_name", { length: 255 }), // User's sending bank
@@ -1038,7 +1043,10 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  // Gold-first: goldGrams is the canonical value, USD is computed from goldGrams × goldPriceUsdPerGram
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(), // Kept for display/reporting
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
   // User's bank account details
   bankName: varchar("bank_name", { length: 255 }).notNull(),

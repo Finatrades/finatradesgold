@@ -161,7 +161,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
           userId: user.id,
           amountUsd: parseFloat(amount).toString(),
           goldGrams: numericGold.toFixed(6),
-          goldPriceAtTime: goldPrice.toFixed(2),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
           bankName,
           accountName,
           accountNumber,

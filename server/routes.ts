@@ -11143,7 +11143,7 @@ ${message}
   // Create deposit request (User) - PROTECTED - Requires KYC
   app.post("/api/deposit-requests", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
-      const { userId, amountUsd } = req.body;
+      const { userId, amountUsd, goldGrams: providedGoldGrams, goldPriceUsdPerGram: providedGoldPrice } = req.body;
       
       // Validate deposit limits
       const depositUser = await storage.getUser(userId);
@@ -11152,6 +11152,21 @@ ${message}
       }
       
       const amount = parseFloat(amountUsd);
+      
+      // Gold-first logic: Determine gold price and calculate gold grams
+      let goldPriceUsdPerGram = providedGoldPrice ? parseFloat(providedGoldPrice) : null;
+      let goldGrams = providedGoldGrams ? parseFloat(providedGoldGrams) : null;
+      
+      // Fetch live gold price if not provided
+      if (!goldPriceUsdPerGram) {
+        const goldPriceData = await getGoldPrice();
+        goldPriceUsdPerGram = goldPriceData.pricePerGram;
+      }
+      
+      // Calculate goldGrams from USD if not provided
+      if (!goldGrams && goldPriceUsdPerGram > 0) {
+        goldGrams = amount / goldPriceUsdPerGram;
+      }
       const limitResult = await platformLimits.validateFullTransactionLimits(
         amount,
         depositUser,
@@ -11171,6 +11186,8 @@ ${message}
       const requestData = insertDepositRequestSchema.parse({
         ...req.body,
         referenceNumber,
+        goldGrams: goldGrams?.toString() || null,
+        goldPriceUsdPerGram: goldPriceUsdPerGram?.toString() || null,
       });
       const request = await storage.createDepositRequest(requestData);
       
@@ -11555,7 +11572,7 @@ ${message}
   // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN + rate limit
   app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, checkMaintenanceMode, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
     try {
-      const { userId, amountUsd, ...bankDetails } = req.body;
+      const { userId, amountUsd, goldGrams: providedGoldGrams, goldPriceUsdPerGram: providedGoldPrice, ...bankDetails } = req.body;
       
       // SECURITY: Verify user can only create withdrawal for themselves
       if (req.session?.userId !== userId) {
@@ -11570,6 +11587,22 @@ ${message}
       
       // Validate withdrawal limits
       const amount = parseFloat(amountUsd);
+      
+      // Gold-first logic: Determine gold price and calculate gold grams
+      let goldPriceUsdPerGram = providedGoldPrice ? parseFloat(providedGoldPrice) : null;
+      let goldGrams = providedGoldGrams ? parseFloat(providedGoldGrams) : null;
+      
+      // Fetch live gold price if not provided
+      if (!goldPriceUsdPerGram) {
+        const goldPriceData = await getGoldPrice();
+        goldPriceUsdPerGram = goldPriceData.pricePerGram;
+      }
+      
+      // Calculate goldGrams from USD if not provided
+      if (!goldGrams && goldPriceUsdPerGram > 0) {
+        goldGrams = amount / goldPriceUsdPerGram;
+      }
+      
       const limitResult = await platformLimits.validateFullTransactionLimits(
         amount,
         withdrawUser,
@@ -11584,16 +11617,23 @@ ${message}
         });
       }
       
-      // Check user has sufficient balance
+      // Check user has sufficient balance (gold-first: check gold grams)
       const wallet = await storage.getWallet(userId);
       if (!wallet) {
         return res.status(400).json({ message: "Wallet not found" });
       }
       
-      const currentBalance = parseFloat(wallet.usdBalance.toString());
+      const currentGoldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
+      const currentUsdBalance = parseFloat(wallet.usdBalance.toString());
+      const withdrawGoldGrams = goldGrams || 0;
       const withdrawAmount = parseFloat(amountUsd);
       
-      if (currentBalance < withdrawAmount) {
+      // Primary check: gold grams balance
+      if (withdrawGoldGrams > 0 && currentGoldBalance < withdrawGoldGrams) {
+        return res.status(400).json({ message: "Insufficient gold balance" });
+      }
+      // Fallback check: USD balance (for backwards compatibility)
+      if (withdrawGoldGrams <= 0 && currentUsdBalance < withdrawAmount) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
@@ -11604,13 +11644,16 @@ ${message}
         userId,
         amountUsd,
         referenceNumber,
+        goldGrams: goldGrams?.toString() || null,
+        goldPriceUsdPerGram: goldPriceUsdPerGram?.toString() || null,
         ...bankDetails,
       });
       
-      // Debit the amount from wallet immediately (hold)
-      await storage.updateWallet(wallet.id, {
-        usdBalance: (currentBalance - withdrawAmount).toString(),
-      });
+      // Debit the amount from wallet immediately (hold) - gold-first: debit gold grams
+      const walletUpdate = withdrawGoldGrams > 0 
+        ? { goldGrams: (currentGoldBalance - withdrawGoldGrams).toString() }
+        : { usdBalance: (currentUsdBalance - withdrawAmount).toString() };
+      await storage.updateWallet(wallet.id, walletUpdate);
       
       const request = await storage.createWithdrawalRequest(requestData);
       
