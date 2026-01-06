@@ -600,10 +600,13 @@ export default function KYC() {
       });
       
       toast.success("Corporate KYC Submitted Successfully", {
-        description: "Your verification is now under review."
+        description: "Your verification is now under review. Redirecting to dashboard..."
       });
       
-      setLocation('/kyc');
+      // Redirect to dashboard after showing completion
+      setTimeout(() => {
+        setLocation('/dashboard');
+      }, 2000);
     } catch (error) {
       toast.error("Submission Failed", {
         description: "Please try again later."
