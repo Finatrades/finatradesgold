@@ -466,7 +466,8 @@ function HowItWorksSection() {
         </motion.div>
 
         <div className="relative">
-          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2">
+          {/* Timeline line - hidden on mobile, center on desktop */}
+          <div className="hidden md:block absolute md:left-1/2 top-0 bottom-0 w-px md:-translate-x-1/2">
             <motion.div
               initial={{ scaleY: 0 }}
               animate={{ scaleY: isInView ? 1 : 0 }}
@@ -492,7 +493,8 @@ function HowItWorksSection() {
             ))}
           </div>
 
-          <div className="space-y-12">
+          {/* Steps container - stacked on mobile, alternating on desktop */}
+          <div className="space-y-4 md:space-y-12">
             {steps.map((step, index) => {
               const isLeft = index % 2 === 0;
               const isActive = activeStep === index;
@@ -501,16 +503,17 @@ function HowItWorksSection() {
               return (
                 <div
                   key={step.number}
-                  className={`flex ${isLeft ? 'justify-start pr-[52%]' : 'justify-end pl-[52%]'}`}
+                  className={`flex md:w-[calc(50%-2rem)] ${isLeft ? 'md:mr-auto md:pr-8' : 'md:ml-auto md:pl-8'}`}
                 >
                   <motion.div
-                    initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
+                    initial={{ opacity: 0, x: 0, y: 20 }}
                     animate={{ 
                       opacity: isActive || isCompleted ? 1 : 0.3,
                       x: 0,
+                      y: 0,
                     }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className={`relative flex items-center gap-6 ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}
+                    transition={{ duration: 0.6, delay: index * 0.15 }}
+                    className="relative flex flex-row items-start gap-3 md:gap-6 w-full"
                   >
                     <motion.div
                       animate={{
@@ -520,15 +523,23 @@ function HowItWorksSection() {
                           : '0 0 0 0 rgba(138, 43, 226, 0)',
                       }}
                       transition={{ duration: 0.8, repeat: isActive ? Infinity : 0, repeatDelay: 2 }}
-                      className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                      className={`relative z-10 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
                         isActive || isCompleted
                           ? 'bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-400'
                           : 'bg-gray-100 border border-gray-200'
                       }`}
                     >
-                      <step.icon className={`w-7 h-7 transition-colors duration-500 ${
+                      <step.icon className={`w-5 h-5 md:w-7 md:h-7 transition-colors duration-500 ${
                         isActive || isCompleted ? 'text-purple-600' : 'text-gray-400'
                       }`} />
+                      
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: isActive ? 1 : 0 }}
+                        className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 rounded-full bg-purple-600 flex items-center justify-center"
+                      >
+                        <span className="text-white text-[10px] md:text-xs font-bold">{step.number}</span>
+                      </motion.div>
                     </motion.div>
 
                     <motion.div
@@ -537,20 +548,37 @@ function HowItWorksSection() {
                         opacity: isActive || isCompleted ? 1 : 0.5,
                         y: 0,
                       }}
-                      transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                      className={`flex-1 p-5 rounded-xl backdrop-blur-sm transition-all duration-500 ${
+                      transition={{ duration: 0.5, delay: index * 0.15 + 0.2 }}
+                      className={`flex-1 p-4 md:p-5 rounded-xl md:rounded-2xl backdrop-blur-sm transition-all duration-500 ${
                         isActive
                           ? 'bg-white border-2 border-purple-300 shadow-lg shadow-purple-100'
-                          : 'bg-white border border-gray-100 shadow-sm'
+                          : isCompleted
+                          ? 'bg-white border border-purple-200'
+                          : 'bg-white/70 border border-gray-100 shadow-sm'
                       }`}
                     >
-                      <span className={`text-sm font-bold ${isActive ? 'text-purple-600' : 'text-gray-400'}`}>
-                        Step {step.number}
-                      </span>
-                      <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-gray-900' : 'text-gray-500'}`}>
+                      <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <span className={`text-xs md:text-sm font-bold ${isActive ? 'text-purple-600' : 'text-gray-400'}`}>
+                          Step {step.number}
+                        </span>
+                        {isCompleted && !isActive && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="text-green-500 text-xs"
+                          >
+                            ✓
+                          </motion.span>
+                        )}
+                      </div>
+                      <h3 className={`text-base md:text-lg font-semibold mb-1 md:mb-2 transition-colors duration-500 ${
+                        isActive || isCompleted ? 'text-gray-900' : 'text-gray-500'
+                      }`}>
                         {step.title}
                       </h3>
-                      <p className={`text-sm mt-2 ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
+                      <p className={`text-xs md:text-sm leading-relaxed transition-colors duration-500 ${
+                        isActive ? 'text-gray-600' : 'text-gray-400'
+                      }`}>
                         {step.description}
                       </p>
                     </motion.div>
