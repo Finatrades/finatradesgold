@@ -70,6 +70,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<PlatformBankAccount | null>(null);
   const [amount, setAmount] = useState('');
+  const [goldAmount, setGoldAmount] = useState('');
+  const [inputMode, setInputMode] = useState<'usd' | 'gold'>('usd');
   const [senderBankName, setSenderBankName] = useState('');
   const [senderAccountName, setSenderAccountName] = useState('');
   const [proofOfPayment, setProofOfPayment] = useState<string | null>(null);
@@ -206,14 +208,46 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const getDepositSummary = () => {
-    const amountNum = parseFloat(amount) || 0;
     const accountCurrency = selectedAccount?.currency || 'USD';
+    
+    if (inputMode === 'gold') {
+      const goldGramsNum = parseFloat(goldAmount) || 0;
+      if (!goldPrice?.pricePerGram || goldGramsNum <= 0) {
+        return { 
+          amountNum: 0, amountInUsd: 0, feeAmount: 0, feeInOriginalCurrency: 0,
+          netDeposit: 0, netDepositUsd: 0, goldGrams: goldGramsNum,
+          currency: accountCurrency, currencySymbol: getCurrencySymbol(accountCurrency),
+          inputMode: 'gold' as const, requiredUsd: 0, requiredOriginalCurrency: 0
+        };
+      }
+      const netDepositUsd = goldGramsNum * goldPrice.pricePerGram;
+      const feeAmount = calculateFee(netDepositUsd);
+      const requiredUsd = netDepositUsd + feeAmount;
+      const requiredOriginalCurrency = accountCurrency.toUpperCase() !== 'USD' ? requiredUsd * getRate(accountCurrency) : requiredUsd;
+      const feeInOriginalCurrency = accountCurrency.toUpperCase() !== 'USD' ? feeAmount * getRate(accountCurrency) : feeAmount;
+      
+      return { 
+        amountNum: requiredOriginalCurrency, 
+        amountInUsd: requiredUsd,
+        feeAmount, 
+        feeInOriginalCurrency,
+        netDeposit: netDepositUsd, 
+        netDepositUsd,
+        goldGrams: goldGramsNum,
+        currency: accountCurrency,
+        currencySymbol: getCurrencySymbol(accountCurrency),
+        inputMode: 'gold' as const,
+        requiredUsd,
+        requiredOriginalCurrency
+      };
+    }
+    
+    const amountNum = parseFloat(amount) || 0;
     const amountInUsd = convertToUsd(amountNum, accountCurrency);
-    const feeAmount = calculateFee(amountInUsd); // Fee calculated in USD
+    const feeAmount = calculateFee(amountInUsd);
     const netDepositUsd = amountInUsd - feeAmount;
     const goldGrams = goldPrice?.pricePerGram && netDepositUsd > 0 ? netDepositUsd / goldPrice.pricePerGram : 0;
     
-    // Convert fee back to original currency for display
     const feeInOriginalCurrency = accountCurrency.toUpperCase() !== 'USD' ? feeAmount * getRate(accountCurrency) : feeAmount;
     const netDepositOriginal = amountNum - feeInOriginalCurrency;
     
@@ -226,7 +260,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       netDepositUsd,
       goldGrams,
       currency: accountCurrency,
-      currencySymbol: getCurrencySymbol(accountCurrency)
+      currencySymbol: getCurrencySymbol(accountCurrency),
+      inputMode: 'usd' as const,
+      requiredUsd: amountInUsd,
+      requiredOriginalCurrency: amountNum
     };
   };
 
@@ -235,6 +272,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setPaymentMethod(null);
     setSelectedAccount(null);
     setAmount('');
+    setGoldAmount('');
+    setInputMode('usd');
     setSenderBankName('');
     setSenderAccountName('');
     setProofOfPayment(null);
@@ -443,10 +482,13 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const handleSubmit = async () => {
-    if (!selectedAccount || !user || !amount) return;
+    if (!selectedAccount || !user) return;
     
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
+    const hasValidAmount = inputMode === 'usd' 
+      ? parseFloat(amount) > 0 
+      : parseFloat(goldAmount) > 0;
+    
+    if (!hasValidAmount) {
       toast.error("Please enter a valid amount");
       return;
     }
@@ -456,12 +498,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       return;
     }
 
+    const summary = getDepositSummary();
+    const amountUsdToSubmit = summary.amountInUsd;
+
     setSubmitting(true);
     try {
       const res = await apiRequest('POST', '/api/deposit-requests', {
         userId: user.id,
         bankAccountId: selectedAccount.id,
-        amountUsd: parseFloat(amount).toString(),
+        amountUsd: amountUsdToSubmit.toFixed(2),
         targetBankName: selectedAccount.bankName,
         targetAccountName: selectedAccount.accountName,
         targetAccountNumber: selectedAccount.accountNumber,
@@ -471,6 +516,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         senderBankName: senderBankName || null,
         senderAccountName: senderAccountName || null,
         proofOfPayment: proofOfPayment,
+        inputMode: inputMode,
+        requestedGoldGrams: inputMode === 'gold' ? summary.goldGrams.toFixed(6) : null,
       });
       const data = await res.json();
       
@@ -755,68 +802,155 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {/* Right Panel - Deposit Information */}
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium">Amount ({selectedAccount?.currency || 'USD'}) *</Label>
-                  <div className="relative mt-1.5">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
-                      {getCurrencySymbol(selectedAccount?.currency || 'USD').trim()}
-                    </span>
-                    <Input 
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="0.00"
-                      className={selectedAccount?.currency === 'AED' ? 'pl-12 h-11' : 'pl-7 h-11'}
-                      data-testid="input-deposit-amount"
-                    />
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">
+                      {inputMode === 'usd' ? `Amount (${selectedAccount?.currency || 'USD'})` : 'Gold Amount (grams)'} *
+                    </Label>
+                    <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => { setInputMode('usd'); setGoldAmount(''); }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                          inputMode === 'usd' 
+                            ? 'bg-primary text-white shadow-sm' 
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        data-testid="toggle-input-usd"
+                      >
+                        <DollarSign className="w-3 h-3 inline mr-1" />
+                        {selectedAccount?.currency || 'USD'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setInputMode('gold'); setAmount(''); }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                          inputMode === 'gold' 
+                            ? 'bg-primary text-white shadow-sm' 
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        data-testid="toggle-input-gold"
+                      >
+                        <Coins className="w-3 h-3 inline mr-1" />
+                        Gold
+                      </button>
+                    </div>
                   </div>
-                  {selectedAccount?.currency !== 'USD' && (
+                  
+                  {inputMode === 'usd' ? (
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                        {getCurrencySymbol(selectedAccount?.currency || 'USD').trim()}
+                      </span>
+                      <Input 
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.00"
+                        className={selectedAccount?.currency === 'AED' ? 'pl-12 h-11' : 'pl-7 h-11'}
+                        data-testid="input-deposit-amount"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                        g
+                      </span>
+                      <Input 
+                        type="number"
+                        value={goldAmount}
+                        onChange={(e) => setGoldAmount(e.target.value)}
+                        placeholder="0.0000"
+                        step="0.0001"
+                        className="pl-7 h-11"
+                        data-testid="input-deposit-gold-amount"
+                      />
+                    </div>
+                  )}
+                  
+                  {inputMode === 'usd' && selectedAccount?.currency !== 'USD' && parseFloat(amount) > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       ≈ ${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toFixed(2)} USD (rate: 1 USD = {getRate(selectedAccount?.currency || 'USD').toFixed(4)} {selectedAccount?.currency})
                     </p>
                   )}
+                  {inputMode === 'gold' && goldPrice?.pricePerGram && parseFloat(goldAmount) > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
+                    </p>
+                  )}
                 </div>
 
-                {parseFloat(amount) > 0 && (
+                {((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
                   <div className="border border-primary/20 rounded-xl p-4 bg-primary/5">
                     <div className="flex items-center gap-2 mb-3">
                       <Coins className="w-5 h-5 text-primary" />
                       <h4 className="font-semibold text-foreground">Deposit Summary</h4>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Deposit Amount:</span>
-                        <span className="font-medium">{getDepositSummary().currencySymbol}{getDepositSummary().amountNum.toFixed(2)}</span>
-                      </div>
-                      {selectedAccount?.currency !== 'USD' && (
-                        <div className="flex justify-between text-muted-foreground text-xs">
-                          <span>USD Equivalent:</span>
-                          <span>${getDepositSummary().amountInUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {depositFee && getDepositSummary().feeAmount > 0 && (
-                        <div className="flex justify-between text-warning">
-                          <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
-                          <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeInOriginalCurrency.toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
-                        <span>Net Credit to Wallet (USD):</span>
-                        <span className="text-success">${getDepositSummary().netDepositUsd.toFixed(2)}</span>
-                      </div>
-                      {selectedAccount?.currency !== 'USD' && (
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>({selectedAccount?.currency} equivalent):</span>
-                          <span>{getDepositSummary().currencySymbol}{getDepositSummary().netDeposit.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {goldPrice?.pricePerGram && getDepositSummary().goldGrams > 0 && (
-                        <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
-                          <span className="flex items-center gap-1">
-                            <Coins className="w-4 h-4" />
-                            Gold Equivalent:
-                          </span>
-                          <span className="font-bold">{getDepositSummary().goldGrams.toFixed(4)}g</span>
-                        </div>
+                      {inputMode === 'gold' ? (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Gold to Acquire:</span>
+                            <span className="font-bold text-primary">{getDepositSummary().goldGrams.toFixed(4)}g</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Gold Value (USD):</span>
+                            <span className="font-medium">${getDepositSummary().netDepositUsd.toFixed(2)}</span>
+                          </div>
+                          {depositFee && getDepositSummary().feeAmount > 0 && (
+                            <div className="flex justify-between text-warning">
+                              <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
+                              <span>+${getDepositSummary().feeAmount.toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
+                            <span>Total Required (USD):</span>
+                            <span className="text-foreground">${getDepositSummary().requiredUsd?.toFixed(2) || '0.00'}</span>
+                          </div>
+                          {selectedAccount?.currency !== 'USD' && (
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>({selectedAccount?.currency} equivalent):</span>
+                              <span>{getDepositSummary().currencySymbol}{getDepositSummary().requiredOriginalCurrency?.toFixed(2) || '0.00'}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Deposit Amount:</span>
+                            <span className="font-medium">{getDepositSummary().currencySymbol}{getDepositSummary().amountNum.toFixed(2)}</span>
+                          </div>
+                          {selectedAccount?.currency !== 'USD' && (
+                            <div className="flex justify-between text-muted-foreground text-xs">
+                              <span>USD Equivalent:</span>
+                              <span>${getDepositSummary().amountInUsd.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {depositFee && getDepositSummary().feeAmount > 0 && (
+                            <div className="flex justify-between text-warning">
+                              <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
+                              <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeInOriginalCurrency.toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
+                            <span>Net Credit to Wallet (USD):</span>
+                            <span className="text-success">${getDepositSummary().netDepositUsd.toFixed(2)}</span>
+                          </div>
+                          {selectedAccount?.currency !== 'USD' && (
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>({selectedAccount?.currency} equivalent):</span>
+                              <span>{getDepositSummary().currencySymbol}{getDepositSummary().netDeposit.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {goldPrice?.pricePerGram && getDepositSummary().goldGrams > 0 && (
+                            <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
+                              <span className="flex items-center gap-1">
+                                <Coins className="w-4 h-4" />
+                                Gold Equivalent:
+                              </span>
+                              <span className="font-bold">{getDepositSummary().goldGrams.toFixed(4)}g</span>
+                            </div>
+                          )}
+                        </>
                       )}
                       {goldPrice?.pricePerGram && (
                         <p className="text-xs text-muted-foreground mt-1">
