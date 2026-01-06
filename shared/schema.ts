@@ -3106,7 +3106,7 @@ export const adminActionTypeEnum = pgEnum('admin_action_type', [
   'withdrawal_approval', 'withdrawal_rejection',
   'bnsl_approval', 'bnsl_rejection',
   'trade_case_approval', 'trade_case_rejection',
-  'user_suspension', 'user_activation'
+  'user_suspension', 'user_activation', 'cms_snapshot_apply'
 ]);
 
 export const adminActionOtps = pgTable("admin_action_otps", {

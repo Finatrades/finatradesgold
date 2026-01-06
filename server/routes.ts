@@ -15514,7 +15514,7 @@ ${message}
         return res.status(400).json({ message: "OTP code required for safety" });
       }
       
-      const isValidOtp = await storage.verifyAdminActionOtp(user.id, otpCode, 'cms_snapshot_apply');
+      const isValidOtp = await storage.verifySimpleAdminOtp(user.id, otpCode, 'cms_snapshot_apply');
       if (!isValidOtp) {
         return res.status(400).json({ message: "Invalid or expired OTP code" });
       }
@@ -15623,7 +15623,7 @@ ${message}
       if (!user) return res.status(404).json({ message: "User not found" });
       
       // Generate and send OTP
-      const otp = await storage.createAdminActionOtp(user.id, 'cms_snapshot_apply');
+      const otp = await storage.createSimpleAdminOtp(user.id, 'cms_snapshot_apply');
       
       // Send email
       const { sendEmail } = await import('./email');
