@@ -20,7 +20,24 @@ All system-generated reports (security audits, CSRF reports, compliance reports,
 
 The platform uses a client-server architecture with a React frontend and an Express Node.js backend. Data persistence is handled by PostgreSQL.
 
-**Core Calculation Rule:** All financial calculations are performed in **USD value**, while the underlying asset is **gold (grams)**. USD is used for user input, transaction calculations, and reporting, while gold grams represent the actual owned asset.
+**Core Calculation Rule - GOLD-ONLY COMPLIANCE (Updated Jan 2026):**
+- **Single Source of Truth**: Gold grams is the ONLY authoritative balance. USD is computed dynamically.
+- **Storage**: All ledgers, wallets, locks, and certificates record gold grams ONLY.
+- **Display**: UI shows gold as primary (amber styling), with USD as "≈ equivalent" below.
+- **Disclaimer**: All balance displays include: "USD is an equivalent value. Your real balance is gold."
+- **Historical Records**: Transactions may store USD for audit purposes (value at time of transaction).
+- **Deprecated Fields**: `usdBalance`, `eurBalance`, `bnslLockedUsd`, `finaBridgeLockedUsd` - marked deprecated, will be removed.
+- **Utility Functions**: Use `shared/gold-utils.ts` for conversions (usdToGold, goldToUsd, formatGoldGrams).
+
+**Gold-Only UI Pattern:**
+```typescript
+// PRIMARY: Gold grams displayed prominently (amber styling)
+const goldGrams = wallet.goldBalanceGrams;  // Single source of truth
+
+// SECONDARY: USD computed dynamically from gold × current price
+const usdEquivalent = goldGrams * currentGoldPrice;
+// Always prefix with "≈" to indicate it's an equivalent, not stored value
+```
 
 **Frontend:**
 - **Framework & Libraries**: React 18 with TypeScript, Vite, Wouter for routing, React Context API for state management, shadcn/ui (Radix UI) for components, Tailwind CSS v4 for styling, TanStack React Query for data fetching, Framer Motion for animations.
