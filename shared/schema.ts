@@ -4034,51 +4034,6 @@ export type InsertScheduledJobRun = z.infer<typeof insertScheduledJobRunSchema>;
 export type ScheduledJobRun = typeof scheduledJobRuns.$inferSelect;
 
 // ============================================
-// SETTLEMENT QUEUE
-// ============================================
-
-export const settlementStatusEnum = pgEnum('settlement_status', [
-  'pending', 'processing', 'completed', 'failed', 'cancelled'
-]);
-
-export const settlementTypeEnum = pgEnum('settlement_type', [
-  'withdrawal', 'bnsl_payout', 'trade_finance', 'refund', 'commission'
-]);
-
-export const settlementQueue = pgTable("settlement_queue", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceId: varchar("reference_id", { length: 255 }).notNull().unique(),
-  
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  type: settlementTypeEnum("type").notNull(),
-  
-  amountUsd: decimal("amount_usd", { precision: 20, scale: 2 }).notNull(),
-  amountGold: decimal("amount_gold", { precision: 20, scale: 6 }),
-  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
-  
-  paymentMethod: varchar("payment_method", { length: 100 }),
-  bankDetails: json("bank_details").$type<Record<string, any>>(),
-  
-  status: settlementStatusEnum("status").notNull().default('pending'),
-  priority: integer("priority").notNull().default(5),
-  
-  scheduledFor: timestamp("scheduled_for"),
-  processedAt: timestamp("processed_at"),
-  processedBy: varchar("processed_by", { length: 255 }),
-  
-  externalRef: varchar("external_ref", { length: 255 }),
-  notes: text("notes"),
-  errorMessage: text("error_message"),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertSettlementQueueSchema = createInsertSchema(settlementQueue).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertSettlementQueue = z.infer<typeof insertSettlementQueueSchema>;
-export type SettlementQueueItem = typeof settlementQueue.$inferSelect;
-
-// ============================================
 // REVENUE TRACKING
 // ============================================
 
@@ -4107,37 +4062,6 @@ export const revenueEntries = pgTable("revenue_entries", {
 export const insertRevenueEntrySchema = createInsertSchema(revenueEntries).omit({ id: true, createdAt: true });
 export type InsertRevenueEntry = z.infer<typeof insertRevenueEntrySchema>;
 export type RevenueEntry = typeof revenueEntries.$inferSelect;
-
-// ============================================
-// LIQUIDITY TRACKING
-// ============================================
-
-export const liquiditySnapshots = pgTable("liquidity_snapshots", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  
-  snapshotDate: timestamp("snapshot_date").notNull(),
-  
-  totalGoldGrams: decimal("total_gold_grams", { precision: 20, scale: 6 }).notNull(),
-  totalGoldValueUsd: decimal("total_gold_value_usd", { precision: 20, scale: 2 }).notNull(),
-  
-  totalCashUsd: decimal("total_cash_usd", { precision: 20, scale: 2 }).notNull(),
-  totalCashAed: decimal("total_cash_aed", { precision: 20, scale: 2 }).notNull(),
-  
-  pendingWithdrawalsUsd: decimal("pending_withdrawals_usd", { precision: 20, scale: 2 }).notNull(),
-  pendingDepositsUsd: decimal("pending_deposits_usd", { precision: 20, scale: 2 }).notNull(),
-  
-  bnslObligationsUsd: decimal("bnsl_obligations_usd", { precision: 20, scale: 2 }).notNull(),
-  tradeFinanceLockedUsd: decimal("trade_finance_locked_usd", { precision: 20, scale: 2 }).notNull(),
-  
-  availableLiquidityUsd: decimal("available_liquidity_usd", { precision: 20, scale: 2 }).notNull(),
-  liquidityRatio: decimal("liquidity_ratio", { precision: 10, scale: 4 }).notNull(),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertLiquiditySnapshotSchema = createInsertSchema(liquiditySnapshots).omit({ id: true, createdAt: true });
-export type InsertLiquiditySnapshot = z.infer<typeof insertLiquiditySnapshotSchema>;
-export type LiquiditySnapshot = typeof liquiditySnapshots.$inferSelect;
 
 // ============================================
 // REGULATORY REPORTS
