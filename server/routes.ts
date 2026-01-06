@@ -15707,32 +15707,32 @@ ${message}
     cms: {
       name: 'CMS Content',
       description: 'Pages, blocks, and labels',
-      tables: ['content_pages', 'content_blocks', 'cms_labels'],
+      tables: ['contentPages', 'contentBlocks', 'cmsLabels'],
     },
     platform_config: {
       name: 'Platform Config',
       description: 'Fees, limits, and system settings',
-      tables: ['platform_config'],
+      tables: ['platformConfig'],
     },
     payment_gateways: {
       name: 'Payment Gateway Settings',
       description: 'Payment processor configurations',
-      tables: ['payment_gateway_settings'],
+      tables: ['paymentGatewaySettings'],
     },
     bnsl_templates: {
       name: 'BNSL Templates',
       description: 'Buy Now Sell Later plan templates',
-      tables: ['bnsl_plan_templates', 'bnsl_template_variants'],
+      tables: ['bnslPlanTemplates', 'bnslTemplateVariants'],
     },
     settings: {
       name: 'Branding/Security/Compliance',
       description: 'Platform appearance and security settings',
-      tables: ['branding_settings', 'security_settings', 'compliance_settings'],
+      tables: ['brandingSettings', 'securitySettings', 'complianceSettings'],
     },
     roles_permissions: {
       name: 'Admin Roles & Permissions',
       description: 'Role-based access control configuration',
-      tables: ['admin_roles', 'admin_components', 'role_permissions', 'role_component_permissions'],
+      tables: ['adminRoles', 'adminComponents', 'rolePermissions', 'roleComponentPermissions'],
     },
     announcements: {
       name: 'Announcements',
@@ -15742,7 +15742,7 @@ ${message}
     knowledge_base: {
       name: 'Knowledge Base',
       description: 'Help articles and categories',
-      tables: ['knowledge_categories', 'knowledge_articles'],
+      tables: ['knowledgeCategories', 'knowledgeArticles'],
     },
   };
 
