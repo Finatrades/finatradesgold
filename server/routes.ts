@@ -15746,6 +15746,28 @@ ${message}
     },
   };
 
+  // Mapping from schema export names (camelCase) to actual SQL table names (snake_case)
+  const schemaToTableName: Record<string, string> = {
+    contentPages: 'content_pages',
+    contentBlocks: 'content_blocks',
+    cmsLabels: 'cms_labels',
+    platformConfig: 'platform_config',
+    paymentGatewaySettings: 'payment_gateway_settings',
+    bnslPlanTemplates: 'bnsl_plan_templates',
+    bnslTemplateVariants: 'bnsl_template_variants',
+    brandingSettings: 'branding_settings',
+    securitySettings: 'security_settings',
+    complianceSettings: 'compliance_settings',
+    adminRoles: 'admin_roles',
+    adminComponents: 'admin_components',
+    rolePermissions: 'role_permissions',
+    roleComponentPermissions: 'role_component_permissions',
+    announcements: 'announcements',
+    knowledgeCategories: 'knowledge_categories',
+    knowledgeArticles: 'knowledge_articles',
+  };
+
+
   // Get all sync categories
   app.get("/api/admin/dev-prod-sync/categories", async (req, res) => {
     try {
@@ -15801,21 +15823,25 @@ ${message}
           const preview: Record<string, { dev: number; prod: number }> = {};
           let hasDifferences = false;
           
-          for (const tableName of category.tables) {
-            const tableSchema = (schema as any)[tableName];
-            if (tableSchema) {
+          for (const schemaName of category.tables) {
+            const sqlTableName = schemaToTableName[schemaName];
+            if (sqlTableName) {
               try {
-                const devRows = await db.select().from(tableSchema);
-                const prodRows = await prodDb.select().from(tableSchema);
-                preview[tableName] = {
-                  dev: devRows.length,
-                  prod: prodRows.length,
+                // Use raw SQL to count rows directly
+                const devCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM ${sql.identifier(sqlTableName)}`);
+                const prodCountResult = await prodDb.execute(sql`SELECT COUNT(*) as count FROM ${sql.identifier(sqlTableName)}`);
+                const devCount = parseInt(String((devCountResult.rows[0] as any)?.count || '0'));
+                const prodCount = parseInt(String((prodCountResult.rows[0] as any)?.count || '0'));
+                preview[schemaName] = {
+                  dev: devCount,
+                  prod: prodCount,
                 };
-                if (devRows.length !== prodRows.length) {
+                if (devCount !== prodCount) {
                   hasDifferences = true;
                 }
               } catch (e) {
-                preview[tableName] = { dev: 0, prod: 0 };
+                console.error(`[DEV-PROD Compare] Error counting ${sqlTableName}:`, e);
+                preview[schemaName] = { dev: 0, prod: 0 };
               }
             }
           }
@@ -15878,15 +15904,22 @@ ${message}
       try {
         const preview: Record<string, { dev: number; prod: number }> = {};
         
-        for (const tableName of category.tables) {
-          const tableSchema = (schema as any)[tableName];
-          if (tableSchema) {
-            const devRows = await db.select().from(tableSchema);
-            const prodRows = await prodDb.select().from(tableSchema);
-            preview[tableName] = {
-              dev: devRows.length,
-              prod: prodRows.length,
-            };
+        for (const schemaName of category.tables) {
+          const sqlTableName = schemaToTableName[schemaName];
+          if (sqlTableName) {
+            try {
+              const devCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM ${sql.identifier(sqlTableName)}`);
+              const prodCountResult = await prodDb.execute(sql`SELECT COUNT(*) as count FROM ${sql.identifier(sqlTableName)}`);
+              const devCount = parseInt(String((devCountResult.rows[0] as any)?.count || '0'));
+              const prodCount = parseInt(String((prodCountResult.rows[0] as any)?.count || '0'));
+              preview[schemaName] = {
+                dev: devCount,
+                prod: prodCount,
+              };
+            } catch (e) {
+              console.error(`[DEV-PROD Preview] Error counting ${sqlTableName}:`, e);
+              preview[schemaName] = { dev: 0, prod: 0 };
+            }
           }
         }
         
@@ -16008,7 +16041,8 @@ ${message}
         // Fetch all DEV data first (outside transaction for read)
         const devData: Record<string, any[]> = {};
         for (const tableName of tablesToInsert) {
-          const tableSchema = (schema as any)[tableName];
+          console.log(`[DEV-PROD Debug] Looking up table: ${tableName}, found:`, typeof (schema as any)[tableName]);
+            const tableSchema = (schema as any)[tableName];
           if (tableSchema) {
             devData[tableName] = await db.select().from(tableSchema);
           }
@@ -16018,6 +16052,7 @@ ${message}
         await prodDb.transaction(async (tx) => {
           // Delete from PROD in reverse order (foreign key order)
           for (const tableName of tablesToDelete) {
+            console.log(`[DEV-PROD Debug] Looking up table: ${tableName}, found:`, typeof (schema as any)[tableName]);
             const tableSchema = (schema as any)[tableName];
             if (tableSchema) {
               await tx.delete(tableSchema);
@@ -16027,6 +16062,7 @@ ${message}
           
           // Insert from DEV to PROD in normal order
           for (const tableName of tablesToInsert) {
+            console.log(`[DEV-PROD Debug] Looking up table: ${tableName}, found:`, typeof (schema as any)[tableName]);
             const tableSchema = (schema as any)[tableName];
             const rows = devData[tableName] || [];
             
