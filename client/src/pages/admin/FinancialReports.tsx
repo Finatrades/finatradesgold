@@ -784,23 +784,21 @@ function BNSLSection({ metrics, isLoading }: { metrics?: ProductMetrics['bnsl'];
             <CardTitle>Plan Status Distribution</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <StatusBar label="Active" count={metrics?.activePlans || 0} total={100} color="bg-green-500" />
-            <StatusBar label="Maturing" count={15} total={100} color="bg-blue-500" />
-            <StatusBar label="Completed" count={45} total={100} color="bg-gray-400" />
-            <StatusBar label="Defaulted" count={metrics?.delinquentPlans || 0} total={100} color="bg-red-500" />
+            <StatusBar label="Active" count={metrics?.activePlans || 0} total={Math.max(metrics?.activePlans || 0, 1)} color="bg-green-500" />
+            <StatusBar label="Delinquent" count={metrics?.delinquentPlans || 0} total={Math.max(metrics?.activePlans || 0, 1)} color="bg-red-500" />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Payouts</CardTitle>
-            <CardDescription>Next 30 days payout schedule</CardDescription>
+            <CardTitle>Expected Payouts</CardTitle>
+            <CardDescription>Total expected payout value</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <PayoutRow date="Dec 15, 2025" amount={5200} plans={3} />
-            <PayoutRow date="Dec 20, 2025" amount={8750} plans={5} />
-            <PayoutRow date="Dec 25, 2025" amount={3400} plans={2} />
-            <PayoutRow date="Jan 1, 2026" amount={12000} plans={7} />
+          <CardContent>
+            <div className="text-center py-6">
+              <div className="text-3xl font-bold text-primary">{formatCurrency(metrics?.expectedPayoutsUsd || 0)}</div>
+              <p className="text-muted-foreground mt-2">From {metrics?.activePlans || 0} active plans</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -1375,19 +1373,3 @@ function StatusBar({ label, count, total, color }: { label: string; count: numbe
   );
 }
 
-function PayoutRow({ date, amount, plans }: { date: string; amount: number; plans: number }) {
-  return (
-    <div className="flex items-center justify-between p-3 border rounded-lg">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-purple-100 rounded-lg">
-          <Calendar className="w-4 h-4 text-purple-600" />
-        </div>
-        <div>
-          <p className="font-medium">{date}</p>
-          <p className="text-sm text-gray-500">{plans} plans</p>
-        </div>
-      </div>
-      <p className="font-bold text-purple-600">{formatCurrency(amount)}</p>
-    </div>
-  );
-}
