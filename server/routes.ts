@@ -15367,6 +15367,305 @@ ${message}
     }
   });
   
+
+  // === CMS Snapshots (Safe DEV-PROD Sync) ===
+  
+  // Create a CMS snapshot
+  app.post("/api/admin/cms/snapshots", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { description } = req.body;
+      const user = await storage.getUser(req.session.userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      
+      // Get all CMS data
+      const pages = await storage.getAllContentPages();
+      const blocks = await storage.getAllContentBlocks();
+      const labels = await storage.getAllCmsLabels();
+      
+      // Create payload
+      const payload = { pages, blocks, labels };
+      const payloadString = JSON.stringify(payload);
+      
+      // Generate checksum
+      const crypto = await import('crypto');
+      const checksum = crypto.createHash('sha256').update(payloadString).digest('hex');
+      
+      // Generate version
+      const now = new Date();
+      const version = `v${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+      
+      // Check environment
+      const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
+      
+      // Save snapshot
+      const { db } = await import('./db');
+      const { cmsSnapshots } = await import('../shared/schema');
+      
+      const [snapshot] = await db.insert(cmsSnapshots).values({
+        version,
+        description: description || `CMS Snapshot created on ${now.toLocaleString()}`,
+        environment,
+        createdBy: user.id,
+        createdByEmail: user.email,
+        pagesCount: pages.length,
+        blocksCount: blocks.length,
+        labelsCount: labels.length,
+        payload,
+        checksum,
+        status: 'created',
+      }).returning();
+      
+      res.json({ 
+        success: true, 
+        snapshot: {
+          id: snapshot.id,
+          version: snapshot.version,
+          description: snapshot.description,
+          environment: snapshot.environment,
+          pagesCount: snapshot.pagesCount,
+          blocksCount: snapshot.blocksCount,
+          labelsCount: snapshot.labelsCount,
+          checksum: snapshot.checksum,
+          createdAt: snapshot.createdAt,
+          createdByEmail: snapshot.createdByEmail,
+        }
+      });
+    } catch (error) {
+      console.error('[CMS Snapshot] Error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to create snapshot" });
+    }
+  });
+  
+  // List all CMS snapshots
+  app.get("/api/admin/cms/snapshots", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { db } = await import('./db');
+      const { cmsSnapshots } = await import('../shared/schema');
+      const { desc } = await import('drizzle-orm');
+      
+      const snapshots = await db.select({
+        id: cmsSnapshots.id,
+        version: cmsSnapshots.version,
+        description: cmsSnapshots.description,
+        environment: cmsSnapshots.environment,
+        pagesCount: cmsSnapshots.pagesCount,
+        blocksCount: cmsSnapshots.blocksCount,
+        labelsCount: cmsSnapshots.labelsCount,
+        checksum: cmsSnapshots.checksum,
+        status: cmsSnapshots.status,
+        createdAt: cmsSnapshots.createdAt,
+        createdByEmail: cmsSnapshots.createdByEmail,
+        appliedAt: cmsSnapshots.appliedAt,
+        appliedByEmail: cmsSnapshots.appliedByEmail,
+      }).from(cmsSnapshots).orderBy(desc(cmsSnapshots.createdAt));
+      
+      res.json({ snapshots });
+    } catch (error) {
+      console.error('[CMS Snapshots List] Error:', error);
+      res.status(500).json({ message: "Failed to list snapshots" });
+    }
+  });
+  
+  // Get snapshot details (with payload)
+  app.get("/api/admin/cms/snapshots/:id", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { db } = await import('./db');
+      const { cmsSnapshots } = await import('../shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const [snapshot] = await db.select().from(cmsSnapshots).where(eq(cmsSnapshots.id, req.params.id));
+      
+      if (!snapshot) {
+        return res.status(404).json({ message: "Snapshot not found" });
+      }
+      
+      res.json({ snapshot });
+    } catch (error) {
+      console.error('[CMS Snapshot Detail] Error:', error);
+      res.status(500).json({ message: "Failed to get snapshot" });
+    }
+  });
+  
+  // Apply a CMS snapshot (requires OTP verification)
+  app.post("/api/admin/cms/snapshots/:id/apply", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { otpCode } = req.body;
+      const user = await storage.getUser(req.session.userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      
+      // Verify OTP
+      if (!otpCode) {
+        return res.status(400).json({ message: "OTP code required for safety" });
+      }
+      
+      const isValidOtp = await storage.verifyAdminActionOtp(user.id, otpCode, 'cms_snapshot_apply');
+      if (!isValidOtp) {
+        return res.status(400).json({ message: "Invalid or expired OTP code" });
+      }
+      
+      const { db } = await import('./db');
+      const { cmsSnapshots, contentPages, contentBlocks, cmsLabels } = await import('../shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      // Get snapshot
+      const [snapshot] = await db.select().from(cmsSnapshots).where(eq(cmsSnapshots.id, req.params.id));
+      if (!snapshot) {
+        return res.status(404).json({ message: "Snapshot not found" });
+      }
+      
+      const payload = snapshot.payload as { pages: any[], blocks: any[], labels: any[] };
+      
+      // Apply in transaction
+      await db.transaction(async (tx) => {
+        // Clear existing CMS data
+        await tx.delete(contentBlocks);
+        await tx.delete(contentPages);
+        await tx.delete(cmsLabels);
+        
+        // Insert pages
+        if (payload.pages && payload.pages.length > 0) {
+          for (const page of payload.pages) {
+            await tx.insert(contentPages).values({
+              id: page.id,
+              slug: page.slug,
+              title: page.title,
+              description: page.description,
+              metaTitle: page.metaTitle,
+              metaDescription: page.metaDescription,
+              status: page.status || 'published',
+              createdAt: new Date(page.createdAt),
+              updatedAt: new Date(page.updatedAt || page.createdAt),
+            });
+          }
+        }
+        
+        // Insert blocks
+        if (payload.blocks && payload.blocks.length > 0) {
+          for (const block of payload.blocks) {
+            await tx.insert(contentBlocks).values({
+              id: block.id,
+              pageId: block.pageId,
+              type: block.type,
+              order: block.order,
+              content: block.content,
+              settings: block.settings,
+              status: block.status || 'published',
+              createdAt: new Date(block.createdAt),
+              updatedAt: new Date(block.updatedAt || block.createdAt),
+            });
+          }
+        }
+        
+        // Insert labels
+        if (payload.labels && payload.labels.length > 0) {
+          for (const label of payload.labels) {
+            await tx.insert(cmsLabels).values({
+              id: label.id,
+              key: label.key,
+              value: label.value,
+              defaultValue: label.defaultValue,
+              category: label.category,
+              description: label.description,
+              createdAt: new Date(label.createdAt),
+              updatedAt: new Date(label.updatedAt || label.createdAt),
+            });
+          }
+        }
+        
+        // Update snapshot status
+        await tx.update(cmsSnapshots).set({
+          status: 'applied',
+          appliedAt: new Date(),
+          appliedBy: user.id,
+          appliedByEmail: user.email,
+        }).where(eq(cmsSnapshots.id, snapshot.id));
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully applied snapshot ${snapshot.version}`,
+        counts: {
+          pages: payload.pages?.length || 0,
+          blocks: payload.blocks?.length || 0,
+          labels: payload.labels?.length || 0,
+        }
+      });
+    } catch (error) {
+      console.error('[CMS Snapshot Apply] Error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to apply snapshot" });
+    }
+  });
+  
+  // Request OTP for snapshot apply
+  app.post("/api/admin/cms/snapshots/request-otp", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      
+      // Generate and send OTP
+      const otp = await storage.createAdminActionOtp(user.id, 'cms_snapshot_apply');
+      
+      // Send email
+      const { sendEmail } = await import('./email');
+      await sendEmail({
+        to: user.email,
+        subject: 'CMS Snapshot Apply - OTP Verification',
+        templateSlug: 'admin-otp',
+        data: {
+          firstName: user.firstName,
+          otpCode: otp,
+          action: 'Apply CMS Snapshot to Production',
+          expiresIn: '10 minutes',
+        },
+      });
+      
+      res.json({ success: true, message: 'OTP sent to your email' });
+    } catch (error) {
+      console.error('[CMS Snapshot OTP] Error:', error);
+      res.status(500).json({ message: "Failed to send OTP" });
+    }
+  });
+  
+  // Delete a snapshot
+  app.delete("/api/admin/cms/snapshots/:id", async (req, res) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { db } = await import('./db');
+      const { cmsSnapshots } = await import('../shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      await db.delete(cmsSnapshots).where(eq(cmsSnapshots.id, req.params.id));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[CMS Snapshot Delete] Error:', error);
+      res.status(500).json({ message: "Failed to delete snapshot" });
+    }
+  });
+
   // === Media Assets ===
   
   // Get all media assets (Admin)
