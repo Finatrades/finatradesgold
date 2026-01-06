@@ -2,6 +2,18 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 export const SESSION_EXPIRED_EVENT = 'session:expired';
 
+export function getApiUrl(path: string): string {
+  return new URL(path, window.location.origin).href;
+}
+
+export async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
+  const absoluteUrl = getApiUrl(url);
+  return fetch(absoluteUrl, {
+    ...options,
+    credentials: options?.credentials || 'include',
+  });
+}
+
 function handleSessionExpired() {
   const currentPath = window.location.pathname;
   const publicPaths = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/reset-password', '/verify-email'];
@@ -64,7 +76,8 @@ export async function apiRequest(
     headers['Content-Type'] = 'application/json';
   }
   
-  const res = await fetch(url, {
+  const absoluteUrl = getApiUrl(url);
+  const res = await fetch(absoluteUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -81,7 +94,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const path = queryKey.join("/") as string;
+    const url = getApiUrl(path);
+    const res = await fetch(url, {
       credentials: "include",
     });
 
@@ -118,7 +133,8 @@ export function prefetchDashboardData(userId: string) {
   return queryClient.prefetchQuery({
     queryKey: ['dashboard', userId],
     queryFn: async () => {
-      const res = await fetch(`/api/dashboard/${userId}`, { credentials: 'include' });
+      const url = getApiUrl(`/api/dashboard/${userId}`);
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to prefetch dashboard');
       const data = await res.json();
       const loadTime = (performance.now() - startTime).toFixed(0);

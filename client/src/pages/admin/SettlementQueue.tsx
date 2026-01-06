@@ -16,7 +16,7 @@ import {
   Search, RefreshCw, Clock, CheckCircle, XCircle, 
   DollarSign, Send, AlertTriangle, ArrowUpDown, Coins
 } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, apiFetch } from '@/lib/queryClient';
 
 interface SettlementItem {
   id: string;
@@ -55,7 +55,7 @@ export default function SettlementQueue() {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (typeFilter !== 'all') params.set('type', typeFilter);
-      const res = await fetch(`/api/admin/settlements?${params.toString()}`);
+      const res = await apiFetch(`/api/admin/settlements?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch settlements');
       return res.json();
     },

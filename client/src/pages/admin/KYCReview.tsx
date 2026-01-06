@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import AdminLayout from './AdminLayout';
+import { apiFetch } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -514,7 +515,7 @@ export default function KYCReview() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-kyc-submissions'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/kyc');
+      const res = await apiFetch('/api/admin/kyc');
       if (!res.ok) throw new Error('Failed to fetch KYC submissions');
       return res.json();
     },

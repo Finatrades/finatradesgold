@@ -2471,6 +2471,36 @@ export const insertCmsLabelSchema = createInsertSchema(cmsLabels).omit({ id: tru
 export type InsertCmsLabel = z.infer<typeof insertCmsLabelSchema>;
 export type CmsLabel = typeof cmsLabels.$inferSelect;
 
+// CMS Snapshots - For safe sync between DEV and PROD environments
+export const cmsSnapshotStatusEnum = pgEnum('cms_snapshot_status', ['created', 'applied', 'failed']);
+
+export const cmsSnapshots = pgTable("cms_snapshots", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  version: varchar("version", { length: 50 }).notNull(),
+  description: text("description"),
+  environment: varchar("environment", { length: 20 }).notNull(), // 'development' or 'production'
+  createdBy: varchar("created_by", { length: 255 }).notNull(),
+  createdByEmail: varchar("created_by_email", { length: 255 }),
+  pagesCount: integer("pages_count").notNull().default(0),
+  blocksCount: integer("blocks_count").notNull().default(0),
+  labelsCount: integer("labels_count").notNull().default(0),
+  payload: json("payload").$type<{
+    pages: any[];
+    blocks: any[];
+    labels: any[];
+  }>().notNull(),
+  checksum: varchar("checksum", { length: 64 }).notNull(),
+  status: cmsSnapshotStatusEnum("status").notNull().default('created'),
+  appliedAt: timestamp("applied_at"),
+  appliedBy: varchar("applied_by", { length: 255 }),
+  appliedByEmail: varchar("applied_by_email", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCmsSnapshotSchema = createInsertSchema(cmsSnapshots).omit({ id: true, createdAt: true });
+export type InsertCmsSnapshot = z.infer<typeof insertCmsSnapshotSchema>;
+export type CmsSnapshot = typeof cmsSnapshots.$inferSelect;
+
 // ============================================
 // EMAIL NOTIFICATION SETTINGS
 // ============================================
@@ -3076,7 +3106,11 @@ export const adminActionTypeEnum = pgEnum('admin_action_type', [
   'withdrawal_approval', 'withdrawal_rejection',
   'bnsl_approval', 'bnsl_rejection',
   'trade_case_approval', 'trade_case_rejection',
-  'user_suspension', 'user_activation'
+  'user_suspension', 'user_activation', 'cms_snapshot_apply',
+  'dev_prod_sync_platform_config', 'dev_prod_sync_payment_gateways',
+  'dev_prod_sync_bnsl_templates', 'dev_prod_sync_settings',
+  'dev_prod_sync_roles_permissions', 'dev_prod_sync_announcements',
+  'dev_prod_sync_knowledge_base'
 ]);
 
 export const adminActionOtps = pgTable("admin_action_otps", {

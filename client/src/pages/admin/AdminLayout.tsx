@@ -70,6 +70,8 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/chat': ['view_support', 'manage_support'],
   '/admin/email-notifications': ['manage_settings'],
   '/admin/cms': ['view_cms', 'manage_cms'],
+  '/admin/cms-snapshots': ['manage_cms'],
+  '/admin/dev-prod-sync': ['manage_settings'],
   '/admin/security': ['manage_settings'],
   '/admin/platform-config': ['manage_settings'],
   '/admin/database-backups': ['manage_settings'],
@@ -99,7 +101,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     queryKey: ['/api/admin/employee/me', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const res = await fetch(`/api/admin/employees/by-user/${user.id}`);
+      const url = new URL(`/api/admin/employees/by-user/${user.id}`, window.location.origin).href;
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
@@ -110,7 +113,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: pendingCounts } = useQuery({
     queryKey: ['/api/admin/pending-counts'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/pending-counts');
+      const url = new URL('/api/admin/pending-counts', window.location.origin).href;
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
@@ -158,6 +162,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       '/admin/chat': pendingCounts.unreadChats || 0,
       '/admin/email-notifications': 0,
       '/admin/cms': 0,
+      '/admin/cms-snapshots': 0,
+      '/admin/dev-prod-sync': 0,
       '/admin/security': 0,
       '/admin/platform-config': 0,
       '/admin/database-backups': 0,
@@ -201,11 +207,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Daily Reconciliation', href: '/admin/daily-reconciliation' },
         { label: 'Settlement Queue', href: '/admin/settlement-queue' },
         { label: 'Liquidity Dashboard', href: '/admin/liquidity' },
-        { label: 'Cash Position', href: '/admin/cash-position' },
-        { label: 'Wire Transfers', href: '/admin/wire-transfers' },
         { label: 'Currency Exchange', href: '/admin/currency-exchange' },
-        { label: 'Bank Statements', href: '/admin/bank-statements' },
-        { label: 'Chargebacks', href: '/admin/chargebacks' },
         { label: 'Counterparty Risk', href: '/admin/counterparty-risk' },
         { label: 'Interest Calculator', href: '/admin/interest-calculator' },
         { label: 'Payment Gateways', href: '/admin/payment-gateways' },
@@ -250,6 +252,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Support Chat', href: '/admin/chat' },
         { label: 'Email Notifications', href: '/admin/email-notifications' },
         { label: 'CMS', href: '/admin/cms' },
+        { label: 'CMS Snapshots', href: '/admin/cms-snapshots' },
+        { label: 'DEV→PROD Sync', href: '/admin/dev-prod-sync' },
         { label: 'Security', href: '/admin/security' },
         { label: 'Platform Config', href: '/admin/platform-config' },
         { label: 'Database Backups', href: '/admin/database-backups' },
