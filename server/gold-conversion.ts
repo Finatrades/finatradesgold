@@ -99,16 +99,25 @@ export function calculateFeeGrams(
 
 /**
  * Create a price snapshot for storing with transactions
+ * Accepts optional timestamp and source to preserve upstream metadata
  */
-export function createPriceSnapshot(pricePerGram: number, source: string = 'system'): {
+export function createPriceSnapshot(
+  pricePerGram: number, 
+  source?: string,
+  timestamp?: string | Date
+): {
   pricePerGramAtTxn: string;
   priceTimestamp: string;
   priceSource: string;
 } {
+  const ts = timestamp 
+    ? (typeof timestamp === 'string' ? timestamp : timestamp.toISOString())
+    : new Date().toISOString();
+  
   return {
     pricePerGramAtTxn: pricePerGram.toFixed(USD_PRECISION),
-    priceTimestamp: new Date().toISOString(),
-    priceSource: source,
+    priceTimestamp: ts,
+    priceSource: source || 'system',
   };
 }
 

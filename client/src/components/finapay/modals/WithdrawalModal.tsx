@@ -29,7 +29,9 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
   const [swiftCode, setSwiftCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [goldPrice, setGoldPrice] = useState<number>(85);
+  const [goldPrice, setGoldPrice] = useState<number>(0);
+  const [priceLoading, setPriceLoading] = useState(true);
+  const [priceError, setPriceError] = useState(false);
   
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
@@ -44,20 +46,30 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
       setAccountNumber('');
       setRoutingNumber('');
       setSwiftCode('');
+      setPriceError(false);
       
       fetchGoldPrice();
     }
   }, [isOpen]);
 
   const fetchGoldPrice = async () => {
+    setPriceLoading(true);
+    setPriceError(false);
     try {
       const response = await fetch('/api/gold-price');
+      if (!response.ok) throw new Error('Failed to fetch price');
       const data = await response.json();
-      if (data.pricePerGram) {
+      if (data.pricePerGram && data.pricePerGram > 0) {
         setGoldPrice(data.pricePerGram);
+      } else {
+        throw new Error('Invalid price data');
       }
     } catch (error) {
       console.error('Failed to load gold price');
+      setPriceError(true);
+      toast.error("Failed to load current gold price. Please try again.");
+    } finally {
+      setPriceLoading(false);
     }
   };
 
@@ -91,12 +103,23 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
 
   const numericAmount = parseFloat(amount) || 0;
   const numericGold = parseFloat(goldAmount) || 0;
-  const effectiveBalance = walletBalance > 0 ? walletBalance : (goldBalance * goldPrice);
-  const effectiveGoldBalance = goldBalance > 0 ? goldBalance : (walletBalance / goldPrice);
+  
+  // Calculate effective balances - gold is the primary balance
+  const effectiveGoldBalance = goldBalance > 0 ? goldBalance : (goldPrice > 0 ? walletBalance / goldPrice : 0);
+  const effectiveBalance = goldPrice > 0 ? effectiveGoldBalance * goldPrice : walletBalance;
+  
+  // Check if gold balance is sufficient
+  const hasInsufficientGold = numericGold > effectiveGoldBalance;
+  const hasInsufficientBalance = numericAmount > effectiveBalance;
 
   const handleSubmit = async () => {
     if (!user || !amount || !bankName || !accountName || !accountNumber) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+    
+    if (priceError || goldPrice <= 0) {
+      toast.error("Cannot proceed without valid gold price. Please try again.");
       return;
     }
     
@@ -106,7 +129,8 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
       return;
     }
 
-    if (amountNum > effectiveBalance) {
+    // Check both USD and gold balance
+    if (hasInsufficientGold || hasInsufficientBalance) {
       toast.error("Insufficient balance");
       return;
     }
@@ -268,10 +292,17 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
                     </div>
                   )}
                   
-                  {numericAmount > effectiveBalance && (
+                  {priceError && (
                     <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
                       <span className="text-red-500">⚠️</span>
-                      <span>Insufficient funds. Your balance is ${effectiveBalance.toFixed(2)}</span>
+                      <span>Failed to load gold price. <button className="underline" onClick={fetchGoldPrice}>Retry</button></span>
+                    </div>
+                  )}
+                  
+                  {(hasInsufficientBalance || hasInsufficientGold) && !priceError && (
+                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
+                      <span className="text-red-500">⚠️</span>
+                      <span>Insufficient funds. Your balance is ${effectiveBalance.toFixed(2)} ({effectiveGoldBalance.toFixed(4)}g)</span>
                     </div>
                   )}
                 </div>
@@ -408,12 +439,23 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button 
                 onClick={handleSubmit} 
-                disabled={!amount || !bankName || !accountName || !accountNumber || submitting || numericAmount > effectiveBalance || numericAmount <= 0}
+                disabled={
+                  !amount || 
+                  !bankName || 
+                  !accountName || 
+                  !accountNumber || 
+                  submitting || 
+                  priceLoading ||
+                  priceError ||
+                  hasInsufficientBalance || 
+                  hasInsufficientGold ||
+                  numericAmount <= 0
+                }
                 className="bg-purple-500 hover:bg-purple-600"
                 data-testid="button-submit-withdrawal"
               >
-                {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Submit Withdrawal
+                {(submitting || priceLoading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {priceLoading ? 'Loading...' : 'Submit Withdrawal'}
               </Button>
             </>
           )}
