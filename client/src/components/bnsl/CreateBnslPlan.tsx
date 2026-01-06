@@ -270,7 +270,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   
   const selectedTenor = currentVariant?.tenorMonths || 12;
   // Store rate as percentage (e.g., 10 for 10%), marginRatePercent is already in percentage format
-  const annualRatePercent = currentVariant ? parseFloat(currentVariant.marginRatePercent) : 8;
+  const annualRatePercent = currentVariant ? parseFloat(currentVariant.marginRatePercent) : 10;
   const annualRateDecimal = annualRatePercent / 100; // For calculations only
   const years = selectedTenor / 12;
   const totalMarginComponent = basePriceComponent * annualRateDecimal * years;

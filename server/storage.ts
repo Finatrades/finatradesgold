@@ -2353,8 +2353,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(peerRequests).where(eq(peerRequests.requesterId, userId)).orderBy(desc(peerRequests.createdAt));
   }
 
-  async getUserReceivedPeerRequests(userId: string): Promise<PeerRequest[]> {
-    return await db.select().from(peerRequests).where(eq(peerRequests.targetId, userId)).orderBy(desc(peerRequests.createdAt));
+  async getUserReceivedPeerRequests(userId: string, userEmail?: string, userFinatradesId?: string): Promise<PeerRequest[]> {
+    // Match by targetId OR by targetIdentifier (email/finatrades ID)
+    const conditions = [eq(peerRequests.targetId, userId)];
+    
+    if (userEmail) {
+      conditions.push(sql`LOWER(${peerRequests.targetIdentifier}) = LOWER(${userEmail})`);
+    }
+    if (userFinatradesId) {
+      conditions.push(sql`UPPER(${peerRequests.targetIdentifier}) = UPPER(${userFinatradesId})`);
+    }
+    
+    return await db.select().from(peerRequests).where(or(...conditions)).orderBy(desc(peerRequests.createdAt));
   }
 
   async getAllPeerRequests(): Promise<PeerRequest[]> {

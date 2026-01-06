@@ -75,7 +75,7 @@ function BnslTemplatesManager() {
 
   const [variantForm, setVariantForm] = useState({
     tenorMonths: '12',
-    marginRatePercent: '8.00'
+    marginRatePercent: '10.00'
   });
 
   const fetchTemplates = async () => {
@@ -147,7 +147,7 @@ function BnslTemplatesManager() {
       await apiRequest('POST', `/api/admin/bnsl/templates/${selectedTemplateId}/variants`, variantForm);
       toast.success('Variant added');
       setVariantDialogOpen(false);
-      setVariantForm({ tenorMonths: '12', marginRatePercent: '8.00' });
+      setVariantForm({ tenorMonths: '12', marginRatePercent: '10.00' });
       fetchTemplates();
     } catch (err) {
       toast.error('Failed to add variant');

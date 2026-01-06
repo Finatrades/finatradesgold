@@ -16016,7 +16016,12 @@ ${message}
   // Get money requests received by user - PROTECTED
   app.get("/api/finapay/requests/received/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
-      const requests = await storage.getUserReceivedPeerRequests(req.params.userId);
+      // Get user details to match by email or Finatrades ID as well
+      const targetUser = await storage.getUser(req.params.userId);
+      const userEmail = targetUser?.email;
+      const userFinatradesId = targetUser?.finatradesId;
+      
+      const requests = await storage.getUserReceivedPeerRequests(req.params.userId, userEmail, userFinatradesId);
       res.json({ requests });
     } catch (error) {
       res.status(400).json({ message: "Failed to get received requests" });
