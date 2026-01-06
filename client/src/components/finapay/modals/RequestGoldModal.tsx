@@ -129,10 +129,15 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
         });
       }
       
+      // Gold-first: Calculate gold grams from USD
+      const goldGrams = currentGoldPrice > 0 ? numericAmount / currentGoldPrice : 0;
+      
       const res = await apiRequest('POST', '/api/finapay/request', {
         requesterId: user.id,
         targetIdentifier: targetIdentifier || null,
         amountUsd: numericAmount.toFixed(2),
+        amountGold: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
         channel: !targetIdentifier ? 'qr_code' : (isFinatradesId ? 'finatrades_id' : 'email'),
         memo: memo || null,
         attachmentData,

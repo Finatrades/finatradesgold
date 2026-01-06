@@ -15939,7 +15939,7 @@ ${message}
   // Create money request - PROTECTED
   app.post("/api/finapay/request", ensureAuthenticated, async (req, res) => {
     try {
-      const { requesterId, targetIdentifier, amountUsd, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize } = req.body;
+      const { requesterId, targetIdentifier, amountUsd, amountGold, goldPriceUsdPerGram, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize } = req.body;
       
       const requester = await storage.getUser(requesterId);
       if (!requester) {
@@ -15983,6 +15983,8 @@ ${message}
         targetIdentifier,
         channel,
         amountUsd: parseFloat(amountUsd).toFixed(2),
+        amountGold: amountGold ? parseFloat(amountGold).toFixed(6) : null,
+        goldPriceUsdPerGram: goldPriceUsdPerGram ? parseFloat(goldPriceUsdPerGram).toFixed(2) : null,
         memo,
         qrPayload,
         status: 'Pending',

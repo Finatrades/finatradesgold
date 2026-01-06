@@ -2584,6 +2584,7 @@ export const peerRequests = pgTable("peer_requests", {
   channel: peerTransferChannelEnum("channel").notNull(),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
   amountGold: decimal("amount_gold", { precision: 18, scale: 6 }), // Gold amount for gold requests
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }), // Gold price at time of request
   assetType: varchar("asset_type", { length: 20 }).notNull().default('GOLD'), // GOLD or USD
   memo: text("memo"),
   qrPayload: varchar("qr_payload", { length: 500 }), // Unique token for QR code requests
