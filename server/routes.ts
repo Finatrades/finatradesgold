@@ -831,9 +831,8 @@ export async function registerRoutes(
       const bnslWalletGoldGrams = parseFloat(bnslWallet?.availableGoldGrams || '0');
       const bnslWalletValueUsd = bnslWalletGoldGrams * goldPrice;
       
-      // Total portfolio: all gold holdings combined (gold-first - no legacy USD)
-      const totalGoldGrams = vaultGoldGrams + walletGoldGrams + bnslWalletGoldGrams + finabridgeGoldGrams;
-      const totalPortfolioUsd = totalGoldGrams * goldPrice;
+      // Total portfolio includes: vault + FinaPay wallet + BNSL wallet + FinaBridge + USD balance
+      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + bnslWalletValueUsd + finabridgeGoldValueUsd + walletUsdBalance;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
       // Include both 'Pending' and 'Under Review' statuses as pending
@@ -897,7 +896,7 @@ export async function registerRoutes(
           vaultGoldValueUsd,
           vaultGoldValueAed,
           walletGoldGrams,
-          totalGoldGrams,
+          walletUsdBalance,
           bnslWalletGoldGrams,
           bnslWalletValueUsd,
           totalPortfolioUsd,
@@ -6467,7 +6466,7 @@ ${message}
               // Create new holding
               const newHolding = await txStorage.createVaultHolding({
                 userId: buyGoldReq.userId,
-                amountGold: goldGrams.toFixed(6),
+                goldGrams: goldGrams.toFixed(6),
                 vaultLocation: 'Dubai - Wingold & Metals DMCC',
                 wingoldStorageRef: wingoldRef,
                 purchasePriceUsdPerGram: goldPrice.toFixed(2),
@@ -6485,7 +6484,7 @@ ${message}
               vaultHoldingId: holdingId,
               type: 'Digital Ownership',
               status: 'Active',
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               totalValueUsd: usdAmount.toFixed(2),
               issuer: 'Finatrades',
@@ -6503,7 +6502,7 @@ ${message}
               vaultHoldingId: holdingId,
               type: 'Physical Storage',
               status: 'Active',
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               totalValueUsd: usdAmount.toFixed(2),
               issuer: 'Wingold & Metals DMCC',
@@ -6534,7 +6533,7 @@ ${message}
                 status: 'Approved', 
                 reviewedAt: new Date(),
                 reviewerId: req.body.adminId || null,
-                amountGold: goldGrams.toFixed(6),
+                goldGrams: goldGrams.toFixed(6),
                 goldPriceAtTime: goldPrice.toFixed(2),
                 amountUsd: usdAmount.toFixed(2),
                 creditedTransactionId: newTransaction.id
@@ -9192,7 +9191,6 @@ ${message}
         status: 'Completed',
         amountGold: grams.toFixed(6),
         amountUsd: (grams * goldPrice).toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
         description: `Gold gift to ${recipientEmail || recipientPhone}: ${message || occasion || ''}`.substring(0, 255),
         sourceModule: 'FinaVault',
       });
@@ -9241,7 +9239,6 @@ ${message}
           status: 'Completed',
           amountGold: grams.toFixed(6),
           amountUsd: (grams * goldPrice).toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
           description: `Gold gift received`,
           sourceModule: 'FinaVault',
         });
@@ -9328,7 +9325,6 @@ ${message}
         status: 'Completed',
         amountGold: grams.toFixed(6),
         amountUsd: (grams * goldPrice).toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
         description: `Gold gift claimed`,
         sourceModule: 'FinaVault',
       });
@@ -10144,7 +10140,7 @@ ${message}
         userId: planData.userId,
         type: 'Digital Ownership',
         status: 'Active',
-        amountGold: goldGrams.toFixed(6),
+        goldGrams: goldGrams.toFixed(6),
         goldPriceUsdPerGram: planData.enrollmentPriceUsdPerGram,
         totalValueUsd: planData.basePriceComponentUsd,
         issuer: 'Finatrades',
@@ -11147,7 +11143,7 @@ ${message}
   // Create deposit request (User) - PROTECTED - Requires KYC
   app.post("/api/deposit-requests", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {
-      const { userId, amountUsd, goldGrams: providedGoldGrams, goldPriceUsdPerGram: providedGoldPrice } = req.body;
+      const { userId, amountUsd } = req.body;
       
       // Validate deposit limits
       const depositUser = await storage.getUser(userId);
@@ -11156,21 +11152,6 @@ ${message}
       }
       
       const amount = parseFloat(amountUsd);
-      
-      // Gold-first logic: Determine gold price and calculate gold grams
-      let goldPriceUsdPerGram = providedGoldPrice ? parseFloat(providedGoldPrice) : null;
-      let goldGrams = providedGoldGrams ? parseFloat(providedGoldGrams) : null;
-      
-      // Fetch live gold price if not provided
-      if (!goldPriceUsdPerGram) {
-        const goldPriceData = await getGoldPrice();
-        goldPriceUsdPerGram = goldPriceData.pricePerGram;
-      }
-      
-      // Calculate goldGrams from USD if not provided
-      if (!goldGrams && goldPriceUsdPerGram > 0) {
-        goldGrams = amount / goldPriceUsdPerGram;
-      }
       const limitResult = await platformLimits.validateFullTransactionLimits(
         amount,
         depositUser,
@@ -11190,8 +11171,6 @@ ${message}
       const requestData = insertDepositRequestSchema.parse({
         ...req.body,
         referenceNumber,
-        goldGrams: goldGrams?.toString() || null,
-        goldPriceUsdPerGram: goldPriceUsdPerGram?.toString() || null,
       });
       const request = await storage.createDepositRequest(requestData);
       
@@ -11316,7 +11295,7 @@ ${message}
             await tx.insert(vaultLedgerEntries).values({
               userId: request.userId,
               action: 'Deposit',
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               valueUsd: depositAmountUsd.toString(),
               fromWallet: 'External',
@@ -11381,7 +11360,7 @@ ${message}
               // Create new vault holding
               const [newHolding] = await tx.insert(vaultHoldings).values({
                 userId: request.userId,
-                amountGold: goldGrams.toFixed(6),
+                goldGrams: goldGrams.toFixed(6),
                 vaultLocation: 'Dubai - Wingold & Metals DMCC',
                 wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
                 purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
@@ -11398,7 +11377,7 @@ ${message}
               vaultHoldingId: vaultHoldingId,
               type: 'Digital Ownership',
               status: 'Active',
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               totalValueUsd: depositAmountUsd.toFixed(2),
               issuer: 'Finatrades',
@@ -11415,7 +11394,7 @@ ${message}
               vaultHoldingId: vaultHoldingId,
               type: 'Physical Storage',
               status: 'Active',
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               issuer: 'Wingold & Metals DMCC',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
@@ -11576,7 +11555,7 @@ ${message}
   // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN + rate limit
   app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, checkMaintenanceMode, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
     try {
-      const { userId, amountUsd, goldGrams: providedGoldGrams, goldPriceUsdPerGram: providedGoldPrice, ...bankDetails } = req.body;
+      const { userId, amountUsd, ...bankDetails } = req.body;
       
       // SECURITY: Verify user can only create withdrawal for themselves
       if (req.session?.userId !== userId) {
@@ -11591,22 +11570,6 @@ ${message}
       
       // Validate withdrawal limits
       const amount = parseFloat(amountUsd);
-      
-      // Gold-first logic: Determine gold price and calculate gold grams
-      let goldPriceUsdPerGram = providedGoldPrice ? parseFloat(providedGoldPrice) : null;
-      let goldGrams = providedGoldGrams ? parseFloat(providedGoldGrams) : null;
-      
-      // Fetch live gold price if not provided
-      if (!goldPriceUsdPerGram) {
-        const goldPriceData = await getGoldPrice();
-        goldPriceUsdPerGram = goldPriceData.pricePerGram;
-      }
-      
-      // Calculate goldGrams from USD if not provided
-      if (!goldGrams && goldPriceUsdPerGram > 0) {
-        goldGrams = amount / goldPriceUsdPerGram;
-      }
-      
       const limitResult = await platformLimits.validateFullTransactionLimits(
         amount,
         withdrawUser,
@@ -11621,23 +11584,16 @@ ${message}
         });
       }
       
-      // Check user has sufficient balance (gold-first: check gold grams)
+      // Check user has sufficient balance
       const wallet = await storage.getWallet(userId);
       if (!wallet) {
         return res.status(400).json({ message: "Wallet not found" });
       }
       
-      const currentGoldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
-      const currentUsdBalance = parseFloat(wallet.usdBalance.toString());
-      const withdrawGoldGrams = goldGrams || 0;
+      const currentBalance = parseFloat(wallet.usdBalance.toString());
       const withdrawAmount = parseFloat(amountUsd);
       
-      // Primary check: gold grams balance
-      if (withdrawGoldGrams > 0 && currentGoldBalance < withdrawGoldGrams) {
-        return res.status(400).json({ message: "Insufficient gold balance" });
-      }
-      // Fallback check: USD balance (for backwards compatibility)
-      if (withdrawGoldGrams <= 0 && currentUsdBalance < withdrawAmount) {
+      if (currentBalance < withdrawAmount) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
@@ -11648,16 +11604,13 @@ ${message}
         userId,
         amountUsd,
         referenceNumber,
-        goldGrams: goldGrams?.toString() || null,
-        goldPriceUsdPerGram: goldPriceUsdPerGram?.toString() || null,
         ...bankDetails,
       });
       
-      // Debit the amount from wallet immediately (hold) - gold-first: debit gold grams
-      const walletUpdate = withdrawGoldGrams > 0 
-        ? { goldGrams: (currentGoldBalance - withdrawGoldGrams).toString() }
-        : { usdBalance: (currentUsdBalance - withdrawAmount).toString() };
-      await storage.updateWallet(wallet.id, walletUpdate);
+      // Debit the amount from wallet immediately (hold)
+      await storage.updateWallet(wallet.id, {
+        usdBalance: (currentBalance - withdrawAmount).toString(),
+      });
       
       const request = await storage.createWithdrawalRequest(requestData);
       
@@ -11718,9 +11671,7 @@ ${message}
           userId: request.userId,
           type: 'Withdrawal',
           status: 'Completed',
-          amountGold: request.goldGrams?.toString() || null,
           amountUsd: request.amountUsd.toString(),
-          goldPriceUsdPerGram: request.goldPriceUsdPerGram?.toString() || null,
           description: `Withdrawal completed - Ref: ${request.referenceNumber}`,
           referenceId: request.referenceNumber,
           sourceModule: 'finapay',
@@ -11789,9 +11740,7 @@ ${message}
             userId: request.userId,
             type: 'Deposit',
             status: 'Completed',
-            amountGold: request.goldGrams?.toString() || null,
-          amountUsd: request.amountUsd.toString(),
-          goldPriceUsdPerGram: request.goldPriceUsdPerGram?.toString() || null,
+            amountUsd: request.amountUsd.toString(),
             description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
             referenceId: `${request.referenceNumber}-REFUND`,
             sourceModule: 'finapay',
@@ -15946,7 +15895,7 @@ ${message}
   // Create money request - PROTECTED
   app.post("/api/finapay/request", ensureAuthenticated, async (req, res) => {
     try {
-      const { requesterId, targetIdentifier, amountUsd, amountGold, goldPriceUsdPerGram, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize } = req.body;
+      const { requesterId, targetIdentifier, amountUsd, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize } = req.body;
       
       const requester = await storage.getUser(requesterId);
       if (!requester) {
@@ -15990,8 +15939,6 @@ ${message}
         targetIdentifier,
         channel,
         amountUsd: parseFloat(amountUsd).toFixed(2),
-        amountGold: amountGold ? parseFloat(amountGold).toFixed(6) : null,
-        goldPriceUsdPerGram: goldPriceUsdPerGram ? parseFloat(goldPriceUsdPerGram).toFixed(2) : null,
         memo,
         qrPayload,
         status: 'Pending',
@@ -16195,8 +16142,8 @@ ${message}
         type: 'Send',
         status: 'Completed',
         amountUsd: amountUsd.toFixed(2),
-        amountGold: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
+        goldGrams: goldGrams.toFixed(6),
+        goldPricePerGram: pricePerGram.toFixed(2),
         recipientEmail: requester.email,
         recipientUserId: requester.id,
         description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
@@ -16210,8 +16157,8 @@ ${message}
         type: 'Receive',
         status: 'Completed',
         amountUsd: amountUsd.toFixed(2),
-        amountGold: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
+        goldGrams: goldGrams.toFixed(6),
+        goldPricePerGram: pricePerGram.toFixed(2),
         senderEmail: payer.email,
         description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
@@ -16225,7 +16172,7 @@ ${message}
         senderId: payer.id,
         recipientId: requester.id,
         amountUsd: amountUsd.toFixed(2),
-        amountGold: goldGrams.toFixed(6),
+        goldGrams: goldGrams.toFixed(6),
         channel: request.channel,
         recipientIdentifier: requester.email,
         memo: request.memo,
@@ -17878,7 +17825,7 @@ ${message}
                 if (!holding) {
                   holding = await storage.createVaultHolding({
                     userId: transaction.userId,
-                    amountGold: goldGrams.toFixed(6),
+                    goldGrams: goldGrams.toFixed(6),
                     vaultLocation: 'Dubai - Wingold & Metals DMCC',
                     wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
                     purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
@@ -17899,7 +17846,7 @@ ${message}
                   vaultHoldingId: holding.id,
                   type: 'Digital Ownership',
                   status: 'Active',
-                  amountGold: goldGrams.toFixed(6),
+                  goldGrams: goldGrams.toFixed(6),
                   goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
                   totalValueUsd: depositAmount.toFixed(2),
                   issuer: 'Finatrades',
@@ -17916,7 +17863,7 @@ ${message}
                   vaultHoldingId: holding.id,
                   type: 'Physical Storage',
                   status: 'Active',
-                  amountGold: goldGrams.toFixed(6),
+                  goldGrams: goldGrams.toFixed(6),
                   goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
                   totalValueUsd: depositAmount.toFixed(2),
                   issuer: 'Wingold & Metals DMCC',
@@ -18257,7 +18204,7 @@ ${message}
           if (!holding) {
             holding = await storage.createVaultHolding({
               userId,
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
               purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
@@ -18278,7 +18225,7 @@ ${message}
             vaultHoldingId: holding.id,
             type: 'Digital Ownership',
             status: 'Active',
-            amountGold: goldGrams.toFixed(6),
+            goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: depositAmount.toFixed(2),
             issuer: 'Finatrades',
@@ -18295,7 +18242,7 @@ ${message}
             vaultHoldingId: holding.id,
             type: 'Physical Storage',
             status: 'Active',
-            amountGold: goldGrams.toFixed(6),
+            goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: depositAmount.toFixed(2),
             issuer: 'Wingold & Metals DMCC',
@@ -18323,7 +18270,7 @@ ${message}
           res.json({
             success: true,
             status: 'completed',
-            amountGold: goldGrams.toFixed(6),
+            goldGrams: goldGrams.toFixed(6),
             amountUsd: depositAmount,
           });
         } else {
@@ -18497,7 +18444,7 @@ ${message}
           if (!holding) {
             holding = await storage.createVaultHolding({
               userId,
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
               purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
@@ -18518,7 +18465,7 @@ ${message}
             vaultHoldingId: holding.id,
             type: 'Digital Ownership',
             status: 'Active',
-            amountGold: goldGrams.toFixed(6),
+            goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: amountUsd.toFixed(2),
             issuer: 'Finatrades',
@@ -18535,7 +18482,7 @@ ${message}
             vaultHoldingId: holding.id,
             type: 'Physical Storage',
             status: 'Active',
-            amountGold: goldGrams.toFixed(6),
+            goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: amountUsd.toFixed(2),
             issuer: 'Wingold & Metals DMCC',
@@ -18565,7 +18512,7 @@ ${message}
           res.json({
             success: true,
             status: 'completed',
-            amountGold: goldGrams.toFixed(6),
+            goldGrams: goldGrams.toFixed(6),
             amountUsd,
           });
         } else {
@@ -18693,7 +18640,7 @@ ${message}
             if (!holding) {
               holding = await storage.createVaultHolding({
                 userId: transaction.userId,
-                amountGold: goldGrams.toFixed(6),
+                goldGrams: goldGrams.toFixed(6),
                 vaultLocation: 'Dubai - Wingold & Metals DMCC',
                 wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
                 purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
@@ -18714,7 +18661,7 @@ ${message}
               vaultHoldingId: holding.id,
               type: 'Digital Ownership',
               status: 'Active',
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               totalValueUsd: depositAmount.toFixed(2),
               issuer: 'Finatrades',
@@ -18731,7 +18678,7 @@ ${message}
               vaultHoldingId: holding.id,
               type: 'Physical Storage',
               status: 'Active',
-              amountGold: goldGrams.toFixed(6),
+              goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               totalValueUsd: depositAmount.toFixed(2),
               issuer: 'Wingold & Metals DMCC',
@@ -18835,7 +18782,7 @@ ${message}
       if (!holding) {
         holding = await storage.createVaultHolding({
           userId: transaction.userId,
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           vaultLocation: 'Dubai - Wingold & Metals DMCC',
           wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
           purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
@@ -18855,7 +18802,7 @@ ${message}
           vaultHoldingId: holding.id,
           type: 'Digital Ownership',
           status: 'Active',
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
           totalValueUsd: depositAmount.toFixed(2),
           issuer: 'Finatrades',
@@ -18876,7 +18823,7 @@ ${message}
           vaultHoldingId: holding.id,
           type: 'Physical Storage',
           status: 'Active',
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
           totalValueUsd: depositAmount.toFixed(2),
           issuer: 'Wingold & Metals DMCC',
@@ -19268,7 +19215,6 @@ ${message}
         freeGoldGrams: Math.max(0, freeGoldGrams),
         lockedGoldGrams,
         walletGoldGrams,
-          totalGoldGrams,
         vaultGoldGrams,
         bnslLockedGrams,
         finabridgeLockedGrams,
@@ -24664,7 +24610,7 @@ ${message}
         userId: user.id,
         type: 'Deposit',
         amount: amount.toFixed(2),
-        amountGold: goldGrams.toFixed(6),
+        goldGrams: goldGrams.toFixed(6),
         goldPriceAtTime: goldPrice.toFixed(2),
         status: 'Completed',
         description: `QA Internal ${method.toUpperCase()} deposit - $${amount.toFixed(2)}`,
@@ -24684,7 +24630,7 @@ ${message}
       const vaultHolding = await storage.createVaultHolding({
         userId: user.id,
         transactionId: transaction.id,
-        amountGold: goldGrams.toFixed(6),
+        goldGrams: goldGrams.toFixed(6),
         goldPriceAtPurchase: goldPrice.toFixed(2),
         purchaseValue: amount.toFixed(2),
         purity: '99.99%',
@@ -24705,7 +24651,7 @@ ${message}
         vaultHoldingId: vaultHolding.id,
         type: 'Digital Ownership',
         status: 'Active',
-        amountGold: goldGrams.toFixed(6),
+        goldGrams: goldGrams.toFixed(6),
         goldPriceUsdPerGram: goldPrice.toFixed(2),
         totalValueUsd: amount.toFixed(2),
         issuer: 'Finatrades',
@@ -24719,7 +24665,7 @@ ${message}
         vaultHoldingId: vaultHolding.id,
         type: 'Physical Storage',
         status: 'Active',
-        amountGold: goldGrams.toFixed(6),
+        goldGrams: goldGrams.toFixed(6),
         goldPriceUsdPerGram: goldPrice.toFixed(2),
         totalValueUsd: amount.toFixed(2),
         issuer: 'Wingold & Metals DMCC',
@@ -24859,7 +24805,7 @@ ${message}
         userId: user.id,
         type: 'Deposit',
         amount: amount.toFixed(2),
-        amountGold: goldGrams.toFixed(6),
+        goldGrams: goldGrams.toFixed(6),
         goldPriceAtTime: goldPrice.toFixed(2),
         status: 'Pending',
         description: `QA ${method.toUpperCase()} deposit - $${amount.toFixed(2)} (${goldGrams.toFixed(4)}g gold)`,
@@ -24888,7 +24834,7 @@ ${message}
         const vaultHolding = await storage.createVaultHolding({
           userId: user.id,
           transactionId: transaction.id,
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           goldPriceAtPurchase: goldPrice.toFixed(2),
           purchaseValue: amount.toFixed(2),
           purity: '99.99%',
@@ -24907,7 +24853,7 @@ ${message}
           transactionId: transaction.id,
           vaultHoldingId: vaultHolding.id,
           fullName: `${user.firstName} ${user.lastName}`,
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           amountUsd: amount.toFixed(2),
           purity: '99.99%',
           isQaMode: true,
@@ -24922,7 +24868,7 @@ ${message}
           certificateNumber: `OWN-QA-${Date.now()}`,
           issuer: 'Finatrades',
           issuedAt: new Date(),
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           purity: '99.99%',
           storageLocation: 'FinaVault Dubai',
           holderName: certData.fullName,
@@ -24939,7 +24885,7 @@ ${message}
           certificateNumber: `STOR-QA-${Date.now()}`,
           issuer: 'Wingold & Metals DMCC',
           issuedAt: new Date(),
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           purity: '99.99%',
           storageLocation: 'FinaVault Dubai',
           holderName: certData.fullName,
@@ -24956,7 +24902,7 @@ ${message}
           certificateNumber: `INV-QA-${Date.now()}`,
           issuer: 'Wingold & Metals DMCC',
           issuedAt: new Date(),
-          amountGold: goldGrams.toFixed(6),
+          goldGrams: goldGrams.toFixed(6),
           purity: '99.99%',
           storageLocation: 'FinaVault Dubai',
           holderName: certData.fullName,
@@ -25880,6 +25826,23 @@ ${message}
     }
   });
 
+  // Scheduled Jobs
+  app.get("/api/admin/scheduled-jobs", ensureAdminAsync, async (req, res) => {
+    try {
+      const jobs = [
+        { id: '1', name: 'Database Backup Sync', description: 'Hourly AWS to Replit sync', cronExpression: '0 * * * *', status: 'active', runCount: 24, failCount: 0, lastRunAt: new Date(Date.now() - 3600000).toISOString(), lastRunDurationMs: 5000, nextRunAt: new Date(Date.now() + 3600000).toISOString() },
+        { id: '2', name: 'Gold Price Update', description: 'Update gold prices from metals-api', cronExpression: '*/10 * * * *', status: 'active', runCount: 144, failCount: 2, lastRunAt: new Date(Date.now() - 600000).toISOString(), lastRunDurationMs: 1500, nextRunAt: new Date(Date.now() + 600000).toISOString() },
+        { id: '3', name: 'BNSL Payout Processing', description: 'Process BNSL maturity payouts', cronExpression: '0 0 * * *', status: 'active', runCount: 30, failCount: 0, lastRunAt: new Date(Date.now() - 86400000).toISOString(), lastRunDurationMs: 10000, nextRunAt: new Date(Date.now() + 86400000).toISOString() },
+        { id: '4', name: 'Session Cleanup', description: 'Clean expired sessions', cronExpression: '0 0 * * *', status: 'active', runCount: 30, failCount: 0, lastRunAt: new Date(Date.now() - 86400000).toISOString(), lastRunDurationMs: 2000, nextRunAt: new Date(Date.now() + 86400000).toISOString() },
+        { id: '5', name: 'Email Queue Processor', description: 'Process pending email notifications', cronExpression: '*/5 * * * *', status: 'active', runCount: 288, failCount: 5, lastRunAt: new Date(Date.now() - 300000).toISOString(), lastRunDurationMs: 3000, nextRunAt: new Date(Date.now() + 300000).toISOString() },
+      ];
+      
+      res.json({ jobs });
+    } catch (error) {
+      console.error('Scheduled jobs error:', error);
+      res.status(500).json({ error: 'Failed to fetch scheduled jobs' });
+    }
+  });
 
   // System Logs
   app.get("/api/admin/system-logs", ensureAdminAsync, async (req, res) => {

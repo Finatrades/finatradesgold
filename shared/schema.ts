@@ -897,8 +897,6 @@ export const wallets = pgTable("wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
-  // DEPRECATED: USD/EUR balances are computed dynamically from goldGrams × currentGoldPrice
-  // Kept for backward compatibility - will be phased out
   usdBalance: decimal("usd_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   eurBalance: decimal("eur_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1014,10 +1012,7 @@ export const depositRequests = pgTable("deposit_requests", {
   targetSwiftCode: varchar("target_swift_code", { length: 100 }),
   targetIban: varchar("target_iban", { length: 100 }),
   targetCurrency: varchar("target_currency", { length: 10 }),
-  // Gold-first: goldGrams is the canonical value, USD is computed from goldGrams × goldPriceUsdPerGram
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(), // Kept for display/reporting, computed from gold
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
   paymentMethod: varchar("payment_method", { length: 100 }).notNull().default('Bank Transfer'),
   senderBankName: varchar("sender_bank_name", { length: 255 }), // User's sending bank
@@ -1043,10 +1038,7 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  // Gold-first: goldGrams is the canonical value, USD is computed from goldGrams × goldPriceUsdPerGram
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(), // Kept for display/reporting
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
   // User's bank account details
   bankName: varchar("bank_name", { length: 255 }).notNull(),
@@ -2584,7 +2576,6 @@ export const peerRequests = pgTable("peer_requests", {
   channel: peerTransferChannelEnum("channel").notNull(),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
   amountGold: decimal("amount_gold", { precision: 18, scale: 6 }), // Gold amount for gold requests
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }), // Gold price at time of request
   assetType: varchar("asset_type", { length: 20 }).notNull().default('GOLD'), // GOLD or USD
   memo: text("memo"),
   qrPayload: varchar("qr_payload", { length: 500 }), // Unique token for QR code requests
@@ -3987,6 +3978,60 @@ export const insertAccountDeletionRequestSchema = createInsertSchema(accountDele
 });
 export type InsertAccountDeletionRequest = z.infer<typeof insertAccountDeletionRequestSchema>;
 export type AccountDeletionRequest = typeof accountDeletionRequests.$inferSelect;
+
+// ============================================
+// SCHEDULED JOBS (Background Tasks)
+// ============================================
+
+export const scheduledJobStatusEnum = pgEnum('scheduled_job_status', [
+  'active', 'paused', 'completed', 'failed', 'running'
+]);
+
+export const scheduledJobs = pgTable("scheduled_jobs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  cronExpression: varchar("cron_expression", { length: 100 }),
+  intervalMs: integer("interval_ms"),
+  
+  status: scheduledJobStatusEnum("status").notNull().default('active'),
+  
+  lastRunAt: timestamp("last_run_at"),
+  lastRunDurationMs: integer("last_run_duration_ms"),
+  lastRunResult: text("last_run_result"),
+  lastError: text("last_error"),
+  
+  nextRunAt: timestamp("next_run_at"),
+  runCount: integer("run_count").notNull().default(0),
+  failCount: integer("fail_count").notNull().default(0),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertScheduledJobSchema = createInsertSchema(scheduledJobs).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertScheduledJob = z.infer<typeof insertScheduledJobSchema>;
+export type ScheduledJob = typeof scheduledJobs.$inferSelect;
+
+// Scheduled Job Runs (History)
+export const scheduledJobRuns = pgTable("scheduled_job_runs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id", { length: 255 }).notNull().references(() => scheduledJobs.id),
+  
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  durationMs: integer("duration_ms"),
+  
+  success: boolean("success"),
+  result: text("result"),
+  error: text("error"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertScheduledJobRunSchema = createInsertSchema(scheduledJobRuns).omit({ id: true, createdAt: true });
+export type InsertScheduledJobRun = z.infer<typeof insertScheduledJobRunSchema>;
+export type ScheduledJobRun = typeof scheduledJobRuns.$inferSelect;
 
 // ============================================
 // SETTLEMENT QUEUE

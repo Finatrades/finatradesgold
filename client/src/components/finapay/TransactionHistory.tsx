@@ -201,14 +201,12 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                           <td className="py-3 px-4 text-right font-mono">
                             {isDebit ? (
                               <div>
-                                {/* Gold-first: Show gold grams as primary */}
                                 <span className="text-red-600 font-medium">
-                                  {tx.amountGrams && tx.amountGrams > 0 
-                                    ? `${tx.amountGrams.toFixed(4)}g` 
-                                    : `${(tx.amountUsd / goldPrice).toFixed(4)}g`}
+                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
                                 </span>
-                                {/* USD as computed equivalent */}
-                                <div className="text-xs text-muted-foreground">≈ ${tx.amountUsd.toFixed(2)}</div>
+                                {tx.amountGrams && tx.amountGrams > 0 && (
+                                  <div className="text-xs text-muted-foreground">${tx.amountUsd.toFixed(2)}</div>
+                                )}
                               </div>
                             ) : (
                               <span className="text-muted-foreground">—</span>
@@ -217,14 +215,12 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                           <td className="py-3 px-4 text-right font-mono">
                             {isCredit ? (
                               <div>
-                                {/* Gold-first: Show gold grams as primary */}
                                 <span className="text-green-600 font-medium">
-                                  {tx.amountGrams && tx.amountGrams > 0 
-                                    ? `${tx.amountGrams.toFixed(4)}g` 
-                                    : `${(tx.amountUsd / goldPrice).toFixed(4)}g`}
+                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
                                 </span>
-                                {/* USD as computed equivalent */}
-                                <div className="text-xs text-muted-foreground">≈ ${tx.amountUsd.toFixed(2)}</div>
+                                {tx.amountGrams && tx.amountGrams > 0 && (
+                                  <div className="text-xs text-muted-foreground">${tx.amountUsd.toFixed(2)}</div>
+                                )}
                               </div>
                             ) : (
                               <span className="text-muted-foreground">—</span>

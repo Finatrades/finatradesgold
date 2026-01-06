@@ -4,24 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowUpRight, CheckCircle2, DollarSign, Loader2, Building2, CreditCard, Coins, ArrowRightLeft } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, DollarSign, Loader2, Building2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 import { useTransactionPin } from '@/components/TransactionPinPrompt';
-import { usdToGold, goldToUsd, roundGold, roundUsd, GOLD_INPUT_HELPER } from '@/lib/goldConversion';
 
 interface WithdrawalModalProps {
   isOpen: boolean;
   onClose: () => void;
   walletBalance: number;
-  goldBalance?: number;
 }
 
-export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBalance = 0 }: WithdrawalModalProps) {
+export default function WithdrawalModal({ isOpen, onClose, walletBalance }: WithdrawalModalProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<'form' | 'submitted'>('form');
   const [amount, setAmount] = useState('');
-  const [goldAmount, setGoldAmount] = useState('');
-  const [inputMode, setInputMode] = useState<'usd' | 'gold'>('usd');
   const [bankName, setBankName] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -29,9 +26,6 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
   const [swiftCode, setSwiftCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [goldPrice, setGoldPrice] = useState<number>(0);
-  const [priceLoading, setPriceLoading] = useState(true);
-  const [priceError, setPriceError] = useState(false);
   
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
@@ -39,87 +33,17 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
     if (isOpen) {
       setStep('form');
       setAmount('');
-      setGoldAmount('');
-      setInputMode('usd');
       setBankName('');
       setAccountName('');
       setAccountNumber('');
       setRoutingNumber('');
       setSwiftCode('');
-      setPriceError(false);
-      
-      fetchGoldPrice();
     }
   }, [isOpen]);
-
-  const fetchGoldPrice = async () => {
-    setPriceLoading(true);
-    setPriceError(false);
-    try {
-      const response = await fetch('/api/gold-price');
-      if (!response.ok) throw new Error('Failed to fetch price');
-      const data = await response.json();
-      if (data.pricePerGram && data.pricePerGram > 0) {
-        setGoldPrice(data.pricePerGram);
-      } else {
-        throw new Error('Invalid price data');
-      }
-    } catch (error) {
-      console.error('Failed to load gold price');
-      setPriceError(true);
-      toast.error("Failed to load current gold price. Please try again.");
-    } finally {
-      setPriceLoading(false);
-    }
-  };
-
-  const handleUsdChange = (val: string) => {
-    setAmount(val);
-    if (!val) {
-      setGoldAmount('');
-      return;
-    }
-    const numUsd = parseFloat(val);
-    if (!isNaN(numUsd) && goldPrice > 0) {
-      setGoldAmount(usdToGold(numUsd, goldPrice).toFixed(6));
-    }
-  };
-
-  const handleGoldChange = (val: string) => {
-    setGoldAmount(val);
-    if (!val) {
-      setAmount('');
-      return;
-    }
-    const numGold = parseFloat(val);
-    if (!isNaN(numGold) && goldPrice > 0) {
-      setAmount(goldToUsd(numGold, goldPrice).toFixed(2));
-    }
-  };
-
-  const toggleInputMode = () => {
-    setInputMode(inputMode === 'usd' ? 'gold' : 'usd');
-  };
-
-  const numericAmount = parseFloat(amount) || 0;
-  const numericGold = parseFloat(goldAmount) || 0;
-  
-  // Calculate effective balances - gold is the primary balance
-  const effectiveGoldBalance = goldBalance > 0 ? goldBalance : (goldPrice > 0 ? walletBalance / goldPrice : 0);
-  const effectiveBalance = goldPrice > 0 ? effectiveGoldBalance * goldPrice : walletBalance;
-  
-  // Check if gold balance is sufficient
-  const hasInsufficientGold = numericGold > effectiveGoldBalance;
-  const hasInsufficientBalance = numericAmount > effectiveBalance;
 
   const handleSubmit = async () => {
     if (!user || !amount || !bankName || !accountName || !accountNumber) {
       toast.error("Please fill in all required fields");
-      return;
-    }
-    
-    if (priceError || goldPrice <= 0) {
-      toast.error("Cannot proceed without valid gold price. Please try again.");
       return;
     }
     
@@ -129,8 +53,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
       return;
     }
 
-    // Check both USD and gold balance
-    if (hasInsufficientGold || hasInsufficientBalance) {
+    if (amountNum > walletBalance) {
       toast.error("Insufficient balance");
       return;
     }
@@ -141,7 +64,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
         userId: user.id,
         action: 'withdraw_funds',
         title: 'Authorize Withdrawal',
-        description: `Enter your 6-digit PIN to withdraw $${amountNum.toFixed(2)} (${numericGold.toFixed(4)}g gold)`,
+        description: `Enter your 6-digit PIN to withdraw $${amountNum.toFixed(2)}`,
       });
     } catch (error) {
       return;
@@ -160,8 +83,6 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
         body: JSON.stringify({
           userId: user.id,
           amountUsd: parseFloat(amount).toString(),
-          goldGrams: numericGold.toFixed(6),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
           bankName,
           accountName,
           accountNumber,
@@ -224,8 +145,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">${effectiveBalance.toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{effectiveGoldBalance.toFixed(4)}g gold</p>
+                    <p className="text-2xl font-bold text-gray-900">${walletBalance.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                     <Building2 className="w-6 h-6 text-purple-600" />
@@ -233,76 +153,23 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
                 </div>
                 
                 <div className="pt-4 border-t border-purple-200">
-                  {/* Input Mode Toggle */}
-                  <div className="flex items-center justify-between mb-3">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Amount to Withdraw ({inputMode === 'usd' ? 'USD' : 'Gold'}) *
-                    </Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                      onClick={toggleInputMode}
-                    >
-                      <ArrowRightLeft className="w-3 h-3 mr-1" />
-                      Switch to {inputMode === 'usd' ? 'Gold' : 'USD'}
-                    </Button>
+                  <Label className="text-sm font-medium text-gray-700">Amount to Withdraw (USD) *</Label>
+                  <div className="relative mt-2">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input 
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-9 bg-white border-gray-200 text-lg font-semibold"
+                      max={walletBalance}
+                      data-testid="input-withdrawal-amount"
+                    />
                   </div>
-                  
-                  {inputMode === 'usd' ? (
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input 
-                        type="number"
-                        value={amount}
-                        onChange={(e) => handleUsdChange(e.target.value)}
-                        placeholder="0.00"
-                        className="pl-9 bg-white border-gray-200 text-lg font-semibold"
-                        max={effectiveBalance}
-                        data-testid="input-withdrawal-amount"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-500" />
-                      <Input 
-                        type="number"
-                        value={goldAmount}
-                        onChange={(e) => handleGoldChange(e.target.value)}
-                        placeholder="0.0000"
-                        step="0.0001"
-                        className="pl-9 pr-10 bg-white border-gray-200 text-lg font-semibold"
-                        max={effectiveGoldBalance}
-                        data-testid="input-withdrawal-gold"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">g</span>
-                    </div>
-                  )}
-                  
-                  {/* Equivalent display */}
-                  {(numericAmount > 0 || numericGold > 0) && (
-                    <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
-                      <ArrowRightLeft className="w-3 h-3" />
-                      {inputMode === 'usd' 
-                        ? `≈ ${numericGold.toFixed(4)}g gold` 
-                        : `≈ $${numericAmount.toFixed(2)} USD`
-                      }
-                      <span className="text-xs">@ ${goldPrice.toFixed(2)}/g</span>
-                    </div>
-                  )}
-                  
-                  {priceError && (
+                  {amount && parseFloat(amount) > walletBalance && (
                     <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
                       <span className="text-red-500">⚠️</span>
-                      <span>Failed to load gold price. <button className="underline" onClick={fetchGoldPrice}>Retry</button></span>
-                    </div>
-                  )}
-                  
-                  {(hasInsufficientBalance || hasInsufficientGold) && !priceError && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
-                      <span className="text-red-500">⚠️</span>
-                      <span>Insufficient funds. Your balance is ${effectiveBalance.toFixed(2)} ({effectiveGoldBalance.toFixed(4)}g)</span>
+                      <span>Insufficient funds. Your balance is ${walletBalance.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -312,8 +179,6 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
                 <div className="mt-0.5 text-purple-500">⚠️</div>
                 <p className="leading-relaxed">Once submitted, the withdrawal amount will be held from your balance. Funds will be transferred to your bank account within 2-5 business days after admin approval.</p>
               </div>
-              
-              <p className="text-xs text-muted-foreground">{GOLD_INPUT_HELPER}</p>
             </div>
 
             {/* Right Panel - Bank Details */}
@@ -402,7 +267,6 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
               <div className="bg-success-muted border border-success/20 rounded-xl p-4 text-center">
                 <p className="text-xs text-muted-foreground mb-1">Amount</p>
                 <p className="font-mono font-bold text-lg text-success">${parseFloat(amount).toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">{numericGold.toFixed(4)}g gold</p>
               </div>
             </div>
             
@@ -439,23 +303,12 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance, goldBa
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button 
                 onClick={handleSubmit} 
-                disabled={
-                  !amount || 
-                  !bankName || 
-                  !accountName || 
-                  !accountNumber || 
-                  submitting || 
-                  priceLoading ||
-                  priceError ||
-                  hasInsufficientBalance || 
-                  hasInsufficientGold ||
-                  numericAmount <= 0
-                }
+                disabled={!amount || !bankName || !accountName || !accountNumber || submitting || parseFloat(amount) > walletBalance}
                 className="bg-purple-500 hover:bg-purple-600"
                 data-testid="button-submit-withdrawal"
               >
-                {(submitting || priceLoading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {priceLoading ? 'Loading...' : 'Submit Withdrawal'}
+                {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Submit Withdrawal
               </Button>
             </>
           )}

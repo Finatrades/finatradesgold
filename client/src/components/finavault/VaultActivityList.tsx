@@ -75,49 +75,19 @@ export default function VaultActivityList() {
   const [certTab, setCertTab] = useState('ownership');
 
   const handlePrint = () => {
-    if (!viewingCerts || viewingCerts.length === 0) return;
+    const printContent = document.getElementById('certificate-print-area');
+    if (!printContent) return;
     
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
       alert('Please allow pop-ups to print the certificate');
       return;
     }
     
-    // Determine certificate type and get data
-    const ownershipCert = viewingCerts.find(c => c.type === 'Digital Ownership');
-    const storageCert = viewingCerts.find(c => c.type === 'Physical Storage');
-    const transferCert = viewingCerts.find(c => c.type === 'Transfer');
-    
-    const isOwnership = certTab === 'ownership' && ownershipCert;
-    const isStorage = certTab === 'storage' && storageCert;
-    const isTransfer = certTab === 'transfer' && transferCert;
-    
-    const cert = isOwnership ? ownershipCert : isStorage ? storageCert : transferCert;
-    if (!cert) return;
-    
-    const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const goldAmount = parseFloat(cert.goldGrams).toFixed(4);
-    
-    // Colors based on type
-    const accentColor = isOwnership ? '#D4AF37' : isTransfer ? '#22c55e' : '#000000';
-    const bgColor = isOwnership || isTransfer ? '#0D0515' : '#ffffff';
-    const textColor = isOwnership || isTransfer ? '#ffffff' : '#000000';
-    const borderColor = isOwnership ? 'rgba(212, 175, 55, 0.4)' : isTransfer ? 'rgba(34, 197, 94, 0.4)' : 'rgba(0, 0, 0, 0.3)';
-    
-    // Certificate title and subtitle
-    const title = isOwnership ? 'Digital Ownership' : isStorage ? 'Physical Storage' : 'Gold Transfer';
-    const subtitle = isOwnership ? 'Certificate of Beneficial Ownership' : isStorage ? 'Physical Storage Certificate' : 'Transfer Confirmation';
-    const description = isOwnership 
-      ? 'This certifies that the holder is the beneficial owner of the following precious metal assets, securely stored and insured at Dubai - Wingold & Metals DMCC.'
-      : isStorage 
-      ? 'This certifies that the following physical gold is securely stored at Wingold & Metals DMCC vault facility in Dubai.'
-      : 'This certifies that the following gold transfer has been successfully executed and recorded on the Finatrades platform.';
-    
-    // SVG icons for print (inline SVG since we can't use React icons)
-    const shieldIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>`;
-    const boxIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
-    const sendIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
-    const icon = isOwnership ? shieldIcon : isStorage ? boxIcon : sendIcon;
+    const isOwnership = certTab === 'ownership';
+    const bgColor = isOwnership ? '#0D0515' : '#ffffff';
+    const textColor = isOwnership ? '#ffffff' : '#000000';
+    const accentColor = isOwnership ? '#D4AF37' : '#000000';
     
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -125,17 +95,13 @@ export default function VaultActivityList() {
         <head>
           <title>Certificate - Finatrades</title>
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;700&display=swap');
             
             * { margin: 0; padding: 0; box-sizing: border-box; }
             
             @page {
               size: A4 portrait;
-              margin: 0;
-            }
-            
-            @media print {
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              margin: 0.5in;
             }
             
             body {
@@ -332,74 +298,10 @@ export default function VaultActivityList() {
               background: rgba(0,0,0,0.05);
               font-weight: bold;
             }
-            
-            .no-print {
-              display: none !important;
-            }
           </style>
         </head>
         <body>
-          <div class="certificate-container">
-            <!-- Header with Icon -->
-            <div class="header">
-              <div class="icon-circle">
-                ${icon}
-              </div>
-              <div class="title">CERTIFICATE</div>
-              <div class="subtitle">${title}</div>
-              <div class="cert-id">ID: ${cert.certificateNumber}</div>
-            </div>
-            
-            <!-- Description -->
-            <p class="description">${description}</p>
-            
-            <!-- Details Grid -->
-            <div class="details-grid">
-              <div class="detail-item">
-                <div class="detail-label">Asset Type</div>
-                <div class="detail-value">Gold</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">Total Weight</div>
-                <div class="detail-value">${goldAmount}g</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">Purity</div>
-                <div class="detail-value">999.9</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">Status</div>
-                <div class="detail-value">${cert.status}</div>
-              </div>
-            </div>
-            
-            <!-- Footer with Date -->
-            <div class="footer">
-              <div class="footer-item">
-                <div class="footer-value">${issueDate}</div>
-                <div class="divider"></div>
-                <div class="footer-label">Date of Issue</div>
-              </div>
-              <div class="footer-item">
-                <div class="footer-value">Finatrades Platform</div>
-                <div class="divider"></div>
-                <div class="footer-label">Issuing Authority</div>
-              </div>
-              <div class="footer-item">
-                <div class="footer-value">${isStorage ? 'Wingold & Metals DMCC' : 'Dubai, UAE'}</div>
-                <div class="divider"></div>
-                <div class="footer-label">${isStorage ? 'Storage Facility' : 'Location'}</div>
-              </div>
-            </div>
-            
-            <!-- Disclaimer -->
-            <p class="disclaimer">
-              This certificate is issued by Finatrades and represents ${isOwnership ? 'beneficial ownership of' : isStorage ? 'physical storage of' : 'a verified transfer of'} 
-              precious metals. The gold referenced in this certificate is ${isStorage ? 'physically stored at Wingold & Metals DMCC vault facility in Dubai' : 'held in secure storage on behalf of the certificate holder'}. 
-              This certificate is non-transferable and must be presented for any redemption or verification requests. 
-              Finatrades reserves the right to verify the authenticity of this certificate at any time.
-            </p>
-          </div>
+          ${printContent.innerHTML}
         </body>
       </html>
     `);
@@ -409,7 +311,8 @@ export default function VaultActivityList() {
     
     setTimeout(() => {
       printWindow.print();
-    }, 500);
+      printWindow.close();
+    }, 250);
   };
 
   const handleShare = async (certs: typeof viewingCerts) => {
