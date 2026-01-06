@@ -28,12 +28,9 @@ import {
   Gift,
   Globe,
   ChevronDown,
-  Activity,
   BarChart3,
   Scale,
   AlertTriangle,
-  Clock,
-  Terminal,
   Coins,
   FileCheck
 } from 'lucide-react';
@@ -83,8 +80,6 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/risk-exposure': ['view_reports'],
   '/admin/sar-reports': ['view_kyc', 'manage_kyc'],
   '/admin/regulatory-reports': ['view_reports', 'generate_reports'],
-  '/admin/scheduled-jobs': ['manage_settings'],
-  '/admin/api-logs': ['manage_settings'],
   '/admin/settlement-queue': ['view_transactions', 'manage_transactions'],
   '/admin/liquidity': ['view_reports'],
 };
@@ -220,14 +215,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Risk Exposure', href: '/admin/risk-exposure' },
         { label: 'SAR Reports', href: '/admin/sar-reports' },
         { label: 'Regulatory Reports', href: '/admin/regulatory-reports' },
-      ]
-    },
-    {
-      title: 'Operations',
-      icon: <Activity className="w-4 h-4" />,
-      items: [
-        { label: 'Scheduled Jobs', href: '/admin/scheduled-jobs' },
-        { label: 'API & Error Logs', href: '/admin/api-logs' },
       ]
     },
     {

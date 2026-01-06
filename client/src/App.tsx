@@ -149,8 +149,6 @@ import RevenueAnalytics from "@/pages/admin/RevenueAnalytics";
 import DailyReconciliation from "@/pages/admin/DailyReconciliation";
 import RiskExposure from "@/pages/admin/RiskExposure";
 import SuspiciousActivityReports from "@/pages/admin/SuspiciousActivityReports";
-import ScheduledJobs from "@/pages/admin/ScheduledJobs";
-import ApiLogs from "@/pages/admin/ApiLogs";
 import SettlementQueue from "@/pages/admin/SettlementQueue";
 import LiquidityDashboard from "@/pages/admin/LiquidityDashboard";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
@@ -255,8 +253,6 @@ function Router() {
       <Route path="/admin/daily-reconciliation" component={DailyReconciliation} />
       <Route path="/admin/risk-exposure" component={RiskExposure} />
       <Route path="/admin/sar-reports" component={SuspiciousActivityReports} />
-      <Route path="/admin/scheduled-jobs" component={ScheduledJobs} />
-      <Route path="/admin/api-logs" component={ApiLogs} />
       <Route path="/admin/settlement-queue" component={SettlementQueue} />
       <Route path="/admin/liquidity" component={LiquidityDashboard} />
       <Route path="/admin/regulatory-reports" component={RegulatoryReports} />
