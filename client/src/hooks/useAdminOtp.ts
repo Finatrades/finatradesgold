@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import type { AdminActionType } from '@/components/admin/AdminOtpModal';
-import { apiFetch } from '@/lib/queryClient';
 
 interface UseAdminOtpReturn {
   isOtpModalOpen: boolean;
@@ -70,7 +69,7 @@ export async function checkIfOtpRequired(
   adminUserId: string
 ): Promise<boolean> {
   try {
-    const res = await apiFetch(`/api/admin/action-otp/required/${actionType}`, {
+    const res = await fetch(`/api/admin/action-otp/required/${actionType}`, {
       headers: {
         'X-Admin-User-Id': adminUserId,
       },

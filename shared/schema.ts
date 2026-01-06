@@ -3106,11 +3106,7 @@ export const adminActionTypeEnum = pgEnum('admin_action_type', [
   'withdrawal_approval', 'withdrawal_rejection',
   'bnsl_approval', 'bnsl_rejection',
   'trade_case_approval', 'trade_case_rejection',
-  'user_suspension', 'user_activation', 'cms_snapshot_apply',
-  'dev_prod_sync_platform_config', 'dev_prod_sync_payment_gateways',
-  'dev_prod_sync_bnsl_templates', 'dev_prod_sync_settings',
-  'dev_prod_sync_roles_permissions', 'dev_prod_sync_announcements',
-  'dev_prod_sync_knowledge_base'
+  'user_suspension', 'user_activation', 'cms_snapshot_apply'
 ]);
 
 export const adminActionOtps = pgTable("admin_action_otps", {

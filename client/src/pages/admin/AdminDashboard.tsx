@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
-import { apiRequest } from '@/lib/queryClient';
 
 interface AdminStats {
   totalUsers: number;
@@ -102,7 +101,8 @@ export default function AdminDashboard() {
   const { data: stats, isLoading, error } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/admin/stats');
+      const res = await fetch('/api/admin/stats');
+      if (!res.ok) throw new Error('Failed to fetch stats');
       return res.json();
     },
     refetchInterval: 30000

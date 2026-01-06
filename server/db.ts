@@ -87,19 +87,14 @@ function getAwsSslConfig(): pg.PoolConfig['ssl'] {
   // Default: Try to load AWS RDS CA bundle for secure certificate verification
   // Check multiple locations for production (dist/) and development environments
   const cwd = process.cwd();
-  console.log(`[Database] Searching for CA bundle. CWD: ${cwd}`);
-  
   const caBundlePaths = [
     path.join(cwd, 'certs', 'aws-rds-global-bundle.pem'),
     path.join(cwd, 'dist', 'certs', 'aws-rds-global-bundle.pem'),
-    path.resolve('certs', 'aws-rds-global-bundle.pem'),
-    path.resolve('dist', 'certs', 'aws-rds-global-bundle.pem'),
     '/etc/ssl/certs/aws-rds-global-bundle.pem',
   ];
   
   for (const caPath of caBundlePaths) {
     try {
-      console.log(`[Database] Checking CA bundle path: ${caPath}`);
       if (fs.existsSync(caPath)) {
         const ca = fs.readFileSync(caPath, 'utf8');
         console.log(`[Database] Using AWS RDS CA bundle from: ${caPath}`);
@@ -110,16 +105,15 @@ function getAwsSslConfig(): pg.PoolConfig['ssl'] {
     }
   }
   
-  console.warn(`[Database] CA bundle not found in any of: ${caBundlePaths.join(', ')}`);
-  
   // Fallback: If in development and CA bundle not found, use relaxed mode with warning
   if (process.env.NODE_ENV !== 'production') {
-    console.warn('[Database] WARNING: Using relaxed SSL for development (CA bundle not found).');
+    console.warn('[Database] WARNING: AWS RDS CA bundle not found. Using relaxed SSL for development.');
+    console.warn('[Database] For production, ensure certs/aws-rds-global-bundle.pem exists.');
     return { rejectUnauthorized: false };
   }
   
-  // In production without CA bundle, fail securely but with detailed error
-  throw new Error(`[Database] SECURITY: AWS RDS CA bundle required in production. Checked: ${caBundlePaths.join(', ')}`);
+  // In production without CA bundle, fail securely
+  throw new Error('[Database] SECURITY: AWS RDS CA bundle required in production. Add certs/aws-rds-global-bundle.pem');
 }
 
 // Primary database pool (AWS RDS in production)

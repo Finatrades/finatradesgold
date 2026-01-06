@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { apiFetch } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,7 @@ export default function AuditTrail() {
       const params = new URLSearchParams();
       if (entityFilter !== 'all') params.set('entityType', entityFilter);
       if (actionFilter !== 'all') params.set('actionType', actionFilter);
-      const res = await apiFetch(`/api/admin/audit-logs?${params.toString()}`);
+      const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch audit logs');
       return res.json();
     },

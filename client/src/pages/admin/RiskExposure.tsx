@@ -1,5 +1,4 @@
 import React from 'react';
-import { apiFetch } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +54,7 @@ export default function RiskExposure() {
   const { data, isLoading, refetch } = useQuery<RiskData>({
     queryKey: ['/api/admin/risk-exposure'],
     queryFn: async () => {
-      const res = await apiFetch('/api/admin/risk-exposure');
+      const res = await fetch('/api/admin/risk-exposure');
       if (!res.ok) throw new Error('Failed to fetch risk data');
       return res.json();
     },

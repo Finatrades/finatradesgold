@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/queryClient";
 import { format } from "date-fns";
 import AdminLayout from "./AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,7 +171,7 @@ export default function DatabaseBackups() {
   
   const triggerSyncMutation = useMutation({
     mutationFn: async (direction: string) => {
-      const res = await apiFetch("/api/admin/database-sync/trigger", {
+      const res = await fetch("/api/admin/database-sync/trigger", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -202,7 +201,7 @@ export default function DatabaseBackups() {
   
   const schedulerControlMutation = useMutation({
     mutationFn: async (action: 'start' | 'stop') => {
-      const res = await apiFetch("/api/admin/database-sync/scheduler", {
+      const res = await fetch("/api/admin/database-sync/scheduler", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -232,7 +231,7 @@ export default function DatabaseBackups() {
   
   const createBackupMutation = useMutation({
     mutationFn: async (otp: string) => {
-      const res = await apiFetch("/api/admin/backups", {
+      const res = await fetch("/api/admin/backups", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -263,7 +262,7 @@ export default function DatabaseBackups() {
   
   const deleteBackupMutation = useMutation({
     mutationFn: async (backupId: string) => {
-      const res = await apiFetch(`/api/admin/backups/${backupId}`, {
+      const res = await fetch(`/api/admin/backups/${backupId}`, {
         method: "DELETE",
         headers: { "X-Requested-With": "XMLHttpRequest" },
         credentials: "include",
@@ -290,7 +289,7 @@ export default function DatabaseBackups() {
   
   const restoreBackupMutation = useMutation({
     mutationFn: async ({ backupId, otp }: { backupId: string; otp: string }) => {
-      const res = await apiFetch(`/api/admin/backups/${backupId}/restore`, {
+      const res = await fetch(`/api/admin/backups/${backupId}/restore`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -324,7 +323,7 @@ export default function DatabaseBackups() {
   
   const handleDownload = async (backup: Backup, otp: string) => {
     try {
-      const res = await apiFetch(`/api/admin/backups/${backup.id}/download`, {
+      const res = await fetch(`/api/admin/backups/${backup.id}/download`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

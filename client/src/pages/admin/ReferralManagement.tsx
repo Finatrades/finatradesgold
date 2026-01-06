@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
-import { apiFetch } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,11 +51,11 @@ export default function ReferralManagement() {
   const fetchReferrals = async () => {
     setIsLoading(true);
     try {
-      const response = await apiFetch('/api/admin/referrals');
+      const response = await fetch('/api/admin/referrals');
       const data = await response.json();
       setReferrals(data.referrals || []);
       
-      const usersResponse = await apiFetch('/api/admin/users');
+      const usersResponse = await fetch('/api/admin/users');
       const usersData = await usersResponse.json();
       const usersMap: Record<string, User> = {};
       (usersData.users || []).forEach((user: User) => {
@@ -101,7 +100,7 @@ export default function ReferralManagement() {
         }
       }
       
-      const response = await apiFetch(`/api/admin/referrals/${selectedReferral.id}`, {
+      const response = await fetch(`/api/admin/referrals/${selectedReferral.id}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',

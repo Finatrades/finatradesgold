@@ -128,7 +128,6 @@ import { FinaPayProvider } from "@/context/FinaPayContext";
 import AdminChat from "@/pages/admin/AdminChat";
 import CMSManagement from "@/pages/admin/CMSManagement";
 import CMSSnapshots from "@/pages/admin/CMSSnapshots";
-import DevProdSync from "@/pages/admin/DevProdSync";
 import EmployeeManagement from "@/pages/admin/EmployeeManagement";
 import RoleManagement from "@/pages/admin/RoleManagement";
 import ApprovalQueue from "@/pages/admin/ApprovalQueue";
@@ -157,9 +156,13 @@ import SettlementQueue from "@/pages/admin/SettlementQueue";
 import LiquidityDashboard from "@/pages/admin/LiquidityDashboard";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
+import BankStatementImport from "@/pages/admin/BankStatementImport";
+import ChargebackTracker from "@/pages/admin/ChargebackTracker";
 import CounterpartyRisk from "@/pages/admin/CounterpartyRisk";
 import CurrencyExchange from "@/pages/admin/CurrencyExchange";
+import DailyCashPosition from "@/pages/admin/DailyCashPosition";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
+import WireTransferTracking from "@/pages/admin/WireTransferTracking";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
@@ -236,7 +239,6 @@ function Router() {
       <Route path="/admin/chat" component={AdminChat} />
       <Route path="/admin/cms" component={CMSManagement} />
       <Route path="/admin/cms-snapshots" component={CMSSnapshots} />
-      <Route path="/admin/dev-prod-sync" component={DevProdSync} />
       <Route path="/admin/employees" component={EmployeeManagement} />
       <Route path="/admin/roles" component={RoleManagement} />
       <Route path="/admin/approvals" component={ApprovalQueue} />
@@ -282,7 +284,11 @@ function Router() {
       <Route path="/admin/compliance" component={ComplianceDashboard} />
       
       {/* Operations & Finance */}
+      <Route path="/admin/cash-position" component={DailyCashPosition} />
+      <Route path="/admin/wire-transfers" component={WireTransferTracking} />
       <Route path="/admin/currency-exchange" component={CurrencyExchange} />
+      <Route path="/admin/bank-statements" component={BankStatementImport} />
+      <Route path="/admin/chargebacks" component={ChargebackTracker} />
       <Route path="/admin/counterparty-risk" component={CounterpartyRisk} />
       <Route path="/admin/interest-calculator" component={InterestCalculator} />
       
