@@ -25880,23 +25880,6 @@ ${message}
     }
   });
 
-  // Scheduled Jobs
-  app.get("/api/admin/scheduled-jobs", ensureAdminAsync, async (req, res) => {
-    try {
-      const jobs = [
-        { id: '1', name: 'Database Backup Sync', description: 'Hourly AWS to Replit sync', cronExpression: '0 * * * *', status: 'active', runCount: 24, failCount: 0, lastRunAt: new Date(Date.now() - 3600000).toISOString(), lastRunDurationMs: 5000, nextRunAt: new Date(Date.now() + 3600000).toISOString() },
-        { id: '2', name: 'Gold Price Update', description: 'Update gold prices from metals-api', cronExpression: '*/10 * * * *', status: 'active', runCount: 144, failCount: 2, lastRunAt: new Date(Date.now() - 600000).toISOString(), lastRunDurationMs: 1500, nextRunAt: new Date(Date.now() + 600000).toISOString() },
-        { id: '3', name: 'BNSL Payout Processing', description: 'Process BNSL maturity payouts', cronExpression: '0 0 * * *', status: 'active', runCount: 30, failCount: 0, lastRunAt: new Date(Date.now() - 86400000).toISOString(), lastRunDurationMs: 10000, nextRunAt: new Date(Date.now() + 86400000).toISOString() },
-        { id: '4', name: 'Session Cleanup', description: 'Clean expired sessions', cronExpression: '0 0 * * *', status: 'active', runCount: 30, failCount: 0, lastRunAt: new Date(Date.now() - 86400000).toISOString(), lastRunDurationMs: 2000, nextRunAt: new Date(Date.now() + 86400000).toISOString() },
-        { id: '5', name: 'Email Queue Processor', description: 'Process pending email notifications', cronExpression: '*/5 * * * *', status: 'active', runCount: 288, failCount: 5, lastRunAt: new Date(Date.now() - 300000).toISOString(), lastRunDurationMs: 3000, nextRunAt: new Date(Date.now() + 300000).toISOString() },
-      ];
-      
-      res.json({ jobs });
-    } catch (error) {
-      console.error('Scheduled jobs error:', error);
-      res.status(500).json({ error: 'Failed to fetch scheduled jobs' });
-    }
-  });
 
   // System Logs
   app.get("/api/admin/system-logs", ensureAdminAsync, async (req, res) => {
