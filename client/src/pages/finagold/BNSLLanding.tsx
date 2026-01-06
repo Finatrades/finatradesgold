@@ -625,7 +625,7 @@ function CalculatorSection() {
   }, [planValue, tenure, rate]);
 
   const handleValueChange = (value: number) => {
-    setPlanValue(Math.min(Math.max(value, 500), 500000));
+    setPlanValue(Math.min(Math.max(value, 0), 500000));
   };
 
   const formatCurrency = (value: number) => {
@@ -712,7 +712,7 @@ function CalculatorSection() {
                 </div>
                 <input
                   type="range"
-                  min="500"
+                  min="0"
                   max="500000"
                   step="500"
                   value={planValue}
