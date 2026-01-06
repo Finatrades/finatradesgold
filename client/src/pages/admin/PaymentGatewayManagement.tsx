@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import AdminLayout from './AdminLayout';
 import { useAuth } from '@/context/AuthContext';
+import { apiFetch } from '@/lib/queryClient';
 
 interface BankAccount {
   id: string;
@@ -139,7 +140,7 @@ export default function PaymentGatewayManagement() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/admin/payment-gateways', {
+      const res = await apiFetch('/api/admin/payment-gateways', {
         headers: { 'X-Admin-User-Id': user?.id || '' }
       });
       if (!res.ok) throw new Error('Failed to fetch');
@@ -178,7 +179,7 @@ export default function PaymentGatewayManagement() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/admin/payment-gateways', {
+      const res = await apiFetch('/api/admin/payment-gateways', {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -243,7 +244,7 @@ export default function PaymentGatewayManagement() {
   // Crypto wallet functions
   const fetchCryptoWallets = async () => {
     try {
-      const response = await fetch('/api/admin/crypto-wallets', {
+      const response = await apiFetch('/api/admin/crypto-wallets', {
         headers: { 'X-Admin-User-Id': user?.id || '' }
       });
       if (!response.ok) throw new Error('Failed to fetch');
@@ -325,7 +326,7 @@ export default function PaymentGatewayManagement() {
         : '/api/admin/crypto-wallets';
       const method = editingWallet ? 'PATCH' : 'POST';
       
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -348,7 +349,7 @@ export default function PaymentGatewayManagement() {
     if (!confirm('Are you sure you want to delete this wallet?')) return;
     
     try {
-      const res = await fetch(`/api/admin/crypto-wallets/${id}`, {
+      const res = await apiFetch(`/api/admin/crypto-wallets/${id}`, {
         method: 'DELETE',
         headers: { 
           'X-Requested-With': 'XMLHttpRequest',
@@ -366,7 +367,7 @@ export default function PaymentGatewayManagement() {
 
   const handleToggleWalletActive = async (wallet: CryptoWalletConfig) => {
     try {
-      const res = await fetch(`/api/admin/crypto-wallets/${wallet.id}`, {
+      const res = await apiFetch(`/api/admin/crypto-wallets/${wallet.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

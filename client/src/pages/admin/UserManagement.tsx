@@ -6,7 +6,7 @@ import { MoreHorizontal, Ban, Trash, Eye, CheckCircle, Mail, Shield, UserCheck, 
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, apiFetch } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
@@ -47,7 +47,7 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await apiFetch('/api/admin/users');
       const data = await response.json();
       setUsers(data.users || []);
     } catch (error) {

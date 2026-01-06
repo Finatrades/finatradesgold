@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from './AdminLayout';
+import { apiFetch } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -95,7 +96,7 @@ export default function EmailNotificationsManagement() {
   const { data: settingsData, isLoading: settingsLoading, refetch: refetchSettings } = useQuery({
     queryKey: ['email-notification-settings'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/email-notifications', {
+      const res = await apiFetch('/api/admin/email-notifications', {
         headers: { 'X-Admin-User-Id': user?.id || '' },
         credentials: 'include',
       });
@@ -107,7 +108,7 @@ export default function EmailNotificationsManagement() {
   const { data: logsData, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
     queryKey: ['email-logs'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/email-logs', {
+      const res = await apiFetch('/api/admin/email-logs', {
         headers: { 'X-Admin-User-Id': user?.id || '' },
         credentials: 'include',
       });
@@ -118,7 +119,7 @@ export default function EmailNotificationsManagement() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ type, isEnabled }: { type: string; isEnabled: boolean }) => {
-      const res = await fetch(`/api/admin/email-notifications/${type}/toggle`, {
+      const res = await apiFetch(`/api/admin/email-notifications/${type}/toggle`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -142,7 +143,7 @@ export default function EmailNotificationsManagement() {
 
   const seedMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/admin/email-notifications/seed', {
+      const res = await apiFetch('/api/admin/email-notifications/seed', {
         method: 'POST',
         headers: { 
           'X-Requested-With': 'XMLHttpRequest',

@@ -1,4 +1,5 @@
 import React from 'react';
+import { apiFetch } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,7 @@ export default function LiquidityDashboard() {
   const { data, isLoading, refetch } = useQuery<LiquidityData>({
     queryKey: ['/api/admin/liquidity'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/liquidity');
+      const res = await apiFetch('/api/admin/liquidity');
       if (!res.ok) throw new Error('Failed to fetch liquidity data');
       return res.json();
     },

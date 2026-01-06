@@ -6,6 +6,14 @@ export function getApiUrl(path: string): string {
   return new URL(path, window.location.origin).href;
 }
 
+export async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
+  const absoluteUrl = getApiUrl(url);
+  return fetch(absoluteUrl, {
+    ...options,
+    credentials: options?.credentials || 'include',
+  });
+}
+
 function handleSessionExpired() {
   const currentPath = window.location.pathname;
   const publicPaths = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/reset-password', '/verify-email'];
@@ -68,7 +76,8 @@ export async function apiRequest(
     headers['Content-Type'] = 'application/json';
   }
   
-  const res = await fetch(url, {
+  const absoluteUrl = getApiUrl(url);
+  const res = await fetch(absoluteUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,

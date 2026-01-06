@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, RefreshCw, TrendingUp, Coins, Send, Eye, Building2, Plus, Edit2, Trash2, CreditCard, Banknote, Bitcoin, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, apiFetch } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { AdminActionType } from '@/components/admin/AdminOtpModal';
 
@@ -235,14 +235,14 @@ export default function FinaPayManagement() {
     };
     try {
       const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes, buyGoldRes] = await Promise.all([
-        fetch('/api/admin/transactions', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/users', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/deposit-requests', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/withdrawal-requests', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/finapay/peer-transfers', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/finapay/peer-requests', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/crypto-payments', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/buy-gold', { credentials: 'include', headers: adminHeaders })
+        apiFetch('/api/admin/transactions', { credentials: 'include', headers: adminHeaders }),
+        apiFetch('/api/admin/users', { credentials: 'include', headers: adminHeaders }),
+        apiFetch('/api/admin/deposit-requests', { credentials: 'include', headers: adminHeaders }),
+        apiFetch('/api/admin/withdrawal-requests', { credentials: 'include', headers: adminHeaders }),
+        apiFetch('/api/admin/finapay/peer-transfers', { credentials: 'include', headers: adminHeaders }),
+        apiFetch('/api/admin/finapay/peer-requests', { credentials: 'include', headers: adminHeaders }),
+        apiFetch('/api/admin/crypto-payments', { credentials: 'include', headers: adminHeaders }),
+        apiFetch('/api/admin/buy-gold', { credentials: 'include', headers: adminHeaders })
       ]);
       
       const txData = await txResponse.json();
@@ -435,7 +435,7 @@ export default function FinaPayManagement() {
       
       console.log('[handleCryptoAction] Sending request:', { endpoint, userId: currentUser.id, body });
       
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -492,7 +492,7 @@ export default function FinaPayManagement() {
             adminNotes: buyGoldAdminNotes 
           };
       
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

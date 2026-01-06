@@ -17,7 +17,7 @@ import {
   Coins, Receipt, ScrollText, Eye, ChevronDown, FileSpreadsheet
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, apiFetch } from '@/lib/queryClient';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -161,7 +161,7 @@ export default function FinancialReports() {
   const { data: overview, isLoading: loadingOverview, refetch: refetchOverview } = useQuery<FinancialOverview>({
     queryKey: ['/api/admin/financial/overview', dateRange],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/financial/overview?range=${dateRange}`);
+      const res = await apiFetch(`/api/admin/financial/overview?range=${dateRange}`);
       if (!res.ok) throw new Error('Failed to fetch financial overview');
       return res.json();
     }
@@ -170,7 +170,7 @@ export default function FinancialReports() {
   const { data: metrics, isLoading: loadingMetrics } = useQuery<ProductMetrics>({
     queryKey: ['/api/admin/financial/metrics', dateRange],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/financial/metrics?range=${dateRange}`);
+      const res = await apiFetch(`/api/admin/financial/metrics?range=${dateRange}`);
       if (!res.ok) throw new Error('Failed to fetch product metrics');
       return res.json();
     }
@@ -179,7 +179,7 @@ export default function FinancialReports() {
   const { data: userFinancials, isLoading: loadingUsers } = useQuery<UserFinancialData[]>({
     queryKey: ['/api/admin/financial/users'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/financial/users');
+      const res = await apiFetch('/api/admin/financial/users');
       if (!res.ok) throw new Error('Failed to fetch user financials');
       return res.json();
     }
@@ -188,7 +188,7 @@ export default function FinancialReports() {
   const { data: goldHoldings, isLoading: loadingGold } = useQuery<GoldHoldingsSummary>({
     queryKey: ['/api/admin/financial/gold-holdings'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/financial/gold-holdings');
+      const res = await apiFetch('/api/admin/financial/gold-holdings');
       if (!res.ok) throw new Error('Failed to fetch gold holdings');
       return res.json();
     }
@@ -197,7 +197,7 @@ export default function FinancialReports() {
   const { data: certificates, isLoading: loadingCerts } = useQuery<CertificateSummary>({
     queryKey: ['/api/admin/financial/certificates'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/financial/certificates');
+      const res = await apiFetch('/api/admin/financial/certificates');
       if (!res.ok) throw new Error('Failed to fetch certificates');
       return res.json();
     }
@@ -206,7 +206,7 @@ export default function FinancialReports() {
   const { data: finaBridge, isLoading: loadingBridge } = useQuery<FinaBridgeSummary>({
     queryKey: ['/api/admin/financial/finabridge'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/financial/finabridge');
+      const res = await apiFetch('/api/admin/financial/finabridge');
       if (!res.ok) throw new Error('Failed to fetch FinaBridge');
       return res.json();
     }
@@ -215,7 +215,7 @@ export default function FinancialReports() {
   const { data: feesSummary, isLoading: loadingFees } = useQuery<FeesSummary>({
     queryKey: ['/api/admin/financial/fees', dateRange],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/financial/fees?range=${dateRange}`);
+      const res = await apiFetch(`/api/admin/financial/fees?range=${dateRange}`);
       if (!res.ok) throw new Error('Failed to fetch fees summary');
       return res.json();
     }
