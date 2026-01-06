@@ -101,7 +101,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     queryKey: ['/api/admin/employee/me', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const res = await fetch(`/api/admin/employees/by-user/${user.id}`, { credentials: 'include' });
+      const url = new URL(`/api/admin/employees/by-user/${user.id}`, window.location.origin).href;
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
@@ -112,7 +113,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: pendingCounts } = useQuery({
     queryKey: ['/api/admin/pending-counts'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/pending-counts', { credentials: 'include' });
+      const url = new URL('/api/admin/pending-counts', window.location.origin).href;
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },

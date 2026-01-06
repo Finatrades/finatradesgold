@@ -2,6 +2,10 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 export const SESSION_EXPIRED_EVENT = 'session:expired';
 
+export function getApiUrl(path: string): string {
+  return new URL(path, window.location.origin).href;
+}
+
 function handleSessionExpired() {
   const currentPath = window.location.pathname;
   const publicPaths = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/reset-password', '/verify-email'];
