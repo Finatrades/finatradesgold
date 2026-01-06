@@ -15644,8 +15644,6 @@ ${message}
       await sendEmailDirect(user.email, 'CMS Snapshot Apply - OTP Verification', htmlBody);
       
       res.json({ success: true, message: 'OTP sent to your email' });
-      
-      res.json({ success: true, message: 'OTP sent to your email' });
     } catch (error) {
       console.error('[CMS Snapshot OTP] Error:', error);
       res.status(500).json({ message: "Failed to send OTP" });
