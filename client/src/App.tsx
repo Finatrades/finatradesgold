@@ -145,23 +145,14 @@ import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManage
 import UserPreferencesManagement from "@/pages/admin/UserPreferencesManagement";
 import AccountDeletionRequests from "@/pages/admin/AccountDeletionRequests";
 import AuditTrail from "@/pages/admin/AuditTrail";
-import RevenueAnalytics from "@/pages/admin/RevenueAnalytics";
 import DailyReconciliation from "@/pages/admin/DailyReconciliation";
 import RiskExposure from "@/pages/admin/RiskExposure";
 import SuspiciousActivityReports from "@/pages/admin/SuspiciousActivityReports";
 import ScheduledJobs from "@/pages/admin/ScheduledJobs";
 import ApiLogs from "@/pages/admin/ApiLogs";
-import SettlementQueue from "@/pages/admin/SettlementQueue";
-import LiquidityDashboard from "@/pages/admin/LiquidityDashboard";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
-import BankStatementImport from "@/pages/admin/BankStatementImport";
-import ChargebackTracker from "@/pages/admin/ChargebackTracker";
-import CounterpartyRisk from "@/pages/admin/CounterpartyRisk";
-import CurrencyExchange from "@/pages/admin/CurrencyExchange";
-import DailyCashPosition from "@/pages/admin/DailyCashPosition";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
-import WireTransferTracking from "@/pages/admin/WireTransferTracking";
 import QADepositTest from "@/pages/QADepositTest";
 import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
@@ -251,14 +242,11 @@ function Router() {
       <Route path="/admin/user-preferences" component={UserPreferencesManagement} />
       <Route path="/admin/account-deletion-requests" component={AccountDeletionRequests} />
       <Route path="/admin/audit-trail" component={AuditTrail} />
-      <Route path="/admin/revenue-analytics" component={RevenueAnalytics} />
       <Route path="/admin/daily-reconciliation" component={DailyReconciliation} />
       <Route path="/admin/risk-exposure" component={RiskExposure} />
       <Route path="/admin/sar-reports" component={SuspiciousActivityReports} />
       <Route path="/admin/scheduled-jobs" component={ScheduledJobs} />
       <Route path="/admin/api-logs" component={ApiLogs} />
-      <Route path="/admin/settlement-queue" component={SettlementQueue} />
-      <Route path="/admin/liquidity" component={LiquidityDashboard} />
       <Route path="/admin/regulatory-reports" component={RegulatoryReports} />
       
       {/* Renamed/Consolidated Modules */}
@@ -282,12 +270,6 @@ function Router() {
       <Route path="/admin/compliance" component={ComplianceDashboard} />
       
       {/* Operations & Finance */}
-      <Route path="/admin/cash-position" component={DailyCashPosition} />
-      <Route path="/admin/wire-transfers" component={WireTransferTracking} />
-      <Route path="/admin/currency-exchange" component={CurrencyExchange} />
-      <Route path="/admin/bank-statements" component={BankStatementImport} />
-      <Route path="/admin/chargebacks" component={ChargebackTracker} />
-      <Route path="/admin/counterparty-risk" component={CounterpartyRisk} />
       <Route path="/admin/interest-calculator" component={InterestCalculator} />
       
       {/* Analytics & Business Intelligence */}

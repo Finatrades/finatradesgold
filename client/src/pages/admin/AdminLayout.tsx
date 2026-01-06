@@ -78,15 +78,12 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/referrals': ['view_users', 'manage_users'],
   '/admin/account-deletion-requests': ['view_users', 'manage_users'],
   '/admin/audit-trail': ['view_reports'],
-  '/admin/revenue-analytics': ['view_reports', 'generate_reports'],
   '/admin/daily-reconciliation': ['view_reports', 'generate_reports'],
   '/admin/risk-exposure': ['view_reports'],
   '/admin/sar-reports': ['view_kyc', 'manage_kyc'],
   '/admin/regulatory-reports': ['view_reports', 'generate_reports'],
   '/admin/scheduled-jobs': ['manage_settings'],
   '/admin/api-logs': ['manage_settings'],
-  '/admin/settlement-queue': ['view_transactions', 'manage_transactions'],
-  '/admin/liquidity': ['view_reports'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -197,16 +194,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'Transactions', href: '/admin/transactions' },
         { label: 'Account Statements', href: '/admin/account-statements' },
-        { label: 'Revenue Analytics', href: '/admin/revenue-analytics' },
         { label: 'Daily Reconciliation', href: '/admin/daily-reconciliation' },
-        { label: 'Settlement Queue', href: '/admin/settlement-queue' },
-        { label: 'Liquidity Dashboard', href: '/admin/liquidity' },
-        { label: 'Cash Position', href: '/admin/cash-position' },
-        { label: 'Wire Transfers', href: '/admin/wire-transfers' },
-        { label: 'Currency Exchange', href: '/admin/currency-exchange' },
-        { label: 'Bank Statements', href: '/admin/bank-statements' },
-        { label: 'Chargebacks', href: '/admin/chargebacks' },
-        { label: 'Counterparty Risk', href: '/admin/counterparty-risk' },
         { label: 'Interest Calculator', href: '/admin/interest-calculator' },
         { label: 'Payment Gateways', href: '/admin/payment-gateways' },
         { label: 'Fee Management', href: '/admin/fees' },
