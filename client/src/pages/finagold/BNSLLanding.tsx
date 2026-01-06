@@ -804,47 +804,47 @@ function CalculatorSection() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+            <div className="grid grid-cols-2 gap-3 lg:gap-4">
+              <div className="bg-white rounded-2xl p-4 lg:p-5 border border-gray-100 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">BNSL Plan Value</span>
-                  <div className="p-1.5 rounded-lg bg-purple-100">
-                    <Lock className="w-3.5 h-3.5 text-purple-600" />
+                  <span className="text-[10px] lg:text-xs font-semibold text-gray-500 uppercase tracking-wide">BNSL Plan Value</span>
+                  <div className="p-1 lg:p-1.5 rounded-lg bg-purple-100">
+                    <Lock className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-purple-600" />
                   </div>
                 </div>
-                <p className="text-3xl font-black text-gray-900">{formatCurrency(calculations.planValue)}</p>
-                <p className="text-xs text-gray-500 mt-1">Value of your BNSL plan</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-gray-900 truncate">{formatCurrency(calculations.planValue)}</p>
+                <p className="text-[10px] lg:text-xs text-gray-500 mt-1">Value of your BNSL plan</p>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+              <div className="bg-white rounded-2xl p-4 lg:p-5 border border-gray-100 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Guaranteed Buy Back Margin *</span>
-                  <Sparkles className="w-4 h-4 text-yellow-500" />
+                  <span className="text-[10px] lg:text-xs font-semibold text-gray-500 uppercase tracking-wide">Guaranteed Buy Back Margin *</span>
+                  <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 text-yellow-500" />
                 </div>
-                <p className="text-3xl font-black text-green-600">+{formatCurrency(calculations.guaranteedMargin)}</p>
-                <p className="text-xs text-gray-500 mt-1">Guaranteed margin on buy back</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-green-600 truncate">+{formatCurrency(calculations.guaranteedMargin)}</p>
+                <p className="text-[10px] lg:text-xs text-gray-500 mt-1">Guaranteed margin on buy back</p>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+              <div className="bg-white rounded-2xl p-4 lg:p-5 border border-gray-100 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Gold Value at Maturity *</span>
-                  <div className="p-1.5 rounded-lg bg-blue-100">
-                    <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="text-[10px] lg:text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Gold Value at Maturity *</span>
+                  <div className="p-1 lg:p-1.5 rounded-lg bg-blue-100">
+                    <BarChart3 className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-blue-600" />
                   </div>
                 </div>
-                <p className="text-3xl font-black text-gray-900">{formatCurrency(calculations.totalValueAtMaturity)}</p>
-                <p className="text-xs text-gray-500 mt-1">Combined purchased and additional gold</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-gray-900 truncate">{formatCurrency(calculations.totalValueAtMaturity)}</p>
+                <p className="text-[10px] lg:text-xs text-gray-500 mt-1">Combined purchased and additional gold</p>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+              <div className="bg-white rounded-2xl p-4 lg:p-5 border border-gray-100 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quarterly Paid Margin *</span>
-                  <div className="p-1.5 rounded-lg bg-orange-100">
-                    <Sparkles className="w-3.5 h-3.5 text-orange-600" />
+                  <span className="text-[10px] lg:text-xs font-semibold text-gray-500 uppercase tracking-wide">Quarterly Paid Margin *</span>
+                  <div className="p-1 lg:p-1.5 rounded-lg bg-orange-100">
+                    <Sparkles className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-orange-600" />
                   </div>
                 </div>
-                <p className="text-3xl font-black text-gray-900">{formatCurrency(calculations.quarterlyMargin)}</p>
-                <p className="text-xs text-gray-500 mt-1">Margin paid every quarter + Principal paid after locking period.</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-gray-900 truncate">{formatCurrency(calculations.quarterlyMargin)}</p>
+                <p className="text-[10px] lg:text-xs text-gray-500 mt-1">Margin paid every quarter + Principal paid after locking period.</p>
               </div>
             </div>
 
