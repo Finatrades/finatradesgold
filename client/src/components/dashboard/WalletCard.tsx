@@ -7,13 +7,12 @@ import { AEDAmount } from '@/components/ui/DirhamSymbol';
 
 interface WalletCardProps {
   goldGrams?: number;
-  usdBalance?: number;
   goldPrice?: number;
 }
 
 const USD_TO_AED = 3.67;
 
-export default function WalletCard({ goldGrams = 0, usdBalance = 0, goldPrice = 85 }: WalletCardProps) {
+export default function WalletCard({ goldGrams = 0, goldPrice = 85 }: WalletCardProps) {
   const goldValueUsd = goldGrams * goldPrice;
   const goldValueAed = goldValueUsd * USD_TO_AED;
 
@@ -40,10 +39,7 @@ export default function WalletCard({ goldGrams = 0, usdBalance = 0, goldPrice = 
              <span data-testid="text-wallet-usd-value">≈ ${goldValueUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
              <span>≈ <AEDAmount amount={goldValueAed} /></span>
            </div>
-           {usdBalance > 0 && (
-             <p className="text-xs text-white/60 mt-1">+ ${usdBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD cash</p>
-           )}
-         </div>
+           </div>
 
          <div className="flex gap-3">
            <Link href="/finapay?action=deposit" className="flex-1">

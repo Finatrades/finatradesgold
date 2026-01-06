@@ -17,9 +17,11 @@ export default function GoldBackedDisclosure({ variant = 'compact', className = 
           <div className="flex-1">
             <h4 className="font-semibold text-foreground mb-1">Gold-Backed Balance Disclosure</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Your balance is not cash. It represents physical gold that you legally own, digitally recorded by 
+              <strong className="text-amber-700">USD is an equivalent value. Your real balance is gold.</strong> Your balance represents 
+              physical gold that you legally own, digitally recorded by 
               <span className="font-medium text-fuchsia-600"> Finatrades</span> and physically stored by 
-              <span className="font-medium text-fuchsia-600"> Wingold & Metals DMCC</span>.
+              <span className="font-medium text-fuchsia-600"> Wingold & Metals DMCC</span>. The USD value is calculated 
+              dynamically based on the current gold price.
             </p>
             <div className="mt-3 pt-3 border-t border-purple-200">
               <p className="text-xs text-muted-foreground">
@@ -37,10 +39,11 @@ export default function GoldBackedDisclosure({ variant = 'compact', className = 
   }
 
   return (
-    <div className={`flex items-center gap-2 text-xs text-muted-foreground bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 ${className}`}>
-      <Info className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+    <div className={`flex items-center gap-2 text-xs text-muted-foreground bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 ${className}`}>
+      <Info className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
       <span>
-        Your balance represents physical gold backed 1:1 — digitally recorded by Finatrades and stored by Wingold & Metals DMCC.
+        <strong className="text-amber-700">USD is an equivalent value. Your real balance is gold.</strong>
+        {' '}The USD value shown is calculated at the current gold price and may change.
       </span>
     </div>
   );
