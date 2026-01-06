@@ -3989,60 +3989,6 @@ export type InsertAccountDeletionRequest = z.infer<typeof insertAccountDeletionR
 export type AccountDeletionRequest = typeof accountDeletionRequests.$inferSelect;
 
 // ============================================
-// SCHEDULED JOBS (Background Tasks)
-// ============================================
-
-export const scheduledJobStatusEnum = pgEnum('scheduled_job_status', [
-  'active', 'paused', 'completed', 'failed', 'running'
-]);
-
-export const scheduledJobs = pgTable("scheduled_jobs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  cronExpression: varchar("cron_expression", { length: 100 }),
-  intervalMs: integer("interval_ms"),
-  
-  status: scheduledJobStatusEnum("status").notNull().default('active'),
-  
-  lastRunAt: timestamp("last_run_at"),
-  lastRunDurationMs: integer("last_run_duration_ms"),
-  lastRunResult: text("last_run_result"),
-  lastError: text("last_error"),
-  
-  nextRunAt: timestamp("next_run_at"),
-  runCount: integer("run_count").notNull().default(0),
-  failCount: integer("fail_count").notNull().default(0),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertScheduledJobSchema = createInsertSchema(scheduledJobs).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertScheduledJob = z.infer<typeof insertScheduledJobSchema>;
-export type ScheduledJob = typeof scheduledJobs.$inferSelect;
-
-// Scheduled Job Runs (History)
-export const scheduledJobRuns = pgTable("scheduled_job_runs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  jobId: varchar("job_id", { length: 255 }).notNull().references(() => scheduledJobs.id),
-  
-  startedAt: timestamp("started_at").notNull().defaultNow(),
-  completedAt: timestamp("completed_at"),
-  durationMs: integer("duration_ms"),
-  
-  success: boolean("success"),
-  result: text("result"),
-  error: text("error"),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertScheduledJobRunSchema = createInsertSchema(scheduledJobRuns).omit({ id: true, createdAt: true });
-export type InsertScheduledJobRun = z.infer<typeof insertScheduledJobRunSchema>;
-export type ScheduledJobRun = typeof scheduledJobRuns.$inferSelect;
-
-// ============================================
 // SETTLEMENT QUEUE
 // ============================================
 
