@@ -266,7 +266,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
             {step === 'upload' && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="amountUsd">Amount (USD) - Optional</Label>
+                  <Label htmlFor="amountUsd">Amount (USD)</Label>
                   <Input
                     id="amountUsd"
                     type="number"
@@ -281,7 +281,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="referenceId">Wingold Reference ID - Optional</Label>
+                  <Label htmlFor="referenceId">Wingold Reference ID</Label>
                   <Input
                     id="referenceId"
                     placeholder="Enter Wingold transaction reference"
