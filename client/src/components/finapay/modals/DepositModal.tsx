@@ -1543,7 +1543,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
                 onClick={handleSubmit} 
-                disabled={!amount || submitting || (termsContent?.enabled && !termsAccepted)}
+                disabled={(inputMode === 'usd' ? !amount || parseFloat(amount) <= 0 : !goldAmount || parseFloat(goldAmount) <= 0) || submitting || (termsContent?.enabled && !termsAccepted)}
                 data-testid="button-submit-deposit"
               >
                 {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
