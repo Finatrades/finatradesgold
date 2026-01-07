@@ -23163,6 +23163,37 @@ ${message}
         createdBy: adminUser?.id || 'system',
       });
       
+      // Update dual-wallet vaultOwnershipSummary for MPGW/FPGW balance tracking
+      const walletType = (paymentRequest as any).goldWalletType || 'MPGW';
+      const [existingSummary] = await db.select().from(vaultOwnershipSummary)
+        .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
+      
+      if (existingSummary) {
+        if (walletType === 'FPGW') {
+          const currentFpgw = parseFloat(existingSummary.fpgwAvailableGrams || '0');
+          await db.update(vaultOwnershipSummary)
+            .set({ 
+              fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6),
+              lastUpdated: new Date() 
+            })
+            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
+        } else {
+          const currentMpgw = parseFloat(existingSummary.mpgwAvailableGrams || '0');
+          await db.update(vaultOwnershipSummary)
+            .set({ 
+              mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6),
+              lastUpdated: new Date() 
+            })
+            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
+        }
+      } else {
+        await db.insert(vaultOwnershipSummary).values({
+          userId: paymentRequest.userId,
+          mpgwAvailableGrams: walletType === 'MPGW' ? goldGrams.toFixed(6) : '0',
+          fpgwAvailableGrams: walletType === 'FPGW' ? goldGrams.toFixed(6) : '0',
+        });
+      }
+      
       // SPECIFICATION REQUIREMENT: Generate DOC + SSC certificates
       const generatedCertificates: any[] = [];
       
