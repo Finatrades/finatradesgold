@@ -1473,9 +1473,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               )}
             </div>
             
-            <div className="bg-warning-muted border border-warning/30 rounded-lg p-3 text-sm text-warning-muted-foreground">
-              <p className="font-medium mb-1">After sending, click "I've Sent Payment" below</p>
-              <p className="text-xs">You'll then enter your transaction hash for verification.</p>
+            <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 text-sm text-primary">
+              <p className="font-semibold mb-1">After sending, click "I've Sent Payment" below</p>
+              <p className="text-xs text-primary/80">You'll then enter your transaction hash for verification.</p>
             </div>
           </div>
         ) : step === 'crypto-submit-proof' ? (
@@ -1710,6 +1710,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
                 onClick={() => setStep('crypto-submit-proof')}
+                className="bg-primary hover:bg-primary/90"
                 data-testid="button-crypto-sent"
               >
                 <CheckCircle2 className="w-4 h-4 mr-2" />
