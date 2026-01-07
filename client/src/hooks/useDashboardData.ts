@@ -87,6 +87,16 @@ interface DashboardResponse {
     activeBnslPlans: number;
     pendingGoldGrams: number;
     pendingDepositUsd: number;
+    // MPGW/FPGW breakdown
+    mpgwAvailableGrams: number;
+    mpgwPendingGrams: number;
+    mpgwLockedBnslGrams: number;
+    mpgwReservedTradeGrams: number;
+    fpgwAvailableGrams: number;
+    fpgwPendingGrams: number;
+    fpgwLockedBnslGrams: number;
+    fpgwReservedTradeGrams: number;
+    fpgwWeightedAvgPriceUsd: number;
   };
   _meta: SyncMeta;
 }
@@ -121,6 +131,16 @@ interface DashboardData {
     activeBnslPlans: number;
     pendingGoldGrams: number;
     pendingDepositUsd: number;
+    // MPGW/FPGW breakdown
+    mpgwAvailableGrams: number;
+    mpgwPendingGrams: number;
+    mpgwLockedBnslGrams: number;
+    mpgwReservedTradeGrams: number;
+    fpgwAvailableGrams: number;
+    fpgwPendingGrams: number;
+    fpgwLockedBnslGrams: number;
+    fpgwReservedTradeGrams: number;
+    fpgwWeightedAvgPriceUsd: number;
   };
   refetch: () => void;
   invalidateAll: () => void;
@@ -217,6 +237,15 @@ export function useDashboardData(): DashboardData {
     activeBnslPlans: 0,
     pendingGoldGrams: 0,
     pendingDepositUsd: 0,
+    mpgwAvailableGrams: 0,
+    mpgwPendingGrams: 0,
+    mpgwLockedBnslGrams: 0,
+    mpgwReservedTradeGrams: 0,
+    fpgwAvailableGrams: 0,
+    fpgwPendingGrams: 0,
+    fpgwLockedBnslGrams: 0,
+    fpgwReservedTradeGrams: 0,
+    fpgwWeightedAvgPriceUsd: 0,
   };
 
   return {

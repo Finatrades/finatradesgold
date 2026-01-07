@@ -5,6 +5,8 @@ import { Link } from 'wouter';
 import { Badge } from '@/components/ui/badge';
 
 interface WalletData {
+  mpgwGrams?: number;
+  fpgwGrams?: number;
   goldGrams: number;
   usdValue: number;
   pending?: number;
@@ -66,6 +68,22 @@ export default function DashboardWalletCards({
             </p>
             <p className="text-xs text-fuchsia-600 font-medium gold-shimmer">~{finaPayWallet.goldGrams.toFixed(2)}g gold</p>
           </div>
+          
+          {/* MPGW/FPGW Dual Wallet Breakdown */}
+          {(finaPayWallet.mpgwGrams || finaPayWallet.fpgwGrams) ? (
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 bg-gradient-to-r from-purple-50 to-fuchsia-50 p-2 rounded-lg">
+            <div>
+              <p className="text-xs text-purple-500 font-medium">MPGW (Market)</p>
+              <p className="text-sm font-bold text-gray-900">{(finaPayWallet.mpgwGrams || 0).toFixed(4)}g</p>
+              <p className="text-xs text-gray-500">Live price</p>
+            </div>
+            <div>
+              <p className="text-xs text-amber-500 font-medium">FPGW (Fixed)</p>
+              <p className="text-sm font-bold text-gray-900">{(finaPayWallet.fpgwGrams || 0).toFixed(4)}g</p>
+              <p className="text-xs text-gray-500">Locked price</p>
+            </div>
+          </div>
+          ) : null}
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
             <div>

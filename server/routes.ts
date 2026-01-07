@@ -743,7 +743,8 @@ export async function registerRoutes(
         tradeCases,
         certificates,
         finabridgeWallet,
-        buyGoldRequests
+        buyGoldRequests,
+        vaultSummaryResult
       ] = await Promise.all([
         storage.getWallet(userId).catch(() => null),
         storage.getUserVaultHoldings(userId).catch(() => []),
@@ -756,11 +757,14 @@ export async function registerRoutes(
         storage.getUserTradeCases(userId).catch(() => []),
         storage.getUserCertificates(userId).catch(() => []),
         storage.getFinabridgeWallet(userId).catch(() => null),
-        storage.getUserBuyGoldRequests(userId).catch(() => [])
+        storage.getUserBuyGoldRequests(userId).catch(() => []),
+        db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId)).limit(1).catch(() => []),
       ]);
 
       const goldPrice = priceData.pricePerGram || 85;
       const goldPriceSource = priceData.source || 'fallback';
+      // Extract vault ownership summary with MPGW/FPGW breakdown
+      const vaultSummary = Array.isArray(vaultSummaryResult) && vaultSummaryResult.length > 0 ? vaultSummaryResult[0] : null;
       
       // Convert deposit requests to transaction format (exclude approved ones - they already have a transaction record)
       const depositTransactions = (depositRequests || [])
@@ -907,7 +911,17 @@ export async function registerRoutes(
           bnslTotalProfit,
           activeBnslPlans: activeBnslPlans.length,
           pendingGoldGrams,
-          pendingDepositUsd
+          pendingDepositUsd,
+          // MPGW/FPGW breakdown from vault ownership summary
+          mpgwAvailableGrams: parseFloat(vaultSummary?.mpgwAvailableGrams || '0'),
+          mpgwPendingGrams: parseFloat(vaultSummary?.mpgwPendingGrams || '0'),
+          mpgwLockedBnslGrams: parseFloat(vaultSummary?.mpgwLockedBnslGrams || '0'),
+          mpgwReservedTradeGrams: parseFloat(vaultSummary?.mpgwReservedTradeGrams || '0'),
+          fpgwAvailableGrams: parseFloat(vaultSummary?.fpgwAvailableGrams || '0'),
+          fpgwPendingGrams: parseFloat(vaultSummary?.fpgwPendingGrams || '0'),
+          fpgwLockedBnslGrams: parseFloat(vaultSummary?.fpgwLockedBnslGrams || '0'),
+          fpgwReservedTradeGrams: parseFloat(vaultSummary?.fpgwReservedTradeGrams || '0'),
+          fpgwWeightedAvgPriceUsd: parseFloat(vaultSummary?.fpgwWeightedAvgPriceUsd || '0')
         },
         _meta: { 
           loadTimeMs: loadTime,

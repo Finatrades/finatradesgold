@@ -328,6 +328,8 @@ export default function Dashboard() {
               finaPayWallet={{
                 goldGrams: totals.walletGoldGrams || 0,
                 usdValue: (totals.walletGoldGrams || 0) * goldPrice,
+                mpgwGrams: totals.mpgwAvailableGrams || 0,
+                fpgwGrams: totals.fpgwAvailableGrams || 0,
                 pending: totals.pendingGoldGrams || 0,
                 transactions: transactions?.length || 0
               }}

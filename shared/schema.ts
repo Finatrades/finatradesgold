@@ -1055,8 +1055,6 @@ export const depositRequests = pgTable("deposit_requests", {
   // MPGW/FPGW wallet selection - which wallet gold is used for settlement
   goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   status: depositRequestStatusEnum("status").notNull().default('Pending'),
-  // MPGW/FPGW wallet selection - which wallet to credit
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('MPGW'), // 'MPGW' or 'FPGW'
   processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
   processedAt: timestamp("processed_at"),
   rejectionReason: text("rejection_reason"),
@@ -1089,8 +1087,6 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   // MPGW/FPGW wallet selection - which wallet gold is used for settlement
   goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   status: withdrawalRequestStatusEnum("status").notNull().default('Pending'),
-  // MPGW/FPGW wallet selection - which wallet to debit
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('MPGW'), // 'MPGW' or 'FPGW'
   // Gold amount being withdrawn
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
   goldPriceAtRequest: decimal("gold_price_at_request", { precision: 12, scale: 2 }),
@@ -1405,9 +1401,6 @@ export const vaultLedgerEntries = pgTable("vault_ledger_entries", {
   
   // Audit fields
   notes: text("notes"),
-
-  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdBy: varchar("created_by", { length: 255 }), // 'system' or admin userId
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -1852,8 +1845,6 @@ export const bnslPlans = pgTable("bnsl_plans", {
   planRiskLevel: riskLevelEnum("plan_risk_level").notNull().default('Low'),
   notes: text("notes"),
 
-  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   
   // Fee percentages (captured from template at enrollment)
   earlyTerminationFeePercent: decimal("early_termination_fee_percent", { precision: 5, scale: 2 }).notNull().default('2.00'),
