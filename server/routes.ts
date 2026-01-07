@@ -23139,7 +23139,7 @@ ${message}
         goldPriceUsdPerGram: paymentRequest.goldPriceAtTime,
         description: `Crypto deposit - $${parseFloat(paymentRequest.amountUsd).toFixed(2)} (${parseFloat(paymentRequest.goldGrams).toFixed(4)}g gold)`,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+        goldWalletType: (paymentRequest as any).goldWalletType || 'MPGW',
       });
       
       const goldGrams = paymentRequest.goldGrams ? parseFloat(paymentRequest.goldGrams) : 0;
