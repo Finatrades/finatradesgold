@@ -521,14 +521,20 @@ export default function VaultActivityList() {
   );
   
   const bankDepositActivities: VaultTransaction[] = depositRequests
-    .filter(dep => !existingDepositRefs.has(dep.referenceNumber))
+    .filter(dep => {
+      // Exclude confirmed/approved deposits - they have a transaction record with gold data
+      if (dep.status === 'Confirmed' || dep.status === 'Approved') return false;
+      // Also exclude if there's already a matching transaction
+      if (existingDepositRefs.has(dep.referenceNumber)) return false;
+      return true;
+    })
     .map(dep => ({
       id: `deposit-${dep.id}`,
       type: 'Bank Deposit' as const,
-      status: dep.status === 'Confirmed' ? 'Completed' : dep.status === 'Rejected' ? 'Cancelled' : 'Pending',
-      amountGold: dep.goldGrams || null,
+      status: dep.status === 'Rejected' ? 'Cancelled' : 'Pending',
+      amountGold: null, // Deposit requests don't have gold data until approved
       amountUsd: dep.amountUsd,
-      goldPriceUsdPerGram: dep.goldPriceAtRequest || null,
+      goldPriceUsdPerGram: null, // Will be set when deposit is approved
       recipientEmail: null,
       senderEmail: null,
       description: `Bank Deposit via ${dep.paymentMethod}`,
