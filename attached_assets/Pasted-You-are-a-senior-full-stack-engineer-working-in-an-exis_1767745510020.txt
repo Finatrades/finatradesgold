@@ -1,0 +1,252 @@
+You are a senior full-stack engineer working in an existing FINATRADES Replit codebase (already ~80–85% complete). DO NOT rebuild the app. Implement the MPGW/FPGW dual-wallet feature and internal transfers as incremental patches with DB migrations, API updates, UI updates, and tests.
+
+========================================================
+GOAL
+========================================================
+Add two user-selectable wallet types:
+- MPGW = Market Price Gold Wallet (live market valuation)
+- FPGW = Fixed Price Gold Wallet (price locked at time of entry/lock)
+
+Users must be able to:
+1) Choose MPGW or FPGW when: Add Funds, Withdraw/Sell, Send Payment, Request Payment
+2) Perform INTERNAL TRANSFER:
+   - MPGW → FPGW (lock price snapshot)
+   - FPGW → MPGW (release to market pricing)
+3) View wallet balances + Pending + Locked (BNSL/Trade) separately per wallet type
+4) Have correct ledger entries + certificates for every action
+
+Non-negotiable Rules:
+- Gold grams are the asset of record; USD is reference display only.
+- Pending and Locked gold are NOT spendable.
+- MPGW/FPGW are logical sub-wallets within the same FinaVault ledger.
+- Internal transfers do NOT move physical gold; only valuation mode changes.
+- All balance changes must write append-only ledger entries.
+- Certificates must auto-generate and be linked to tx_id.
+
+========================================================
+A) DATABASE / MODELS (MIGRATIONS REQUIRED)
+========================================================
+
+1) vaultOwnershipSummary (or equivalent balances table/view)
+If you already added pendingGrams earlier, keep it and extend as follows:
+
+Add these fields (decimal):
+- mpgwAvailableGrams
+- mpgwPendingGrams
+- mpgwLockedBnslGrams
+- mpgwReservedTradeGrams
+
+- fpgwAvailableGrams
+- fpgwPendingGrams
+- fpgwLockedBnslGrams
+- fpgwReservedTradeGrams
+
+If your existing schema has availableGrams/lockedBnslGrams/reservedTradeGrams only:
+- keep them for backward compatibility temporarily
+- but move logic to new fields and gradually deprecate old fields.
+
+2) fpgw_batches (NEW TABLE)
+FPGW must support multiple locked-price batches.
+
+Create table: fpgw_batches
+Fields:
+- id (pk)
+- userId (fk)
+- gramsRemaining (decimal)
+- lockedPricePerGram (decimal)
+- lockedAt (timestamp)
+- sourceTxId (fk transactions)
+- status (ACTIVE | CONSUMED)
+- createdAt
+
+Spend policy for FPGW:
+- FIFO by default (consume oldest ACTIVE batch first)
+- No negative grams
+
+3) transactions updates
+Ensure these fields exist:
+- walletType: MPGW | FPGW (nullable for internal transfer, but required for most actions)
+- fromWalletType/toWalletType for internal transfer
+- priceSnapshotPerGram (decimal, required when creating FPGW batch)
+- status state machine: DRAFT | PENDING_VERIFICATION | APPROVED | COMPLETED | REJECTED
+- rejectedReason (nullable)
+
+4) ledger entries updates
+Add fields:
+- walletType (MPGW/FPGW)
+- bucket (AVAILABLE/PENDING/LOCKED_BNSL/RESERVED_TRADE)
+- priceSnapshotPerGram (nullable)
+- referenceTxId
+
+========================================================
+B) PRICE FEED + SNAPSHOT RULES
+========================================================
+- MPGW valuation uses current price feed at display time.
+- FPGW locks priceSnapshotPerGram at:
+  - Add Funds submission time OR admin approval time (choose ONE and be consistent; recommend: admin approval time)
+  - MPGW→FPGW internal transfer confirmation time (snapshot at transfer moment)
+
+Store snapshot per transaction and per FPGW batch.
+
+========================================================
+C) INTERNAL TRANSFER FLOW (NEW)
+========================================================
+
+Create new feature: "Transfer Between Wallets"
+
+1) MPGW → FPGW (Lock Now)
+Steps:
+- User selects grams/USD to convert
+- Validate spendable grams:
+  spendable = mpgwAvailableGrams only
+- Create transaction type=INTERNAL_TRANSFER status=COMPLETED (no admin approval)
+- Debit mpgwAvailableGrams
+- Credit fpgwAvailableGrams
+- Create fpgw_batches row with:
+  gramsRemaining = moved grams
+  lockedPricePerGram = current price snapshot
+  lockedAt = now
+- Create ledger entries debit/credit
+- Generate certificate: LOCK_CONVERSION_CERTIFICATE
+  Include: grams, lockedPricePerGram, lockedAt, vault reference
+
+2) FPGW → MPGW (Release)
+Steps:
+- Validate spendable grams:
+  spendable = fpgwAvailableGrams (and must exist in ACTIVE batches)
+- Consume FIFO batches to cover requested grams
+- Create transaction type=INTERNAL_TRANSFER status=COMPLETED
+- Debit fpgwAvailableGrams
+- Credit mpgwAvailableGrams
+- Update batches gramsRemaining; mark CONSUMED if 0
+- Ledger entries debit/credit
+- Generate certificate: RELEASE_CONVERSION_CERTIFICATE
+  Include: grams, previous locked price references (optional summary), releasedAt
+
+========================================================
+D) UPDATE EXISTING FLOWS TO SUPPORT WALLET SELECTION
+========================================================
+
+1) Add Funds (Card/Bank/Crypto)
+- Add wallet selector: MPGW or FPGW
+- If MPGW:
+  - on completion credit mpgwAvailableGrams
+- If FPGW:
+  - on completion credit fpgwAvailableGrams
+  - create fpgw_batches with lockedPricePerGram snapshot
+- Pending:
+  - pending should be tracked separately per wallet: mpgwPendingGrams or fpgwPendingGrams
+- Certificates on COMPLETED:
+  - DIGITAL_OWNERSHIP_CERTIFICATE
+  - PHYSICAL_STORAGE_CERTIFICATE (Wingold) with vaultLocation and grams
+  - If FPGW: include lockedPricePerGram in certificate meta
+
+2) Withdraw/Sell
+- User selects wallet MPGW or FPGW
+- Check spendable grams in selected wallet’s AVAILABLE bucket
+- Debit selected wallet available grams
+- If from FPGW: consume FIFO batches accordingly
+- Generate TITLE_TRANSFER_TO_FINATRADES_CERTIFICATE
+
+3) Send Payment + Request Payment settlement
+- Sender chooses wallet type to pay from (MPGW or FPGW)
+- Spendable grams = AVAILABLE only in that wallet
+- Debit sender selected wallet available grams (and consume FPGW batches if FPGW)
+- Credit receiver:
+  Choose one consistent rule (implement now):
+  RULE A (recommended): receiver gets the SAME wallet type as sender:
+    - If sender uses FPGW, receiver credited to FPGW and a new batch created using the sender’s effective locked price snapshot for the grams transferred.
+    - If sender uses MPGW, receiver credited to MPGW.
+- Certificates:
+  - Sender: TRANSFER_CERTIFICATE
+  - Receiver: DIGITAL_OWNERSHIP_CERTIFICATE
+  - Storage certificate reference remains valid.
+
+4) BNSL Locking
+- Allow user to choose which wallet to lock from (MPGW or FPGW)
+- Move AVAILABLE → LOCKED_BNSL within same wallet type
+- Issue LOCK_CERTIFICATE (walletType + lock purpose)
+- If FPGW locked grams were from batches, mark those grams as locked with batch references OR create bnsl_lock_batches mapping.
+
+5) FinaBridge Reserve/Lock
+- Allow business users to choose wallet (MPGW or FPGW) when transferring into trade reserve
+- Move AVAILABLE → RESERVED_TRADE within same wallet type
+- Issue LOCK_CERTIFICATE
+- Ensure settlement lock uses RESERVED_TRADE only (not pending)
+
+========================================================
+E) UI CHANGES (MINIMAL, BANKING STYLE)
+========================================================
+
+1) Wallet Summary (FinaPay + FinaVault)
+Display two wallet cards:
+- MPGW: Available / Pending / Locked(BNSL) / Reserved(Trade)
+- FPGW: Available / Pending / Locked(BNSL) / Reserved(Trade)
+Show USD reference value for each wallet using:
+- MPGW: grams * live price
+- FPGW: show both:
+  - grams
+  - locked value summary (weighted average lockedPricePerGram)
+  Provide "View batches" option (optional but recommended).
+
+2) Add Funds / Withdraw / Send / Request forms:
+Add wallet selector dropdown (MPGW/FPGW)
+Show clear labels:
+- MPGW: live price
+- FPGW: price locked
+
+3) New screen:
+"Transfer Between Wallets"
+- From Wallet (MPGW/FPGW)
+- To Wallet (auto opposite)
+- Amount in USD/grams
+- Show preview with snapshot and confirmation
+
+========================================================
+F) CERTIFICATE TYPES (ADD IF MISSING)
+========================================================
+Add/ensure these certificate types exist:
+- LOCK_CONVERSION_CERTIFICATE (MPGW→FPGW)
+- RELEASE_CONVERSION_CERTIFICATE (FPGW→MPGW)
+
+Certificates must be created as DB records with:
+- userId, txId, type, metadata (grams, price snapshot, timestamps), file_url optional
+
+========================================================
+G) SECURITY / VALIDATION
+========================================================
+- Add a single reusable “SpendGuard” that checks:
+  - Only AVAILABLE grams in chosen wallet can be spent
+  - Pending/Locked/Reserved cannot be used
+- Apply guard to:
+  Add Funds completion, Send/Request, Withdraw/Sell, Internal transfer, BNSL lock, Trade reserve.
+
+========================================================
+H) TESTS (REQUIRED)
+========================================================
+Add tests to ensure:
+1) MPGW→FPGW creates batch + certificate and moves grams correctly
+2) FPGW→MPGW consumes FIFO batches correctly
+3) Cannot transfer/spend pending or locked grams
+4) Send payment from FPGW creates receiver FPGW batch with snapshot
+5) Withdraw from FPGW consumes batches and issues title transfer certificate
+6) Add funds into FPGW creates batch with snapshot and correct pending→available transition
+7) Ledger entries always match before/after balances (no negative)
+
+========================================================
+DELIVERABLES
+========================================================
+- DB migrations
+- Updated models/services
+- New internal transfer endpoints + UI
+- Updated existing flows with wallet selection
+- Certificate auto-generation hooks
+- Tests passing
+
+Start implementation by:
+1) DB migrations + models
+2) SpendGuard + ledger helpers
+3) Internal transfer APIs + batch logic
+4) Update Add Funds/Send/Withdraw/Request forms to include walletType
+5) Update UI wallet summary
+6) Certificates + tests
