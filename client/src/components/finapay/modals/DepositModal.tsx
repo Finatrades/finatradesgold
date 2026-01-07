@@ -1463,12 +1463,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <div className="bg-muted/30 rounded-lg border p-3 space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount to send:</span>
-                <span className="font-bold text-secondary">${parseFloat(amount).toFixed(2)} worth</span>
+                <span className="font-bold text-primary">${parseFloat(amount).toFixed(2)} worth</span>
               </div>
               {goldPrice?.pricePerGram && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Gold to receive:</span>
-                  <span className="font-medium">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
+                  <span className="font-bold text-amber-600">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
                 </div>
               )}
             </div>
