@@ -11314,7 +11314,7 @@ ${message}
               description: `Bank deposit confirmed - Ref: ${request.referenceNumber} | Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: request.referenceNumber,
               sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+              goldWalletType: (request as any).goldWalletType || 'MPGW',
               approvedBy: updates.processedBy,
               approvedAt: new Date(),
               completedAt: new Date(),
