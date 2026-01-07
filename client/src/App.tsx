@@ -162,8 +162,6 @@ import ApiLogs from "@/pages/admin/ApiLogs";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
-import QADepositTest from "@/pages/QADepositTest";
-import QATests from "@/pages/QATests";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 import BNSLLanding from "@/pages/finagold/BNSLLanding";
 import FinaVaultLanding from "@/pages/finagold/FinaVaultLanding";
@@ -287,10 +285,6 @@ function Router() {
       
       {/* Communication */}
       <Route path="/admin/announcements" component={Announcements} />
-      
-      {/* QA Routes */}
-      <Route path="/qa/tests" component={QATests} />
-      <Route path="/qa/deposit-test" component={QADepositTest} />
 
       <Route component={NotFound} />
     </Switch>
