@@ -124,105 +124,107 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
     const transactionId = crypto.randomUUID();
     const now = new Date();
 
-    if (fromWalletType === 'MPGW' && toWalletType === 'FPGW') {
-      await db
-        .update(vaultOwnershipSummary)
-        .set({
-          mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} - ${goldGrams}`,
-          lastUpdated: now
-        })
-        .where(eq(vaultOwnershipSummary.userId, userId));
+    await db.transaction(async (tx) => {
+      if (fromWalletType === 'MPGW' && toWalletType === 'FPGW') {
+        await tx
+          .update(vaultOwnershipSummary)
+          .set({
+            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} - ${goldGrams}`,
+            lastUpdated: now
+          })
+          .where(eq(vaultOwnershipSummary.userId, userId));
 
-      await createFpgwBatch({
-        userId,
-        goldGrams,
-        lockedPriceUsd: currentGoldPrice,
-        sourceType: 'conversion',
-        sourceTransactionId: transactionId,
-        notes: notes || `MPGW to FPGW conversion at $${currentGoldPrice.toFixed(2)}/g`
-      });
+        await createFpgwBatch({
+          userId,
+          goldGrams,
+          lockedPriceUsd: currentGoldPrice,
+          sourceType: 'conversion',
+          sourceTransactionId: transactionId,
+          notes: notes || `MPGW to FPGW conversion at $${currentGoldPrice.toFixed(2)}/g`
+        });
 
-      const balanceSummary = await getBalanceSummary(userId);
-      await db.insert(vaultLedgerEntries).values({
-        userId,
-        action: 'MPGW_To_FPGW',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-        valueUsd: (goldGrams * currentGoldPrice).toFixed(2),
-        fromGoldWalletType: 'MPGW',
-        toGoldWalletType: 'FPGW',
-        balanceAfterGrams: (balanceSummary.total.totalGrams).toFixed(6),
-        transactionId,
-        notes: `Converted ${goldGrams.toFixed(6)}g from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
-      });
+        const balanceSummary = await getBalanceSummary(userId);
+        await tx.insert(vaultLedgerEntries).values({
+          userId,
+          action: 'MPGW_To_FPGW',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
+          valueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          fromGoldWalletType: 'MPGW',
+          toGoldWalletType: 'FPGW',
+          balanceAfterGrams: (balanceSummary.total.totalGrams).toFixed(6),
+          transactionId,
+          notes: `Converted ${goldGrams.toFixed(6)}g from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
+        });
 
-      const certNumber = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-      await db.insert(certificates).values({
-        certificateNumber: certNumber,
-        userId,
-        type: 'Conversion',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-        totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
-        issuer: 'Finatrades',
-        fromGoldWalletType: 'MPGW',
-        toGoldWalletType: 'FPGW',
-        conversionPriceUsd: currentGoldPrice.toFixed(2),
-        status: 'Active',
-        transactionId,
-        issuedAt: now
-      });
+        const certNumber = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+        await tx.insert(certificates).values({
+          certificateNumber: certNumber,
+          userId,
+          type: 'Conversion',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
+          totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          issuer: 'Finatrades',
+          fromGoldWalletType: 'MPGW',
+          toGoldWalletType: 'FPGW',
+          conversionPriceUsd: currentGoldPrice.toFixed(2),
+          status: 'Active',
+          transactionId,
+          issuedAt: now
+        });
 
-    } else if (fromWalletType === 'FPGW' && toWalletType === 'MPGW') {
-      const consumption = await consumeFpgwBatches(userId, goldGrams, 'Available');
-      
-      if (!consumption.success) {
-        return res.status(400).json({ error: consumption.error });
+      } else if (fromWalletType === 'FPGW' && toWalletType === 'MPGW') {
+        const consumption = await consumeFpgwBatches(userId, goldGrams, 'Available');
+        
+        if (!consumption.success) {
+          throw new Error(consumption.error || 'FPGW consumption failed');
+        }
+
+        await tx
+          .update(vaultOwnershipSummary)
+          .set({
+            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} + ${goldGrams}`,
+            lastUpdated: now
+          })
+          .where(eq(vaultOwnershipSummary.userId, userId));
+
+        const avgPrice = consumption.totalGramsConsumed > 0 
+          ? consumption.weightedValueUsd / consumption.totalGramsConsumed 
+          : currentGoldPrice;
+
+        const balanceSummaryFpgw = await getBalanceSummary(userId);
+        await tx.insert(vaultLedgerEntries).values({
+          userId,
+          action: 'FPGW_To_MPGW',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: avgPrice.toFixed(2),
+          valueUsd: consumption.weightedValueUsd.toFixed(2),
+          fromGoldWalletType: 'FPGW',
+          toGoldWalletType: 'MPGW',
+          balanceAfterGrams: (balanceSummaryFpgw.total.totalGrams).toFixed(6),
+          transactionId,
+          notes: `Converted ${goldGrams.toFixed(6)}g from FPGW to MPGW (FPGW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
+        });
+
+        const certNumberFpgw = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+        await tx.insert(certificates).values({
+          certificateNumber: certNumberFpgw,
+          userId,
+          type: 'Conversion',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
+          totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          issuer: 'Finatrades',
+          fromGoldWalletType: 'FPGW',
+          toGoldWalletType: 'MPGW',
+          conversionPriceUsd: avgPrice.toFixed(2),
+          status: 'Active',
+          transactionId,
+          issuedAt: now
+        });
       }
-
-      await db
-        .update(vaultOwnershipSummary)
-        .set({
-          mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} + ${goldGrams}`,
-          lastUpdated: now
-        })
-        .where(eq(vaultOwnershipSummary.userId, userId));
-
-      const avgPrice = consumption.totalGramsConsumed > 0 
-        ? consumption.weightedValueUsd / consumption.totalGramsConsumed 
-        : currentGoldPrice;
-
-      const balanceSummaryFpgw = await getBalanceSummary(userId);
-      await db.insert(vaultLedgerEntries).values({
-        userId,
-        action: 'FPGW_To_MPGW',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: avgPrice.toFixed(2),
-        valueUsd: consumption.weightedValueUsd.toFixed(2),
-        fromGoldWalletType: 'FPGW',
-        toGoldWalletType: 'MPGW',
-        balanceAfterGrams: (balanceSummaryFpgw.total.totalGrams).toFixed(6),
-        transactionId,
-        notes: `Converted ${goldGrams.toFixed(6)}g from FPGW to MPGW (FPGW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
-      });
-
-      const certNumberFpgw = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-      await db.insert(certificates).values({
-        certificateNumber: certNumberFpgw,
-        userId,
-        type: 'Conversion',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-        totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
-        issuer: 'Finatrades',
-        fromGoldWalletType: 'FPGW',
-        toGoldWalletType: 'MPGW',
-        conversionPriceUsd: avgPrice.toFixed(2),
-        status: 'Active',
-        transactionId,
-        issuedAt: now
-      });
-    }
+    });
 
     emitLedgerEvent(userId, {
       type: 'balance_update',

@@ -21,6 +21,7 @@ import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 
+import DualWalletDisplay from "@/components/finapay/DualWalletDisplay";
 import { useLocation, useSearch } from 'wouter';
 import { ShieldAlert } from 'lucide-react';
 
@@ -337,6 +338,9 @@ export default function FinaPay() {
 
           </div>
         </div>
+
+        {/* Dual Wallet Display - MPGW/FPGW */}
+        {user && <DualWalletDisplay userId={user.id} />}
 
         {/* KYC Warning Banner */}
         {!isKycApproved && (
